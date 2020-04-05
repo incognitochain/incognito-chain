@@ -277,7 +277,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		// new request
-		newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
+		newWaitingPortingRequestState := statedb.NewWaitingPortingRequestWithValue(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -289,7 +289,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		newPortingRequestStateAccept := metadata.NewPortingRequestStatus(
+		newPortingRequestState := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -301,7 +301,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		newPortingTxRequestStateAccept := metadata.NewPortingRequestStatus(
+		newPortingTxRequestState := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -314,7 +314,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		)
 
 		//save transaction
-		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingTxRequestStateAccept)
+		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingTxRequestState)
 		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalPortingRequestTxStatusPrefix(),
@@ -328,7 +328,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save success porting request
-		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStateAccept)
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
 		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalPortingRequestStatusPrefix(),
@@ -351,7 +351,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save waiting request porting state
 		keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save waiting porting request with key %v", keyWaitingPortingRequest)
-		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newPortingRequestStateWaiting
+		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newWaitingPortingRequestState
 
 		break
 	case common.PortalPortingRequestRejectedChainStatus:

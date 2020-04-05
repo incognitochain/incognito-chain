@@ -14,16 +14,17 @@ import (
 	"testing"
 )
 
-
 type PortingRequestExcepted struct {
-	Metadata string
+	Metadata    string
 	ChainStatus string
+	Custodian1 []string
+	Custodian2 []string
 }
 
 type PortingRequestTestCase struct {
 	TestCaseName string
-	Input func() metadata.PortalUserRegisterAction
-	Output func() PortingRequestExcepted
+	Input        func() metadata.PortalUserRegisterAction
+	Output       func() PortingRequestExcepted
 }
 
 // Define the suite, and absorb the built-in basic suite
@@ -70,14 +71,14 @@ func (suite *PortalProducerSuite) SetupPortingRequest(beaconHeight uint64) {
 
 	custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ")
 	newCustodian := statedb.NewCustodianStateWithValue(
-	"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
-	100000,
+		"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
+		100000,
 		100000,
 		nil,
 		nil,
 		remoteAddresses,
 		0,
-		)
+	)
 
 	custodian := make(map[string]*statedb.CustodianState)
 	custodian[custodianKey.String()] = newCustodian
@@ -161,7 +162,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
 					"1",
-					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC",
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
 					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
 					1000,
 					4,
@@ -177,8 +178,14 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 			},
 			func() PortingRequestExcepted {
 				return PortingRequestExcepted{
-					Metadata: strconv.Itoa(metadata.PortalUserRegisterMeta),
+					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
+					Custodian1: []string{
+						"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //address
+						"40000", //free collateral
+						"1000", //hold pToken
+						"60000", //lock prv amount
+					},
 				}
 			},
 		},
@@ -187,7 +194,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 	suite.verifyPortingRequest(happyCases)
 }
 
-func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingRequestTestCase)  {
+func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingRequestTestCase) {
 	trieMock := new(mocks.Trie)
 	beaconHeight := uint64(1)
 	suite.SetupPortingRequest(beaconHeight)
@@ -209,15 +216,15 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 			beaconHeight,
 		)
 
-		fmt.Printf("Testcase %v, instruction %+v",testCase.TestCaseName, value)
+		fmt.Printf("Testcase %v, instruction %+v", testCase.TestCaseName, value)
 
 		assert.Equal(suite.T(), err, nil)
 
 		if len(testCase.Output().Metadata) > 0 {
-			assert.Equal(suite.T(),  testCase.Output().Metadata, value[0][0])
+			assert.Equal(suite.T(), testCase.Output().Metadata, value[0][0])
 		}
 
-		assert.Equal(suite.T(),  strconv.Itoa(1), value[0][1])
+		assert.Equal(suite.T(), strconv.Itoa(1), value[0][1])
 
 		if len(testCase.Output().ChainStatus) > 0 {
 			assert.Equal(suite.T(), testCase.Output().ChainStatus, value[0][2])
@@ -225,11 +232,60 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 
 		assert.NotNil(suite.T(), value[0][3])
 
-		//custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ")
-		//custodian := suite.currentPortalState.CustodianPoolState[custodianKey.String()]
+		//test current portal state
+		var portingRequestContent metadata.PortalPortingRequestContent
+		json.Unmarshal([]byte(value[0][3]), &portingRequestContent)
 
-		//holdPublicToken := custodian.GetHoldingPublicTokens()
-		//assert.Equal(suite.T(), "1", holdPublicToken["a"])
+		for _, itemCustodian := range portingRequestContent.Custodian {
+			//update custodian state
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
+			custodian := suite.currentPortalState.CustodianPoolState[custodianKey.String()]
+
+			holdPublicToken := custodian.GetHoldingPublicTokens()
+			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+
+			if testCase.Output().Custodian1 != nil && itemCustodian.IncAddress == testCase.Output().Custodian1[0] {
+				i1, err := strconv.ParseInt(testCase.Output().Custodian1[1], 10, 64)
+				if err == nil {
+					fmt.Println(i1)
+				}
+
+				i2, err := strconv.ParseInt(testCase.Output().Custodian1[2], 10, 64)
+				if err == nil {
+					fmt.Println(i2)
+				}
+
+				i3, err := strconv.ParseInt(testCase.Output().Custodian1[3], 10, 64)
+				if err == nil {
+					fmt.Println(i3)
+				}
+
+				assert.Equal(suite.T(), i1, custodian.GetFreeCollateral()) //free collateral
+				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
+				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
+			}
+
+			if testCase.Output().Custodian2 != nil && itemCustodian.IncAddress == testCase.Output().Custodian2[0] {
+				i1, err := strconv.ParseInt(testCase.Output().Custodian2[1], 10, 64)
+				if err == nil {
+					fmt.Println(i1)
+				}
+
+				i2, err := strconv.ParseInt(testCase.Output().Custodian2[2], 10, 64)
+				if err == nil {
+					fmt.Println(i2)
+				}
+
+				i3, err := strconv.ParseInt(testCase.Output().Custodian2[3], 10, 64)
+				if err == nil {
+					fmt.Println(i3)
+				}
+
+				assert.Equal(suite.T(), i1, custodian.GetFreeCollateral()) //free collateral
+				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
+				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
+			}
+		}
 	}
 }
 
