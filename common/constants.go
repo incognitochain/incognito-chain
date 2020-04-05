@@ -131,15 +131,12 @@ const (
 
 	PortalPortingReqSuccessStatus    = 1
 	PortalPortingReqWaitingStatus    = 2
-	PortalPortingReqRejectedStatus   = 3
-	PortalPortingReqAcceptedStatus   = 4
-	PortalPortingReqExpiredStatus    = 5
-	PortalPortingReqLiquidatedStatus = 6
+	PortalPortingReqExpiredStatus    = 3
+	PortalPortingReqLiquidatedStatus = 4
 
 	PortalRedeemReqSuccessStatus    = 1
 	PortalRedeemReqWaitingStatus    = 2
-	PortalRedeemReqRejectedStatus   = 3
-	PortalRedeemReqLiquidatedStatus = 4
+	PortalRedeemReqLiquidatedStatus = 3
 
 	PortalCustodianWithdrawReqAcceptedStatus = 1
 	PortalCustodianWithdrawReqRejectStatus   = 2
