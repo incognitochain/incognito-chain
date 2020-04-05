@@ -3,8 +3,8 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	mocks "github.com/incognitochain/incognito-chain/mocks"
 	"github.com/stretchr/testify/assert"
@@ -23,16 +23,16 @@ type PortalProducerSuite struct {
 
 func (suite *PortalProducerSuite) SetupTest() {
 	suite.currentPortalState = &CurrentPortalState{
-		CustodianPoolState:     map[string]*lvdb.CustodianState{},
-		ExchangeRatesRequests:  map[string]*lvdb.ExchangeRatesRequest{},
-		WaitingPortingRequests: map[string]*lvdb.PortingRequest{},
-		WaitingRedeemRequests:  map[string]*lvdb.RedeemRequest{},
+		CustodianPoolState:     map[string]*statedb.CustodianState{},
+		ExchangeRatesRequests:  map[string]*metadata.ExchangeRatesRequestStatus{},
+		WaitingPortingRequests: map[string]*statedb.WaitingPortingRequest{},
+		WaitingRedeemRequests:  map[string]*statedb.WaitingRedeemRequest{},
 	}
 }
 
 func buildPortalCustodianDepositAction(
 	incogAddressStr string,
-	remoteAddresses map[string]string,
+	remoteAddresses []statedb.RemoteAddress,
 	depositedAmount uint64,
 ) []string {
 	custodianDepositMeta, _ := metadata.NewPortalCustodianDeposit(
@@ -70,20 +70,47 @@ func buildPortalCustodianDepositAction(
 
 
 func TestBuildInstructionsForPortingRequest(t *testing.T)  {
-	databaseInterface := new(mocks.DatabaseInterface)
+	trieMock := new(mocks.Trie)
 
-	keyPortingRequest := lvdb.NewPortingRequestKey("123")
-	databaseInterface.On("GetItemPortalByKey", []byte(keyPortingRequest)).Return(
+	keyPortingRequest := "123456789"
+	trieMock.On("GetKey").Return(
 		nil,
-		database.NewDatabaseError(database.GetItemPortalByKeyError, errors.New("data not found")),
 	).Once()
 
-	config := &Config{
-		DataBase: databaseInterface,
+	trieMock.On("TryGet", []byte(keyPortingRequest)).Return(
+		0,
+		nil,
+	)
+
+	root1 := common.Hash{}
+	wrapperDBMock := new(mocks.DatabaseAccessWarper)
+	wrapperDBMock.On("OpenPrefixTrie",root1).Return(
+		trieMock,
+		nil,
+	)
+
+	wrapperDBMock.On("CopyTrie",trieMock).Return(
+		trieMock,
+		nil,
+	)
+
+
+	root := common.Hash{}
+	stateDb, err := statedb.NewWithPrefixTrie(root, wrapperDBMock)
+	if err != nil || stateDb == nil {
+		t.Fatal(err, stateDb)
+	}
+
+	beaconBestState := &BeaconBestState{
+		featureStateDB: stateDb,
+	}
+
+	bestState := &BestState{
+		Beacon: beaconBestState,
 	}
 
 	blockChain := &BlockChain{
-		config: *config,
+		BestState: bestState,
 	}
 
 	//case: wrong input data
@@ -129,11 +156,11 @@ func TestBuildInstructionsForPortingRequest(t *testing.T)  {
 	assert.Equal(t, value, [][]string{})
 
 	//case: check unique id from record from db
-	currentPortalState := &CurrentPortalState{
-		CustodianPoolState:     map[string]*lvdb.CustodianState{},
-		ExchangeRatesRequests:  map[string]*lvdb.ExchangeRatesRequest{},
-		WaitingPortingRequests: map[string]*lvdb.PortingRequest{},
-		WaitingRedeemRequests:  map[string]*lvdb.RedeemRequest{},
+	/*currentPortalState := &CurrentPortalState{
+		CustodianPoolState:     map[string]*statedb.CustodianState{},
+		ExchangeRatesRequests:  map[string]*metadata.ExchangeRatesRequestStatus{},
+		WaitingPortingRequests: map[string]*statedb.WaitingPortingRequest{},
+		WaitingRedeemRequests:  map[string]*statedb.WaitingRedeemRequest{},
 	}
 
 	instruct, err := blockChain.buildInstructionsForPortingRequest(
@@ -145,5 +172,5 @@ func TestBuildInstructionsForPortingRequest(t *testing.T)  {
 	)
 
 	result := instruct[0]
-	assert.Equal(t, result[2], "rejected")
+	assert.Equal(t, result[2], "rejected")*/
 }

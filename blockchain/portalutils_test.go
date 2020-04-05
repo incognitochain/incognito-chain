@@ -18,9 +18,9 @@ func  TestCurrentPortalStateStruct(t *testing.T)  {
 	assert.Equal(t, len(currentPortalState.ExchangeRatesRequests), 0)
 	assert.Equal(t, len(currentPortalState.WaitingPortingRequests), 0)
 	assert.Equal(t, len(currentPortalState.WaitingRedeemRequests), 0)
-	assert.Equal(t, len(currentPortalState.FinalExchangeRates), 0)
+	assert.Equal(t, len(currentPortalState.FinalExchangeRatesState), 0)
 
-	finalExchangeRates := currentPortalState.FinalExchangeRates["abc"]
+	finalExchangeRates := currentPortalState.FinalExchangeRatesState["abc"]
 	assert.Equal(t, finalExchangeRates.Rates, nil)
 
 	_, ok := currentPortalState.CustodianPoolState["abc"]

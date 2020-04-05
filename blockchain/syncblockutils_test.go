@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"github.com/btcsuite/btcd/database"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"io/ioutil"
 	"os"
 	"reflect"
