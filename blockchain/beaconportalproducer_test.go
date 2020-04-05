@@ -162,7 +162,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
 					"1",
-					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
+					"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //100.000 prv
 					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
 					1000,
 					4,
@@ -181,7 +181,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
 					Custodian1: []string{
-						"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //address
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"40000", //free collateral
 						"1000", //hold pToken
 						"60000", //lock prv amount
@@ -216,7 +216,8 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 			beaconHeight,
 		)
 
-		fmt.Printf("Testcase %v, instruction %+v", testCase.TestCaseName, value)
+		fmt.Printf("Testcase %v: instruction %+v", testCase.TestCaseName, value)
+		fmt.Println()
 
 		assert.Equal(suite.T(), err, nil)
 
@@ -243,45 +244,46 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 
 			holdPublicToken := custodian.GetHoldingPublicTokens()
 			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+			freeCollateral := custodian.GetFreeCollateral()
 
 			if testCase.Output().Custodian1 != nil && itemCustodian.IncAddress == testCase.Output().Custodian1[0] {
-				i1, err := strconv.ParseInt(testCase.Output().Custodian1[1], 10, 64)
+				i1, err := strconv.ParseUint(testCase.Output().Custodian1[1], 10, 64)
 				if err == nil {
 					fmt.Println(i1)
 				}
 
-				i2, err := strconv.ParseInt(testCase.Output().Custodian1[2], 10, 64)
+				i2, err := strconv.ParseUint(testCase.Output().Custodian1[2], 10, 64)
 				if err == nil {
 					fmt.Println(i2)
 				}
 
-				i3, err := strconv.ParseInt(testCase.Output().Custodian1[3], 10, 64)
+				i3, err := strconv.ParseUint(testCase.Output().Custodian1[3], 10, 64)
 				if err == nil {
 					fmt.Println(i3)
 				}
 
-				assert.Equal(suite.T(), i1, custodian.GetFreeCollateral()) //free collateral
+				assert.Equal(suite.T(), i1, freeCollateral) //free collateral
 				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
 				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
 			}
 
 			if testCase.Output().Custodian2 != nil && itemCustodian.IncAddress == testCase.Output().Custodian2[0] {
-				i1, err := strconv.ParseInt(testCase.Output().Custodian2[1], 10, 64)
+				i1, err := strconv.ParseUint(testCase.Output().Custodian2[1], 10, 64)
 				if err == nil {
 					fmt.Println(i1)
 				}
 
-				i2, err := strconv.ParseInt(testCase.Output().Custodian2[2], 10, 64)
+				i2, err := strconv.ParseUint(testCase.Output().Custodian2[2], 10, 64)
 				if err == nil {
 					fmt.Println(i2)
 				}
 
-				i3, err := strconv.ParseInt(testCase.Output().Custodian2[3], 10, 64)
+				i3, err := strconv.ParseUint(testCase.Output().Custodian2[3], 10, 64)
 				if err == nil {
 					fmt.Println(i3)
 				}
 
-				assert.Equal(suite.T(), i1, custodian.GetFreeCollateral()) //free collateral
+				assert.Equal(suite.T(), i1, freeCollateral) //free collateral
 				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
 				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
 			}
