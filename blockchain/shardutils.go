@@ -149,7 +149,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, nil, shardID)
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
 			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)
@@ -232,7 +232,7 @@ func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardI
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
 		if meta != nil {
-			actionPairs, err := meta.BuildReqActions(tx, bc, nil, nil, shardID)
+			actionPairs, err := meta.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
 			if err != nil {
 				continue
 			}
