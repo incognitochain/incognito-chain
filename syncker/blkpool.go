@@ -1,14 +1,18 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
+	"fmt"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type BlkPool struct {
 	action            chan func()
 	blkPoolByHash     map[string]common.BlockPoolInterface // hash -> block
 	blkPoolByPrevHash map[string][]string                  // prevhash -> []nexthash
+
+	blkHashByHeightNsID map[string][]string
 }
 
 func NewBlkPool(name string) *BlkPool {
@@ -16,6 +20,7 @@ func NewBlkPool(name string) *BlkPool {
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.BlockPoolInterface)
 	pool.blkPoolByPrevHash = make(map[string][]string)
+	pool.blkHashByHeightNsID = make(map[string][]string)
 	go pool.Start()
 	return pool
 }
@@ -48,6 +53,8 @@ func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 			return
 		}
 		pool.blkPoolByHash[hash] = blk
+		key := fmt.Sprintf("%v-%v", blk.GetHeight(), blk.GetShardID())
+		pool.blkHashByHeightNsID[key] = append(pool.blkHashByHeightNsID[key], hash)
 		if common.IndexOfStr(hash, pool.blkPoolByPrevHash[prevHash]) > -1 {
 			return
 		}
@@ -76,8 +83,11 @@ func (pool *BlkPool) HasHash(hash common.Hash) bool {
 
 func (pool *BlkPool) RemoveBlock(hash string) {
 	pool.action <- func() {
-		if _, ok := pool.blkPoolByHash[hash]; ok {
+		if blk, ok := pool.blkPoolByHash[hash]; ok {
+			key := fmt.Sprintf("%v-%v", blk.GetHeight(), blk.GetShardID())
+			delete(pool.blkHashByHeightNsID, key)
 			delete(pool.blkPoolByHash, hash)
+			delete(pool.blkPoolByPrevHash, hash)
 		}
 	}
 }
@@ -94,6 +104,14 @@ func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInter
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetLongestChain(currentHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
+	}
+	return <-res
+}
+
+func (pool *BlkPool) GetPoolInfo() []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		res <- GetPoolInfo(pool.blkPoolByHash)
 	}
 	return <-res
 }

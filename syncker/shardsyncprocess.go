@@ -3,9 +3,10 @@ package syncker
 import (
 	"context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -65,7 +66,22 @@ func (s *ShardSyncProcess) start() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
 			if s.isCommittee {
-				s.crossShardSyncProcess.start()
+				notStarted := s.crossShardSyncProcess.start()
+				if notStarted {
+					go func(s *CrossShardSyncProcess) {
+						ticker := time.NewTicker(time.Second * 20)
+						lastBestHeight := map[byte]uint64{}
+						for i := 0; i < s.server.GetChainParam().ActiveShards; i++ {
+							lastBestHeight[byte(i)] = 1
+						}
+						for range ticker.C {
+							s.RemoveOldBlock(lastBestHeight)
+							if s.status == STOP_SYNC {
+								return
+							}
+						}
+					}(s.crossShardSyncProcess)
+				}
 			} else {
 				s.crossShardSyncProcess.stop()
 			}

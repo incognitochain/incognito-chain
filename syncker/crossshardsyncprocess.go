@@ -3,8 +3,9 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type CrossShardSyncProcess struct {
@@ -37,9 +38,9 @@ func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess,
 	return s
 }
 
-func (s *CrossShardSyncProcess) start() {
+func (s *CrossShardSyncProcess) start() bool {
 	if s.status == RUNNING_SYNC {
-		return
+		return false
 	}
 	s.status = RUNNING_SYNC
 	go func() {
@@ -48,6 +49,7 @@ func (s *CrossShardSyncProcess) start() {
 			f()
 		}
 	}()
+	return true
 }
 
 func (s *CrossShardSyncProcess) stop() {
@@ -117,10 +119,35 @@ func (s *CrossShardSyncProcess) streamMissingCrossShardBlock(fromSID int, hashes
 		case blk := <-ch:
 			if !isNil(blk) {
 				fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
+				key := fmt.Sprintf("%v-%v", blk.GetHeight(), fromSID)
+				s.crossShardPool.action <- func() {
+					s.crossShardPool.blkHashByHeightNsID[key] = blk.Hash().String()
+				}
 				s.crossShardPool.AddBlock(blk.(common.CrossShardBlkPoolInterface))
 			} else {
 				break
 			}
 		}
+	}
+}
+
+func (s *CrossShardSyncProcess) RemoveOldBlock(lastCrossShard map[byte]uint64) {
+	nBestHeight := s.shardSyncProcess.Chain.GetCrossShardState()
+	for sID, oldHeight := range lastCrossShard {
+		newHeight := nBestHeight[sID]
+		if newHeight < 2 {
+			continue
+		}
+		sIDint := int(sID)
+		s.crossShardPool.action <- func() {
+			cleanOldDateCrossShardBlks(
+				oldHeight,
+				newHeight-1,
+				sIDint,
+				s.crossShardPool.blkHashByHeightNsID,
+				s.crossShardPool.blkPoolByHash,
+			)
+		}
+		lastCrossShard[sID] = newHeight - 1
 	}
 }

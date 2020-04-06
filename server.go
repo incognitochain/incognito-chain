@@ -540,6 +540,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 			PubSubManager:               pubsubManager,
 			ConsensusEngine:             serverObj.consensusEngine,
 			MemCache:                    serverObj.memCache,
+			Syncker:                     serverObj.syncker,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -2070,6 +2071,7 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 }
 
 func (serverObj *Server) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("[SyncBeacon] from %v to %v ", from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkBc,
 		Specific:     false,
@@ -2082,6 +2084,7 @@ func (serverObj *Server) RequestBeaconBlocksViaStream(ctx context.Context, peerI
 }
 
 func (serverObj *Server) RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("[SyncShard] from %v to %v fromShard %v", from, to, fromSID)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkShard,
 		Specific:     false,
@@ -2094,6 +2097,7 @@ func (serverObj *Server) RequestShardBlocksViaStream(ctx context.Context, peerID
 }
 
 func (serverObj *Server) RequestShardToBeaconBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("[SyncS2B] from %v to %v fromShard %v", from, to, fromSID)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkS2B,
 		Specific:     false,
@@ -2107,6 +2111,7 @@ func (serverObj *Server) RequestShardToBeaconBlocksViaStream(ctx context.Context
 }
 
 func (serverObj *Server) RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("[SyncXShard] heights %v fromShard %v toShard %v", heights, fromSID, toSID)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkXShard,
 		Specific:     true,
