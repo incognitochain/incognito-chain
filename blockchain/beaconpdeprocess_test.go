@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"strconv"
 	"testing"
 
@@ -108,7 +109,7 @@ func (suite *PDEProcessSuite) TestPDEContributionOnUnexistedWaitingUniqID() {
 	)
 	beaconHeight := uint64(1001)
 	bc := &BlockChain{}
-	err := bc.processPDEContributionV2(beaconHeight-1, contribInsts[0], suite.currentPDEState)
+	err := bc.processPDEContributionV2(&statedb.StateDB{}, beaconHeight-1, contribInsts[0], suite.currentPDEState)
 	suite.Equal(err, nil)
 	waitingContribKey := string(rawdbv2.BuildWaitingPDEContributionKey(
 		beaconHeight-1,
@@ -150,7 +151,7 @@ func (suite *PDEProcessSuite) TestPDEContributionOnUnexistedPairForExistedWaitin
 		contribToken2IDStr,
 	)
 	bc := &BlockChain{}
-	err := bc.processPDEContributionV2(beaconHeight-1, contribInsts[0], suite.currentPDEState)
+	err := bc.processPDEContributionV2(&statedb.StateDB{}, beaconHeight-1, contribInsts[0], suite.currentPDEState)
 	suite.Equal(err, nil)
 	_, found := currentPDEState.WaitingPDEContributions[existedWaitingContribKey]
 	suite.Equal(found, false)
@@ -261,7 +262,7 @@ func (suite *PDEProcessSuite) TestPDEContributionOnExistedPairForExistedWaitingU
 		contribToken2IDStr,
 	)
 	bc := &BlockChain{}
-	err := bc.processPDEContributionV2(beaconHeight-1, contribInsts[0], suite.currentPDEState)
+	err := bc.processPDEContributionV2(&statedb.StateDB{}, beaconHeight-1, contribInsts[0], suite.currentPDEState)
 	suite.Equal(err, nil)
 	newWaitingPDEContributions := suite.currentPDEState.WaitingPDEContributions
 	suite.Equal(len(newWaitingPDEContributions), 1)

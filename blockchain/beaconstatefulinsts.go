@@ -17,9 +17,6 @@ import (
 func (blockchain *BlockChain) collectStatefulActions(
 	shardBlockInstructions [][]string,
 ) [][]string {
-		if len(shardBlockInstructions) > 0 {
-			Logger.log.Errorf("collectStatefulActions starting !!!!!")
-		}
 	// stateful instructions are dependently processed with results of instructioins before them in shards2beacon blocks
 	statefulInsts := [][]string{}
 	for _, inst := range shardBlockInstructions {
@@ -31,7 +28,6 @@ func (blockchain *BlockChain) collectStatefulActions(
 		}
 
 		metaType, err := strconv.Atoi(inst[0])
-		Logger.log.Errorf("collectStatefulActions metaType %v\n", metaType)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -56,10 +52,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
 			metadata.PortalLiquidationCustodianDepositMeta,
 			metadata.PortalLiquidationCustodianDepositResponseMeta:
-				{
-					Logger.log.Errorf("collectStatefulActions stateful instruction")
-					statefulInsts = append(statefulInsts, inst)
-				}
+				statefulInsts = append(statefulInsts, inst)
 
 		default:
 			continue
@@ -83,10 +76,6 @@ func groupPDEActionsByShardID(
 }
 
 func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64) [][]string {
-	if len(statefulActionsByShardID[0]) > 0 {
-		Logger.log.Errorf("buildStatefulInstructions starting....!!!!! - %v\n", len(statefulActionsByShardID[0]))
-	}
-
 	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -170,7 +159,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 				)
 			case metadata.PortalCustodianDepositMeta:
 				{
-					Logger.log.Errorf("Receive instruction for custodian deposit !!!!!")
 					portalCustodianDepositActionsByShardID = groupPortalActionsByShardID(
 						portalCustodianDepositActionsByShardID,
 						action,

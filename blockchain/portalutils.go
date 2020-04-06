@@ -206,7 +206,8 @@ func pickMultipleCustodian(
 	metadata metadata.PortalUserRegister,
 	exchangeRate *statedb.FinalExchangeRatesState,
 	custodianStateSlice []CustodianStateSlice,
-	currentPortalState *CurrentPortalState) ([]*statedb.MatchingPortingCustodianDetail, error) {
+	currentPortalState *CurrentPortalState,
+) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	//get multiple custodian
 	var holdPToken uint64 = 0
 
@@ -228,17 +229,17 @@ func pickMultipleCustodian(
 			return nil, err
 		}
 
-		pTokenCanUseUint64 := down150Percent(totalPToken)
+		pTokenHolded := down150Percent(totalPToken)
 
 		remainPToken := metadata.RegisterAmount - holdPToken // 1000 - 833 = 167
-		if pTokenCanUseUint64 > remainPToken {
-			pTokenCanUseUint64 = remainPToken
-			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenCanUseUint64)
+		if pTokenHolded > remainPToken {
+			pTokenHolded = remainPToken
+			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenHolded)
 		} else {
-			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenCanUseUint64)
+			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenHolded)
 		}
 
-		totalPTokenAfterUp150PercentUnit64 := up150Percent(pTokenCanUseUint64)
+		totalPTokenAfterUp150PercentUnit64 := up150Percent(pTokenHolded)
 		totalPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 
 		if err != nil {
@@ -246,7 +247,7 @@ func pickMultipleCustodian(
 			return nil, err
 		}
 
-		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenCanUseUint64, totalPRV)
+		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenHolded, totalPRV)
 
 		if custodianItem.Value.GetFreeCollateral() >= totalPRV {
 			remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianItem.Value.GetRemoteAddresses(), metadata.PTokenId)
@@ -259,16 +260,16 @@ func pickMultipleCustodian(
 				&statedb.MatchingPortingCustodianDetail{
 					IncAddress:             custodianItem.Value.GetIncognitoAddress(),
 					RemoteAddress:          remoteAddr,
-					Amount:                 pTokenCanUseUint64,
+					Amount:                 pTokenHolded,
 					LockedAmountCollateral: totalPRV,
 					RemainCollateral:       custodianItem.Value.GetFreeCollateral() - totalPRV,
 				},
 			)
 
-			holdPToken = holdPToken + pTokenCanUseUint64
+			holdPToken = holdPToken + pTokenHolded
 
 			//update custodian state
-			err = UpdateCustodianWithNewAmount(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenCanUseUint64, totalPRV)
+			err = UpdateCustodianWithNewAmount(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenHolded, totalPRV)
 			if err != nil {
 				return nil, err
 			}
@@ -285,6 +286,7 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 	}
 
 	freeCollateral := custodian.GetFreeCollateral() - lockedAmountCollateral
+	custodian.SetFreeCollateral(freeCollateral)
 
 	//update ptoken holded
 	holdingPubTokensMapping := make(map[string]uint64)
@@ -296,9 +298,9 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 		}
 	}
 	holdingPubTokens := holdingPubTokensMapping
+	custodian.SetHoldingPublicTokens(holdingPubTokens)
 
 	//update collateral holded
-
 	if custodian.GetLockedAmountCollateral() == nil {
 		totalLockedAmountCollateral := make(map[string]uint64)
 		totalLockedAmountCollateral[PTokenId] = lockedAmountCollateral
@@ -308,9 +310,6 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 		lockedAmount[PTokenId] = lockedAmount[PTokenId] + lockedAmountCollateral
 		custodian.SetLockedAmountCollateral(lockedAmount)
 	}
-
-	custodian.SetFreeCollateral(freeCollateral)
-	custodian.SetHoldingPublicTokens(holdingPubTokens)
 
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 
