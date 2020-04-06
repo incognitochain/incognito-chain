@@ -67,5 +67,3 @@ func TestBNBProof(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, true, isValid2)
 }
-
-

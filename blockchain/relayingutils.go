@@ -165,20 +165,15 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 
 	// check newBlock is a header contain last commit for one of the header in unconfirmed header list or not\
 	// check newLatestBNBHeader is genesis header or not
-	genesisHeaderHeight := int64(0)
-	genesisHeaderStr := ""
-	if blockchain.config.ChainParams.BNBRelayingHeaderChainID == TestnetBNBChainID {
-		genesisHeaderHeight = bnbrelaying.TestnetGenesisBlockHeight
-		genesisHeaderStr = bnbrelaying.TestnetGenesisHeaderStr
-	} else if blockchain.config.ChainParams.BNBRelayingHeaderChainID == MainnetBNBChainID {
-		genesisHeaderHeight = bnbrelaying.MainnetGenesisBlockHeight
-		genesisHeaderStr = bnbrelaying.MainnetGenesisHeaderStr
-	}
+	genesisHeaderHeight, _ := bnbrelaying.GetGenesisBNBHeaderBlockHeight(blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestBlock
 	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBBlockHeader == nil {
+		genesisBlockBytes, _ := json.Marshal(newLatestBNBHeader)
+		genesisBlockStr := base64.StdEncoding.EncodeToString(genesisBlockBytes)
+		//genesisBlockStr, _ := bnbrelaying.GetGenesisBNBHeaderStr(blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 		inst1 := rbnbChain.buildHeaderRelayingInst(
 			relayingHeaderAction.Meta.IncogAddressStr,
-			genesisHeaderStr,
+			genesisBlockStr,
 			uint64(genesisHeaderHeight),
 			relayingHeaderAction.Meta.Type,
 			relayingHeaderAction.ShardID,

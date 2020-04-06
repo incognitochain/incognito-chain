@@ -910,9 +910,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 				for _, coin := range out.Coins {
 					if coin.Denom == bnb.DenomBNB {
 						amountTransfer += coin.Amount
-						// note: log error for debug
-						Logger.log.Errorf("TxProof-BNB coin.Amount %d",
-							coin.Amount)
 					}
 				}
 				if amountTransfer < amountNeedToBeTransferInBNB {

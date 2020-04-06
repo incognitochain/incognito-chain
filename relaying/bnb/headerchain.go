@@ -2,32 +2,12 @@ package bnb
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/tendermint/tendermint/types"
 	"strings"
 )
-
-func createGenesisHeaderChain(chainID string) (*types.Block, error) {
-	genesisBlockStr, err := GetGenesisBNBHeaderStr(chainID)
-	if err != nil {
-		return nil, err
-	}
-	genesisBlockBytes, err := base64.StdEncoding.DecodeString(genesisBlockStr)
-	if err != nil {
-		return nil, errors.New("Can not decode genesis header string")
-	}
-	var bnbBlock types.Block
-	err = json.Unmarshal(genesisBlockBytes, &bnbBlock)
-	if err != nil {
-		return nil, errors.New("Can not unmarshal genesis header bytes")
-	}
-
-	return &bnbBlock, nil
-}
 
 func NewSignedHeader (h *types.Header, lastCommit *types.Commit) *types.SignedHeader{
 	return &types.SignedHeader{
@@ -118,10 +98,8 @@ func (hc *LatestHeaderChain) AppendBlock(h *types.Block, chainID string) (*Lates
 	// create genesis header before appending new header
 	if hc.LatestBlock == nil && len(hc.UnconfirmedBlocks) == 0 {
 		genesisBlock, _ := createGenesisHeaderChain(chainID)
-		Logger.log.Errorf("genesisBlock: %v\n", genesisBlock)
 		hc.LatestBlock = genesisBlock
 	}
-	Logger.log.Errorf("h: %v\n", h)
 
 	var err2 error
 	if hc.LatestBlock != nil && h.LastCommit == nil {
@@ -140,8 +118,6 @@ func (hc *LatestHeaderChain) AppendBlock(h *types.Block, chainID string) (*Lates
 		// get the latest committed block header
 		latestHeader := hc.LatestBlock
 		latestHeaderBlockID := latestHeader.Hash()
-		Logger.log.Errorf("latestHeader.Hash(): %v\n", latestHeader.Hash().Bytes())
-		Logger.log.Errorf("h.LastBlockID.Hash.Bytes(): %v\n", h.LastBlockID.Hash.Bytes())
 
 		// check last blockID
 		if bytes.Equal(h.LastBlockID.Hash.Bytes(), latestHeaderBlockID) && h.Height == latestHeader.Height + 1{
@@ -150,7 +126,7 @@ func (hc *LatestHeaderChain) AppendBlock(h *types.Block, chainID string) (*Lates
 			newSignedHeader := NewSignedHeader(&latestHeader.Header, h.LastCommit)
 			isValid, err := VerifySignedHeader(newSignedHeader, chainID)
 			if isValid && err == nil{
-				Logger.log.Errorf("[AppendBlock] Case 1: Receive new confirmed header %v\n", h.Height)
+				Logger.log.Infof("[AppendBlock] Case 1: Receive new confirmed header %v\n", h.Height)
 				hc.UnconfirmedBlocks, err2 = appendBlockToUnconfirmedBlocks(h, hc.UnconfirmedBlocks)
 				if err2 != nil {
 					Logger.log.Errorf("[AppendBlock] Error when append header to unconfirmed headers %v\n", err2)
@@ -176,7 +152,7 @@ func (hc *LatestHeaderChain) AppendBlock(h *types.Block, chainID string) (*Lates
 				if isValid && err == nil{
 					hc.LatestBlock = uh
 					hc.UnconfirmedBlocks = []*types.Block{h}
-					Logger.log.Errorf("[AppendBlock] Case 2 new unconfirmed block %v\n", h.Height)
+					Logger.log.Infof("[AppendBlock] Case 2 new unconfirmed block %v\n", h.Height)
 					return hc, true, nil
 				}
 
