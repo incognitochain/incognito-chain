@@ -146,7 +146,7 @@ func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.State
 }
 
 func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
+	return blockchain.BestState.Shard[shardID].GetCopiedFeatureStateDB()
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {

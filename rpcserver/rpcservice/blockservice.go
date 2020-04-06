@@ -870,8 +870,31 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 	if err != nil {
 		return byte(0), err
 	}
-	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	status, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
+	status := byte(common.BridgeRequestNotFoundStatus)
+	for _, i := range blockService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		bridgeStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedFeatureStateDB()
+		status, err = statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
+		if err != nil {
+			return status, err
+		}
+		if status == byte(common.BridgeRequestNotFoundStatus) {
+			break
+		}
+	}
+	if status == common.BridgeRequestAcceptedStatus {
+		return status, nil
+	}
+	if status == common.BridgeRequestNotFoundStatus || status == common.BridgeRequestProcessingStatus {
+		bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+		bStatus, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
+		if err != nil {
+			return bStatus, err
+		}
+		if bStatus == common.BridgeRequestRejectedStatus {
+			return bStatus, nil
+		}
+	}
 	return status, err
 }
 
@@ -901,7 +924,7 @@ func (blockService BlockService) CheckETHHashIssued(data map[string]interface{})
 func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, error) {
 	for i := 0; i < blockService.BlockChain.BestState.Beacon.ActiveShards; i++ {
 		shardID := byte(i)
-		burningConfirmStateDB := blockService.BlockChain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
+		burningConfirmStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedFeatureStateDB()
 		res, err := statedb.GetBurningConfirm(burningConfirmStateDB, txID)
 		if err == nil {
 			return res, nil
