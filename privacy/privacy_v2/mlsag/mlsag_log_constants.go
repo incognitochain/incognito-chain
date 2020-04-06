@@ -14,5 +14,6 @@ func (mlsag *MlsagLogger) Init(inst common.Logger) {
 var Logger = MlsagLogger{}
 
 const (
-	HashSize = 32
+	HashSize    = 32
+	MlsagPrefix = byte(0x2)
 )

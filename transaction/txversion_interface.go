@@ -32,41 +32,27 @@ type TxVersionSwitcher interface {
 	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
 }
 
+func initTxVersionSwitcher(ver int8) TxVersionSwitcher {
+	var versionSwitcher TxVersionSwitcher
+	if ver == 1 {
+		versionSwitcher = new(TxVersion1)
+	} else if ver == 2 {
+		versionSwitcher = new(TxVersion2)
+	}
+	return versionSwitcher
+}
+
 // Used in Tx.Init
 // For Tx to be formed correctly by using privacy package
 func proveAndSignVersionSwitcher(tx *Tx, params *TxPrivacyInitParams) error {
-	// Init interface
-	var versionSwitcher TxVersionSwitcher
-	if tx.Version == 1 {
-		versionSwitcher = new(TxVersion1)
-	} else if tx.Version == 2 {
-		versionSwitcher = new(TxVersion2)
-	}
-	// Start proving and verifying
-	return versionSwitcher.Prove(tx, params)
+	return initTxVersionSwitcher(tx.Version).Prove(tx, params)
 }
 
 func verifierVersionSwitcher(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	// Init interface
-	var versionSwitcher TxVersionSwitcher
-	if tx.Version == 1 {
-		versionSwitcher = new(TxVersion1)
-	} else if tx.Version == 2 {
-		versionSwitcher = new(TxVersion2)
-	}
-
-	// Start proving and verifying
-	return versionSwitcher.Verify(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+	vs := initTxVersionSwitcher(tx.Version)
+	return vs.Verify(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
 func proveAndSignVersionSwitcherASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
-	// Init interface
-	var versionSwitcher TxVersionSwitcher
-	if tx.Version == 1 {
-		versionSwitcher = new(TxVersion1)
-	} else if tx.Version == 2 {
-		versionSwitcher = new(TxVersion2)
-	}
-	// Start proving and verifying
-	return versionSwitcher.ProveASM(tx, params)
+	return initTxVersionSwitcher(tx.Version).ProveASM(tx, params)
 }

@@ -163,13 +163,15 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 	}
 
 	tx.Sig, err = mlsagSignature.ToBytes()
+	check, err := mlsag.Verify(mlsagSignature, ring, message)
 
-	fmt.Println("Done mlsag")
-	fmt.Println("Done mlsag")
-	fmt.Println("Done mlsag")
-	fmt.Println("Done mlsag")
-	fmt.Println("Done mlsag")
-	fmt.Println("Done mlsag")
+	fmt.Println("After proving")
+	fmt.Println("After proving")
+	fmt.Println("After proving")
+	fmt.Println(check)
+	fmt.Println(check)
+	fmt.Println(err)
+	fmt.Println(err)
 	return err
 }
 
@@ -219,6 +221,13 @@ func verifySigTxVer2(tx *Tx) (bool, error) {
 	}
 
 	message := tx.Proof.Bytes()
+
+	fmt.Println("Verifying")
+	fmt.Println("Verifying")
+	fmt.Println("Verifying")
+	fmt.Println(txSig)
+	fmt.Println(tx.SigPubKey)
+	fmt.Println(message)
 	return mlsag.Verify(txSig, ring, message)
 }
 
@@ -245,23 +254,22 @@ func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, err
 	}
 
-	//if isNewTransaction {
-	//	for i := 0; i < len(outputCoins); i++ {
-	//		// Check output coins' SND is not exists in SND list (Database)
-	//		if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
-	//			if err != nil {
-	//				Logger.Log.Error(err)
-	//			}
-	//			Logger.Log.Errorf("snd existed: %d\n", i)
-	//			return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
-	//		}
-	//	}
-	//}
+	// Wonder if ver 2 needs this
+	// if isNewTransaction {
+	// 	for i := 0; i < len(outputCoins); i++ {
+	// 		// Check output coins' SND is not exists in SND list (Database)
+	// 		if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+	// 			if err != nil {
+	// 				Logger.Log.Error(err)
+	// 			}
+	// 			Logger.Log.Errorf("snd existed: %d\n", i)
+	// 			return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
+	// 		}
+	// 	}
+	// }
 
 	// Verify the payment proof
-	var p interface{} = tx.Proof
-	var txProofV2 privacy.ProofV2 = p.(privacy.ProofV2)
-
+	var txProofV2 *privacy.ProofV2 = tx.Proof.(*privacy.ProofV2)
 	valid, err = txProofV2.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil)
 
 	if !valid {

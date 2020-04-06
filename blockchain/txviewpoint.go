@@ -83,7 +83,7 @@ fetchTxViewPointFromBlock get list serialnumber and commitments, output coins fr
 return a tx view point which contains list new serialNumbers and new commitments from block
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 */
-func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shardID byte, proof *privacy.Proof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
+func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shardID byte, proof privacy.Proof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
@@ -95,7 +95,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shard
 	// Process input of transaction
 	// Get Serial numbers of input
 	// Append into accepttedSerialNumbers if this serial number haven't exist yet
-	inputCoins := (*proof).GetInputCoins()
+	inputCoins := proof.GetInputCoins()
 	for _, item := range inputCoins {
 		serialNum := item.CoinDetails.GetSerialNumber().ToBytesS()
 		ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNum, shardID)
@@ -111,7 +111,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shard
 	// Proccessed variable: commitment, snd, outputcoins
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
-	outputCoins := (*proof).GetOutputCoins()
+	outputCoins := proof.GetOutputCoins()
 	for _, item := range outputCoins {
 		commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
 		pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
@@ -159,7 +159,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, &normalTx.Proof, prvCoinID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, normalTx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -192,7 +192,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				var p interface{} = tx
 				tx := p.(transaction.TxCustomTokenPrivacy)
 
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, &tx.Proof, prvCoinID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, tx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -224,7 +224,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
 				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(stateDB, subView.shardID, &tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(stateDB, subView.shardID, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}

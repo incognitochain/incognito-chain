@@ -5,6 +5,7 @@ package mlsag
 import (
 	"crypto/sha256"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -34,46 +35,49 @@ func (ring Ring) ToBytes() ([]byte, error) {
 	}
 	n := len(k)
 	m := len(k[0])
-	b := make([]byte, 2)
 	if n > 255 || m > 255 {
 		return nil, errors.New("RingToBytes: Ring size is too large")
 	}
-	b[0] = byte(n)
-	b[1] = byte(m)
-
-	// fmt.Println("Printing ring")
-	// for i := 0; i < n; i += 1 {
-	// 	fmt.Println(k[i])
-	// }
+	b := make([]byte, 3)
+	b[0] = MlsagPrefix
+	b[1] = byte(n)
+	b[2] = byte(m)
 
 	for i := 0; i < n; i += 1 {
 		for j := 0; j < m; j += 1 {
 			b = append(b, k[i][j].ToBytesS()...)
 		}
 	}
+
 	return b, nil
 }
 
 func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
-	if len(b) < 2 {
+	if len(b) < 3 {
 		return nil, errors.New("RingFromBytes: byte length is too short")
 	}
-	n := int(b[0])
-	m := int(b[1])
-	if len(b) != operation.Ed25519KeySize*n*m+2 {
+	if b[0] != MlsagPrefix {
+		return nil, errors.New("RingFromBytes: byte[0] is not MlsagPrefix")
+	}
+	n := int(b[1])
+	m := int(b[2])
+	fmt.Println(b[3 : 3+operation.Ed25519KeySize])
+
+	if len(b) != operation.Ed25519KeySize*n*m+3 {
 		return nil, errors.New("RingFromBytes: byte length is not correct")
 	}
-	offset := 2
+	offset := 3
 	key := make([][]*operation.Point, 0)
 	for i := 0; i < n; i += 1 {
 		curRow := make([]*operation.Point, m)
 		for j := 0; j < m; j += 1 {
 			currentByte := b[offset : offset+operation.Ed25519KeySize]
+			offset += operation.Ed25519KeySize
 			currentPoint, err := new(operation.Point).FromBytesS(currentByte)
 			if err != nil {
 				return nil, errors.New("RingFromBytes: byte contains incorrect point")
 			}
-			curRow = append(curRow, currentPoint)
+			curRow[j] = currentPoint
 		}
 		key = append(key, curRow)
 	}

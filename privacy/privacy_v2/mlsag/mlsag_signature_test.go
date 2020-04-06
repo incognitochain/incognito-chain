@@ -1,7 +1,9 @@
 package mlsag
 
 import (
+	"bytes"
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,6 +21,30 @@ func InitializeSignatureForTest() (mlsag *Mlsag) {
 	pi := common.RandInt() % numFake
 	ring := NewRandomRing(keyInputs, numFake, pi)
 	return NewMlsag(keyInputs, ring, pi)
+}
+
+func TestRing(t *testing.T) {
+	keyInputs := []*operation.Scalar{}
+	for i := 0; i < 8; i += 1 {
+		privateKey := operation.RandomScalar()
+		keyInputs = append(keyInputs, privateKey)
+	}
+	numFake := 5
+	pi := common.RandInt() % numFake
+	ring := NewRandomRing(keyInputs, numFake, pi)
+	bRing, err := ring.ToBytes()
+	assert.Equal(t, nil, err, "There should not be any error when ring.ToBytes")
+
+	ringTemp, err := new(Ring).FromBytes(bRing)
+	assert.Equal(t, nil, err, "There should not be any error when ring.FromBytes")
+
+	fmt.Println(ring.keys)
+	fmt.Println(ringTemp.keys)
+
+	bRingTemp, err := ringTemp.ToBytes()
+	assert.Equal(t, nil, err, "There should not be any error when ring.ToBytes")
+
+	assert.Equal(t, true, bytes.Equal(bRingTemp, bRing))
 }
 
 func TestSignatureHexBytesConversion(t *testing.T) {

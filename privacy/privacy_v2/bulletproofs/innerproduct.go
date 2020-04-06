@@ -21,6 +21,19 @@ type InnerProductProof struct {
 	p *operation.Point
 }
 
+func (inner *InnerProductProof) Init() *InnerProductProof {
+	if inner == nil {
+		inner = new(InnerProductProof)
+	}
+	inner.l = []*operation.Point{}
+	inner.r = []*operation.Point{}
+	inner.a = new(operation.Scalar)
+	inner.b = new(operation.Scalar)
+	inner.p = new(operation.Point).Identity()
+
+	return inner
+}
+
 func (proof InnerProductProof) ValidateSanity() bool {
 	if len(proof.l) != len(proof.r) {
 		return false

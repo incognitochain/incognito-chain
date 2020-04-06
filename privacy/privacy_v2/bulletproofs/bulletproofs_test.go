@@ -2,12 +2,13 @@ package bulletproofs
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"

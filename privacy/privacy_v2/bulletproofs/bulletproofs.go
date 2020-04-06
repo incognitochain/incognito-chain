@@ -58,7 +58,7 @@ func (proof *AggregatedRangeProof) Init() {
 	proof.tauX = new(operation.Scalar)
 	proof.tHat = new(operation.Scalar)
 	proof.mu = new(operation.Scalar)
-	proof.innerProductProof = new(InnerProductProof)
+	proof.innerProductProof = new(InnerProductProof).Init()
 }
 
 func (proof AggregatedRangeProof) IsNil() bool {
@@ -109,7 +109,6 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, proof.innerProductProof.Bytes()...)
 
 	return res
-
 }
 
 func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {

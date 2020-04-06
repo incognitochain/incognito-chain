@@ -23,7 +23,7 @@ type CoinV2 struct {
 }
 
 func (this CoinV2) GetVersion() uint8               { return 2 }
-func (this CoinV2) GetShardId() uint8             { return this.shardId }
+func (this CoinV2) GetShardId() uint8               { return this.shardId }
 func (this CoinV2) GetMask() *operation.Scalar      { return this.mask }
 func (this CoinV2) GetAmount() *operation.Scalar    { return this.amount }
 func (this CoinV2) GetTxRandom() *operation.Point   { return this.txRandom }
@@ -34,7 +34,7 @@ func (this CoinV2) GetInfo() []byte                 { return this.info }
 
 func (this *CoinV2) SetVersion()                               { this.version = 2 }
 func (this *CoinV2) SetMask(mask *operation.Scalar)            { this.mask.Set(mask) }
-func (this *CoinV2) SetShardId(shardId uint8)                 { this.shardId = shardId }
+func (this *CoinV2) SetShardId(shardId uint8)                  { this.shardId = shardId }
 func (this *CoinV2) SetAmount(amount *operation.Scalar)        { this.amount.Set(amount) }
 func (this *CoinV2) SetTxRandom(txRandom *operation.Point)     { this.txRandom.Set(txRandom) }
 func (this *CoinV2) SetPublicKey(publicKey *operation.Point)   { this.publicKey.Set(publicKey) }

@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
+
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -41,25 +43,24 @@ type Tx struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
-// For unmarshal tx
-type TxVer1 struct {
-	// Basic data, required
-	Version  int8   `json:"Version"`
-	Type     string `json:"Type"` // Transaction type
-	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte // 512 bytes
-	// Sign and Privacy proof, required
-	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
-	Sig                  []byte `json:"Sig, omitempty"`       //
-	Proof                *zkp.PaymentProof
-	PubKeyLastByteSender byte
-	// Metadata, optional
-	Metadata metadata.Metadata
-	// private field, not use for json parser, only use as temp variable
-	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
-	cachedHash       *common.Hash // cached hash data of tx
-	cachedActualSize *uint64      // cached actualsize data for tx
+func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
+	proofInBytes, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+	var res privacy.Proof
+	if ver == 1 {
+		res = &zkp.PaymentProof{}
+	} else if ver == 2 {
+		res = &privacy_v2.PaymentProofV2{}
+	} else {
+		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2")
+	}
+	err = json.Unmarshal(proofInBytes, res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (tx *Tx) UnmarshalJSON(data []byte) error {
@@ -67,34 +68,13 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
 		Metadata interface{}
+		Proof    interface{}
 		*Alias
 	}{
 		Alias: (*Alias)(tx),
 	}
 	err := json.Unmarshal(data, temp)
 	if err != nil {
-		// Test if it is ver1 tx
-		tempTx := new(TxVer1)
-		err = json.Unmarshal(data, tempTx)
-		if err == nil {
-			temp.Version = tempTx.Version
-			temp.Type = tempTx.Type
-			temp.LockTime = tempTx.LockTime
-			temp.Fee = tempTx.Fee
-			temp.Info = tempTx.Info
-			temp.SigPubKey = tempTx.SigPubKey
-			temp.Sig = tempTx.Sig
-			temp.Proof = tempTx.Proof
-			temp.PubKeyLastByteSender = tempTx.PubKeyLastByteSender
-			temp.Metadata = tempTx.Metadata
-			meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-			if parseErr != nil {
-				Logger.Log.Error(parseErr)
-				return parseErr
-			}
-			tx.SetMetadata(meta)
-			return nil
-		}
 		Logger.Log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
@@ -104,6 +84,19 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		return parseErr
 	}
 	tx.SetMetadata(meta)
+
+	proof, proofErr := parseProof(temp.Proof, tx.Version)
+	if proofErr != nil {
+		Logger.Log.Error(proofErr)
+		return proofErr
+	}
+	tx.SetProof(proof)
+
+	// d, _ := json.Marshal(tx)
+	// fmt.Println(string(d))
+	// fmt.Println(string(d))
+	// fmt.Println(string(d))
+
 	return nil
 }
 
@@ -601,10 +594,20 @@ func (tx Tx) ValidateTxWithBlockChain(
 	return tx.ValidateDoubleSpendWithBlockchain(bcr, shardID, stateDB, nil)
 }
 
-func (tx Tx) validateNormalTxSanityData() (bool, error) {
+func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
+	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
+	if tx.Metadata != nil {
+		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx, beaconHeight)
+		Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
+		if err != nil || !ok || !isContinued {
+			return ok, err
+		}
+	}
+	Logger.Log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
 	//check version
 	if tx.Version > txVersion {
-		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
+		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, txVersion))
 	}
 	// check LockTime before now
 	if int64(tx.LockTime) > time.Now().Unix() {
@@ -619,14 +622,14 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check sanity of Proof
-	validateSanityOfProof, err := tx.validateSanityDataOfProof()
-	if err != nil || !validateSanityOfProof {
-		return false, err
+	if tx.Proof != nil {
+		ok, err := tx.Proof.ValidateSanity()
+		if !ok || err != nil {
+			s := fmt.Sprintf("ValidateSanity Proof got error: %d %s\n", ok, err.Error())
+			return false, errors.New(s)
+		}
 	}
 
-	if len(tx.SigPubKey) != common.SigPubKeySize {
-		return false, NewTransactionErr(RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
-	}
 	// check Type is normal or salary tx
 	switch tx.Type {
 	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
@@ -643,28 +646,13 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
 	}
 
-	return true, nil
-}
-
-func (txN Tx) validateSanityDataOfProof() (bool, error) {
-	if txN.Proof == nil {
-		return true, nil
-	}
-	return txN.Proof.ValidateSanity()
-}
-
-func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
-	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
-	if tx.Metadata != nil {
-		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx, beaconHeight)
-		Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
-		if err != nil || !ok || !isContinued {
-			return ok, err
+	if tx.Version == 1 {
+		if len(tx.SigPubKey) != common.SigPubKeySize {
+			return false, NewTransactionErr(RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
 		}
 	}
-	Logger.Log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
-	return tx.validateNormalTxSanityData()
+
+	return true, nil
 }
 
 func (tx Tx) ValidateTxByItself(
@@ -714,6 +702,10 @@ func (tx Tx) GetMetadata() metadata.Metadata {
 // SetMetadata sets metadata to tx
 func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
+}
+
+func (tx *Tx) SetProof(proof privacy.Proof) {
+	tx.Proof = proof
 }
 
 // GetMetadata returns metadata of tx is existed

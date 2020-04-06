@@ -152,7 +152,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	lenComOutputMultiRangeProof := int(lenComOutputMultiRangeUint32)
 	offset += common.Uint32Size
 
-	if offset+lenComOutputMultiRangeProof >= len(proofbytes) {
+	if offset+lenComOutputMultiRangeProof > len(proofbytes) {
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
 	}
 	if lenComOutputMultiRangeProof > 0 {
@@ -181,7 +181,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 		offset += 1
 
 		proof.inputCoins[i] = new(coin.InputCoin)
-		if offset+lenInputCoin >= len(proofbytes) {
+		if offset+lenInputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		err := proof.inputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
@@ -207,20 +207,20 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 		lenOutputCoin := int(proofbytes[offset])
 		offset += 1
 
-		if offset+lenOutputCoin >= len(proofbytes) {
+		if offset+lenOutputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
 		err := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		if err != nil {
 			// 1-byte is wrong
 			// try get 2-byte for len
-			if offset+1 >= len(proofbytes) {
+			if offset+1 > len(proofbytes) {
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 			}
 			lenOutputCoin = common.BytesToInt(proofbytes[offset-1 : offset+1])
 			offset += 1
 
-			if offset+lenOutputCoin >= len(proofbytes) {
+			if offset+lenOutputCoin > len(proofbytes) {
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 			}
 			err1 := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
