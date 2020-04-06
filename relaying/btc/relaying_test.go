@@ -2,6 +2,7 @@ package btcrelaying
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
+
+	"github.com/blockcypher/gobcy"
 )
 
 func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*chaincfg.Params, error) {
@@ -189,4 +193,85 @@ func TestBuildBTCBlockFromCypher(t *testing.T) {
 	if ts.UnixNano() != blk.MsgBlock().Header.Timestamp.UnixNano() {
 		t.Error("Convertion from unix timestamp to Time is not correct")
 	}
+}
+
+func TestGenerateAndFaucetBTCAddresses(t *testing.T) {
+	// bc := getBlockCypherAPI("test3")
+
+	bc := gobcy.API{"029727206f7e4c8fb19301e4629c5793", "bcy", "test"}
+	addrKeys1, err := bc.GenAddrKeychain()
+	if err != nil {
+		t.Errorf("Could not generate btc address by using cypher api - with err: %v", err)
+		return
+	}
+	fmt.Printf("Account 1: %+v\n", addrKeys1)
+
+	addrKeys2, err := bc.GenAddrKeychain()
+	if err != nil {
+		t.Errorf("Could not generate btc address by using cypher api - with err: %v", err)
+		return
+	}
+	fmt.Printf("Account 2: %+v\n", addrKeys2)
+
+	//Fund it with faucet
+	txhash, err := bc.Faucet(addrKeys1, 500000)
+	if err != nil {
+		t.Errorf("Could not do faucet by using cypher api - with err: %v", err)
+		return
+	}
+	fmt.Printf("Address: %v, Faucet TXHash: %v\n", addrKeys1.Address, txhash)
+}
+
+func TestGetBTCTxFromCypher(t *testing.T) {
+	bc := gobcy.API{"029727206f7e4c8fb19301e4629c5793", "bcy", "test"}
+	cypherTx, _ := bc.GetTX("84ac285019633b12020cb20e67a50a4f8f63c71448a13d24438f15e877989d12", nil)
+	txB, _ := json.Marshal(cypherTx)
+	fmt.Printf("Tx: %s\n", string(txB))
+}
+
+func TestCreateAndSendBTCTxToCypher(t *testing.T) {
+	bc := gobcy.API{"029727206f7e4c8fb19301e4629c5793", "bcy", "test"}
+
+	inAddr := "Bx7kw2wy93ZpRVzrDsJxexPTZnDHCrSiJZ"
+	outAddr := "C5fKUmwEC63NqNkd58BxRYJuYDg5vYj9U8"
+	amount := int(1000)
+	trans := gobcy.TX{}
+	trans.Inputs = make([]gobcy.TXInput, 1)
+	trans.Inputs[0].Addresses = make([]string, 1)
+	trans.Inputs[0].Addresses[0] = inAddr
+
+	trans.Outputs = make([]gobcy.TXOutput, 2)
+	trans.Outputs[0].ScriptType = "null-data"
+	script := []byte{
+		txscript.OP_RETURN,
+		0x10,
+	}
+	script = append(script, []byte("btc is great!!!")...)
+	trans.Outputs[0].Script = hex.EncodeToString(script)
+
+	trans.Outputs[1].Addresses = make([]string, 1)
+	trans.Outputs[1].Addresses[0] = outAddr
+	trans.Outputs[1].Value = amount
+
+	// bc := getBlockCypherAPI("test3")
+	skelTx, err := bc.NewTX(trans, false)
+	if err != nil {
+		t.Errorf("Could not init btc tx by using cypher api - with err: %v", err)
+		return
+	}
+
+	privateKeys := []string{"97447d1ff71352a8ec7991e3b8d997e46fdb487a80252d2947168950ab0cd7c4"}
+	err = skelTx.Sign(privateKeys)
+	if err != nil {
+		t.Errorf("Could not sign btc tx by using cypher api - with err: %v", err)
+		return
+	}
+
+	tx, err := bc.SendTX(skelTx)
+	if err != nil {
+		t.Errorf("Could not send btc tx by using cypher api - with err: %v", err)
+		return
+	}
+	bb, _ := json.Marshal(tx)
+	fmt.Println("Newly created tx: ", string(bb))
 }
