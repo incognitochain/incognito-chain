@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -302,9 +303,18 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	if len(arrayParams) == 1 {
 		getCountTxs = true
 	}
-	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+	listPrivacyToken := make(map[common.Hash]*statedb.TokenState)
+	var err error
+	if getCountTxs {
+		listPrivacyToken, err = httpServer.blockService.ListPrivacyCustomTokenWithTxs()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
+	} else {
+		listPrivacyToken, err = httpServer.blockService.ListPrivacyCustomToken()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	for _, tokenState := range listPrivacyToken {

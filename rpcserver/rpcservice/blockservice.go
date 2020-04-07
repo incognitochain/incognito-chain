@@ -587,6 +587,15 @@ func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*stat
 	return tokenStates, err
 }
 
+func (blockService BlockService) ListPrivacyCustomTokenWithTxs() (map[common.Hash]*statedb.TokenState, error) {
+	tokenStates, err := blockService.BlockChain.ListAllPrivacyCustomTokenAndPRVWithTxs()
+	if err != nil {
+		return tokenStates, err
+	}
+	delete(tokenStates, common.PRVCoinID)
+	return tokenStates, err
+}
+
 func (blockService BlockService) ListPrivacyCustomTokenWithPRVByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
 	return blockService.BlockChain.ListPrivacyCustomTokenAndPRVByShardID(shardID)
 }
