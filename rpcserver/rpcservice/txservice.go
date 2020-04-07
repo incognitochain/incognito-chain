@@ -838,7 +838,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	return result, nil
 }
 
-func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenID string) (uint64, *RPCError) {
+func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenIDStr string) (uint64, *RPCError) {
 	var totalValue uint64 = 0
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
@@ -850,23 +850,28 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	tokenIDs, err := txService.ListPrivacyCustomToken()
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
-		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	for tempTokenID := range tokenIDs {
-		if tokenID == tempTokenID.String() {
-			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
-			if err != nil {
-				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-				return uint64(0), NewRPCError(UnexpectedError, err)
-			}
-			for _, out := range outcoints {
-				totalValue += out.CoinDetails.GetValue()
-			}
+	isExisted := false
+	for _, i := range txService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		isExisted = txService.BlockChain.PrivacyCustomTokenIDExistedV2(tokenID, shardID)
+		if isExisted {
+			break
+		}
+	}
+	if isExisted {
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID)
+		if err != nil {
+			Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+			return uint64(0), NewRPCError(UnexpectedError, err)
+		}
+		for _, out := range outcoints {
+			totalValue += out.CoinDetails.GetValue()
 		}
 	}
 	if totalValue == 0 {
@@ -884,7 +889,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 			if len(allBridgeTokens) > 0 {
 				for _, bridgeToken := range allBridgeTokens {
 					tempTokenID := bridgeToken.TokenID
-					if tokenID == tempTokenID.String() {
+					if tokenID.IsEqual(tempTokenID) {
 						lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 						shardIDSender := common.GetShardIDFromLastByte(lastByte)
 						outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tempTokenID)
