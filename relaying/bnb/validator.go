@@ -103,7 +103,7 @@ func DecodePublicKeyValidator() error {
 	return nil
 }
 
-// Testnet
+// Local
 
 // address = hexEncode(sha256(pubKey)[:20])
 //var ValidatorAddressesTestnet = []string{
@@ -124,6 +124,8 @@ func DecodePublicKeyValidator() error {
 //	1000000000000,
 //}
 
+
+// Testnet
 var ValidatorAddressesTestnet = []string{
 	"06FD60078EB4C2356137DD50036597DB267CF616",
 	"18E69CC672973992BB5F76D049A5B2C5DDF77436",

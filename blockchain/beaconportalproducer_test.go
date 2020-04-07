@@ -14,19 +14,6 @@ import (
 	"testing"
 )
 
-type PortingRequestExcepted struct {
-	Metadata    string
-	ChainStatus string
-	Custodian1 []string
-	Custodian2 []string
-}
-
-type PortingRequestTestCase struct {
-	TestCaseName string
-	Input        func() metadata.PortalUserRegisterAction
-	Output       func() PortingRequestExcepted
-}
-
 // Define the suite, and absorb the built-in basic suite
 // functionality from testify - including a T() method which
 // returns the current testing context
@@ -43,6 +30,20 @@ func (suite *PortalProducerSuite) SetupTest() {
 		WaitingPortingRequests:  map[string]*statedb.WaitingPortingRequest{},
 		WaitingRedeemRequests:   map[string]*statedb.WaitingRedeemRequest{},
 	}
+}
+
+/************************ Porting request test ************************/
+type PortingRequestExcepted struct {
+	Metadata    string
+	ChainStatus string
+	Custodian1 []string
+	Custodian2 []string
+}
+
+type PortingRequestTestCase struct {
+	TestCaseName string
+	Input        func() metadata.PortalUserRegisterAction
+	Output       func() PortingRequestExcepted
 }
 
 func (suite *PortalProducerSuite) SetupPortingRequest(beaconHeight uint64) {
@@ -323,6 +324,11 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 	}
 }
 
+/************************ Custodian deposit test ************************/
+
+
+
+/************************ Run suite test ************************/
 // In order for 'go test' to run this suite, we need to create
 // a normal test function and pass our suite to suite.Run
 func TestPortalProducerSuite(t *testing.T) {

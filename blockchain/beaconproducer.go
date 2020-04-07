@@ -433,10 +433,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState
 	instructions := shardBlock.Instructions
-	if len(instructions) > 0 {
-		Logger.log.Errorf("=======================================================")
-		Logger.log.Errorf("Receive instructions in shardToBeaconBlock %v\n", instructions)
-	}
 	Logger.log.Info(instructions)
 	// extract instructions
 	for _, instruction := range instructions {

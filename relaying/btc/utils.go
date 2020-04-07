@@ -2,8 +2,6 @@ package btcrelaying
 
 import (
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -76,8 +74,6 @@ func buildBTCBlockFromCypher(networkName string, blkHeight int) (*btcutil.Block,
 func buildMsgTxFromCypher(txID string) *wire.MsgTx {
 	bc := getBlockCypherAPI("main")
 	cypherTx, _ := bc.GetTX(txID, nil)
-	txB, _ := json.Marshal(cypherTx)
-	fmt.Println(string(txB))
 
 	txIns := []*wire.TxIn{}
 	for _, cypherTxIn := range cypherTx.Inputs {
