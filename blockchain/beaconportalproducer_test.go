@@ -158,10 +158,42 @@ func buildPortalCustodianDepositAction(
 func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 	happyCases := []PortingRequestTestCase{
 		{
-			"happy_case",
+			"happy_case_1",
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
 					"1",
+					"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //100.000 prv
+					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+					1000,
+					4,
+					metadata.PortalUserRegisterMeta,
+				)
+
+				actionContent := metadata.PortalUserRegisterAction{
+					Meta:    *meta,
+					TxReqID: *meta.Hash(),
+					ShardID: 1,
+				}
+				return actionContent
+			},
+			func() PortingRequestExcepted {
+				return PortingRequestExcepted{
+					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
+					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"40000", //free collateral
+						"1000", //hold pToken
+						"60000", //lock prv amount
+					},
+				}
+			},
+		},
+		{
+			"happy_case_2",
+			func() metadata.PortalUserRegisterAction {
+				meta, _ := metadata.NewPortalUserRegister(
+					"2",
 					"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //100.000 prv
 					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
 					1000,
