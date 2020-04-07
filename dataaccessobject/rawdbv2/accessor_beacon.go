@@ -13,15 +13,9 @@ import (
 // StoreBeaconBlock store block hash => block value and block index => block hash
 // record1: prefix-index-hash => empty
 // record2: prefix-hash => block value
-func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v interface{}) error {
+func StoreBeaconBlock(db incdb.KeyValueWriter, index uint64, hash common.Hash, v interface{}) error {
 	keyHash := GetBeaconHashToBlockKey(hash)
-	if ok, _ := db.Has(keyHash); ok {
-		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyHash))
-	}
 	keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
-	if ok, _ := db.Has(keyIndex); ok {
-		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyIndex))
-	}
 	val, err := json.Marshal(v)
 	if err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
@@ -38,7 +32,7 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 // StoreBeaconBlockIndex store block hash => block index
 // key: i-{hash}
 // value: {index-shardID}
-func StoreBeaconBlockIndex(db incdb.Database, index uint64, hash common.Hash) error {
+func StoreBeaconBlockIndex(db incdb.KeyValueWriter, index uint64, hash common.Hash) error {
 	key := GetBeaconBlockHashToIndexKey(hash)
 	buf := common.Uint64ToBytes(index)
 	err := db.Put(key, buf)
@@ -48,7 +42,7 @@ func StoreBeaconBlockIndex(db incdb.Database, index uint64, hash common.Hash) er
 	return nil
 }
 
-func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
+func HasBeaconBlock(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
 	keyHash := GetBeaconHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
 		return false, NewRawdbError(HasBeaconBlockError, fmt.Errorf("has key %+v failed", keyHash))
@@ -58,7 +52,7 @@ func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	return false, nil
 }
 
-func GetBeaconBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
+func GetBeaconBlockByHash(db incdb.KeyValueReader, hash common.Hash) ([]byte, error) {
 	keyHash := GetBeaconHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
 		return []byte{}, NewRawdbError(GetBeaconBlockByHashError, fmt.Errorf("has key %+v failed", keyHash))
@@ -100,7 +94,7 @@ func GetBeaconBlockByIndex(db incdb.Database, index uint64) (map[common.Hash][]b
 	return m, nil
 }
 
-func GetIndexOfBeaconBlock(db incdb.Database, hash common.Hash) (uint64, error) {
+func GetIndexOfBeaconBlock(db incdb.KeyValueReader, hash common.Hash) (uint64, error) {
 	key := GetBeaconBlockHashToIndexKey(hash)
 	buf, err := db.Get(key)
 	if err != nil {
@@ -113,7 +107,7 @@ func GetIndexOfBeaconBlock(db incdb.Database, hash common.Hash) (uint64, error) 
 	return index, nil
 }
 
-func DeleteBeaconBlock(db incdb.Database, index uint64, hash common.Hash) error {
+func DeleteBeaconBlock(db incdb.KeyValueWriter, index uint64, hash common.Hash) error {
 	keyHash := GetBeaconHashToBlockKey(hash)
 	keyIndexToHash := GetBeaconIndexToBlockHashKey(index, hash)
 	keyIndex := GetBeaconBlockHashToIndexKey(hash)
@@ -146,7 +140,7 @@ func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, 
 	return beaconBlockHashes, nil
 }
 
-func StoreBeaconBestState(db incdb.Database, val []byte) error {
+func StoreBeaconBestState(db incdb.KeyValueWriter, val []byte) error {
 	key := GetBeaconBestStateKey()
 	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreBeaconBestStateError, err)
@@ -154,7 +148,7 @@ func StoreBeaconBestState(db incdb.Database, val []byte) error {
 	return nil
 }
 
-func GetBeaconBestState(db incdb.Database) ([]byte, error) {
+func GetBeaconBestState(db incdb.KeyValueReader) ([]byte, error) {
 	key := GetBeaconBestStateKey()
 	block, err := db.Get(key)
 	if err != nil {
@@ -163,7 +157,7 @@ func GetBeaconBestState(db incdb.Database) ([]byte, error) {
 	return block, nil
 }
 
-func StoreConsensusStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+func StoreConsensusStateRootHash(db incdb.KeyValueWriter, height uint64, rootHash common.Hash) error {
 	key := GetBeaconConsensusRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
@@ -172,7 +166,7 @@ func StoreConsensusStateRootHash(db incdb.Database, height uint64, rootHash comm
 	return nil
 }
 
-func GetConsensusStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+func GetConsensusStateRootHash(db incdb.KeyValueReader, height uint64) (common.Hash, error) {
 	key := GetBeaconConsensusRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
@@ -181,7 +175,7 @@ func GetConsensusStateRootHash(db incdb.Database, height uint64) (common.Hash, e
 	return common.BytesToHash(res), nil
 }
 
-func StoreRewardStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+func StoreRewardStateRootHash(db incdb.KeyValueWriter, height uint64, rootHash common.Hash) error {
 	key := GetBeaconRewardRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
@@ -190,7 +184,7 @@ func StoreRewardStateRootHash(db incdb.Database, height uint64, rootHash common.
 	return nil
 }
 
-func GetRewardStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+func GetRewardStateRootHash(db incdb.KeyValueReader, height uint64) (common.Hash, error) {
 	key := GetBeaconRewardRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
@@ -199,7 +193,7 @@ func GetRewardStateRootHash(db incdb.Database, height uint64) (common.Hash, erro
 	return common.BytesToHash(res), nil
 }
 
-func StoreFeatureStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+func StoreFeatureStateRootHash(db incdb.KeyValueWriter, height uint64, rootHash common.Hash) error {
 	key := GetBeaconFeatureRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
@@ -208,7 +202,7 @@ func StoreFeatureStateRootHash(db incdb.Database, height uint64, rootHash common
 	return nil
 }
 
-func GetFeatureStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+func GetFeatureStateRootHash(db incdb.KeyValueReader, height uint64) (common.Hash, error) {
 	key := GetBeaconFeatureRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
@@ -217,7 +211,7 @@ func GetFeatureStateRootHash(db incdb.Database, height uint64) (common.Hash, err
 	return common.BytesToHash(res), nil
 }
 
-func StoreSlashStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+func StoreSlashStateRootHash(db incdb.KeyValueWriter, height uint64, rootHash common.Hash) error {
 	key := GetBeaconSlashRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
@@ -226,7 +220,7 @@ func StoreSlashStateRootHash(db incdb.Database, height uint64, rootHash common.H
 	return nil
 }
 
-func GetSlashStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+func GetSlashStateRootHash(db incdb.KeyValueReader, height uint64) (common.Hash, error) {
 	key := GetBeaconSlashRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {

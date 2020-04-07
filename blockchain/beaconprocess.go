@@ -1345,6 +1345,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	tempBeaconBestState.featureStateDB.ClearObjects()
 	tempBeaconBestState.slashStateDB.ClearObjects()
 	//statedb===========================END
+	batch := blockchain.GetDatabase().NewBatch()
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
 		//GetBeaconBestState().lock.Lock()
@@ -1360,14 +1361,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 					}
 					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 					waitHeight := shardBlock.Height
-					err := rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, lastHeight, waitHeight)
+					err := rawdbv2.StoreCrossShardNextHeight(batch, fromShard, toShard, lastHeight, waitHeight)
 					if err != nil {
 						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
-					err = rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, waitHeight, 0)
+					err = rawdbv2.StoreCrossShardNextHeight(batch, fromShard, toShard, waitHeight, 0)
 					if err != nil {
 						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
@@ -1383,7 +1384,20 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		//GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHeight, blockHash); err != nil {
+	//State Root Hash
+	if err := rawdbv2.StoreConsensusStateRootHash(batch, blockHeight, consensusRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreRewardStateRootHash(batch, blockHeight, rewardRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreFeatureStateRootHash(batch, blockHeight, featureRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreSlashStateRootHash(batch, blockHeight, slashRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreBeaconBlockIndex(batch, blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 	Logger.log.Debugf("Store Beacon BestState Height %+v", blockHeight)
@@ -1391,24 +1405,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	if err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
-	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
+	if err := rawdbv2.StoreBeaconBestState(batch, beaconBestStateBytes); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
-	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
+	if err := rawdbv2.StoreBeaconBlock(batch, blockHeight, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-	//State Root Hash
-	if err := rawdbv2.StoreConsensusStateRootHash(blockchain.GetDatabase(), blockHeight, consensusRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-	if err := rawdbv2.StoreRewardStateRootHash(blockchain.GetDatabase(), blockHeight, rewardRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-	if err := rawdbv2.StoreFeatureStateRootHash(blockchain.GetDatabase(), blockHeight, featureRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-	if err := rawdbv2.StoreSlashStateRootHash(blockchain.GetDatabase(), blockHeight, slashRootHash); err != nil {
+	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 	return nil
