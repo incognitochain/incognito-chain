@@ -287,6 +287,11 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 }
 
 /************************ Custodian deposit test ************************/
+const ShardIDHardCode = 0
+const BeaconHeight = 1
+const BNBTokenID = "b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"
+const BNBRemoteAddress = "tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"
+
 type CustodianDepositOutput struct {
 	MetadataType            string
 	ChainStatus             string
@@ -305,9 +310,6 @@ type CustodianDepositTestCase struct {
 	Input        CustodianDepositInput
 	Output       CustodianDepositOutput
 }
-
-const ShardIDHardCode = 0
-const BeaconHeight = 1
 
 func buildPortalCustodianDepositAction(
 	incogAddressStr string,
@@ -357,8 +359,8 @@ func getTestCasesForCustodianDeposit() []*CustodianDepositTestCase {
 				IncognitoAddress: "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
 				RemoteAddresses: []statedb.RemoteAddress{
 					*statedb.NewRemoteAddressWithValue(
-						"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
-						"tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"),
+						BNBTokenID,
+						BNBRemoteAddress),
 				},
 				DepositedAmount: 1000 * 1e9,
 			},
@@ -374,8 +376,8 @@ func getTestCasesForCustodianDeposit() []*CustodianDepositTestCase {
 				IncognitoAddress: "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy",
 				RemoteAddresses: []statedb.RemoteAddress{
 					*statedb.NewRemoteAddressWithValue(
-						"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
-						"tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"),
+						BNBTokenID,
+						BNBRemoteAddress),
 				},
 				DepositedAmount: 2000 * 1e9,
 			},
@@ -390,8 +392,8 @@ func getTestCasesForCustodianDeposit() []*CustodianDepositTestCase {
 				IncognitoAddress: "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
 				RemoteAddresses: []statedb.RemoteAddress{
 					*statedb.NewRemoteAddressWithValue(
-						"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
-						"tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"),
+						BNBTokenID,
+						BNBRemoteAddress),
 				},
 				DepositedAmount: 3000 * 1e9,
 			},
@@ -466,6 +468,265 @@ func (suite *PortalProducerSuite) TestCustodianDeposit() {
 		suite.Equal(tc.Output.CustodianDepositContent, newInst[3])
 		suite.EqualValues(tc.Output.CustodianPool, suite.currentPortalState.CustodianPoolState)
 	}
+}
+
+/************************ Redeem request test ************************/
+type RedeemRequestOutput struct {
+	MetadataType            string
+	ChainStatus             string
+	RedeemRequestContent string
+	CustodianPool           map[string]*statedb.CustodianState
+	WaitingRedeemRequest    map[string]*statedb.WaitingRedeemRequest
+}
+
+type RedeemRequestInput struct {
+	UniqueRedeemID string
+	TokenID string
+	RedeemAmount uint64
+	RedeemerIncAddress string
+	RedeemerRemoteAddr string
+	RedeemFee uint64
+}
+
+type RedeemRequestTestCase struct {
+	TestCaseName string
+	Input        RedeemRequestInput
+	Output       RedeemRequestOutput
+}
+
+func buildPortalRedeemRequestAction(
+	uniqueRedeemID string,
+	tokenID string,
+	redeemAmount uint64,
+	incAddressStr string,
+	remoteAddr string,
+	redeemFee uint64,
+) []string {
+	redeemRequestMeta, _ := metadata.NewPortalRedeemRequest(
+		metadata.PortalRedeemRequestMeta,
+		uniqueRedeemID,
+		tokenID,
+		redeemAmount,
+		incAddressStr,
+		remoteAddr,
+		redeemFee,
+	)
+
+	actionContent := metadata.PortalRedeemRequestAction{
+		Meta:    *redeemRequestMeta,
+		TxReqID: common.Hash{},
+		ShardID: byte(ShardIDHardCode),
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(metadata.PortalRedeemRequestMeta), actionContentBase64Str}
+	return action
+}
+
+func buildPortalRedeemRequestContent(
+	uniqueRedeemID string,
+	tokenID string,
+	redeemAmount uint64,
+	incAddressStr string,
+	remoteAddr string,
+	redeemFee uint64,
+	matchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail,
+) string {
+	redeemRequestContent := metadata.PortalRedeemRequestContent{
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		RedeemerIncAddressStr:   incAddressStr,
+		RemoteAddress:           remoteAddr,
+		RedeemFee:               redeemFee,
+		MatchingCustodianDetail: matchingCustodianDetail,
+		TxReqID:                 common.Hash{},
+		ShardID:                 byte(ShardIDHardCode),
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return string(redeemRequestContentBytes)
+}
+
+func (suite *PortalProducerSuite) SetupRedeemRequest(beaconHeight uint64) {
+	// set up exchange rates
+	rates := make(map[string]statedb.FinalExchangeRatesDetail)
+	rates["b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"] = statedb.FinalExchangeRatesDetail{
+		Amount: 8000000000,
+	}
+	rates["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] = statedb.FinalExchangeRatesDetail{
+		Amount: 20000000,
+	}
+	rates["0000000000000000000000000000000000000000000000000000000000000004"] = statedb.FinalExchangeRatesDetail{
+		Amount: 500000,
+	}
+
+	exchangeRates := make(map[string]*statedb.FinalExchangeRatesState)
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRates[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(rates)
+	suite.currentPortalState.FinalExchangeRatesState = exchangeRates
+
+	// set up custodian pool
+	remoteAddresses := make([]statedb.RemoteAddress, 0)
+	remoteAddresses = append(
+		remoteAddresses,
+		*statedb.NewRemoteAddressWithValue(BNBTokenID, BNBRemoteAddress),
+	)
+
+	custodianStates := []*statedb.CustodianState{
+		statedb.NewCustodianStateWithValue(
+			"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
+			1000 * 1e9,
+			400 * 1e9,
+			map[string]uint64{
+				BNBTokenID: 10 * 1e9,    		// hold 10 BNB
+			},
+			map[string]uint64{
+				BNBTokenID: 600 * 1e9,    		// lock 600 PRV
+			},
+			remoteAddresses,
+			0,
+		),
+		statedb.NewCustodianStateWithValue(
+			"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy",
+			5000 * 1e9,
+			2000 * 1e9,
+			map[string]uint64{
+				BNBTokenID: 50 * 1e9,    		// hold 50 BNB
+			},
+			map[string]uint64{
+				BNBTokenID: 3000 * 1e9,    		// lock 3000 PRV
+			},
+			remoteAddresses,
+			0,
+		),
+	}
+
+	custodian := make(map[string]*statedb.CustodianState)
+	for _, cus := range custodianStates {
+		custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cus.GetIncognitoAddress())
+		custodian[custodianKey.String()] = cus
+	}
+
+	suite.currentPortalState.CustodianPoolState = custodian
+}
+
+func getTestCasesForRedeemRequest() []*RedeemRequestTestCase {
+	testcases := []*RedeemRequestTestCase{
+		{
+			TestCaseName: "Redeem request matches to one custodian",
+			Input: RedeemRequestInput{
+				UniqueRedeemID:     "1",
+				TokenID:            BNBTokenID,
+				RedeemAmount:       1 * 1e9,
+				RedeemerIncAddress: "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC",
+				RedeemerRemoteAddr: BNBRemoteAddress,
+				RedeemFee:          0.004 * 1e9,
+			},
+			Output: RedeemRequestOutput{
+				MetadataType:            strconv.Itoa(metadata.PortalRedeemRequestMeta),
+				ChainStatus:             common.PortalRedeemRequestAcceptedChainStatus,
+				RedeemRequestContent: "",
+			},
+		},
+		{
+			TestCaseName: "Redeem request matches to two custodians",
+			Input: RedeemRequestInput{
+				UniqueRedeemID:     "1",
+				TokenID:            BNBTokenID,
+				RedeemAmount:       51 * 1e9,
+				RedeemerIncAddress: "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC",
+				RedeemerRemoteAddr: BNBRemoteAddress,
+				RedeemFee:          0.204 * 1e9,
+			},
+			Output: RedeemRequestOutput{
+				MetadataType:            strconv.Itoa(metadata.PortalRedeemRequestMeta),
+				ChainStatus:             common.PortalRedeemRequestAcceptedChainStatus,
+				RedeemRequestContent: "",
+			},
+		},
+		{
+			TestCaseName: "Redeem request with fee less than min redeem fee",
+			Input: RedeemRequestInput{
+				UniqueRedeemID:     "1",
+				TokenID:            BNBTokenID,
+				RedeemAmount:       1 * 1e9,
+				RedeemerIncAddress: "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC",
+				RedeemerRemoteAddr: BNBRemoteAddress,
+				RedeemFee:          0.003 * 1e9,
+			},
+			Output: RedeemRequestOutput{
+				MetadataType:            strconv.Itoa(metadata.PortalRedeemRequestMeta),
+				ChainStatus:             common.PortalRedeemRequestRejectedChainStatus,
+				RedeemRequestContent: "",
+			},
+		},
+	}
+
+	//custodianPool := make(map[string]*statedb.CustodianState, 0)
+	//for i := 0; i < len(testcases); i++ {
+	//	testcases[i].Output.CustodianDepositContent = buildPortalCustodianDepositContent(
+	//		testcases[i].Input.IncognitoAddress,
+	//		testcases[i].Input.RemoteAddresses,
+	//		testcases[i].Input.DepositedAmount)
+	//
+	//	custodianKey := statedb.GenerateCustodianStateObjectKey(uint64(BeaconHeight), testcases[i].Input.IncognitoAddress)
+	//	if custodianPool[custodianKey.String()] == nil {
+	//		custodianState := statedb.NewCustodianStateWithValue(
+	//			testcases[i].Input.IncognitoAddress,
+	//			testcases[i].Input.DepositedAmount,
+	//			testcases[i].Input.DepositedAmount,
+	//			nil, nil,
+	//			testcases[i].Input.RemoteAddresses,
+	//			0,
+	//		)
+	//		custodianPool[custodianKey.String()] = custodianState
+	//	} else {
+	//		custodianPool[custodianKey.String()].SetFreeCollateral(custodianPool[custodianKey.String()].GetFreeCollateral() + testcases[i].Input.DepositedAmount)
+	//		custodianPool[custodianKey.String()].SetTotalCollateral(custodianPool[custodianKey.String()].GetTotalCollateral() + testcases[i].Input.DepositedAmount)
+	//	}
+	//	custodianPoolTmp := map[string]*statedb.CustodianState{}
+	//	for key, cus := range custodianPool {
+	//		custodianPoolTmp[key] = statedb.NewCustodianStateWithValue(
+	//			cus.GetIncognitoAddress(),
+	//			cus.GetTotalCollateral(),
+	//			cus.GetFreeCollateral(),
+	//			cus.GetHoldingPublicTokens(),
+	//			cus.GetLockedAmountCollateral(),
+	//			cus.GetRemoteAddresses(),
+	//			cus.GetRewardAmount(),
+	//		)
+	//	}
+	//	testcases[i].Output.CustodianPool = custodianPoolTmp
+	//}
+	return testcases
+}
+
+func (suite *PortalProducerSuite) TestRedeemRequest() {
+	//testcases := getTestCasesForRedeemRequest()
+	//
+	//for _, tc := range testcases {
+	//	fmt.Printf("[Redeem Request] Running test case: %v\n", tc.TestCaseName)
+	//	// build redeem request action
+	//	action := buildPortalRedeemRequestAction(
+	//		tc.Input.UniqueRedeemID, tc.Input.TokenID, tc.Input.RedeemAmount,
+	//		tc.Input.RedeemerIncAddress, tc.Input.RedeemerRemoteAddr,  tc.Input.RedeemFee)
+	//
+	//	// beacon build new instruction for the action
+	//	bc := BlockChain{}
+	//	shardID := byte(ShardIDHardCode)
+	//	metaType, _ := strconv.Atoi(action[0])
+	//	contentStr := action[1]
+	//	newInsts, err := bc.buildInstructionsForRedeemRequest(statedb, contentStr, shardID, metaType, suite.currentPortalState, uint64(BeaconHeight))
+	//
+	//	// compare results to Outputs of test case
+	//	suite.Nil(err)
+	//	suite.Equal(1, len(newInsts))
+	//	newInst := newInsts[0]
+	//	suite.Equal(tc.Output.MetadataType, newInst[0])
+	//	suite.Equal(tc.Output.ChainStatus, newInst[2])
+	//	suite.Equal(tc.Output.CustodianDepositContent, newInst[3])
+	//	suite.EqualValues(tc.Output.CustodianPool, suite.currentPortalState.CustodianPoolState)
+	//}
 }
 
 /************************ Run suite test ************************/
