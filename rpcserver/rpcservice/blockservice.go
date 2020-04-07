@@ -878,12 +878,9 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 		if err != nil {
 			return status, err
 		}
-		if status == byte(common.BridgeRequestNotFoundStatus) {
-			break
+		if status == byte(common.BridgeRequestAcceptedStatus) {
+			return status, nil
 		}
-	}
-	if status == common.BridgeRequestAcceptedStatus {
-		return status, nil
 	}
 	if status == common.BridgeRequestNotFoundStatus || status == common.BridgeRequestProcessingStatus {
 		bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
