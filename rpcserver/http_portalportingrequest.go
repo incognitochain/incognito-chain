@@ -14,6 +14,14 @@ import (
 func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
 	// get meta data from params
 	data, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
@@ -104,6 +112,14 @@ func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(par
 func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
+
 	// get meta data from params
 	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
@@ -126,6 +142,14 @@ func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, c
 
 func (httpServer *HttpServer) handleGetPortingRequestByPortingId(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError)  {
 	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
 
 	// get meta data from params
 	data, ok := arrayParams[0].(map[string]interface{})

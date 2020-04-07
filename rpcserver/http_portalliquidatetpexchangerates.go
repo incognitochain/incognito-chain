@@ -15,6 +15,14 @@ import (
 func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
+
 	// get meta data from params
 	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
@@ -47,6 +55,14 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 
 func (httpServer *HttpServer) handleGetLiquidationTpExchangeRatesByTokenId(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
 
 	// get meta data from params
 	data, ok := arrayParams[0].(map[string]interface{})
@@ -90,6 +106,14 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRatesByTokenId(param
 func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
+
 	// get meta data from params
 	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
@@ -126,7 +150,13 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 
 func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
 
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
 	// get meta data from params
 	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
@@ -174,6 +204,10 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
 	if len(arrayParams) >= 7 {
 		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
 		if !ok {
@@ -184,6 +218,11 @@ func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params int
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be disabled"))
 		}
 	}
+
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
 
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
@@ -257,6 +296,10 @@ func (httpServer *HttpServer) handleCreateAndSendRedeemLiquidationExchangeRates(
 
 func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
 	if len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
 	}
@@ -270,7 +313,6 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress is invalid"))
 	}
-
 
 	pTokenId, ok := data["PTokenId"].(string)
 	if !ok {

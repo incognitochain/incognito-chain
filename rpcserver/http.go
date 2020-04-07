@@ -43,7 +43,7 @@ type HttpServer struct {
 	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
-	portal     		  *rpcservice.Portal
+	portal     		  *rpcservice.PortalService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -88,7 +88,7 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
 
-	httpServer.portal = &rpcservice.Portal{
+	httpServer.portal = &rpcservice.PortalService{
 		BlockChain: httpServer.config.BlockChain,
 	}
 }
