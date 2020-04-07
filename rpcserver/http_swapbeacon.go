@@ -32,7 +32,7 @@ type ConsensusEngine interface {
 
 // handleGetLatestBeaconSwapProof returns the latest proof of a change in bridge's committee
 func (httpServer *HttpServer) handleGetLatestBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBlock := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBlock := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for i := latestBlock; i >= 1; i-- {
 		params := []interface{}{float64(i)}
 		proof, err := httpServer.handleGetBeaconSwapProof(params, closeChan)

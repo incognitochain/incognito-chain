@@ -36,6 +36,10 @@ type ShardHeader struct {
 	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
+
+	//for version 2
+	Proposer    string
+	ProposeTime int64
 }
 
 func (shardHeader *ShardHeader) String() string {
@@ -71,6 +75,11 @@ func (shardHeader *ShardHeader) String() string {
 	}
 	for _, value := range shardHeader.CrossShardBitMap {
 		res += string(value)
+	}
+
+	if shardHeader.Version == 2 {
+		res += shardHeader.Proposer
+		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 	return res
 }

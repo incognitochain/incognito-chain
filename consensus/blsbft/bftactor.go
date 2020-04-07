@@ -7,21 +7,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type BLSBFT struct {
-	Chain    blockchain.ChainInterface
-	Node     consensus.NodeInterface
+	Chain    ChainInterface
+	Node     NodeInterface
 	ChainKey string
+	ChainID  int
 	PeerID   string
 
 	UserKeySet       *MiningKey
@@ -64,6 +63,13 @@ func (e *BLSBFT) GetConsensusName() string {
 	return consensusName
 }
 
+func (e *BLSBFT) GetChainKey() string {
+	return e.ChainKey
+}
+func (e *BLSBFT) GetChainID() int {
+	return e.ChainID
+}
+
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		select {
@@ -75,13 +81,14 @@ func (e *BLSBFT) Stop() error {
 		e.isStarted = false
 		e.isOngoing = false
 	}
-	return consensus.NewConsensusError(consensus.ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
+	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
 }
 
 func (e *BLSBFT) Start() error {
 	if e.isStarted {
-		return consensus.NewConsensusError(consensus.ConsensusAlreadyStartedError, errors.New(e.ChainKey))
+		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
+
 	e.isStarted = true
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
@@ -163,7 +170,7 @@ func (e *BLSBFT) Start() error {
 								go func() {
 									voteCtnBytes, err := json.Marshal(voteMsg)
 									if err != nil {
-										e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+										e.logger.Error(NewConsensusError(UnExpectedError, err))
 										return
 									}
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
@@ -216,7 +223,8 @@ func (e *BLSBFT) Start() error {
 					if e.Blocks[roundKey] != nil {
 						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
-						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
+
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue
@@ -265,7 +273,7 @@ func (e *BLSBFT) Start() error {
 
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
-						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
+						err = ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							e.logger.Error(err)
 							e.logger.Errorf("e.RoundData.Block.GetValidationField()=%+v\n", e.RoundData.Block.GetValidationField())
@@ -318,7 +326,7 @@ func (e *BLSBFT) enterProposePhase() {
 	validationData := e.CreateValidationData(block)
 	validationDataString, err := EncodeValidationData(validationData)
 	if err != nil {
-		consensus.Logger.Log.Errorf("Encode validation data failed %+v", err)
+		e.logger.Errorf("Encode validation data failed %+v", err)
 	}
 	block.(blockValidation).AddValidationField(validationDataString)
 
@@ -376,9 +384,7 @@ func (e *BLSBFT) enterNewRound() {
 	e.logger.Info("============================================")
 	e.logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
-	//TODO: revert this
-	//if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
-	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex())%e.Chain.GetCommitteeSize() {
+	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(e.Chain.GetLastProposerIndex(), e.RoundData.Round, e.Chain.GetCommitteeSize()) {
 		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
 	} else {
@@ -416,7 +422,16 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	go func() {
 		time1 := time.Now()
 		var err error
-		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
+		commitee := e.Chain.GetCommittee()
+		pk := e.UserKeySet.GetPublicKey()
+		base58Str, err := commitee[e.Chain.GetPubKeyCommitteeIndex(pk.GetMiningKeyBase58(consensusName))].ToBase58()
+		if err != nil {
+			e.logger.Error("UserKeySet is wrong", err)
+			errCh <- err
+			return
+		}
+
+		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix())
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {
@@ -438,20 +453,20 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		if block != nil {
 			e.logger.Info("Create block has something wrong ", block.GetHeight())
 		}
-		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
+		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
 	}
 }
 
-func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
+func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
+	newInstance.ChainID = chainID
 	newInstance.Node = node
-	newInstance.UserKeySet = e.UserKeySet
 	newInstance.logger = logger
 	return &newInstance
 }
 
-func init() {
-	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
-}
+//func init() {
+//	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
+//}

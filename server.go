@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -18,9 +18,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+	"github.com/incognitochain/incognito-chain/syncker"
+
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -61,6 +65,7 @@ type Server struct {
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
 	dataBase          incdb.Database
+	syncker           *syncker.SynckerManager
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
@@ -186,6 +191,10 @@ func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
+func (serverObj *Server) GetChainParam() *blockchain.Params {
+	return serverObj.chainParams
+}
+
 /*
 NewServer - create server object which control all process of node
 */
@@ -197,8 +206,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
-	serverObj.consensusEngine = consensus.New()
-
+	serverObj.consensusEngine = consensus.NewConsensusEngine()
+	serverObj.syncker = syncker.NewSynckerManager()
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
@@ -254,20 +263,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.BtcClientIP, cfg.BtcClientPort, cfg.BtcClientUsername, cfg.BtcClientPassword)
 	}
 	// Init block template generator
-	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
+	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.syncker, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		return err
 	}
-	// Init consensus engine
-	err = serverObj.consensusEngine.Init(&consensus.EngineConfig{
-		Blockchain:    serverObj.blockChain,
-		Node:          serverObj,
-		BlockGen:      serverObj.blockgen,
-		PubSubManager: serverObj.pusubManager,
-	})
-	if err != nil {
-		return err
-	}
+
 	// TODO hy
 	// Connect to highway
 	Logger.log.Debug("Listenner: ", cfg.Listener)
@@ -277,8 +277,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
 	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
 
-	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
-	pubkey := miningKeys[common.BlsConsensus]
+	pubkey := serverObj.consensusEngine.GetMiningPublicKeys()
 	dispatcher := &peerv2.Dispatcher{
 		MessageListeners: &peerv2.MessageListeners{
 			OnBlockShard:       serverObj.OnBlockShard,
@@ -302,14 +301,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		},
 		BC: serverObj.blockChain,
 	}
-
+	metrics.SetBlockChainObj(serverObj.blockChain)
 	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
 	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
 	serverObj.highway = peerv2.NewConnManager(
 		host,
 		cfg.DiscoverPeersAddress,
-		&pubkey,
+		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
 		cfg.NodeMode,
@@ -321,14 +320,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		DataBase:    serverObj.dataBase,
 		MemCache:    serverObj.memCache,
 		//MemCache:          nil,
-		BlockGen:          serverObj.blockgen,
-		Interrupt:         interrupt,
-		RelayShards:       relayShards,
-		BeaconPool:        serverObj.beaconPool,
-		ShardPool:         serverObj.shardPool,
-		ShardToBeaconPool: serverObj.shardToBeaconPool,
-		CrossShardPool:    serverObj.crossShardPool,
-		Server:            serverObj,
+		BlockGen:    serverObj.blockgen,
+		Interrupt:   interrupt,
+		RelayShards: relayShards,
+		Server:      serverObj,
+		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
@@ -345,7 +341,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool(serverObj.pusubManager)
+	mempool.InitBeaconPool(serverObj.pusubManager, serverObj.blockChain)
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool
@@ -357,25 +353,24 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
-			_ = bestState
-			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase, shardID)
+		for shardID, _ := range serverObj.blockChain.ShardChain {
+			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase, byte(shardID))
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
 					Logger.log.Debugf("Failed to restore fee estimator %v", err)
 					Logger.log.Debug("Init NewFeeEstimator")
-					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+					serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
 						cfg.LimitFee)
 				} else {
-					serverObj.feeEstimator[shardID] = feeEstimator
+					serverObj.feeEstimator[byte(shardID)] = feeEstimator
 				}
 			} else {
 				Logger.log.Debugf("Failed to get fee estimator from DB %v", err)
 				Logger.log.Debug("Init NewFeeEstimator")
-				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+				serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
 					cfg.LimitFee)
@@ -440,6 +435,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}
 	serverObj.netSync.Init(&netsync.NetSyncConfig{
+		Syncker:           serverObj.syncker,
 		BlockChain:        serverObj.blockChain,
 		ChainParam:        chainParams,
 		TxMemPool:         serverObj.memPool,
@@ -471,6 +467,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		cfg.MaxPeersNoShard = 0
 		cfg.MaxPeersBeacon = 9999
 	}
+
 	connManager := connmanager.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
@@ -485,7 +482,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		MaxPeersNoShard:    cfg.MaxPeersNoShard,
 		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
+
 	serverObj.connManager = connManager
+	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
+	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -622,7 +622,7 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	err := serverObj.consensusEngine.Stop("all")
+	err := serverObj.consensusEngine.Stop()
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -716,12 +716,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
-	err := serverObj.consensusEngine.Start()
-	if err != nil {
-		Logger.log.Error(err)
-		go serverObj.Stop()
-		return
-	}
+
 	if cfg.NodeMode != common.NodeModeRelay {
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
@@ -731,7 +726,10 @@ func (serverObj Server) Start() {
 		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
-	go serverObj.blockChain.Synker.Start()
+	//go serverObj.blockChain.Synker.Start()
+	go serverObj.syncker.Start()
+	go serverObj.blockgen.Start(serverObj.cQuit)
+
 	if serverObj.memPool != nil {
 		err := serverObj.memPool.LoadOrResetDatabaseMempool()
 		if err != nil {
@@ -742,11 +740,18 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
+
+	err := serverObj.consensusEngine.Start()
+	if err != nil {
+		Logger.log.Error(err)
+		go serverObj.Stop()
+		return
+	}
 	// go metrics.StartSystemMetrics()
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {
-	return serverObj.blockChain.BestState.Beacon.ActiveShards
+	return serverObj.blockChain.GetBeaconBestState().ActiveShards
 }
 
 // func (serverObj *Server) GetNodePubKey() string {
@@ -964,46 +969,51 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	msg *wire.MessageBlockShard) {
-	Logger.log.Debug("Receive a new blockshard START")
-
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new blockshard END")
+	//Logger.log.Debug("Receive a new blockshard START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new blockshard END")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 	msg *wire.MessageBlockBeacon) {
-	Logger.log.Debug("Receive a new blockbeacon START")
 
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new blockbeacon END")
+	//Logger.log.Info("Receive a new blockbeacon START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new blockbeacon END")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
 	msg *wire.MessageCrossShard) {
-	Logger.log.Debug("Receive a new crossshard START")
-
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new crossshard END")
+	//Logger.log.Debug("Receive a new crossshard START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new crossshard END")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnShardToBeacon(p *peer.PeerConn,
 	msg *wire.MessageShardToBeacon) {
-	Logger.log.Debug("Receive a new shardToBeacon START")
-
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new shardToBeacon END")
+	//Logger.log.Debug("Receive a new shardToBeacon START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new shardToBeacon END")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
@@ -1220,7 +1230,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 		// fmt.Println("eiiiiiiiiiiiii")
 		// os.Exit(0)
 		//TODO hy check here
-		bestState := blockchain.GetBeaconBestState()
+		bestState := serverObj.blockChain.GetBeaconBestState()
 		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		if err != nil {
 			panic(err)
@@ -1249,10 +1259,10 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 }
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
-	Logger.log.Debug("Handling new message peerstate %+v", msg)
 	Logger.log.Debug("Receive a peerstate START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	go serverObj.syncker.ReceivePeerState(msg)
 	Logger.log.Debug("Receive a peerstate END")
 }
 
@@ -1288,8 +1298,7 @@ func (serverObj *Server) GetNodeRole() string {
 	if cfg.NodeMode == "relay" {
 		return "RELAY"
 	}
-	role, shardID := serverObj.consensusEngine.GetUserLayer()
-
+	role, shardID := serverObj.GetUserMiningState()
 	switch shardID {
 	case -2:
 		return ""
@@ -1298,25 +1307,6 @@ func (serverObj *Server) GetNodeRole() string {
 	default:
 		return "SHARD_" + role
 	}
-	// pubkey := serverObj.userKeySet.GetPublicKeyInBase58CheckEncode()
-	// if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
-	// 	return "BEACON_VALIDATOR"
-	// }
-	// if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconPendingValidator) > -1 {
-	// 	return "BEACON_WAITING"
-	// }
-	// shardCommittee := blockchain.GetBestStateBeacon().GetShardCommittee()
-	// for _, s := range shardCommittee {
-	// 	if common.IndexOfStr(pubkey, s) > -1 {
-	// 		return "SHARD_VALIDATOR"
-	// 	}
-	// }
-	// shardPendingCommittee := blockchain.GetBestStateBeacon().GetShardPendingValidator()
-	// for _, s := range shardPendingCommittee {
-	// 	if common.IndexOfStr(pubkey, s) > -1 {
-	// 		return "SHARD_VALIDATOR"
-	// 	}
-	// }
 }
 
 /*
@@ -1508,6 +1498,7 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 		// Create dummy msg wrapping grpc response
 		psMsg := &p2ppubsub.Message{
 			Message: &pb.Message{
+				// From: ,
 				Data: msg,
 			},
 		}
@@ -1516,38 +1507,38 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error {
-	Logger.log.Debug("[stream] Get blk beacon by heights %v %v", from, to)
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkBc,
-		Specific: false,
-		Heights:  []uint64{from, to},
-		From:     int32(peerv2.HighwayBeaconID),
-		To:       int32(peerv2.HighwayBeaconID),
-	}
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	Logger.log.Infof("[stream] Get blk beacon by heights %v %v", from, to)
+	//req := &proto.BlockByHeightRequest{
+	//	Type:     proto.BlkType_BlkBc,
+	//	Specific: false,
+	//	Heights:  []uint64{from, to},
+	//	From:     int32(peerv2.HighwayBeaconID),
+	//	To:       int32(peerv2.HighwayBeaconID),
+	//}
+	//err := serverObj.highway.Requester.StreamBlockByHeight(req)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	Logger.log.Debug("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkBc,
-		Specific: true,
-		Heights:  heights,
-		From:     int32(peerv2.HighwayBeaconID),
-		To:       int32(peerv2.HighwayBeaconID),
-	}
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
-	// serverObj.putResponseMsgs(msgs)
+	//Logger.log.Infof("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
+	//req := &proto.BlockByHeightRequest{
+	//	Type:     proto.BlkType_BlkBc,
+	//	Specific: true,
+	//	Heights:  heights,
+	//	From:     int32(peerv2.HighwayBeaconID),
+	//	To:       int32(peerv2.HighwayBeaconID),
+	//}
+	//err := serverObj.highway.Requester.StreamBlockByHeight(req)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
+	//// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
+	//// serverObj.putResponseMsgs(msgs)
 	return nil
 }
 
@@ -1564,39 +1555,40 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64) error {
-	Logger.log.Debug("[stream] Get blk shard %v by heights %v->%v", shardID, from, to)
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkShard,
-		Specific: false,
-		Heights:  []uint64{from, to},
-		From:     int32(shardID),
-		To:       int32(shardID),
-	}
-
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	//Logger.log.Infof("[stream] Get blk shard %v by heights %v->%v", shardID, from, to)
+	//req := &proto.BlockByHeightRequest{
+	//	Type:     proto.BlkType_BlkShard,
+	//	Specific: false,
+	//	Heights:  []uint64{from, to},
+	//	From:     int32(shardID),
+	//	To:       int32(shardID),
+	//}
+	//
+	//err := serverObj.highway.Requester.StreamBlockByHeight(req)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 
 	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-	Logger.log.Debug("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkShard,
-		Specific: true,
-		Heights:  heights,
-		From:     int32(shardID),
-		To:       int32(shardID),
-	}
 
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	//Logger.log.Infof("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
+	//req := &proto.BlockByHeightRequest{
+	//	Type:     proto.BlkType_BlkShard,
+	//	Specific: true,
+	//	Heights:  heights,
+	//	From:     int32(shardID),
+	//	To:       int32(shardID),
+	//}
+	//
+	//err := serverObj.highway.Requester.StreamBlockByHeight(req)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 	return nil
 }
 
@@ -1617,20 +1609,20 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
-	Logger.log.Debug("[stream] Get blk S2B shard %v by heights %v->%v", shardID, from, to)
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkS2B,
-		Specific: false,
-		Heights:  []uint64{from, to},
-		From:     int32(shardID),
-		To:       int32(peerv2.HighwayBeaconID),
-	}
-
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	//Logger.log.Infof("[stream] Get blk S2B shard %v by heights %v->%v", shardID, from, to)
+	//req := &proto.BlockByHeightRequest{
+	//	Type:     proto.BlkType_BlkS2B,
+	//	Specific: false,
+	//	Heights:  []uint64{from, to},
+	//	From:     int32(shardID),
+	//	To:       int32(peerv2.HighwayBeaconID),
+	//}
+	//
+	//err := serverObj.highway.Requester.StreamBlockByHeight(req)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 	return nil
 }
 
@@ -1652,6 +1644,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, bl
 		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(
@@ -1661,21 +1654,21 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(
 	peerID libp2p.ID,
 ) error {
 
-	Logger.log.Debug("[stream] Get blk S2B shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
-
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkS2B,
-		Specific: true,
-		Heights:  heights,
-		From:     int32(shardID),
-		To:       int32(peerv2.HighwayBeaconID),
-	}
-
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	//Logger.log.Infof("[stream] Get blk S2B shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
+	//
+	//req := &proto.BlockByHeightRequest{
+	//	Type:     proto.BlkType_BlkS2B,
+	//	Specific: true,
+	//	Heights:  heights,
+	//	From:     int32(shardID),
+	//	To:       int32(peerv2.HighwayBeaconID),
+	//}
+	//
+	//err := serverObj.highway.Requester.StreamBlockByHeight(req)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 	return nil
 
 }
@@ -1703,26 +1696,12 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Debug("[stream] Get blk Cross shard %v to %v by specific heights [%v..%v] len %v", fromShard, toShard, heights[0], heights[len(heights)-1], len(heights))
 
-	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkXShard,
-		Specific: true,
-		Heights:  heights,
-		From:     int32(fromShard),
-		To:       int32(toShard),
-	}
-
-	err := serverObj.highway.Requester.StreamBlockByHeight(req)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
 	return nil
 }
 
 func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
-	Logger.log.Debug("[peerstate] Start Publish SelfPeerState")
+	Logger.log.Debugf("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
 	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
@@ -1730,93 +1709,49 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	// }
 
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	if userKey == "" {
+		return nil
+	}
+
 	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
 	}
-	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
-		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
-		serverObj.blockChain.BestState.Beacon.BeaconHeight,
-		serverObj.blockChain.BestState.Beacon.BestBlockHash,
-		serverObj.blockChain.BestState.Beacon.Hash(),
+	msg.(*wire.MessagePeerState).Beacon = wire.ChainState{
+		serverObj.blockChain.GetBeaconBestState().BestBlock.Header.Timestamp,
+		serverObj.blockChain.GetBeaconBestState().BeaconHeight,
+		serverObj.blockChain.GetBeaconBestState().BestBlockHash,
+		serverObj.blockChain.GetBeaconBestState().Hash(),
 	}
 
 	if userLayer != common.BeaconRole {
-		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlock.Header.Timestamp,
-			serverObj.blockChain.BestState.Shard[byte(shardID)].ShardHeight,
-			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[byte(shardID)].Hash(),
+		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = wire.ChainState{
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).ShardHeight,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlockHash,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).Hash(),
 		}
 	} else {
 		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
-		Logger.log.Debug("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
+		Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
 	if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
 		msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 	}
 
-	//
-	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()[serverObj.blockChain.BestState.Beacon.ConsensusAlgorithm]
+	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()
 	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
 	if err != nil {
 		return err
 	}
 	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-	Logger.log.Debug("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+	Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}
 	Logger.log.Debugf("Publish peerstate")
-	serverObj.PushMessageToAll(msg)
-	return nil
-}
-
-func (serverObj *Server) BoardcastNodeState() error {
-	listener := serverObj.connManager.GetConfig().ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
-		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
-		serverObj.blockChain.BestState.Beacon.BeaconHeight,
-		serverObj.blockChain.BestState.Beacon.BestBlockHash,
-		serverObj.blockChain.BestState.Beacon.Hash(),
-	}
-	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
-		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
-			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[shardID].Hash(),
-		}
-	}
-	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
-
-	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	// signDataInBase58CheckEncode := common.EmptyString
-	if publicKeyInBase58CheckEncode != "" {
-		_, shardID := serverObj.consensusEngine.GetUserLayer()
-		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
-			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
-		}
-	}
-	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	if userKey != "" {
-		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
-		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
-			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
-			if userRole == "shard-proposer" || userRole == "shard-validator" {
-				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
-			}
-		}
-	}
-	msg.SetSenderID(listener.GetPeerID())
-	Logger.log.Debugf("Broadcast peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
 	return nil
 }
@@ -1844,20 +1779,25 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	}
 	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
-		layer, role, shardID := serverObj.consensusEngine.GetUserRole()
-
-		if shardID == -2 {
+		role, chainID := serverObj.GetUserMiningState()
+		layer := ""
+		if chainID == -2 {
 			return notmining
 		}
-		if chain != -1 && layer == common.BeaconRole {
-			return notmining
+		if chainID == -1 {
+			layer = common.BeaconRole
+		} else if chainID >= 0 {
+			layer = common.ShardRole
 		}
 
 		switch layer {
 		case common.BeaconRole:
+			if chain != -1 {
+				return notmining
+			}
 			switch role {
 			case common.CommitteeRole:
-				if serverObj.blockChain.Synker.IsLatest(false, 0) {
+				if serverObj.syncker.IsChainReady(chain) {
 					return mining
 				}
 				return syncing
@@ -1867,12 +1807,12 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 				return waiting
 			}
 		case common.ShardRole:
-			if chain != shardID {
+			if chain != chainID {
 				return notmining
 			}
 			switch role {
 			case common.CommitteeRole:
-				if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
+				if serverObj.syncker.IsChainReady(chain) {
 					return mining
 				}
 				return syncing
@@ -1897,7 +1837,7 @@ func (serverObj *Server) GetPrivateKey() string {
 	return serverObj.privateKey
 }
 
-func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.ChainInterface) error {
 	chainID := chain.GetShardID()
 	if chainID == -1 {
 		serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{})
@@ -1905,10 +1845,6 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
 	}
 	return nil
-}
-
-func (serverObj *Server) DropAllConnections() {
-	serverObj.connManager.DropAllConnections()
 }
 
 func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
@@ -1939,7 +1875,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		}
 		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
 		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
-		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.BestState.Beacon.ActiveShards)
+		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {
@@ -1955,7 +1891,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 
 func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int, int) {
 	var beaconBestState blockchain.BeaconBestState
-	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.GetBeaconBestState())
 	if err != nil {
 		return -2, -1
 	}
@@ -2015,7 +1951,7 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 
 func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool, int) {
 	var beaconBestState blockchain.BeaconBestState
-	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.GetBeaconBestState())
 	if err != nil {
 		return -2, false, -1
 	}
@@ -2075,7 +2011,7 @@ func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool,
 
 func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType string) []byte {
 	var beaconBestState blockchain.BeaconBestState
-	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.GetBeaconBestState())
 	if err != nil {
 		return nil
 	}
@@ -2131,4 +2067,285 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	}
 
 	return nil
+}
+
+func (serverObj *Server) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHeightRequest{
+		Type:         proto.BlkType_BlkBc,
+		Specific:     false,
+		Heights:      []uint64{from, to},
+		From:         int32(peerv2.HighwayBeaconID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHeightRequest{
+		Type:         proto.BlkType_BlkShard,
+		Specific:     false,
+		Heights:      []uint64{from, to},
+		From:         int32(fromSID),
+		To:           int32(fromSID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestShardToBeaconBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHeightRequest{
+		Type:         proto.BlkType_BlkS2B,
+		Specific:     false,
+		Heights:      []uint64{from, to},
+		From:         int32(fromSID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
+	}
+
+	return serverObj.requestBlocksViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHeightRequest{
+		Type:         proto.BlkType_BlkXShard,
+		Specific:     true,
+		Heights:      heights,
+		From:         int32(fromSID),
+		To:           int32(toSID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkXShard,
+		Hashes:       hashes,
+		From:         int32(fromSID),
+		To:           int32(toSID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkBc,
+		Hashes:       hashes,
+		From:         int32(peerv2.HighwayBeaconID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkShard,
+		Hashes:       hashes,
+		From:         int32(fromSID),
+		To:           int32(fromSID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestShardToBeaconBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkS2B,
+		Hashes:       hashes,
+		From:         int32(fromSID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
+	}
+
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("[stream] Request Block type %v from peer %v from cID %v, [%v %v] ", req.Type, peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1])
+	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
+	stream, err := serverObj.highway.Requester.StreamBlockByHeight(ctx, req)
+	if err != nil {
+		Logger.log.Errorf("[stream] %v", err)
+		return nil, err
+	}
+
+	var closeChannel = func() {
+		if blockCh != nil {
+			close(blockCh)
+			blockCh = nil
+		}
+	}
+
+	go func(stream proto.HighwayService_StreamBlockByHeightClient, ctx context.Context) {
+		for {
+			blkData, err := stream.Recv()
+			if err != nil || err == io.EOF {
+				Logger.log.Errorf("[stream] %v", err)
+				closeChannel()
+				return
+			}
+
+			if len(blkData.Data) < 2 {
+				Logger.log.Errorf("[stream] received empty blk")
+				closeChannel()
+				return
+			}
+
+			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			if req.Type == proto.BlkType_BlkShard {
+				newBlk = new(blockchain.ShardBlock)
+			} else if req.Type == proto.BlkType_BlkS2B {
+				newBlk = new(blockchain.ShardToBeaconBlock)
+			} else if req.Type == proto.BlkType_BlkXShard {
+				newBlk = new(blockchain.CrossShardBlock)
+			}
+
+			err = wrapper.DeCom(blkData.Data[1:], newBlk)
+			if err != nil {
+				Logger.log.Errorf("[stream] %v", err)
+				closeChannel()
+				return
+			}
+			fmt.Printf("[stream]: Receive %v block %v \n", req.GetType(), newBlk.GetHeight())
+			select {
+			case <-ctx.Done():
+				closeChannel()
+				return
+			case blockCh <- newBlk:
+			}
+		}
+
+	}(stream, ctx)
+
+	return blockCh, nil
+}
+
+func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerID string, req *proto.BlockByHashRequest) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("SYNCKER Request Block by hash from peerID %v, from CID %v, total %v blocks", peerID, req.From, len(req.Hashes))
+	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
+	stream, err := serverObj.highway.Requester.StreamBlockByHash(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var closeChannel = func() {
+		if blockCh != nil {
+			close(blockCh)
+			blockCh = nil
+		}
+	}
+
+	go func(stream proto.HighwayService_StreamBlockByHashClient, ctx context.Context) {
+		for {
+			blkData, err := stream.Recv()
+			if err != nil || err == io.EOF {
+				closeChannel()
+				return
+			}
+
+			if len(blkData.Data) < 2 {
+				closeChannel()
+				return
+			}
+
+			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			if req.Type == proto.BlkType_BlkShard {
+				newBlk = new(blockchain.ShardBlock)
+			} else if req.Type == proto.BlkType_BlkS2B {
+				newBlk = new(blockchain.ShardToBeaconBlock)
+			} else if req.Type == proto.BlkType_BlkXShard {
+				newBlk = new(blockchain.CrossShardBlock)
+			}
+
+			err = wrapper.DeCom(blkData.Data[1:], newBlk)
+			if err != nil {
+				closeChannel()
+				return
+			}
+			//fmt.Println("SYNCKER: Receive block ...", newBlk.GetHeight())
+			select {
+			case <-ctx.Done():
+				closeChannel()
+				return
+			case blockCh <- newBlk:
+			}
+		}
+
+	}(stream, ctx)
+
+	return blockCh, nil
+}
+
+func (s *Server) GetUserMiningState() (role string, chainID int) {
+	//TODO: check synker is in FewBlockBehind
+	userPk := s.consensusEngine.GetMiningPublicKeys()
+	if s.blockChain == nil || userPk == nil {
+		return "", -2
+	}
+
+	//For Beacon, check in beacon state, if user is in committee
+	for _, v := range s.blockChain.BeaconChain.GetCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.CommitteeRole, -1
+		}
+	}
+	for _, v := range s.blockChain.BeaconChain.GetPendingCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.PendingRole, -1
+		}
+	}
+
+	//For Shard, loop through shard chain and check if they in committee
+	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
+	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
+
+	for _, chain := range s.blockChain.ShardChain {
+		for _, v := range chain.GetCommittee() {
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+				for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] {
+					if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // and in shard pending committee in beacon state
+						return common.CommitteeRole, chain.GetShardID()
+					}
+				}
+				for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] {
+					if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // or in shard committee in beacon state
+						return common.CommitteeRole, chain.GetShardID()
+					}
+				}
+			}
+		}
+
+		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+				return common.PendingRole, chain.GetShardID()
+			}
+		}
+
+	}
+	return "", -2
+}
+
+func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *syncker.NextCrossShardInfo {
+	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase, byte(fromSID), byte(toSID), uint64(currentHeight))
+	if err != nil {
+		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+		return nil
+	}
+	var res = new(syncker.NextCrossShardInfo)
+	err = json.Unmarshal(b, res)
+	if err != nil {
+		return nil
+	}
+	return res
+}
+
+func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
+	return s.blockChain.GetBeaconBlockByHeightAndView(height, common.Hash{})
+}
+
+func (s *Server) GetIncDatabase() incdb.Database {
+	return s.dataBase
 }

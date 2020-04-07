@@ -71,14 +71,14 @@ func NewPDETradeRequest(
 	return pdeTradeRequest, nil
 }
 
-func (pc PDETradeRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (pc PDETradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 
-func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
 
@@ -91,13 +91,13 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if len(traderAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's trader address")
 	}
-	if !txr.IsCoinsBurning(bcr, beaconHeight) {
+	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
-	if (pc.SellAmount + pc.TradingFee) != txr.CalculateTxValue() {
+	if (pc.SellAmount + pc.TradingFee) != tx.CalculateTxValue() {
 		return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], traderAddr.Pk[:]) {
+	if !bytes.Equal(tx.GetSigPubKey()[:], traderAddr.Pk[:]) {
 		return false, false, errors.New("TraderAddress incorrect")
 	}
 
@@ -111,15 +111,15 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToSellStr incorrect"))
 	}
 
-	if !bytes.Equal(txr.GetTokenID()[:], tokenIDToSell[:]) {
+	if !bytes.Equal(tx.GetTokenID()[:], tokenIDToSell[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
 
-	if txr.GetType() == common.TxNormalType && pc.TokenIDToSellStr != common.PRVCoinID.String() {
+	if tx.GetType() == common.TxNormalType && pc.TokenIDToSellStr != common.PRVCoinID.String() {
 		return false, false, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token.")
 	}
 
-	if txr.GetType() == common.TxCustomTokenPrivacyType && pc.TokenIDToSellStr == common.PRVCoinID.String() {
+	if tx.GetType() == common.TxCustomTokenPrivacyType && pc.TokenIDToSellStr == common.PRVCoinID.String() {
 		return false, false, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token.")
 	}
 
@@ -143,7 +143,7 @@ func (pc PDETradeRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDETradeRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PDETradeRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),

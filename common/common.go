@@ -233,6 +233,15 @@ func IndexOfStr(item string, list []string) int {
 	return -1
 }
 
+func IndexOfHash(item Hash, list []Hash) int {
+	for k, v := range list {
+		if item.IsEqual(&v) {
+			return k
+		}
+	}
+	return -1
+}
+
 // IndexOfByte receives a array of bytes and a item byte
 // It checks whether a item is contained in array or not
 // and returns the first index of the item in the array

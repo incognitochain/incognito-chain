@@ -141,10 +141,6 @@ var HttpHandler = map[string]httpHandler{
 	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 
-	// revert
-	revertbeaconchain: (*HttpServer).handleRevertBeacon,
-	revertshardchain:  (*HttpServer).handleRevertShard,
-
 	// mining info
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
 	enableMining:                (*HttpServer).handleEnableMining,

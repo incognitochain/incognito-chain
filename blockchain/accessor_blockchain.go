@@ -11,15 +11,118 @@ import (
 )
 
 func (blockchain *BlockChain) StoreShardBestState(shardID byte) error {
-	return rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, blockchain.BestState.Shard[shardID])
+	return rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, blockchain.GetBestStateShard(shardID))
+}
+
+func (blockchain *BlockChain) FinalizedShardBlock(shardBlock *ShardBlock) error {
+	return rawdbv2.FinalizedShardBlock(blockchain.GetDatabase(), shardBlock.Header.ShardID, shardBlock.Header.Hash())
+}
+
+func (blockchain *BlockChain) GetFinalizedShardBlock(shardID byte) (*ShardBlock, uint64, error) {
+	hash, err := rawdbv2.GetFinalizedShardBlock(blockchain.GetDatabase(), shardID)
+	if err != nil {
+		return nil, 0, err
+	}
+	shardBlock, height, err := blockchain.GetShardBlockByHash(hash)
+	if err != nil {
+		return nil, 0, err
+	}
+	return shardBlock, height, nil
+}
+
+func (blockchain *BlockChain) DeleteShardBlockByView(view common.Hash) error {
+	return rawdbv2.DeleteShardBlockByView(blockchain.GetDatabase(), view)
+}
+
+func (blockchain *BlockChain) GetShardBlockByHeightAndView(shardID byte, height uint64, view common.Hash) (*ShardBlock, error) {
+	finalShardBlock, finalHeight, err := blockchain.GetFinalizedShardBlock(shardID)
+	if err != nil {
+		return nil, err
+	}
+	if height == finalHeight {
+		return finalShardBlock, nil
+	}
+	if height < finalHeight {
+		shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
+		if err != nil {
+			return nil, err
+		}
+		shardBlock := NewShardBlock()
+		for _, v := range shardBlocks {
+			shardBlock = v
+			break
+		}
+		return shardBlock, nil
+	}
+	if height > finalHeight {
+		shardBlockIndexes, err := rawdbv2.GetShardBlockByView(blockchain.GetDatabase(), view)
+		if err != nil {
+			return nil, err
+		}
+		if blockHash, ok := shardBlockIndexes[height]; !ok {
+			return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
+		} else {
+			shardBlock, shardHeight, err := blockchain.GetShardBlockByHash(blockHash)
+			if err != nil {
+				return nil, err
+			}
+			if shardHeight != height {
+				return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
+			}
+			return shardBlock, nil
+		}
+	}
+	return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
 }
 
 func (blockchain *BlockChain) StoreBeaconBestState() error {
-	beaconBestStateBytes, err := json.Marshal(blockchain.BestState.Beacon)
+	beaconBestStateBytes, err := json.Marshal(blockchain.GetBeaconBestState())
 	if err != nil {
 		return err
 	}
 	return rawdbv2.StoreBeaconBestState(blockchain.config.DataBase, beaconBestStateBytes)
+}
+
+func (blockchain *BlockChain) FinalizedBeaconBlock(beaconBlock *BeaconBlock) error {
+	return rawdbv2.FinalizedBeaconBlock(blockchain.GetDatabase(), beaconBlock.Header.Hash())
+}
+
+func (blockchain *BlockChain) GetFinalizedBeaconBlock() (*BeaconBlock, uint64, error) {
+	hash, err := rawdbv2.GetFinalizedBeaconBlock(blockchain.GetDatabase())
+	if err != nil {
+		return nil, 0, err
+	}
+	beaconBlock, height, err := blockchain.GetBeaconBlockByHash(hash)
+	if err != nil {
+		return nil, 0, err
+	}
+	return beaconBlock, height, nil
+}
+
+func (blockchain *BlockChain) DeleteBeaconBlockByView(view common.Hash) error {
+	return rawdbv2.DeleteBeaconBlockByView(blockchain.GetDatabase(), view)
+}
+
+func (blockchain *BlockChain) GetBeaconBlockByHeightAndView(height uint64, viewHash common.Hash) (*BeaconBlock, error) {
+	finalView := blockchain.BeaconChain.GetFinalView()
+
+	if height == finalView.GetHeight() {
+		return finalView.GetBlock().(*BeaconBlock), nil
+	}
+	if height < finalView.GetHeight() {
+		beaconBlocks, err := blockchain.GetBeaconBlockByHeight(height)
+		if err != nil {
+			return nil, err
+		}
+		return beaconBlocks[0], nil
+	}
+	if height > finalView.GetHeight() {
+		view := blockchain.BeaconChain.GetViewByHash(viewHash)
+		if view != nil {
+			return view.GetBlock().(*BeaconBlock), nil
+		}
+	}
+	return nil, fmt.Errorf("Beacon, Block Height %+v, View %+v, not found", height, viewHash)
 }
 
 func (blockchain *BlockChain) GetBlockHeightByBlockHash(hash common.Hash) (uint64, byte, error) {
@@ -137,23 +240,23 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 	return shardBlock, shardBlock.Header.Height, nil
 }
 
-func (blockchain *BlockChain) GetShardRewardStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+func (blockchain *BlockChain) GetBestStateShardRewardStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetShardRewardStateDB()
 }
 
-func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+func (blockchain *BlockChain) GetBestStateTransactionStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetShardTransactionStateDB()
 }
 
-func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
+func (blockchain *BlockChain) GetBestStateShardFeatureStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetShardFeatureStateDB()
 }
 
-func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
+func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDB() *statedb.StateDB {
+	return blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 }
 
-func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
+func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
 	rootHash, err := blockchain.GetBeaconFeatureRootHash(blockchain.GetDatabase(), height)
 	if err != nil {
 		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
@@ -161,10 +264,10 @@ func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db 
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }
 
-func (blockchain *BlockChain) GetBeaconSlashStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.slashStateDB
+func (blockchain *BlockChain) GetBestBeaconSlashStateDB() *statedb.StateDB {
+	return blockchain.GetBeaconBestState().slashStateDB
 }
 
-func (blockchain *BlockChain) GetBeaconRewardStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.rewardStateDB
+func (blockchain *BlockChain) GetBestBeaconRewardStateDB() *statedb.StateDB {
+	return blockchain.GetBeaconBestState().rewardStateDB
 }

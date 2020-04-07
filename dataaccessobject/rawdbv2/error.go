@@ -9,6 +9,10 @@ import (
 const (
 	// Beacon
 	StoreBeaconBlockError = iota
+	StoreBeaconBlockWithViewError
+	UpdateBeaconBlockViewError
+	GetBeaconBlockByViewError
+	DeleteBeaconBlockByViewError
 	StoreBeaconBlockIndexError
 	GetIndexOfBeaconBlockError
 	HasBeaconBlockError
@@ -17,6 +21,8 @@ const (
 	DeleteBeaconBlockError
 	StoreBeaconBestStateError
 	GetBeaconBestStateError
+	FinalizedBeaconBlockError
+	GetFinalizedBeaconBlockError
 	StoreBeaconConsensusRootHashError
 	GetBeaconConsensusRootHashError
 	StoreBeaconRewardRootHashError
@@ -45,6 +51,12 @@ const (
 	CleanUpPreviousBeaconBestStateError
 	// Shard
 	StoreShardBlockError
+	StoreShardBlockWithViewError
+	UpdateShardBlockViewError
+	GetShardBlockByViewError
+	DeleteShardBlockByViewError
+	FinalizedShardBlockError
+	GetFinalizedShardBlockError
 	StoreShardBlockIndexError
 	HasShardBlockError
 	GetShardBlockByHashError
@@ -72,14 +84,20 @@ var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
-	HasBeaconBlockError:        {-1000, "Has Beacon Block Error"},
-	GetBeaconBlockByHashError:  {-1001, "Get Beacon Block By Hash Error"},
-	GetBeaconBlockByIndexError: {-1002, "Get Beacon Block By Index Error"},
-	DeleteBeaconBlockError:     {-1003, "Delete Beacon Block Error"},
-	StoreBeaconBlockIndexError: {-1004, "Store Beacon Block Index Error"},
-	GetIndexOfBeaconBlockError: {-1005, "Get Index Of Beacon Block Error"},
-	StoreBeaconBestStateError:  {-1006, "Store Beacon Best State Error"},
-	GetBeaconBestStateError:    {-1007, "Fetch Beacon Best State Error"},
+	HasBeaconBlockError:           {-1000, "Has Beacon Block Error"},
+	GetBeaconBlockByHashError:     {-1001, "Get Beacon Block By Hash Error"},
+	GetBeaconBlockByIndexError:    {-1002, "Get Beacon Block By Index Error"},
+	DeleteBeaconBlockError:        {-1003, "Delete Beacon Block Error"},
+	StoreBeaconBlockIndexError:    {-1004, "Store Beacon Block Index Error"},
+	GetIndexOfBeaconBlockError:    {-1005, "Get Index Of Beacon Block Error"},
+	StoreBeaconBestStateError:     {-1006, "Store Beacon Best State Error"},
+	GetBeaconBestStateError:       {-1007, "Fetch Beacon Best State Error"},
+	StoreBeaconBlockWithViewError: {-1008, "Store Beacon Block With View Error"},
+	UpdateBeaconBlockViewError:    {-1009, "Update Beacon Block View Error"},
+	GetBeaconBlockByViewError:     {-1010, "Get Beacon Block By View Error"},
+	DeleteBeaconBlockByViewError:  {-1011, "Delete Beacon Block By View"},
+	FinalizedBeaconBlockError:     {-2016, "Finalized Beacon Block Error "},
+	GetFinalizedBeaconBlockError:  {-2017, "Get Finalized Beacon Block Error"},
 
 	StoreShardBlockError:           {-2000, "Store Shard Block Error"},
 	HasShardBlockError:             {-2001, "Has Shard Block Error"},
@@ -93,6 +111,12 @@ var ErrCodeMessage = map[int]struct {
 	StoreShardBestStateError:       {-2009, "Store Shard Best State Error"},
 	StoreFeeEstimatorError:         {-2010, "Store Fee Estimator Error"},
 	GetFeeEstimatorError:           {-2011, "Get Fee Estimator Error"},
+	StoreShardBlockWithViewError:   {-2012, "Store Shard Block With View Error"},
+	UpdateShardBlockViewError:      {-2013, "Update Shard Block View Error"},
+	GetShardBlockByViewError:       {-2014, "Get Shard Block By View Error"},
+	DeleteShardBlockByViewError:    {-2015, "Delete Shard Block By View"},
+	FinalizedShardBlockError:       {-2016, "Finalized Shard Block Error "},
+	GetFinalizedShardBlockError:    {-2017, "Get Finalized Shard Block Error"},
 
 	StoreTransactionIndexError:   {-3000, "Store Transaction Index Error"},
 	GetTransactionByHashError:    {-3001, "Get Transaction By Hash Error"},

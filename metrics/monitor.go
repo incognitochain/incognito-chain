@@ -23,6 +23,7 @@ import (
 
 var monitorFile *os.File
 var globalParam *logKV
+var blockchainObj *blockchain.BlockChain
 
 func getCPUSample() (idle, total uint64) {
 	contents, err := ioutil.ReadFile("/proc/stat")
@@ -65,14 +66,18 @@ func init() {
 		idle0, total0 := getCPUSample()
 		var m runtime.MemStats
 		for _ = range ticker.C {
+			if blockchainObj == nil {
+				time.Sleep(time.Second)
+				continue
+			}
 			l := NewLog()
 			idle1, total1 := getCPUSample()
 			idleTicks := float64(idle1 - idle0)
 			totalTicks := float64(total1 - total0)
 			cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
 			runtime.ReadMemStats(&m)
-			bheight := blockchain.GetBeaconBestState().BeaconHeight
-			bhash := blockchain.GetBeaconBestState().BestBlockHash
+			bheight := blockchainObj.GetBeaconBestState().BeaconHeight
+			bhash := blockchainObj.GetBeaconBestState().BestBlockHash
 
 			//beaconValidator := []string{}
 			//for _, v := range blockchain.GetBeaconBestState().GetBeaconCommittee() {
@@ -94,7 +99,7 @@ func init() {
 			//pendingShardValidator := map[byte][]string{}
 			//shardValidator := map[byte][]string{}
 
-			for i := 0; i < blockchain.GetBeaconBestState().ActiveShards; i++ {
+			for i := 0; i < blockchainObj.GetBeaconBestState().ActiveShards; i++ {
 				//for _, v := range blockchain.GetBestStateShard(byte(i)).ShardCommittee {
 				//	shardValidator[byte(i)] = append(shardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
 				//}
@@ -106,8 +111,8 @@ func init() {
 				//}
 				//l.Add("pendingShardValidator", pendingShardValidator)
 
-				shash := blockchain.GetBestStateShard(byte(i)).BestBlockHash
-				sheight := blockchain.GetBestStateShard(byte(i)).ShardHeight
+				shash := blockchainObj.GetBestStateShard(byte(i)).BestBlockHash
+				sheight := blockchainObj.GetBestStateShard(byte(i)).ShardHeight
 				l.Add(fmt.Sprintf("Shard%v", i), fmt.Sprintf("%v:%v", sheight, shash.String()))
 			}
 
@@ -136,6 +141,10 @@ func SetGlobalParam(p ...interface{}) {
 	globalParam.Add(p...)
 }
 
+func SetBlockChainObj(obj *blockchain.BlockChain) {
+	blockchainObj = obj
+}
+
 func NewLog(p ...interface{}) *logKV {
 	nl := (&logKV{param: make(map[string]interface{})}).Add(p...)
 	globalParam.RLock()
@@ -148,7 +157,6 @@ func NewLog(p ...interface{}) *logKV {
 
 func (s *logKV) Add(p ...interface{}) *logKV {
 	if len(p) == 0 || len(p)%2 != 0 {
-		fmt.Println(len(p))
 		return s
 	}
 	s.Lock()

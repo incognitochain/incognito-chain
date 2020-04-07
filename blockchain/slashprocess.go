@@ -28,9 +28,19 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	slashLevels := blockchain.config.ChainParams.SlashLevels
 	numOfBlocksByProducers := map[string]uint64{}
 	if isBeacon {
-		numOfBlocksByProducers = blockchain.BestState.Beacon.NumOfBlocksByProducers
+		if blockchain.GetBeaconBestState() == nil {
+			numOfBlocksByProducers = make(map[string]uint64)
+		} else {
+			numOfBlocksByProducers = blockchain.GetBeaconBestState().NumOfBlocksByProducers
+		}
+
 	} else {
-		numOfBlocksByProducers = blockchain.BestState.Shard[byte(shardID)].NumOfBlocksByProducers
+		if blockchain.GetBestStateShard(byte(shardID)) == nil {
+			numOfBlocksByProducers = make(map[string]uint64)
+		} else {
+			numOfBlocksByProducers = blockchain.GetBestStateShard(byte(shardID)).NumOfBlocksByProducers
+		}
+
 	}
 	// numBlkPerEpoch := blockchain.config.ChainParams.Epoch
 	numBlkPerEpoch := uint64(0)

@@ -40,7 +40,7 @@ func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.Shard
 		}
 	}
 	if len(shards) == 0 {
-		shards = blockService.BlockChain.BestState.GetClonedAllShardBestState()
+		shards = blockService.BlockChain.GetClonedAllShardBestState()
 		cacheValue, err := json.Marshal(shards)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
@@ -56,13 +56,13 @@ func (blockService BlockService) GetShardBestStateByShardID(shardID byte) (*bloc
 	if blockService.IsShardBestStateNil() {
 		return nil, errors.New("Best State shard not existed")
 	}
-	shard, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+	shard, err := blockService.BlockChain.GetClonedAShardBestState(shardID)
 	return shard, err
 }
 
 func (blockService BlockService) GetShardBestBlockHashes() map[int]common.Hash {
 	bestBlockHashes := make(map[int]common.Hash)
-	shards := blockService.BlockChain.BestState.GetClonedAllShardBestState()
+	shards := blockService.BlockChain.GetClonedAllShardBestState()
 	for shardID, best := range shards {
 		bestBlockHashes[int(shardID)] = best.BestBlockHash
 	}
@@ -83,7 +83,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
 		}
 	} else {
-		beacon, err = blockService.BlockChain.BestState.GetClonedBeaconBestState()
+		beacon, err = blockService.BlockChain.GetClonedBeaconBestState()
 		cacheValue, err := json.Marshal(beacon)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cachedKey, cacheValue, 10000)
@@ -96,7 +96,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 }
 
 func (blockService BlockService) GetBeaconBestBlockHash() (*common.Hash, error) {
-	clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+	clonedBeaconBestState, err := blockService.BlockChain.GetClonedBeaconBestState()
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		}
 		result.Data = hex.EncodeToString(data)
 	} else if verbosity == "1" {
-		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 		blockHeight := shardBlock.Header.Height
 		// Get next block hash unless there are none.
 		var nextHashString string
@@ -169,7 +169,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
 	} else if verbosity == "2" {
-		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
 		blockHeight := shardBlock.Header.Height
 		// Get next block hash unless there are none.
@@ -250,7 +250,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 			}
 			res.Data = hex.EncodeToString(data)
 		} else if verbosity == "1" {
-			best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+			best := blockService.BlockChain.GetBestStateShard(shardID).BestBlock
 			// Get next block hash unless there are none.
 			var nextHashString string
 			// if blockHeight < best.Header.GetHeight() {
@@ -292,7 +292,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				res.TxHashes = append(res.TxHashes, tx.Hash().String())
 			}
 		} else if verbosity == "2" {
-			best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+			best := blockService.BlockChain.GetBestStateShard(shardID).BestBlock
 			blockHeight := shardBlock.Header.Height
 			var nextHashString string
 			if blockHeight < best.Header.Height {
@@ -366,7 +366,7 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errD)
 		return nil, NewRPCError(GetBeaconBlockByHashError, errD)
 	}
-	bestBeaconBlock := blockService.BlockChain.BestState.Beacon.BestBlock
+	bestBeaconBlock := blockService.BlockChain.GetBeaconBestState().BestBlock
 	blockHeight := block.Header.Height
 	// Get next block hash unless there are none.
 	var nextHashString string
@@ -397,7 +397,7 @@ func (blockService BlockService) RetrieveBeaconBlockByHeight(blockHeight uint64)
 		return nil, NewRPCError(GetBeaconBlockByHashError, err)
 	}
 	result := []*jsonresult.GetBeaconBlockResult{}
-	bestBeaconBlock := blockService.BlockChain.BestState.Beacon.BestBlock
+	bestBeaconBlock := blockService.BlockChain.GetBeaconBestState().BestBlock
 	// Get next block hash unless there are none.
 	if blockHeight < bestBeaconBlock.Header.Height {
 		nextBeaconBlocks, err = blockService.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
@@ -455,7 +455,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 	if shardIDParam != -1 {
 		if len(resultShard) == 0 {
 			shardID := byte(shardIDParam)
-			clonedShardBestState, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+			clonedShardBestState, err := blockService.BlockChain.GetClonedAShardBestState(shardID)
 			if err != nil {
 				return nil, NewRPCError(GetClonedShardBestStateError, err)
 			}
@@ -489,7 +489,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 		return resultShard, nil
 	} else {
 		if len(resultBeacon) == 0 {
-			clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+			clonedBeaconBestState, err := blockService.BlockChain.GetClonedBeaconBestState()
 			if err != nil {
 				return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 			}
@@ -524,11 +524,11 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 }
 
 func (blockService BlockService) IsBeaconBestStateNil() bool {
-	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Beacon == nil
+	return blockService.BlockChain.GetBeaconBestState() == nil
 }
 
 func (blockService BlockService) IsShardBestStateNil() bool {
-	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Shard == nil || len(blockService.BlockChain.BestState.Shard) <= 0
+	return blockService.BlockChain.GetBestStateShard(0) == nil
 }
 
 func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string, *RPCError) {
@@ -575,7 +575,7 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 }
 
 func (blockService BlockService) GetActiveShards() int {
-	return blockService.BlockChain.BestState.Beacon.ActiveShards
+	return blockService.BlockChain.GetBeaconBestState().ActiveShards
 }
 
 func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
@@ -657,7 +657,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 		return nil, err
 	}
 	rewardAmountResult := make(map[string]uint64)
-	rewardStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+	rewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 	tempIncPublicKey := base58.Base58Check{}.Encode(incPublicKey, common.Base58Version)
 	for _, coinID := range allCoinIDs {
 		amount, err := statedb.GetCommitteeReward(rewardStateDB, tempIncPublicKey, coinID)
@@ -675,14 +675,6 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 	return rewardAmountResult, nil
 }
 
-func (blockService BlockService) RevertBeacon() error {
-	return blockService.BlockChain.RevertBeaconState()
-}
-
-func (blockService BlockService) RevertShard(shardID byte) error {
-	return blockService.BlockChain.RevertShardState(shardID)
-}
-
 func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]uint64, error) {
 	m := make(map[string]map[common.Hash]uint64)
 	beaconBestState := blockchain.NewBeaconBestState()
@@ -696,7 +688,7 @@ func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]
 	}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
-		committeeRewardStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 		committeeReward := statedb.ListCommitteeReward(committeeRewardStateDB)
 		for k, v := range committeeReward {
 			m[k] = v
@@ -721,7 +713,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 		return nil, err
 	}
 	for _, coinID := range allCoinIDs {
-		committeeRewardStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 		tempPK := base58.Base58Check{}.Encode(publicKey, common.Base58Version)
 		amount, err := statedb.GetCommitteeReward(committeeRewardStateDB, tempPK, coinID)
 		if err != nil {
@@ -750,7 +742,7 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 		return nil, err
 	}
 	for _, coinID := range allCoinIDs {
-		committeeRewardStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 		amount, err := statedb.GetCommitteeReward(committeeRewardStateDB, publicKey, coinID)
 		if err != nil {
 			return nil, err
@@ -870,7 +862,7 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 	if err != nil {
 		return byte(0), err
 	}
-	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	status, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
 	return status, err
 }
@@ -893,15 +885,15 @@ func (blockService BlockService) CheckETHHashIssued(data map[string]interface{})
 	}
 	txIdx := uint(txIdxParam)
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
-	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	issued, err := statedb.IsETHTxHashIssued(bridgeStateDB, uniqETHTx)
 	return issued, err
 }
 
 func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, error) {
-	for i := 0; i < blockService.BlockChain.BestState.Beacon.ActiveShards; i++ {
+	for i := 0; i < blockService.BlockChain.GetBeaconBestState().ActiveShards; i++ {
 		shardID := byte(i)
-		burningConfirmStateDB := blockService.BlockChain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
+		burningConfirmStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardFeatureStateDB()
 		res, err := statedb.GetBurningConfirm(burningConfirmStateDB, txID)
 		if err == nil {
 			return res, nil
@@ -911,7 +903,7 @@ func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, er
 }
 
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
-	pdexStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(pdexStateDB, pdePrefix, pdeSuffix)
 	if err != nil {
 		return nil, err
@@ -928,7 +920,7 @@ func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeS
 }
 
 func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte) (byte, error) {
-	pdexStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	return statedb.GetPDEStatus(pdexStateDB, pdePrefix, pdeSuffix)
 }
 

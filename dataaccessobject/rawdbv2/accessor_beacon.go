@@ -10,18 +10,47 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+func FinalizedBeaconBlock(db incdb.Database, hash common.Hash) error {
+	key := GetLastBeaconBlockKey()
+	if err := db.Put(key, hash[:]); err != nil {
+		return NewRawdbError(FinalizedBeaconBlockError, err)
+	}
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(hash))
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		if err := db.Delete(key); err != nil {
+			return NewRawdbError(FinalizedBeaconBlockError, err)
+		}
+	}
+	return nil
+}
+
+func GetFinalizedBeaconBlock(db incdb.Database) (common.Hash, error) {
+	key := GetLastBeaconBlockKey()
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFinalizedBeaconBlockError, err)
+	}
+	h, err := common.Hash{}.NewHash(res)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFinalizedBeaconBlockError, err)
+	}
+	return *h, nil
+}
+
 // StoreBeaconBlock store block hash => block value and block index => block hash
 // record1: prefix-index-hash => empty
 // record2: prefix-hash => block value
 func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v interface{}) error {
 	keyHash := GetBeaconHashToBlockKey(hash)
-	if ok, _ := db.Has(keyHash); ok {
-		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyHash))
-	}
+	//if ok, _ := db.Has(keyHash); ok {
+	//	return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyHash))
+	//}
 	keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
-	if ok, _ := db.Has(keyIndex); ok {
-		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyIndex))
-	}
+	//if ok, _ := db.Has(keyIndex); ok {
+	//	return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyIndex))
+	//}
 	val, err := json.Marshal(v)
 	if err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
@@ -31,6 +60,89 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 	}
 	if err := db.Put(keyHash, val); err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
+	}
+	return nil
+}
+
+func StoreBeaconBlockWithView(db incdb.Database, view common.Hash, height uint64, blockHash common.Hash) error {
+	key := GetViewBeaconKey(view, height)
+	err := db.Put(key, blockHash[:])
+	if err != nil {
+		return NewRawdbError(StoreBeaconBlockWithViewError, err)
+	}
+	return nil
+}
+
+func GetBeaconBlockByView(db incdb.Database, view common.Hash) (map[uint64]common.Hash, error) {
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(view))
+	m := make(map[uint64]common.Hash)
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		strs := strings.Split(string(key), string(splitter))
+		tempHeight := strs[2]
+		height, err := common.BytesToUint64([]byte(tempHeight))
+		if err != nil {
+			return nil, NewRawdbError(GetBeaconBlockByViewError, err)
+		}
+		h, err := common.Hash{}.NewHash(value)
+		if err != nil {
+			return nil, NewRawdbError(GetBeaconBlockByViewError, err)
+		}
+		m[height] = *h
+	}
+	return m, nil
+}
+
+func UpdateBeaconBlockView(db incdb.Database, oldView common.Hash, newView common.Hash) error {
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(oldView))
+	for iter.Next() {
+		oldKey := make([]byte, len(iter.Key()))
+		copy(oldKey, iter.Key())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		strs := strings.Split(string(oldKey), string(splitter))
+		tempHeight := strs[2]
+		height, err := common.BytesToUint64([]byte(tempHeight))
+		if err != nil {
+			return NewRawdbError(UpdateBeaconBlockViewError, err)
+		}
+		newKey := GetViewBeaconKey(newView, height)
+		if err := db.Put(newKey, value); err != nil {
+			return NewRawdbError(UpdateBeaconBlockViewError, err)
+		}
+		if err := db.Delete(oldKey); err != nil {
+			return NewRawdbError(UpdateBeaconBlockViewError, err)
+		}
+	}
+	return nil
+}
+
+func DeleteBeaconBlockByView(db incdb.Database, view common.Hash) error {
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(view))
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		strs := strings.Split(string(key), string(splitter))
+		tempHeight := strs[2]
+		height, err := common.BytesToUint64([]byte(tempHeight))
+		if err != nil {
+			return NewRawdbError(DeleteBeaconBlockByViewError, err)
+		}
+		h, err := common.Hash{}.NewHash(value)
+		if err != nil {
+			return NewRawdbError(DeleteBeaconBlockByViewError, err)
+		}
+		if err := DeleteBeaconBlock(db, height, *h); err != nil {
+			return NewRawdbError(DeleteBeaconBlockByViewError, err)
+		}
+		if err := db.Delete(key); err != nil {
+			return NewRawdbError(DeleteBeaconBlockByViewError, err)
+		}
 	}
 	return nil
 }

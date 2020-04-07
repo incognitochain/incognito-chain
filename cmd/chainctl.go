@@ -175,7 +175,7 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 		if err != nil {
 			return err
 		}
-		if bc.BestState.Shard[block.Header.ShardID].ShardHeight >= block.Header.Height {
+		if bc.GetBestStateShard(block.Header.ShardID).ShardHeight >= block.Header.Height {
 			continue
 		}
 		if block.Header.Height%100 == 0 {
@@ -257,7 +257,7 @@ func restoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		if err != nil {
 			return err
 		}
-		if bc.BestState.Beacon.BeaconHeight >= block.Header.Height {
+		if bc.GetBeaconBestState().BeaconHeight >= block.Header.Height {
 			continue
 		}
 		if block.Header.Height%100 == 0 {

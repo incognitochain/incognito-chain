@@ -17,13 +17,44 @@ type ShardBlock struct {
 	Header         ShardHeader
 }
 
+func (shardBlock *ShardBlock) GetProposer() string {
+	return shardBlock.Header.Proposer
+}
+
+func (shardBlock *ShardBlock) GetProposeTime() int64 {
+	return shardBlock.Header.ProposeTime
+}
+
+func (shardBlock *ShardBlock) GetProduceTime() int64 {
+	return shardBlock.Header.Timestamp
+}
+
+func (shardBlock *ShardBlock) GetShardID() int {
+	return int(shardBlock.Header.ShardID)
+}
+func (shardBlock *ShardBlock) GetPrevHash() common.Hash {
+	return shardBlock.Header.PreviousBlockHash
+}
+
 type ShardToBeaconBlock struct {
 	ValidationData string `json:"ValidationData"`
 	Instructions   [][]string
 	Header         ShardHeader
 }
 
+func (shardToBeaconBlock *ShardToBeaconBlock) GetPrevHash() common.Hash {
+	return shardToBeaconBlock.Header.PreviousBlockHash
+}
+
+func (shardToBeaconBlock *ShardToBeaconBlock) GetShardID() int {
+	return int(shardToBeaconBlock.Header.ShardID)
+}
+
 type CrossShardBlock struct {
+	// AggregatedSig   string  `json:"AggregatedSig"`
+	// R               string  `json:"R"`
+	// ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
+	// ProducerSig     string  `json:"ProducerSig"`
 	ValidationData  string `json:"ValidationData"`
 	Header          ShardHeader
 	ToShardID       byte
@@ -66,14 +97,31 @@ func NewShardBlockFull(header ShardHeader, body ShardBody) *ShardBlock {
 		Body:   body,
 	}
 }
+
 func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []metadata.Transaction) {
 	shardBlock.Body.Instructions = append(shardBlock.Body.Instructions, instructions...)
 	shardBlock.Body.CrossTransactions = crossTransaction
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
 
+func (crossShardBlock CrossShardBlock) GetProposer() string {
+	return crossShardBlock.Header.Proposer
+}
+
+func (crossShardBlock CrossShardBlock) GetProposeTime() int64 {
+	return crossShardBlock.Header.ProposeTime
+}
+
+func (crossShardBlock CrossShardBlock) GetProduceTime() int64 {
+	return crossShardBlock.Header.Timestamp
+}
+
 func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
 	return crossShardBlock.Header.Epoch
+}
+
+func (crossShardBlock CrossShardBlock) GetPrevHash() common.Hash {
+	return crossShardBlock.Header.PreviousBlockHash
 }
 
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
@@ -127,8 +175,8 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Header.Epoch < 1 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Epoch greater or equal than 1"))
 	}
-	if shardBlock.Header.Timestamp < 0 {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Epoch greater or equal than 0"))
+	if shardBlock.Header.Timestamp <= 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Time greater than 0"))
 	}
 	if len(shardBlock.Header.TxRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Tx Root in the right format"))
@@ -208,6 +256,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.ValidationData = tempShardBlock.ValidationData
+
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempShardBlock.Body)
 	if err != nil {
@@ -336,6 +385,10 @@ func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
 
+func (block ShardBlock) GetVersion() int {
+	return block.Header.Version
+}
+
 func (block ShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
@@ -356,8 +409,16 @@ func (block CrossShardBlock) GetProducer() string {
 	return block.Header.Producer
 }
 
+func (block CrossShardBlock) GetVersion() int {
+	return block.Header.Version
+}
+
 func (block CrossShardBlock) GetHeight() uint64 {
 	return block.Header.Height
+}
+
+func (block CrossShardBlock) GetShardID() int {
+	return int(block.Header.ShardID)
 }
 
 func (block CrossShardBlock) GetValidationField() string {
@@ -380,6 +441,10 @@ func (block ShardToBeaconBlock) GetValidationField() string {
 	return block.ValidationData
 }
 
+func (block ShardToBeaconBlock) GetVersion() int {
+	return block.Header.Version
+}
+
 func (block ShardToBeaconBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
@@ -395,6 +460,17 @@ func (block ShardToBeaconBlock) GetInstructions() [][]string {
 	return block.Instructions
 }
 
+func (block ShardToBeaconBlock) GetProposer() string {
+	return block.Header.Proposer
+}
+
+func (block ShardToBeaconBlock) GetProposeTime() int64 {
+	return block.Header.ProposeTime
+}
+
+func (block ShardToBeaconBlock) GetProduceTime() int64 {
+	return block.Header.Timestamp
+}
 func (block ShardToBeaconBlock) GetProducer() string {
 	return block.Header.Producer
 }

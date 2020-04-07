@@ -36,8 +36,8 @@ func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee u
 	return true
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, stateDB *statedb.StateDB) (bool, error) {
-	stakingTx := bcr.GetStakingTx(shardID)
+func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	stakingTx := shardViewRetriever.GetStakingTx()
 	for key, value := range stakingTx {
 		committeePublicKey := incognitokey.CommitteePublicKey{}
 		err := committeePublicKey.FromString(key)
@@ -45,7 +45,7 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bc
 			return false, err
 		}
 		if reflect.DeepEqual(sbsRes.StakerAddress.Pk, committeePublicKey.IncPubKey) && (sbsRes.TxID == value) {
-			autoStakingList := bcr.GetAutoStakingList()
+			autoStakingList := beaconViewRetriever.GetAutoStakingList()
 			if autoStakingList[key] {
 				return false, errors.New("Can not return staking amount for candidate, who want to restaking.")
 			}
@@ -55,7 +55,7 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bc
 	return false, errors.New("Can not find any staking information of this publickey")
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if len(sbsRes.StakerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

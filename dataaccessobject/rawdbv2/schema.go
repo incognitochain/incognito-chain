@@ -6,13 +6,14 @@ import (
 
 // Header key will be used for light mode in the future
 var (
-	lastShardBlockKey                  = []byte("LastShardBlock")
+	lastShardBlockKey                  = []byte("LastShardBlock" + string(splitter))
 	lastShardHeaderKey                 = []byte("LastShardHeader")
 	lastBeaconBlockKey                 = []byte("LastBeaconBlock")
 	lastBeaconHeaderKey                = []byte("LastBeaconHeader")
 	beaconBestStatePrefix              = []byte("BeaconBestState")
 	shardBestStatePrefix               = []byte("ShardBestState" + string(splitter))
 	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
+	viewPrefix                         = []byte("V" + string(splitter))
 	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
 	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
 	shardHeaderHashPrefix              = []byte("s-h-h" + string(splitter))
@@ -38,20 +39,36 @@ var (
 	splitter                           = []byte("-[-]-")
 )
 
-func GetLastShardBlockKey() []byte {
-	return lastShardBlockKey
-}
-
-func GetLastShardHeaderKey() []byte {
-	return lastShardHeaderKey
+func GetLastShardBlockKey(shardID byte) []byte {
+	return append(lastShardBlockKey, shardID)
 }
 
 func GetLastBeaconBlockKey() []byte {
 	return lastBeaconBlockKey
 }
 
-func GetLastBeaconHeaderKey() []byte {
-	return lastBeaconHeaderKey
+// ============================= View =======================================
+func GetViewPrefix() []byte {
+	return viewPrefix
+}
+
+func GetViewPrefixWithValue(view common.Hash) []byte {
+	key := append(viewPrefix, view[:]...)
+	return append(key, splitter...)
+}
+
+func GetViewBeaconKey(view common.Hash, height uint64) []byte {
+	key := GetViewPrefixWithValue(view)
+	buf := common.Uint64ToBytes(height)
+	return append(key, buf...)
+}
+
+func GetViewShardKey(view common.Hash, shardID byte, height uint64) []byte {
+	key := GetViewPrefixWithValue(view)
+	key = append(key, shardID)
+	key = append(key, splitter...)
+	buf := common.Uint64ToBytes(height)
+	return append(key, buf...)
 }
 
 // ============================= Shard =======================================

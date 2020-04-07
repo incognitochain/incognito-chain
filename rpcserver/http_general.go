@@ -48,7 +48,7 @@ handleGetAllConnectedPeers - return all connnected peers which this node connect
 */
 func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetAllConnectedPeers params: %+v", params)
-	result := jsonresult.NewGetAllConnectedPeersResult(*httpServer.config.ConnMgr)
+	result := jsonresult.NewGetAllConnectedPeersResult(*httpServer.config.ConnMgr, httpServer.config.BlockChain)
 	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }

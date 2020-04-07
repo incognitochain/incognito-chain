@@ -60,7 +60,7 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+							processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetShardTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
 							if processedOutputCoin == nil {
 								Logger.log.Errorf("processedOutputCoin is nil!")
 								continue
@@ -149,7 +149,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 					for _, crossTransaction := range crossTransactions {
 						for _, crossTokenPrivacyData := range crossTransaction.TokenPrivacyData {
 							for _, crossOutputCoin := range crossTokenPrivacyData.OutputCoin {
-								processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+								processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetShardTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
 								if processedOutputCoin != nil {
 									if m[senderShardID] == nil {
 										m[senderShardID] = make(map[common.Hash]uint64)

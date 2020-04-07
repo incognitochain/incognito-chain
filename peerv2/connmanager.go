@@ -8,6 +8,8 @@ import (
 	"sort"
 	"time"
 
+	"stathat.com/c/consistent"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -18,7 +20,6 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
-	"github.com/stathat/consistent"
 )
 
 var HighwayBeaconID = byte(255)
@@ -259,10 +260,11 @@ func (cm *ConnManager) keepHighwayConnection() {
 			if cm.checkConnection(currentHighway) {
 				currentHighway = nil // Failed retries, connect to new highway next iteration
 			}
-
+			if currentHighway != nil {
+				cm.disp.CurrentHWPeerID = currentHighway.ID
+			}
 		case <-refreshTimestep.C:
 			currentHighway, hwAddrs, _ = refreshHighway()
-
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
 			break

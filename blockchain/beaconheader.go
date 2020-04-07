@@ -26,6 +26,10 @@ type BeaconHeader struct {
 	ConsensusType                   string      `json:"ConsensusType"`
 	Producer                        string      `json:"Producer"`
 	ProducerPubKeyStr               string      `json:"ProducerPubKeyStr"`
+
+	//for version 2
+	Proposer    string `json:"Proposer"`
+	ProposeTime int64  `json:"ProposeTime"`
 }
 
 func (beaconHeader *BeaconHeader) toString() string {
@@ -44,6 +48,11 @@ func (beaconHeader *BeaconHeader) toString() string {
 	res += beaconHeader.AutoStakingRoot.String()
 	res += beaconHeader.ShardStateHash.String()
 	res += beaconHeader.InstructionHash.String()
+
+	if beaconHeader.Version == 2 {
+		res += beaconHeader.Proposer
+		res += fmt.Sprintf("%v", beaconHeader.ProposeTime)
+	}
 	return res
 }
 

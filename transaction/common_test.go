@@ -114,7 +114,6 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 }
 
 var db incdb.Database
-var bc *metadata.BlockchainRetriever
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {
