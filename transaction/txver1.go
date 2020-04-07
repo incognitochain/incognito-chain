@@ -319,7 +319,7 @@ func getCommitmentsInDatabase(
 			}
 			recheckIndex, err := statedb.GetCommitmentIndex(transactionStateDB, *tokenID, commitmentBytes, shardID)
 			if err != nil || recheckIndex.Uint64() != index {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when getCommitmentIndex from database", index, err)
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Error when getCommitmentIndex from database", index, err)
 				return nil, NewTransactionErr(GetCommitmentsInDatabaseError, err)
 			}
 

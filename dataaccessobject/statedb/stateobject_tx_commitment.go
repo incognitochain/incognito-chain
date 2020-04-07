@@ -9,11 +9,15 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+// additional []byte is when in special needs
+// For example, while changing privacy ver1 to ver2, needs additional to store SnD
+// But with commitments of only ver2, additional will be empty
 type CommitmentState struct {
 	tokenID    common.Hash
 	shardID    byte
 	commitment []byte
 	publicKey  []byte
+	additional []byte
 	index      *big.Int
 }
 
@@ -23,6 +27,14 @@ func (c CommitmentState) Index() *big.Int {
 
 func (c *CommitmentState) SetIndex(index *big.Int) {
 	c.index = index
+}
+
+func (c CommitmentState) Additional() []byte {
+	return c.additional
+}
+
+func (c *CommitmentState) SetAdditional(b []byte) {
+	c.additional = b
 }
 
 func (c CommitmentState) PublicKey() []byte {
@@ -61,12 +73,13 @@ func NewCommitmentState() *CommitmentState {
 	return &CommitmentState{}
 }
 
-func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte, index *big.Int) *CommitmentState {
+func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte, additional []byte, index *big.Int) *CommitmentState {
 	return &CommitmentState{
 		tokenID:    tokenID,
 		shardID:    shardID,
 		commitment: commitment,
 		publicKey:  publicKey,
+		additional: additional,
 		index:      index,
 	}
 }

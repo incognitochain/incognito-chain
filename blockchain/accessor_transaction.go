@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -15,10 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -459,6 +460,8 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+
+	// Start to store to db
 	for _, k := range keys {
 		publicKey := k
 		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
@@ -468,19 +471,28 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
 		publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if publicKeyShardID == shardID {
-			// commitment
-			commitmentsArray := view.mapCommitments[k]
-			err = statedb.StoreCommitments(stateDB, *view.tokenID, publicKeyBytes, commitmentsArray, view.shardID)
-			if err != nil {
-				return err
-			}
+			var mapComSnd map[string][]byte = make(map[string][]byte)
+
 			// outputs
 			outputCoinArray := view.mapOutputCoins[k]
 			outputCoinBytesArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {
+				commitment := outputCoin.CoinDetails.GetCoinCommitment()
+				commitmentBytes := commitment.ToBytesS()
+				snd := outputCoin.CoinDetails.GetSNDerivator()
+				mapComSnd[string(commitmentBytes)] = snd.ToBytesS()
+
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
 			err = statedb.StoreOutputCoins(stateDB, *view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+
+			// commitment
+			commitmentsArray := view.mapCommitments[k]
+			err = statedb.StoreCommitments(stateDB, *view.tokenID, publicKeyBytes, &mapComSnd, commitmentsArray, view.shardID)
+			if err != nil {
+				return err
+			}
+
 			// clear cached data
 			if blockchain.config.MemCache != nil {
 				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)

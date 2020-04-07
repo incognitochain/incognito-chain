@@ -1,6 +1,7 @@
 package coin
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"testing"
@@ -13,8 +14,41 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCoinV1CommitAllThenSwitchV2(t *testing.T) {
+	coin := new(CoinV1).Init()
+	seedKey := operation.RandomScalar().ToBytesS()
+	privateKey := key.GeneratePrivateKey(seedKey)
+	publicKey := key.GeneratePublicKey(privateKey)
+
+	// init other fields for coin
+	coin.publicKey.FromBytesS(publicKey)
+	coin.snDerivator = operation.RandomScalar()
+	coin.randomness = operation.RandomScalar()
+	coin.value = new(big.Int).SetBytes(privacy_util.RandBytes(2)).Uint64()
+	coin.serialNumber = new(operation.Point).Derive(PedCom.G[0], new(operation.Scalar).FromBytesS(privateKey), coin.snDerivator)
+	coin.info = []byte("Incognito chain")
+
+	err := coin.CommitAll()
+	assert.Equal(t, nil, err)
+
+	allcm := coin.GetCoinCommitment()
+	cm := ParseCommitmentToV2WithCoin(coin)
+
+	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+	allcm = ParseCommitmentToV2(
+		allcm,
+		coin.GetPublicKey(),
+		coin.GetSNDerivator(),
+		shardID,
+	)
+
+	b1 := allcm.ToBytesS()
+	b2 := cm.ToBytesS()
+	assert.Equal(t, true, bytes.Equal(b1, b2))
+}
+
 func TestCoinV1CommitAll(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
@@ -44,7 +78,7 @@ func TestCoinV1CommitAll(t *testing.T) {
 
 func TestCoinMarshalJSON(t *testing.T) {
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
@@ -75,7 +109,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 
 func TestCoinBytesSetBytes(t *testing.T) {
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
@@ -105,7 +139,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 }
 
 func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
@@ -179,7 +213,7 @@ func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 */
 
 func TestInputCoinBytesSetBytes(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		coin := new(InputCoin).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)

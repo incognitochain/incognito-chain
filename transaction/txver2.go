@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
@@ -8,8 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
-
-	"github.com/incognitochain/incognito-chain/common/base58"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -21,36 +20,68 @@ import (
 
 type TxVersion2 struct{}
 
-func generateMlsagRing(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte) (*mlsag.Ring, error) {
+type TxSignatureVer2 struct {
+	ring    *mlsag.Ring
+	indexes [][]*big.Int
+}
+
+func (txSig TxSignatureVer2) GetRing() *mlsag.Ring     { return txSig.ring }
+func (txSig TxSignatureVer2) GetIndexes() [][]*big.Int { return txSig.indexes }
+
+func (txSig *TxSignatureVer2) SetRing(r *mlsag.Ring)       { txSig.ring = r }
+func (txSig *TxSignatureVer2) SetIndexes(idx [][]*big.Int) { txSig.indexes = idx }
+
+func (txSig *TxSignatureVer2) Init() *TxSignatureVer2 {
+	if txSig == nil {
+		txSig = new(TxSignatureVer2)
+	}
+	txSig.ring = new(mlsag.Ring)
+	txSig.indexes = make([][]*big.Int, 0)
+	return txSig
+}
+
+func (txSig TxSignatureVer2) ToBytes() ([]byte, error) {
+	byteMlsag, err := txSig.ring.ToBytes()
+	if err != nil {
+		return nil, err
+	}
+	if len(byteMlsag) >= 1<<32 {
+		return nil, errors.New("Length of mlsag is too big, larger than 1<<32")
+	}
+
+	mlsagLen := uint32(len(byteMlsag))
+	b := make([]byte, 0)
+	b = append(b, common.Uint32ToBytes(mlsagLen)...)
+	b = append(b, byteMlsag...)
+
+}
+
+func (txSig *TxSignatureVer2) FromBytes([]byte) error {
+	if txSig == nil {
+		txSig = new(TxSignatureVer2)
+	}
+}
+
+func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte) (*mlsag.Ring, [][]*big.Int, error) {
 	inputCoins := *inp
 	outputCoins := *out
 
 	// loop to create list usable commitments from usableInputCoins
 	listUsableCommitments := make(map[common.Hash][]byte)
-	listUsableCommitmentsIndices := make([]common.Hash, len(inputCoins))
 	// tick index of each usable commitment with full db commitments
-	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
-	for i, in := range inputCoins {
+	for _, in := range inputCoins {
 		usableCommitment := in.CoinDetails.GetCoinCommitment().ToBytesS()
 		commitmentInHash := common.HashH(usableCommitment)
 		listUsableCommitments[commitmentInHash] = usableCommitment
-		listUsableCommitmentsIndices[i] = commitmentInHash
-		index, err := statedb.GetCommitmentIndex(params.stateDB, *params.tokenID, usableCommitment, shardID)
-		if err != nil {
-			Logger.Log.Error(err)
-			return nil, err
-		}
-		commitmentInBase58Check := base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)
-		mapIndexCommitmentsInUsableTx[commitmentInBase58Check] = index
 	}
 	lenCommitment, err := statedb.GetCommitmentLength(params.stateDB, *params.tokenID, shardID)
 	if err != nil {
 		Logger.Log.Error(err)
-		return nil, err
+		return nil, nil, err
 	}
 	if lenCommitment == nil {
 		Logger.Log.Error(errors.New("Commitments is empty"))
-		return nil, errors.New("Commitments is empty")
+		return nil, nil, errors.New("Commitments is empty")
 	}
 
 	outputCommitments := new(operation.Point).Identity()
@@ -60,53 +91,83 @@ func generateMlsagRing(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *
 
 	ring := make([][]*operation.Point, privacy.RingSize)
 	key := params.senderSK
+
+	// The indexes array is for validator recheck
+	indexes := make([][]*big.Int, privacy.RingSize)
 	for i := 0; i < privacy.RingSize; i += 1 {
 		sumInputs := new(operation.Point).Identity()
 		row := make([]*operation.Point, len(inputCoins))
+		rowIndexes := make([]*big.Int, len(inputCoins))
+
 		if i == pi {
 			for j := 0; j < len(inputCoins); j += 1 {
 				privKey := new(operation.Scalar).FromBytesS(*key)
 				row[j] = new(operation.Point).ScalarMultBase(privKey)
-				sumInputs.Add(sumInputs, inputCoins[j].CoinDetails.GetCoinCommitment())
+
+				// Caution caution does coin.publickey same as *key??? Log it out plz
+				fmt.Println("Does it the same??")
+				tmp := inputCoins[j].CoinDetails.GetPublicKey().ToBytesS()
+				fmt.Println(*key)
+				fmt.Println(tmp)
+				fmt.Println(bytes.Equal(*key, tmp))
+
+				coinCommitmentDB := inputCoins[j].CoinDetails.GetCoinCommitment()
+				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j].CoinDetails)
+				sumInputs.Add(sumInputs, coinCommitmentV2)
+
+				// Store index for validator recheck
+				commitmentBytes := coinCommitmentDB.ToBytesS()
+				rowIndexes[j], err = statedb.GetCommitmentIndex(params.stateDB, *params.tokenID, commitmentBytes, shardID)
+				if err != nil {
+					return nil, nil, err
+				}
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				for {
 					index, _ := common.RandBigIntMaxRange(lenCommitment)
+					rowIndexes[j] = index
+
 					ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
-					if ok && err == nil {
-						commitment, publicKey, _ := statedb.GetCommitmentAndPublicKeyByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
-						if _, found := listUsableCommitments[common.HashH(commitment)]; found {
-							if lenCommitment.Uint64() == 1 && len(inputCoins) == 1 {
-								commitment = privacy.RandomPoint().ToBytesS()
-								publicKey = privacy.RandomPoint().ToBytesS()
-							} else {
-								continue
-							}
-						}
-						row[j], err = new(operation.Point).FromBytesS(publicKey)
-						if err != nil {
-							return nil, err
-						}
-
-						temp, err := new(operation.Point).FromBytesS(commitment)
-						if err != nil {
-							return nil, err
-						}
-
-						sumInputs.Add(sumInputs, temp)
-						break
-					} else {
-						return nil, err
+					if !ok || err != nil {
+						return nil, nil, err
 					}
+					commitment, publicKey, snd, _ := statedb.GetCommitmentPublicKeyAddditionalByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+					_, found := listUsableCommitments[common.HashH(commitment)]
+					if found && (lenCommitment.Uint64() != 1 || len(inputCoins) != 1) {
+						continue
+					}
+					row[j], err = new(operation.Point).FromBytesS(publicKey)
+					if err != nil {
+						return nil, nil, err
+					}
+
+					// Change commitment to v2
+					commitmentBytesV2, err := coin.ParseCommitmentToV2ByBytes(
+						commitment,
+						publicKey,
+						snd,
+						shardID,
+					)
+					if err != nil {
+						return nil, nil, err
+					}
+
+					temp, err := new(operation.Point).FromBytesS(commitmentBytesV2)
+					if err != nil {
+						return nil, nil, err
+					}
+					sumInputs.Add(sumInputs, temp)
+					break
 				}
 			}
 		}
 		row = append(row, sumInputs.Sub(sumInputs, outputCommitments))
 		ring[i] = row
+		indexes[i] = rowIndexes
 	}
 	mlsagring := mlsag.NewRing(ring)
-	return mlsagring, nil
+	return mlsagring, indexes, nil
 }
 
 func createPrivKeyMlsag(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, senderSK *key.PrivateKey) *[]*operation.Scalar {
@@ -138,7 +199,7 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 
 	var pi int = common.RandIntInterval(0, privacy.RingSize-1)
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
-	ring, err := generateMlsagRing(inp, out, params, pi, shardID)
+	ring, indexes, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID)
 	if err != nil {
 		return err
 	}
@@ -163,15 +224,8 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 	}
 
 	tx.Sig, err = mlsagSignature.ToBytes()
-	check, err := mlsag.Verify(mlsagSignature, ring, message)
+	// check, err := mlsag.Verify(mlsagSignature, ring, message)
 
-	fmt.Println("After proving")
-	fmt.Println("After proving")
-	fmt.Println("After proving")
-	fmt.Println(check)
-	fmt.Println(check)
-	fmt.Println(err)
-	fmt.Println(err)
 	return err
 }
 
@@ -182,10 +236,6 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	}
 	for i := 0; i < len(*outputCoins); i += 1 {
 		(*outputCoins)[i].CoinDetails.SetRandomness(operation.RandomScalar())
-		err := (*outputCoins)[i].CoinDetails.CommitValueRandomness()
-		if err != nil {
-			return err
-		}
 	}
 	inputCoins := &params.inputCoins
 

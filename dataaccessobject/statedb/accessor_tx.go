@@ -43,7 +43,14 @@ func ListSerialNumber(stateDB *StateDB, tokenID common.Hash, shardID byte) (map[
 	return m, nil
 }
 
-func StoreCommitments(stateDB *StateDB, tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
+func StoreCommitments(stateDB *StateDB,
+	tokenID common.Hash,
+	pubkey []byte,
+	mapComSnd *map[string][]byte,
+	commitments [][]byte,
+	shardID byte) error {
+
+	comSnd := *mapComSnd
 	commitmentLengthKey := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 	commitmentLength, has, err := stateDB.getCommitmentLengthState(commitmentLengthKey)
 	if err != nil {
@@ -58,7 +65,8 @@ func StoreCommitments(stateDB *StateDB, tokenID common.Hash, pubkey []byte, comm
 	for _, commitment := range commitments {
 		// store commitment
 		keyCommitment := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, pubkey, commitmentLength)
+		additional := comSnd[string(commitment)]
+		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, pubkey, additional, commitmentLength)
 		err = stateDB.SetStateObject(CommitmentObjectType, keyCommitment, valueCommitment)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentError, err)
@@ -110,22 +118,22 @@ func HasCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex u
 	return has, nil
 }
 
-func GetCommitmentAndPublicKeyByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, []byte, error) {
+func GetCommitmentPublicKeyAddditionalByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, []byte, []byte, error) {
 	commitmentIndexTemp := new(big.Int).SetUint64(commitmentIndex)
 	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
 	c, has, err := stateDB.getCommitmentIndexState(key)
 	if err != nil {
-		return []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, err)
+		return []byte{}, []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, err)
 	}
 	if !has {
-		return []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
+		return []byte{}, []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
 	}
 	if c.Index().Uint64() != commitmentIndex {
 		panic("same key wrong value")
-		return []byte{}, []byte{}, nil
+		return []byte{}, []byte{}, []byte{}, nil
 	}
 
-	return c.Commitment(), c.PublicKey(), nil
+	return c.Commitment(), c.PublicKey(), c.Additional(), nil
 }
 
 func GetCommitmentByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
@@ -142,7 +150,6 @@ func GetCommitmentByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex
 		panic("same key wrong value")
 		return []byte{}, nil
 	}
-
 	return c.commitment, nil
 }
 

@@ -96,23 +96,10 @@ func (coin *CoinV1) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *CoinV1) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*operation.Scalar{new(operation.Scalar).FromUint64(0), new(operation.Scalar).FromUint64(coin.value), coin.snDerivator, new(operation.Scalar).FromUint64(uint64(shardID)), coin.randomness}
-	commitment, err := operation.PedCom.CommitAll(values)
-	if err != nil {
-		return err
-	}
-	coin.coinCommitment = commitment
-	coin.coinCommitment.Add(coin.coinCommitment, coin.publicKey)
-
-	return nil
-}
-
-func (coin *CoinV1) CommitValueRandomness() error {
-	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	values := []*operation.Scalar{
 		new(operation.Scalar).FromUint64(0),
 		new(operation.Scalar).FromUint64(coin.value),
-		new(operation.Scalar).FromUint64(0),
+		coin.snDerivator,
 		new(operation.Scalar).FromUint64(uint64(shardID)),
 		coin.randomness,
 	}
@@ -121,6 +108,8 @@ func (coin *CoinV1) CommitValueRandomness() error {
 		return err
 	}
 	coin.coinCommitment = commitment
+	coin.coinCommitment.Add(coin.coinCommitment, coin.publicKey)
+
 	return nil
 }
 

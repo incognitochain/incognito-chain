@@ -286,8 +286,13 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 	aggregateproof := new(bulletproofs.AggregatedRangeProof)
 	aggregateproof.Init()
 	proof.aggregatedRangeProof = aggregateproof
-	proof.SetInputCoins(inputCoins)
-	proof.SetOutputCoins(outputCoins)
+
+	if err := proof.SetInputCoins(inputCoins); err != nil {
+		return nil, err
+	}
+	if err := proof.SetOutputCoins(outputCoins); err != nil {
+		return nil, err
+	}
 
 	// If not have privacy then don't need to prove range
 	if !hasPrivacy {
@@ -324,8 +329,8 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 		proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
 	}
 
-	// hide information of input coins except serial number of input coins
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
+		proof.GetInputCoins()[i].CoinDetails.SetSerialNumber(nil)
 		proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
 		proof.GetInputCoins()[i].CoinDetails.SetValue(0)
 		proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
