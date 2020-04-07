@@ -36,8 +36,8 @@ func (suite *PortalProducerSuite) SetupTest() {
 type PortingRequestExcepted struct {
 	Metadata    string
 	ChainStatus string
-	Custodian1 []string
-	Custodian2 []string
+	Custodian1  []string
+	Custodian2  []string
 }
 
 type PortingRequestTestCase struct {
@@ -118,44 +118,6 @@ func (suite *PortalProducerSuite) SetupMockBlockChain(trieMock *mocks.Trie) *Blo
 	return blockChain
 }
 
-func buildPortalCustodianDepositAction(
-	incogAddressStr string,
-	remoteAddresses []statedb.RemoteAddress,
-	depositedAmount uint64,
-) []string {
-	custodianDepositMeta, _ := metadata.NewPortalCustodianDeposit(
-		metadata.PortalCustodianDepositMeta,
-		incogAddressStr,
-		remoteAddresses,
-		depositedAmount,
-	)
-
-	shardID := byte(0)
-	actionContent := metadata.PortalCustodianDepositAction{
-		Meta:    *custodianDepositMeta,
-		TxReqID: common.Hash{},
-		ShardID: shardID,
-	}
-	actionContentBytes, _ := json.Marshal(actionContent)
-
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(metadata.PortalCustodianDepositMeta), actionContentBase64Str}
-	return action
-}
-
-//func (suite *PortalProducerSuite) CustodianDepositOnEmptyCustodianPool() {
-//	fmt.Println("Testing CustodianDepositOnEmptyCustodianPool")
-//
-//	// setup suite
-//	suite := new(PortalProducerSuite)
-//	suite.SetupTest()
-//
-//	// build new portal custodian deposit action (from shard)
-//	action := buildPortalCustodianDepositAction(
-//		""
-//	)
-//}
-
 func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 	happyCases := []PortingRequestTestCase{
 		{
@@ -184,7 +146,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"40000", //free collateral
-						"1000", //hold pToken
+						"1000",  //hold pToken
 						"60000", //lock prv amount
 					},
 				}
@@ -216,7 +178,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"40000", //free collateral
-						"1000", //hold pToken
+						"1000",  //hold pToken
 						"60000", //lock prv amount
 					},
 				}
@@ -295,8 +257,8 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 					fmt.Println(i3)
 				}
 
-				assert.Equal(suite.T(), i1, freeCollateral) //free collateral
-				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
+				assert.Equal(suite.T(), i1, freeCollateral)                                                                             //free collateral
+				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])        //hold ptoken
 				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
 			}
 
@@ -316,8 +278,8 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 					fmt.Println(i3)
 				}
 
-				assert.Equal(suite.T(), i1, freeCollateral) //free collateral
-				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
+				assert.Equal(suite.T(), i1, freeCollateral)                                                                             //free collateral
+				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])        //hold ptoken
 				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
 			}
 		}
@@ -325,8 +287,186 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 }
 
 /************************ Custodian deposit test ************************/
+type CustodianDepositOutput struct {
+	MetadataType            string
+	ChainStatus             string
+	CustodianDepositContent string
+	CustodianPool           map[string]*statedb.CustodianState
+}
 
+type CustodianDepositInput struct {
+	IncognitoAddress string
+	RemoteAddresses  []statedb.RemoteAddress
+	DepositedAmount  uint64
+}
 
+type CustodianDepositTestCase struct {
+	TestCaseName string
+	Input        CustodianDepositInput
+	Output       CustodianDepositOutput
+}
+
+const ShardIDHardCode = 0
+const BeaconHeight = 1
+
+func buildPortalCustodianDepositAction(
+	incogAddressStr string,
+	remoteAddresses []statedb.RemoteAddress,
+	depositedAmount uint64,
+) []string {
+	custodianDepositMeta, _ := metadata.NewPortalCustodianDeposit(
+		metadata.PortalCustodianDepositMeta,
+		incogAddressStr,
+		remoteAddresses,
+		depositedAmount,
+	)
+
+	actionContent := metadata.PortalCustodianDepositAction{
+		Meta:    *custodianDepositMeta,
+		TxReqID: common.Hash{},
+		ShardID: byte(ShardIDHardCode),
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(metadata.PortalCustodianDepositMeta), actionContentBase64Str}
+	return action
+}
+
+func buildPortalCustodianDepositContent(
+	custodianAddressStr string,
+	remoteAddresses []statedb.RemoteAddress,
+	depositedAmount uint64,
+) string {
+	custodianDepositContent := metadata.PortalCustodianDepositContent{
+		IncogAddressStr: custodianAddressStr,
+		RemoteAddresses: remoteAddresses,
+		DepositedAmount: depositedAmount,
+		TxReqID:         common.Hash{},
+		ShardID:         byte(ShardIDHardCode),
+	}
+	custodianDepositContentBytes, _ := json.Marshal(custodianDepositContent)
+	return string(custodianDepositContentBytes)
+}
+
+func getTestCasesForCustodianDeposit() []*CustodianDepositTestCase {
+	testcases := []*CustodianDepositTestCase{
+		{
+			TestCaseName: "Custodian deposit when custodian pool is empty",
+			Input: CustodianDepositInput{
+				IncognitoAddress: "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
+				RemoteAddresses: []statedb.RemoteAddress{
+					*statedb.NewRemoteAddressWithValue(
+						"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+						"tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"),
+				},
+				DepositedAmount: 1000 * 1e9,
+			},
+			Output: CustodianDepositOutput{
+				MetadataType:            strconv.Itoa(metadata.PortalCustodianDepositMeta),
+				ChainStatus:             common.PortalCustodianDepositAcceptedChainStatus,
+				CustodianDepositContent: "",
+			},
+		},
+		{
+			TestCaseName: "Custodian deposit when custodian pool has one custodian before",
+			Input: CustodianDepositInput{
+				IncognitoAddress: "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy",
+				RemoteAddresses: []statedb.RemoteAddress{
+					*statedb.NewRemoteAddressWithValue(
+						"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+						"tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"),
+				},
+				DepositedAmount: 2000 * 1e9,
+			},
+			Output: CustodianDepositOutput{
+				MetadataType:            strconv.Itoa(metadata.PortalCustodianDepositMeta),
+				ChainStatus:             common.PortalCustodianDepositAcceptedChainStatus,
+				CustodianDepositContent: "",
+			},
+		}, {
+			TestCaseName: "Custodian deposit more",
+			Input: CustodianDepositInput{
+				IncognitoAddress: "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
+				RemoteAddresses: []statedb.RemoteAddress{
+					*statedb.NewRemoteAddressWithValue(
+						"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+						"tbnb1fau9kq605jwkyfea2knw495we8cpa47r9r6uxv"),
+				},
+				DepositedAmount: 3000 * 1e9,
+			},
+			Output: CustodianDepositOutput{
+				MetadataType:            strconv.Itoa(metadata.PortalCustodianDepositMeta),
+				ChainStatus:             common.PortalCustodianDepositAcceptedChainStatus,
+				CustodianDepositContent: "",
+			},
+		},
+	}
+
+	custodianPool := make(map[string]*statedb.CustodianState, 0)
+	for i := 0; i < len(testcases); i++ {
+		testcases[i].Output.CustodianDepositContent = buildPortalCustodianDepositContent(
+			testcases[i].Input.IncognitoAddress,
+			testcases[i].Input.RemoteAddresses,
+			testcases[i].Input.DepositedAmount)
+
+		custodianKey := statedb.GenerateCustodianStateObjectKey(uint64(BeaconHeight), testcases[i].Input.IncognitoAddress)
+		if custodianPool[custodianKey.String()] == nil {
+			custodianState := statedb.NewCustodianStateWithValue(
+				testcases[i].Input.IncognitoAddress,
+				testcases[i].Input.DepositedAmount,
+				testcases[i].Input.DepositedAmount,
+				nil, nil,
+				testcases[i].Input.RemoteAddresses,
+				0,
+			)
+			custodianPool[custodianKey.String()] = custodianState
+		} else {
+			custodianPool[custodianKey.String()].SetFreeCollateral(custodianPool[custodianKey.String()].GetFreeCollateral() + testcases[i].Input.DepositedAmount)
+			custodianPool[custodianKey.String()].SetTotalCollateral(custodianPool[custodianKey.String()].GetTotalCollateral() + testcases[i].Input.DepositedAmount)
+		}
+		custodianPoolTmp := map[string]*statedb.CustodianState{}
+		for key, cus := range custodianPool {
+			custodianPoolTmp[key] = statedb.NewCustodianStateWithValue(
+				cus.GetIncognitoAddress(),
+				cus.GetTotalCollateral(),
+				cus.GetFreeCollateral(),
+				cus.GetHoldingPublicTokens(),
+				cus.GetLockedAmountCollateral(),
+				cus.GetRemoteAddresses(),
+				cus.GetRewardAmount(),
+			)
+		}
+		testcases[i].Output.CustodianPool = custodianPoolTmp
+	}
+	return testcases
+}
+
+func (suite *PortalProducerSuite) TestCustodianDeposit() {
+	testcases := getTestCasesForCustodianDeposit()
+
+	for _, tc := range testcases {
+		fmt.Printf("[Custodian deposit] Running test case: %v\n", tc.TestCaseName)
+		// build custodian deposit action
+		action := buildPortalCustodianDepositAction(tc.Input.IncognitoAddress, tc.Input.RemoteAddresses, tc.Input.DepositedAmount)
+
+		// beacon build new instruction for the action
+		bc := BlockChain{}
+		shardID := byte(ShardIDHardCode)
+		metaType, _ := strconv.Atoi(action[0])
+		contentStr := action[1]
+		newInsts, err := bc.buildInstructionsForCustodianDeposit(contentStr, shardID, metaType, suite.currentPortalState, uint64(BeaconHeight))
+
+		// compare results to Outputs of test case
+		suite.Nil(err)
+		suite.Equal(1, len(newInsts))
+		newInst := newInsts[0]
+		suite.Equal(tc.Output.MetadataType, newInst[0])
+		suite.Equal(tc.Output.ChainStatus, newInst[2])
+		suite.Equal(tc.Output.CustodianDepositContent, newInst[3])
+		suite.EqualValues(tc.Output.CustodianPool, suite.currentPortalState.CustodianPoolState)
+	}
+}
 
 /************************ Run suite test ************************/
 // In order for 'go test' to run this suite, we need to create
