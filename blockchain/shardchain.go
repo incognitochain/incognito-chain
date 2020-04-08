@@ -184,8 +184,8 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
+func (chain *ShardChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
+	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
 	}

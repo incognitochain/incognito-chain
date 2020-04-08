@@ -58,5 +58,5 @@ type Chain interface {
 	//ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
-	InsertBlk(block common.BlockInterface) error
+	InsertBlk(block common.BlockInterface, shouldValidate bool) error
 }

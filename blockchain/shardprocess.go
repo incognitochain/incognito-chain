@@ -103,7 +103,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
-func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
+func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldValidate bool) error {
 	shardID := shardBlock.Header.ShardID
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
@@ -142,7 +142,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
-	if !isValidated {
+	if shouldValidate {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+vt \n", shardID, blockHeight, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false); err != nil {
 			return err
@@ -183,7 +183,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 	//========Post verification: verify new beaconstate with corresponding block
-	if !isValidated {
+	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
 			return err
@@ -332,7 +332,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	if len(txMerkleTree) > 0 {
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
-	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
+	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
 	}
 	// Verify ShardTx Root
