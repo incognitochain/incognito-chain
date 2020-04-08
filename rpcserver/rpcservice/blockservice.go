@@ -874,12 +874,15 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 	for _, i := range blockService.BlockChain.GetShardIDs() {
 		shardID := byte(i)
 		bridgeStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedFeatureStateDB()
-		status, err = statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
+		newStatus, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
 		if err != nil {
 			return status, err
 		}
-		if status == byte(common.BridgeRequestAcceptedStatus) {
-			return status, nil
+		if newStatus == byte(common.BridgeRequestProcessingStatus) {
+			status = newStatus
+		}
+		if newStatus == byte(common.BridgeRequestAcceptedStatus) {
+			return newStatus, nil
 		}
 	}
 	if status == common.BridgeRequestNotFoundStatus || status == common.BridgeRequestProcessingStatus {
