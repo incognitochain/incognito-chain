@@ -13,11 +13,6 @@ import (
 	"time"
 )
 
-const (
-	PercentPortingFeeAmount = 0.01
-	PercentRedeemFeeAmount  = 0.01
-)
-
 type CurrentPortalState struct {
 	CustodianPoolState         map[string]*statedb.CustodianState             // key : hash(beaconHeight || custodian_address)
 	WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest      // key : hash(beaconHeight || UniquePortingID)
@@ -321,7 +316,7 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 }
 
 func CalculatePortingFees(totalPToken uint64) uint64 {
-	result := 0.01 * float64(totalPToken) / 100
+	result := common.PercentPortingFeeAmount * float64(totalPToken) / 100
 	roundNumber := math.Round(result)
 	return uint64(roundNumber)
 }
@@ -334,7 +329,7 @@ func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchange
 		return 0, err
 	}
 
-	portingFee := math.Ceil(float64(portingAmountInPRV) * PercentPortingFeeAmount / 100)
+	portingFee := math.Ceil(float64(portingAmountInPRV) * common.PercentPortingFeeAmount / 100)
 	return uint64(portingFee), nil
 }
 
@@ -346,7 +341,7 @@ func calMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 		return 0, err
 	}
 
-	redeemFee := math.Ceil(float64(redeemAmountInPRV) * PercentRedeemFeeAmount / 100)
+	redeemFee := math.Ceil(float64(redeemAmountInPRV) * common.PercentRedeemFeeAmount / 100)
 	return uint64(redeemFee), nil
 }
 

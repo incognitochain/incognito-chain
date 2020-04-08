@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"strconv"
+	"time"
 )
 
 // beacon build instruction for portal liquidation when custodians run away - don't send public tokens back to users.
@@ -120,7 +121,7 @@ func buildLiquidationCustodianDepositInst(
 	}
 }
 
-func checkAndBuildInstForCustodianLiquidation(
+func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
@@ -137,9 +138,7 @@ func checkAndBuildInstForCustodianLiquidation(
 	liquidatedByExchangeRate := false
 
 	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= common.PortalTimeOutCustodianSendPubTokenBack {
-			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] redeemReq.BeaconHeight: %v\n", redeemReq.GetBeaconHeight())
-			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] beaconHeight: %v\n", beaconHeight)
+		if (beaconHeight+1) - redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutCustodianSendPubTokenBack) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -338,13 +337,18 @@ func buildInstForExpiredPortingReqByPortingID(
 	return insts, nil
 }
 
-func checkAndBuildInstForExpiredWaitingPortingRequest(
+// convertPortalTimeOutToBeaconBlocks returns number of beacon blocks corresponding to duration time
+func (blockchain *BlockChain) convertPortalTimeOutToBeaconBlocks(duration time.Duration) uint64 {
+	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds())
+}
+
+func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
 	insts := [][]string{}
 	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
-		if (beaconHeight+1)-portingReq.BeaconHeight() >= common.PortalTimeOutWaitingPortingRequest {
+		if (beaconHeight+1) - portingReq.BeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {

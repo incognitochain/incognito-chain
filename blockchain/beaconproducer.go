@@ -308,10 +308,6 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 			validStopAutoStakingInstructions = append(validStopAutoStakingInstructions, stopAutoStakingInstruction...)
 			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 
-			if len(statefulActions) > 0 {
-				Logger.log.Errorf("GetShardState statefulActions : %v\n", statefulActions)
-			}
-
 			// group stateful actions by shardID
 			_, found := statefulActionsByShardID[shardID]
 			if !found {
