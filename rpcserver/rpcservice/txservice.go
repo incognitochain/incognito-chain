@@ -726,6 +726,21 @@ func (txService TxService) ListPrivacyCustomToken() (map[common.Hash]*statedb.To
 	delete(tokenStates, common.PRVCoinID)
 	return tokenStates, nil
 }
+
+func (txService TxService) GetPrivacyTokenWithTxs(tokenID common.Hash) (*statedb.TokenState, error) {
+	for _, i := range txService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		tokenState, has, err := txService.BlockChain.GetPrivacyTokenState(tokenID, shardID)
+		if err != nil {
+			return tokenState, err
+		}
+		if has {
+			return tokenState, nil
+		}
+	}
+	return nil, nil
+}
+
 func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, *RPCError) {
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	resultM := make(map[string]jsonresult.CustomTokenBalance)
@@ -823,7 +838,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	return result, nil
 }
 
-func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenID string) (uint64, *RPCError) {
+func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenIDStr string) (uint64, *RPCError) {
 	var totalValue uint64 = 0
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
@@ -835,23 +850,28 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	tokenIDs, err := txService.ListPrivacyCustomToken()
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
-		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	for tempTokenID := range tokenIDs {
-		if tokenID == tempTokenID.String() {
-			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
-			if err != nil {
-				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-				return uint64(0), NewRPCError(UnexpectedError, err)
-			}
-			for _, out := range outcoints {
-				totalValue += out.CoinDetails.GetValue()
-			}
+	isExisted := false
+	for _, i := range txService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		isExisted = txService.BlockChain.PrivacyCustomTokenIDExistedV2(tokenID, shardID)
+		if isExisted {
+			break
+		}
+	}
+	if isExisted {
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID)
+		if err != nil {
+			Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+			return uint64(0), NewRPCError(UnexpectedError, err)
+		}
+		for _, out := range outcoints {
+			totalValue += out.CoinDetails.GetValue()
 		}
 	}
 	if totalValue == 0 {
@@ -869,7 +889,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 			if len(allBridgeTokens) > 0 {
 				for _, bridgeToken := range allBridgeTokens {
 					tempTokenID := bridgeToken.TokenID
-					if tokenID == tempTokenID.String() {
+					if tokenID.IsEqual(tempTokenID) {
 						lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 						shardIDSender := common.GetShardIDFromLastByte(lastByte)
 						outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tempTokenID)
@@ -895,18 +915,16 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
 		return nil, nil, err
 	}
-	tokenStates, err := txService.ListPrivacyCustomToken()
-	if err != nil {
+	tokenStates, err := txService.GetPrivacyTokenWithTxs(*tokenID)
+	if err != nil || tokenStates == nil {
 		return nil, nil, err
 	}
 	tokenData := &transaction.TxPrivacyTokenData{}
 	txs := []common.Hash{}
-	if token, ok := tokenStates[*tokenID]; ok {
-		tokenData.PropertyName = token.PropertyName()
-		tokenData.PropertySymbol = token.PropertySymbol()
-		txs = append(txs, token.InitTx())
-		txs = append(txs, token.Txs()...)
-	}
+	tokenData.PropertyName = tokenStates.PropertyName()
+	tokenData.PropertySymbol = tokenStates.PropertySymbol()
+	txs = append(txs, tokenStates.InitTx())
+	txs = append(txs, tokenStates.Txs()...)
 	return txs, tokenData, nil
 }
 
