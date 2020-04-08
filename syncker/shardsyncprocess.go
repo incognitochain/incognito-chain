@@ -146,7 +146,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		}
 		insertShardTimeCache.Add(viewHash.String(), time.Now())
 		insertCnt++
-		if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
 		s.shardPool.RemoveBlock(blk.Hash().String())

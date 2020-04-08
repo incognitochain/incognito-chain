@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/pkg/errors"
 )
 
 type BeaconChain struct {
@@ -44,50 +42,6 @@ func (chain *BeaconChain) GetViewByHash(hash common.Hash) multiview.View {
 		return nil
 	}
 	return chain.multiView.GetViewByHash(hash)
-}
-
-func (chain *BeaconChain) InsertBatchBlock(blocks []common.BlockInterface) (int, error) {
-
-	curEpoch := chain.GetBestView().(*BeaconBestState).Epoch
-	sameCommitteeBlock := blocks
-	for i, v := range blocks {
-		if v.GetCurrentEpoch() == curEpoch+1 {
-			sameCommitteeBlock = blocks[:i+1]
-			break
-		}
-	}
-
-	for i, blk := range sameCommitteeBlock {
-		if i == len(sameCommitteeBlock)-1 {
-			break
-		}
-		if blk.GetHeight() != sameCommitteeBlock[i+1].GetHeight()-1 {
-			sameCommitteeBlock = blocks[:i+1]
-			break
-		}
-	}
-
-	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], chain.GetCommittee()); err != nil {
-			sameCommitteeBlock = sameCommitteeBlock[:i]
-		} else {
-			break
-		}
-	}
-
-	if len(sameCommitteeBlock) > 0 {
-		if sameCommitteeBlock[0].GetHeight()-1 != chain.CurrentHeight() {
-			return 0, errors.New(fmt.Sprintf("Not expected height: %d %d", sameCommitteeBlock[0].GetHeight()-1, chain.CurrentHeight()))
-		}
-	}
-
-	for _, v := range sameCommitteeBlock {
-		err := chain.InsertBlk(v)
-		if err != nil {
-			return 0, err
-		}
-	}
-	return len(sameCommitteeBlock), nil
 }
 
 func (s *BeaconChain) GetShardBestViewHash() map[byte]common.Hash {
@@ -203,8 +157,8 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterf
 	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
+func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Info(err)
 		return err
 	}

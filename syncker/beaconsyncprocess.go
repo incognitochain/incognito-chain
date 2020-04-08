@@ -218,7 +218,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 		}
 		insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 		insertCnt++
-		if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
 		s.beaconPool.RemoveBlock(blk.Hash().String())
