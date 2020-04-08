@@ -38,30 +38,3 @@ func TestWorkflowMlsag(t *testing.T) {
 	assert.Equal(t, nil, err, "There should not be any error when to bytes the signature")
 	assert.Equal(t, true, bytes.Equal(b1, b2), "There should not be any error when to bytes the signature")
 }
-
-func createFakePublicKeyArray(length int) []*operation.Point {
-	K := make([]*operation.Point, length)
-	for i := 0; i < length; i += 1 {
-		K[i] = operation.RandomPoint()
-	}
-	return K
-}
-
-// Create a random ring with dimension: (numFake; len(privateKeys)) where we generate fake public keys inside
-func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
-	m := len(privateKeys)
-
-	K = new(Ring)
-	K.keys = make([][]*operation.Point, numFake)
-	for i := 0; i < numFake; i += 1 {
-		if i != pi {
-			K.keys[i] = createFakePublicKeyArray(m)
-		} else {
-			K.keys[pi] = make([]*operation.Point, m)
-			for j := 0; j < m; j += 1 {
-				K.keys[i][j] = parsePublicKey(privateKeys[j])
-			}
-		}
-	}
-	return
-}

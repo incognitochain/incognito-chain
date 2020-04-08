@@ -89,11 +89,15 @@ func (c CommitmentState) MarshalJSON() ([]byte, error) {
 		TokenID    common.Hash
 		ShardID    byte
 		Commitment []byte
+		PublicKey  []byte
+		Additional []byte
 		Index      *big.Int
 	}{
 		TokenID:    c.tokenID,
 		ShardID:    c.shardID,
 		Commitment: c.commitment,
+		PublicKey:  c.publicKey,
+		Additional: c.additional,
 		Index:      c.index,
 	})
 	if err != nil {
@@ -107,6 +111,8 @@ func (c *CommitmentState) UnmarshalJSON(data []byte) error {
 		TokenID    common.Hash
 		ShardID    byte
 		Commitment []byte
+		PublicKey  []byte
+		Additional []byte
 		Index      *big.Int
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -116,6 +122,8 @@ func (c *CommitmentState) UnmarshalJSON(data []byte) error {
 	c.tokenID = temp.TokenID
 	c.shardID = temp.ShardID
 	c.commitment = temp.Commitment
+	c.publicKey = temp.PublicKey
+	c.additional = temp.Additional
 	c.index = temp.Index
 	return nil
 }

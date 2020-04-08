@@ -74,7 +74,7 @@ func TxFullWorkFlow() {
 		return
 	}
 	signer := mlsag.NewMlsag(privateKeys, ring, pi)
-	message := "Some f******* message that can be changed with the transaction message :D"
+	message := "Hello World"
 	signature, err_sig := signer.Sign(message)
 	if err_sig != nil {
 		fmt.Println(err_sig)

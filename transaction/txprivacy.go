@@ -625,7 +625,12 @@ func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight u
 	if tx.Proof != nil {
 		ok, err := tx.Proof.ValidateSanity()
 		if !ok || err != nil {
-			s := fmt.Sprintf("ValidateSanity Proof got error: %d %s\n", ok, err.Error())
+			s := ""
+			if !ok {
+				s = "ValidateSanity Proof got error: ok = false\n"
+			} else {
+				s = fmt.Sprintf("ValidateSanity Proof got error: error %s\n", err.Error())
+			}
 			return false, errors.New(s)
 		}
 	}

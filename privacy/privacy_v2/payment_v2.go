@@ -253,12 +253,6 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 		return false, errors.New("validate sanity Aggregated range proof failed")
 	}
 
-	// check input coins with privacy
-	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		if !proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
-			return false, errors.New("validate sanity Serial number of input coin failed")
-		}
-	}
 	// check output coins with privacy
 	for i := 0; i < len(proof.GetOutputCoins()); i++ {
 		if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
@@ -266,9 +260,6 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 		}
 		if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
 			return false, errors.New("validate sanity Coin commitment of output coin failed")
-		}
-		if !proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
-			return false, errors.New("validate sanity SNDerivator of output coin failed")
 		}
 	}
 	return true, nil

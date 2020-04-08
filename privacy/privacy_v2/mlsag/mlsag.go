@@ -5,7 +5,6 @@ package mlsag
 import (
 	"crypto/sha256"
 	"errors"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -16,6 +15,10 @@ var CurveOrder *operation.Scalar = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
 
 type Ring struct {
 	keys [][]*operation.Point
+}
+
+func (ring Ring) GetKeys() [][]*operation.Point {
+	return ring.keys
 }
 
 func NewRing(keys [][]*operation.Point) *Ring {
@@ -61,7 +64,7 @@ func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
 	}
 	n := int(b[1])
 	m := int(b[2])
-	fmt.Println(b[3 : 3+operation.Ed25519KeySize])
+	// fmt.Println(b[3 : 3+operation.Ed25519KeySize])
 
 	if len(b) != operation.Ed25519KeySize*n*m+3 {
 		return nil, errors.New("RingFromBytes: byte length is not correct")
@@ -85,6 +88,33 @@ func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
 	return ring, nil
 }
 
+func createFakePublicKeyArray(length int) []*operation.Point {
+	K := make([]*operation.Point, length)
+	for i := 0; i < length; i += 1 {
+		K[i] = operation.RandomPoint()
+	}
+	return K
+}
+
+// Create a random ring with dimension: (numFake; len(privateKeys)) where we generate fake public keys inside
+func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
+	m := len(privateKeys)
+
+	K = new(Ring)
+	K.keys = make([][]*operation.Point, numFake)
+	for i := 0; i < numFake; i += 1 {
+		if i != pi {
+			K.keys[i] = createFakePublicKeyArray(m)
+		} else {
+			K.keys[pi] = make([]*operation.Point, m)
+			for j := 0; j < m; j += 1 {
+				K.keys[i][j] = parsePublicKey(privateKeys[j])
+			}
+		}
+	}
+	return
+}
+
 type Mlsag struct {
 	R           *Ring
 	pi          int
@@ -96,7 +126,7 @@ func NewMlsag(privateKeys []*operation.Scalar, R *Ring, pi int) *Mlsag {
 	return &Mlsag{
 		R,
 		pi,
-		parseKeyImages(privateKeys),
+		ParseKeyImages(privateKeys),
 		privateKeys,
 	}
 }
@@ -106,7 +136,7 @@ func parsePublicKey(privateKey *operation.Scalar) *operation.Point {
 	return new(operation.Point).ScalarMultBase(privateKey)
 }
 
-func parseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
+func ParseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
 	m := len(privateKeys)
 
 	result := make([]*operation.Point, m)

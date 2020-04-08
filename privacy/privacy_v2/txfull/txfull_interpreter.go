@@ -48,4 +48,3 @@ func getTxPrivateKey(privAddress *address.PrivateAddress, inputCoin *coin.CoinV2
 	privKey := ota.ParseUtxoPrivatekey(privAddress, inputCoin)
 	return privKey
 }
-

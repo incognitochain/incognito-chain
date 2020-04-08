@@ -17,4 +17,8 @@ const (
 	CustomTokenPrivacyType
 )
 
-const MaxSizeInfo = 512
+const (
+	MaxSizeInfo   = 512
+	MaxSizeUint32 = (1 << 32) - 1
+	MaxSizeByte   = (1 << 8) - 1
+)

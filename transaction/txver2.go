@@ -43,10 +43,27 @@ func (txSig *TxSignatureVer2) Init() *TxSignatureVer2 {
 func (txSig TxSignatureVer2) ToBytes() ([]byte, error) {
 	byteMlsag, err := txSig.ring.ToBytes()
 	if err != nil {
+		Logger.Log.Errorf("Error when getting byte of ring, error %v ", err)
 		return nil, err
 	}
-	if len(byteMlsag) >= 1<<32 {
+	if len(byteMlsag) > MaxSizeUint32 {
 		return nil, errors.New("Length of mlsag is too big, larger than 1<<32")
+	}
+	n := len(txSig.indexes)
+	if n == 0 {
+		return nil, errors.New("TxSig.ToBytes: Indexes is empty")
+	}
+	if n > MaxSizeByte {
+		return nil, errors.New("TxSig.ToBytes: Indexes is too large, too many rows")
+	}
+	m := len(txSig.indexes[0])
+	if m > MaxSizeByte {
+		return nil, errors.New("TxSig.ToBytes: Indexes is too large, too many columns")
+	}
+	for i := 1; i < n; i += 1 {
+		if len(txSig.indexes[i]) != m {
+			return nil, errors.New("TxSig.ToBytes: Indexes is not a rectangle array")
+		}
 	}
 
 	mlsagLen := uint32(len(byteMlsag))
@@ -54,21 +71,77 @@ func (txSig TxSignatureVer2) ToBytes() ([]byte, error) {
 	b = append(b, common.Uint32ToBytes(mlsagLen)...)
 	b = append(b, byteMlsag...)
 
+	b = append(b, byte(n))
+	b = append(b, byte(m))
+	for i := 0; i < n; i += 1 {
+		for j := 0; j < m; j += 1 {
+			// 8 bytes for uint64
+			currentByte := common.AddPaddingBigInt(txSig.indexes[i][j], common.Uint64Size)
+			b = append(b, currentByte...)
+		}
+	}
+	return b, nil
 }
 
-func (txSig *TxSignatureVer2) FromBytes([]byte) error {
+func (txSig *TxSignatureVer2) FromBytes(b []byte) error {
+	if len(b) < 4 {
+		return errors.New("TxSig.FromBytes: cannot parse ring length, length of byte is too small")
+	}
+
+	ringLenByte := b[0:common.Uint32Size]
+	ringLen, err := common.BytesToUint32(ringLenByte)
+	if err != nil {
+		Logger.Log.Errorf("Parsing bytes to uint32 error %v ", err)
+		return err
+	}
+	offset := uint32(common.Uint32Size)
+	if offset+ringLen > uint32(len(b)) {
+		return errors.New("TxSig.FromBytes: cannot parse mlsag ring, length of byte is too small")
+	}
+	ringByte := b[offset : offset+ringLen]
+	ring, err := new(mlsag.Ring).FromBytes(ringByte)
+	if err != nil {
+		Logger.Log.Errorf("Parsing bytes to mlsagring error %v ", err)
+		return err
+	}
+	offset += ringLen
+
+	if offset+2 > uint32(len(b)) {
+		return errors.New("TxSig.FromBytes: cannot parse length of indexes, length of byte is too small")
+	}
+	n := int(b[offset : offset+1][0])
+	m := int(b[offset+1 : offset+2][0])
+	offset += 2
+	if int(offset)+common.Uint64Size*n*m > len(b) {
+		return errors.New("TxSig.FromBytes: cannot parse indexes, length of byte is too small")
+	}
+	indexes := make([][]*big.Int, n)
+	for i := 0; i < n; i += 1 {
+		row := make([]*big.Int, m)
+		for j := 0; j < m; j += 1 {
+			currentByte := b[offset : offset+common.Uint64Size]
+			offset += common.Uint64Size
+			row[j] = new(big.Int).SetBytes(currentByte)
+		}
+		indexes[i] = row
+	}
+
 	if txSig == nil {
 		txSig = new(TxSignatureVer2)
 	}
+	txSig.SetRing(ring)
+	txSig.SetIndexes(indexes)
+	return nil
 }
 
 func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte) (*mlsag.Ring, [][]*big.Int, error) {
 	inputCoins := *inp
 	outputCoins := *out
 
-	// loop to create list usable commitments from usableInputCoins
+	// Remember which coin commitment existed in inputCoin
+	// The coinCommitment is in the original format (have not changed it to ver2)
+	// The reason why it must be in original format is that we will query db these commitments
 	listUsableCommitments := make(map[common.Hash][]byte)
-	// tick index of each usable commitment with full db commitments
 	for _, in := range inputCoins {
 		usableCommitment := in.CoinDetails.GetCoinCommitment().ToBytesS()
 		commitmentInHash := common.HashH(usableCommitment)
@@ -76,7 +149,7 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 	}
 	lenCommitment, err := statedb.GetCommitmentLength(params.stateDB, *params.tokenID, shardID)
 	if err != nil {
-		Logger.Log.Error(err)
+		Logger.Log.Errorf("Getting length of commitment error %v ", err)
 		return nil, nil, err
 	}
 	if lenCommitment == nil {
@@ -86,7 +159,8 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 
 	outputCommitments := new(operation.Point).Identity()
 	for i := 0; i < len(outputCoins); i += 1 {
-		outputCommitments.Add(outputCommitments, outputCoins[i].CoinDetails.GetCoinCommitment())
+		commitment := coin.ParseCommitmentToV2WithCoin(outputCoins[i].CoinDetails)
+		outputCommitments.Add(outputCommitments, commitment)
 	}
 
 	ring := make([][]*operation.Point, privacy.RingSize)
@@ -107,9 +181,10 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 				// Caution caution does coin.publickey same as *key??? Log it out plz
 				fmt.Println("Does it the same??")
 				tmp := inputCoins[j].CoinDetails.GetPublicKey().ToBytesS()
-				fmt.Println(*key)
+				tmp2 := row[j].ToBytesS()
+				fmt.Println(tmp2)
 				fmt.Println(tmp)
-				fmt.Println(bytes.Equal(*key, tmp))
+				fmt.Println(bytes.Equal(tmp2, tmp))
 
 				coinCommitmentDB := inputCoins[j].CoinDetails.GetCoinCommitment()
 				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j].CoinDetails)
@@ -119,6 +194,7 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 				commitmentBytes := coinCommitmentDB.ToBytesS()
 				rowIndexes[j], err = statedb.GetCommitmentIndex(params.stateDB, *params.tokenID, commitmentBytes, shardID)
 				if err != nil {
+					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, err
 				}
 			}
@@ -130,15 +206,22 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 
 					ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
 					if !ok || err != nil {
+						Logger.Log.Errorf("Has commitment index error %v ", err)
 						return nil, nil, err
 					}
-					commitment, publicKey, snd, _ := statedb.GetCommitmentPublicKeyAddditionalByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+					commitment, publicKey, snd, err := statedb.GetCommitmentPublicKeyAddditionalByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+					if err != nil {
+						Logger.Log.Errorf("Get Commitment PublicKey and Additional by index error %v ", err)
+						return nil, nil, err
+					}
 					_, found := listUsableCommitments[common.HashH(commitment)]
 					if found && (lenCommitment.Uint64() != 1 || len(inputCoins) != 1) {
 						continue
 					}
 					row[j], err = new(operation.Point).FromBytesS(publicKey)
 					if err != nil {
+						fmt.Println(publicKey)
+						Logger.Log.Errorf("Parsing from byte to point error %v ", err)
 						return nil, nil, err
 					}
 
@@ -150,11 +233,13 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 						shardID,
 					)
 					if err != nil {
+						Logger.Log.Errorf("ParseCommitmentToV2ByBytes got error %v ", err)
 						return nil, nil, err
 					}
 
 					temp, err := new(operation.Point).FromBytesS(commitmentBytesV2)
 					if err != nil {
+						Logger.Log.Errorf("commitmentBytesV2 is not byte operation.point %v ", err)
 						return nil, nil, err
 					}
 					sumInputs.Add(sumInputs, temp)
@@ -199,32 +284,57 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 
 	var pi int = common.RandIntInterval(0, privacy.RingSize-1)
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
+
 	ring, indexes, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID)
 	if err != nil {
+		Logger.Log.Errorf("generateMlsagRingWithIndexes got error %v ", err)
 		return err
 	}
 	privKeysMlsag := *createPrivKeyMlsag(inp, out, params.senderSK)
+	keyImages := mlsag.ParseKeyImages(privKeysMlsag)
+	for i := 0; i < len(tx.Proof.GetInputCoins()); i += 1 {
+		tx.Proof.GetInputCoins()[i].CoinDetails.SetSerialNumber(keyImages[i])
+	}
 
 	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
 
 	tx.sigPrivKey, err = privacy.ArrayScalarToBytes(&privKeysMlsag)
 	if err != nil {
+		Logger.Log.Errorf("tx.SigPrivKey cannot parse arrayScalar to Bytes, error %v ", err)
 		return err
 	}
 
-	tx.SigPubKey, err = ring.ToBytes()
+	txSigPubKey := new(TxSignatureVer2)
+	txSigPubKey.SetIndexes(indexes)
+	txSigPubKey.SetRing(ring)
+	tx.SigPubKey, err = txSigPubKey.ToBytes()
 	if err != nil {
+		Logger.Log.Errorf("tx.SigPubKey cannot parse from Bytes, error %v ", err)
 		return err
 	}
 
 	message := tx.Proof.Bytes()
 	mlsagSignature, err := sag.Sign(message)
 	if err != nil {
+		Logger.Log.Errorf("Cannot sign mlsagSignature, error %v ", err)
 		return err
+	}
+
+	fmt.Println("Checking ring")
+	fmt.Println("Checking ring")
+	fmt.Println("Checking ring")
+	fmt.Println("Checking ring")
+	m := len(privKeysMlsag)
+	for i := 0; i < m; i += 1 {
+		b1 := ring.GetKeys()[pi][i].ToBytesS()
+		b2 := new(operation.Point).ScalarMultBase(privKeysMlsag[i])
+		fmt.Println(b1)
+		fmt.Println(b2)
 	}
 
 	tx.Sig, err = mlsagSignature.ToBytes()
 	// check, err := mlsag.Verify(mlsagSignature, ring, message)
+	// fmt.Println("")
 
 	return err
 }
@@ -232,15 +342,20 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	outputCoins, err := parseOutputCoins(params)
 	if err != nil {
+		Logger.Log.Errorf("Cannot parse outputcoin, error %v ", err)
 		return err
 	}
 	for i := 0; i < len(*outputCoins); i += 1 {
 		(*outputCoins)[i].CoinDetails.SetRandomness(operation.RandomScalar())
+		(*outputCoins)[i].CoinDetails.SetCoinCommitment(
+			coin.ParseCommitmentToV2WithCoin((*outputCoins)[i].CoinDetails),
+		)
 	}
 	inputCoins := &params.inputCoins
 
 	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, &params.paymentInfo)
 	if err != nil {
+		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
 	}
 
@@ -260,10 +375,13 @@ func verifySigTxVer2(tx *Tx) (bool, error) {
 	}
 	var err error
 
-	ring, err := new(mlsag.Ring).FromBytes(tx.SigPubKey)
+	txSigPubKey := new(TxSignatureVer2)
+	err = txSigPubKey.FromBytes(tx.SigPubKey)
 	if err != nil {
 		return false, err
 	}
+
+	ring := txSigPubKey.GetRing()
 
 	txSig, err := new(mlsag.MlsagSig).FromBytes(tx.Sig)
 	if err != nil {
@@ -272,12 +390,12 @@ func verifySigTxVer2(tx *Tx) (bool, error) {
 
 	message := tx.Proof.Bytes()
 
-	fmt.Println("Verifying")
-	fmt.Println("Verifying")
-	fmt.Println("Verifying")
-	fmt.Println(txSig)
-	fmt.Println(tx.SigPubKey)
-	fmt.Println(message)
+	// fmt.Println("Verifying")
+	// fmt.Println("Verifying")
+	// fmt.Println("Verifying")
+	// fmt.Println(txSig)
+	// fmt.Println(tx.SigPubKey)
+	// fmt.Println(message)
 	return mlsag.Verify(txSig, ring, message)
 }
 

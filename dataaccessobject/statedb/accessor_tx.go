@@ -66,7 +66,9 @@ func StoreCommitments(stateDB *StateDB,
 		// store commitment
 		keyCommitment := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
 		additional := comSnd[string(commitment)]
+
 		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, pubkey, additional, commitmentLength)
+
 		err = stateDB.SetStateObject(CommitmentObjectType, keyCommitment, valueCommitment)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentError, err)
