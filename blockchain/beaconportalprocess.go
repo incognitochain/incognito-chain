@@ -178,6 +178,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			Status:          common.PortalCustodianDepositAcceptedStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount: actionData.DepositedAmount,
+			RemoteAddresses: actionData.RemoteAddresses,
 		}
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
 
@@ -197,6 +198,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			Status:          common.PortalCustodianDepositRefundStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount: actionData.DepositedAmount,
+			RemoteAddresses: actionData.RemoteAddresses,
 		}
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
 
