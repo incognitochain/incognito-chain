@@ -268,7 +268,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 			},
 		},
 	    {
-			"pick_multiple_custodian_case_2",
+			"pick_a_custodian_case_2",
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
 					"2",
@@ -312,6 +312,80 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 	suite.SetupExchangeRates(1)
 	suite.SetupMultipleCustodian(1)
 	suite.verifyPortingRequest(pickMultipleCustodianCases)
+
+
+	waitingPortingRequest := []PortingRequestTestCase{
+		{
+			"waiting_porting_request_case_1",
+			func() metadata.PortalUserRegisterAction {
+				meta, _ := metadata.NewPortalUserRegister(
+					"1",
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
+					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+					2000,
+					8,
+					metadata.PortalUserRegisterMeta,
+				)
+
+				actionContent := metadata.PortalUserRegisterAction{
+					Meta:    *meta,
+					TxReqID: *meta.Hash(),
+					ShardID: 1,
+				}
+				return actionContent
+			},
+			func() PortingRequestExcepted {
+				return PortingRequestExcepted{
+					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
+					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"0", //free collateral
+						"1667",  //hold pToken
+						"100000", //lock prv amount
+					},
+					Custodian2: []string{
+						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
+						"70000", //free collateral
+						"333",  //hold pToken
+						"20000", //lock prv amount
+					},
+				}
+			},
+		},
+		{
+			"waiting_porting_request_exist_case_2",
+			func() metadata.PortalUserRegisterAction {
+				meta, _ := metadata.NewPortalUserRegister(
+					"1",
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
+					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+					1000,
+					4,
+					metadata.PortalUserRegisterMeta,
+				)
+
+				actionContent := metadata.PortalUserRegisterAction{
+					Meta:    *meta,
+					TxReqID: *meta.Hash(),
+					ShardID: 1,
+				}
+				return actionContent
+			},
+			func() PortingRequestExcepted {
+				return PortingRequestExcepted{
+					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
+					ChainStatus: common.PortalPortingRequestRejectedChainStatus,
+				}
+			},
+		},
+	}
+
+	//reset
+	suite.SetupTest()
+	suite.SetupExchangeRates(1)
+	suite.SetupMultipleCustodian(1)
+	suite.verifyPortingRequest(waitingPortingRequest)
 }
 
 func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingRequestTestCase) {
