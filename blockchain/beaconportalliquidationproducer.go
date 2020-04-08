@@ -621,7 +621,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	return insts, nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
+func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchangeRates(
 	contentStr string,
 	shardID byte,
 	metaType int,

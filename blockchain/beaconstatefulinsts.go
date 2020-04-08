@@ -712,7 +712,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
-	// handle portal req unlock collateral inst
+	// handle liquidation user redeem ptoken  exchange rates
 	var redeemLiquidateExchangeRatesActionByShardIDKeys []int
 	for k := range portalRedeemLiquidateExchangeRatesActionByShardID {
 		redeemLiquidateExchangeRatesActionByShardIDKeys = append(redeemLiquidateExchangeRatesActionByShardIDKeys, int(k))
@@ -724,7 +724,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		actions := portalRedeemLiquidateExchangeRatesActionByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForRedeemLiquidateExchangeRates(
+			newInst, err := blockchain.buildInstructionsForLiquidationRedeemPTokenExchangeRates(
 				contentStr,
 				shardID,
 				metadata.PortalRedeemLiquidateExchangeRatesMeta,
