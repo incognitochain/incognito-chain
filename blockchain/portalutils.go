@@ -146,16 +146,20 @@ func pickSingleCustodian(
 	custodianStateSlice []CustodianStateSlice,
 	currentPortalState *CurrentPortalState) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	//sort random slice
+	var cloneCustodianList []CustodianStateSlice
+	copy(cloneCustodianList, custodianStateSlice)
+
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(custodianStateSlice), func(i, j int) {
-		custodianStateSlice[i],
-			custodianStateSlice[j] = custodianStateSlice[j],
-			custodianStateSlice[i]
+	rand.Shuffle(len(cloneCustodianList), func(i, j int) {
+		cloneCustodianList[i],
+		cloneCustodianList[j] = cloneCustodianList[j],
+		cloneCustodianList[i]
 	})
 
 	//pToken to PRV
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	totalPTokenAfterUp150PercentUnit64 := up150Percent(metadata.RegisterAmount) //return nano pBTC, pBNB
+
 	totalPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 
 	if err != nil {
@@ -165,8 +169,8 @@ func pickSingleCustodian(
 
 	Logger.log.Infof("Porting request, pick single custodian ptoken: %v,  need prv %v for %v ptoken", metadata.PTokenId, totalPRV, metadata.RegisterAmount)
 
-	for _, kv := range custodianStateSlice {
-		Logger.log.Infof("Porting request,  pick single custodian key %v, free collateral: %v", kv.Key, kv.Value.GetFreeCollateral())
+	for _, kv := range cloneCustodianList {
+		Logger.log.Infof("Porting request,  pick single custodian address %v, key %v, free collateral: %v", kv.Value.GetIncognitoAddress(), kv.Key, kv.Value.GetFreeCollateral())
 		if kv.Value.GetFreeCollateral() >= totalPRV {
 			result := make([]*statedb.MatchingPortingCustodianDetail, 1)
 
@@ -205,7 +209,6 @@ func pickMultipleCustodian(
 ) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	//get multiple custodian
 	var holdPToken uint64 = 0
-
 	multipleCustodian := make([]*statedb.MatchingPortingCustodianDetail, 0)
 
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
@@ -245,6 +248,7 @@ func pickMultipleCustodian(
 		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenHolded, totalPRV)
 
 		if custodianItem.Value.GetFreeCollateral() >= totalPRV {
+
 			remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianItem.Value.GetRemoteAddresses(), metadata.PTokenId)
 			if err != nil {
 				Logger.log.Errorf("Error when get remote address by tokenID %v", err)
@@ -775,9 +779,19 @@ func NewConvertExchangeRatesObject(finalExchangeRates *statedb.FinalExchangeRate
 func (c ConvertExchangeRatesObject) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) (uint64, error) {
 	switch pTokenId {
 	case common.PortalBTCIDStr:
-		return c.ExchangeBTC2PRV(value)
+		result, err := c.ExchangeBTC2PRV(value)
+		if err != nil {
+			return 0, err
+		}
+
+		return result, nil
 	case common.PortalBNBIDStr:
-		return c.ExchangeBNB2PRV(value)
+		result, err := c.ExchangeBNB2PRV(value)
+		if err != nil {
+			return 0, err
+		}
+
+		return result, nil
 	}
 
 	return 0, errors.New("Ptoken is not support")

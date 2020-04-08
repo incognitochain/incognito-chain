@@ -389,14 +389,15 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//pick one
 	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
-
 	Logger.log.Infof("Porting request, pick single custodian result %v", len(pickCustodianResult))
+
 	//pick multiple
 	if len(pickCustodianResult) == 0 {
 		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
 		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
 	}
 	//end
+
 	if len(pickCustodianResult) == 0 {
 		Logger.log.Errorf("Porting request, custodian not found")
 		inst := buildRequestPortingInst(
