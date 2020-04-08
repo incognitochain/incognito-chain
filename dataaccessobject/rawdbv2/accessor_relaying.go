@@ -55,11 +55,11 @@ func GetBNBDataHashByBlockHeight(db incdb.Database, blockHeight uint64) ([]byte,
 		return nil, NewRawdbError(GetRelayingBNBHeaderError, err)
 	}
 
-	var bnbHeader types.Header
-	err = json.Unmarshal(data, &bnbHeader)
+	var bnbBlock types.Block
+	err = json.Unmarshal(data, &bnbBlock)
 	if err != nil {
 		return nil, NewRawdbError(GetRelayingBNBHeaderError, err)
 	}
 
-	return bnbHeader.DataHash, nil
+	return bnbBlock.DataHash, nil
 }
