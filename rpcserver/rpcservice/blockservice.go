@@ -892,7 +892,7 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 			return bStatus, nil
 		}
 	}
-	return status, err
+	return status, nil
 }
 
 func (blockService BlockService) GetAllBridgeTokens() ([]*rawdbv2.BridgeTokenInfo, error) {
