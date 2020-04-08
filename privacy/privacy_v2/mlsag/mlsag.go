@@ -108,7 +108,7 @@ func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
 		} else {
 			K.keys[pi] = make([]*operation.Point, m)
 			for j := 0; j < m; j += 1 {
-				K.keys[i][j] = parsePublicKey(privateKeys[j])
+				K.keys[i][j] = parsePublicKey(privateKeys[j], j == m-1)
 			}
 		}
 	}
@@ -132,7 +132,14 @@ func NewMlsag(privateKeys []*operation.Scalar, R *Ring, pi int) *Mlsag {
 }
 
 // Parse public key from private key
-func parsePublicKey(privateKey *operation.Scalar) *operation.Point {
+func parsePublicKey(privateKey *operation.Scalar, isLast bool) *operation.Point {
+	// isLast will commit to random base G
+	if isLast {
+		return new(operation.Point).ScalarMult(
+			operation.PedCom.G[operation.PedersenRandomnessIndex],
+			privateKey,
+		)
+	}
 	return new(operation.Point).ScalarMultBase(privateKey)
 }
 
@@ -141,7 +148,7 @@ func ParseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
 
 	result := make([]*operation.Point, m)
 	for i := 0; i < m; i += 1 {
-		publicKey := parsePublicKey(privateKeys[i])
+		publicKey := parsePublicKey(privateKeys[i], i == m-1)
 		hashPoint := operation.HashToPoint(publicKey.ToBytesS())
 		result[i] = new(operation.Point).ScalarMult(hashPoint, privateKeys[i])
 	}
@@ -178,6 +185,12 @@ func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*o
 	b = append(b, digest[:]...)
 	for i := 0; i < len(K); i += 1 {
 		alphaG := new(operation.Point).ScalarMultBase(alpha[i])
+		if i == len(K)-1 {
+			alphaG = new(operation.Point).ScalarMult(
+				operation.PedCom.G[operation.PedersenRandomnessIndex],
+				alpha[i],
+			)
+		}
 
 		H := operation.HashToPoint(K[i].ToBytesS())
 		alphaH := new(operation.Point).ScalarMult(H, alpha[i])
@@ -208,6 +221,12 @@ func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operatio
 	// rHK_cKI: rHK + cKI
 	for i := 0; i < len(K); i += 1 {
 		rG := new(operation.Point).ScalarMultBase(r[i])
+		if i == len(K)-1 {
+			rG = new(operation.Point).ScalarMult(
+				operation.PedCom.G[operation.PedersenRandomnessIndex],
+				r[i],
+			)
+		}
 		cK := new(operation.Point).ScalarMult(K[i], c)
 		rG_cK := new(operation.Point).Add(rG, cK)
 

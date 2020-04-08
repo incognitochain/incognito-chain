@@ -292,7 +292,7 @@ func validateSndFromOutputCoin(outputCoins []*privacy.OutputCoin) error {
 
 func getCommitmentsInDatabase(
 	proof *privacy.ProofV1, hasPrivacy bool,
-	pubKey key.PublicKey, fee uint64, transactionStateDB *statedb.StateDB,
+	pubKey key.PublicKey, transactionStateDB *statedb.StateDB,
 	shardID byte, tokenID *common.Hash, isBatch bool) (*[][privacy_util.CommitmentRingSize]*operation.Point, error) {
 
 	// verify for input coins
@@ -431,7 +431,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	}
 	// Verify the payment proof
 	var txProofV1 *privacy.ProofV1 = tx.Proof.(*privacy.ProofV1)
-	commitments, err := getCommitmentsInDatabase(txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+	commitments, err := getCommitmentsInDatabase(txProofV1, hasPrivacy, tx.SigPubKey, transactionStateDB, shardID, tokenID, isBatch)
 	if err != nil {
 		return false, err
 	}

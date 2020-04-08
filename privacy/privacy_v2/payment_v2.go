@@ -309,12 +309,13 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 
 	// After Prove, we should hide all information in coin details.
 	// encrypt coin details (Randomness)
-	// hide information of output coins except coin commitments, public key, snDerivators
+	// hide information of output coins except coin commitments, public key
 	for i := 0; i < len(proof.GetOutputCoins()); i++ {
 		err = proof.GetOutputCoins()[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 		if err.(*errhandler.PrivacyError) != nil {
 			return nil, err.(*errhandler.PrivacyError)
 		}
+		// proof.GetOutputCoins()[i].CoinDetails.SetSNDerivator(nil)
 		proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
 		proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
 		proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
@@ -336,15 +337,23 @@ func (proof PaymentProofV2) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, sh
 	return true, nil
 }
 
-func (proof PaymentProofV2) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
+	// Verify the proof that output values and sum of them do not exceed v_max
+	if isBatch == false {
+		valid, err := proof.aggregatedRangeProof.Verify()
+		if !valid {
+			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF V2: Multi-range failed")
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
+		}
+	}
 	return true, nil
 }
 
 func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
-		return proof.verifyNoPrivacy(pubKey, fee, shardID, tokenID)
+		return true, nil
 	}
 
-	return proof.verifyHasPrivacy(pubKey, fee, shardID, tokenID, isBatch)
+	return proof.verifyHasPrivacy(isBatch)
 }

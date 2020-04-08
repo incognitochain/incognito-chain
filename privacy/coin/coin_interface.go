@@ -24,6 +24,10 @@ func ParseCommitmentToV2WithCoin(c *CoinV1) *operation.Point {
 }
 
 func ParseCommitmentToV2(commitment *operation.Point, publicKey *operation.Point, snd *operation.Scalar, shardID byte) *operation.Point {
+	// This is already v2 coin
+	if snd == nil {
+		return commitment
+	}
 	G2SND := new(operation.Point).ScalarMult(
 		operation.PedCom.G[operation.PedersenSndIndex],
 		snd,
