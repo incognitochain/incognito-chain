@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // for common
 const (
 	EmptyString       = ""
@@ -231,13 +233,16 @@ const (
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 2160    // 2160 beacon blocks ~ 24 hours
-	PortalTimeOutWaitingPortingRequest     = 2160    // 2160 beacon blocks ~ 24 hours
-	PercentReceivedCollateralAmount        = 120     // users will be receive 120% of redeem amount in PRV
-	TotalRewardPerBlock                    = 1 * 1e9 // 1 prv
+	PortalTimeOutCustodianSendPubTokenBack = 12 * time.Hour // 12 hours
+	PortalTimeOutWaitingPortingRequest     = 12 * time.Hour // 12 hours
+	PercentReceivedCollateralAmount        = 120                           // users will be received 120% of redeem amount in PRV
+	TotalRewardPerBlock                    = 1 * 1e9                       // 1 prv
 
 	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 	TP130 = 130
+
+	PercentPortingFeeAmount = 0.01  // %
+	PercentRedeemFeeAmount  = 0.01 	// %
 )
 
 const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"

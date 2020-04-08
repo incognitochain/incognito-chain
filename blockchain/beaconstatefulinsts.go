@@ -797,7 +797,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	insts := [][]string{}
 
 	// check there is any waiting porting request timeout
-	expiredWaitingPortingInsts, err := checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState)
+	expiredWaitingPortingInsts, err := blockchain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -808,7 +808,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
 	// get custodian's collateral to return user
-	custodianLiqInsts, err := checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
+	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
