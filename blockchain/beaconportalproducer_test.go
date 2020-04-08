@@ -46,7 +46,7 @@ type PortingRequestTestCase struct {
 	Output       func() PortingRequestExcepted
 }
 
-func (suite *PortalProducerSuite) SetupPortingRequest(beaconHeight uint64) {
+func (suite *PortalProducerSuite) SetupExchangeRates(beaconHeight uint64) {
 	rates := make(map[string]statedb.FinalExchangeRatesDetail)
 	rates["b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"] = statedb.FinalExchangeRatesDetail{
 		Amount: 8000000000,
@@ -155,7 +155,6 @@ func (suite *PortalProducerSuite) SetupMockBlockChain(trieMock *mocks.Trie) *Blo
 }
 
 func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
-	/*
 	happyCases := []PortingRequestTestCase{
 		{
 			"happy_case_1",
@@ -214,15 +213,9 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
-<<<<<<< HEAD
 						"34000", //free collateral
 						"1100",  //hold pToken
 						"66000", //lock prv amount
-=======
-						"40000", //free collateral
-						"1000",  //hold pToken
-						"60000", //lock prv amount
->>>>>>> c4e8756087c76c80e132ddf29db9cf6d6cba87fa
 					},
 				}
 			},
@@ -231,10 +224,10 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 
 	//reset
 	suite.SetupTest()
-	suite.SetupPortingRequest(1)
+	suite.SetupExchangeRates(1)
 	suite.SetupOneCustodian(1)
 	suite.verifyPortingRequest(happyCases)
-*/
+
 	pickMultipleCustodianCases := []PortingRequestTestCase{
 		{
 			"pick_multiple_custodian_case_1",
@@ -316,7 +309,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 
 	//reset
 	suite.SetupTest()
-	suite.SetupPortingRequest(1)
+	suite.SetupExchangeRates(1)
 	suite.SetupMultipleCustodian(1)
 	suite.verifyPortingRequest(pickMultipleCustodianCases)
 }
