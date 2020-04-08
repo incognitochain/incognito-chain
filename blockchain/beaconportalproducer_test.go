@@ -36,8 +36,8 @@ func (suite *PortalProducerSuite) SetupTest() {
 type PortingRequestExcepted struct {
 	Metadata    string
 	ChainStatus string
-	Custodian1 []string
-	Custodian2 []string
+	Custodian1  []string
+	Custodian2  []string
 }
 
 type PortingRequestTestCase struct {
@@ -63,7 +63,9 @@ func (suite *PortalProducerSuite) SetupPortingRequest(beaconHeight uint64) {
 	exchangeRates[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(rates)
 
 	suite.currentPortalState.FinalExchangeRatesState = exchangeRates
+}
 
+func (suite *PortalProducerSuite) SetupOneCustodian(beaconHeight uint64) {
 	remoteAddresses := make([]statedb.RemoteAddress, 0)
 	remoteAddresses = append(
 		remoteAddresses,
@@ -84,7 +86,41 @@ func (suite *PortalProducerSuite) SetupPortingRequest(beaconHeight uint64) {
 	custodian := make(map[string]*statedb.CustodianState)
 	custodian[custodianKey.String()] = newCustodian
 	suite.currentPortalState.CustodianPoolState = custodian
+}
 
+func (suite *PortalProducerSuite) SetupMultipleCustodian(beaconHeight uint64) {
+	remoteAddresses := make([]statedb.RemoteAddress, 0)
+	remoteAddresses = append(
+		remoteAddresses,
+		*statedb.NewRemoteAddressWithValue("b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", "bnb136ns6lfw4zs5hg4n85vdthaad7hq5m4gtkgf234"),
+	)
+
+	custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ")
+	newCustodian := statedb.NewCustodianStateWithValue(
+		"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
+		100000,
+		100000,
+		nil,
+		nil,
+		remoteAddresses,
+		0,
+	)
+
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy")
+	newCustodian2 := statedb.NewCustodianStateWithValue(
+		"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy",
+		90000,
+		90000,
+		nil,
+		nil,
+		remoteAddresses,
+		0,
+	)
+
+	custodian := make(map[string]*statedb.CustodianState)
+	custodian[custodianKey.String()] = newCustodian
+	custodian[custodianKey2.String()] = newCustodian2
+	suite.currentPortalState.CustodianPoolState = custodian
 }
 
 func (suite *PortalProducerSuite) SetupMockBlockChain(trieMock *mocks.Trie) *BlockChain {
@@ -157,13 +193,14 @@ func buildPortalCustodianDepositAction(
 //}
 
 func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
+	/*
 	happyCases := []PortingRequestTestCase{
 		{
 			"happy_case_1",
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
 					"1",
-					"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //100.000 prv
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
 					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
 					1000,
 					4,
@@ -184,7 +221,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"40000", //free collateral
-						"1000", //hold pToken
+						"1000",  //hold pToken
 						"60000", //lock prv amount
 					},
 				}
@@ -195,7 +232,86 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
 					"2",
-					"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //100.000 prv
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
+					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+					100,
+					4,
+					metadata.PortalUserRegisterMeta,
+				)
+
+				actionContent := metadata.PortalUserRegisterAction{
+					Meta:    *meta,
+					TxReqID: *meta.Hash(),
+					ShardID: 1,
+				}
+				return actionContent
+			},
+			func() PortingRequestExcepted {
+				return PortingRequestExcepted{
+					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
+					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"34000", //free collateral
+						"1100",  //hold pToken
+						"66000", //lock prv amount
+					},
+				}
+			},
+		},
+	}
+
+	//reset
+	suite.SetupTest()
+	suite.SetupPortingRequest(1)
+	suite.SetupOneCustodian(1)
+	suite.verifyPortingRequest(happyCases)
+*/
+	pickMultipleCustodianCases := []PortingRequestTestCase{
+		{
+			"pick_multiple_custodian_case_1",
+			func() metadata.PortalUserRegisterAction {
+				meta, _ := metadata.NewPortalUserRegister(
+					"1",
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
+					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+					2000,
+					8,
+					metadata.PortalUserRegisterMeta,
+				)
+
+				actionContent := metadata.PortalUserRegisterAction{
+					Meta:    *meta,
+					TxReqID: *meta.Hash(),
+					ShardID: 1,
+				}
+				return actionContent
+			},
+			func() PortingRequestExcepted {
+				return PortingRequestExcepted{
+					Metadata:    strconv.Itoa(metadata.PortalUserRegisterMeta),
+					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"0", //free collateral
+						"1667",  //hold pToken
+						"100000", //lock prv amount
+					},
+					Custodian2: []string{
+						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
+						"70000", //free collateral
+						"333",  //hold pToken
+						"20000", //lock prv amount
+					},
+				}
+			},
+		},
+	    {
+			"pick_multiple_custodian_case_2",
+			func() metadata.PortalUserRegisterAction {
+				meta, _ := metadata.NewPortalUserRegister(
+					"2",
+					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC", //100.000 prv
 					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
 					1000,
 					4,
@@ -215,22 +331,31 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
-						"40000", //free collateral
-						"1000", //hold pToken
-						"60000", //lock prv amount
+						"0", //free collateral
+						"1667",  //hold pToken
+						"100000", //lock prv amount
+					},
+					Custodian2: []string{
+						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
+						"10000", //free collateral
+						"1333",  //hold pToken
+						"80000", //lock prv amount
 					},
 				}
 			},
 		},
 	}
 
-	suite.verifyPortingRequest(happyCases)
+	//reset
+	suite.SetupTest()
+	suite.SetupPortingRequest(1)
+	suite.SetupMultipleCustodian(1)
+	suite.verifyPortingRequest(pickMultipleCustodianCases)
 }
 
 func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingRequestTestCase) {
 	trieMock := new(mocks.Trie)
 	beaconHeight := uint64(1)
-	suite.SetupPortingRequest(beaconHeight)
 
 	for _, testCase := range testCases {
 		actionContentBytes, _ := json.Marshal(testCase.Input())
@@ -249,7 +374,7 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 			beaconHeight,
 		)
 
-		fmt.Printf("Testcase %v: instruction %+v", testCase.TestCaseName, value)
+		fmt.Printf("Testcase %v: instruction %#v", testCase.TestCaseName, value)
 		fmt.Println()
 
 		assert.Equal(suite.T(), err, nil)
@@ -270,63 +395,66 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 		var portingRequestContent metadata.PortalPortingRequestContent
 		json.Unmarshal([]byte(value[0][3]), &portingRequestContent)
 
+		prettyJSON, _ := json.MarshalIndent(portingRequestContent, "", "  ")
+		fmt.Printf("Porting request result: %s\n", string(prettyJSON))
+
 		for _, itemCustodian := range portingRequestContent.Custodian {
 			//update custodian state
 			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
 			custodian := suite.currentPortalState.CustodianPoolState[custodianKey.String()]
 
-			holdPublicToken := custodian.GetHoldingPublicTokens()
-			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
-			freeCollateral := custodian.GetFreeCollateral()
-
 			if testCase.Output().Custodian1 != nil && itemCustodian.IncAddress == testCase.Output().Custodian1[0] {
-				i1, err := strconv.ParseUint(testCase.Output().Custodian1[1], 10, 64)
-				if err == nil {
-					fmt.Println(i1)
+				holdPublicToken := custodian.GetHoldingPublicTokens()
+				lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+				freeCollateral := custodian.GetFreeCollateral()
+
+				fmt.Println("custodian 1")
+				fmt.Println(testCase.Output().Custodian1)
+				i1, _ := strconv.ParseUint(testCase.Output().Custodian1[1], 10, 64)
+				i2, _ := strconv.ParseUint(testCase.Output().Custodian1[2], 10, 64)
+				i3, _ := strconv.ParseUint(testCase.Output().Custodian1[3], 10, 64)
+
+				if i1 != freeCollateral {    //free collateral
+					suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
 				}
 
-				i2, err := strconv.ParseUint(testCase.Output().Custodian1[2], 10, 64)
-				if err == nil {
-					fmt.Println(i2)
+				if i2 != holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+					suite.T().Errorf("hold public token is not equal, %v != %v", i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
 				}
 
-				i3, err := strconv.ParseUint(testCase.Output().Custodian1[3], 10, 64)
-				if err == nil {
-					fmt.Println(i3)
+				if i3 != lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+					suite.T().Errorf("lock amount collateral is not equal, %v != %v", i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
 				}
-
-				assert.Equal(suite.T(), i1, freeCollateral) //free collateral
-				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
-				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
 			}
 
 			if testCase.Output().Custodian2 != nil && itemCustodian.IncAddress == testCase.Output().Custodian2[0] {
-				i1, err := strconv.ParseUint(testCase.Output().Custodian2[1], 10, 64)
-				if err == nil {
-					fmt.Println(i1)
+				holdPublicToken := custodian.GetHoldingPublicTokens()
+				lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+				freeCollateral := custodian.GetFreeCollateral()
+
+				fmt.Println("custodian 2")
+				fmt.Println(testCase.Output().Custodian2)
+				i1, _ := strconv.ParseUint(testCase.Output().Custodian2[1], 10, 64)
+				i2, _ := strconv.ParseUint(testCase.Output().Custodian2[2], 10, 64)
+				i3, _ := strconv.ParseUint(testCase.Output().Custodian2[3], 10, 64)
+
+				if i1 != freeCollateral {    //free collateral
+					suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
 				}
 
-				i2, err := strconv.ParseUint(testCase.Output().Custodian2[2], 10, 64)
-				if err == nil {
-					fmt.Println(i2)
+				if i2 != holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+					suite.T().Errorf("hold public token is not equal, %v != %v", i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
 				}
 
-				i3, err := strconv.ParseUint(testCase.Output().Custodian2[3], 10, 64)
-				if err == nil {
-					fmt.Println(i3)
+				if i3 != lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+					suite.T().Errorf("lock amount collateral is not equal, %v != %v", i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
 				}
-
-				assert.Equal(suite.T(), i1, freeCollateral) //free collateral
-				assert.Equal(suite.T(), i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //hold ptoken
-				assert.Equal(suite.T(), i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"]) //lock prv
 			}
 		}
 	}
 }
 
 /************************ Custodian deposit test ************************/
-
-
 
 /************************ Run suite test ************************/
 // In order for 'go test' to run this suite, we need to create
