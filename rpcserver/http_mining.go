@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -175,8 +176,10 @@ func (httpServer *HttpServer) handleGetMinerRewardFromMiningKey(params interface
 	}
 	keyType := keyParts[0]
 	publicKey := keyParts[1]
-
 	incPublicKey := httpServer.config.Server.GetMinerIncognitoPublickey(publicKey, keyType)
+	if len(incPublicKey) != 32 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("incognito public key length error, expect 32 but get %+v", len(incPublicKey)))
+	}
 	rewardAmountResult, err := httpServer.blockService.GetMinerRewardFromMiningKey(incPublicKey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
