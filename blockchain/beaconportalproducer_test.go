@@ -29,6 +29,7 @@ func (suite *PortalProducerSuite) SetupTest() {
 		FinalExchangeRatesState: map[string]*statedb.FinalExchangeRatesState{},
 		WaitingPortingRequests:  map[string]*statedb.WaitingPortingRequest{},
 		WaitingRedeemRequests:   map[string]*statedb.WaitingRedeemRequest{},
+		LiquidateExchangeRatesPool:   map[string]*statedb.LiquidateExchangeRatesPool{},
 	}
 }
 
@@ -40,10 +41,23 @@ type PortingRequestExcepted struct {
 	Custodian2  []string
 }
 
+type LiquidationExchangeRatesExcepted struct {
+	TpValue int
+	Custodian1  []string
+	Custodian2  []string
+	LiquidationPool  []uint64
+}
+
 type PortingRequestTestCase struct {
 	TestCaseName string
 	Input        func() metadata.PortalUserRegisterAction
 	Output       func() PortingRequestExcepted
+}
+
+type AutoLiquidationExchangeRatesTestCase struct {
+	TestCaseName string
+	Input        map[string]uint64
+	Output       func() LiquidationExchangeRatesExcepted
 }
 
 func (suite *PortalProducerSuite) SetupExchangeRates(beaconHeight uint64) {
@@ -56,6 +70,25 @@ func (suite *PortalProducerSuite) SetupExchangeRates(beaconHeight uint64) {
 	}
 	rates["0000000000000000000000000000000000000000000000000000000000000004"] = statedb.FinalExchangeRatesDetail{
 		Amount: 500000,
+	}
+
+	exchangeRates := make(map[string]*statedb.FinalExchangeRatesState)
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRates[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(rates)
+
+	suite.currentPortalState.FinalExchangeRatesState = exchangeRates
+}
+
+func (suite *PortalProducerSuite) SetupExchangeRatesWithValue(beaconHeight uint64, btc uint64, bnb uint64, prv uint64) {
+	rates := make(map[string]statedb.FinalExchangeRatesDetail)
+	rates["b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"] = statedb.FinalExchangeRatesDetail{
+		Amount: btc,
+	}
+	rates["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] = statedb.FinalExchangeRatesDetail{
+		Amount: bnb,
+	}
+	rates["0000000000000000000000000000000000000000000000000000000000000004"] = statedb.FinalExchangeRatesDetail{
+		Amount: prv,
 	}
 
 	exchangeRates := make(map[string]*statedb.FinalExchangeRatesState)
@@ -113,6 +146,58 @@ func (suite *PortalProducerSuite) SetupMultipleCustodian(beaconHeight uint64) {
 		90000,
 		nil,
 		nil,
+		remoteAddresses,
+		0,
+	)
+
+	custodian := make(map[string]*statedb.CustodianState)
+	custodian[custodianKey.String()] = newCustodian
+	custodian[custodianKey2.String()] = newCustodian2
+	suite.currentPortalState.CustodianPoolState = custodian
+}
+
+func (suite *PortalProducerSuite) SetupMultipleCustodianContainPToken(beaconHeight uint64) {
+	remoteAddresses := make([]statedb.RemoteAddress, 0)
+	remoteAddresses = append(
+		remoteAddresses,
+		*statedb.NewRemoteAddressWithValue("b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", "bnb136ns6lfw4zs5hg4n85vdthaad7hq5m4gtkgf234"),
+	)
+
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+
+	convertExchangeRatesObj := NewConvertExchangeRatesObject(suite.currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()])
+	totalPTokenAfterUp150PercentUnit64 := up150Percent(1000) //return nano pBTC, pBNB
+	totalPTokenAfterUp150PercentUnit64_2 := up150Percent(2000) //return nano pBTC, pBNB
+
+	totalPRV, _ := convertExchangeRatesObj.ExchangePToken2PRVByTokenId("b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", totalPTokenAfterUp150PercentUnit64)
+	totalPRV_2, _ := convertExchangeRatesObj.ExchangePToken2PRVByTokenId("b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", totalPTokenAfterUp150PercentUnit64_2)
+
+	custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ")
+	newCustodian := statedb.NewCustodianStateWithValue(
+		"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
+		100000,
+		100000,
+		map[string]uint64{
+			"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": 1000,
+		},
+		map[string]uint64{
+			"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": totalPRV,
+		},
+		remoteAddresses,
+		0,
+	)
+
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy")
+	newCustodian2 := statedb.NewCustodianStateWithValue(
+		"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy",
+		90000,
+		90000,
+		map[string]uint64{
+			"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": 2000,
+		},
+		map[string]uint64{
+			"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": totalPRV_2,
+		},
 		remoteAddresses,
 		0,
 	)
@@ -386,6 +471,200 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 	suite.SetupExchangeRates(1)
 	suite.SetupMultipleCustodian(1)
 	suite.verifyPortingRequest(waitingPortingRequest)
+}
+
+func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeRates() {
+	//check tp 150
+	//check tp 130
+	//check tp 120
+
+	//check custodian
+	//check liquidation pool
+
+	exchangeRatesChange := []AutoLiquidationExchangeRatesTestCase{
+		{
+			"liquidation_exchange_rates_none_tp150_1",
+			map[string]uint64 {
+				"btc": 8000000000,
+				"bnb": 20000000,
+				"prv": 500000,
+			},
+			func() LiquidationExchangeRatesExcepted {
+				return LiquidationExchangeRatesExcepted{
+					TpValue: 0,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"100000", //free collateral
+						"1000",  //hold pToken
+						"60000", //lock prv amount
+					},
+					Custodian2: nil,
+					LiquidationPool: []uint64{
+						0,
+						0,
+					},
+				}
+			},
+		},
+		{
+			"liquidation_exchange_rates_tp130_2",
+			map[string]uint64 {
+				"btc": 8000000000,
+				"bnb": 23000000,
+				"prv": 500000,
+			},
+			func() LiquidationExchangeRatesExcepted {
+				return LiquidationExchangeRatesExcepted{
+					TpValue: 130,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"100000", //free collateral
+						"1000",  //hold pToken
+						"60000", //lock prv amount
+					},
+					Custodian2: nil,
+					LiquidationPool: []uint64{
+						0, //lock ptoken
+						0, //lock amount collateral
+					},
+				}
+			},
+		},
+		{
+			"liquidation_exchange_rates_tp120_3",
+			map[string]uint64 {
+				"btc": 8000000000,
+				"bnb": 25000000,
+				"prv": 500000,
+			},
+			func() LiquidationExchangeRatesExcepted {
+				return LiquidationExchangeRatesExcepted{
+					TpValue: 120,
+					Custodian1: []string{
+						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
+						"100000", //free collateral
+						"0",  //hold pToken
+						"0", //lock prv amount
+					},
+					Custodian2: []string{
+						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
+						"90000", //free collateral
+						"0",  //hold pToken
+						"0", //lock prv amount
+					},
+					LiquidationPool: []uint64{
+						3000, //lock ptoken
+						180000, //lock amount collateral
+					},
+				}
+			},
+		},
+	}
+
+	suite.SetupTest()
+	suite.SetupExchangeRates(1)
+	suite.SetupMultipleCustodianContainPToken(1)
+	suite.verifyAutoLiquidationExchangeRates(exchangeRatesChange)
+}
+
+func (suite *PortalProducerSuite) verifyAutoLiquidationExchangeRates(testCases []AutoLiquidationExchangeRatesTestCase) {
+	beaconHeight := uint64(1)
+
+	for _, testCase := range testCases {
+		suite.SetupExchangeRatesWithValue(beaconHeight, testCase.Input["btc"], testCase.Input["bnb"], testCase.Input["prv"],)
+
+		value, _ := buildInstForLiquidationTopPercentileExchangeRates(
+			beaconHeight,
+			suite.currentPortalState,
+		)
+
+		fmt.Printf("Testcase %v: instruction %#v", testCase.TestCaseName, value)
+		fmt.Println()
+
+		if testCase.Output().TpValue > 0 {
+			var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
+			json.Unmarshal([]byte(value[0][3]), &actionData)
+
+			if actionData.TP["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].TPKey != testCase.Output().TpValue {    //free collateral
+				suite.T().Errorf("tp is not equal, %v != %v", actionData.TP["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].TPKey, testCase.Output().TpValue)
+			}
+		}
+
+		//custodian 1
+		if testCase.Output().Custodian1 != nil {
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, testCase.Output().Custodian1[0])
+			custodian, ok := suite.currentPortalState.CustodianPoolState[custodianKey.String()]
+			if !ok {
+				suite.T().Errorf("custodian %v not found", custodianKey.String())
+			}
+
+			holdPublicToken := custodian.GetHoldingPublicTokens()
+			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+			freeCollateral := custodian.GetFreeCollateral()
+
+			fmt.Println("custodian 1")
+			fmt.Println(testCase.Output().Custodian1)
+			i1, _ := strconv.ParseUint(testCase.Output().Custodian1[1], 10, 64)
+			i2, _ := strconv.ParseUint(testCase.Output().Custodian1[2], 10, 64)
+			i3, _ := strconv.ParseUint(testCase.Output().Custodian1[3], 10, 64)
+
+			if i1 != freeCollateral {    //free collateral
+				suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
+			}
+
+			if i2 != holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+				suite.T().Errorf("hold public token is not equal, %v != %v", i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
+			}
+
+			if i3 != lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+				suite.T().Errorf("lock amount collateral is not equal, %v != %v", i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
+			}
+		}
+
+		if testCase.Output().Custodian2 != nil {
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, testCase.Output().Custodian2[0])
+			custodian, ok := suite.currentPortalState.CustodianPoolState[custodianKey.String()]
+			if !ok {
+				suite.T().Errorf("custodian %v not found", custodianKey.String())
+			}
+
+			holdPublicToken := custodian.GetHoldingPublicTokens()
+			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+			freeCollateral := custodian.GetFreeCollateral()
+
+			fmt.Println("custodian 1")
+			fmt.Println(testCase.Output().Custodian1)
+			i1, _ := strconv.ParseUint(testCase.Output().Custodian2[1], 10, 64)
+			i2, _ := strconv.ParseUint(testCase.Output().Custodian2[2], 10, 64)
+			i3, _ := strconv.ParseUint(testCase.Output().Custodian2[3], 10, 64)
+
+			if i1 != freeCollateral {    //free collateral
+				suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
+			}
+
+			if i2 != holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+				suite.T().Errorf("hold public token is not equal, %v != %v", i2, holdPublicToken["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
+			}
+
+			if i3 != lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"] {
+				suite.T().Errorf("lock amount collateral is not equal, %v != %v", i3, lockedAmountCollateral["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"])
+			}
+		}
+
+		//liquidation pool
+		if testCase.Output().LiquidationPool != nil {
+			liquidationPoolKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+			liquidationPool, ok := suite.currentPortalState.LiquidateExchangeRatesPool[liquidationPoolKey.String()]
+
+			if ok && testCase.Output().LiquidationPool[0] != liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountPubToken {
+				suite.T().Errorf("hold public token is not equal, %v != %v", testCase.Output().LiquidationPool[0], liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountPubToken)
+			}
+
+			if ok && testCase.Output().LiquidationPool[1] != liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountFreeCollateral {
+				suite.T().Errorf("hold amount collateral is not equal, %v != %v", testCase.Output().LiquidationPool[1], liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountFreeCollateral)
+			}
+		}
+	}
 }
 
 func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingRequestTestCase) {

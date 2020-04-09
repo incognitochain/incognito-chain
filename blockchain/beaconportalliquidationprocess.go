@@ -166,56 +166,10 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 		}
 
 		if len(detectTp) > 0 {
-			for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-				lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-				lockedAmountTmp[ptoken] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
-				custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+			//update current portal state
+			updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight, currentPortalState, cusStateKeyStr, custodianState, detectTp)
 
-				holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
-				holdingPubTokenTmp[ptoken] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
-				custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
-
-				custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral)
-			}
-
-			//update custodian
-			Logger.log.Infof("update custodian key %v", cusStateKey)
-			currentPortalState.CustodianPoolState[cusStateKeyStr] = custodianState
-
-			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
-
-			if !ok {
-				item := make(map[string]statedb.LiquidateExchangeRatesDetail)
-
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					item[ptoken] = statedb.LiquidateExchangeRatesDetail{
-						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-					}
-				}
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
-			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					} else {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					}
-				}
-
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
-			}
-
-
-
+			//save db
 			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 			newTPKey := beaconHeightBytes
 			newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)

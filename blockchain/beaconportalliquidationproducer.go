@@ -48,11 +48,13 @@ func buildTopPercentileExchangeRatesLiquidationInst(
 	custodianAddress string,
 	metaType int,
 	status string,
+	topPercentile map[string]metadata.LiquidateTopPercentileExchangeRatesDetail,
 ) []string {
 	tpContent := metadata.PortalLiquidateTopPercentileExchangeRatesContent{
 		CustodianAddress: custodianAddress,
 		MetaType:         metaType,
 		Status:           status,
+		TP: topPercentile,
 	}
 	tpContentBytes, _ := json.Marshal(tpContent)
 	return []string{
@@ -489,7 +491,7 @@ func checkAndBuildInstForTPExchangeRatePortingRequest(
 Top percentile (TP): 150 (TP150), 130 (TP130), 120 (TP120)
 if TP down, we are need liquidation custodian and notify to custodians (or users)
 */
-func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
 	if len(currentPortalState.CustodianPoolState) <= 0 {
 		return [][]string{}, nil
 	}
@@ -525,7 +527,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 		Logger.log.Infof("liquidate exchange rates: detect TP result  %v", detectTp)
 		if len(detectTp) > 0 {
-
 			for pTokenID, v := range detectTp {
 				if v.HoldAmountFreeCollateral > 0 {
 					// check and build instruction for waiting redeem request
@@ -568,55 +569,12 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 				custodianState.GetIncognitoAddress(),
 				metadata.PortalLiquidateTPExchangeRatesMeta,
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+				detectTp,
 			)
 
-			//update custodian
-			for pTokenId, v := range detectTp {
-				holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
-				holdingPubTokenTmp[pTokenId] -= v.HoldAmountPubToken
-				custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
 
-				lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-				lockedAmountTmp[pTokenId] -= v.HoldAmountFreeCollateral
-				custodianState.SetLockedAmountCollateral(lockedAmountTmp)
-
-				custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - v.HoldAmountFreeCollateral)
-			}
-
-			currentPortalState.CustodianPoolState[custodianKey] = custodianState
-
-			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
-
-			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
-			if !ok {
-				item := make(map[string]statedb.LiquidateExchangeRatesDetail)
-
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					item[ptoken] = statedb.LiquidateExchangeRatesDetail{
-						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-					}
-				}
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
-			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					} else {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					}
-				}
-
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
-			}
+			//update current portal state
+			updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight, currentPortalState, custodianKey, custodianState, detectTp)
 
 			insts = append(insts, inst)
 		}

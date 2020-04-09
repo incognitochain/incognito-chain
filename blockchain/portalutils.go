@@ -882,3 +882,55 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BNB(value uint64) (uint64, erro
 	Logger.log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 	return valueExchange, nil
 }
+
+func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState, custodianKey string, custodianState *statedb.CustodianState, detectTp map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)  {
+	//update custodian
+	for pTokenId, liquidateTopPercentileExchangeRatesDetail := range detectTp {
+		holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
+		holdingPubTokenTmp[pTokenId] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
+		custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
+
+		lockedAmountTmp := custodianState.GetLockedAmountCollateral()
+		lockedAmountTmp[pTokenId] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
+		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+
+		custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral)
+	}
+
+	currentPortalState.CustodianPoolState[custodianKey] = custodianState
+	//end
+
+	//update LiquidateExchangeRates
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
+
+	Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
+	if !ok {
+		item := make(map[string]statedb.LiquidateExchangeRatesDetail)
+
+		for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
+			item[ptoken] = statedb.LiquidateExchangeRatesDetail{
+				HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+				HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+			}
+		}
+		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
+	} else {
+		for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
+			if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
+				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
+					HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+					HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+				}
+			} else {
+				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
+					HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+					HoldAmountPubToken:       liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+				}
+			}
+		}
+
+		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
+	}
+	//end
+}

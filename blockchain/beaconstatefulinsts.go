@@ -819,7 +819,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 
-	exchangeRatesLiqInsts, err := checkTopPercentileExchangeRatesLiquidationInst(beaconHeight, currentPortalState)
+	exchangeRatesLiqInsts, err := buildInstForLiquidationTopPercentileExchangeRates(beaconHeight, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build exchange rates liquidation %v\n", err)
 	}

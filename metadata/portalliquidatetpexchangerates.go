@@ -4,6 +4,7 @@ type PortalLiquidateTopPercentileExchangeRatesContent struct {
 	CustodianAddress string
 	Status string
 	MetaType int
+	TP map[string]LiquidateTopPercentileExchangeRatesDetail
 }
 
 type LiquidateTopPercentileExchangeRatesDetail struct {
