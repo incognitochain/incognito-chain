@@ -50,7 +50,7 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 	}
 
 	for _, v := range sameCommitteeBlock {
-		err := chain.InsertBlk(v, true)
+		err := chain.InsertBlk(v, false)
 		if err != nil {
 			return 0, err
 		}

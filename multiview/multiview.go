@@ -163,20 +163,26 @@ func (multiView *MultiView) updateViewState(newView View) {
 
 func (multiView *MultiView) GetAllViewsWithBFS() []View {
 	queue := []View{multiView.finalView}
-	res := []View{}
-	for {
-		if len(queue) == 0 {
-			break
+	resCh := make(chan []View)
+
+	multiView.actionCh <- func() {
+		res := []View{}
+		for {
+			if len(queue) == 0 {
+				break
+			}
+			firstItem := queue[0]
+			if firstItem == nil {
+				break
+			}
+			for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
+				queue = append(queue, v)
+			}
+			res = append(res, firstItem)
+			queue = queue[1:]
 		}
-		firstItem := queue[0]
-		if firstItem == nil {
-			break
-		}
-		for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
-			queue = append(queue, v)
-		}
-		res = append(res, firstItem)
-		queue = queue[1:]
+		resCh <- res
 	}
-	return res
+
+	return <-resCh
 }
