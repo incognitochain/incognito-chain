@@ -4,6 +4,7 @@ package bnb
 const (
 	// fixed params
 	DenomBNB = "BNB"
+	MinConfirmationsBlock = 3
 
 	// mainnet
 	MainnetBNBChainID         = "Binance-Chain-Tigris"
@@ -22,5 +23,5 @@ const (
 	TestnetBNBChainID         = "Binance-Chain-Nile"
 	TestnetTotalVotingPowers  = 11000000000000
 	TestnetURLRemote          = "https://data-seed-pre-0-s1.binance.org:443"
-	TestnetGenesisBlockHeight = 75424400
+	TestnetGenesisBlockHeight = 75955500
 )

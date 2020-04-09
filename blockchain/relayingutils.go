@@ -331,3 +331,19 @@ func storeRelayingHeaderStateToDB(
 	}
 	return nil
 }
+
+// getBNBHeaderChainState gets bnb header chain state at beaconHeight
+func getLatestRelayingBNBBlockHeight(
+	db incdb.Database,
+	beaconHeight uint64,
+) (int64, error) {
+	bnbChainState, err := getBNBHeaderChainState(db, beaconHeight)
+	if err != nil {
+		return int64(0), err
+	}
+
+	if bnbChainState.LatestBlock == nil {
+		return int64(0), errors.New("Latest bnb block is nil")
+	}
+	return bnbChainState.LatestBlock.Height, nil
+}
