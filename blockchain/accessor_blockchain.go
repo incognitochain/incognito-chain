@@ -245,11 +245,11 @@ func (blockchain *BlockChain) GetBestStateShardRewardStateDB(shardID byte) *stat
 }
 
 func (blockchain *BlockChain) GetBestStateTransactionStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.GetBestStateShard(shardID).GetShardTransactionStateDB()
+	return blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 }
 
-func (blockchain *BlockChain) GetBestStateShardFeatureStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.GetBestStateShard(shardID).GetShardFeatureStateDB()
+func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetCopiedFeatureStateDB()
 }
 
 func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDB() *statedb.StateDB {

@@ -331,7 +331,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(shardView.GetShardTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
+	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -649,7 +649,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
 		now = time.Now()
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetShardTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
+		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolValidationDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -662,7 +662,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	// Condition 7: validate tx with data of blockchain
 	now = time.Now()
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetShardTransactionStateDB())
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),

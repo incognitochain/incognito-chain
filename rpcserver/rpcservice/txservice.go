@@ -36,12 +36,12 @@ type TxService struct {
 }
 
 func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	return statedb.ListSerialNumber(transactionStateDB, tokenID, shardID)
 }
 
 func (txService TxService) ListSNDerivator(tokenID common.Hash, shardID byte) ([]big.Int, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	resultInBytes, err := statedb.ListSNDerivator(transactionStateDB, tokenID)
 	if err != nil {
 		return nil, err
@@ -54,12 +54,12 @@ func (txService TxService) ListSNDerivator(tokenID common.Hash, shardID byte) ([
 }
 
 func (txService TxService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	return statedb.ListCommitment(transactionStateDB, tokenID, shardID)
 }
 
 func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
@@ -78,7 +78,7 @@ func (txService TxService) HasSerialNumbers(paymentAddressStr string, serialNumb
 		if err != nil {
 			return nil, fmt.Errorf("Decode serial number failed, %+v", itemStr)
 		}
-		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB()
+		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardIDSender)
 		if ok && err == nil {
 			// serial number in db
@@ -107,7 +107,7 @@ func (txService TxService) HasSnDerivators(paymentAddressStr string, snDerivator
 		if err != nil {
 			return nil, errors.New("Invalid serial number derivator param")
 		}
-		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB()
+		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 		ok, err := statedb.HasSNDerivator(transactionStateDB, tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
 		if ok && err == nil {
 			// SnD in db
@@ -378,7 +378,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 			inputCoins,
 			realFee,
 			params.HasPrivacyCoin,
-			txService.BlockChain.GetBestStateShard(params.ShardIDSender).GetShardTransactionStateDB(),
+			txService.BlockChain.GetBestStateShard(params.ShardIDSender).GetCopiedTransactionStateDB(),
 			nil, // use for prv coin -> nil is valid
 			meta,
 			params.Info,
@@ -561,7 +561,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if err != nil {
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 			}
-			isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB(), *tokenID)
+			isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(), *tokenID)
 			if !isExisted {
 				var isBridgeToken bool
 				_, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
@@ -653,7 +653,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 			inputCoins,
 			realFeePRV,
 			tokenParams,
-			txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetShardTransactionStateDB(),
+			txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetCopiedTransactionStateDB(),
 			metaData,
 			txParam.HasPrivacyCoin,
 			txParam.HasPrivacyToken,
@@ -726,6 +726,21 @@ func (txService TxService) ListPrivacyCustomToken() (map[common.Hash]*statedb.To
 	delete(tokenStates, common.PRVCoinID)
 	return tokenStates, nil
 }
+
+func (txService TxService) GetPrivacyTokenWithTxs(tokenID common.Hash) (*statedb.TokenState, error) {
+	for _, i := range txService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		tokenState, has, err := txService.BlockChain.GetPrivacyTokenState(tokenID, shardID)
+		if err != nil {
+			return tokenState, err
+		}
+		if has {
+			return tokenState, nil
+		}
+	}
+	return nil, nil
+}
+
 func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, *RPCError) {
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	resultM := make(map[string]jsonresult.CustomTokenBalance)
@@ -823,7 +838,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	return result, nil
 }
 
-func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenID string) (uint64, *RPCError) {
+func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenIDStr string) (uint64, *RPCError) {
 	var totalValue uint64 = 0
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
@@ -835,23 +850,28 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	tokenIDs, err := txService.ListPrivacyCustomToken()
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
-		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	for tempTokenID := range tokenIDs {
-		if tokenID == tempTokenID.String() {
-			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
-			if err != nil {
-				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-				return uint64(0), NewRPCError(UnexpectedError, err)
-			}
-			for _, out := range outcoints {
-				totalValue += out.CoinDetails.GetValue()
-			}
+	isExisted := false
+	for _, i := range txService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		isExisted = txService.BlockChain.PrivacyCustomTokenIDExistedV2(tokenID, shardID)
+		if isExisted {
+			break
+		}
+	}
+	if isExisted {
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID)
+		if err != nil {
+			Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+			return uint64(0), NewRPCError(UnexpectedError, err)
+		}
+		for _, out := range outcoints {
+			totalValue += out.CoinDetails.GetValue()
 		}
 	}
 	if totalValue == 0 {
@@ -869,7 +889,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 			if len(allBridgeTokens) > 0 {
 				for _, bridgeToken := range allBridgeTokens {
 					tempTokenID := bridgeToken.TokenID
-					if tokenID == tempTokenID.String() {
+					if tokenID.IsEqual(tempTokenID) {
 						lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 						shardIDSender := common.GetShardIDFromLastByte(lastByte)
 						outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tempTokenID)
@@ -895,18 +915,16 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
 		return nil, nil, err
 	}
-	tokenStates, err := txService.ListPrivacyCustomToken()
-	if err != nil {
+	tokenStates, err := txService.GetPrivacyTokenWithTxs(*tokenID)
+	if err != nil || tokenStates == nil {
 		return nil, nil, err
 	}
 	tokenData := &transaction.TxPrivacyTokenData{}
 	txs := []common.Hash{}
-	if token, ok := tokenStates[*tokenID]; ok {
-		tokenData.PropertyName = token.PropertyName()
-		tokenData.PropertySymbol = token.PropertySymbol()
-		txs = append(txs, token.InitTx())
-		txs = append(txs, token.Txs()...)
-	}
+	tokenData.PropertyName = tokenStates.PropertyName()
+	tokenData.PropertySymbol = tokenStates.PropertySymbol()
+	txs = append(txs, tokenStates.InitTx())
+	txs = append(txs, tokenStates.Txs()...)
 	return txs, tokenData, nil
 }
 
@@ -1137,7 +1155,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 			inputCoins,
 			realFee,
 			hasPrivacyCoin,
-			txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB(),
+			txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(),
 			nil, // use for prv coin -> nil is valid
 			meta, nil))
 	// END create tx

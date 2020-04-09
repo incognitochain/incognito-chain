@@ -168,10 +168,10 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever Chain
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
 	// track the request status to leveldb
-	err = statedb.TrackBridgeReqWithStatus(beaconViewRetriever.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
-	if err != nil {
-		return [][]string{}, NewMetadataTxError(IssuingRequestBuildReqActionsError, err)
-	}
+	//err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
+	//if err != nil {
+	//	return [][]string{}, NewMetadataTxError(IssuingRequestBuildReqActionsError, err)
+	//}
 	return [][]string{action}, nil
 }
 

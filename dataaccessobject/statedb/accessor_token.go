@@ -48,6 +48,10 @@ func ListPrivacyToken(stateDB *StateDB) map[common.Hash]*TokenState {
 	return stateDB.getAllToken()
 }
 
+func ListPrivacyTokenWithTxs(stateDB *StateDB) map[common.Hash]*TokenState {
+	return stateDB.getAllTokenWithTxs()
+}
+
 func GetPrivacyTokenTxs(stateDB *StateDB, tokenID common.Hash) []common.Hash {
 	txs := stateDB.getTokenTxs(tokenID)
 	return txs
@@ -64,4 +68,22 @@ func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
 		panic("same key wrong value")
 	}
 	return has
+}
+
+func GetPrivacyTokenState(stateDB *StateDB, tokenID common.Hash) (*TokenState, bool, error) {
+	key := GenerateTokenObjectKey(tokenID)
+	tokenState, has, err := stateDB.getTokenState(key)
+	if err != nil {
+		return nil, false, err
+	}
+	tempTokenID := tokenState.TokenID()
+	if has && !tempTokenID.IsEqual(&tokenID) {
+		panic("same key wrong value")
+	}
+	if !has {
+		return tokenState, false, nil
+	}
+	txs := GetPrivacyTokenTxs(stateDB, tokenID)
+	tokenState.AddTxs(txs)
+	return tokenState, true, nil
 }
