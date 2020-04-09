@@ -197,7 +197,7 @@ func GetBridgeReqWithStatus(stateDB *StateDB, txReqID common.Hash) (byte, error)
 		return 0, NewStatedbError(GetBridgeReqWithStatusError, err)
 	}
 	if !has {
-		return 0, nil
+		return common.BridgeRequestNotFoundStatus, nil
 	}
 	tempTxReqID := bridgeStatusState.TxReqID()
 	if !tempTxReqID.IsEqual(&txReqID) {

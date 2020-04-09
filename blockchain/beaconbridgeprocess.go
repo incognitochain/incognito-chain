@@ -266,18 +266,29 @@ func (blockchain *BlockChain) storeBurningConfirm(bridgeStateDB *statedb.StateDB
 func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.StateDB, block *ShardBlock) error {
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
+		var err error
 		var reqTxID common.Hash
+		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta {
+			reqTxID = *tx.Hash()
+			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
+			if err != nil {
+				return err
+			}
+		}
 		if metaType == metadata.IssuingETHResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingETHResponse)
 			reqTxID = meta.RequestedTxID
+			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
+			if err != nil {
+				return err
+			}
 		} else if metaType == metadata.IssuingResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingResponse)
 			reqTxID = meta.RequestedTxID
-		}
-		var err error
-		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
-		if err != nil {
-			return err
+			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
