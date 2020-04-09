@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"math"
+	"math/big"
 	"sort"
 	"strconv"
 )
@@ -31,8 +31,9 @@ func splitPortingFeeForMatchingCustodians(
 	matchingCustodianAddresses []*statedb.MatchingPortingCustodianDetail,
 	rewardInfos map[string]uint64) {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
-		splitedFee := float64(matchCustodianDetail.Amount) / float64(portingAmount) * float64(feeAmount)
-		rewardInfos[matchCustodianDetail.IncAddress] += uint64(math.Floor(splitedFee))
+		tmp := new(big.Int).Mul(big.NewInt(int64(matchCustodianDetail.Amount)), big.NewInt(int64(feeAmount)))
+		splitedFee := new(big.Int).Div(tmp, big.NewInt(int64(portingAmount)))
+		rewardInfos[matchCustodianDetail.IncAddress] += splitedFee.Uint64()
 	}
 }
 
@@ -42,8 +43,9 @@ func splitRedeemFeeForMatchingCustodians(
 	matchingCustodianAddresses []*statedb.MatchingRedeemCustodianDetail,
 	rewardInfos map[string]uint64) {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
-		splitedFee := float64(matchCustodianDetail.GetAmount()) / float64(redeemAmount) * float64(feeAmount)
-		rewardInfos[matchCustodianDetail.GetIncognitoAddress()] += uint64(math.Floor(splitedFee))
+		tmp := new(big.Int).Mul(big.NewInt(int64(matchCustodianDetail.GetAmount())), big.NewInt(int64(feeAmount)))
+		splitedFee := new(big.Int).Div(tmp, big.NewInt(int64(redeemAmount)))
+		rewardInfos[matchCustodianDetail.GetIncognitoAddress()] += splitedFee.Uint64()
 	}
 }
 
@@ -54,8 +56,9 @@ func splitRewardForCustodians(
 	rewardInfos map[string]uint64) {
 	for _, custodian := range custodianState {
 		for _, lockedAmount := range custodian.GetLockedAmountCollateral() {
-			splitedReward := float64(lockedAmount) / float64(totalLockedAmount) * float64(totalReward)
-			rewardInfos[custodian.GetIncognitoAddress()] += uint64(math.Floor(splitedReward))
+			tmp := new(big.Int).Mul(big.NewInt(int64(lockedAmount)), big.NewInt(int64(totalReward)))
+			splitedReward := new(big.Int).Div(tmp, big.NewInt(int64(totalLockedAmount)))
+			rewardInfos[custodian.GetIncognitoAddress()] += splitedReward.Uint64()
 		}
 	}
 }
