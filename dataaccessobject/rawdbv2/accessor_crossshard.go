@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
-func StoreCrossShardNextHeight(db incdb.KeyValueWriter, fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
+func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
 	key := GetCrossShardNextHeightKey(fromShard, toShard, curHeight)
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, nextHeight)

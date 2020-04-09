@@ -1345,7 +1345,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	tempBeaconBestState.featureStateDB.ClearObjects()
 	tempBeaconBestState.slashStateDB.ClearObjects()
 	//statedb===========================END
-	batch := blockchain.GetDatabase().NewBatch()
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
 		//GetBeaconBestState().lock.Lock()
@@ -1361,14 +1360,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 					}
 					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 					waitHeight := shardBlock.Height
-					err := rawdbv2.StoreCrossShardNextHeight(batch, fromShard, toShard, lastHeight, waitHeight)
+					err := rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, lastHeight, waitHeight)
 					if err != nil {
 						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
-					err = rawdbv2.StoreCrossShardNextHeight(batch, fromShard, toShard, waitHeight, 0)
+					err = rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, waitHeight, 0)
 					if err != nil {
 						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
@@ -1384,6 +1383,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		//GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
+	batch := blockchain.GetDatabase().NewBatch()
 	//State Root Hash
 	if err := rawdbv2.StoreConsensusStateRootHash(batch, blockHeight, consensusRootHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
