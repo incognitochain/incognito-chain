@@ -193,10 +193,10 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
-	if err != nil {
-		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
-	}
+	//err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
+	//if err != nil {
+	//	return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
+	//}
 	return [][]string{action}, nil
 }
 
