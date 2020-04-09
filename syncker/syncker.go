@@ -119,41 +119,49 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
 		beaconBlk := blk.(*blockchain.BeaconBlock)
-		synckerManager.beaconPool.AddBlock(beaconBlk)
 		fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
 		//create fake s2b pool peerstate
-		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- &wire.MessagePeerState{
-			Beacon: wire.ChainState{
-				Timestamp: beaconBlk.Header.Timestamp,
-				BlockHash: *beaconBlk.Hash(),
-				Height:    beaconBlk.GetHeight(),
-			},
-			SenderID:  peerID,
-			Timestamp: time.Now().Unix(),
+		if synckerManager.BeaconSyncProcess != nil {
+			synckerManager.beaconPool.AddBlock(beaconBlk)
+			synckerManager.BeaconSyncProcess.beaconPeerStateCh <- &wire.MessagePeerState{
+				Beacon: wire.ChainState{
+					Timestamp: beaconBlk.Header.Timestamp,
+					BlockHash: *beaconBlk.Hash(),
+					Height:    beaconBlk.GetHeight(),
+				},
+				SenderID:  peerID,
+				Timestamp: time.Now().Unix(),
+			}
 		}
 
 	case *blockchain.ShardBlock:
 
 		shardBlk := blk.(*blockchain.ShardBlock)
 		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
-		synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
+		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
+			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
+		}
 
 	case *blockchain.ShardToBeaconBlock:
 		s2bBlk := blk.(*blockchain.ShardToBeaconBlock)
-		synckerManager.s2bPool.AddBlock(s2bBlk)
-		//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
-		//create fake s2b pool peerstate
-		synckerManager.S2BSyncProcess.s2bPeerStateCh <- &wire.MessagePeerState{
-			SenderID:          peerID,
-			ShardToBeaconPool: map[byte][]uint64{s2bBlk.Header.ShardID: []uint64{1, s2bBlk.GetHeight()}},
-			Timestamp:         time.Now().Unix(),
+		if synckerManager.S2BSyncProcess != nil {
+			synckerManager.s2bPool.AddBlock(s2bBlk)
+			//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
+			//create fake s2b pool peerstate
+			synckerManager.S2BSyncProcess.s2bPeerStateCh <- &wire.MessagePeerState{
+				SenderID:          peerID,
+				ShardToBeaconPool: map[byte][]uint64{s2bBlk.Header.ShardID: []uint64{1, s2bBlk.GetHeight()}},
+				Timestamp:         time.Now().Unix(),
+			}
 		}
+
 	case *blockchain.CrossShardBlock:
 		csBlk := blk.(*blockchain.CrossShardBlock)
-		fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
-		synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
+		if synckerManager.CrossShardSyncProcess[int(csBlk.ToShardID)] != nil {
+			fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
+			synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
+		}
 	}
-
 }
 
 //Process incomming broadcast peerstate
@@ -161,16 +169,19 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 	//b, _ := json.Marshal(peerState)
 	//fmt.Println("SYNCKER: receive peer state", string(b))
 	//beacon
-	if peerState.Beacon.Height != 0 {
+	if peerState.Beacon.Height != 0 && synckerManager.BeaconSyncProcess != nil {
 		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- peerState
 	}
 	//s2b
-	if len(peerState.ShardToBeaconPool) != 0 {
+	if len(peerState.ShardToBeaconPool) != 0 && synckerManager.S2BSyncProcess != nil {
 		synckerManager.S2BSyncProcess.s2bPeerStateCh <- peerState
 	}
 	//shard
 	for sid, _ := range peerState.Shards {
-		synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
+		if synckerManager.ShardSyncProcess[int(sid)] != nil {
+			synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
+		}
+
 	}
 }
 
