@@ -141,7 +141,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			continue
 		}
 
-		fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
+		fmt.Println("Syncker: Insert shard", s.shardID, "from pool", blk.(common.BlockInterface).GetHeight())
 		if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
 			return
 		}
@@ -231,7 +231,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d shard block(from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						fmt.Printf("Syncker Insert %d shard %d block(from %d to %d) elaspse %f \n", successBlk, s.shardID, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk >= len(blockBuffer) {
 							break
 						}
