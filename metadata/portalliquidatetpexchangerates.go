@@ -9,7 +9,7 @@ type PortalLiquidateTopPercentileExchangeRatesContent struct {
 
 type LiquidateTopPercentileExchangeRatesDetail struct {
 	TPKey int
-	TPValue                  int
+	TPValue                  uint64
 	HoldAmountFreeCollateral uint64
 	HoldAmountPubToken       uint64
 }

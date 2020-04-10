@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 	"math"
+	"math/big"
 	"math/rand"
 	"sort"
 	"time"
@@ -171,7 +172,7 @@ func pickSingleCustodian(
 
 	for _, kv := range cloneCustodianList {
 		Logger.log.Infof("Porting request,  pick single custodian address %v, key %v, free collateral: %v", kv.Value.GetIncognitoAddress(), kv.Key, kv.Value.GetFreeCollateral())
-		if kv.Value.GetFreeCollateral() >= totalPRV {
+		if kv.Value.GetFreeCollateral() > 0 && kv.Value.GetFreeCollateral() >= totalPRV {
 			result := make([]*statedb.MatchingPortingCustodianDetail, 1)
 
 			remoteAddr, err := statedb.GetRemoteAddressByTokenID(kv.Value.GetRemoteAddresses(), metadata.PTokenId)
@@ -247,7 +248,7 @@ func pickMultipleCustodian(
 
 		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenHolded, totalPRV)
 
-		if custodianItem.Value.GetFreeCollateral() >= totalPRV {
+		if custodianItem.Value.GetFreeCollateral() > 0 && custodianItem.Value.GetFreeCollateral() >= totalPRV {
 
 			remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianItem.Value.GetRemoteAddresses(), metadata.PTokenId)
 			if err != nil {
@@ -368,15 +369,20 @@ func upByPercent(amount uint64, percent int) uint64 {
 
 func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates statedb.LiquidateExchangeRatesDetail) (uint64, error) {
 	//todo: need review divide operator
-
 	// prv  ------   total token
 	// ?		     amount token
-	totalPrv := liquidateExchangeRates.HoldAmountFreeCollateral * RedeemAmount / liquidateExchangeRates.HoldAmountPubToken
-	return totalPrv, nil
+
+	if liquidateExchangeRates.HoldAmountPubToken <= 0 {
+		return 0, errors.New("Can not divide 0")
+	}
+
+	tmp := new(big.Int).Mul(big.NewInt(int64(liquidateExchangeRates.HoldAmountFreeCollateral)), big.NewInt(int64(RedeemAmount)))
+	totalPrv := new(big.Int).Div(tmp, big.NewInt(int64(liquidateExchangeRates.HoldAmountPubToken)))
+	return totalPrv.Uint64(), nil
 }
 
 //check value is tp120 or tp130
-func IsTP120(tpValue int) (bool, bool) {
+func IsTP120(tpValue uint64) (bool, bool) {
 	if tpValue > common.TP120 && tpValue <= common.TP130 {
 		return false, true
 	}
@@ -390,7 +396,7 @@ func IsTP120(tpValue int) (bool, bool) {
 }
 
 //filter TP for ptoken each custodian
-func detectTopPercentileLiquidation(custodian *statedb.CustodianState, tpList map[string]int) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
+func detectTopPercentileLiquidation(custodian *statedb.CustodianState, tpList map[string]uint64) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
 	if custodian == nil {
 		return nil, errors.New("Custodian not found")
 	}
@@ -420,8 +426,8 @@ func detectTopPercentileLiquidation(custodian *statedb.CustodianState, tpList ma
 }
 
 //detect tp by hold ptoken and hold prv each custodian
-func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *statedb.FinalExchangeRatesState) (map[string]int, error) {
-	result := make(map[string]int)
+func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *statedb.FinalExchangeRatesState) (map[string]uint64, error) {
+	result := make(map[string]uint64)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
 	for key, amountPToken := range holdPToken {
 		amountPRV, ok := holdPRV[key]
@@ -430,7 +436,7 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 		}
 
 		if amountPRV <= 0 || amountPToken <= 0 {
-			return nil, errors.New("TokenId is must larger than 0")
+			return nil, errors.New("total PToken of custodian is zero")
 		}
 
 		//(1): convert amount PToken to PRV
@@ -450,9 +456,9 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 			return nil, errors.New("Can not divide zero")
 		}
 		//todo: calculate
-		percentUp := amountPRV * 100 / amountPTokenConverted
-		roundNumber := math.Ceil(float64(percentUp))
-		result[key] = int(roundNumber)
+		percentUp := new(big.Int).Mul(big.NewInt(int64(amountPRV)), big.NewInt(100)) //amountPRV * 100 / amountPTokenConverted
+		roundNumber := new(big.Int).Div(percentUp, big.NewInt(int64(amountPTokenConverted))) // math.Ceil(float64(percentUp))
+		result[key] = roundNumber.Uint64()
 	}
 
 	return result, nil
@@ -810,16 +816,17 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2PTokenByTokenId(pTokenId string
 
 func (c *ConvertExchangeRatesObject) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error) {
 	//convert to pusdt
-	total := (value * ratesFrom) / uint64(math.Pow10(9)) //value of nanno
+	total := new(big.Int).Mul(big.NewInt(int64(value)), big.NewInt(int64(ratesFrom)))
+	pUstd := new(big.Int).Div(total, big.NewInt(int64(math.Pow10(9)))) //value of nanno
 
 	if RatesTo <= 0 {
 		return 0, errors.New("Can not divide zero")
 	}
 
 	//pusdt -> new coin
-	result := (total * uint64(math.Pow10(9))) / RatesTo
-	roundNumber := math.Round(float64(result))
-	return uint64(roundNumber), nil
+	result := new(big.Int).Mul(pUstd, big.NewInt(int64(math.Pow10(9)))) // (total * uint64(math.Pow10(9))) / RatesTo
+	roundNumber := new(big.Int).Div(result, big.NewInt(int64(RatesTo))) //round up
+	return roundNumber.Uint64(), nil
 
 }
 
@@ -904,7 +911,7 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, cur
 	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
-	Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
+	Logger.log.Infof("update LiquidateExchangeRatesPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, detectTp)
 	if !ok {
 		item := make(map[string]statedb.LiquidateExchangeRatesDetail)
 

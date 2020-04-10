@@ -288,11 +288,11 @@ func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB, beaconHeight uint64) (
 }
 
 //======================  Porting  ======================
-func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte, beaconHeight uint64) error {
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
 
-	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple statusType: %+v, statusSuffix: %+v, value: %+v", string(statusType), string(statusSuffix), value.ToString())
+	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple [beaconHeight: %v] statusType: %+v, statusSuffix: %+v, value: %+v",beaconHeight, string(statusType), string(statusSuffix), value.ToString())
 
 	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
 

@@ -508,9 +508,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 	custodianPoolState := currentPortalState.CustodianPoolState
 
 	for custodianKey, custodianState := range custodianPoolState {
-		Logger.log.Infof("Start detect tp custodian key %v", custodianKey)
-
-		Logger.log.Infof("custodian key %v, total pubtokens %v, total amount collateral %v", custodianKey, custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
+		Logger.log.Infof("Start detect tp custodian address: custodian key %v, custodian address %v, total pubtokens %v, total amount collateral %v",custodianKey, custodianState.GetIncognitoAddress(), custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
 
 		calTPRatio, err := calculateTPRatio(custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral(), exchangeRate)
 		if err != nil {
@@ -571,6 +569,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 				detectTp,
 			)
+
 
 
 			//update current portal state
@@ -737,8 +736,8 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 	}
 
 	//todo: review
-	if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral {
-		Logger.log.Errorf("total liquidation error %v", err)
+	if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral || liquidateByTokenID.HoldAmountFreeCollateral <= 0 {
+		Logger.log.Errorf("amout free collateral not enough, need prv %v != hold amount free collateral %v", totalPrv, liquidateByTokenID.HoldAmountFreeCollateral)
 		inst := buildRedeemLiquidateExchangeRatesInst(
 			meta.TokenID,
 			meta.RedeemAmount,

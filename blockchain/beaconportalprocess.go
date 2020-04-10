@@ -322,6 +322,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			statedb.PortalPortingRequestTxStatusPrefix(),
 			[]byte(txReqID.String()),
 			newPortingTxRequestStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -336,6 +337,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			statedb.PortalPortingRequestStatusPrefix(),
 			[]byte(uniquePortingID),
 			newPortingRequestStatusBytes,
+			beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
@@ -378,6 +380,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			statedb.PortalPortingRequestTxStatusPrefix(),
 			[]byte(txReqID.String()),
 			newPortingTxRequestStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -442,6 +445,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			statedb.PortalPortingRequestStatusPrefix(),
 			[]byte(actionData.UniquePortingID),
 			newPortingRequestStatusBytes,
+			beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
@@ -545,6 +549,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 			statedb.PortalExchangeRatesRequestStatusPrefix(),
 			[]byte(portingExchangeRatesContent.TxReqID.String()),
 			newExchangeRatesStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -570,6 +575,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 			statedb.PortalExchangeRatesRequestStatusPrefix(),
 			[]byte(portingExchangeRatesContent.TxReqID.String()),
 			newExchangeRatesStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -893,6 +899,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 			statedb.PortalCustodianWithdrawStatusPrefix(),
 			[]byte(txHash),
 			contentStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -920,6 +927,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 			statedb.PortalCustodianWithdrawStatusPrefix(),
 			[]byte(txHash),
 			contentStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
