@@ -2209,7 +2209,7 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 				closeChannel()
 				return
 			}
-			fmt.Printf("[stream]: Receive %v block %v \n", req.GetType(), newBlk.GetHeight())
+			//fmt.Printf("[stream]: Receive %v block %v \n", req.GetType(), newBlk.GetHeight())
 			select {
 			case <-ctx.Done():
 				closeChannel()
