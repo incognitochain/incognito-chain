@@ -37,7 +37,7 @@ const (
 	DefaultMaxRPCClients               = 200
 	DefaultRPCLimitRequestPerDay       = 0 // 0: unlimited
 	DefaultRPCLimitErrorRequestPerHour = 0 // 0: unlimited
-	DefaultMaxRPCWsClients             = 200
+	DefaultMaxRPCWsClients             = 500
 	DefaultMetricUrl                   = ""
 	SampleConfigFilename               = "sample-config.conf"
 	DefaultDisableRpcTLS               = true
