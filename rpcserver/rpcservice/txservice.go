@@ -916,8 +916,11 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 		return nil, nil, err
 	}
 	tokenStates, err := txService.GetPrivacyTokenWithTxs(*tokenID)
-	if err != nil || tokenStates == nil {
+	if err != nil {
 		return nil, nil, err
+	}
+	if tokenStates == nil {
+		return nil, nil, errors.New("Token not found")
 	}
 	tokenData := &transaction.TxPrivacyTokenData{}
 	txs := []common.Hash{}
