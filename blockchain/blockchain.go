@@ -124,16 +124,15 @@ func (blockchain *BlockChain) initChainState() error {
 	}
 
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
-
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
 		blockchain.ShardChain[shardID] = &ShardChain{
+			shardID:    shard - 1,
 			multiView:  multiview.NewMultiView(),
 			BlockGen:   blockchain.config.BlockGen,
 			ChainName:  common.GetShardChainKey(shardID),
 			Blockchain: blockchain,
 		}
-
 		if err := blockchain.RestoreShardViews(shardID); err != nil {
 			fmt.Println("debug restore shard fail, init")
 			err := blockchain.initShardState(shardID)

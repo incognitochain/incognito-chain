@@ -23,6 +23,7 @@ var (
 	beaconBlockHashToIndexPrefix       = []byte("b-b-H" + string(splitter))
 	txHashPrefix                       = []byte("tx-h" + string(splitter))
 	crossShardNextHeightPrefix         = []byte("c-s-n-h" + string(splitter))
+	lastBeaconHeightConfirmCrossShard  = []byte("p-c-c-s" + string(splitter))
 	feeEstimatorPrefix                 = []byte("fee-est" + string(splitter))
 	txByPublicKeyPrefix                = []byte("tx-pb")
 	rootHashPrefix                     = []byte("R-H-")
