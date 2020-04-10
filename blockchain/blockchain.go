@@ -237,7 +237,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 
 	// Insert new block into beacon chain
 	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
-	if err := blockchain.BackupBeaconViews(); err != nil {
+	if err := blockchain.BackupBeaconViews(blockchain.GetDatabase()); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.GetBeaconBestState().BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
