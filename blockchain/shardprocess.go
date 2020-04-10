@@ -99,10 +99,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if blockHeight != GetBestStateShard(shardID).ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
-	isExist, _ := rawdbv2.HasShardBlock(blockchain.GetDatabase(), blockHash)
-	if isExist {
-		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardID, blockHeight, blockHash))
-	}
 	// fetch beacon blocks
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), tempShardBestState.BeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
