@@ -149,7 +149,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
 		shardID,
-		shardView.GetShardTransactionStateDB(),
+		shardView.GetCopiedTransactionStateDB(),
 		beaconView.GetBeaconFeatureStateDB(),
 	)
 	if err != nil {
@@ -183,7 +183,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 		pdeTradeAcceptedContent.RequestedTxID,
 		producerPrivateKey,
 		shardID,
-		shardView.GetShardTransactionStateDB(),
+		shardView.GetCopiedTransactionStateDB(),
 		beaconView.GetBeaconFeatureStateDB(),
 	)
 	if err != nil {
@@ -266,7 +266,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			wdAcceptedContent.DeductingPoolValue,
 			&receiverAddr,
 			producerPrivateKey,
-			shardView.GetShardTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -303,7 +303,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			nil,
 			0,
 			tokenParams,
-			shardView.GetShardTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
@@ -363,7 +363,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			refundContribution.ContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			shardView.GetShardTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -401,7 +401,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			nil,
 			0,
 			tokenParams,
-			shardView.GetShardTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
@@ -464,7 +464,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			matchedNReturnedContribution.ReturnedContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			shardView.GetShardTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -500,7 +500,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			nil,
 			0,
 			tokenParams,
-			shardView.GetShardTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,

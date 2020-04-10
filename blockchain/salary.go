@@ -60,7 +60,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		txData.CalculateTxValue(),
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
-		view.GetShardTransactionStateDB(),
+		view.GetCopiedTransactionStateDB(),
 		returnStakingMeta,
 	)
 	//modify the type of the salary transaction
@@ -348,7 +348,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 		&requestDetail.PaymentAddress,
 		amount,
 		blkProducerPrivateKey,
-		view.GetShardTransactionStateDB(),
+		view.GetCopiedTransactionStateDB(),
 		blockchain.GetBeaconBestState().GetBeaconFeatureStateDB(),
 		responseMeta,
 		requestDetail.TokenID,

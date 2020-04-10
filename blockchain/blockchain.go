@@ -273,7 +273,7 @@ func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
-	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.GetBestStateShard(shardID).GetShardTransactionStateDB(), shardID, tokenID)
+	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(), shardID, tokenID)
 	return transaction.RandomCommitmentsProcess(param)
 }
 
@@ -416,13 +416,13 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 /*
 Backup all BeaconView into Database
 */
-func (blockchain *BlockChain) BackupBeaconViews() error {
+func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
 	allViews := []*BeaconBestState{}
 	for _, v := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
 	b, _ := json.Marshal(allViews)
-	return rawdbv2.StoreBeaconBestState(blockchain.config.DataBase, b)
+	return rawdbv2.StoreBeaconBestState(db, b)
 }
 
 /*
@@ -453,13 +453,13 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 /*
 Backup shard views
 */
-func (blockchain *BlockChain) BackupShardViews(shardID byte) error {
+func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte) error {
 	allViews := []*ShardBestState{}
 	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
 	fmt.Println("debug BackupShardViews", len(allViews))
-	return rawdbv2.StoreShardBestState(blockchain.config.DataBase, shardID, allViews)
+	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
 /*

@@ -74,7 +74,7 @@ type ShardViewRetriever interface {
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
-	GetShardFeatureStateDB() *statedb.StateDB
+	GetCopiedFeatureStateDB() *statedb.StateDB
 }
 
 // Interface for all type of transaction

@@ -66,11 +66,15 @@ type ShardBestState struct {
 	lock                       sync.RWMutex
 }
 
-func (shardBestState *ShardBestState) GetShardTransactionStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetShardFeatureStateDB() *statedb.StateDB {
+	panic("implement me")
+}
+
+func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
 	return shardBestState.transactionStateDB.Copy()
 }
 
-func (shardBestState *ShardBestState) GetShardFeatureStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetCopiedFeatureStateDB() *statedb.StateDB {
 	return shardBestState.featureStateDB.Copy()
 }
 
@@ -390,7 +394,7 @@ func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.
 
 func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
 	tokenIDs := []common.Hash{}
-	tokenStates := statedb.ListPrivacyToken(shardBestState.GetShardTransactionStateDB())
+	tokenStates := statedb.ListPrivacyToken(shardBestState.GetCopiedTransactionStateDB())
 	for k, _ := range tokenStates {
 		tokenIDs = append(tokenIDs, k)
 	}
