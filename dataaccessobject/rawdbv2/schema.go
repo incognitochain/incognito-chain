@@ -118,7 +118,9 @@ func GetShardBlockHashToIndexKey(hash common.Hash) []byte {
 }
 
 func GetShardBestStateKey(shardID byte) []byte {
-	return append(shardBestStatePrefix, shardID)
+	temp := make([]byte, 0, len(shardBestStatePrefix))
+	temp = append(temp, shardBestStatePrefix...)
+	return append(temp, shardID)
 }
 
 // ============================= BEACON =======================================
