@@ -197,3 +197,7 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 
 	return burningAddress2
 }
+
+func (blockchain *BlockChain) GetIncognitoDAOAddress() string {
+	return blockchain.config.ChainParams.IncognitoDAOAddress
+}

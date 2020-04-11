@@ -193,6 +193,8 @@ const (
 	StoreRewardFeatureError
 	GetRewardFeatureError
 	GetAllRewardFeatureError
+	ResetAllFeatureRewardByTokenIDError
+	GetRewardFeatureAmountByTokenIDError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -328,9 +330,11 @@ var ErrCodeMessage = map[int]struct {
 	StoreLockedCollateralStateError:                     {-14046, "Store locked collateral state error"},
 	GetLockedCollateralStateError:                       {-14047, "Get locked collateral state error"},
 
-	StoreRewardFeatureError:  {-15000, "Store reward feature state error"},
-	GetRewardFeatureError:    {-15001, "Get reward feature state error"},
-	GetAllRewardFeatureError: {-15002, "Get all reward feature state error"},
+	StoreRewardFeatureError:              {-15000, "Store reward feature state error"},
+	GetRewardFeatureError:                {-15001, "Get reward feature state error"},
+	GetAllRewardFeatureError:             {-15002, "Get all reward feature state error"},
+	ResetAllFeatureRewardByTokenIDError:  {-15003, "Reset all reward feature state by tokenID error"},
+	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 }
 
 type StatedbError struct {

@@ -134,6 +134,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			if (amount == 0) || (err != nil) {
 				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
+			amount, err = blockchain.CheckAndCalDAOFundsByTokenID(requesterRes, amount, requestMeta.TokenID.String())
+			if err != nil {
+				return errors.Errorf("Error when checking and calculating Dao funds %v", err)
+			}
 			if amount != amountRes {
 				return errors.Errorf("Wrong amount for token %v, get from db %v, response amount %v", requestMeta.TokenID, amount, amountRes)
 			}

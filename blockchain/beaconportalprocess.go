@@ -73,6 +73,8 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		// total custodian reward instruction
 		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
 			err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.WithDrawRewardResponseMeta):
+			err = blockchain.processResetFeatureReward(portalStateDB, inst)
 		}
 
 		if err != nil {

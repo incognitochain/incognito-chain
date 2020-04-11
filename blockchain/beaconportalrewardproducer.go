@@ -110,10 +110,6 @@ func getCustodianRewardByEpochFromInst(rewardByEpochInsts [][]string) (map[commo
 	for _, inst := range rewardByEpochInsts {
 		if inst[0] == strconv.Itoa(metadata.IncDAORewardRequestMeta) {
 			var incDAORewardInfo metadata.IncDAORewardInfo
-			//incDAORewardInfoBytes, err := base64.StdEncoding.DecodeString(inst[3])
-			//if err != nil {
-			//	return nil, fmt.Errorf("can not decode DAO reward instruction content %v", err)
-			//}
 			err := json.Unmarshal([]byte(inst[3]), &incDAORewardInfo)
 			if err != nil {
 				return nil, fmt.Errorf("can not marshal DAO reward instruction content %v", err)
@@ -203,7 +199,6 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 			// reset total locked collateral for custodians
 			currentPortalState.LockedCollateralState.Reset()
-			Logger.log.Errorf("RESET LOCKED COLLATERAL : %v\n", currentPortalState.LockedCollateralState)
 		}
 	}
 
@@ -216,7 +211,6 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		}
 		for _, rewardInfo := range rewardInfos {
 			if rewardInfo.GetCustodianIncAddr() == custodianAddr {
-				Logger.log.Errorf("rewardInfo.GetRewards(): %v\n", rewardInfo.GetRewards())
 				for _, rewardDetail := range rewardInfo.GetRewards() {
 					custodianReward[rewardDetail.GetTokenID()] += rewardDetail.GetAmount()
 				}
@@ -224,13 +218,12 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 			}
 		}
 		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
-		Logger.log.Errorf("currentPortalState.CustodianPoolState[custodianKey]: %v\n", currentPortalState.CustodianPoolState[custodianKey].GetRewardAmount())
 	}
 
-	inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
-	rewardInsts = append(rewardInsts, inst)
-
-	Logger.log.Errorf("[buildPortalRewardsInsts] insts at beaconHeight: %v - %v\n", beaconHeight+1, rewardInsts)
+	if len(rewardInfos) > 0 {
+		inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
+		rewardInsts = append(rewardInsts, inst)
+	}
 
 	return rewardInsts, nil
 }
@@ -269,7 +262,6 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 ) ([][]string, error) {
-	Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Starting....")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -304,7 +296,6 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 	custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
 	if custodian == nil {
 		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Not found custodian address in custodian pool.")
-		Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Rejected....")
 		inst := buildWithdrawPortalRewardInst(
 			actionData.Meta.CustodianAddressStr,
 			actionData.Meta.TokenID,
@@ -321,7 +312,6 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 
 		if rewardAmount <= 0 {
 			Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Reward amount of custodian %v is zero.", meta.CustodianAddressStr)
-			Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Rejected....")
 			inst := buildWithdrawPortalRewardInst(
 				actionData.Meta.CustodianAddressStr,
 				actionData.Meta.TokenID,
@@ -334,7 +324,6 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 			return [][]string{inst}, nil
 		}
 
-		Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Accepted....")
 		inst := buildWithdrawPortalRewardInst(
 			actionData.Meta.CustodianAddressStr,
 			actionData.Meta.TokenID,

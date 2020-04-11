@@ -22,7 +22,6 @@ func (blockchain *BlockChain) processPortalReward(
 
 	reqStatus := instructions[2]
 	if reqStatus == "portalRewardInst" {
-		Logger.log.Errorf("[processPortalReward] ====================")
 		// update reward amount for custodian
 		for custodianKey, custodianState := range currentPortalState.CustodianPoolState {
 			custodianAddr := custodianState.GetIncognitoAddress()
@@ -38,7 +37,6 @@ func (blockchain *BlockChain) processPortalReward(
 					break
 				}
 			}
-			Logger.log.Errorf("[processPortalReward] currentPortalState.CustodianPoolState[custodianKey]: %v\n",custodianReward)
 			currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 		}
 
@@ -161,9 +159,6 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 
 	reqStatus := instructions[2]
 	if reqStatus == "portalTotalRewardInst" {
-		// reset total locked collateral for custodians for new epoch
-		currentPortalState.LockedCollateralState.Reset()
-
 		// get old total custodian reward
 		oldCustodianRewards, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, statedb.PortalRewardName)
 		if err != nil {
@@ -178,7 +173,6 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 
 		// reset total locked collateral for custodians
 		currentPortalState.LockedCollateralState.Reset()
-		Logger.log.Errorf("[processPortalTotalCustodianReward] RESET LOCKED COLLATERAL : %v\n", currentPortalState.LockedCollateralState)
 
 		// store total custodian reward into db
 		err = statedb.StoreRewardFeatureState(

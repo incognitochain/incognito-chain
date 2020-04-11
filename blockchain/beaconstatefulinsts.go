@@ -51,7 +51,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestWithdrawRewardMeta,
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
 			metadata.PortalLiquidationCustodianDepositMeta,
-			metadata.PortalLiquidationCustodianDepositResponseMeta:
+			metadata.PortalLiquidationCustodianDepositResponseMeta,
+			metadata.WithDrawRewardResponseMeta:
 				statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -116,6 +117,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
 	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
 	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
+
+	// withdraw response for DAO funds, request to reset total feature rewards on beacon
+	resetFeatureRewardActionsByShardID := map[byte][][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -225,6 +229,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
 			case metadata.RelayingBTCHeaderMeta:
 				pm.relayingChains[metadata.RelayingBTCHeaderMeta].putAction(action)
+			case metadata.WithDrawRewardResponseMeta:
+				resetFeatureRewardActionsByShardID = groupPortalActionsByShardID(
+					resetFeatureRewardActionsByShardID,
+					action,
+					shardID,
+				)
 			default:
 				continue
 			}
@@ -251,6 +261,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 	}
 	if len(pdeInsts) > 0 {
 		instructions = append(instructions, pdeInsts...)
+	}
+
+	resetFeatureRewardInst, err := blockchain.handleRequestResetFeatureReward(stateDB, resetFeatureRewardActionsByShardID)
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(resetFeatureRewardInst) > 0 {
+		instructions = append(instructions, resetFeatureRewardInst...)
 	}
 
 	// handle portal instructions
@@ -886,5 +905,38 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 	return instructions, nil
 }
 
+func (blockchain *BlockChain) handleRequestResetFeatureReward(
+	stateDB *statedb.StateDB, resetFeatureRewardActionsByShardID map[byte][][]string) ([][]string, error) {
+
+	instructions := [][]string{}
+	var shardIDKeys []int
+	for k := range resetFeatureRewardActionsByShardID {
+		shardIDKeys = append(shardIDKeys, int(k))
+	}
+
+	sort.Ints(shardIDKeys)
+	for _, value := range shardIDKeys {
+		shardID := byte(value)
+		actions := resetFeatureRewardActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForResetFeatureReward(
+				contentStr,
+				shardID,
+				metadata.WithDrawRewardResponseMeta,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	return instructions, nil
+}
 
 

@@ -29,7 +29,7 @@ func StoreWaitingRedeemRequests(
 			waitingReq.redeemFee,
 			waitingReq.beaconHeight,
 			waitingReq.txReqID,
-			)
+		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StoreWaitingRedeemRequestError, err)
@@ -90,7 +90,6 @@ func GetPortalRedeemRequestByTxIDStatus(stateDB *StateDB, txID string) ([]byte, 
 
 	return data, nil
 }
-
 
 //======================  Custodian pool  ======================
 // getCustodianPoolState gets custodian pool state at beaconHeight
@@ -157,7 +156,7 @@ func GetCustodianDepositStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
-func GetOneCustodian(stateDB *StateDB,beaconHeight uint64, custodianAddress string) (*CustodianState, error) {
+func GetOneCustodian(stateDB *StateDB, beaconHeight uint64, custodianAddress string) (*CustodianState, error) {
 	key := GenerateCustodianStateObjectKey(beaconHeight, custodianAddress)
 	custodianState, has, err := stateDB.getCustodianByKey(key)
 	if err != nil {
@@ -179,7 +178,7 @@ func GetFinalExchangeRatesState(
 	return finalExchangeRates, nil
 }
 
-func GetFinalExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
+func GetFinalExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error) {
 	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
 	if err != nil {
@@ -218,7 +217,7 @@ func StorePortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID str
 	return nil
 }
 
-func GetPortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string,) ([]byte, error) {
+func GetPortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string, ) ([]byte, error) {
 	statusType := PortalLiquidateCustodianRunAwayPrefix()
 	statusSuffix := append([]byte(redeemID), []byte(custodianIncognitoAddress)...)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
@@ -274,7 +273,7 @@ func StoreBulkLiquidateExchangeRatesPool(
 	return nil
 }
 
-func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
+func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error) {
 	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
 	if err != nil {
@@ -298,22 +297,22 @@ func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusS
 
 	var errType int
 	switch string(statusType) {
-		case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
-			errType = StoreLiquidateTopPercentileExchangeRatesError
-		case string(PortalLiquidationRedeemRequestStatusPrefix()):
-			errType = StoreRedeemLiquidationExchangeRatesError
-		case string(PortalLiquidationCustodianDepositStatusPrefix()):
-			errType = StoreLiquidationCustodianDepositError
-		case string(PortalPortingRequestStatusPrefix()):
-			errType = StorePortalStatusError
-		case string(PortalPortingRequestTxStatusPrefix()):
-			errType = StorePortalTxStatusError
-		case string(PortalExchangeRatesRequestStatusPrefix()):
-			errType = StorePortalExchangeRatesStatusError
-		case string(PortalCustodianWithdrawStatusPrefix()):
-			errType = StorePortalCustodianWithdrawRequestStatusError
-		default:
-			errType = StorePortalStatusError
+	case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
+		errType = StoreLiquidateTopPercentileExchangeRatesError
+	case string(PortalLiquidationRedeemRequestStatusPrefix()):
+		errType = StoreRedeemLiquidationExchangeRatesError
+	case string(PortalLiquidationCustodianDepositStatusPrefix()):
+		errType = StoreLiquidationCustodianDepositError
+	case string(PortalPortingRequestStatusPrefix()):
+		errType = StorePortalStatusError
+	case string(PortalPortingRequestTxStatusPrefix()):
+		errType = StorePortalTxStatusError
+	case string(PortalExchangeRatesRequestStatusPrefix()):
+		errType = StorePortalExchangeRatesStatusError
+	case string(PortalCustodianWithdrawStatusPrefix()):
+		errType = StorePortalCustodianWithdrawRequestStatusError
+	default:
+		errType = StorePortalStatusError
 	}
 
 	if err != nil {
@@ -329,16 +328,16 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 
 	var errType int
 	switch string(statusType) {
-		case string(PortalPortingRequestStatusPrefix()):
-			errType = GetPortingRequestStatusError
-		case string(PortalPortingRequestTxStatusPrefix()):
-			errType = GetPortingRequestTxStatusError
-		case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
-			errType = GetLiquidationTopPercentileExchangeRatesStatusError
-		case string(PortalCustodianWithdrawStatusPrefix()):
-			errType = GetPortalCustodianWithdrawStatusError
-		default:
-			errType = StorePortalStatusError
+	case string(PortalPortingRequestStatusPrefix()):
+		errType = GetPortingRequestStatusError
+	case string(PortalPortingRequestTxStatusPrefix()):
+		errType = GetPortingRequestTxStatusError
+	case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
+		errType = GetLiquidationTopPercentileExchangeRatesStatusError
+	case string(PortalCustodianWithdrawStatusPrefix()):
+		errType = GetPortalCustodianWithdrawStatusError
+	default:
+		errType = StorePortalStatusError
 	}
 
 	if err != nil {
@@ -455,7 +454,6 @@ func GetRequestPTokenStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
-
 func StorePortalRequestUnlockCollateralStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalRequestUnlockCollateralStatusPrefix()
 	statusSuffix := []byte(txID)
@@ -546,11 +544,11 @@ func StoreLockedCollateralState(
 	stateDB *StateDB,
 	beaconHeight uint64,
 	lockedCollateralState *LockedCollateralState) error {
-		key := GenerateLockedCollateralStateObjectKey(beaconHeight)
-		err := stateDB.SetStateObject(LockedCollateralStateObjectType, key, lockedCollateralState)
-		if err != nil {
-			return NewStatedbError(StorePortalRewardError, err)
-		}
+	key := GenerateLockedCollateralStateObjectKey(beaconHeight)
+	err := stateDB.SetStateObject(LockedCollateralStateObjectType, key, lockedCollateralState)
+	if err != nil {
+		return NewStatedbError(StorePortalRewardError, err)
+	}
 
 	return nil
 }
@@ -565,10 +563,60 @@ func StoreRewardFeatureState(
 
 	err := stateDB.SetStateObject(RewardFeatureStateObjectType, key, value)
 	if err != nil {
-		return NewStatedbError(StorePortalRewardError, err)
+		return NewStatedbError(StoreRewardFeatureError, err)
 	}
 
 	return nil
+}
+
+func ResetRewardFeatureStateByTokenID(
+	stateDB *StateDB,
+	tokenID string) (uint64, error) {
+
+	totalAmount := uint64(0)
+	// reset for portal reward
+	portalReward, err := GetRewardFeatureStateByFeatureName(stateDB, PortalRewardName)
+	if err != nil {
+		return uint64(0), NewStatedbError(ResetAllFeatureRewardByTokenIDError, err)
+	}
+	totalRewards := portalReward.GetTotalRewards()
+	for i := 0; i < len(totalRewards); i++ {
+		if totalRewards[i].GetTokenID() == tokenID {
+			totalAmount += totalRewards[i].GetAmount()
+			totalRewards[i].SetAmount(0)
+			break
+		}
+	}
+	fmt.Errorf("[ResetRewardFeatureStateByTokenID] ======== totalRewards: %v\n", totalRewards)
+	err = StoreRewardFeatureState(stateDB, PortalRewardName, totalRewards)
+	if err != nil {
+		return uint64(0), NewStatedbError(ResetAllFeatureRewardByTokenIDError, err)
+	}
+
+	// Note: when add more feature rewards, need to reset those rewards
+
+	return totalAmount, nil
+}
+
+func GetRewardFeatureAmountByTokenID(
+	stateDB *StateDB,
+	tokenID string) (uint64, error) {
+
+	totalAmount := uint64(0)
+	// reset for portal reward
+	allRewardFeature, err := GetAllRewardFeatureState(stateDB)
+	if err != nil {
+		return uint64(0), NewStatedbError(GetRewardFeatureAmountByTokenIDError, err)
+	}
+	totalRewards := allRewardFeature.GetTotalRewards()
+	for i := 0; i < len(totalRewards); i++ {
+		if totalRewards[i].GetTokenID() == tokenID {
+			totalAmount = totalRewards[i].GetAmount()
+			break
+		}
+	}
+
+	return totalAmount, nil
 }
 
 func GetRewardFeatureStateByFeatureName(
