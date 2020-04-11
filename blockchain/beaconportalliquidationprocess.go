@@ -133,6 +133,8 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 		return nil
 	}
 
+	Logger.log.Infof("start processLiquidationTopPercentileExchangeRates with data %#v", actionData)
+
 	keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate.String()]
 	if !ok {
@@ -143,6 +145,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddress)
 	cusStateKeyStr := cusStateKey.String()
 	custodianState, ok := currentPortalState.CustodianPoolState[cusStateKeyStr]
+
 	//todo: check custodian exist on db
 	if !ok {
 		Logger.log.Errorf("Custodian not found")
@@ -152,6 +155,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
+		Logger.log.Infof("custodian address %v, hold ptoken %+v, lock amount %+v", custodianState.GetIncognitoAddress(), custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
 		detectTPExchangeRates, err := calculateTPRatio(custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral(), exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Detect tp ratio error %v", err)
@@ -166,56 +170,12 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 		}
 
 		if len(detectTp) > 0 {
-			for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-				lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-				lockedAmountTmp[ptoken] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
-				custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+			//update current portal state
+			Logger.log.Infof("start update liquidation %#v", currentPortalState)
+			updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight, currentPortalState, cusStateKeyStr, custodianState, detectTp)
+			Logger.log.Infof("end update liquidation %#v", currentPortalState)
 
-				holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
-				holdingPubTokenTmp[ptoken] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
-				custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
-
-				custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral)
-			}
-
-			//update custodian
-			Logger.log.Infof("update custodian key %v", cusStateKey)
-			currentPortalState.CustodianPoolState[cusStateKeyStr] = custodianState
-
-			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
-
-			if !ok {
-				item := make(map[string]statedb.LiquidateExchangeRatesDetail)
-
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					item[ptoken] = statedb.LiquidateExchangeRatesDetail{
-						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-					}
-				}
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
-			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					} else {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					}
-				}
-
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
-			}
-
-
-
+			//save db
 			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 			newTPKey := beaconHeightBytes
 			newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
@@ -232,6 +192,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 				statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
 				newTPKey,
 				contentStatusBytes,
+				beaconHeight,
 			)
 
 			if err != nil {
@@ -256,6 +217,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 			statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
 			newTPKey,
 			contentStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -336,6 +298,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 			statedb.PortalLiquidationRedeemRequestStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
 			contentStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -380,6 +343,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 			statedb.PortalLiquidationRedeemRequestStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
 			contentStatusBytes,
+			beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Errorf("Store redeem liquidate exchange rates error %v\n", err)
@@ -471,6 +435,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 			statedb.PortalLiquidationCustodianDepositStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
 			contentStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {
@@ -493,6 +458,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 			statedb.PortalLiquidationCustodianDepositStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
 			contentStatusBytes,
+			beaconHeight,
 		)
 
 		if err != nil {

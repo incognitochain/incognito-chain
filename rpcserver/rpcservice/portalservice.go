@@ -64,7 +64,7 @@ func (portal *PortalService) GetCustodianWithdrawByTxId(txId string) (jsonresult
 		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
-	if  custodianWithdraw == nil {
+	if custodianWithdraw == nil {
 		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
@@ -80,7 +80,6 @@ func (portal *PortalService) GetCustodianWithdrawByTxId(txId string) (jsonresult
 
 	return result, nil
 }
-
 
 func (portal *PortalService) GetFinalExchangeRates(beaconHeight uint64) (jsonresult.FinalExchangeRatesResult, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
@@ -100,7 +99,7 @@ func (portal *PortalService) GetFinalExchangeRates(beaconHeight uint64) (jsonres
 
 	result := jsonresult.FinalExchangeRatesResult{
 		BeaconHeight: beaconHeight,
-		Rates: item,
+		Rates:        item,
 	}
 	return result, nil
 }
@@ -150,11 +149,11 @@ func (portal *PortalService) getFinalExchangeRates(beaconHeight uint64) (*stated
 		return statedb.NewFinalExchangeRatesState(), err
 	}
 
-	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates); err != nil {
 		return statedb.NewFinalExchangeRatesState(), err
 	}
 
-	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates); err != nil {
 		return statedb.NewFinalExchangeRatesState(), err
 	}
 
@@ -178,21 +177,25 @@ func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(be
 
 	result := jsonresult.GetLiquidateAmountNeededCustodianDeposit{
 		IsFreeCollateralSelected: isFreeCollateralSelected,
-		Amount: amountNeeded,
-		TokenId: pTokenId,
-		FreeCollateral: custodian.GetFreeCollateral(),
+		Amount:                   amountNeeded,
+		TokenId:                  pTokenId,
+		FreeCollateral:           custodian.GetFreeCollateral(),
 	}
 
 	return result, nil
 }
 
-func (portal *PortalService) GetLiquidateTpExchangeRates(beaconHeight uint64 , custodianAddress string) (interface{}, error) {
+func (portal *PortalService) GetLiquidateTpExchangeRates(beaconHeight uint64, custodianAddress string) (interface{}, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	newTPKey := beaconHeightBytes
 	newTPKey = append(newTPKey, []byte(custodianAddress)...)
 
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
+	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(
+		portalStateDB,
+		statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
+		newTPKey,
+	)
 
 	if err != nil {
 		return nil, err
@@ -201,13 +204,11 @@ func (portal *PortalService) GetLiquidateTpExchangeRates(beaconHeight uint64 , c
 	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
 	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
-
 
 	return liquidateTopPercentileExchangeRatesStatus, nil
 }
-
 
 func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(beaconHeight uint64, custodianAddress string, tokenSymbol string) (jsonresult.GetLiquidateTpExchangeRates, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
@@ -235,9 +236,9 @@ func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(beaconHeight uin
 
 	tp := "TP" + strconv.Itoa(topPercentile.TPKey)
 	result := jsonresult.GetLiquidateTpExchangeRates{
-		TokenId: tokenSymbol,
+		TokenId:       tokenSymbol,
 		TopPercentile: tp,
-		Data: topPercentile,
+		Data:          topPercentile,
 	}
 
 	return result, nil
@@ -261,7 +262,7 @@ func (portal *PortalService) GetLiquidateExchangeRatesPool(
 	}
 
 	result := jsonresult.GetLiquidateExchangeRates{
-		TokenId: tokenSymbol,
+		TokenId:     tokenSymbol,
 		Liquidation: liquidateExchangeRatesDetail,
 	}
 	return result, nil
