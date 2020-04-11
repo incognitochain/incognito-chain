@@ -134,7 +134,7 @@ func (txSig *TxSignatureVer2) FromBytes(b []byte) error {
 	return nil
 }
 
-func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte) (*mlsag.Ring, [][]*big.Int, error) {
+func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
 	inputCoins := *inp
 	outputCoins := *out
 
@@ -163,7 +163,7 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 		outputCommitments.Add(outputCommitments, commitment)
 	}
 
-	ring := make([][]*operation.Point, privacy.RingSize)
+	ring := make([][]*operation.Point, ringSize)
 	key := params.senderSK
 
 	feeCommitment := new(operation.Point).ScalarMult(
@@ -172,8 +172,8 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 	)
 
 	// The indexes array is for validator recheck
-	indexes := make([][]*big.Int, privacy.RingSize)
-	for i := 0; i < privacy.RingSize; i += 1 {
+	indexes := make([][]*big.Int, ringSize)
+	for i := 0; i < ringSize; i += 1 {
 		sumInputs := new(operation.Point).Identity()
 		sumInputs.Sub(sumInputs, feeCommitment)
 
@@ -281,10 +281,15 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 
-	var pi int = common.RandIntInterval(0, privacy.RingSize-1)
+	ringSize := privacy.RingSize
+	if !params.hasPrivacy {
+		ringSize = 1
+	}
+
+	var pi int = common.RandIntInterval(0, ringSize-1)
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
 
-	ring, indexes, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID)
+	ring, indexes, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID, ringSize)
 	if err != nil {
 		Logger.Log.Errorf("generateMlsagRingWithIndexes got error %v ", err)
 		return err

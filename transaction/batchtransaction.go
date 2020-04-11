@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 )
 
 type batchTransaction struct {
@@ -60,13 +61,11 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 				continue
 			}
 			if tx.GetProof().GetVersion() == 1 {
-				var bulletproofV1 *privacy.AggregatedRangeProofV1 = new(privacy.AggregatedRangeProofV1)
-				bulletproofV1 = bulletproof.(*privacy.AggregatedRangeProofV1)
+				bulletproofV1 := bulletproof.(*privacy.AggregatedRangeProofV1)
 				bulletProofListVer1 = append(bulletProofListVer1, bulletproofV1)
 			} else if tx.GetProof().GetVersion() == 2 {
-				var p interface{} = bulletproof
-				bulletproofV2 := p.(privacy.AggregatedRangeProofV2)
-				bulletProofListVer2 = append(bulletProofListVer2, &bulletproofV2)
+				bulletproofV2 := bulletproof.(*privacy.AggregatedRangeProofV2)
+				bulletProofListVer2 = append(bulletProofListVer2, bulletproofV2)
 			}
 
 		}
@@ -80,7 +79,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", i)
 		return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 1 PAYMENT PROOF %d", i)), -1
 	}
-	ok, err, i = aggregatedrange.VerifyBatchingAggregatedRangeProofs(bulletProofListVer1)
+	ok, err, i = bulletproofs.VerifyBatch(bulletProofListVer2)
 	if err != nil {
 		return false, NewTransactionErr(TxProofVerifyFailError, err), -1
 	}

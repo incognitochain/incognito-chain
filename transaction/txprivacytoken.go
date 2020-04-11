@@ -238,8 +238,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				tempOutputCoin[0].CoinDetails.SetInfo(params.tokenParams.Receiver[0].Message)
 			}
 
-			sndOut := privacy.RandomScalar()
-			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			tempOutputCoin[0].CoinDetails.SetSNDerivator(privacy.RandomScalar())
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment
