@@ -479,7 +479,7 @@ func GetPortalRequestUnlockCollateralStatus(stateDB *StateDB, txID string) ([]by
 }
 
 //======================  Portal reward  ======================
-// getCustodianPoolState gets custodian pool state at beaconHeight
+// GetPortalRewardsByBeaconHeight gets portal reward state at beaconHeight
 func GetPortalRewardsByBeaconHeight(
 	stateDB *StateDB,
 	beaconHeight uint64,
@@ -497,7 +497,7 @@ func StorePortalRewards(
 		key := GeneratePortalRewardInfoObjectKey(beaconHeight, info.custodianIncAddr)
 		value := NewPortalRewardInfoWithValue(
 			info.custodianIncAddr,
-			info.amount,
+			info.rewards,
 		)
 		err := stateDB.SetStateObject(PortalRewardInfoObjectType, key, value)
 		if err != nil {
@@ -528,4 +528,66 @@ func GetPortalRequestWithdrawRewardStatus(stateDB *StateDB, txID string) ([]byte
 	}
 
 	return data, nil
+}
+
+func GetLockedCollateralStateByBeaconHeight(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) (*LockedCollateralState, error) {
+	lockedCollateralState, _, err := stateDB.getLockedCollateralState(beaconHeight)
+	if err != nil {
+		return nil, NewStatedbError(GetLockedCollateralStateError, err)
+	}
+	return lockedCollateralState, nil
+}
+
+// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
+func StoreLockedCollateralState(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	lockedCollateralState *LockedCollateralState) error {
+		key := GenerateLockedCollateralStateObjectKey(beaconHeight)
+		err := stateDB.SetStateObject(LockedCollateralStateObjectType, key, lockedCollateralState)
+		if err != nil {
+			return NewStatedbError(StorePortalRewardError, err)
+		}
+
+	return nil
+}
+
+//======================  Feature reward  ======================
+func StoreRewardFeatureState(
+	stateDB *StateDB,
+	featureName string,
+	rewardInfo []*RewardInfoDetail) error {
+	key := GenerateRewardFeatureStateObjectKey(featureName)
+	value := NewRewardFeatureStateWithValue(rewardInfo)
+
+	err := stateDB.SetStateObject(RewardFeatureStateObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePortalRewardError, err)
+	}
+
+	return nil
+}
+
+func GetRewardFeatureStateByFeatureName(
+	stateDB *StateDB,
+	featureName string) (*RewardFeatureState, error) {
+	result, _, err := stateDB.getFeatureRewardByFeatureName(featureName)
+	if err != nil {
+		return nil, NewStatedbError(GetRewardFeatureError, err)
+	}
+
+	return result, nil
+}
+
+func GetAllRewardFeatureState(
+	stateDB *StateDB) (*RewardFeatureState, error) {
+	result, _, err := stateDB.getAllFeatureRewards()
+	if err != nil {
+		return nil, NewStatedbError(GetAllRewardFeatureError, err)
+	}
+
+	return result, nil
 }

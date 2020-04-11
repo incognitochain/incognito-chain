@@ -1356,3 +1356,52 @@ func (stateDB *StateDB) getPortalStatusByKey(key common.Hash) (*PortalStatusStat
 	}
 	return NewPortalStatusState(), false, nil
 }
+
+func (stateDB *StateDB) getLockedCollateralState(beaconHeight uint64) (*LockedCollateralState, bool, error) {
+	key := GenerateLockedCollateralStateObjectKey(beaconHeight)
+	lockedCollateralState, err := stateDB.getStateObject(LockedCollateralStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if lockedCollateralState != nil {
+		return lockedCollateralState.GetValue().(*LockedCollateralState), true, nil
+	}
+	return NewLockedCollateralState(), false, nil
+}
+
+// ================================= Feature reward OBJECT =======================================
+func (stateDB *StateDB) getFeatureRewardByFeatureName(featureName string) (*RewardFeatureState, bool, error) {
+	key := GenerateRewardFeatureStateObjectKey(featureName)
+	rewardFeatureState, err := stateDB.getStateObject(RewardFeatureStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if rewardFeatureState != nil {
+		return rewardFeatureState.GetValue().(*RewardFeatureState), true, nil
+	}
+	return NewRewardFeatureState(), false, nil
+}
+
+func (stateDB *StateDB) getAllFeatureRewards() (*RewardFeatureState, bool, error) {
+	result := NewRewardFeatureState()
+
+	temp := stateDB.trie.NodeIterator(GetRewardFeatureStatePrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardFeature := NewRewardFeatureState()
+		err := json.Unmarshal(newValue, rewardFeature)
+		if err != nil {
+			panic("wrong expect type")
+		}
+
+		for _, r := range rewardFeature.totalRewards {
+			result.AddTotalRewards(r.tokenID, r.amount)
+		}
+	}
+	return result, true, nil
+}

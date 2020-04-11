@@ -189,8 +189,6 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		Logger.log.Errorf("ERROR: an error occured while initializing request ptoken response tx: %+v", initErr)
 		return nil, initErr
 	}
-
-	Logger.log.Errorf("Suucc: %+v", err)
 	return resTx, nil
 }
 
@@ -455,6 +453,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 	meta := metadata.NewPortalWithdrawRewardResponse(
 		withdrawRewardContent.TxReqID,
 		withdrawRewardContent.CustodianAddressStr,
+		withdrawRewardContent.TokenID,
 		withdrawRewardContent.RewardAmount,
 		metadata.PortalRequestWithdrawRewardResponseMeta,
 	)
@@ -467,17 +466,62 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 
 	// the returned currency is PRV
-	resTx := new(transaction.Tx)
-	err = resTx.InitTxSalary(
-		withdrawRewardContent.RewardAmount,
-		&receiverAddr,
-		producerPrivateKey,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
-		meta,
-	)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", err)
-		return nil, nil
+	if withdrawRewardContent.TokenID.String() == common.PRVIDStr {
+		resTx := new(transaction.Tx)
+		err = resTx.InitTxSalary(
+			withdrawRewardContent.RewardAmount,
+			&receiverAddr,
+			producerPrivateKey,
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			meta,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", err)
+			return nil, nil
+		}
+		return resTx, nil
+	} else {
+		// in case the returned currency is privacy custom token
+		receiver := &privacy.PaymentInfo{
+			Amount:         withdrawRewardContent.RewardAmount,
+			PaymentAddress: receiverAddr,
+		}
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], withdrawRewardContent.TokenID[:])
+		propID := common.Hash(propertyID)
+		tokenParams := &transaction.CustomTokenPrivacyParamTx{
+			PropertyID: propID.String(),
+			// PropertyName:   issuingAcceptedInst.IncTokenName,
+			// PropertySymbol: issuingAcceptedInst.IncTokenName,
+			Amount:      withdrawRewardContent.RewardAmount,
+			TokenTxType: transaction.CustomTokenInit,
+			Receiver:    []*privacy.PaymentInfo{receiver},
+			TokenInput:  []*privacy.InputCoin{},
+			Mintable:    true,
+		}
+		resTx := &transaction.TxCustomTokenPrivacy{}
+		txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+		featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
+		err = resTx.Init(
+			transaction.NewTxPrivacyTokenInitParams(
+				producerPrivateKey,
+				[]*privacy.PaymentInfo{},
+				nil,
+				0,
+				tokenParams,
+				txStateDB,
+				meta,
+				false,
+				false,
+				shardID,
+				nil,
+				featureStateDB,
+			),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", err)
+			return nil, nil
+		}
+		return resTx, nil
 	}
-	return resTx, nil
 }

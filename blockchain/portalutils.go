@@ -19,6 +19,8 @@ type CurrentPortalState struct {
 	WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest       // key : hash(beaconHeight || UniqueRedeemID)
 	FinalExchangeRatesState    map[string]*statedb.FinalExchangeRatesState    // key : hash(beaconHeight || TxID)
 	LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool // key : hash(beaconHeight || TxID)
+	// it used for calculate reward for custodian at the end epoch
+	LockedCollateralState *statedb.LockedCollateralState
 	//Store temporary exchange rates requests
 	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 }
@@ -53,13 +55,15 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-
 	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
-
 	liquidateExchangeRatesPool, err := statedb.GetLiquidateExchangeRatesPool(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	lockedCollateralState, err := statedb.GetLockedCollateralStateByBeaconHeight(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +75,7 @@ func InitCurrentPortalStateFromDB(
 		FinalExchangeRatesState:    finalExchangeRates,
 		ExchangeRatesRequests:      make(map[string]*metadata.ExchangeRatesRequestStatus),
 		LiquidateExchangeRatesPool: liquidateExchangeRatesPool,
+		LockedCollateralState:      lockedCollateralState,
 	}, nil
 }
 
@@ -91,13 +96,15 @@ func storePortalStateToDB(
 	if err != nil {
 		return err
 	}
-
 	err = statedb.StoreBulkFinalExchangeRatesState(stateDB, beaconHeight, currentPortalState.FinalExchangeRatesState)
 	if err != nil {
 		return err
 	}
-
 	err = statedb.StoreBulkLiquidateExchangeRatesPool(stateDB, beaconHeight, currentPortalState.LiquidateExchangeRatesPool)
+	if err != nil {
+		return err
+	}
+	err = statedb.StoreLockedCollateralState(stateDB, beaconHeight, currentPortalState.LockedCollateralState)
 	if err != nil {
 		return err
 	}
@@ -152,8 +159,8 @@ func pickSingleCustodian(
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(cloneCustodianList), func(i, j int) {
 		cloneCustodianList[i],
-		cloneCustodianList[j] = cloneCustodianList[j],
-		cloneCustodianList[i]
+			cloneCustodianList[j] = cloneCustodianList[j],
+			cloneCustodianList[i]
 	})
 
 	//pToken to PRV

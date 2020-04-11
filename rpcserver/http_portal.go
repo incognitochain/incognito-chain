@@ -234,6 +234,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		CustodianPool              map[string]*statedb.CustodianState             `json:"CustodianPool"`
 		FinalExchangeRatesState    map[string]*statedb.FinalExchangeRatesState    `json:"FinalExchangeRatesState"`
 		LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool `json:"LiquidateExchangeRatesPool"`
+		LockedCollateralState      *statedb.LockedCollateralState                 `json:"LockedCollateralState"`
 		BeaconTimeStamp            int64                                          `json:"BeaconTimeStamp"`
 	}
 
@@ -244,6 +245,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		CustodianPool:              portalState.CustodianPoolState,
 		FinalExchangeRatesState:    portalState.FinalExchangeRatesState,
 		LiquidateExchangeRatesPool: portalState.LiquidateExchangeRatesPool,
+		LockedCollateralState:      portalState.LockedCollateralState,
 	}
 	return result, nil
 }
@@ -638,11 +640,22 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqWithdrawRewardPortal(param
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddressStr is invalid"))
 	}
+	tokenID := new(common.Hash)
+	tokenIDStr, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+
+	}
+	var err error
+	tokenID, err = tokenID.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
 
 	meta, _ := metadata.NewPortalRequestWithdrawReward(
 		metadata.PortalRequestWithdrawRewardMeta,
 		incognitoAddress,
-	)
+		*tokenID)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -702,8 +715,6 @@ func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeCha
 	}
 
 	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
-
-	//stateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), latestBeaconHeight)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", incognitoAddress, err))
@@ -715,10 +726,11 @@ func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeCha
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, err)
 	}
 
-	rewardAmount := uint64(0)
+	rewardAmount := map[string]uint64{}
 	for _, cus := range portalState.CustodianPoolState {
 		if cus.GetIncognitoAddress() == incognitoAddress {
 			rewardAmount = cus.GetRewardAmount()
+			break
 		}
 	}
 	return rewardAmount, nil
@@ -743,4 +755,25 @@ func (httpServer *HttpServer) handleGetRequestWithdrawPortalRewardStatus(params 
 		return nil, rpcservice.NewRPCError(rpcservice.GetRequestWithdrawRewardStatusError, err)
 	}
 	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetRewardFeature(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	featureName, ok := data["FeatureName"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param FeatureName is invalid"))
+	}
+
+	result, err := httpServer.blockService.GetRewardFeatureByFeatureName(featureName)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetRequestWithdrawRewardStatusError, err)
+	}
+	return result, nil
 }

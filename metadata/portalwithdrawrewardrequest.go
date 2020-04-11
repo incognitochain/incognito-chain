@@ -16,6 +16,7 @@ import (
 type PortalRequestWithdrawReward struct {
 	MetadataBase
 	CustodianAddressStr string
+	TokenID             common.Hash
 }
 
 // PortalRequestWithdrawRewardAction - shard validator creates instruction that contain this action content
@@ -31,6 +32,7 @@ type PortalRequestWithdrawRewardAction struct {
 // both accepted and rejected status
 type PortalRequestWithdrawRewardContent struct {
 	CustodianAddressStr string
+	TokenID             common.Hash
 	RewardAmount        uint64
 	TxReqID             common.Hash
 	ShardID             byte
@@ -40,18 +42,21 @@ type PortalRequestWithdrawRewardContent struct {
 type PortalRequestWithdrawRewardStatus struct {
 	Status              byte
 	CustodianAddressStr string
+	TokenID             common.Hash
 	RewardAmount        uint64
 	TxReqID             common.Hash
 }
 
 func NewPortalRequestWithdrawReward(
 	metaType int,
-	incogAddressStr string,) (*PortalRequestWithdrawReward, error) {
+	incogAddressStr string,
+	tokenID common.Hash) (*PortalRequestWithdrawReward, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	meta := &PortalRequestWithdrawReward{
 		CustodianAddressStr: incogAddressStr,
+		TokenID:             tokenID,
 	}
 	meta.MetadataBase = metadataBase
 	return meta, nil
@@ -77,7 +82,7 @@ func (meta PortalRequestWithdrawReward) ValidateSanityData(bcr BlockchainRetriev
 		return false, false, errors.New("Custodian incognito address is invalid")
 	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false,  errors.New("Custodian incognito address is not signer")
+		return false, false, errors.New("Custodian incognito address is not signer")
 	}
 
 	// check tx type
@@ -95,6 +100,7 @@ func (meta PortalRequestWithdrawReward) ValidateMetadataByItself() bool {
 func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
 	record := meta.MetadataBase.Hash().String()
 	record += meta.CustodianAddressStr
+	record += meta.TokenID.String()
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -118,6 +124,3 @@ func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, bcr Blo
 func (meta *PortalRequestWithdrawReward) CalculateSize() uint64 {
 	return calculateSize(meta)
 }
-
-
-

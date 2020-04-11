@@ -15,6 +15,7 @@ import (
 type PortalWithdrawRewardResponse struct {
 	MetadataBase
 	CustodianAddressStr string
+	TokenID common.Hash
 	RewardAmount        uint64
 	TxReqID             common.Hash
 }
@@ -22,6 +23,7 @@ type PortalWithdrawRewardResponse struct {
 func NewPortalWithdrawRewardResponse(
 	reqTxID common.Hash,
 	custodianAddressStr string,
+	tokenID common.Hash,
 	rewardAmount uint64,
 	metaType int,
 ) *PortalWithdrawRewardResponse {
@@ -31,6 +33,7 @@ func NewPortalWithdrawRewardResponse(
 	return &PortalWithdrawRewardResponse{
 		MetadataBase:        metadataBase,
 		CustodianAddressStr: custodianAddressStr,
+		TokenID: tokenID,
 		RewardAmount:        rewardAmount,
 		TxReqID:             reqTxID,
 	}
@@ -59,6 +62,7 @@ func (iRes PortalWithdrawRewardResponse) Hash() *common.Hash {
 	record := iRes.MetadataBase.Hash().String()
 	record += iRes.TxReqID.String()
 	record += iRes.CustodianAddressStr
+	record += iRes.TokenID.String()
 	record += strconv.FormatUint(iRes.RewardAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -98,6 +102,7 @@ func (iRes PortalWithdrawRewardResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 		var txReqIDFromInst common.Hash
 		var custodianAddrStrFromInst string
 		var rewardAmountFromInst uint64
+		var tokenIDFromInst common.Hash
 
 		contentBytes := []byte(inst[3])
 		var reqWithdrawRewardContent PortalRequestWithdrawRewardContent
@@ -110,6 +115,7 @@ func (iRes PortalWithdrawRewardResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 		txReqIDFromInst = reqWithdrawRewardContent.TxReqID
 		custodianAddrStrFromInst = reqWithdrawRewardContent.CustodianAddressStr
 		rewardAmountFromInst = reqWithdrawRewardContent.RewardAmount
+		tokenIDFromInst = reqWithdrawRewardContent.TokenID
 
 		if !bytes.Equal(iRes.TxReqID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
@@ -121,11 +127,10 @@ func (iRes PortalWithdrawRewardResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 			continue
 		}
 
-		PRVIDStr := common.PRVCoinID.String()
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
 			rewardAmountFromInst != paidAmount ||
-			PRVIDStr != assetID.String() {
+			tokenIDFromInst.String() != assetID.String() {
 			continue
 		}
 		idx = i

@@ -15,7 +15,7 @@ type CustodianState struct {
 	holdingPubTokens       map[string]uint64 // tokenID : amount
 	lockedAmountCollateral map[string]uint64 // tokenID : amount
 	remoteAddresses        []RemoteAddress
-	rewardAmount           uint64 // reward in prv
+	rewardAmount           map[string]uint64 // tokenID : amount
 }
 
 type RemoteAddress struct {
@@ -71,11 +71,11 @@ func (cs *CustodianState) SetFreeCollateral(amount uint64) {
 	cs.freeCollateral = amount
 }
 
-func (cs CustodianState) GetRewardAmount() uint64 {
+func (cs CustodianState) GetRewardAmount() map[string]uint64 {
 	return cs.rewardAmount
 }
 
-func (cs *CustodianState) SetRewardAmount(amount uint64) {
+func (cs *CustodianState) SetRewardAmount(amount map[string]uint64) {
 	cs.rewardAmount = amount
 }
 
@@ -87,7 +87,7 @@ func (cs CustodianState) MarshalJSON() ([]byte, error) {
 		HoldingPubTokens       map[string]uint64
 		LockedAmountCollateral map[string]uint64
 		RemoteAddresses        []RemoteAddress
-		RewardAmount           uint64
+		RewardAmount           map[string]uint64
 	}{
 		IncognitoAddress:       cs.incognitoAddress,
 		TotalCollateral:        cs.totalCollateral,
@@ -111,7 +111,7 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 		HoldingPubTokens       map[string]uint64
 		LockedAmountCollateral map[string]uint64
 		RemoteAddresses        []RemoteAddress
-		RewardAmount           uint64
+		RewardAmount           map[string]uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -149,7 +149,7 @@ func (r RemoteAddress) MarshalJSON() ([]byte, error) {
 		Address  string
 	}{
 		PTokenID: r.pTokenID,
-		Address : r.address,
+		Address:  r.address,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -183,7 +183,11 @@ func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (strin
 }
 
 func NewCustodianState() *CustodianState {
-	return &CustodianState{}
+	return &CustodianState{
+		rewardAmount:           map[string]uint64{},
+		holdingPubTokens:       map[string]uint64{},
+		lockedAmountCollateral: map[string]uint64{},
+	}
 }
 
 func NewCustodianStateWithValue(
@@ -193,7 +197,7 @@ func NewCustodianStateWithValue(
 	holdingPubTokens map[string]uint64,
 	lockedAmountCollateral map[string]uint64,
 	remoteAddresses []RemoteAddress,
-	rewardAmount uint64) *CustodianState {
+	rewardAmount map[string]uint64) *CustodianState {
 
 	return &CustodianState{
 		incognitoAddress:       incognitoAddress,
@@ -207,7 +211,7 @@ func NewCustodianStateWithValue(
 }
 
 func NewRemoteAddressWithValue(pToken string, address string) *RemoteAddress {
-	return &RemoteAddress{pTokenID:pToken, address: address}
+	return &RemoteAddress{pTokenID: pToken, address: address}
 }
 
 type CustodianStateObject struct {

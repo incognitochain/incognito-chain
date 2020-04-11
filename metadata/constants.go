@@ -67,6 +67,7 @@ const (
 	PortalRedeemLiquidateExchangeRatesResponseMeta = 121
 	PortalLiquidationCustodianDepositMeta = 122
 	PortalLiquidationCustodianDepositResponseMeta = 123
+	PortalTotalRewardCustodianMeta = 124
 
 	// relaying
 	RelayingBNBHeaderMeta = 200

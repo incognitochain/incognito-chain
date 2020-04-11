@@ -22,23 +22,46 @@ func (blockchain *BlockChain) processPortalReward(
 
 	reqStatus := instructions[2]
 	if reqStatus == "portalRewardInst" {
-		// update reward amount for each custodian
-		for _, receiver := range actionData.Rewards {
-			cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, receiver.GetCustodianIncAddr())
-			cusStateKeyStr := cusStateKey.String()
-			custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
-			if custodianState == nil {
-				Logger.log.Errorf("[processPortalReward] Can not get custodian state with key %v", cusStateKey)
-				continue
+		Logger.log.Errorf("[processPortalReward] ====================")
+		// update reward amount for custodian
+		for custodianKey, custodianState := range currentPortalState.CustodianPoolState {
+			custodianAddr := custodianState.GetIncognitoAddress()
+			custodianReward := custodianState.GetRewardAmount()
+			if custodianReward == nil {
+				custodianReward = map[string]uint64{}
+			}
+			for _, rewardInfo := range actionData.Rewards {
+				if rewardInfo.GetCustodianIncAddr() == custodianAddr {
+					for _, rewardDetail := range rewardInfo.GetRewards() {
+						custodianReward[rewardDetail.GetTokenID()] += rewardDetail.GetAmount()
+					}
+					break
+				}
+			}
+			Logger.log.Errorf("[processPortalReward] currentPortalState.CustodianPoolState[custodianKey]: %v\n",custodianReward)
+			currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
+		}
+
+		if (beaconHeight+1) % blockchain.config.ChainParams.Epoch != 1 {
+			totalLockedCollateralAmount := uint64(0)
+			lockedCollateralDetails := currentPortalState.LockedCollateralState.GetLockedCollateralDetail()
+			for _, custodianState := range currentPortalState.CustodianPoolState {
+				for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
+					totalLockedCollateralAmount += lockedAmount
+					lockedCollateralDetails[custodianState.GetIncognitoAddress()] += lockedAmount
+				}
 			}
 
-			custodianState.SetRewardAmount(custodianState.GetRewardAmount() + receiver.GetAmount())
+			currentPortalState.LockedCollateralState.SetTotalLockedCollateralInEpoch(
+				currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() + totalLockedCollateralAmount)
+			currentPortalState.LockedCollateralState.SetLockedCollateralDetail(
+				lockedCollateralDetails)
 		}
 
 		// store reward at beacon height into db
 		err = statedb.StorePortalRewards(
 			stateDB,
-			beaconHeight + 1,
+			beaconHeight+1,
 			actionData.Rewards,
 		)
 		if err != nil {
@@ -76,14 +99,17 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 			Logger.log.Errorf("[processPortalWithdrawReward] Can not get custodian state with key %v", cusStateKey)
 			return nil
 		}
-		custodianState.SetRewardAmount( 0)
+		updatedRewardAmount := custodianState.GetRewardAmount()
+		updatedRewardAmount[actionData.TokenID.String()] = 0
+		currentPortalState.CustodianPoolState[cusStateKeyStr].SetRewardAmount(updatedRewardAmount)
 
 		// track request withdraw portal reward
 		portalReqRewardStatus := metadata.PortalRequestWithdrawRewardStatus{
-			Status: common.PortalReqWithdrawRewardAcceptedStatus,
+			Status:              common.PortalReqWithdrawRewardAcceptedStatus,
 			CustodianAddressStr: actionData.CustodianAddressStr,
-			RewardAmount: actionData.RewardAmount,
-			TxReqID: actionData.TxReqID,
+			TokenID:             actionData.TokenID,
+			RewardAmount:        actionData.RewardAmount,
+			TxReqID:             actionData.TxReqID,
 		}
 		portalReqRewardStatusBytes, _ := json.Marshal(portalReqRewardStatus)
 		err = statedb.StorePortalRequestWithdrawRewardStatus(
@@ -99,10 +125,11 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
 		// track request withdraw portal reward
 		portalReqRewardStatus := metadata.PortalRequestWithdrawRewardStatus{
-			Status: common.PortalReqWithdrawRewardRejectedStatus,
+			Status:              common.PortalReqWithdrawRewardRejectedStatus,
 			CustodianAddressStr: actionData.CustodianAddressStr,
-			RewardAmount: actionData.RewardAmount,
-			TxReqID: actionData.TxReqID,
+			TokenID:             actionData.TokenID,
+			RewardAmount:        actionData.RewardAmount,
+			TxReqID:             actionData.TxReqID,
 		}
 		portalReqRewardStatusBytes, _ := json.Marshal(portalReqRewardStatus)
 		err = statedb.StorePortalRequestWithdrawRewardStatus(
@@ -114,6 +141,58 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 			Logger.log.Errorf("ERROR: an error occured while tracking liquidation custodian: %+v", err)
 			return nil
 		}
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalTotalCustodianReward(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState) error {
+
+	// unmarshal instructions content
+	var actionData metadata.PortalTotalCustodianReward
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	if reqStatus == "portalTotalRewardInst" {
+		// reset total locked collateral for custodians for new epoch
+		currentPortalState.LockedCollateralState.Reset()
+
+		// get old total custodian reward
+		oldCustodianRewards, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, statedb.PortalRewardName)
+		if err != nil {
+			Logger.log.Errorf("ERROR: Can not get reward for custodian: %+v", err)
+			return nil
+		}
+
+		// update total custodian reward
+		for _, r := range actionData.Rewards {
+			oldCustodianRewards.AddTotalRewards(r.GetTokenID(), r.GetAmount())
+		}
+
+		// reset total locked collateral for custodians
+		currentPortalState.LockedCollateralState.Reset()
+		Logger.log.Errorf("[processPortalTotalCustodianReward] RESET LOCKED COLLATERAL : %v\n", currentPortalState.LockedCollateralState)
+
+		// store total custodian reward into db
+		err = statedb.StoreRewardFeatureState(
+			stateDB,
+			statedb.PortalRewardName,
+			oldCustodianRewards.GetTotalRewards(),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while storing total custodian reward: %+v", err)
+			return nil
+		}
+	} else {
+		Logger.log.Errorf("ERROR: Invalid status of instruction: %+v", reqStatus)
+		return nil
 	}
 
 	return nil

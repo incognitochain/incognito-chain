@@ -42,6 +42,8 @@ const (
 	CustodianStateObjectType
 	WaitingRedeemRequestObjectType
 	PortalRewardInfoObjectType
+	LockedCollateralStateObjectType
+	RewardFeatureStateObjectType
 )
 
 // Prefix length

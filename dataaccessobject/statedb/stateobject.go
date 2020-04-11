@@ -77,6 +77,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newWaitingRedeemRequestObjectWithValue(db, hash, value)
 	case CustodianStateObjectType:
 		return newCustodianStateObjectWithValue(db, hash, value)
+	case LockedCollateralStateObjectType:
+		return newLockedCollateralStateObjectWithValue(db, hash, value)
+	case RewardFeatureStateObjectType:
+		return newRewardFeatureStateObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -134,6 +138,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newWaitingRedeemRequestObject(db, hash)
 	case CustodianStateObjectType:
 		return newCustodianStateObject(db, hash)
+	case LockedCollateralStateObjectType:
+		return newLockedCollateralStateObject(db, hash)
+	case RewardFeatureStateObjectType:
+		return newRewardFeatureStateObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

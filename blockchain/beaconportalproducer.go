@@ -174,7 +174,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		newCustodian := statedb.NewCustodianStateWithValue(
 			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
 			nil, nil,
-			meta.RemoteAddresses, 0)
+			meta.RemoteAddresses, nil)
 		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	} else {
 		Logger.log.Errorf("buildInstructionsForCustodianDeposit - 22222 !!!!!")
