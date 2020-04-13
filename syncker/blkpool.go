@@ -1,7 +1,6 @@
 package syncker
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -28,7 +27,6 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 			//remove block from blkPoolByHash
 			if pool.GetPoolSize() > 100 {
 				blkList := pool.GetBlockList()
-				fmt.Println(blkList)
 				for _, blk := range blkList {
 					if IsOutdatedBlk(blk) {
 						pool.RemoveBlock(blk.Hash())
