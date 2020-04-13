@@ -126,6 +126,13 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 	return res
 }
 
+func GetPoolInfo(byHash map[string]common.BlockPoolInterface) (res []common.BlockPoolInterface) {
+	for _, v := range byHash {
+		res = append(res, v)
+	}
+	return res
+}
+
 func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Hash) (diffHashes map[byte][]common.Hash) {
 	diffHashes = make(map[byte][]common.Hash)
 	poolListsHash := make(map[byte][]common.Hash)

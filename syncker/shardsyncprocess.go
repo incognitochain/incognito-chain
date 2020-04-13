@@ -3,9 +3,10 @@ package syncker
 import (
 	"context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -36,13 +37,20 @@ type ShardSyncProcess struct {
 }
 
 func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
+			return true
+		}
+		return false
+	}
+
 	s := &ShardSyncProcess{
 		shardID:          shardID,
 		status:           STOP_SYNC,
 		Server:           server,
 		Chain:            chain,
 		beaconChain:      beaconChain,
-		shardPool:        NewBlkPool("ShardPool-" + string(shardID)),
+		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState),
 
@@ -140,7 +148,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			continue
 		}
 
-		fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
+		fmt.Println("Syncker: Insert shard", s.shardID, "from pool", blk.(common.BlockInterface).GetHeight())
 		if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
 			return
 		}
@@ -149,7 +157,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
-		s.shardPool.RemoveBlock(blk.Hash().String())
+		s.shardPool.RemoveBlock(blk.Hash())
 	}
 }
 func (s *ShardSyncProcess) syncShardProcess() {
@@ -230,7 +238,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d shard block(from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						fmt.Printf("Syncker Insert %d shard %d block(from %d to %d) elaspse %f \n", successBlk, s.shardID, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk >= len(blockBuffer) {
 							break
 						}

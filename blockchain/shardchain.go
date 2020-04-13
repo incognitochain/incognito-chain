@@ -12,6 +12,7 @@ import (
 )
 
 type ShardChain struct {
+	shardID   int
 	multiView *multiview.MultiView
 
 	BlockGen   *BlockGenerator
@@ -214,7 +215,7 @@ func (chain *ShardChain) GetConsensusType() string {
 }
 
 func (chain *ShardChain) GetShardID() int {
-	return int(chain.GetBestState().ShardID)
+	return chain.shardID
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {

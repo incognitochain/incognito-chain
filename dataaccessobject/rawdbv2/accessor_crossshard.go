@@ -9,6 +9,19 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+func StoreLastBeaconHeightConfirmCrossShard(db incdb.Database, height uint64) error {
+	if err := db.Put(lastBeaconHeightConfirmCrossShard, common.Uint64ToBytes(height)); err != nil {
+		return NewRawdbError(StoreCrossShardNextHeightError, err)
+	}
+	return nil
+}
+
+func GetLastBeaconHeightConfirmCrossShard(db incdb.Database) uint64 {
+	lastProcessHeight, _ := db.Get(lastBeaconHeightConfirmCrossShard)
+	height, _ := common.BytesToUint64(lastProcessHeight)
+	return height
+}
+
 func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64, val []byte) error {
 	key := GetCrossShardNextHeightKey(fromShard, toShard, curHeight)
 	if err := db.Put(key, val); err != nil {
