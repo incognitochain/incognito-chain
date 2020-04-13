@@ -3,6 +3,7 @@
 package mlsag
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 
@@ -183,14 +184,10 @@ func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*o
 	}
 	var b []byte
 	b = append(b, digest[:]...)
-	for i := 0; i < len(K); i += 1 {
+
+	// Process columns before the last
+	for i := 0; i < len(K)-1; i += 1 {
 		alphaG := new(operation.Point).ScalarMultBase(alpha[i])
-		if i == len(K)-1 {
-			alphaG = new(operation.Point).ScalarMult(
-				operation.PedCom.G[operation.PedersenRandomnessIndex],
-				alpha[i],
-			)
-		}
 
 		H := operation.HashToPoint(K[i].ToBytesS())
 		alphaH := new(operation.Point).ScalarMult(H, alpha[i])
@@ -198,6 +195,14 @@ func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*o
 		b = append(b, alphaG.ToBytesS()...)
 		b = append(b, alphaH.ToBytesS()...)
 	}
+
+	// Process last column
+	alphaG := new(operation.Point).ScalarMult(
+		operation.PedCom.G[operation.PedersenRandomnessIndex],
+		alpha[len(K)-1],
+	)
+	b = append(b, alphaG.ToBytesS()...)
+
 	return operation.HashToScalar(b), nil
 }
 
@@ -219,7 +224,9 @@ func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operatio
 	// rHK: r_i*H_p(K_i)
 	// cKI: c*R~ (KI as keyImage)
 	// rHK_cKI: rHK + cKI
-	for i := 0; i < len(K); i += 1 {
+
+	// Process columns before the last
+	for i := 0; i < len(K)-1; i += 1 {
 		rG := new(operation.Point).ScalarMultBase(r[i])
 		if i == len(K)-1 {
 			rG = new(operation.Point).ScalarMult(
@@ -238,6 +245,16 @@ func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operatio
 		b = append(b, rG_cK.ToBytesS()...)
 		b = append(b, rHK_cKI.ToBytesS()...)
 	}
+
+	// Process last column
+	rG := new(operation.Point).ScalarMult(
+		operation.PedCom.G[operation.PedersenRandomnessIndex],
+		r[len(K)-1],
+	)
+	cK := new(operation.Point).ScalarMult(K[len(K)-1], c)
+	rG_cK := new(operation.Point).Add(rG, cK)
+	b = append(b, rG_cK.ToBytesS()...)
+
 	return operation.HashToScalar(b), nil
 }
 
@@ -292,8 +309,9 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 
 func verifyRing(sig *MlsagSig, R *Ring, message []byte) (bool, error) {
 	digest := common.Keccak256(message)
-	c := sig.c
-	cBefore := sig.c
+
+	c := *sig.c
+	cBefore := *sig.c
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			digest,
@@ -306,7 +324,7 @@ func verifyRing(sig *MlsagSig, R *Ring, message []byte) (bool, error) {
 		}
 		c = *nextC
 	}
-	return c == cBefore, nil
+	return bytes.Equal(c.ToBytesS(), cBefore.ToBytesS()), nil
 }
 
 func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
@@ -324,6 +342,6 @@ func (this *Mlsag) Sign(message []byte) (*MlsagSig, error) {
 		return nil, err
 	}
 	return &MlsagSig{
-		*c[0], this.keyImages, r,
+		c[0], this.keyImages, r,
 	}, nil
 }

@@ -163,4 +163,19 @@ func getStatistic(filename string) {
 func main() {
 	getStatistic("./tx1.json")
 	getStatistic("./tx2.json")
+
+	// s, _ := new(big.Int).SetString("1000000000000000000", 10)
+	// fmt.Println(len(s.Bytes()))
+	// fmt.Println(s.Bytes())
+	// fmt.Println("?")
+	// a := new(int)
+	// *a = 10
+
+	// b := *a
+
+	// c := &b
+	// *c = 20
+
+	// fmt.Println(*a)
+	// fmt.Println(*c)
 }

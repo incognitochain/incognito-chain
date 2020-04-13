@@ -8,10 +8,29 @@ import (
 )
 
 type MlsagSig struct {
-	c         operation.Scalar      // 32 bytes
+	c         *operation.Scalar     // 32 bytes
 	keyImages []*operation.Point    // 32 * size bytes
 	r         [][]*operation.Scalar // 32 * size_1 * size_2 bytes
 }
+
+func NewMlsagSig(c *operation.Scalar, keyImages []*operation.Point, r [][]*operation.Scalar) (*MlsagSig, error) {
+	if len(keyImages) != len(r[0]) {
+		return nil, errors.New("Cannot create new mlsag signature, length of keyImages is not correct")
+	}
+	res := new(MlsagSig)
+	res.SetC(c)
+	res.SetKeyImages(keyImages)
+	res.SetR(r)
+	return res, nil
+}
+
+func (this MlsagSig) GetC() *operation.Scalar          { return this.c }
+func (this MlsagSig) GetKeyImages() []*operation.Point { return this.keyImages }
+func (this MlsagSig) GetR() [][]*operation.Scalar      { return this.r }
+
+func (this *MlsagSig) SetC(c *operation.Scalar)                  { this.c = c }
+func (this *MlsagSig) SetKeyImages(keyImages []*operation.Point) { this.keyImages = keyImages }
+func (this *MlsagSig) SetR(r [][]*operation.Scalar)              { this.r = r }
 
 func (this *MlsagSig) ToHex() (string, error) {
 	b, err := this.ToBytes()
@@ -26,7 +45,7 @@ func (this *MlsagSig) ToBytes() ([]byte, error) {
 	b = append(b, MlsagPrefix)
 
 	// Number of private keys should be up to 2^8 only (1 byte)
-	var length byte = byte(len(this.keyImages))
+	length := byte(len(this.keyImages))
 
 	b = append(b, length)
 	b = append(b, this.c.ToBytesS()...)
@@ -75,7 +94,7 @@ func (this *MlsagSig) FromBytes(b []byte) (*MlsagSig, error) {
 	}
 
 	offset := 2
-	this.c = *new(operation.Scalar).FromBytesS(b[offset : offset+HashSize])
+	this.c = new(operation.Scalar).FromBytesS(b[offset : offset+HashSize])
 	offset += HashSize
 
 	this.keyImages = make([]*operation.Point, m)

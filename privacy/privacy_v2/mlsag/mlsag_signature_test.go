@@ -3,7 +3,6 @@ package mlsag
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -37,9 +36,6 @@ func TestRing(t *testing.T) {
 
 	ringTemp, err := new(Ring).FromBytes(bRing)
 	assert.Equal(t, nil, err, "There should not be any error when ring.FromBytes")
-
-	fmt.Println(ring.keys)
-	fmt.Println(ringTemp.keys)
 
 	bRingTemp, err := ringTemp.ToBytes()
 	assert.Equal(t, nil, err, "There should not be any error when ring.ToBytes")
