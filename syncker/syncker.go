@@ -30,7 +30,7 @@ type SynckerManager struct {
 	beaconPool            *BlkPool
 	shardPool             map[int]*BlkPool
 	s2bPool               *BlkPool
-	crossShardPool        map[int]*CrossShardBlkPool
+	crossShardPool        map[int]*BlkPool
 }
 
 func NewSynckerManager() *SynckerManager {
@@ -38,7 +38,7 @@ func NewSynckerManager() *SynckerManager {
 		ShardSyncProcess:      make(map[int]*ShardSyncProcess),
 		shardPool:             make(map[int]*BlkPool),
 		CrossShardSyncProcess: make(map[int]*CrossShardSyncProcess),
-		crossShardPool:        make(map[int]*CrossShardBlkPool),
+		crossShardPool:        make(map[int]*BlkPool),
 	}
 	return s
 }
@@ -197,6 +197,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 			blk.Header.ShardID = byte(i)
 			v = *blk.Hash()
 		}
+
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
 			res[byte(i)] = append(res[byte(i)], v)
 			//fmt.Println("syncker: get block ", i, v.GetHeight(), v.Hash().String())
@@ -231,7 +232,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
-					if synckerManager.crossShardPool[int(toShard)].HasBlock(shardState.Hash) {
+					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
 						res[byte(i)] = append(res[byte(i)], synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash))
 					}
 					lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
@@ -340,7 +341,7 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 				select {
 				case blk := <-ch:
 					if !isNil(blk) {
-						synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.CrossShardBlkPoolInterface))
+						synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.BlockPoolInterface))
 					} else {
 						return
 					}

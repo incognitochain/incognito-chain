@@ -70,10 +70,12 @@ func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	pool.action <- func() {
 		prevHash := blk.GetPrevHash().String()
 		hash := blk.Hash().String()
+		//if exists, return
 		if _, ok := pool.blkPoolByHash[hash]; ok {
 			return
 		}
 		pool.blkPoolByHash[hash] = blk
+		//insert into prehash datastructure
 		if common.IndexOfStr(hash, pool.blkPoolByPrevHash[prevHash]) > -1 {
 			return
 		}
@@ -108,6 +110,20 @@ func (pool *BlkPool) RemoveBlock(hash *common.Hash) {
 	}
 }
 
+func (pool *BlkPool) GetPoolInfo() []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		res <- GetPoolInfo(pool.blkPoolByHash)
+	}
+	return <-res
+}
+
+// END OF COMMON FUNCTION =======================================================================
+
+// START OF SPECIAL CASE FUNCTION =======================================================================
+
+//When get s2b block for producer
+//Get Block from current hash to final block
 func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []common.BlockPoolInterface {
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
@@ -116,18 +132,12 @@ func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []common.Blo
 	return <-res
 }
 
+//When get last block for s2b synchronization
+//Get longest branch in pool
 func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInterface {
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetLongestChain(currentHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
-	}
-	return <-res
-}
-
-func (pool *BlkPool) GetPoolInfo() []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
-	pool.action <- func() {
-		res <- GetPoolInfo(pool.blkPoolByHash)
 	}
 	return <-res
 }

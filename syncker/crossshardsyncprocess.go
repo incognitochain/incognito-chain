@@ -15,7 +15,7 @@ type CrossShardSyncProcess struct {
 	shardID          int
 	shardSyncProcess *ShardSyncProcess
 	beaconChain      BeaconChainInterface
-	crossShardPool   *CrossShardBlkPool
+	crossShardPool   *BlkPool
 	actionCh         chan func()
 }
 
@@ -38,7 +38,7 @@ func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess,
 		server:           server,
 		beaconChain:      beaconChain,
 		shardSyncProcess: shardSyncProcess,
-		crossShardPool:   NewCrossShardBlkPool("crossshard", isOutdatedBlock),
+		crossShardPool:   NewBlkPool("crossshard", isOutdatedBlock),
 		shardID:          shardSyncProcess.shardID,
 		actionCh:         make(chan func()),
 	}
@@ -129,7 +129,7 @@ func (s *CrossShardSyncProcess) streamMissingCrossShardBlock(fromSID int, hashes
 		case blk := <-ch:
 			if !isNil(blk) {
 				fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
-				s.crossShardPool.AddBlock(blk.(common.CrossShardBlkPoolInterface))
+				s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
 			} else {
 				break
 			}
