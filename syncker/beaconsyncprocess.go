@@ -50,6 +50,23 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
+
+	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			if s.beaconPool.GetPoolSize() > 1000 {
+				removeOutdatedBlocks(s.beaconPool, func(blk interface{}) bool {
+					if blk.(*blockchain.BeaconBlock).GetHeight() < s.chain.GetFinalViewHeight() {
+						return true
+					}
+					return false
+				})
+			}
+		}
+	}()
+
 	return s
 }
 

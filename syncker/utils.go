@@ -162,10 +162,10 @@ type PoolInterface interface {
 	RemoveBlock(hash *common.Hash)
 }
 
-func removeOutdatedBlocks(pool PoolInterface, isOutDated func(uint64) bool) {
+func removeOutdatedBlocks(pool PoolInterface, isOutDated func(interface{}) bool) {
 	blkList := pool.GetBlockList()
 	for _, blk := range blkList {
-		if isOutDated(blk.GetHeight()) {
+		if isOutDated(blk) {
 			pool.RemoveBlock(blk.Hash())
 		}
 	}

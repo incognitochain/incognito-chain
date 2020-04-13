@@ -33,12 +33,8 @@ func (pool *BlkPool) Start() {
 	}
 }
 
-func (pool *BlkPool) GetPoolLength() int {
-	res := make(chan int)
-	pool.action <- func() {
-		res <- len(pool.blkPoolByHash)
-	}
-	return <-res
+func (pool *BlkPool) GetPoolSize() int {
+	return len(pool.blkPoolByHash)
 }
 
 func (pool *BlkPool) GetBlockList() []common.BlockPoolInterface {

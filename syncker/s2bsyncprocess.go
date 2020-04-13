@@ -41,6 +41,22 @@ func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconC
 	}
 
 	go s.syncS2BPoolProcess()
+
+	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			if s.s2bPool.GetPoolSize() > 1000 {
+				removeOutdatedBlocks(s.s2bPool, func(blk interface{}) bool {
+					if blk.(*blockchain.ShardToBeaconBlock).GetHeight() < s.beaconChain.GetShardBestViewHeight()[byte(blk.(*blockchain.ShardToBeaconBlock).GetShardID())] {
+						return true
+					}
+					return false
+				})
+			}
+		}
+	}()
 	return s
 }
 

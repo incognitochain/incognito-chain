@@ -53,6 +53,23 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
+
+	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			if s.shardPool.GetPoolSize() > 1000 {
+				removeOutdatedBlocks(s.shardPool, func(blk interface{}) bool {
+					if blk.(*blockchain.ShardBlock).GetHeight() < s.Chain.GetFinalViewHeight() {
+						return true
+					}
+					return false
+				})
+			}
+		}
+	}()
+
 	return s
 }
 

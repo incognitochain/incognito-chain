@@ -31,12 +31,8 @@ func (pool *CrossShardBlkPool) Start() {
 	}
 }
 
-func (pool *CrossShardBlkPool) GetPoolLength() int {
-	res := make(chan int)
-	pool.action <- func() {
-		res <- len(pool.blkPoolByHash)
-	}
-	return <-res
+func (pool *CrossShardBlkPool) GetPoolSize() int {
+	return len(pool.blkPoolByHash)
 }
 
 func (pool *CrossShardBlkPool) GetBlockList() []common.BlockPoolInterface {
@@ -79,10 +75,10 @@ func (pool *CrossShardBlkPool) GetBlock(hash common.Hash) common.CrossShardBlkPo
 	return <-res
 }
 
-func (pool *CrossShardBlkPool) RemoveBlock(hash string) {
+func (pool *CrossShardBlkPool) RemoveBlock(hash *common.Hash) {
 	pool.action <- func() {
-		if _, ok := pool.blkPoolByHash[hash]; ok {
-			delete(pool.blkPoolByHash, hash)
+		if _, ok := pool.blkPoolByHash[hash.String()]; ok {
+			delete(pool.blkPoolByHash, hash.String())
 		}
 	}
 }

@@ -3,6 +3,7 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -35,6 +36,23 @@ func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess,
 	}
 
 	go s.syncCrossShard()
+
+	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			if s.crossShardPool.GetPoolSize() > 1000 {
+				removeOutdatedBlocks(s.crossShardPool, func(blk interface{}) bool {
+					if blk.(*blockchain.CrossShardBlock).GetHeight() < s.shardSyncProcess.Chain.GetCrossShardState()[byte(blk.(*blockchain.CrossShardBlock).GetHeight())] {
+						return true
+					}
+					return false
+				})
+			}
+		}
+	}()
+
 	return s
 }
 

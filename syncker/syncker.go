@@ -444,13 +444,13 @@ func (synckerManager *SynckerManager) GetSyncStatus(includePool bool) SynckerSta
 	}
 
 	if includePool {
-		info.Beacon.PoolLength = synckerManager.beaconPool.GetPoolLength()
-		info.S2B.PoolLength = synckerManager.s2bPool.GetPoolLength()
+		info.Beacon.PoolLength = synckerManager.beaconPool.GetPoolSize()
+		info.S2B.PoolLength = synckerManager.s2bPool.GetPoolSize()
 		for k, _ := range synckerManager.ShardSyncProcess {
-			info.Shard[k].PoolLength = synckerManager.shardPool[k].GetPoolLength()
+			info.Shard[k].PoolLength = synckerManager.shardPool[k].GetPoolSize()
 		}
 		for k, _ := range synckerManager.CrossShardSyncProcess {
-			info.Crossshard[k].PoolLength = synckerManager.crossShardPool[k].GetPoolLength()
+			info.Crossshard[k].PoolLength = synckerManager.crossShardPool[k].GetPoolSize()
 		}
 	}
 	return info
