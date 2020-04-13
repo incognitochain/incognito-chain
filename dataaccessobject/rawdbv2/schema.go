@@ -297,3 +297,9 @@ func GetPreviousBestStateKey(shardID int) []byte {
 	temp = append(temp, previousBestStatePrefix...)
 	return append(temp, byte(shardID))
 }
+
+func GetLastBeaconHeightConfirmCrossShardKey() []byte {
+	temp := make([]byte, 0, len(lastBeaconHeightConfirmCrossShard))
+	temp = append(temp, lastBeaconHeightConfirmCrossShard...)
+	return temp
+}
