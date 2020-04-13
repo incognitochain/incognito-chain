@@ -13,7 +13,6 @@ type BlkPool struct {
 }
 
 func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
-
 	pool := new(BlkPool)
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.BlockPoolInterface)
@@ -25,12 +24,31 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 		ticker := time.NewTicker(15 * time.Second)
 		for {
 			<-ticker.C
+			//remove block from blkPoolByHash
 			if pool.GetPoolSize() > 1000 {
 				blkList := pool.GetBlockList()
 				for _, blk := range blkList {
 					if IsOutdatedBlk(blk) {
 						pool.RemoveBlock(blk.Hash())
 					}
+				}
+			}
+
+			//remove prehash block pointer if it point to nothing
+			if len(pool.blkPoolByPrevHash) > 1000 {
+				blkList := pool.GetPrevHashPool()
+				for prevhash, hashes := range blkList {
+					stillPointToABlock := false
+					for _, hash := range hashes {
+						h, _ := common.Hash{}.NewHashFromStr(hash)
+						if pool.HasHash(*h) {
+							stillPointToABlock = true
+						}
+					}
+					if !stillPointToABlock {
+						pool.RemovePrevHash(prevhash)
+					}
+
 				}
 			}
 		}
@@ -45,13 +63,24 @@ func (pool *BlkPool) Start() {
 		case f := <-pool.action:
 			f()
 		case <-ticker.C:
-			//TODO: loop through all prevhash, delete if all nextHash is deleted
 		}
 	}
 }
 
 func (pool *BlkPool) GetPoolSize() int {
 	return len(pool.blkPoolByHash)
+}
+
+func (pool *BlkPool) GetPrevHashPool() map[string][]string {
+	res := make(chan map[string][]string)
+	pool.action <- func() {
+		prevHashPool := make(map[string][]string)
+		for preBlk, blks := range pool.blkPoolByPrevHash {
+			prevHashPool[preBlk] = blks
+		}
+		res <- prevHashPool
+	}
+	return <-res
 }
 
 func (pool *BlkPool) GetBlockList() []common.BlockPoolInterface {
@@ -104,9 +133,13 @@ func (pool *BlkPool) HasHash(hash common.Hash) bool {
 
 func (pool *BlkPool) RemoveBlock(hash *common.Hash) {
 	pool.action <- func() {
-		if _, ok := pool.blkPoolByHash[hash.String()]; ok {
-			delete(pool.blkPoolByHash, hash.String())
-		}
+		delete(pool.blkPoolByHash, hash.String())
+	}
+}
+
+func (pool *BlkPool) RemovePrevHash(hash string) {
+	pool.action <- func() {
+		delete(pool.blkPoolByPrevHash, hash)
 	}
 }
 
