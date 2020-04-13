@@ -126,6 +126,13 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 	return res
 }
 
+func GetPoolInfo(byHash map[string]common.BlockPoolInterface) (res []common.BlockPoolInterface) {
+	for _, v := range byHash {
+		res = append(res, v)
+	}
+	return res
+}
+
 func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Hash) (diffHashes map[byte][]common.Hash) {
 	diffHashes = make(map[byte][]common.Hash)
 	poolListsHash := make(map[byte][]common.Hash)
@@ -148,4 +155,39 @@ func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Ha
 		}
 	}
 	return diffHashes
+}
+
+func cleanOldDateBlks(
+	fromHeight,
+	toHeight uint64,
+	sID int,
+	blksHashByHeightNsID map[string][]string,
+	blkPoolByHash map[string]common.BlockPoolInterface,
+	blkPoolByPrevHash map[string][]string,
+) {
+	for i := fromHeight; i <= toHeight; i++ {
+		key := fmt.Sprintf("%v-%v", i, sID)
+		for _, hash := range blksHashByHeightNsID[key] {
+			delete(blkPoolByHash, hash)
+			delete(blkPoolByPrevHash, hash)
+		}
+		delete(blksHashByHeightNsID, key)
+	}
+}
+
+func cleanOldDateCrossShardBlks(
+	fromHeight,
+	toHeight uint64,
+	sID int,
+	blksHashByHeightNsID map[string]string,
+	blkPoolByHash map[string]common.CrossShardBlkPoolInterface,
+) {
+	fmt.Printf("[Remove] %v->%v %v\n", fromHeight, toHeight, sID)
+	for i := fromHeight; i <= toHeight; i++ {
+		key := fmt.Sprintf("%v-%v", i, sID)
+		if hash, ok := blksHashByHeightNsID[key]; ok {
+			delete(blkPoolByHash, hash)
+		}
+		delete(blksHashByHeightNsID, key)
+	}
 }

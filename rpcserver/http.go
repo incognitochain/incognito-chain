@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"io"
 	"io/ioutil"
 	"net"
@@ -16,6 +14,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -43,6 +44,7 @@ type HttpServer struct {
 	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
+	synkerService     *rpcservice.SynkerService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -86,6 +88,9 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		BlockChain: httpServer.config.BlockChain,
 	}
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.synkerService = &rpcservice.SynkerService{
+		Synker: config.Syncker,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.

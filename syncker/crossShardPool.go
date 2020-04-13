@@ -1,19 +1,23 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type CrossShardBlkPool struct {
 	action        chan func()
 	blkPoolByHash map[string]common.CrossShardBlkPoolInterface // hash -> block
+
+	blkHashByHeightNsID map[string]string
 }
 
 func NewCrossShardBlkPool(name string) *CrossShardBlkPool {
 	pool := new(CrossShardBlkPool)
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.CrossShardBlkPoolInterface)
+	pool.blkHashByHeightNsID = make(map[string]string)
 	go pool.Start()
 	return pool
 }
@@ -45,7 +49,6 @@ func (pool *CrossShardBlkPool) AddBlock(blk common.CrossShardBlkPoolInterface) {
 			return
 		}
 		pool.blkPoolByHash[hash.String()] = blk
-
 	}
 }
 

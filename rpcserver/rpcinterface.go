@@ -172,6 +172,12 @@ var HttpHandler = map[string]httpHandler{
 	// incognnito mode for sc
 	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,
 	createAndSendBurningForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+
+	//new pool info
+	getBeaconPoolInfo:        (*HttpServer).hanldeGetBeaconPoolInfo,
+	getShardToBeaconPoolInfo: (*HttpServer).handleGetShardToBeaconPoolInfo,
+	getShardPoolInfo:         (*HttpServer).hanldeGetShardPoolInfo,
+	getCrossShardPoolInfo:    (*HttpServer).hanldeGetCrossShardPoolInfo,
 }
 
 // Commands that are available to a limited user

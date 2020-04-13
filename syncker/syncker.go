@@ -464,3 +464,67 @@ func (synckerManager *SynckerManager) IsChainReady(chainID int) bool {
 	}
 	return false
 }
+
+type TmpBlock struct {
+	Height  uint64
+	BlkHash *common.Hash
+	PreHash common.Hash
+	ShardID int
+}
+
+func (blk *TmpBlock) GetHeight() uint64 {
+	return blk.Height
+}
+
+func (blk *TmpBlock) Hash() *common.Hash {
+	return blk.BlkHash
+}
+
+func (blk *TmpBlock) GetPrevHash() common.Hash {
+	return blk.PreHash
+}
+
+func (blk *TmpBlock) GetShardID() int {
+	return blk.ShardID
+}
+
+func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []common.BlockPoolInterface {
+	switch poolType {
+	case BeaconPoolType:
+		if synckerManager.BeaconSyncProcess != nil {
+			if synckerManager.BeaconSyncProcess.beaconPool != nil {
+				return synckerManager.BeaconSyncProcess.beaconPool.GetPoolInfo()
+			}
+		}
+	case ShardPoolType:
+		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
+			if syncProcess.shardPool != nil {
+				return syncProcess.shardPool.GetPoolInfo()
+			}
+		}
+	case S2BPoolType:
+		if synckerManager.S2BSyncProcess != nil {
+			if synckerManager.S2BSyncProcess.s2bPool != nil {
+				return synckerManager.S2BSyncProcess.s2bPool.GetPoolInfo()
+			}
+		}
+	case CrossShardPoolType:
+		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
+			if syncProcess.shardPool != nil {
+				res := []common.BlockPoolInterface{}
+				for fromSID, blksPool := range synckerManager.crossShardPool {
+					for _, blk := range blksPool.blkPoolByHash {
+						res = append(res, &TmpBlock{
+							Height:  blk.GetHeight(),
+							BlkHash: blk.Hash(),
+							PreHash: common.Hash{},
+							ShardID: fromSID,
+						})
+					}
+				}
+				return res
+			}
+		}
+	}
+	return []common.BlockPoolInterface{}
+}

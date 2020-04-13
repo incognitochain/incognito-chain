@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"context"
+
 	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -60,3 +61,10 @@ type Chain interface {
 	CurrentHeight() uint64
 	InsertBlk(block common.BlockInterface, shouldValidate bool) error
 }
+
+const (
+	BeaconPoolType = iota
+	S2BPoolType
+	ShardPoolType
+	CrossShardPoolType
+)
