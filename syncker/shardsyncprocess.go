@@ -3,9 +3,10 @@ package syncker
 import (
 	"context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -36,13 +37,20 @@ type ShardSyncProcess struct {
 }
 
 func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
+			return true
+		}
+		return false
+	}
+
 	s := &ShardSyncProcess{
 		shardID:          shardID,
 		status:           STOP_SYNC,
 		Server:           server,
 		Chain:            chain,
 		beaconChain:      beaconChain,
-		shardPool:        NewBlkPool("ShardPool-" + string(shardID)),
+		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState),
 
@@ -149,7 +157,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
-		s.shardPool.RemoveBlock(blk.Hash().String())
+		s.shardPool.RemoveBlock(blk.Hash())
 	}
 }
 func (s *ShardSyncProcess) syncShardProcess() {

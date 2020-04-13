@@ -3,8 +3,10 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type CrossShardSyncProcess struct {
@@ -13,7 +15,7 @@ type CrossShardSyncProcess struct {
 	shardID          int
 	shardSyncProcess *ShardSyncProcess
 	beaconChain      BeaconChainInterface
-	crossShardPool   *CrossShardBlkPool
+	crossShardPool   *BlkPool
 	actionCh         chan func()
 }
 
@@ -23,23 +25,32 @@ type CrossXReq struct {
 }
 
 func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess, beaconChain BeaconChainInterface) *CrossShardSyncProcess {
+
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.CrossShardBlock).GetHeight() < shardSyncProcess.Chain.GetCrossShardState()[byte(blk.(*blockchain.CrossShardBlock).GetHeight())] {
+			return true
+		}
+		return false
+	}
+
 	s := &CrossShardSyncProcess{
 		status:           STOP_SYNC,
 		server:           server,
 		beaconChain:      beaconChain,
 		shardSyncProcess: shardSyncProcess,
-		crossShardPool:   NewCrossShardBlkPool("crossshard"),
+		crossShardPool:   NewBlkPool("crossshard", isOutdatedBlock),
 		shardID:          shardSyncProcess.shardID,
 		actionCh:         make(chan func()),
 	}
 
 	go s.syncCrossShard()
+
 	return s
 }
 
-func (s *CrossShardSyncProcess) start() {
+func (s *CrossShardSyncProcess) start() bool {
 	if s.status == RUNNING_SYNC {
-		return
+		return false
 	}
 	s.status = RUNNING_SYNC
 	go func() {
@@ -48,6 +59,7 @@ func (s *CrossShardSyncProcess) start() {
 			f()
 		}
 	}()
+	return true
 }
 
 func (s *CrossShardSyncProcess) stop() {
@@ -117,7 +129,7 @@ func (s *CrossShardSyncProcess) streamMissingCrossShardBlock(fromSID int, hashes
 		case blk := <-ch:
 			if !isNil(blk) {
 				fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
-				s.crossShardPool.AddBlock(blk.(common.CrossShardBlkPoolInterface))
+				s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
 			} else {
 				break
 			}

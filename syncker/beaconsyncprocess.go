@@ -36,11 +36,18 @@ type BeaconSyncProcess struct {
 
 func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
 
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
+			return true
+		}
+		return false
+	}
+
 	s := &BeaconSyncProcess{
 		status:              STOP_SYNC,
 		server:              server,
 		chain:               chain,
-		beaconPool:          NewBlkPool("BeaconPool"),
+		beaconPool:          NewBlkPool("BeaconPool", isOutdatedBlock),
 		beaconPeerStates:    make(map[string]BeaconPeerState),
 		beaconPeerStateCh:   make(chan *wire.MessagePeerState),
 		actionCh:            make(chan func()),
@@ -225,7 +232,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 		if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
-		s.beaconPool.RemoveBlock(blk.Hash().String())
+		s.beaconPool.RemoveBlock(blk.Hash())
 	}
 
 }

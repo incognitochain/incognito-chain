@@ -11,11 +11,6 @@ type BlockPoolInterface interface {
 	GetShardID() int
 }
 
-type CrossShardBlkPoolInterface interface {
-	Hash() *Hash
-	GetHeight() uint64
-}
-
 type BlockInterface interface {
 	GetVersion() int
 	GetHeight() uint64

@@ -29,11 +29,19 @@ type S2BSyncProcess struct {
 }
 
 func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconChain BeaconChainInterface) *S2BSyncProcess {
+
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.ShardToBeaconBlock).GetHeight() < beaconChain.GetShardBestViewHeight()[byte(blk.(*blockchain.ShardToBeaconBlock).GetShardID())] {
+			return true
+		}
+		return false
+	}
+
 	s := &S2BSyncProcess{
 		status:            STOP_SYNC,
 		Server:            server,
 		beaconChain:       beaconChain,
-		s2bPool:           NewBlkPool("ShardToBeaconPool"),
+		s2bPool:           NewBlkPool("ShardToBeaconPool", isOutdatedBlock),
 		beaconSyncProcess: beaconSyncProc,
 		s2bPeerState:      make(map[string]map[byte]S2BPeerState),
 		s2bPeerStateCh:    make(chan *wire.MessagePeerState),
@@ -83,7 +91,6 @@ func (s *S2BSyncProcess) start() {
 			}
 		}
 	}()
-
 }
 
 func (s *S2BSyncProcess) stop() {
@@ -197,7 +204,6 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, senderState map[byte]S2BP
 		}
 
 	}
-
 	//fmt.Printf("Syncker received S2BState %v, start sync\n", pState)
 	for fromSID, shardState := range senderState {
 		requestS2BBlockFromAShardPeer(fromSID, shardState)
