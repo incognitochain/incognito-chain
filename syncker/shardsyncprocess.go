@@ -37,13 +37,20 @@ type ShardSyncProcess struct {
 }
 
 func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
+			return true
+		}
+		return false
+	}
+
 	s := &ShardSyncProcess{
 		shardID:          shardID,
 		status:           STOP_SYNC,
 		Server:           server,
 		Chain:            chain,
 		beaconChain:      beaconChain,
-		shardPool:        NewBlkPool("ShardPool-" + string(shardID)),
+		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState),
 
@@ -53,23 +60,6 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
-
-	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
-	go func() {
-		ticker := time.NewTicker(15 * time.Second)
-		for {
-			<-ticker.C
-			if s.shardPool.GetPoolSize() > 1000 {
-				removeOutdatedBlocks(s.shardPool, func(blk interface{}) bool {
-					if blk.(*blockchain.ShardBlock).GetHeight() < s.Chain.GetFinalViewHeight() {
-						return true
-					}
-					return false
-				})
-			}
-		}
-	}()
-
 	return s
 }
 

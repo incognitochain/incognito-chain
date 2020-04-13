@@ -156,17 +156,3 @@ func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Ha
 	}
 	return diffHashes
 }
-
-type PoolInterface interface {
-	GetBlockList() []common.BlockPoolInterface
-	RemoveBlock(hash *common.Hash)
-}
-
-func removeOutdatedBlocks(pool PoolInterface, isOutDated func(interface{}) bool) {
-	blkList := pool.GetBlockList()
-	for _, blk := range blkList {
-		if isOutDated(blk) {
-			pool.RemoveBlock(blk.Hash())
-		}
-	}
-}

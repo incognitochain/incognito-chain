@@ -25,33 +25,25 @@ type CrossXReq struct {
 }
 
 func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess, beaconChain BeaconChainInterface) *CrossShardSyncProcess {
+
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.CrossShardBlock).GetHeight() < shardSyncProcess.Chain.GetCrossShardState()[byte(blk.(*blockchain.CrossShardBlock).GetHeight())] {
+			return true
+		}
+		return false
+	}
+
 	s := &CrossShardSyncProcess{
 		status:           STOP_SYNC,
 		server:           server,
 		beaconChain:      beaconChain,
 		shardSyncProcess: shardSyncProcess,
-		crossShardPool:   NewCrossShardBlkPool("crossshard"),
+		crossShardPool:   NewCrossShardBlkPool("crossshard", isOutdatedBlock),
 		shardID:          shardSyncProcess.shardID,
 		actionCh:         make(chan func()),
 	}
 
 	go s.syncCrossShard()
-
-	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
-	go func() {
-		ticker := time.NewTicker(15 * time.Second)
-		for {
-			<-ticker.C
-			if s.crossShardPool.GetPoolSize() > 1000 {
-				removeOutdatedBlocks(s.crossShardPool, func(blk interface{}) bool {
-					if blk.(*blockchain.CrossShardBlock).GetHeight() < s.shardSyncProcess.Chain.GetCrossShardState()[byte(blk.(*blockchain.CrossShardBlock).GetHeight())] {
-						return true
-					}
-					return false
-				})
-			}
-		}
-	}()
 
 	return s
 }

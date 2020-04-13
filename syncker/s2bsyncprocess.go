@@ -29,11 +29,19 @@ type S2BSyncProcess struct {
 }
 
 func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconChain BeaconChainInterface) *S2BSyncProcess {
+
+	var isOutdatedBlock = func(blk interface{}) bool {
+		if blk.(*blockchain.ShardToBeaconBlock).GetHeight() < beaconChain.GetShardBestViewHeight()[byte(blk.(*blockchain.ShardToBeaconBlock).GetShardID())] {
+			return true
+		}
+		return false
+	}
+
 	s := &S2BSyncProcess{
 		status:            STOP_SYNC,
 		Server:            server,
 		beaconChain:       beaconChain,
-		s2bPool:           NewBlkPool("ShardToBeaconPool"),
+		s2bPool:           NewBlkPool("ShardToBeaconPool", isOutdatedBlock),
 		beaconSyncProcess: beaconSyncProc,
 		s2bPeerState:      make(map[string]map[byte]S2BPeerState),
 		s2bPeerStateCh:    make(chan *wire.MessagePeerState),
@@ -41,22 +49,6 @@ func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconC
 	}
 
 	go s.syncS2BPoolProcess()
-
-	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
-	go func() {
-		ticker := time.NewTicker(15 * time.Second)
-		for {
-			<-ticker.C
-			if s.s2bPool.GetPoolSize() > 1000 {
-				removeOutdatedBlocks(s.s2bPool, func(blk interface{}) bool {
-					if blk.(*blockchain.ShardToBeaconBlock).GetHeight() < s.beaconChain.GetShardBestViewHeight()[byte(blk.(*blockchain.ShardToBeaconBlock).GetShardID())] {
-						return true
-					}
-					return false
-				})
-			}
-		}
-	}()
 	return s
 }
 

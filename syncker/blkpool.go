@@ -12,12 +12,29 @@ type BlkPool struct {
 	blkPoolByPrevHash map[string][]string                  // prevhash -> []nexthash
 }
 
-func NewBlkPool(name string) *BlkPool {
+func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
+
 	pool := new(BlkPool)
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.BlockPoolInterface)
 	pool.blkPoolByPrevHash = make(map[string][]string)
 	go pool.Start()
+
+	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			if pool.GetPoolSize() > 1000 {
+				blkList := pool.GetBlockList()
+				for _, blk := range blkList {
+					if IsOutdatedBlk(blk) {
+						pool.RemoveBlock(blk.Hash())
+					}
+				}
+			}
+		}
+	}()
 	return pool
 }
 

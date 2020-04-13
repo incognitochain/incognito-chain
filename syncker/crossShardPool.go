@@ -11,11 +11,28 @@ type CrossShardBlkPool struct {
 	blkPoolByHash map[string]common.CrossShardBlkPoolInterface // hash -> block
 }
 
-func NewCrossShardBlkPool(name string) *CrossShardBlkPool {
+func NewCrossShardBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *CrossShardBlkPool {
 	pool := new(CrossShardBlkPool)
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.CrossShardBlkPoolInterface)
 	go pool.Start()
+
+	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			if pool.GetPoolSize() > 1000 {
+				blkList := pool.GetBlockList()
+				for _, blk := range blkList {
+					if IsOutdatedBlk(blk) {
+						pool.RemoveBlock(blk.Hash())
+					}
+				}
+			}
+		}
+	}()
+
 	return pool
 }
 
