@@ -83,21 +83,6 @@ func (s *S2BSyncProcess) start() {
 			}
 		}
 	}()
-
-	go func(s *S2BSyncProcess) {
-		ticker := time.NewTicker(time.Second * 10)
-		lastBestHeight := map[byte]uint64{}
-		for i := 0; i < s.Server.GetChainParam().ActiveShards; i++ {
-			lastBestHeight[byte(i)] = 1
-		}
-		for range ticker.C {
-			s.RemoveOldBlock(lastBestHeight)
-			if s.status == STOP_SYNC {
-				return
-			}
-		}
-	}(s)
-
 }
 
 func (s *S2BSyncProcess) stop() {
@@ -216,26 +201,4 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, senderState map[byte]S2BP
 		requestS2BBlockFromAShardPeer(fromSID, shardState)
 	}
 	return
-}
-
-func (s *S2BSyncProcess) RemoveOldBlock(lastBestHeight map[byte]uint64) {
-	nBestHeight := s.beaconChain.GetShardBestViewHeight()
-	for sID, oldHeight := range lastBestHeight {
-		newHeight := nBestHeight[sID]
-		if newHeight < 2 {
-			continue
-		}
-		sIDint := int(sID)
-		s.s2bPool.action <- func() {
-			cleanOldDateBlks(
-				oldHeight,
-				newHeight-1,
-				sIDint,
-				s.s2bPool.blkHashByHeightNsID,
-				s.s2bPool.blkPoolByHash,
-				s.s2bPool.blkPoolByPrevHash,
-			)
-		}
-		lastBestHeight[sID] = nBestHeight[sID] - 1
-	}
 }

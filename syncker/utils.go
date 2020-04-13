@@ -157,37 +157,16 @@ func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Ha
 	return diffHashes
 }
 
-func cleanOldDateBlks(
-	fromHeight,
-	toHeight uint64,
-	sID int,
-	blksHashByHeightNsID map[string][]string,
-	blkPoolByHash map[string]common.BlockPoolInterface,
-	blkPoolByPrevHash map[string][]string,
-) {
-	for i := fromHeight; i <= toHeight; i++ {
-		key := fmt.Sprintf("%v-%v", i, sID)
-		for _, hash := range blksHashByHeightNsID[key] {
-			delete(blkPoolByHash, hash)
-			delete(blkPoolByPrevHash, hash)
-		}
-		delete(blksHashByHeightNsID, key)
-	}
+type PoolInterface interface {
+	GetBlockList() []common.BlockPoolInterface
+	RemoveBlock(hash *common.Hash)
 }
 
-func cleanOldDateCrossShardBlks(
-	fromHeight,
-	toHeight uint64,
-	sID int,
-	blksHashByHeightNsID map[string]string,
-	blkPoolByHash map[string]common.CrossShardBlkPoolInterface,
-) {
-	fmt.Printf("[Remove] %v->%v %v\n", fromHeight, toHeight, sID)
-	for i := fromHeight; i <= toHeight; i++ {
-		key := fmt.Sprintf("%v-%v", i, sID)
-		if hash, ok := blksHashByHeightNsID[key]; ok {
-			delete(blkPoolByHash, hash)
+func removeOutdatedBlocks(pool PoolInterface, isOutDated func(uint64) bool) {
+	blkList := pool.GetBlockList()
+	for _, blk := range blkList {
+		if isOutDated(blk.GetHeight()) {
+			pool.RemoveBlock(blk.Hash())
 		}
-		delete(blksHashByHeightNsID, key)
 	}
 }

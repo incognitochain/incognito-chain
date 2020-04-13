@@ -66,22 +66,7 @@ func (s *ShardSyncProcess) start() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
 			if s.isCommittee {
-				notStarted := s.crossShardSyncProcess.start()
-				if notStarted {
-					go func(s *CrossShardSyncProcess) {
-						ticker := time.NewTicker(time.Second * 20)
-						lastBestHeight := map[byte]uint64{}
-						for i := 0; i < s.server.GetChainParam().ActiveShards; i++ {
-							lastBestHeight[byte(i)] = 1
-						}
-						for range ticker.C {
-							s.RemoveOldBlock(lastBestHeight)
-							if s.status == STOP_SYNC {
-								return
-							}
-						}
-					}(s.crossShardSyncProcess)
-				}
+				s.crossShardSyncProcess.start()
 			} else {
 				s.crossShardSyncProcess.stop()
 			}
@@ -165,7 +150,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
-		s.shardPool.RemoveBlock(blk.Hash().String())
+		s.shardPool.RemoveBlock(blk.Hash())
 	}
 }
 func (s *ShardSyncProcess) syncShardProcess() {

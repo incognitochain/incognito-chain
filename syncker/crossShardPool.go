@@ -9,15 +9,12 @@ import (
 type CrossShardBlkPool struct {
 	action        chan func()
 	blkPoolByHash map[string]common.CrossShardBlkPoolInterface // hash -> block
-
-	blkHashByHeightNsID map[string]string
 }
 
 func NewCrossShardBlkPool(name string) *CrossShardBlkPool {
 	pool := new(CrossShardBlkPool)
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.CrossShardBlkPoolInterface)
-	pool.blkHashByHeightNsID = make(map[string]string)
 	go pool.Start()
 	return pool
 }
@@ -38,6 +35,18 @@ func (pool *CrossShardBlkPool) GetPoolLength() int {
 	res := make(chan int)
 	pool.action <- func() {
 		res <- len(pool.blkPoolByHash)
+	}
+	return <-res
+}
+
+func (pool *CrossShardBlkPool) GetBlockList() []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		blkList := make([]common.BlockPoolInterface, len(pool.blkPoolByHash))
+		for _, blk := range pool.blkPoolByHash {
+			blkList = append(blkList, blk.(common.BlockPoolInterface))
+		}
+		res <- blkList
 	}
 	return <-res
 }

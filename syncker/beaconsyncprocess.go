@@ -221,7 +221,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 		if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
 			return
 		}
-		s.beaconPool.RemoveBlock(blk.Hash().String())
+		s.beaconPool.RemoveBlock(blk.Hash())
 	}
 
 }
