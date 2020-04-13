@@ -121,7 +121,7 @@ func (tp *TxPool) loadDatabaseMP() ([]TxDesc, error) {
 		//if not validated by current blockchain db then remove
 		senderShardID := common.GetShardIDFromLastByte(txDesc.Desc.Tx.GetSenderAddrLastByte())
 		beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-		shardView := tp.config.BlockChain.ShardChain[senderShardID].GetFinalView().(*blockchain.ShardBestState)
+		shardView := tp.config.BlockChain.ShardChain[senderShardID].GetBestView().(*blockchain.ShardBestState)
 		err = tp.validateTransaction(shardView, beaconView, txDesc.Desc.Tx, -1, false, false)
 		if err != nil {
 			Logger.log.Error(err)
