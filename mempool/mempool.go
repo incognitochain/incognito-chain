@@ -237,7 +237,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 		return &common.Hash{}, &TxDesc{}, err
 	}
 	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-	shardView := tp.config.BlockChain.ShardChain[senderShardID].GetFinalView().(*blockchain.ShardBestState)
+	shardView := tp.config.BlockChain.ShardChain[senderShardID].GetBestView().(*blockchain.ShardBestState)
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {

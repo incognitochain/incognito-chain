@@ -10,14 +10,16 @@ import (
 )
 
 func StoreLastBeaconHeightConfirmCrossShard(db incdb.Database, height uint64) error {
-	if err := db.Put(lastBeaconHeightConfirmCrossShard, common.Uint64ToBytes(height)); err != nil {
+	key := GetLastBeaconHeightConfirmCrossShardKey()
+	if err := db.Put(key, common.Uint64ToBytes(height)); err != nil {
 		return NewRawdbError(StoreCrossShardNextHeightError, err)
 	}
 	return nil
 }
 
 func GetLastBeaconHeightConfirmCrossShard(db incdb.Database) uint64 {
-	lastProcessHeight, _ := db.Get(lastBeaconHeightConfirmCrossShard)
+	key := GetLastBeaconHeightConfirmCrossShardKey()
+	lastProcessHeight, _ := db.Get(key)
 	height, _ := common.BytesToUint64(lastProcessHeight)
 	return height
 }
