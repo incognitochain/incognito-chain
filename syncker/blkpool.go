@@ -25,7 +25,7 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 		for {
 			<-ticker.C
 			//remove block from blkPoolByHash
-			if pool.GetPoolSize() > 1000 {
+			if pool.GetPoolSize() > 100 {
 				blkList := pool.GetBlockList()
 				for _, blk := range blkList {
 					if IsOutdatedBlk(blk) {
@@ -35,7 +35,7 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 			}
 
 			//remove prehash block pointer if it point to nothing
-			if len(pool.blkPoolByPrevHash) > 1000 {
+			if len(pool.blkPoolByPrevHash) > 100 {
 				blkList := pool.GetPrevHashPool()
 				for prevhash, hashes := range blkList {
 					stillPointToABlock := false
@@ -86,7 +86,7 @@ func (pool *BlkPool) GetPrevHashPool() map[string][]string {
 func (pool *BlkPool) GetBlockList() []common.BlockPoolInterface {
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
-		blkList := make([]common.BlockPoolInterface, len(pool.blkPoolByHash))
+		blkList := []common.BlockPoolInterface{}
 		for _, blk := range pool.blkPoolByHash {
 			blkList = append(blkList, blk)
 		}
