@@ -129,13 +129,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	if blockHeight != curView.ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
-
-	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
-
-	if shardBlock.Header.Height != curView.ShardHeight+1 {
-		return errors.New("Not expected height")
-	}
-
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
