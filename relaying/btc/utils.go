@@ -71,8 +71,8 @@ func buildBTCBlockFromCypher(networkName string, blkHeight int) (*btcutil.Block,
 	return blk, nil
 }
 
-func buildMsgTxFromCypher(txID string) *wire.MsgTx {
-	bc := getBlockCypherAPI("main")
+func buildMsgTxFromCypher(txID string, networkName string) *wire.MsgTx {
+	bc := getBlockCypherAPI(networkName)
 	cypherTx, _ := bc.GetTX(txID, nil)
 
 	txIns := []*wire.TxIn{}

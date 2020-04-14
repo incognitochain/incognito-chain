@@ -76,7 +76,7 @@ func TestMerkleVerification3(t *testing.T) {
 
 func TestBuildTxMsg(t *testing.T) {
 	txID := "8bae12b5f4c088d940733dcd1455efc6a3a69cf9340e17a981286d3778615684"
-	msgTx := buildMsgTxFromCypher(txID)
+	msgTx := buildMsgTxFromCypher(txID, "main")
 	if msgTx.TxHash().String() != txID {
 		t.Errorf("Want tx hash %s but got %s", txID, msgTx.TxHash())
 	}
