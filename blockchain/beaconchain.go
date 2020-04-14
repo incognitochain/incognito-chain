@@ -37,6 +37,10 @@ func (chain *BeaconChain) GetFinalView() multiview.View {
 	return chain.multiView.GetFinalView()
 }
 
+func (chain *BeaconChain) GetFinalViewState() *BeaconBestState {
+	return chain.multiView.GetFinalView().(*BeaconBestState)
+}
+
 func (chain *BeaconChain) GetViewByHash(hash common.Hash) multiview.View {
 	if chain.multiView.GetViewByHash(hash) == nil {
 		return nil

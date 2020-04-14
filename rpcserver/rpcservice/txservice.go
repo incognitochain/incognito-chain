@@ -645,7 +645,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 		txParam.HasPrivacyCoin = false
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-
+	beaconView := txService.BlockChain.BeaconChain.GetFinalViewState()
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
 		transaction.NewTxPrivacyTokenInitParams(&txParam.SenderKeySet.PrivateKey,
@@ -658,7 +658,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 			txParam.HasPrivacyCoin,
 			txParam.HasPrivacyToken,
 			txParam.ShardIDSender, txParam.Info,
-			txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()))
+			beaconView.GetBeaconFeatureStateDB()))
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
