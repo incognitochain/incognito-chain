@@ -40,21 +40,24 @@ func (blockchain *BlockChain) processPortalReward(
 			currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 		}
 
-		if (beaconHeight+1) % blockchain.config.ChainParams.Epoch != 1 {
-			totalLockedCollateralAmount := uint64(0)
-			lockedCollateralDetails := currentPortalState.LockedCollateralState.GetLockedCollateralDetail()
-			for _, custodianState := range currentPortalState.CustodianPoolState {
-				for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
-					totalLockedCollateralAmount += lockedAmount
-					lockedCollateralDetails[custodianState.GetIncognitoAddress()] += lockedAmount
-				}
-			}
-
-			currentPortalState.LockedCollateralState.SetTotalLockedCollateralInEpoch(
-				currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() + totalLockedCollateralAmount)
-			currentPortalState.LockedCollateralState.SetLockedCollateralDetail(
-				lockedCollateralDetails)
+		// at the end of epoch
+		if (beaconHeight+1) % blockchain.config.ChainParams.Epoch == 1 {
+			currentPortalState.LockedCollateralState.Reset()
 		}
+
+		totalLockedCollateralAmount := uint64(0)
+		lockedCollateralDetails := currentPortalState.LockedCollateralState.GetLockedCollateralDetail()
+		for _, custodianState := range currentPortalState.CustodianPoolState {
+			for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
+				totalLockedCollateralAmount += lockedAmount
+				lockedCollateralDetails[custodianState.GetIncognitoAddress()] += lockedAmount
+			}
+		}
+
+		currentPortalState.LockedCollateralState.SetTotalLockedCollateralInEpoch(
+			currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() + totalLockedCollateralAmount)
+		currentPortalState.LockedCollateralState.SetLockedCollateralDetail(
+			lockedCollateralDetails)
 
 		// store reward at beacon height into db
 		err = statedb.StorePortalRewards(
@@ -159,8 +162,9 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 
 	reqStatus := instructions[2]
 	if reqStatus == "portalTotalRewardInst" {
+		epoch := beaconHeight / blockchain.config.ChainParams.Epoch
 		// get old total custodian reward
-		oldCustodianRewards, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, statedb.PortalRewardName)
+		oldCustodianRewards, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, statedb.PortalRewardName, epoch - 1)
 		if err != nil {
 			Logger.log.Errorf("ERROR: Can not get reward for custodian: %+v", err)
 			return nil
@@ -171,14 +175,12 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 			oldCustodianRewards.AddTotalRewards(r.GetTokenID(), r.GetAmount())
 		}
 
-		// reset total locked collateral for custodians
-		currentPortalState.LockedCollateralState.Reset()
-
 		// store total custodian reward into db
 		err = statedb.StoreRewardFeatureState(
 			stateDB,
 			statedb.PortalRewardName,
 			oldCustodianRewards.GetTotalRewards(),
+			epoch,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while storing total custodian reward: %+v", err)

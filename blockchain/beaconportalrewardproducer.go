@@ -3,8 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -101,37 +99,10 @@ func splitRewardForCustodians(
 	return rewardInfos
 }
 
-// getCustodianRewardByEpochFromInst returns custodian rewards by epoch (10% of DAO funds)
-func getCustodianRewardByEpochFromInst(rewardByEpochInsts [][]string) (map[common.Hash]uint64, error) {
-	if len(rewardByEpochInsts) == 0 {
-		return nil, nil
-	}
-
-	for _, inst := range rewardByEpochInsts {
-		if inst[0] == strconv.Itoa(metadata.IncDAORewardRequestMeta) {
-			var incDAORewardInfo metadata.IncDAORewardInfo
-			err := json.Unmarshal([]byte(inst[3]), &incDAORewardInfo)
-			if err != nil {
-				return nil, fmt.Errorf("can not marshal DAO reward instruction content %v", err)
-			}
-
-			daoRewards := incDAORewardInfo.IncDAOReward
-			custodianRewards := map[common.Hash]uint64{}
-			for tokenID, amount := range daoRewards {
-				custodianRewards[tokenID] = amount * common.PercentCustodianRewards / 100
-			}
-			return custodianRewards, nil
-		}
-	}
-
-	return nil, errors.New("not found any instruction for DAO reward")
-}
-
 func (blockchain *BlockChain) buildPortalRewardsInsts(
-	beaconHeight uint64, currentPortalState *CurrentPortalState, rewardByEpochInsts [][]string) ([][]string, error) {
+	beaconHeight uint64, currentPortalState *CurrentPortalState, rewardForCustodianByEpoch map[common.Hash]uint64) ([][]string, error) {
 
 	// rewardInfos are map custodians' addresses and reward amount
-	//rewardInfos := make([]*lvdb.PortalRewardInfo, 0)
 	rewardInfos := make([]*statedb.PortalRewardInfo, 0)
 
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
@@ -160,45 +131,28 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		}
 	}
 
-	// calculate rewards corresponding to locked amount collateral for each custodians
-	// calculate total holding amount for each public tokens
-	totalLockedCollateralAmount := uint64(0)
-	lockedCollateralDetails := currentPortalState.LockedCollateralState.GetLockedCollateralDetail()
-	for _, custodianState := range currentPortalState.CustodianPoolState {
-		for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
-			totalLockedCollateralAmount += lockedAmount
-			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += lockedAmount
-		}
-	}
-
-	currentPortalState.LockedCollateralState.SetTotalLockedCollateralInEpoch(
-		currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() + totalLockedCollateralAmount)
-	currentPortalState.LockedCollateralState.SetLockedCollateralDetail(
-		lockedCollateralDetails)
-
 	// if there are reward by epoch instructions (at the end of the epoch)
 	// split reward for custodians
-	totalCustodianRewards, err := getCustodianRewardByEpochFromInst(rewardByEpochInsts)
-	if err != nil {
-		Logger.log.Errorf("Error when get custodian rewards from instruction %v\n", err)
-	}
 	rewardInsts := [][]string{}
-	if totalCustodianRewards != nil {
+	if rewardForCustodianByEpoch != nil && len(rewardForCustodianByEpoch) > 0 {
 		if currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() > 0 {
 			// split reward for custodians
-			rewardInfos = splitRewardForCustodians(totalCustodianRewards, currentPortalState.LockedCollateralState, currentPortalState.CustodianPoolState, rewardInfos)
+			rewardInfos = splitRewardForCustodians(
+				rewardForCustodianByEpoch,
+				currentPortalState.LockedCollateralState,
+				currentPortalState.CustodianPoolState,
+				rewardInfos)
 
 			// create instruction for total custodian rewards
 			totalCustodianRewardSlice := make([]*statedb.RewardInfoDetail, 0)
-			for tokenID, amount := range totalCustodianRewards {
+			for tokenID, amount := range rewardForCustodianByEpoch {
 				totalCustodianRewardSlice = append(totalCustodianRewardSlice,
 					statedb.NewRewardInfoDetailWithValue(tokenID.String(), amount))
 			}
 			instTotalReward := blockchain.buildInstForPortalTotalReward(totalCustodianRewardSlice)
 			rewardInsts = append(rewardInsts, instTotalReward)
 
-			// reset total locked collateral for custodians
-			currentPortalState.LockedCollateralState.Reset()
+			//currentPortalState.LockedCollateralState.Reset()
 		}
 	}
 
@@ -220,10 +174,8 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 	}
 
-	if len(rewardInfos) > 0 {
-		inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
-		rewardInsts = append(rewardInsts, inst)
-	}
+	inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
+	rewardInsts = append(rewardInsts, inst)
 
 	return rewardInsts, nil
 }

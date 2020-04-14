@@ -557,8 +557,9 @@ func StoreLockedCollateralState(
 func StoreRewardFeatureState(
 	stateDB *StateDB,
 	featureName string,
-	rewardInfo []*RewardInfoDetail) error {
-	key := GenerateRewardFeatureStateObjectKey(featureName)
+	rewardInfo []*RewardInfoDetail,
+	epoch uint64) error {
+	key := GenerateRewardFeatureStateObjectKey(featureName, epoch)
 	value := NewRewardFeatureStateWithValue(rewardInfo)
 
 	err := stateDB.SetStateObject(RewardFeatureStateObjectType, key, value)
@@ -569,42 +570,14 @@ func StoreRewardFeatureState(
 	return nil
 }
 
-func ResetRewardFeatureStateByTokenID(
-	stateDB *StateDB,
-	tokenID string) (uint64, error) {
-
-	totalAmount := uint64(0)
-	// reset for portal reward
-	portalReward, err := GetRewardFeatureStateByFeatureName(stateDB, PortalRewardName)
-	if err != nil {
-		return uint64(0), NewStatedbError(ResetAllFeatureRewardByTokenIDError, err)
-	}
-	totalRewards := portalReward.GetTotalRewards()
-	for i := 0; i < len(totalRewards); i++ {
-		if totalRewards[i].GetTokenID() == tokenID {
-			totalAmount += totalRewards[i].GetAmount()
-			totalRewards[i].SetAmount(0)
-			break
-		}
-	}
-	fmt.Errorf("[ResetRewardFeatureStateByTokenID] ======== totalRewards: %v\n", totalRewards)
-	err = StoreRewardFeatureState(stateDB, PortalRewardName, totalRewards)
-	if err != nil {
-		return uint64(0), NewStatedbError(ResetAllFeatureRewardByTokenIDError, err)
-	}
-
-	// Note: when add more feature rewards, need to reset those rewards
-
-	return totalAmount, nil
-}
-
 func GetRewardFeatureAmountByTokenID(
 	stateDB *StateDB,
-	tokenID string) (uint64, error) {
+	tokenID string,
+	epoch uint64) (uint64, error) {
 
 	totalAmount := uint64(0)
 	// reset for portal reward
-	allRewardFeature, err := GetAllRewardFeatureState(stateDB)
+	allRewardFeature, err := GetAllRewardFeatureState(stateDB, epoch)
 	if err != nil {
 		return uint64(0), NewStatedbError(GetRewardFeatureAmountByTokenIDError, err)
 	}
@@ -621,8 +594,9 @@ func GetRewardFeatureAmountByTokenID(
 
 func GetRewardFeatureStateByFeatureName(
 	stateDB *StateDB,
-	featureName string) (*RewardFeatureState, error) {
-	result, _, err := stateDB.getFeatureRewardByFeatureName(featureName)
+	featureName string,
+	epoch uint64) (*RewardFeatureState, error) {
+	result, _, err := stateDB.getFeatureRewardByFeatureName(featureName, epoch)
 	if err != nil {
 		return nil, NewStatedbError(GetRewardFeatureError, err)
 	}
@@ -631,8 +605,8 @@ func GetRewardFeatureStateByFeatureName(
 }
 
 func GetAllRewardFeatureState(
-	stateDB *StateDB) (*RewardFeatureState, error) {
-	result, _, err := stateDB.getAllFeatureRewards()
+	stateDB *StateDB, epoch uint64) (*RewardFeatureState, error) {
+	result, _, err := stateDB.getAllFeatureRewards(epoch)
 	if err != nil {
 		return nil, NewStatedbError(GetAllRewardFeatureError, err)
 	}

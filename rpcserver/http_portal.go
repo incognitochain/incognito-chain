@@ -770,8 +770,15 @@ func (httpServer *HttpServer) handleGetRewardFeature(params interface{}, closeCh
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param FeatureName is invalid"))
 	}
+	epoch, ok := data["Epoch"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param Epoch is invalid"))
+	}
+	if epoch < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param Epoch must be greater or than 1"))
+	}
 
-	result, err := httpServer.blockService.GetRewardFeatureByFeatureName(featureName)
+	result, err := httpServer.blockService.GetRewardFeatureByFeatureName(featureName, uint64(epoch))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRequestWithdrawRewardStatusError, err)
 	}

@@ -231,7 +231,10 @@ func (blockchain *BlockChain) addShardCommitteeReward(rewardStateDB *statedb.Sta
 	return nil
 }
 
-func (blockchain *BlockChain) buildRewardInstructionByEpoch(blkHeight, epoch uint64, rewardStateDB *statedb.StateDB) ([][]string, error) {
+func (blockchain *BlockChain) buildRewardInstructionByEpoch(
+	blkHeight, epoch uint64,
+	rewardStateDB *statedb.StateDB,
+	isSplitRewardForCustodian bool) ([][]string, map[common.Hash]uint64, error) {
 	var resInst [][]string
 	var err error
 	var instRewardForBeacons [][]string
@@ -244,6 +247,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(blkHeight, epoch uin
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
+	totalRewardForCustodian := map[common.Hash]uint64{}
 	for ID := 0; ID < numberOfActiveShards; ID++ {
 		if totalRewards[ID] == nil {
 			totalRewards[ID] = map[common.Hash]uint64{}
@@ -251,37 +255,38 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(blkHeight, epoch uin
 		for _, coinID := range allCoinID {
 			totalRewards[ID][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(ID), coinID)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if totalRewards[ID][coinID] == 0 {
 				delete(totalRewards[ID], coinID)
 			}
 		}
-		rewardForBeacon, rewardForIncDAO, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO)
+		rewardForBeacon, rewardForIncDAO, rewardForCustodian, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO, isSplitRewardForCustodian)
 		if err != nil {
 			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n", err)
 		}
 		mapPlusMap(rewardForBeacon, &totalRewardForBeacon)
 		mapPlusMap(rewardForIncDAO, &totalRewardForIncDAO)
+		mapPlusMap(rewardForCustodian, &totalRewardForCustodian)
 	}
 	if len(totalRewardForBeacon) > 0 {
 		instRewardForBeacons, err = blockchain.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	instRewardForShards, err = blockchain.buildInstRewardForShards(epoch, totalRewards)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(totalRewardForIncDAO) > 0 {
 		instRewardForIncDAO, err = blockchain.buildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
-	return resInst, nil
+	return resInst, totalRewardForCustodian, nil
 }
 
 //buildInstRewardForBeacons create reward instruction for beacons
@@ -368,7 +373,9 @@ func splitReward(
 	totalReward *map[common.Hash]uint64,
 	numberOfActiveShards int,
 	devPercent int,
+	isSplitRewardForCustodian bool,
 ) (
+	*map[common.Hash]uint64,
 	*map[common.Hash]uint64,
 	*map[common.Hash]uint64,
 	error,
@@ -376,19 +383,26 @@ func splitReward(
 	hasValue := false
 	rewardForBeacon := map[common.Hash]uint64{}
 	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
 	for key, value := range *totalReward {
 		rewardForBeacon[key] = 2 * (uint64(100-devPercent) * value) / ((uint64(numberOfActiveShards) + 2) * 100)
-		rewardForIncDAO[key] = uint64(devPercent) * value / uint64(100)
-		(*totalReward)[key] = value - (rewardForBeacon[key] + rewardForIncDAO[key])
+		totalRewardForDAOAndCustodians := uint64(devPercent) * value / uint64(100)
+		if isSplitRewardForCustodian {
+			rewardForCustodian[key] = uint64(common.PercentCustodianRewards) * totalRewardForDAOAndCustodians / uint64(100)
+			rewardForIncDAO[key] = totalRewardForDAOAndCustodians - rewardForCustodian[key]
+		} else {
+			rewardForIncDAO[key] = totalRewardForDAOAndCustodians
+		}
+		(*totalReward)[key] = value - (rewardForBeacon[key] + totalRewardForDAOAndCustodians)
 		if !hasValue {
 			hasValue = true
 		}
 	}
 	if !hasValue {
 		//fmt.Printf("[ndh] not enough reward\n")
-		return nil, nil, NewBlockChainError(NotEnoughRewardError, errors.New("Not enough reward"))
+		return nil, nil, nil, NewBlockChainError(NotEnoughRewardError, errors.New("Not enough reward"))
 	}
-	return &rewardForBeacon, &rewardForIncDAO, nil
+	return &rewardForBeacon, &rewardForIncDAO, &rewardForCustodian, nil
 }
 
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {

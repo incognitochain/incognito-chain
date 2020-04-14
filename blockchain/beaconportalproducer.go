@@ -135,7 +135,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 ) ([][]string, error) {
-	Logger.log.Errorf("buildInstructionsForCustodianDeposit - starting..... !!!!!")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -169,7 +168,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	keyCustodianStateStr := keyCustodianState.String()
 
 	if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
-		Logger.log.Errorf("buildInstructionsForCustodianDeposit - 11111 !!!!!")
 		// new custodian
 		newCustodian := statedb.NewCustodianStateWithValue(
 			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
@@ -177,7 +175,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 			meta.RemoteAddresses, nil)
 		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	} else {
-		Logger.log.Errorf("buildInstructionsForCustodianDeposit - 22222 !!!!!")
 		// custodian deposited before
 		// update state of the custodian
 		custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
@@ -197,8 +194,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 			holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
 		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	}
-
-	Logger.log.Errorf("buildInstructionsForCustodianDeposit - success !!!!!")
 
 	inst := buildCustodianDepositInst(
 		actionData.Meta.IncogAddressStr,

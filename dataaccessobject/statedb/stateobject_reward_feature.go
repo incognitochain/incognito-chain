@@ -129,8 +129,8 @@ func newRewardFeatureStateObjectWithValue(db *StateDB, key common.Hash, data int
 	}, nil
 }
 
-func GenerateRewardFeatureStateObjectKey(featureName string) common.Hash {
-	prefixHash := GetRewardFeatureStatePrefix()
+func GenerateRewardFeatureStateObjectKey(featureName string, epoch uint64) common.Hash {
+	prefixHash := GetRewardFeatureStatePrefix(epoch)
 	valueHash := common.HashH([]byte(featureName))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }

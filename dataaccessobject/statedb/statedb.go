@@ -1371,8 +1371,8 @@ func (stateDB *StateDB) getLockedCollateralState(beaconHeight uint64) (*LockedCo
 }
 
 // ================================= Feature reward OBJECT =======================================
-func (stateDB *StateDB) getFeatureRewardByFeatureName(featureName string) (*RewardFeatureState, bool, error) {
-	key := GenerateRewardFeatureStateObjectKey(featureName)
+func (stateDB *StateDB) getFeatureRewardByFeatureName(featureName string, epoch uint64) (*RewardFeatureState, bool, error) {
+	key := GenerateRewardFeatureStateObjectKey(featureName, epoch)
 	rewardFeatureState, err := stateDB.getStateObject(RewardFeatureStateObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1384,10 +1384,10 @@ func (stateDB *StateDB) getFeatureRewardByFeatureName(featureName string) (*Rewa
 	return NewRewardFeatureState(), false, nil
 }
 
-func (stateDB *StateDB) getAllFeatureRewards() (*RewardFeatureState, bool, error) {
+func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState, bool, error) {
 	result := NewRewardFeatureState()
 
-	temp := stateDB.trie.NodeIterator(GetRewardFeatureStatePrefix())
+	temp := stateDB.trie.NodeIterator(GetRewardFeatureStatePrefix(epoch))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value

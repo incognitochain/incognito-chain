@@ -1044,9 +1044,9 @@ func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID st
 
 
 //============================= Reward Feature ===============================
-func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string) ([]*statedb.RewardInfoDetail, error) {
+func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) ([]*statedb.RewardInfoDetail, error) {
 	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	data, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, featureName)
+	data, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, featureName, epoch)
 	if err != nil {
 		return nil, err
 	}

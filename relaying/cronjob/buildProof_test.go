@@ -19,37 +19,29 @@ type RedeemMemoBNB struct {
 }
 
 func TestB64EncodeMemo(t *testing.T) {
-	portingID := "2"
+	portingID := "1"
 	memoPorting := PortingMemoBNB{PortingID: portingID}
 	memoPortingBytes, err := json.Marshal(memoPorting)
 	fmt.Printf("err: %v\n", err)
 	memoPortingStr := base64.StdEncoding.EncodeToString(memoPortingBytes)
 	fmt.Printf("memoPortingStr: %v\n", memoPortingStr)
-	//  eyJQb3J0aW5nSUQiOiIxIn0=
 	// eyJQb3J0aW5nSUQiOiIzIn0= // 3
+	// eyJQb3J0aW5nSUQiOiIyIn0= // 2
+	// eyJQb3J0aW5nSUQiOiIxIn0= // 1
 
-	//eyJQb3J0aW5nSUQiOiIyIn0= // 2
-
-	redeemID := "13"
-	custodianIncAddr := "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ"
+	redeemID := "12"
+	custodianIncAddr := "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy"
 	memoRedeem := RedeemMemoBNB{RedeemID: redeemID, CustodianIncognitoAddress: custodianIncAddr}
 	memoRedeemBytes, err := json.Marshal(memoRedeem)
 	fmt.Printf("err: %v\n", err)
 	memoRedeemHash := common.HashB(memoRedeemBytes)
 	memoRedeemStr := base64.StdEncoding.EncodeToString(memoRedeemHash)
 	fmt.Printf("memoRedeemStr: %v\n", memoRedeemStr)
-	// eyJSZWRlZW1JRCI6IjIifQ==   // 2
-
-	// eyJSZWRlZW1JRCI6IjMifQ== // 3
-	// eyJSZWRlZW1JRCI6IjQifQ==   // 4
-
-	// eyJSZWRlZW1JRCI6IjExIn0= // 11
-
 }
 
 func TestBuildAndPushBNBProof(t *testing.T) {
 	txIndex := 0
-	blockHeight := int64(75955651)
+	blockHeight := int64(77015994)
 	url := relaying.TestnetURLRemote
 
 	portingProof, err := BuildProof(txIndex, blockHeight, url)

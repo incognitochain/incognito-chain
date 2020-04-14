@@ -329,8 +329,8 @@ func GetLockedCollateralStatePrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetRewardFeatureStatePrefix() []byte {
-	h := common.HashH(rewardFeatureStatePrefix)
+func GetRewardFeatureStatePrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 

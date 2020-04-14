@@ -400,9 +400,16 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	acceptedBlockRewardInstructions := [][]string{}
 	stopAutoStakingInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
+	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockchain.buildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, blockchain.BestState.Beacon.GetCopiedRewardStateDB())
+		featureStateDB := beaconBestState.GetCopiedFeatureStateDB()
+		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB, beaconBestState.BeaconHeight)
+		if err != nil {
+			return NewBlockChainError(GetTotalLockedCollateralError, err)
+		}
+		isSplitRewardForCustodian := totalLockedCollateral > 0
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, blockchain.BestState.Beacon.GetCopiedRewardStateDB(), isSplitRewardForCustodian)
 		if err != nil {
 			return NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -467,7 +474,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardByEpochInstruction)
+	statefulInsts := blockchain.buildStatefulInstructions(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
 		stakeInstructions, swapInstructions, stopAutoStakingInstructions,

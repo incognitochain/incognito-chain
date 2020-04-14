@@ -75,7 +75,11 @@ func groupPDEActionsByShardID(
 	return pdeActionsByShardID
 }
 
-func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64, rewardByEpochInsts [][]string) [][]string {
+func (blockchain *BlockChain) buildStatefulInstructions(
+	stateDB *statedb.StateDB,
+	statefulActionsByShardID map[byte][][]string,
+	beaconHeight uint64,
+	rewardForCustodianByEpoch map[common.Hash]uint64) [][]string {
 	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -302,7 +306,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 		beaconHeight-1,
 		currentPortalState,
 		portalReqWithdrawRewardActionsByShardID,
-		rewardByEpochInsts,
+		rewardForCustodianByEpoch,
 	)
 
 	if err != nil {
@@ -840,12 +844,12 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
-	rewardByEpochInsts [][]string,
+	rewardForCustodianByEpoch map[common.Hash]uint64,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
 	// Build instructions portal reward for each beacon block
-	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState, rewardByEpochInsts)
+	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState, rewardForCustodianByEpoch)
 	if err != nil {
 		Logger.log.Error(err)
 	}

@@ -80,7 +80,6 @@ func (p *BNBProof) Verify(db incdb.Database) (bool, *BNBRelayingError) {
 	if err != nil {
 		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
 	}
-
 	err = p.Proof.Validate(dataHash)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidTxProofErr, err)

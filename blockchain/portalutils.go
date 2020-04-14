@@ -948,3 +948,12 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, cur
 	}
 	//end
 }
+
+func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, beaconHeight uint64) (uint64, error){
+	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB, beaconHeight)
+	if err != nil {
+		return 0, nil
+	}
+
+	return currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch(), nil
+}

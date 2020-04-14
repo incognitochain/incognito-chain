@@ -92,15 +92,21 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	BLogger.log.Infof("Producing block: %d (epoch %d)", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
+	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.buildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBestState.Epoch, blockGenerator.chain.BestState.Beacon.GetCopiedRewardStateDB())
-		Logger.log.Errorf("At the end of epoch --- REWARD INSTRUCTION")
+		featureStateDB := beaconBestState.GetCopiedFeatureStateDB()
+		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB, beaconBestState.BeaconHeight)
+		if err != nil {
+			return nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+		}
+		isSplitRewardForCustodian := totalLockedCollateral > 0
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockGenerator.chain.buildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBestState.Epoch, blockGenerator.chain.BestState.Beacon.GetCopiedRewardStateDB(), isSplitRewardForCustodian)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
 	}
 
-	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit, rewardByEpochInstruction)
+	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit, rewardForCustodianByEpoch)
 
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
@@ -247,7 +253,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 // 4. bridge instructions
 // 5. accepted reward instructions
 // 6. stop auto staking instructions
-func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestState, shardsToBeacon map[byte]uint64, rewardByEpochInsts [][]string) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
+func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestState, shardsToBeacon map[byte]uint64, rewardForCustodianByEpoch map[common.Hash]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
 	validStakeInstructions := [][]string{}
 	validStakePublicKeys := []string{}
@@ -320,7 +326,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	}
 
 	// build stateful instructions
-	statefulInsts := blockGenerator.chain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardByEpochInsts)
+	statefulInsts := blockGenerator.chain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	return shardStates, validStakeInstructions, validSwapInstructions, bridgeInstructions, acceptedRewardInstructions, validStopAutoStakingInstructions
 }
