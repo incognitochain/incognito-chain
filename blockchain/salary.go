@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 
@@ -207,8 +206,8 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 			}
 
 		}
-	}
-	return nil
+}
+return nil
 }
 
 func (blockchain *BlockChain) addShardCommitteeReward(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeOfShardToProcess []incognitokey.CommitteePublicKey, rewardReceiver map[string]string) (err error) {
@@ -340,13 +339,6 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
 	}
-
-	amount, err = blockchain.CheckAndCalDAOFundsByTokenID(requestDetail.PaymentAddress.Pk, amount, requestDetail.TokenID.String())
-	if err != nil {
-		Logger.log.Errorf("Error when checking and calculating DAO fund amount")
-		return nil, err
-	}
-
 	responseMeta, err := metadata.NewWithDrawRewardResponse(requestDetail, (*txRequest).Hash())
 	if err != nil {
 		return nil, err
@@ -360,62 +352,6 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 		responseMeta,
 		requestDetail.TokenID,
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
-}
-
-func (blockchain *BlockChain) CheckAndCalDAOFunds (publicKey []byte, rewards map[string]uint64) (map[string]uint64, error) {
-	keyWalletDAOAcc, err := wallet.Base58CheckDeserialize(blockchain.GetConfig().ChainParams.IncognitoDAOAddress)
-	if err != nil {
-		Logger.log.Errorf("[checkAndCalDAOFunds] Can not decode DAO address %v\n", err)
-		return nil, err
-	}
-	publicKeyDAOAcc := keyWalletDAOAcc.KeySet.PaymentAddress.Pk
-	if bytes.Equal(publicKey, publicKeyDAOAcc) {
-		// get feature rewards
-		featureStateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
-		featureRewards, err := statedb.GetAllRewardFeatureState(featureStateDB)
-		if err != nil {
-			Logger.log.Errorf("[checkAndCalDAOFunds] Can not get feature rewards %v\n", err)
-			return nil, err
-		}
-
-		for _, r := range featureRewards.GetTotalRewards() {
-			tokenID := r.GetTokenID()
-			if tokenID == common.PRVIDStr {
-				if rewards["PRV"] > 0 {
-					rewards["PRV"] -= r.GetAmount()
-				}
-			} else {
-				rewards[tokenID] -= r.GetAmount()
-			}
-		}
-	}
-	return rewards, nil
-}
-
-func (blockchain *BlockChain) CheckAndCalDAOFundsByTokenID (publicKey []byte, rewardAmount uint64, tokenID string) (uint64, error) {
-	keyWalletDAOAcc, err := wallet.Base58CheckDeserialize(blockchain.GetConfig().ChainParams.IncognitoDAOAddress)
-	if err != nil {
-		Logger.log.Errorf("[checkAndCalDAOFundsByTokenID] Can not decode DAO address %v\n", err)
-		return uint64(0), err
-	}
-	publicKeyDAOAcc := keyWalletDAOAcc.KeySet.PaymentAddress.Pk
-	if bytes.Equal(publicKey, publicKeyDAOAcc) {
-		// get feature rewards
-		featureStateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
-		featureRewards, err := statedb.GetAllRewardFeatureState(featureStateDB)
-		if err != nil {
-			Logger.log.Errorf("[checkAndCalDAOFundsByTokenID] Can not get feature rewards %v\n", err)
-			return uint64(0), err
-		}
-
-		for _, r := range featureRewards.GetTotalRewards() {
-			tokenIDTmp := r.GetTokenID()
-			if tokenIDTmp == tokenID {
-				rewardAmount -= r.GetAmount()
-			}
-		}
-	}
-	return rewardAmount, nil
 }
 
 // mapPlusMap(src, dst): dst = dst + src

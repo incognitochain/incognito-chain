@@ -75,9 +75,6 @@ type BlockchainRetriever interface {
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
-	CheckAndCalDAOFunds(publicKey []byte, rewards map[string]uint64) (map[string]uint64, error)
-	CheckAndCalDAOFundsByTokenID (publicKey []byte, rewardAmount uint64, tokenID string) (uint64, error)
-	GetIncognitoDAOAddress() string
 }
 
 // Interface for all type of transaction
