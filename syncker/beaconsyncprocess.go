@@ -57,15 +57,6 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
-	return s
-}
-
-func (s *BeaconSyncProcess) start(isCommittee bool) {
-	if s.status == RUNNING_SYNC {
-		return
-	}
-	s.isCommittee = isCommittee
-	s.status = RUNNING_SYNC
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
@@ -99,6 +90,15 @@ func (s *BeaconSyncProcess) start(isCommittee bool) {
 			}
 		}
 	}()
+
+	return s
+}
+
+func (s *BeaconSyncProcess) start() {
+	if s.status == RUNNING_SYNC {
+		return
+	}
+	s.status = RUNNING_SYNC
 
 }
 
