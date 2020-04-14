@@ -10,11 +10,11 @@ import (
 	"strconv"
 )
 
-type Portal struct {
+type PortalService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (portal *Portal) GetPortingRequestByByKey(txId string) (jsonresult.PortalPortingRequest, error) {
+func (portal *PortalService) GetPortingRequestByByKey(txId string) (jsonresult.PortalPortingRequest, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	portingRequestItem, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalPortingRequestTxStatusPrefix(), []byte(txId))
 
@@ -35,7 +35,7 @@ func (portal *Portal) GetPortingRequestByByKey(txId string) (jsonresult.PortalPo
 	return result, nil
 }
 
-func (portal *Portal) GetPortingRequestByByPortingId(portingId string) (jsonresult.PortalPortingRequest, error) {
+func (portal *PortalService) GetPortingRequestByByPortingId(portingId string) (jsonresult.PortalPortingRequest, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	portingRequestItem, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(portingId))
 
@@ -56,7 +56,7 @@ func (portal *Portal) GetPortingRequestByByPortingId(portingId string) (jsonresu
 	return result, nil
 }
 
-func (portal *Portal) GetCustodianWithdrawByTxId(txId string) (jsonresult.PortalCustodianWithdrawRequest, error) {
+func (portal *PortalService) GetCustodianWithdrawByTxId(txId string) (jsonresult.PortalCustodianWithdrawRequest, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	custodianWithdraw, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalCustodianWithdrawStatusPrefix(), []byte(txId))
 
@@ -64,7 +64,7 @@ func (portal *Portal) GetCustodianWithdrawByTxId(txId string) (jsonresult.Portal
 		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
-	if  custodianWithdraw == nil {
+	if custodianWithdraw == nil {
 		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
@@ -81,8 +81,7 @@ func (portal *Portal) GetCustodianWithdrawByTxId(txId string) (jsonresult.Portal
 	return result, nil
 }
 
-
-func (portal *Portal) GetFinalExchangeRates(beaconHeight uint64) (jsonresult.FinalExchangeRatesResult, error) {
+func (portal *PortalService) GetFinalExchangeRates(beaconHeight uint64) (jsonresult.FinalExchangeRatesResult, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	finalExchangeRates, err := statedb.GetFinalExchangeRatesByKey(portalStateDB, beaconHeight)
 
@@ -100,12 +99,12 @@ func (portal *Portal) GetFinalExchangeRates(beaconHeight uint64) (jsonresult.Fin
 
 	result := jsonresult.FinalExchangeRatesResult{
 		BeaconHeight: beaconHeight,
-		Rates: item,
+		Rates:        item,
 	}
 	return result, nil
 }
 
-func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, beaconHeight uint64) (map[string]uint64, error) {
+func (portal *PortalService) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, beaconHeight uint64) (map[string]uint64, error) {
 
 	result := make(map[string]uint64)
 	finalExchangeRates, err := portal.getFinalExchangeRates(beaconHeight)
@@ -124,7 +123,7 @@ func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint6
 	return result, nil
 }
 
-func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, beaconHeight uint64) (map[string]uint64, error) {
+func (portal *PortalService) GetPortingFees(tokenSymbol string, valuePToken uint64, beaconHeight uint64) (map[string]uint64, error) {
 	result := make(map[string]uint64)
 	finalExchangeRates, err := portal.getFinalExchangeRates(beaconHeight)
 	if err != nil {
@@ -142,7 +141,7 @@ func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, bea
 	return result, nil
 }
 
-func (portal *Portal) getFinalExchangeRates(beaconHeight uint64) (*statedb.FinalExchangeRatesState, error) {
+func (portal *PortalService) getFinalExchangeRates(beaconHeight uint64) (*statedb.FinalExchangeRatesState, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	finalExchangeRates, err := statedb.GetFinalExchangeRatesByKey(portalStateDB, beaconHeight)
 
@@ -150,18 +149,18 @@ func (portal *Portal) getFinalExchangeRates(beaconHeight uint64) (*statedb.Final
 		return statedb.NewFinalExchangeRatesState(), err
 	}
 
-	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates); err != nil {
 		return statedb.NewFinalExchangeRatesState(), err
 	}
 
-	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates); err != nil {
 		return statedb.NewFinalExchangeRatesState(), err
 	}
 
 	return finalExchangeRates, nil
 }
 
-func (portal *Portal) CalculateAmountNeededCustodianDepositLiquidation(beaconHeight uint64, custodianAddress string, pTokenId string, isFreeCollateralSelected bool) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
+func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(beaconHeight uint64, custodianAddress string, pTokenId string, isFreeCollateralSelected bool) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	custodian, err := statedb.GetOneCustodian(portalStateDB, beaconHeight, custodianAddress)
 
@@ -178,21 +177,25 @@ func (portal *Portal) CalculateAmountNeededCustodianDepositLiquidation(beaconHei
 
 	result := jsonresult.GetLiquidateAmountNeededCustodianDeposit{
 		IsFreeCollateralSelected: isFreeCollateralSelected,
-		Amount: amountNeeded,
-		TokenId: pTokenId,
-		FreeCollateral: custodian.GetFreeCollateral(),
+		Amount:                   amountNeeded,
+		TokenId:                  pTokenId,
+		FreeCollateral:           custodian.GetFreeCollateral(),
 	}
 
 	return result, nil
 }
 
-func (portal *Portal) GetLiquidateTpExchangeRates(beaconHeight uint64 , custodianAddress string) (interface{}, error) {
+func (portal *PortalService) GetLiquidateTpExchangeRates(beaconHeight uint64, custodianAddress string) (interface{}, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	newTPKey := beaconHeightBytes
 	newTPKey = append(newTPKey, []byte(custodianAddress)...)
 
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
+	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(
+		portalStateDB,
+		statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
+		newTPKey,
+	)
 
 	if err != nil {
 		return nil, err
@@ -201,15 +204,13 @@ func (portal *Portal) GetLiquidateTpExchangeRates(beaconHeight uint64 , custodia
 	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
 	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
-
 
 	return liquidateTopPercentileExchangeRatesStatus, nil
 }
 
-
-func (portal *Portal) GetLiquidateTpExchangeRatesByToken(beaconHeight uint64, custodianAddress string, tokenSymbol string) (jsonresult.GetLiquidateTpExchangeRates, error) {
+func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(beaconHeight uint64, custodianAddress string, tokenSymbol string) (jsonresult.GetLiquidateTpExchangeRates, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	newTPKey := beaconHeightBytes
 	newTPKey = append(newTPKey, []byte(custodianAddress)...)
@@ -235,15 +236,15 @@ func (portal *Portal) GetLiquidateTpExchangeRatesByToken(beaconHeight uint64, cu
 
 	tp := "TP" + strconv.Itoa(topPercentile.TPKey)
 	result := jsonresult.GetLiquidateTpExchangeRates{
-		TokenId: tokenSymbol,
+		TokenId:       tokenSymbol,
 		TopPercentile: tp,
-		Data: topPercentile,
+		Data:          topPercentile,
 	}
 
 	return result, nil
 }
 
-func (portal *Portal) GetLiquidateExchangeRatesPool(
+func (portal *PortalService) GetLiquidateExchangeRatesPool(
 	beaconHeight uint64,
 	tokenSymbol string,
 ) (jsonresult.GetLiquidateExchangeRates, error) {
@@ -261,7 +262,7 @@ func (portal *Portal) GetLiquidateExchangeRatesPool(
 	}
 
 	result := jsonresult.GetLiquidateExchangeRates{
-		TokenId: tokenSymbol,
+		TokenId:     tokenSymbol,
 		Liquidation: liquidateExchangeRatesDetail,
 	}
 	return result, nil

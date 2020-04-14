@@ -9,7 +9,12 @@ import (
 
 type PortalRewardInfo struct {
 	custodianIncAddr string
-	amount           uint64
+	rewards          []*RewardInfoDetail
+}
+
+type RewardInfoDetail struct {
+	tokenID string
+	amount  uint64
 }
 
 func (p PortalRewardInfo) GetCustodianIncAddr() string {
@@ -20,21 +25,31 @@ func (p *PortalRewardInfo) SetCustodianIncAddr(custodianIncAddr string) {
 	p.custodianIncAddr = custodianIncAddr
 }
 
-func (p PortalRewardInfo) GetAmount() uint64 {
-	return p.amount
+func (p PortalRewardInfo) GetRewards() []*RewardInfoDetail {
+	return p.rewards
 }
 
-func (p *PortalRewardInfo) SetAmount(amount uint64) {
-	p.amount = amount
+func (p *PortalRewardInfo) SetRewards(rewards []*RewardInfoDetail) {
+	p.rewards = rewards
+}
+
+func (p *PortalRewardInfo) AddPortalRewardInfo(tokenID string, amount uint64) {
+	for i := 0; i < len(p.rewards); i++ {
+		if p.rewards[i].GetTokenID() == tokenID {
+			p.rewards[i].SetAmount(p.rewards[i].GetAmount() + amount)
+			return
+		}
+	}
+	p.rewards = append(p.rewards, NewPortalRewardInfoDetailWithValue(tokenID, amount))
 }
 
 func (p PortalRewardInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		CustodianIncAddr string
-		Amount           uint64
+		Rewards          []*RewardInfoDetail
 	}{
 		CustodianIncAddr: p.custodianIncAddr,
-		Amount:           p.amount,
+		Rewards:          p.rewards,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -45,14 +60,14 @@ func (p PortalRewardInfo) MarshalJSON() ([]byte, error) {
 func (p *PortalRewardInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		CustodianIncAddr string
-		Amount           uint64
+		Rewards          []*RewardInfoDetail
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	p.custodianIncAddr = temp.CustodianIncAddr
-	p.amount = temp.Amount
+	p.rewards = temp.Rewards
 	return nil
 }
 
@@ -62,11 +77,78 @@ func NewPortalRewardInfo() *PortalRewardInfo {
 
 func NewPortalRewardInfoWithValue(
 	custodianIncAddr string,
-	amount uint64) *PortalRewardInfo {
+	rewards []*RewardInfoDetail) *PortalRewardInfo {
 
 	return &PortalRewardInfo{
 		custodianIncAddr: custodianIncAddr,
-		amount:           amount,
+		rewards:          rewards,
+	}
+}
+
+func (p RewardInfoDetail) GetAmount() uint64 {
+	return p.amount
+}
+
+func (p *RewardInfoDetail) SetAmount(amount uint64) {
+	p.amount = amount
+}
+
+func (p RewardInfoDetail) GetTokenID() string {
+	return p.tokenID
+}
+
+func (p *RewardInfoDetail) SetTokenID(tokenId string) {
+	p.tokenID = tokenId
+}
+
+func NewPortalRewardInfoDetailWithValue(
+	tokenID string,
+	amount uint64) *RewardInfoDetail {
+
+	return &RewardInfoDetail{
+		tokenID: tokenID,
+		amount:  amount,
+	}
+}
+
+func (p RewardInfoDetail) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		TokenID string
+		Amount  uint64
+	}{
+		TokenID: p.tokenID,
+		Amount:  p.amount,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (p *RewardInfoDetail) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		TokenID string
+		Amount  uint64
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	p.tokenID = temp.TokenID
+	p.amount = temp.Amount
+	return nil
+}
+
+func NewRewardInfoDetail() *RewardInfoDetail {
+	return &RewardInfoDetail{}
+}
+
+func NewRewardInfoDetailWithValue(
+	tokenID string, amount uint64) *RewardInfoDetail {
+
+	return &RewardInfoDetail{
+		tokenID: tokenID,
+		amount:  amount,
 	}
 }
 

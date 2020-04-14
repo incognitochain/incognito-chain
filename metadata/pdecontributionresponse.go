@@ -100,9 +100,9 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var receivingAmtFromInst uint64
 		var receivingTokenIDStr string
 
-		if instContributionStatus == common.PDEContributionRefundChainStatus {  // refund
+		if instContributionStatus == common.PDEContributionRefundChainStatus {
 			contentBytes := []byte(inst[3])
-			var refundContribution PortalCustodianDepositContent
+			var refundContribution PDERefundContribution
 			err := json.Unmarshal(contentBytes, &refundContribution)
 			if err != nil {
 				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
@@ -110,23 +110,23 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			}
 			shardIDFromInst = refundContribution.ShardID
 			txReqIDFromInst = refundContribution.TxReqID
-			receiverAddrStrFromInst = refundContribution.IncogAddressStr
-			receivingAmtFromInst = refundContribution.DepositedAmount
-			receivingTokenIDStr = common.PRVCoinID.String()
+			receiverAddrStrFromInst = refundContribution.ContributorAddressStr
+			receivingTokenIDStr = refundContribution.TokenIDStr
+			receivingAmtFromInst = refundContribution.ContributedAmount
 
-		} else { // accepted
-			//contentBytes := []byte(inst[3])
-			//var matchedNReturnedContrib PortalCustodianDepositContent
-			//err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
-			//if err != nil {
-			//	Logger.log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
-			//	continue
-			//}
-			//shardIDFromInst = matchedNReturnedContrib.ShardID
-			//txReqIDFromInst = matchedNReturnedContrib.TxReqID
-			//receiverAddrStrFromInst = matchedNReturnedContrib.ContributorAddressStr
-			//receivingTokenIDStr = matchedNReturnedContrib.TokenIDStr
-			//receivingAmtFromInst = matchedNReturnedContrib.ReturnedContributedAmount
+		} else { // matched and returned
+			contentBytes := []byte(inst[3])
+			var matchedNReturnedContrib PDEMatchedNReturnedContribution
+			err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
+			if err != nil {
+				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
+				continue
+			}
+			shardIDFromInst = matchedNReturnedContrib.ShardID
+			txReqIDFromInst = matchedNReturnedContrib.TxReqID
+			receiverAddrStrFromInst = matchedNReturnedContrib.ContributorAddressStr
+			receivingTokenIDStr = matchedNReturnedContrib.TokenIDStr
+			receivingAmtFromInst = matchedNReturnedContrib.ReturnedContributedAmount
 		}
 
 		if !bytes.Equal(iRes.RequestedTxID[:], txReqIDFromInst[:]) ||

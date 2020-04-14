@@ -1,6 +1,9 @@
 package metadata
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -137,9 +140,15 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 		return false, err
 	}
 	if value > 0 {
+		value, err = bcr.CheckAndCalDAOFundsByTokenID(withDrawRewardRequest.PaymentAddress.Pk, value, withDrawRewardRequest.TokenID.String())
+		if err != nil {
+			Logger.log.Errorf("Error when checking and calculating DAO fund amount %v\n", err)
+			return false, err
+		}
+	}
+	if value > 0 {
 		isPositive = true
 	}
-
 	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}
@@ -181,6 +190,12 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
+
+	value, err = bcr.CheckAndCalDAOFundsByTokenID(requesterRes, value, withDrawRewardResponse.TokenID.String())
+	if err != nil {
+		Logger.log.Errorf("Error when checking and calculating DAO fund amount %v\n", err)
+		return false, err
+	}
 	if value != amountRes {
 		return false, errors.New("Wrong amounts")
 	}
@@ -195,3 +210,38 @@ func (withDrawRewardResponse WithDrawRewardResponse) ValidateMetadataByItself() 
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
+
+type WithDrawRewardResponseAction struct {
+	Meta    WithDrawRewardResponse
+	TxReqID common.Hash
+	ShardID byte
+}
+
+// only build action to beacon when there is withdraw request from DAO address
+func (withDrawRewardResponse *WithDrawRewardResponse) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	keyWalletDAOAcc, err := wallet.Base58CheckDeserialize(bcr.GetCentralizedWebsitePaymentAddress())
+	if err != nil {
+		Logger.log.Errorf("[BuildReqActions] Can not decode DAO address %v\n", err)
+		return nil, err
+	}
+	publicKeyDAOAcc := keyWalletDAOAcc.KeySet.PaymentAddress.Pk
+	_, requesterPk, _, _ := tx.GetTransferData()
+
+	if bytes.Equal(requesterPk, publicKeyDAOAcc) {
+		actionContent := WithDrawRewardResponseAction{
+			Meta:    *withDrawRewardResponse,
+			TxReqID: *tx.Hash(),
+			ShardID: shardID,
+		}
+		actionContentBytes, err := json.Marshal(actionContent)
+		if err != nil {
+			return [][]string{}, err
+		}
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		action := []string{strconv.Itoa(WithDrawRewardResponseMeta), actionContentBase64Str}
+		return [][]string{action}, nil
+	}
+
+	return [][]string{}, nil
+}
+

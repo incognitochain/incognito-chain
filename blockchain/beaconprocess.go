@@ -467,7 +467,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height)
+	statefulInsts := blockchain.buildStatefulInstructions(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardByEpochInstruction)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
 		stakeInstructions, swapInstructions, stopAutoStakingInstructions,
@@ -498,7 +498,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 //  Get beacon state of this block
 //  For example, new blockHeight is 91 then beacon state of this block must have height 90
 //  OR new block has previous has is beacon best block hash
-//  - Get producer via index and compare with producer address in beacon block header
+//  - Get producer via index and compare with producer address in beacon block headerproce
 //  - Validate public key and signature sanity
 //  - Validate Agg Signature
 //  - Beacon Best State has best block is previous block of new beacon block

@@ -230,6 +230,9 @@ const (
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
 	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
+
+	// feature rewards
+	getRewardFeature = "getrewardfeature"
 )
 
 const (

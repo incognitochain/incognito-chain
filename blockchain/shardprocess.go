@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
@@ -951,7 +952,14 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 		metaType := tx.GetMetadataType()
 		if metaType == metadata.WithDrawRewardResponseMeta {
 			_, publicKey, amountRes, coinID := tx.GetTransferData()
-			err := statedb.RemoveCommitteeReward(tempShardBestState.rewardStateDB, publicKey, amountRes, *coinID)
+			// check and reset total feature reward, add to committee reward
+			totalFeatureRewardAmount, err := statedb.ResetRewardFeatureStateByTokenID(featureStateDB, coinID.String())
+			if err != nil {
+				return NewBlockChainError(RemoveCommitteeRewardError, err)
+			}
+			amountRes += totalFeatureRewardAmount
+
+			err = statedb.RemoveCommitteeReward(tempShardBestState.rewardStateDB, publicKey, amountRes, *coinID)
 			if err != nil {
 				return NewBlockChainError(RemoveCommitteeRewardError, err)
 			}
@@ -1121,4 +1129,23 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
 	}()
+}
+
+func (blockchain *BlockChain) checkAndResetFeatureRewards (featureStateDB *statedb.StateDB, publicKey []byte, tokenID string) (uint64, error){
+	keyWalletDAOAcc, err := wallet.Base58CheckDeserialize(blockchain.GetConfig().ChainParams.IncognitoDAOAddress)
+	if err != nil {
+		Logger.log.Errorf("[checkAndResetFeatureRewards] Can not decode DAO address %v\n", err)
+		return uint64(0), err
+	}
+	publicKeyDAOAcc := keyWalletDAOAcc.KeySet.PaymentAddress.Pk
+	totalRewards := uint64(0)
+	if bytes.Equal(publicKey, publicKeyDAOAcc) {
+		// get feature rewards
+		totalRewards, err = statedb.ResetRewardFeatureStateByTokenID(featureStateDB, tokenID)
+		if err != nil {
+			Logger.log.Errorf("[checkAndResetFeatureRewards] Can not get feature rewards %v\n", err)
+			return uint64(0), err
+		}
+	}
+	return totalRewards, nil
 }

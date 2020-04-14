@@ -15,3 +15,13 @@ func NewPortalReward(beaconHeight uint64, receivers []*statedb.PortalRewardInfo)
 		Rewards:      receivers,
 	}, nil
 }
+
+type PortalTotalCustodianReward struct {
+	Rewards []*statedb.RewardInfoDetail
+}
+
+func NewPortalTotalCustodianReward(rewards []*statedb.RewardInfoDetail) (*PortalTotalCustodianReward, error) {
+	return &PortalTotalCustodianReward{
+		Rewards: rewards,
+	}, nil
+}

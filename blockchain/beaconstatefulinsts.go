@@ -51,7 +51,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestWithdrawRewardMeta,
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
 			metadata.PortalLiquidationCustodianDepositMeta,
-			metadata.PortalLiquidationCustodianDepositResponseMeta:
+			metadata.PortalLiquidationCustodianDepositResponseMeta,
+			metadata.WithDrawRewardResponseMeta:
 				statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -75,7 +76,7 @@ func groupPDEActionsByShardID(
 	return pdeActionsByShardID
 }
 
-func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64) [][]string {
+func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64, rewardByEpochInsts [][]string) [][]string {
 	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -116,6 +117,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
 	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
 	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
+
+	// withdraw response for DAO funds, request to reset total feature rewards on beacon
+	resetFeatureRewardActionsByShardID := map[byte][][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -225,6 +229,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
 			case metadata.RelayingBTCHeaderMeta:
 				pm.relayingChains[metadata.RelayingBTCHeaderMeta].putAction(action)
+			case metadata.WithDrawRewardResponseMeta:
+				resetFeatureRewardActionsByShardID = groupPortalActionsByShardID(
+					resetFeatureRewardActionsByShardID,
+					action,
+					shardID,
+				)
 			default:
 				continue
 			}
@@ -251,6 +261,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 	}
 	if len(pdeInsts) > 0 {
 		instructions = append(instructions, pdeInsts...)
+	}
+
+	resetFeatureRewardInst, err := blockchain.handleRequestResetFeatureReward(stateDB, resetFeatureRewardActionsByShardID)
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(resetFeatureRewardInst) > 0 {
+		instructions = append(instructions, resetFeatureRewardInst...)
 	}
 
 	// handle portal instructions
@@ -302,6 +321,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 		beaconHeight-1,
 		currentPortalState,
 		portalReqWithdrawRewardActionsByShardID,
+		rewardByEpochInsts,
 	)
 
 	if err != nil {
@@ -712,7 +732,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
-	// handle portal req unlock collateral inst
+	// handle liquidation user redeem ptoken  exchange rates
 	var redeemLiquidateExchangeRatesActionByShardIDKeys []int
 	for k := range portalRedeemLiquidateExchangeRatesActionByShardID {
 		redeemLiquidateExchangeRatesActionByShardIDKeys = append(redeemLiquidateExchangeRatesActionByShardIDKeys, int(k))
@@ -724,7 +744,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		actions := portalRedeemLiquidateExchangeRatesActionByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForRedeemLiquidateExchangeRates(
+			newInst, err := blockchain.buildInstructionsForLiquidationRedeemPTokenExchangeRates(
 				contentStr,
 				shardID,
 				metadata.PortalRedeemLiquidateExchangeRatesMeta,
@@ -797,7 +817,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	insts := [][]string{}
 
 	// check there is any waiting porting request timeout
-	expiredWaitingPortingInsts, err := checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState)
+	expiredWaitingPortingInsts, err := blockchain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -808,7 +828,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
 	// get custodian's collateral to return user
-	custodianLiqInsts, err := checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
+	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -819,7 +839,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 
-	exchangeRatesLiqInsts, err := checkTopPercentileExchangeRatesLiquidationInst(beaconHeight, currentPortalState)
+	exchangeRatesLiqInsts, err := buildInstForLiquidationTopPercentileExchangeRates(beaconHeight, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build exchange rates liquidation %v\n", err)
 	}
@@ -839,8 +859,18 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
+	rewardByEpochInsts [][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
+
+	// Build instructions portal reward for each beacon block
+	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState, rewardByEpochInsts)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	if len(portalRewardInsts) > 0 {
+		instructions = append(instructions, portalRewardInsts...)
+	}
 
 	// handle portal request withdraw reward inst
 	var shardIDKeys []int
@@ -872,17 +902,41 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 		}
 	}
 
-	// Build instructions portal reward for each beacon block
-	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState)
-	if err != nil {
-		Logger.log.Error(err)
+	return instructions, nil
+}
+
+func (blockchain *BlockChain) handleRequestResetFeatureReward(
+	stateDB *statedb.StateDB, resetFeatureRewardActionsByShardID map[byte][][]string) ([][]string, error) {
+
+	instructions := [][]string{}
+	var shardIDKeys []int
+	for k := range resetFeatureRewardActionsByShardID {
+		shardIDKeys = append(shardIDKeys, int(k))
 	}
-	if len(portalRewardInsts) > 0 {
-		instructions = append(instructions, portalRewardInsts...)
+
+	sort.Ints(shardIDKeys)
+	for _, value := range shardIDKeys {
+		shardID := byte(value)
+		actions := resetFeatureRewardActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForResetFeatureReward(
+				contentStr,
+				shardID,
+				metadata.WithDrawRewardResponseMeta,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
 	}
 
 	return instructions, nil
 }
-
 
 

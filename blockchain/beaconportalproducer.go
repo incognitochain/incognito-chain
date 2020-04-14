@@ -174,7 +174,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		newCustodian := statedb.NewCustodianStateWithValue(
 			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
 			nil, nil,
-			meta.RemoteAddresses, 0)
+			meta.RemoteAddresses, nil)
 		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	} else {
 		Logger.log.Errorf("buildInstructionsForCustodianDeposit - 22222 !!!!!")
@@ -389,14 +389,15 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//pick one
 	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
-
 	Logger.log.Infof("Porting request, pick single custodian result %v", len(pickCustodianResult))
+
 	//pick multiple
 	if len(pickCustodianResult) == 0 {
 		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
 		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
 	}
 	//end
+
 	if len(pickCustodianResult) == 0 {
 		Logger.log.Errorf("Porting request, custodian not found")
 		inst := buildRequestPortingInst(
@@ -785,6 +786,41 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.PortingProof)
 		if err != nil {
 			Logger.log.Errorf("PortingProof is invalid %v\n", err)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// check minimum confirmations block of bnb proof
+		latestBNBBlockHeight, err2 := getLatestRelayingBNBBlockHeight(db, beaconHeight)
+		if err2 != nil {
+			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
+				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
 			inst := buildReqPTokensInst(
 				meta.UniquePortingID,
 				meta.TokenID,
@@ -1849,6 +1885,43 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.RedeemProof)
 		if err != nil {
 			Logger.log.Errorf("RedeemProof is invalid %v\n", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// check minimum confirmations block of bnb proof
+		latestBNBBlockHeight, err2 := getLatestRelayingBNBBlockHeight(db, beaconHeight)
+		if err2 != nil {
+			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
+				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,

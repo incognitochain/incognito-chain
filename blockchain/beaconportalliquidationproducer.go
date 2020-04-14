@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"strconv"
+	"time"
 )
 
 // beacon build instruction for portal liquidation when custodians run away - don't send public tokens back to users.
@@ -47,11 +48,13 @@ func buildTopPercentileExchangeRatesLiquidationInst(
 	custodianAddress string,
 	metaType int,
 	status string,
+	topPercentile map[string]metadata.LiquidateTopPercentileExchangeRatesDetail,
 ) []string {
 	tpContent := metadata.PortalLiquidateTopPercentileExchangeRatesContent{
 		CustodianAddress: custodianAddress,
 		MetaType:         metaType,
 		Status:           status,
+		TP: topPercentile,
 	}
 	tpContentBytes, _ := json.Marshal(tpContent)
 	return []string{
@@ -120,7 +123,7 @@ func buildLiquidationCustodianDepositInst(
 	}
 }
 
-func checkAndBuildInstForCustodianLiquidation(
+func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
@@ -137,9 +140,7 @@ func checkAndBuildInstForCustodianLiquidation(
 	liquidatedByExchangeRate := false
 
 	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= common.PortalTimeOutCustodianSendPubTokenBack {
-			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] redeemReq.BeaconHeight: %v\n", redeemReq.GetBeaconHeight())
-			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] beaconHeight: %v\n", beaconHeight)
+		if (beaconHeight+1) - redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutCustodianSendPubTokenBack) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -338,13 +339,18 @@ func buildInstForExpiredPortingReqByPortingID(
 	return insts, nil
 }
 
-func checkAndBuildInstForExpiredWaitingPortingRequest(
+// convertPortalTimeOutToBeaconBlocks returns number of beacon blocks corresponding to duration time
+func (blockchain *BlockChain) convertPortalTimeOutToBeaconBlocks(duration time.Duration) uint64 {
+	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds())
+}
+
+func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
 	insts := [][]string{}
 	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
-		if (beaconHeight+1)-portingReq.BeaconHeight() >= common.PortalTimeOutWaitingPortingRequest {
+		if (beaconHeight+1) - portingReq.BeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
@@ -485,7 +491,7 @@ func checkAndBuildInstForTPExchangeRatePortingRequest(
 Top percentile (TP): 150 (TP150), 130 (TP130), 120 (TP120)
 if TP down, we are need liquidation custodian and notify to custodians (or users)
 */
-func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
 	if len(currentPortalState.CustodianPoolState) <= 0 {
 		return [][]string{}, nil
 	}
@@ -502,9 +508,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	custodianPoolState := currentPortalState.CustodianPoolState
 
 	for custodianKey, custodianState := range custodianPoolState {
-		Logger.log.Infof("Start detect tp custodian key %v", custodianKey)
-
-		Logger.log.Infof("custodian key %v, total pubtokens %v, total amount collateral %v", custodianKey, custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
+		Logger.log.Infof("Start detect tp custodian address: custodian key %v, custodian address %v, total pubtokens %v, total amount collateral %v",custodianKey, custodianState.GetIncognitoAddress(), custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
 
 		calTPRatio, err := calculateTPRatio(custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral(), exchangeRate)
 		if err != nil {
@@ -521,7 +525,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 		Logger.log.Infof("liquidate exchange rates: detect TP result  %v", detectTp)
 		if len(detectTp) > 0 {
-
 			for pTokenID, v := range detectTp {
 				if v.HoldAmountFreeCollateral > 0 {
 					// check and build instruction for waiting redeem request
@@ -564,55 +567,13 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 				custodianState.GetIncognitoAddress(),
 				metadata.PortalLiquidateTPExchangeRatesMeta,
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+				detectTp,
 			)
 
-			//update custodian
-			for pTokenId, v := range detectTp {
-				holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
-				holdingPubTokenTmp[pTokenId] -= v.HoldAmountPubToken
-				custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
 
-				lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-				lockedAmountTmp[pTokenId] -= v.HoldAmountFreeCollateral
-				custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 
-				custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - v.HoldAmountFreeCollateral)
-			}
-
-			currentPortalState.CustodianPoolState[custodianKey] = custodianState
-
-			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
-
-			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
-			if !ok {
-				item := make(map[string]statedb.LiquidateExchangeRatesDetail)
-
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					item[ptoken] = statedb.LiquidateExchangeRatesDetail{
-						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-					}
-				}
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
-			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					} else {
-						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken:       liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
-						}
-					}
-				}
-
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
-			}
+			//update current portal state
+			updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight, currentPortalState, custodianKey, custodianState, detectTp)
 
 			insts = append(insts, inst)
 		}
@@ -621,7 +582,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	return insts, nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
+func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchangeRates(
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -775,8 +736,8 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	//todo: review
-	if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral {
-		Logger.log.Errorf("total liquidation error %v", err)
+	if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral || liquidateByTokenID.HoldAmountFreeCollateral <= 0 {
+		Logger.log.Errorf("amout free collateral not enough, need prv %v != hold amount free collateral %v", totalPrv, liquidateByTokenID.HoldAmountFreeCollateral)
 		inst := buildRedeemLiquidateExchangeRatesInst(
 			meta.TokenID,
 			meta.RedeemAmount,

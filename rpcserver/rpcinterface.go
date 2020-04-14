@@ -214,6 +214,9 @@ var HttpHandler = map[string]httpHandler{
 	// incognnito mode for sc
 	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,
 	createAndSendBurningForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+
+	// feature reward
+	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 }
 
 // Commands that are available to a limited user

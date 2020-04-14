@@ -735,6 +735,12 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 			}
 		}
 	}
+
+	rewardAmountResult, err = blockService.BlockChain.CheckAndCalDAOFunds(publicKey, rewardAmountResult)
+	if err != nil {
+		Logger.log.Errorf("[GetRewardAmount] Error when checking and calculating reward for DAO account %v\n", err)
+		return nil, err
+	}
 	return rewardAmountResult, nil
 }
 
@@ -763,6 +769,14 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 			}
 		}
 	}
+
+	// if public key is DAO address, get DAO rewards minus feature rewards (portal rewards)
+	rewardAmountResult, err = blockService.BlockChain.CheckAndCalDAOFunds(tempPK, rewardAmountResult)
+	if err != nil {
+		Logger.log.Errorf("[GetRewardAmount] Error when checking and calculating reward for DAO account %v\n", err)
+		return nil, err
+	}
+
 	return rewardAmountResult, nil
 }
 
@@ -1041,3 +1055,16 @@ func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID st
 
 	return &status, nil
 }
+
+
+//============================= Reward Feature ===============================
+func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string) ([]*statedb.RewardInfoDetail, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, featureName)
+	if err != nil {
+		return nil, err
+	}
+
+	return data.GetTotalRewards(), nil
+}
+

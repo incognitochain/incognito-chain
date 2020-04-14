@@ -4,11 +4,12 @@ type PortalLiquidateTopPercentileExchangeRatesContent struct {
 	CustodianAddress string
 	Status string
 	MetaType int
+	TP map[string]LiquidateTopPercentileExchangeRatesDetail
 }
 
 type LiquidateTopPercentileExchangeRatesDetail struct {
 	TPKey int
-	TPValue                  int
+	TPValue                  uint64
 	HoldAmountFreeCollateral uint64
 	HoldAmountPubToken       uint64
 }

@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // for common
 const (
 	EmptyString       = ""
@@ -162,8 +164,8 @@ const (
 	PortalExpiredPortingReqSuccessStatus = 1
 	PortalExpiredPortingReqFailedStatus  = 2
 
-	PortalExchangeRatesAcceptedStatus   = 1
-	PortalExchangeRatesRejectedStatus   = 2
+	PortalExchangeRatesAcceptedStatus = 1
+	PortalExchangeRatesRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -191,7 +193,7 @@ const (
 	PortalPortingRequestAcceptedChainStatus = "accepted"
 	PortalPortingRequestRejectedChainStatus = "rejected"
 
-	PortalExchangeRatesAcceptedChainStatus  = "accepted"
+	PortalExchangeRatesAcceptedChainStatus = "accepted"
 	PortalExchangeRatesRejectedChainStatus = "rejected"
 
 	PortalRedeemRequestAcceptedChainStatus = "accepted"
@@ -231,13 +233,16 @@ const (
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 2160    // 2160 beacon blocks ~ 24 hours
-	PortalTimeOutWaitingPortingRequest     = 2160    // 2160 beacon blocks ~ 24 hours
-	PercentReceivedCollateralAmount        = 120     // users will be receive 120% of redeem amount in PRV
-	TotalRewardPerBlock                    = 1 * 1e9 // 1 prv
+	PortalTimeOutCustodianSendPubTokenBack = 24 * time.Hour // 24 hours
+	PortalTimeOutWaitingPortingRequest     = 24 * time.Hour // 24 hours
+	PercentReceivedCollateralAmount        = 120            // users will be received 120% of redeem amount in PRV
+	PercentCustodianRewards                = 10             // 10% of DAO funds per epoch
 
 	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 	TP130 = 130
+
+	PercentPortingFeeAmount = 0.01 // %
+	PercentRedeemFeeAmount  = 0.01 // %
 )
 
 const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
