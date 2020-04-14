@@ -101,7 +101,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	}
 	role, chainID := synckerManager.config.Node.GetUserMiningState()
 	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
-	synckerManager.BeaconSyncProcess.start(synckerManager.BeaconSyncProcess.isCommittee)
+	synckerManager.BeaconSyncProcess.start()
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
 		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {

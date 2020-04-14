@@ -49,21 +49,10 @@ func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconC
 	}
 
 	go s.syncS2BPoolProcess()
-	return s
-}
 
-func (s *S2BSyncProcess) start() {
-	if s.status == RUNNING_SYNC {
-		return
-	}
-	s.status = RUNNING_SYNC
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
-			if s.status != RUNNING_SYNC {
-				time.Sleep(time.Second)
-				continue
-			}
 			select {
 			case f := <-s.actionCh:
 				f()
@@ -91,6 +80,16 @@ func (s *S2BSyncProcess) start() {
 			}
 		}
 	}()
+
+	return s
+}
+
+func (s *S2BSyncProcess) start() {
+	if s.status == RUNNING_SYNC {
+		return
+	}
+	s.status = RUNNING_SYNC
+
 }
 
 func (s *S2BSyncProcess) stop() {

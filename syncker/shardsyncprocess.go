@@ -60,14 +60,6 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
-	return s
-}
-
-func (s *ShardSyncProcess) start() {
-	if s.status == RUNNING_SYNC {
-		return
-	}
-	s.status = RUNNING_SYNC
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
@@ -102,6 +94,14 @@ func (s *ShardSyncProcess) start() {
 		}
 	}()
 
+	return s
+}
+
+func (s *ShardSyncProcess) start() {
+	if s.status == RUNNING_SYNC {
+		return
+	}
+	s.status = RUNNING_SYNC
 }
 
 func (s *ShardSyncProcess) stop() {

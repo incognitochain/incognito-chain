@@ -45,6 +45,13 @@ func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess,
 
 	go s.syncCrossShard()
 
+	go func() {
+		for {
+			f := <-s.actionCh
+			f()
+		}
+	}()
+
 	return s
 }
 
@@ -53,12 +60,7 @@ func (s *CrossShardSyncProcess) start() bool {
 		return false
 	}
 	s.status = RUNNING_SYNC
-	go func() {
-		for {
-			f := <-s.actionCh
-			f()
-		}
-	}()
+
 	return true
 }
 
