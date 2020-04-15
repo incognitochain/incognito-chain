@@ -15,7 +15,7 @@ var (
 
 	beaconInsertBlockTimer                  = metrics.NewRegisteredTimer("beacon/insert", nil)
 	beaconVerifyPreprocesingTimer           = metrics.NewRegisteredTimer("beacon/verify/preprocessing", nil)
-	beaconVerifyPreprocesingForPresignTimer = metrics.NewRegisteredTimer("beacon/verify/preprocessingpresign", nil)
+	beaconVerifyPreprocesingForPreSignTimer = metrics.NewRegisteredTimer("beacon/verify/preprocessingpresign", nil)
 	beaconVerifyWithBestStateTimer          = metrics.NewRegisteredTimer("beacon/verify/withbeststate", nil)
 	beaconVerifyPostProcessingTimer         = metrics.NewRegisteredTimer("beacon/verify/postprocessing", nil)
 	beaconStoreBlockTimer                   = metrics.NewRegisteredTimer("beacon/storeblock", nil)
