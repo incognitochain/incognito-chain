@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math"
 	"reflect"
 	"strconv"
 )
@@ -82,15 +81,6 @@ func NewPortalRedeemRequest(
 	}
 	requestPTokenMeta.MetadataBase = metadataBase
 	return requestPTokenMeta, nil
-}
-
-func getMinRedeemFeeByRedeemAmount(redeemAmount uint64) (uint64, error) {
-	if redeemAmount == 0 {
-		return 0, errors.New("redeem amount must be greater than 0")
-	}
-	// minRedeemFee = redeemAmount * 0.01%
-	minRedeemFee := uint64(math.Floor(float64(redeemAmount) * 0.01 / 100))
-	return minRedeemFee, nil
 }
 
 func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(

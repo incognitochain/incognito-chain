@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math"
+	"math/big"
 	"strconv"
 	"time"
 )
@@ -155,8 +155,8 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 
 			for _, matchCusDetail := range redeemReq.GetCustodians() {
 				// calculate minted collateral amount
-				mintedAmountInPToken := float64(matchCusDetail.GetAmount()) * float64(common.PercentReceivedCollateralAmount) / 100
-				mintedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, uint64(math.Floor(mintedAmountInPToken)))
+				mintedAmountInPToken := matchCusDetail.GetAmount() * common.PercentReceivedCollateralAmount / 100
+				mintedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, mintedAmountInPToken)
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when exchanging ptoken to prv amount %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
@@ -394,7 +394,9 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 		return insts, err
 	}
 
-	totalMintedAmountPRV := uint64(math.Floor(float64(totalMatchingRedeemAmountPubTokenInPRV) * float64(common.PercentReceivedCollateralAmount) / float64(100)))
+	totalMintedTmp := new(big.Int).Mul(new(big.Int).SetUint64(totalMatchingRedeemAmountPubTokenInPRV), new(big.Int).SetUint64(common.PercentReceivedCollateralAmount))
+	totalMintedAmountPRV := new(big.Int).Div(totalMintedTmp, new(big.Int).SetUint64(100)).Uint64()
+
 	if totalMintedAmountPRV > liquidatedCustodianState.GetLockedAmountCollateral()[tokenID] {
 		totalMintedAmountPRV = liquidatedCustodianState.GetLockedAmountCollateral()[tokenID]
 	}
@@ -406,7 +408,8 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 		if redeemReq.GetTokenID() == tokenID {
 			for _, matchCustodian := range redeemReq.GetCustodians() {
 				if matchCustodian.GetIncognitoAddress() == liquidatedCustodianState.GetIncognitoAddress() {
-					mintedAmountPRV := uint64(math.Floor(float64(matchCustodian.GetAmount()) / float64(totalMatchingRedeemAmountPubToken) * float64(totalMintedAmountPRV)))
+					tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodian.GetAmount()), new(big.Int).SetUint64(totalMintedAmountPRV))
+					mintedAmountPRV := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalMatchingRedeemAmountPubToken)).Uint64()
 
 					// get shardId of redeemer
 					redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
@@ -641,7 +644,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 		return [][]string{inst}, nil
 	}
 
-	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, meta.TokenID, exchangeRatesState)
+	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, meta.TokenID, exchangeRatesState)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v", err)
 		inst := buildRedeemLiquidateExchangeRatesInst(

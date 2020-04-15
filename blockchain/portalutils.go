@@ -337,11 +337,13 @@ func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchange
 		return 0, err
 	}
 
-	portingFee := math.Ceil(float64(portingAmountInPRV) * common.PercentPortingFeeAmount / 100)
-	return uint64(portingFee), nil
+	// can't use big int to calculate porting fee because of common.PercentPortingFeeAmount < 1
+	portingFee := uint64(math.Round(float64(portingAmountInPRV) * common.PercentPortingFeeAmount / 100))
+
+	return portingFee, nil
 }
 
-func calMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState) (uint64, error) {
+func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState) (uint64, error) {
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	redeemAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenSymbol, redeemAmountInPToken)
 	if err != nil {
@@ -349,29 +351,25 @@ func calMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 		return 0, err
 	}
 
-	redeemFee := math.Ceil(float64(redeemAmountInPRV) * common.PercentRedeemFeeAmount / 100)
-	return uint64(redeemFee), nil
+	// can't use big int to calculate porting fee because of common.PercentRedeemFeeAmount < 1
+	redeemFee :=  uint64(math.Round(float64(redeemAmountInPRV) * common.PercentRedeemFeeAmount / 100))
+
+	return redeemFee, nil
 }
 
 /*
 	up 150%
 */
 func up150Percent(amount uint64) uint64 {
-	result := float64(amount) * 1.5 //return nano pBTC, pBNB
-	roundNumber := math.Ceil(result)
-	return uint64(roundNumber) //return nano pBTC, pBNB
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(150))
+	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
+	return result //return nano pBTC, pBNB
 }
 
 func down150Percent(amount uint64) uint64 {
-	result := float64(amount) / 1.5
-	roundNumber := math.Ceil(result)
-	return uint64(roundNumber)
-}
-
-func upByPercent(amount uint64, percent int) uint64 {
-	result := float64(amount) * (float64(percent) / 100) //return nano pBTC, pBNB
-	roundNumber := math.Ceil(result)
-	return uint64(roundNumber) //return nano pBTC, pBNB
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(100))
+	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(150)).Uint64()
+	return result
 }
 
 func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates statedb.LiquidateExchangeRatesDetail) (uint64, error) {
@@ -655,7 +653,8 @@ func updateFreeCollateralCustodian(custodianState *statedb.CustodianState, redee
 		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 		custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + unlockedAmount)
 	} else {
-		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
+		tmp := new(big.Int).Mul(new(big.Int).SetUint64(redeemAmount), new(big.Int).SetUint64(common.MinPercentUnlockedCollateralAmount))
+		unlockedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 		unlockedAmount, err = convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, unlockedAmountInPToken)
 
 		if err != nil {

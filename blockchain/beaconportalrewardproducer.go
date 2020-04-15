@@ -61,8 +61,8 @@ func splitPortingFeeForMatchingCustodians(
 	matchingCustodianAddresses []*statedb.MatchingPortingCustodianDetail,
 	rewardInfos []*statedb.PortalRewardInfo) []*statedb.PortalRewardInfo {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
-		tmp := new(big.Int).Mul(big.NewInt(int64(matchCustodianDetail.Amount)), big.NewInt(int64(feeAmount)))
-		splitedFee := new(big.Int).Div(tmp, big.NewInt(int64(portingAmount)))
+		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.Amount), new(big.Int).SetUint64(feeAmount))
+		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(portingAmount))
 		rewardInfos, _ = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.IncAddress, common.PRVIDStr, splitedFee.Uint64())
 	}
 	return rewardInfos
@@ -74,8 +74,8 @@ func splitRedeemFeeForMatchingCustodians(
 	matchingCustodianAddresses []*statedb.MatchingRedeemCustodianDetail,
 	rewardInfos []*statedb.PortalRewardInfo) []*statedb.PortalRewardInfo {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
-		tmp := new(big.Int).Mul(big.NewInt(int64(matchCustodianDetail.GetAmount())), big.NewInt(int64(feeAmount)))
-		splitedFee := new(big.Int).Div(tmp, big.NewInt(int64(redeemAmount)))
+		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.GetAmount()), new(big.Int).SetUint64(feeAmount))
+		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(redeemAmount))
 		rewardInfos, _ = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.GetIncognitoAddress(), common.PRVIDStr, splitedFee.Uint64())
 	}
 
@@ -91,8 +91,8 @@ func splitRewardForCustodians(
 	for _, custodian := range custodianState {
 		lockedCollateralCustodian := lockedCollateralState.GetLockedCollateralDetail()[custodian.GetIncognitoAddress()]
 		for tokenID, amount := range totalCustodianReward {
-			tmp := new(big.Int).Mul(big.NewInt(int64(lockedCollateralCustodian)), big.NewInt(int64(amount)))
-			splitedReward := new(big.Int).Div(tmp, big.NewInt(int64(totalLockedCollateral)))
+			tmp := new(big.Int).Mul(new(big.Int).SetUint64(lockedCollateralCustodian), new(big.Int).SetUint64(amount))
+			splitedReward := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalLockedCollateral))
 			rewardInfos, _ = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward.Uint64())
 		}
 	}
@@ -151,8 +151,6 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 			}
 			instTotalReward := blockchain.buildInstForPortalTotalReward(totalCustodianRewardSlice)
 			rewardInsts = append(rewardInsts, instTotalReward)
-
-			//currentPortalState.LockedCollateralState.Reset()
 		}
 	}
 

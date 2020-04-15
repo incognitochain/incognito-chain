@@ -1259,7 +1259,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		)
 		return [][]string{inst}, nil
 	}
-	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState[exchangeRateKeyStr])
+	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState[exchangeRateKeyStr])
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
 		inst := buildRedeemRequestInst(
