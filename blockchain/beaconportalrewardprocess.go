@@ -16,7 +16,7 @@ func (blockchain *BlockChain) processPortalReward(
 	var actionData metadata.PortalRewardContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
 	}
 
@@ -86,7 +86,7 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 	var actionData metadata.PortalRequestWithdrawRewardContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
 	}
 
@@ -156,7 +156,7 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 	var actionData metadata.PortalTotalCustodianReward
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
 	}
 
