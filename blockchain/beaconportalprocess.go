@@ -82,11 +82,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	}
 
 	//save final exchangeRates
-	err = blockchain.pickExchangesRatesFinal(beaconHeight, currentPortalState)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
+	blockchain.pickExchangesRatesFinal(beaconHeight, currentPortalState)
 
 	// update info of bridge portal token
 	for _, updatingInfo := range updatingInfoByTokenID {
@@ -584,7 +580,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 	return nil
 }
 
-func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) {
 	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 
 	//convert to slice
@@ -686,8 +682,6 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	if len(exchangeRatesList) > 0 {
 		currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(exchangeRatesList)
 	}
-
-	return nil
 }
 
 func calcMedian(ratesList []uint64) uint64 {
@@ -842,7 +836,11 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil

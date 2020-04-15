@@ -41,11 +41,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 				custodianState.GetTotalCollateral(), custodianState.GetLockedAmountCollateral()[pTokenID], actionData.MintedCollateralAmount)
 		}
 
-		err = updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.MintedCollateralAmount, pTokenID)
-		if err != nil {
-			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating %v\n: ", err)
-			return err
-		}
+		updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.MintedCollateralAmount, pTokenID)
 
 		// remove matching custodian from matching custodians list in waiting redeem request
 		waitingRedeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, actionData.UniqueRedeemID)
@@ -511,8 +507,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 				continue
 			}
-			_ = updateCustodianStateAfterExpiredPortingReq(
-				custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+			updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
 		}
 
 		// remove waiting porting request from waiting list

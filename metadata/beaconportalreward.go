@@ -9,19 +9,19 @@ type PortalRewardContent struct {
 	Rewards      []*statedb.PortalRewardInfo
 }
 
-func NewPortalReward(beaconHeight uint64, receivers []*statedb.PortalRewardInfo) (*PortalRewardContent, error) {
+func NewPortalReward(beaconHeight uint64, receivers []*statedb.PortalRewardInfo) *PortalRewardContent {
 	return &PortalRewardContent{
 		BeaconHeight: beaconHeight,
 		Rewards:      receivers,
-	}, nil
+	}
 }
 
 type PortalTotalCustodianReward struct {
 	Rewards []*statedb.RewardInfoDetail
 }
 
-func NewPortalTotalCustodianReward(rewards []*statedb.RewardInfoDetail) (*PortalTotalCustodianReward, error) {
+func NewPortalTotalCustodianReward(rewards []*statedb.RewardInfoDetail) *PortalTotalCustodianReward {
 	return &PortalTotalCustodianReward{
 		Rewards: rewards,
-	}, nil
+	}
 }

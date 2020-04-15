@@ -218,24 +218,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					continue
 				}
 
-				err = updateCustodianStateAfterLiquidateCustodian(custodianState, mintedAmountInPRV, tokenID)
-				if err != nil {
-					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating %v\n: ", err)
-					inst := buildCustodianRunAwayLiquidationInst(
-						redeemReq.GetUniqueRedeemID(),
-						redeemReq.GetTokenID(),
-						matchCusDetail.GetAmount(),
-						mintedAmountInPRV,
-						redeemReq.GetRedeemerAddress(),
-						matchCusDetail.GetIncognitoAddress(),
-						liquidatedByExchangeRate,
-						metadata.PortalLiquidateCustodianMeta,
-						shardID,
-						common.PortalLiquidateCustodianFailedChainStatus,
-					)
-					insts = append(insts, inst)
-					continue
-				}
+				updateCustodianStateAfterLiquidateCustodian(custodianState, mintedAmountInPRV, tokenID)
 
 				// remove matching custodian from matching custodians list in waiting redeem request
 				updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
@@ -319,8 +302,7 @@ func buildInstForExpiredPortingReqByPortingID(
 			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 			continue
 		}
-		_ = updateCustodianStateAfterExpiredPortingReq(
-			custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+		updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
 	}
 
 	// remove waiting porting request from waiting list
