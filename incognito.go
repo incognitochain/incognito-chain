@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,7 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -134,14 +134,14 @@ func main() {
 	limitThreads := os.Getenv("CPU")
 	if limitThreads == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-		metrics.SetGlobalParam("CPU", runtime.NumCPU())
+		monitor.SetGlobalParam("CPU", runtime.NumCPU())
 	} else {
 		numThreads, err := strconv.Atoi(limitThreads)
 		if err != nil {
 			panic(err)
 		}
 		runtime.GOMAXPROCS(numThreads)
-		metrics.SetGlobalParam("CPU", numThreads)
+		monitor.SetGlobalParam("CPU", numThreads)
 	}
 	fmt.Println("NumCPU", runtime.NumCPU())
 	// Block and transaction processing can cause bursty allocations.  This

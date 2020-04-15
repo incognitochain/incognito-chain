@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,7 +24,6 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/syncker"
 
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"cloud.google.com/go/storage"
@@ -301,9 +301,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		},
 		BC: serverObj.blockChain,
 	}
-	metrics.SetBlockChainObj(serverObj.blockChain)
-	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
-	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
+	monitor.SetBlockChainObj(serverObj.blockChain)
+	monitor.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
+	monitor.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
 	serverObj.highway = peerv2.NewConnManager(
 		host,
@@ -1714,7 +1714,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		return nil
 	}
 
-	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
+	monitor.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err

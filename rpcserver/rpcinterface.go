@@ -13,6 +13,7 @@ var HttpHandler = map[string]httpHandler{
 	//profiling
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
+	exportMetrics:  (*HttpServer).handleExportMetrics,
 
 	// node
 	getNodeRole:              (*HttpServer).handleGetNodeRole,
