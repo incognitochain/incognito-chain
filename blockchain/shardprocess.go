@@ -99,10 +99,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if blockHeight != GetBestStateShard(shardID).ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
-	isExist, _ := rawdbv2.HasShardBlock(blockchain.GetDatabase(), blockHash)
-	if isExist {
-		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardID, blockHeight, blockHash))
-	}
 	// fetch beacon blocks
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), tempShardBestState.BeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
@@ -1057,30 +1053,34 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	tempShardBestState.featureStateDB.ClearObjects()
 	tempShardBestState.rewardStateDB.ClearObjects()
 	tempShardBestState.slashStateDB.ClearObjects()
-	if err := rawdbv2.StoreShardConsensusRootHash(blockchain.GetDatabase(), shardID, blockHeight, consensusRootHash); err != nil {
+	batchData := blockchain.GetDatabase().NewBatch()
+	if err := rawdbv2.StoreShardConsensusRootHash(batchData, shardID, blockHeight, consensusRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardTransactionRootHash(blockchain.GetDatabase(), shardID, blockHeight, transactionRootHash); err != nil {
+	if err := rawdbv2.StoreShardTransactionRootHash(batchData, shardID, blockHeight, transactionRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardFeatureRootHash(blockchain.GetDatabase(), shardID, blockHeight, featureRootHash); err != nil {
+	if err := rawdbv2.StoreShardFeatureRootHash(batchData, shardID, blockHeight, featureRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardCommitteeRewardRootHash(blockchain.GetDatabase(), shardID, blockHeight, rewardRootHash); err != nil {
+	if err := rawdbv2.StoreShardCommitteeRewardRootHash(batchData, shardID, blockHeight, rewardRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardSlashRootHash(blockchain.GetDatabase(), shardID, blockHeight, slashRootHash); err != nil {
+	if err := rawdbv2.StoreShardSlashRootHash(batchData, shardID, blockHeight, slashRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(blockchain.GetDatabase(), shardID, blockHeight, blockHash, shardBlock); err != nil {
+	if err := rawdbv2.StoreShardBlock(batchData, shardID, blockHeight, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardBlockIndex(blockchain.GetDatabase(), shardID, blockHeight, blockHash); err != nil {
+	if err := rawdbv2.StoreShardBlockIndex(batchData, shardID, blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, tempShardBestState); err != nil {
+	if err := rawdbv2.StoreShardBestState(batchData, shardID, tempShardBestState); err != nil {
 		return NewBlockChainError(StoreBestStateError, err)
+	}
+	if err := batchData.Write(); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil

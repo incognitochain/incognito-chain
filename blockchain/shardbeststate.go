@@ -65,7 +65,7 @@ func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.Sta
 	return shardBestState.transactionStateDB.Copy()
 }
 
-func (shardBestState *ShardBestState) GetFeatureCopiedStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetCopiedFeatureStateDB() *statedb.StateDB {
 	return shardBestState.featureStateDB.Copy()
 }
 
