@@ -21,7 +21,8 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
-
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
 )
 
@@ -34,8 +35,9 @@ type BlockChain struct {
 	IsTest bool
 }
 
-// config is a descriptor which specifies the blockchain instance configuration.
+// Config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
+	BTCChain          *btcrelaying.BlockChain
 	DataBase          incdb.Database
 	MemCache          *memcache.MemoryCache
 	Interrupt         <-chan struct{}
@@ -501,4 +503,9 @@ func (blockchain *BlockChain) GetWantedShard() map[byte]struct{} {
 		res[sID] = struct{}{}
 	}
 	return res
+}
+
+// GetConfig returns blockchain's config
+func (blockchain *BlockChain) GetConfig() *Config {
+	return &blockchain.config
 }

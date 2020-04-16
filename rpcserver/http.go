@@ -44,6 +44,7 @@ type HttpServer struct {
 	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
+	portal     		  *rpcservice.PortalService
 	synkerService     *rpcservice.SynkerService
 }
 
@@ -90,6 +91,10 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
 	httpServer.synkerService = &rpcservice.SynkerService{
 		Synker: config.Syncker,
+	}
+
+	httpServer.portal = &rpcservice.PortalService{
+		BlockChain: httpServer.config.BlockChain,
 	}
 }
 

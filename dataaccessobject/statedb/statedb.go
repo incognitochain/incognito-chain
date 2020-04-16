@@ -1208,3 +1208,219 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 	}
 	return NewBurningConfirmState(), false, nil
 }
+
+// ================================= Portal OBJECT =======================================
+func (stateDB *StateDB) getWaitingPortingRequests(beaconHeight uint64) map[string]*WaitingPortingRequest {
+	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
+	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewWaitingPortingRequest()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingPortingRequest[keyHash.String()] = object
+	}
+
+	return waitingPortingRequest
+}
+
+func (stateDB *StateDB) getCustodianByKey(key common.Hash) (*CustodianState, bool, error) {
+	custodianState, err := stateDB.getStateObject(CustodianStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if custodianState != nil {
+		return custodianState.GetValue().(*CustodianState), true, nil
+	}
+	return NewCustodianState(), false, nil
+}
+
+func (stateDB *StateDB) getFinalExchangeRatesByKey(key common.Hash) (*FinalExchangeRatesState, bool, error) {
+	finalExchangeRates, err := stateDB.getStateObject(PortalFinalExchangeRatesStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if finalExchangeRates != nil {
+		return finalExchangeRates.GetValue().(*FinalExchangeRatesState), true, nil
+	}
+	return NewFinalExchangeRatesState(), false, nil
+}
+
+func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*LiquidateExchangeRatesPool, bool, error) {
+	liquidateExchangeRates, err := stateDB.getStateObject(PortalLiquidationExchangeRatesPoolObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if liquidateExchangeRates != nil {
+		return liquidateExchangeRates.GetValue().(*LiquidateExchangeRatesPool), true, nil
+	}
+	return NewLiquidateExchangeRatesPool(), false, nil
+}
+
+func (stateDB *StateDB) getLiquidateExchangeRatesPool(beaconHeight uint64) map[string]*LiquidateExchangeRatesPool {
+	liquidateExchangeRatesPoolList := make(map[string]*LiquidateExchangeRatesPool)
+	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewLiquidateExchangeRatesPool()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		liquidateExchangeRatesPoolList[keyHash.String()] = object
+	}
+
+	return liquidateExchangeRatesPoolList
+}
+
+func (stateDB *StateDB) getFinalExchangeRatesState(beaconHeight uint64) map[string]*FinalExchangeRatesState {
+	finalExchangeRatesState := make(map[string]*FinalExchangeRatesState)
+	temp := stateDB.trie.NodeIterator(GetFinalExchangeRatesStatePrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewFinalExchangeRatesState()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		finalExchangeRatesState[keyHash.String()] = object
+	}
+
+	return finalExchangeRatesState
+}
+
+//B
+func (stateDB *StateDB) getAllWaitingRedeemRequest(beaconHeight uint64) map[string]*WaitingRedeemRequest {
+	waitingRedeemRequests := make(map[string]*WaitingRedeemRequest)
+	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewWaitingRedeemRequest()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingRedeemRequests[keyHash.String()] = wr
+	}
+	return waitingRedeemRequests
+}
+
+func (stateDB *StateDB) getAllCustodianStatePool(beaconHeight uint64) map[string]*CustodianState {
+	custodians := make(map[string]*CustodianState)
+	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		cus := NewCustodianState()
+		err := json.Unmarshal(newValue, cus)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		custodians[keyHash.String()] = cus
+	}
+	return custodians
+}
+
+func (stateDB *StateDB) getPortalRewards(beaconHeight uint64) []*PortalRewardInfo {
+	portalRewards := make([]*PortalRewardInfo, 0)
+	temp := stateDB.trie.NodeIterator(GetPortalRewardInfoStatePrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardInfo := NewPortalRewardInfo()
+		err := json.Unmarshal(newValue, rewardInfo)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		portalRewards = append(portalRewards, rewardInfo)
+	}
+	return portalRewards
+}
+
+func (stateDB *StateDB) getPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
+	portalStatusState, err := stateDB.getStateObject(PortalStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalStatusState != nil {
+		return portalStatusState.GetValue().(*PortalStatusState), true, nil
+	}
+	return NewPortalStatusState(), false, nil
+}
+
+func (stateDB *StateDB) getLockedCollateralState(beaconHeight uint64) (*LockedCollateralState, bool, error) {
+	key := GenerateLockedCollateralStateObjectKey(beaconHeight)
+	lockedCollateralState, err := stateDB.getStateObject(LockedCollateralStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if lockedCollateralState != nil {
+		return lockedCollateralState.GetValue().(*LockedCollateralState), true, nil
+	}
+	return NewLockedCollateralState(), false, nil
+}
+
+// ================================= Feature reward OBJECT =======================================
+func (stateDB *StateDB) getFeatureRewardByFeatureName(featureName string, epoch uint64) (*RewardFeatureState, bool, error) {
+	key := GenerateRewardFeatureStateObjectKey(featureName, epoch)
+	rewardFeatureState, err := stateDB.getStateObject(RewardFeatureStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if rewardFeatureState != nil {
+		return rewardFeatureState.GetValue().(*RewardFeatureState), true, nil
+	}
+	return NewRewardFeatureState(), false, nil
+}
+
+func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState, bool, error) {
+	result := NewRewardFeatureState()
+
+	temp := stateDB.trie.NodeIterator(GetRewardFeatureStatePrefix(epoch))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardFeature := NewRewardFeatureState()
+		err := json.Unmarshal(newValue, rewardFeature)
+		if err != nil {
+			panic("wrong expect type")
+		}
+
+		for _, r := range rewardFeature.totalRewards {
+			result.AddTotalRewards(r.tokenID, r.amount)
+		}
+	}
+	return result, true, nil
+}

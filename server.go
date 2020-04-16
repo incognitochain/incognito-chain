@@ -48,6 +48,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 
 	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -198,7 +199,15 @@ func (serverObj *Server) GetChainParam() *blockchain.Params {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(
+	listenAddrs string,
+	db incdb.Database,
+	dbmp databasemp.DatabaseInterface,
+	chainParams *blockchain.Params,
+	protocolVer string,
+	btcChain *btcrelaying.BlockChain,
+	interrupt <-chan struct{},
+) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -316,6 +325,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	)
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
+		BTCChain: btcChain,
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
 		MemCache:    serverObj.memCache,

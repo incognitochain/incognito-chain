@@ -115,22 +115,24 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	allTokenIDs := shardViewRetriever.ListShardPrivacyTokenAndPRV()
-	bridgeTokenIDs, err := beaconViewRetriever.GetAllBridgeTokens()
-	if err != nil {
-		return false, err
-	}
-	for _, bridgeTokenID := range bridgeTokenIDs {
-		if common.IndexOfHash(bridgeTokenID, allTokenIDs) == 1 {
-			allTokenIDs = append(allTokenIDs, bridgeTokenID)
-		}
-	}
+
 	isValid := false
-	for _, availableCoinID := range allTokenIDs {
-		cmp, err := withDrawRewardRequest.TokenID.Cmp(&availableCoinID)
-		if (cmp == 0) && (err == nil) {
-			isValid = true
-			break
+	if withDrawRewardRequest.TokenID.IsEqual(&common.PRVCoinID) {
+		// this is withdraw request for PRV
+		isValid = true
+	} else {
+		// this is withdraw request for token
+		allTokenID, err := bcr.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(txr.GetSenderAddrLastByte()))
+		if err != nil {
+			return false, err
+		}
+
+		for _, availableCoinID := range allTokenID {
+			cmp := withDrawRewardRequest.TokenID.IsEqual(&availableCoinID)
+			if cmp {
+				isValid = true
+				break
+			}
 		}
 	}
 	if !isValid {

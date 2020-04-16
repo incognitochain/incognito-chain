@@ -30,6 +30,17 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	//A
+	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
+	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
+	ErrInvalidWaitingPortingRequestType    = "invalid waiting porting request type"
+	//B
+	ErrInvalidPortalStatusStateType           = "invalid portal status state type"
+	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
+	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
+	ErrInvalidPortalRewardInfoStateType       = "invalid portal reward info state type"
+	ErrInvalidPortalLockedCollateralStateType = "invalid portal locked collateral state type"
+	ErrInvalidRewardFeatureStateType          = "invalid feature reward state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -112,6 +123,78 @@ const (
 	// burning confirm
 	StoreBurningConfirmError
 	GetBurningConfirmError
+
+	//portal
+	StoreCustodianDepositStateError
+	StoreCustodianStateError
+	StoreWaitingRedeemRequestError
+	StoreRedeemRequestStateError
+	TrackCustodianDepositError
+	TrackReqPTokenError
+	GetItemPortalByKeyError
+	GetItemPortalByKeyNotFound
+	GetCustodianDepositStatusError
+	GetReqPTokenStatusError
+	StoreRedeemRequestError
+	TrackRedeemReqByTxReqIDError
+	TrackReqUnlockCollateralByTxReqIDError
+	GetReqUnlockCollateralStatusError
+	TrackLiquidateCustodianError
+	StorePortalRewardError
+	StorePortalStatusError
+	StorePortalTxStatusError
+	GetPortalStatusError
+	GetPortalStatusNotFoundError
+	GetPortalRedeemRequestStatusError
+	StorePortalRedeemRequestStatusError
+	StorePortalCustodianDepositStatusError
+	GetPortalCustodianDepositStatusError
+	StorePortalRequestPTokenStatusError
+	GetPortalRequestPTokenStatusError
+	GetPortalRedeemRequestByTxIDStatusError
+	StorePortalRedeemRequestByTxIDStatusError
+	GetPortalRequestUnlockCollateralStatusError
+	StorePortalRequestUnlockCollateralStatusError
+	GetPortalLiquidationCustodianRunAwayStatusError
+	StorePortalLiquidationCustodianRunAwayStatusError
+	GetPortalExpiredPortingReqStatusError
+	StorePortalExpiredPortingReqStatusError
+	GetPortalRequestWithdrawRewardStatusError
+	StorePortalRequestWithdrawRewardStatusError
+	StoreLockedCollateralStateError
+	GetLockedCollateralStateError
+
+	//porting request
+	GetPortingRequestTxStatusError
+	GetPortingRequestStatusError
+	StorePortingRequestStateError
+	StoreWaitingPortingRequestError
+	//exchange rates
+	GetPortalFinalExchangeRatesStateError
+	StorePortalExchangeRatesStatusError
+	StoreExchangeRatesRequestStateError
+	StoreFinalExchangeRatesStateError
+
+	//liquidation exchange rates
+	GetPortalLiquidationExchangeRatesPoolError
+	GetLiquidationTopPercentileExchangeRatesStatusError
+	StoreLiquidateTopPercentileExchangeRatesError
+	StoreLiquidateExchangeRatesPoolError
+	//liquidation custodian deposit
+	StoreLiquidationCustodianDepositError
+	//liquidation user redeem
+	StoreRedeemLiquidationExchangeRatesError
+
+	//custodian withdraw
+	StorePortalCustodianWithdrawRequestStatusError
+	GetPortalCustodianWithdrawStatusError
+
+	// feature rewards
+	StoreRewardFeatureError
+	GetRewardFeatureError
+	GetAllRewardFeatureError
+	ResetAllFeatureRewardByTokenIDError
+	GetRewardFeatureAmountByTokenIDError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -188,6 +271,70 @@ var ErrCodeMessage = map[int]struct {
 	// -6xxx: burning confirm
 	StoreBurningConfirmError: {-6000, "Store Burning Confirm Error"},
 	GetBurningConfirmError:   {-6001, "Get Burning Confirm Error"},
+
+	//portal
+	StoreCustodianDepositStateError:                {-14001, "Store custodian deposit error"},
+	StoreWaitingPortingRequestError:                {-14002, "Store waiting porting requests error"},
+	StoreWaitingRedeemRequestError:                 {-14003, "Store waiting redeem requests error"},
+	StorePortingRequestStateError:                  {-14004, "Store porting request error"},
+	StoreRedeemRequestStateError:                   {-14005, "Store redeem request error"},
+	TrackCustodianDepositError:                     {-14006, "Track custodian deposit error"},
+	TrackReqPTokenError:                            {-14007, "Track requesting ptokens error"},
+	StoreExchangeRatesRequestStateError:            {-14008, "Store exchange rates request error"},
+	StoreFinalExchangeRatesStateError:              {-14009, "Store final exchange rates request error"},
+	GetItemPortalByKeyError:                        {-14010, "Get item portal by key error"},
+	GetItemPortalByKeyNotFound:                     {-14011, "Get item portal by key not found"},
+	GetCustodianDepositStatusError:                 {-14012, "Get all custodian deposit status error"},
+	GetReqPTokenStatusError:                        {-14013, "Get request ptoken status error"},
+	StoreRedeemRequestError:                        {-14014, "Store redeem request error"},
+	TrackRedeemReqByTxReqIDError:                   {-14015, "Track redeem request by txReqID error"},
+	TrackReqUnlockCollateralByTxReqIDError:         {-14016, "Track request unlock collateral by txReqID error"},
+	GetReqUnlockCollateralStatusError:              {-14017, "Get status of request unlock collateral by txReqID error"},
+	StorePortalCustodianWithdrawRequestStatusError: {-14018, "Store portal custodian withdraw request status error"},
+	TrackLiquidateCustodianError:                   {-14019, "Track liquidation custodian error"},
+	StorePortalRewardError:                         {-14020, "Store portal reward error"},
+	StoreLiquidateTopPercentileExchangeRatesError:  {-14021, "Store liquidate top percentile exchange rates error"},
+	StoreLiquidateExchangeRatesPoolError:           {-14022, "Store liquidate exchange rates pool error"},
+	StoreRedeemLiquidationExchangeRatesError:       {-14023, "Store redeem liquidation exchange rates error"},
+	StoreLiquidationCustodianDepositError:          {-14024, "Store liquidation custodian deposit error"},
+	StoreCustodianStateError:                       {-14025, "Store custodian state error"},
+
+	//B
+	StorePortalStatusError:                              {-14026, "Store portal status error"},
+	GetPortalStatusError:                                {-14027, "Get portal status error"},
+	GetPortalRedeemRequestStatusError:                   {-14028, "Get portal redeem request status error"},
+	StorePortalRedeemRequestStatusError:                 {-14029, "Store portal redeem request status error"},
+	GetPortalCustodianDepositStatusError:                {-14030, "Get portal custodian deposit status error"},
+	StorePortalCustodianDepositStatusError:              {-14031, "Store portal custodian deposit status error"},
+	StorePortalRequestPTokenStatusError:                 {-14032, "Store portal request ptoken status error"},
+	GetPortalRequestPTokenStatusError:                   {-14033, "Get portal request ptoken status error"},
+	GetPortalRedeemRequestByTxIDStatusError:             {-14034, "Get portal redeem request by txid status error"},
+	StorePortalRedeemRequestByTxIDStatusError:           {-14035, "Store portal redeem request by txid status error"},
+	GetPortalRequestUnlockCollateralStatusError:         {-14036, "Get portal request unlock collateral status error"},
+	StorePortalRequestUnlockCollateralStatusError:       {-14037, "Store portal request unlock collateral status error"},
+	GetPortalLiquidationCustodianRunAwayStatusError:     {-14036, "Get portal liquidation custodian run away status error"},
+	StorePortalLiquidationCustodianRunAwayStatusError:   {-14036, "Store portal liquidation custodian run away status error"},
+	GetPortalExpiredPortingReqStatusError:               {-14036, "Get portal expired porting request status error"},
+	StorePortalExpiredPortingReqStatusError:             {-14036, "Store portal expired porting request status error"},
+	GetPortalRequestWithdrawRewardStatusError:           {-14036, "Get portal request withdraw reward status error"},
+	StorePortalRequestWithdrawRewardStatusError:         {-14036, "Store portal request withdraw reward status error"},
+	GetPortalFinalExchangeRatesStateError:               {-14037, "Get portal final exchange rates state error"},
+	StorePortalTxStatusError:                            {-14038, "Store portal Tx status error"},
+	StorePortalExchangeRatesStatusError:                 {-14039, "Store portal exchange rates status error"},
+	GetPortalLiquidationExchangeRatesPoolError:          {-14040, "Get portal liquidation exchange rates pool error"},
+	GetPortingRequestStatusError:                        {-14041, "Get portal porting request status error"},
+	GetPortingRequestTxStatusError:                      {-14042, "Get portal porting request tx status error"},
+	GetLiquidationTopPercentileExchangeRatesStatusError: {-14043, "Get liquidation tp ex change rates status error"},
+	GetPortalStatusNotFoundError:                        {-14044, "Get portal status not found error"},
+	GetPortalCustodianWithdrawStatusError:               {-14045, "Get portal custodian withdraw status error"},
+	StoreLockedCollateralStateError:                     {-14046, "Store locked collateral state error"},
+	GetLockedCollateralStateError:                       {-14047, "Get locked collateral state error"},
+
+	StoreRewardFeatureError:              {-15000, "Store reward feature state error"},
+	GetRewardFeatureError:                {-15001, "Get reward feature state error"},
+	GetAllRewardFeatureError:             {-15002, "Get all reward feature state error"},
+	ResetAllFeatureRewardByTokenIDError:  {-15003, "Reset all reward feature state by tokenID error"},
+	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 }
 
 type StatedbError struct {
