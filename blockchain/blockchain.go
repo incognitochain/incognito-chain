@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
 	"io"
@@ -41,8 +42,9 @@ type BestState struct {
 	Shard  map[byte]*ShardBestState
 }
 
-// config is a descriptor which specifies the blockchain instance configuration.
+// Config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
+	BTCChain          *btcrelaying.BlockChain
 	DataBase          incdb.Database
 	MemCache          *memcache.MemoryCache
 	Interrupt         <-chan struct{}
@@ -522,3 +524,8 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------
+
+// GetConfig returns blockchain's config
+func (blockchain *BlockChain) GetConfig() *Config {
+	return &blockchain.config
+}

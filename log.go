@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"os"
 	"path/filepath"
@@ -56,6 +57,7 @@ var (
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	trieLogger             = backendLog.Logger("Trie log", false)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	relayingLogger         = backendLog.Logger("Relaying log", false)
 	wrapperLogger          = backendLog.Logger("Wrapper log", false)
 	daov2Logger            = backendLog.Logger("DAO log", false)
 )
@@ -96,9 +98,9 @@ func init() {
 	metadata.Logger.Init(metadataLogger)
 	trie.Logger.Init(trieLogger)
 	peerv2.Logger.Init(peerv2Logger)
+	relaying.Logger.Init(relayingLogger)
 	wrapper.Logger.Init(wrapperLogger)
 	dataaccessobject.Logger.Init(daov2Logger)
-
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

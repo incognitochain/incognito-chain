@@ -947,7 +947,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 		metaType := tx.GetMetadataType()
 		if metaType == metadata.WithDrawRewardResponseMeta {
 			_, publicKey, amountRes, coinID := tx.GetTransferData()
-			err := statedb.RemoveCommitteeReward(tempShardBestState.rewardStateDB, publicKey, amountRes, *coinID)
+			err = statedb.RemoveCommitteeReward(tempShardBestState.rewardStateDB, publicKey, amountRes, *coinID)
 			if err != nil {
 				return NewBlockChainError(RemoveCommitteeRewardError, err)
 			}

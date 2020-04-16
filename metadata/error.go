@@ -41,6 +41,11 @@ const (
 	PDEWithdrawalRequestFromMapError
 	CouldNotGetExchangeRateError
 	RejectInvalidFee
+
+	// portal
+	PortalRequestPTokenParamError
+	PortalRedeemRequestParamError
+	PortalRedeemLiquidateExchangeRatesParamError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -80,12 +85,17 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingRequestAlreadyStopError:                {-4005, "Stop Auto Staking Request Already Stop Error"},
 
 	// -5xxx dev reward error
-	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
+	WrongIncognitoDAOPaymentAddressError: 					{-5001, "Invalid dev account"},
 
 	// pde
-	PDEWithdrawalRequestFromMapError: {-6001, "PDE withdrawal request Error"},
-	CouldNotGetExchangeRateError:     {-6002, "Could not get the exchange rate error"},
-	RejectInvalidFee:                 {-6003, "Reject invalid fee"},
+	PDEWithdrawalRequestFromMapError: 						{-6001, "PDE withdrawal request Error"},
+	CouldNotGetExchangeRateError:     						{-6002, "Could not get the exchange rate error"},
+	RejectInvalidFee:                 						{-6003, "Reject invalid fee"},
+
+	// portal
+	PortalRequestPTokenParamError:                 			{-7001, "Portal request ptoken param error"},
+	PortalRedeemRequestParamError:                			{-7002, "Portal redeem request param error"},
+	PortalRedeemLiquidateExchangeRatesParamError:           {-7003, "Portal redeem liquidate exchange rates param error"},
 }
 
 type MetadataTxError struct {

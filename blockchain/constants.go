@@ -71,6 +71,10 @@ const (
 	MainETHContractAddressStr               = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7"                                                              // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
+
+	// relaying header chain
+	MainnetBNBChainID = "Binance-Chain-Tigris"
+	MainnetBTCChainID = "Bitcoin-Mainnet"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -113,6 +117,11 @@ const (
 	TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
+	// relaying header chain
+	TestnetBNBChainID = "Binance-Chain-Nile"
+	//TestnetBNBChainID = "Binance-Dev"
+	TestnetBTCChainID = "Bitcoin-Testnet"
 )
 
 // VARIABLE for testnet

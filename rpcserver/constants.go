@@ -189,9 +189,50 @@ const (
 	// get burning address
 	getBurningAddress = "getburningaddress"
 
+	// portal
+	createAndSendTxWithCustodianDeposit           = "createandsendtxwithcustodiandeposit"
+	createAndSendTxWithReqPToken                  = "createandsendtxwithreqptoken"
+	getPortalState                                = "getportalstate"
+	getPortalCustodianDepositStatus               = "getportalcustodiandepositstatus"
+	createAndSendRegisterPortingPublicTokens      = "createandsendregisterportingpublictokens"
+	createAndSendPortalExchangeRates              = "createandsendportalexchangerates"
+	getPortalFinalExchangeRates                   = "getportalfinalexchangerates"
+	getPortalPortingRequestByKey                  = "getportalportingrequestbykey"
+	getPortalPortingRequestByPortingId            = "getportalportingrequestbyportingid"
+	convertExchangeRates                          = "convertexchangerates"
+	getPortalReqPTokenStatus                      = "getportalreqptokenstatus"
+	getPortingRequestFees                         = "getportingrequestfees"
+	createAndSendTxWithRedeemReq                  = "createandsendtxwithredeemreq"
+	createAndSendTxWithReqUnlockCollateral        = "createandsendtxwithrequnlockcollateral"
+	getPortalReqUnlockCollateralStatus            = "getportalrequnlockcollateralstatus"
+	getPortalReqRedeemStatus                      = "getportalreqredeemstatus"
+	createAndSendCustodianWithdrawRequest         = "createandsendcustodianwithdrawrequest"
+	getCustodianWithdrawByTxId                    = "getcustodianwithdrawbytxid"
+	getCustodianLiquidationStatus                 = "getcustodianliquidationstatus"
+	createAndSendTxWithReqWithdrawRewardPortal    = "createandsendtxwithreqwithdrawrewardportal"
+	createAndSendRedeemLiquidationExchangeRates   = "createandsendredeemliquidationexchangerates"
+	createAndSendLiquidationCustodianDeposit      = "createandsendliquidationcustodiandeposit"
+	getAmountNeededForCustodianDepositLiquidation = "getamountneededforcustodiandepositliquidation"
+	getLiquidationTpExchangeRates                 = "getliquidationtpexchangerates"
+	getLiquidationTpExchangeRatesByTokenId        = "getliquidationexchangeratesbytokenid"
+	getLiquidationExchangeRatesPool               = "getliquidationtpexchangeratespool"
+	getPortalReward                               = "getportalreward"
+	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
+
+	// relaying
+	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
+	createAndSendTxWithRelayingBTCHeader = "createandsendtxwithrelayingbtcheader"
+	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
+	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
+	getBTCRelayingBestState              = "getbtcrelayingbeststate"
+	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
+
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
 	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
+
+	// feature rewards
+	getRewardFeature = "getrewardfeature"
 )
 
 const (
