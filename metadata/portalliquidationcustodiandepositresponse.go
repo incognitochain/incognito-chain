@@ -15,7 +15,7 @@ type PortalLiquidationCustodianDepositResponse struct {
 	DepositStatus    string
 	ReqTxID          common.Hash
 	CustodianAddrStr string
-	DepositedAmount uint64
+	DepositedAmount  uint64
 }
 
 func NewPortalLiquidationCustodianDepositResponse(
@@ -34,7 +34,7 @@ func NewPortalLiquidationCustodianDepositResponse(
 		ReqTxID:          reqTxID,
 		MetadataBase:     metadataBase,
 		CustodianAddrStr: custodianAddressStr,
-		DepositedAmount: depositedAmount,
+		DepositedAmount:  depositedAmount,
 	}
 }
 
@@ -43,12 +43,12 @@ func (iRes PortalLiquidationCustodianDepositResponse) CheckTransactionFee(tr Tra
 	return true
 }
 
-func (iRes PortalLiquidationCustodianDepositResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalLiquidationCustodianDepositResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalLiquidationCustodianDepositResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iRes PortalLiquidationCustodianDepositResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -79,8 +79,10 @@ func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBefore
 	instUsed []int,
 	shardID byte,
 	tx Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever,
 	ac *AccumulatedValues,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {

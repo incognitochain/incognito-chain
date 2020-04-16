@@ -122,7 +122,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 		isValid = true
 	} else {
 		// this is withdraw request for token
-		allTokenID, err := bcr.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(txr.GetSenderAddrLastByte()))
+		allTokenID, err := chainRetriever.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()))
 		if err != nil {
 			return false, err
 		}

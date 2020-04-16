@@ -10,12 +10,12 @@ import (
 // metadata - redeem request - create normal tx with this metadata
 type PortalLiquidateCustodian struct {
 	MetadataBase
-	UniqueRedeemID         string
-	TokenID                string // pTokenID in incognito chain
-	RedeemPubTokenAmount   uint64
-	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
-	RedeemerIncAddressStr  string
-	CustodianIncAddressStr string
+	UniqueRedeemID           string
+	TokenID                  string // pTokenID in incognito chain
+	RedeemPubTokenAmount     uint64
+	MintedCollateralAmount   uint64 // minted PRV amount for sending back to users
+	RedeemerIncAddressStr    string
+	CustodianIncAddressStr   string
 	LiquidatedByExchangeRate bool
 }
 
@@ -23,28 +23,28 @@ type PortalLiquidateCustodian struct {
 // It will be appended to beaconBlock
 type PortalLiquidateCustodianContent struct {
 	MetadataBase
-	UniqueRedeemID         string
-	TokenID                string // pTokenID in incognito chain
-	RedeemPubTokenAmount   uint64
-	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
-	RedeemerIncAddressStr  string
-	CustodianIncAddressStr string
+	UniqueRedeemID           string
+	TokenID                  string // pTokenID in incognito chain
+	RedeemPubTokenAmount     uint64
+	MintedCollateralAmount   uint64 // minted PRV amount for sending back to users
+	RedeemerIncAddressStr    string
+	CustodianIncAddressStr   string
 	LiquidatedByExchangeRate bool
-	ShardID                byte
+	ShardID                  byte
 }
 
 // PortalLiquidateCustodianStatus - Beacon tracks status of custodian liquidation into db
 type PortalLiquidateCustodianStatus struct {
-	Status                 byte
-	UniqueRedeemID         string
-	TokenID                string // pTokenID in incognito chain
-	RedeemPubTokenAmount   uint64
-	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
-	RedeemerIncAddressStr  string
-	CustodianIncAddressStr string
+	Status                   byte
+	UniqueRedeemID           string
+	TokenID                  string // pTokenID in incognito chain
+	RedeemPubTokenAmount     uint64
+	MintedCollateralAmount   uint64 // minted PRV amount for sending back to users
+	RedeemerIncAddressStr    string
+	CustodianIncAddressStr   string
 	LiquidatedByExchangeRate bool
-	ShardID                byte
-	LiquidatedBeaconHeight uint64
+	ShardID                  byte
+	LiquidatedBeaconHeight   uint64
 }
 
 func NewPortalLiquidateCustodian(
@@ -60,12 +60,12 @@ func NewPortalLiquidateCustodian(
 		Type: metaType,
 	}
 	liquidCustodianMeta := &PortalLiquidateCustodian{
-		UniqueRedeemID:         uniqueRedeemID,
-		TokenID:                tokenID,
-		RedeemPubTokenAmount:   redeemAmount,
-		MintedCollateralAmount: mintedCollateralAmount,
-		RedeemerIncAddressStr:  redeemerIncAddressStr,
-		CustodianIncAddressStr: custodianIncAddressStr,
+		UniqueRedeemID:           uniqueRedeemID,
+		TokenID:                  tokenID,
+		RedeemPubTokenAmount:     redeemAmount,
+		MintedCollateralAmount:   mintedCollateralAmount,
+		RedeemerIncAddressStr:    redeemerIncAddressStr,
+		CustodianIncAddressStr:   custodianIncAddressStr,
 		LiquidatedByExchangeRate: liquidatedByExchangeRate,
 	}
 	liquidCustodianMeta.MetadataBase = metadataBase
@@ -74,14 +74,14 @@ func NewPortalLiquidateCustodian(
 
 func (liqCustodian PortalLiquidateCustodian) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (liqCustodian PortalLiquidateCustodian) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (liqCustodian PortalLiquidateCustodian) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	return true, true, nil
 }
 

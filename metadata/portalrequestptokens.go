@@ -77,14 +77,14 @@ func NewPortalRequestPTokens(
 
 func (reqPToken PortalRequestPTokens) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 	//	return true, true, nil
@@ -114,7 +114,7 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 	}
 
 	// validate tokenID and porting proof
-	if !common.IsPortalToken(reqPToken.TokenID){
+	if !common.IsPortalToken(reqPToken.TokenID) {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
 	}
 
@@ -137,7 +137,7 @@ func (reqPToken PortalRequestPTokens) Hash() *common.Hash {
 	return &hash
 }
 
-func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalRequestPTokensAction{
 		Meta:    *reqPToken,
 		TxReqID: *tx.Hash(),

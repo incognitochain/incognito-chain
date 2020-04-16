@@ -31,7 +31,7 @@ type ExchangeRateInfo struct {
 }
 
 type ExchangeRatesRequestStatus struct {
-	Status byte
+	Status        byte
 	SenderAddress string
 	Rates         []*ExchangeRateInfo
 }
@@ -54,15 +54,17 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency []*Exch
 }
 
 type PortalExchangeRatesContent struct {
-	SenderAddress   string
-	Rates           []*ExchangeRateInfo
-	TxReqID         common.Hash
-	LockTime        int64
+	SenderAddress string
+	Rates         []*ExchangeRateInfo
+	TxReqID       common.Hash
+	LockTime      int64
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
@@ -70,7 +72,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
@@ -92,7 +94,6 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr Blockchain
 	if txr.GetType() != common.TxNormalType {
 		return false, false, errors.New("Tx exchange rates must be TxNormalType")
 	}
-
 
 	for _, value := range portalExchangeRates.Rates {
 		if !common.IsPortalExchangeRateToken(value.PTokenID) {
@@ -124,7 +125,7 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	return &hash
 }
 
-func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalExchangeRatesAction{
 		Meta:     *portalExchangeRates,
 		TxReqID:  *tx.Hash(),

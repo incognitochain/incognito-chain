@@ -74,7 +74,7 @@ func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTok
 
 func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
@@ -82,7 +82,7 @@ func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
@@ -111,7 +111,7 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 	}
 
 	// check burning tx
-	if !txr.IsCoinsBurning(bcr, beaconHeight) {
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 		return false, false, errors.New("must send coin to burning address")
 	}
 
@@ -153,7 +153,7 @@ func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 	return &hash
 }
 
-func (portalUserRegister *PortalUserRegister) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (portalUserRegister *PortalUserRegister) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalUserRegisterAction{
 		Meta:    *portalUserRegister,
 		TxReqID: *tx.Hash(),

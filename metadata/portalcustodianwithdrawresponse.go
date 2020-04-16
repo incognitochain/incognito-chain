@@ -41,12 +41,12 @@ func (responseMeta PortalCustodianWithdrawResponse) CheckTransactionFee(tr Trans
 	return true
 }
 
-func (responseMeta PortalCustodianWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (responseMeta PortalCustodianWithdrawResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (responseMeta PortalCustodianWithdrawResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (responseMeta PortalCustodianWithdrawResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -77,8 +77,10 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 	instUsed []int,
 	shardID byte,
 	tx Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever,
 	ac *AccumulatedValues,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
