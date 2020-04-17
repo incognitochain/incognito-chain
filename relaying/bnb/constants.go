@@ -23,5 +23,5 @@ const (
 	TestnetBNBChainID         = "Binance-Chain-Nile"
 	TestnetTotalVotingPowers  = 11000000000000
 	TestnetURLRemote          = "https://data-seed-pre-0-s1.binance.org:443"
-	TestnetGenesisBlockHeight = 75955500
+	TestnetGenesisBlockHeight = 77503400
 )
