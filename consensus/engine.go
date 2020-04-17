@@ -2,13 +2,14 @@ package consensus
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	blsbft2 "github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type Engine struct {
@@ -184,6 +185,10 @@ func (engine *Engine) Stop() error {
 }
 
 func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
+	if engine.currentMiningProcess == nil {
+		Logger.Log.Warnf("Current mining process still nil")
+		return
+	}
 	if engine.currentMiningProcess.GetChainKey() == msg.ChainKey {
 		engine.currentMiningProcess.ProcessBFTMsg(msg)
 	}
