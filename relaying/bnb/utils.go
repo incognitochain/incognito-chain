@@ -109,21 +109,21 @@ func getGenesisBNBBlockMainnet() *tdmtypes.Block {
 	}
 }
 
-// getGenesisBNBBlockMainnet returns Block 75955500 from Binance testnet
+// getGenesisBNBBlockTestnet returns Block 77503400 from Binance testnet
 func getGenesisBNBBlockTestnet() *tdmtypes.Block {
-	lastBlockIDHash, _ := hex.DecodeString("D157C93E92BE2309EBD00FBED7DA9DDDACDA0CC8880D5378251F8253BE5A39B3")
-	partsHeaderHash, _ := hex.DecodeString("38B304DC260622222FCB36C1A713005142956C4C9F984B05DD6AFAE9D546DB41")
-	lastCommitHash, _ := hex.DecodeString("0AAC3C8D6A50792CA69361C4FFA6E03FBB8F2CAEC988E49EBE05A9F3061CA7E6")
-	dataHash, _ := hex.DecodeString("EF38E0A2BA343259087FF49E0A709825F4271CFBC824B637D7BE37687E6F4AEA")
+	lastBlockIDHash, _ := hex.DecodeString("BE1D0351F17A699FCCCEB56318B1B747F6EDEC7F888A38CF5CC2F01ED8528CF4")
+	partsHeaderHash, _ := hex.DecodeString("E98665531CB3C5A5818E33B770DFDA7DD0D9EBBE16A6B8739286FFFA2B564209")
+	lastCommitHash, _ := hex.DecodeString("F724C73268CDBBC369DBCE33578055C4ADE925CE25B49CB687F6C3CB1F50C202")
+	//dataHash, _ := hex.DecodeString("")
 	validatorsHash, _ := hex.DecodeString("80D9AB0FC10D18CA0E0832D5F4C063C5489EC1443DFB738252D038A82131B27A")
 	nextValidatorsHash, _ := hex.DecodeString("80D9AB0FC10D18CA0E0832D5F4C063C5489EC1443DFB738252D038A82131B27A")
 	consensusHash, _ := hex.DecodeString("294D8FBD0B94B767A7EBA9840F299A3586DA7FE6B5DEAD3B7EECBA193C400F93")
-	appHash, _ := hex.DecodeString("DCB96B9F17459C78AAD15715DDEB9F3C7803C5CAFC0CF12393539C92F90FAEAB")
+	appHash, _ := hex.DecodeString("7663ED559C6A6925B233DFB9A284EAEBDFB5B7F7DFD5AEC4324E733651856DD6")
 	//lastResultsHash, _ := hex.DecodeString("")
 	//evidenceHash, _ := hex.DecodeString("")
-	proposerAddress, _ := hex.DecodeString("37EF19AF29679B368D2B9E9DE3F8769B35786676")
+	proposerAddress, _ := hex.DecodeString("7B343E041CA130000A8BC00C35152BD7E7740037")
 	blkTime := time.Time{}
-	blkTime.UnmarshalText([]byte("2020-04-08T11:00:38.832568688Z"))
+	blkTime.UnmarshalText([]byte("2020-04-17T03:58:35.175761987Z"))
 
 	return &tdmtypes.Block{
 		Header: tdmtypes.Header{
@@ -132,10 +132,10 @@ func getGenesisBNBBlockTestnet() *tdmtypes.Block {
 				App:   0,
 			},
 			ChainID:  TestnetBNBChainID,
-			Height:   75955500,
+			Height:   77503400,
 			Time:     blkTime,
-			NumTxs:   1,
-			TotalTxs: 50470541,
+			NumTxs:   0,
+			TotalTxs: 50514519,
 			LastBlockID: tdmtypes.BlockID{
 				Hash: lastBlockIDHash,
 				PartsHeader: tdmtypes.PartSetHeader{
@@ -144,7 +144,7 @@ func getGenesisBNBBlockTestnet() *tdmtypes.Block {
 				},
 			},
 			LastCommitHash: lastCommitHash,
-			DataHash:       dataHash,
+			DataHash:       []byte{},
 			ValidatorsHash: validatorsHash,
 
 			NextValidatorsHash: nextValidatorsHash,
