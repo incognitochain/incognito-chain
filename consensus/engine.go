@@ -124,10 +124,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 		}
 
-		if err := s.BFTProcess[chainID].Start(); err != nil {
-			return
-		}
-
+		s.BFTProcess[chainID].Start()
 		miningProcess = s.BFTProcess[chainID]
 		s.currentMiningProcess = s.BFTProcess[chainID]
 		if err := s.LoadMiningKeys(s.userKeyListString); err != nil {
