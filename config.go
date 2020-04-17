@@ -34,7 +34,7 @@ const (
 	DefaultMaxPeersOther               = 300
 	DefaultMaxPeersNoShard             = 200
 	DefaultMaxPeersBeacon              = 500
-	DefaultMaxRPCClients               = 200
+	DefaultMaxRPCClients               = 500
 	DefaultRPCLimitRequestPerDay       = 0 // 0: unlimited
 	DefaultRPCLimitErrorRequestPerHour = 0 // 0: unlimited
 	DefaultMaxRPCWsClients             = 200

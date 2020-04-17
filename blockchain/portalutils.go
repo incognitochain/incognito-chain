@@ -116,7 +116,7 @@ func storePortalStateToDB(
 func sortCustodianByAmountAscent(
 	metadata metadata.PortalUserRegister,
 	custodianState map[string]*statedb.CustodianState,
-	custodianStateSlice *[]CustodianStateSlice) error {
+	custodianStateSlice *[]CustodianStateSlice) {
 	//convert to slice
 
 	var result []CustodianStateSlice
@@ -145,7 +145,6 @@ func sortCustodianByAmountAscent(
 	})
 
 	*custodianStateSlice = result
-	return nil
 }
 
 func pickSingleCustodian(
@@ -519,7 +518,7 @@ func ValidationExchangeRates(exchangeRates *statedb.FinalExchangeRatesState) err
 	return nil
 }
 
-func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians map[string]*statedb.CustodianState) ([]*CustodianStateSlice, error) {
+func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians map[string]*statedb.CustodianState) []*CustodianStateSlice {
 	sortedCustodians := make([]*CustodianStateSlice, 0)
 	for key, value := range custodians {
 		if value.GetHoldingPublicTokens()[tokenSymbol] > 0 {
@@ -535,7 +534,7 @@ func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians 
 		return sortedCustodians[i].Value.GetHoldingPublicTokens()[tokenSymbol] <= sortedCustodians[j].Value.GetHoldingPublicTokens()[tokenSymbol]
 	})
 
-	return sortedCustodians, nil
+	return sortedCustodians
 }
 
 func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *CurrentPortalState) ([]*statedb.MatchingRedeemCustodianDetail, error) {
@@ -587,11 +586,7 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *
 		return nil, errors.New("there is no custodian in custodian pool")
 	}
 	// sort smallCustodians by amount holding public token
-	sortedCustodianSlice, err := sortCustodiansByAmountHoldingPubTokenAscent(tokenID, smallCustodians)
-	if err != nil {
-		Logger.log.Errorf("Error when sorting custodians by amount holding public token %v", err)
-		return nil, err
-	}
+	sortedCustodianSlice := sortCustodiansByAmountHoldingPubTokenAscent(tokenID, smallCustodians)
 
 	// get custodians util matching full redeemAmount
 	totalMatchedAmount := uint64(0)
@@ -624,11 +619,6 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *
 
 	Logger.log.Errorf("Not enough amount public token to return user")
 	return nil, errors.New("Not enough amount public token to return user")
-}
-
-// convertExternalBNBAmountToIncAmount converts amount in bnb chain (decimal 8) to amount in inc chain (decimal 9)
-func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
-	return externalBNBAmount * 10 // externalBNBAmount / 1^8 * 1^9
 }
 
 // convertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)
@@ -704,7 +694,7 @@ func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db *sta
 	return nil
 }
 
-func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.CustodianState, mintedAmountInPRV uint64, tokenID string) error {
+func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.CustodianState, mintedAmountInPRV uint64, tokenID string) {
 	custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - mintedAmountInPRV)
 
 	if custodianState.GetHoldingPublicTokens()[tokenID] > 0 {
@@ -718,11 +708,10 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.Custodi
 		lockedAmountTmp[tokenID] = 0
 		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 	}
-	return nil
 }
 
 func updateCustodianStateAfterExpiredPortingReq(
-	custodianState *statedb.CustodianState, unlockedAmount uint64, unholdingPublicToken uint64, tokenID string) error {
+	custodianState *statedb.CustodianState, unlockedAmount uint64, unholdingPublicToken uint64, tokenID string) {
 
 	holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
 	holdingPubTokenTmp[tokenID] -= unholdingPublicToken
@@ -733,7 +722,6 @@ func updateCustodianStateAfterExpiredPortingReq(
 	lockedAmountTmp := custodianState.GetLockedAmountCollateral()
 	lockedAmountTmp[tokenID] -= unlockedAmount
 	custodianState.SetLockedAmountCollateral(lockedAmountTmp)
-	return nil
 }
 
 func removeCustodianFromMatchingPortingCustodians(matchingCustodians []*statedb.MatchingPortingCustodianDetail, custodianIncAddr string) bool {
@@ -774,10 +762,6 @@ func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestK
 
 func deleteWaitingPortingRequest(state *CurrentPortalState, waitingPortingRequestKey string) {
 	delete(state.WaitingPortingRequests, waitingPortingRequestKey)
-}
-
-func deleteCustodianState(state *CurrentPortalState, custodianStateKey string) {
-	delete(state.CustodianPoolState, custodianStateKey)
 }
 
 type ConvertExchangeRatesObject struct {

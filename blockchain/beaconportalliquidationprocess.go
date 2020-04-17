@@ -17,7 +17,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	var actionData metadata.PortalLiquidateCustodianContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
 	}
 
@@ -41,11 +41,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 				custodianState.GetTotalCollateral(), custodianState.GetLockedAmountCollateral()[pTokenID], actionData.MintedCollateralAmount)
 		}
 
-		err = updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.MintedCollateralAmount, pTokenID)
-		if err != nil {
-			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating %v\n: ", err)
-			return err
-		}
+		updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.MintedCollateralAmount, pTokenID)
 
 		// remove matching custodian from matching custodians list in waiting redeem request
 		waitingRedeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, actionData.UniqueRedeemID)
@@ -129,7 +125,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
 	}
 
@@ -243,7 +239,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 	var actionData metadata.PortalRedeemLiquidateExchangeRatesContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
 	}
 
@@ -511,8 +507,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 				continue
 			}
-			_ = updateCustodianStateAfterExpiredPortingReq(
-				custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+			updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
 		}
 
 		// remove waiting porting request from waiting list

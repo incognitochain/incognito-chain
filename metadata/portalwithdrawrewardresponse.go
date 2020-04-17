@@ -15,7 +15,7 @@ import (
 type PortalWithdrawRewardResponse struct {
 	MetadataBase
 	CustodianAddressStr string
-	TokenID common.Hash
+	TokenID             common.Hash
 	RewardAmount        uint64
 	TxReqID             common.Hash
 }
@@ -33,7 +33,7 @@ func NewPortalWithdrawRewardResponse(
 	return &PortalWithdrawRewardResponse{
 		MetadataBase:        metadataBase,
 		CustodianAddressStr: custodianAddressStr,
-		TokenID: tokenID,
+		TokenID:             tokenID,
 		RewardAmount:        rewardAmount,
 		TxReqID:             reqTxID,
 	}

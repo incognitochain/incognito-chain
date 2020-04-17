@@ -11,7 +11,7 @@ import (
 )
 
 func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewardInfos []*statedb.PortalRewardInfo) []string {
-	portalRewardContent, _ := metadata.NewPortalReward(beaconHeight, rewardInfos)
+	portalRewardContent := metadata.NewPortalReward(beaconHeight, rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
 	inst := []string{
@@ -25,7 +25,7 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewa
 }
 
 func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos []*statedb.RewardInfoDetail) []string {
-	portalRewardContent, _ := metadata.NewPortalTotalCustodianReward(rewardInfos)
+	portalRewardContent := metadata.NewPortalTotalCustodianReward(rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
 	inst := []string{
@@ -41,18 +41,18 @@ func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos []*state
 func updatePortalRewardInfos(
 	rewardInfos []*statedb.PortalRewardInfo,
 	custodianAddress string,
-	tokenID string, amount uint64) ([]*statedb.PortalRewardInfo, error) {
+	tokenID string, amount uint64) []*statedb.PortalRewardInfo {
 	for i := 0; i < len(rewardInfos); i++ {
 		if rewardInfos[i].GetCustodianIncAddr() == custodianAddress {
 			rewardInfos[i].AddPortalRewardInfo(tokenID, amount)
-			return rewardInfos, nil
+			return rewardInfos
 		}
 	}
 	rewardInfos = append(rewardInfos,
 		statedb.NewPortalRewardInfoWithValue(custodianAddress,
 			[]*statedb.RewardInfoDetail{statedb.NewRewardInfoDetailWithValue(tokenID, amount)}))
 
-	return rewardInfos, nil
+	return rewardInfos
 }
 
 func splitPortingFeeForMatchingCustodians(
@@ -63,7 +63,7 @@ func splitPortingFeeForMatchingCustodians(
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.Amount), new(big.Int).SetUint64(feeAmount))
 		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(portingAmount))
-		rewardInfos, _ = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.IncAddress, common.PRVIDStr, splitedFee.Uint64())
+		rewardInfos = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.IncAddress, common.PRVIDStr, splitedFee.Uint64())
 	}
 	return rewardInfos
 }
@@ -76,7 +76,7 @@ func splitRedeemFeeForMatchingCustodians(
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.GetAmount()), new(big.Int).SetUint64(feeAmount))
 		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(redeemAmount))
-		rewardInfos, _ = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.GetIncognitoAddress(), common.PRVIDStr, splitedFee.Uint64())
+		rewardInfos = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.GetIncognitoAddress(), common.PRVIDStr, splitedFee.Uint64())
 	}
 
 	return rewardInfos
@@ -93,7 +93,7 @@ func splitRewardForCustodians(
 		for tokenID, amount := range totalCustodianReward {
 			tmp := new(big.Int).Mul(new(big.Int).SetUint64(lockedCollateralCustodian), new(big.Int).SetUint64(amount))
 			splitedReward := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalLockedCollateral))
-			rewardInfos, _ = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward.Uint64())
+			rewardInfos = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward.Uint64())
 		}
 	}
 	return rewardInfos

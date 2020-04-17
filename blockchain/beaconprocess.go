@@ -89,11 +89,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		return errors.New("Not expected height")
 	}
 	Logger.log.Infof("BEACON | Begin insert new Beacon Block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	Logger.log.Infof("BEACON | Check Beacon Block existence before insert block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	isExist, _ := rawdbv2.HasBeaconBlock(blockchain.GetDatabase(), beaconBlock.Header.Hash())
-	if isExist {
-		return NewBlockChainError(DuplicateShardBlockError, errors.New("This beaconBlock has been stored already"))
-	}
 	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if !isValidated {
 		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -1401,7 +1396,21 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		//GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHeight, blockHash); err != nil {
+	batch := blockchain.GetDatabase().NewBatch()
+	//State Root Hash
+	if err := rawdbv2.StoreConsensusStateRootHash(batch, blockHeight, consensusRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreRewardStateRootHash(batch, blockHeight, rewardRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreFeatureStateRootHash(batch, blockHeight, featureRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreSlashStateRootHash(batch, blockHeight, slashRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreBeaconBlockIndex(batch, blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 	Logger.log.Debugf("Store Beacon BestState Height %+v", blockHeight)
@@ -1409,25 +1418,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	if err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
-	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
+	if err := rawdbv2.StoreBeaconBestState(batch, beaconBestStateBytes); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
-	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
+	if err := rawdbv2.StoreBeaconBlock(batch, blockHeight, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-	//State Root Hash
-	if err := rawdbv2.StoreConsensusStateRootHash(blockchain.GetDatabase(), blockHeight, consensusRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-	if err := rawdbv2.StoreRewardStateRootHash(blockchain.GetDatabase(), blockHeight, rewardRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-	if err := rawdbv2.StoreFeatureStateRootHash(blockchain.GetDatabase(), blockHeight, featureRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	if err := rawdbv2.StoreSlashStateRootHash(blockchain.GetDatabase(), blockHeight, slashRootHash); err != nil {
+	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 	return nil

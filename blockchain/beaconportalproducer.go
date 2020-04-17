@@ -333,7 +333,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	var sortCustodianStateByFreeCollateral []CustodianStateSlice
-	_ = sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
+	sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
 
 	if len(sortCustodianStateByFreeCollateral) <= 0 {
 		Logger.log.Errorf("Porting request, custodian not found")
