@@ -11,7 +11,7 @@ import (
 
 // buildPortalRefundCustodianDepositTx builds refund tx for custodian deposit tx with status "refund"
 // mints PRV to return to custodian
-func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
+func (blockchain BlockChain) buildPortalRefundCustodianDepositTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -48,7 +48,7 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 		refundDeposit.DepositedAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -60,7 +60,7 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReject(
+func (blockchain BlockChain) buildPortalLiquidationCustodianDepositReject(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -98,7 +98,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReje
 		refundDeposit.DepositedAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -112,7 +112,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReje
 
 // buildPortalAcceptedRequestPTokensTx builds response tx for user request ptoken tx with status "accepted"
 // mints ptoken to return to user
-func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
+func (blockchain BlockChain) buildPortalAcceptedRequestPTokensTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -167,8 +167,8 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
-	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
-	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
+	txStateDB := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	featureStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -192,7 +192,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
+func (blockchain BlockChain) buildPortalCustodianWithdrawRequest(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -233,7 +233,7 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 		receiveAmt,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -244,7 +244,7 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesRequestTx(
+func (blockchain BlockChain) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -287,7 +287,7 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 		receiveAmt,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -298,10 +298,9 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 	return resTx, nil
 }
 
-
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
 // mints ptoken to return to user (ptoken that user burned)
-func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
+func (blockchain BlockChain) buildPortalRejectedRedeemRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -346,7 +345,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
+		PropertyID:  propID.String(),
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
@@ -354,8 +353,8 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
-	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
-	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
+	txStateDB := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	featureStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -383,7 +382,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 
 // buildPortalRefundCustodianDepositTx builds refund tx for custodian deposit tx with status "refund"
 // mints PRV to return to custodian
-func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
+func (blockchain BlockChain) buildPortalLiquidateCustodianResponseTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -421,7 +420,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 		liqCustodian.MintedCollateralAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -433,7 +432,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 
 // buildPortalAcceptedWithdrawRewardTx builds withdraw portal rewards response tx
 // mints rewards in PRV for sending to custodian
-func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
+func (blockchain BlockChain) buildPortalAcceptedWithdrawRewardTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -472,7 +471,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 			withdrawRewardContent.RewardAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -500,8 +499,8 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 			Mintable:    true,
 		}
 		resTx := &transaction.TxCustomTokenPrivacy{}
-		txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
-		featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
+		txStateDB := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+		featureStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 		err = resTx.Init(
 			transaction.NewTxPrivacyTokenInitParams(
 				producerPrivateKey,

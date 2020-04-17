@@ -20,9 +20,8 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/transaction"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	libp2p "github.com/libp2p/go-libp2p-peer"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
 )
 

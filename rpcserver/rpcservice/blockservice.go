@@ -968,7 +968,7 @@ func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map
 
 //============================= Portal ===============================
 func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (*metadata.PortalCustodianDepositStatus, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetCustodianDepositStatus(stateDB, depositTxID)
 	if err != nil {
 		return nil, err
@@ -984,7 +984,7 @@ func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (
 }
 
 func (blockService BlockService) GetPortalReqPTokenStatus(reqTxID string) (*metadata.PortalRequestPTokensStatus, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetRequestPTokenStatus(stateDB, reqTxID)
 	if err != nil {
 		return nil, err
@@ -1000,7 +1000,7 @@ func (blockService BlockService) GetPortalReqPTokenStatus(reqTxID string) (*meta
 }
 
 func (blockService BlockService) GetPortalReqUnlockCollateralStatus(reqTxID string) (*metadata.PortalRequestUnlockCollateralStatus, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPortalRequestUnlockCollateralStatus(stateDB, reqTxID)
 	if err != nil {
 		return nil, err
@@ -1016,7 +1016,7 @@ func (blockService BlockService) GetPortalReqUnlockCollateralStatus(reqTxID stri
 }
 
 func (blockService BlockService) GetPortalRedeemReqStatus(redeemID string) (*metadata.PortalRedeemRequestStatus, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPortalRedeemRequestStatus(stateDB, redeemID)
 	if err != nil {
 		return nil, err
@@ -1035,7 +1035,7 @@ func (blockService BlockService) GetPortalRedeemReqStatus(redeemID string) (*met
 }
 
 func (blockService BlockService) GetPortalLiquidationCustodianStatus(redeemID string, custodianIncAddress string) (*metadata.PortalLiquidateCustodianStatus, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPortalLiquidationCustodianRunAwayStatus(stateDB, redeemID, custodianIncAddress)
 	if err != nil {
 		return nil, err
@@ -1051,7 +1051,7 @@ func (blockService BlockService) GetPortalLiquidationCustodianStatus(redeemID st
 }
 
 func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID string) (*metadata.PortalRequestWithdrawRewardStatus, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPortalRequestWithdrawRewardStatus(stateDB, reqTxID)
 	if err != nil {
 		return nil, err
@@ -1066,10 +1066,9 @@ func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID st
 	return &status, nil
 }
 
-
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) ([]*statedb.RewardInfoDetail, error) {
-	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, featureName, epoch)
 	if err != nil {
 		return nil, err
@@ -1077,4 +1076,3 @@ func (blockService BlockService) GetRewardFeatureByFeatureName(featureName strin
 
 	return data.GetTotalRewards(), nil
 }
-

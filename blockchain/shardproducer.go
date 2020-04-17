@@ -381,38 +381,38 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 			case metadata.PortalCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
-					newTx, err = blockGenerator.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalUserRequestPTokenMeta:
 				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPortalAcceptedRequestPTokensTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalAcceptedRequestPTokensTx(l[3], producerPrivateKey, shardID)
 				}
 				//custodian withdraw
 			case metadata.PortalCustodianWithdrawRequestMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
-					newTx, err = blockGenerator.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:
 				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
-					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
 			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
 				if len(l) >= 4 && l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
-					newTx, err = blockGenerator.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalLiquidateCustodianMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
-					newTx, err = blockGenerator.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRequestWithdrawRewardMeta:
 				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPortalAcceptedWithdrawRewardTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalAcceptedWithdrawRewardTx(l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: custodian deposit
 			case metadata.PortalLiquidationCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
-					newTx, err = blockGenerator.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.chain.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
 				}
 			default:
 				continue
@@ -431,9 +431,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				responsedTxs = append(responsedTxs, newTx)
 				responsedHashTxs = append(responsedHashTxs, newTxHash)
 			}
-}
-}
-return responsedTxs, errorInstructions, nil
+		}
+	}
+	return responsedTxs, errorInstructions, nil
 }
 
 // Process Instruction From Beacon Blocks:

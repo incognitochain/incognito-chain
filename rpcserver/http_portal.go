@@ -210,7 +210,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
 
-	//stateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	//stateDB := httpServer.config.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB()
 	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
@@ -714,7 +714,7 @@ func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeCha
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncognitoAddress is invalid"))
 	}
 
-	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), latestBeaconHeight)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", incognitoAddress, err))

@@ -209,7 +209,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 	latestBNBHeaderBlockHeight := genesisBNBHeaderBlockHeight
 
 	bc := httpServer.config.BlockChain
-	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	relayingState, err := bc.InitRelayingHeaderChainStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(latestBeaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetLatestBNBHeaderBlockHeightError, err)
@@ -229,7 +229,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 		LatestBNBHeaderBlockHeight int64 `json:"LatestBNBHeaderBlockHeight"`
 		BeaconTimeStamp            int64 `json:"BeaconTimeStamp"`
 	}
-	result := LatestBNBHeaderBlockHeight {
+	result := LatestBNBHeaderBlockHeight{
 		LatestBNBHeaderBlockHeight: latestBNBHeaderBlockHeight,
 		BeaconTimeStamp:            beaconBlock.Header.Timestamp,
 	}

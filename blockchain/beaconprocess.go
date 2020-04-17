@@ -397,13 +397,13 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
-		featureStateDB := beaconBestState.GetCopiedFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB, beaconBestState.BeaconHeight)
+		featureStateDB := curView.GetBeaconFeatureStateDB()
+		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB, curView.BeaconHeight)
 		if err != nil {
 			return NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 		isSplitRewardForCustodian := totalLockedCollateral > 0
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, blockchain.BestState.Beacon.GetCopiedRewardStateDB(), isSplitRewardForCustodian)
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian)
 		if err != nil {
 			return NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -459,8 +459,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height)
-	statefulInsts := blockchain.buildStatefulInstructions(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch)
+	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,
@@ -1319,7 +1318,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 	// execute, store
-	err = blockchain.processPortalInstructions(tempBeaconBestState.featureStateDB, beaconBlock)
+	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}

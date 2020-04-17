@@ -207,8 +207,8 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 			}
 
 		}
-}
-return nil
+	}
+	return nil
 }
 
 func (blockchain *BlockChain) addShardCommitteeReward(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeOfShardToProcess []incognitokey.CommitteePublicKey, rewardReceiver map[string]string) (err error) {
@@ -232,7 +232,7 @@ func (blockchain *BlockChain) addShardCommitteeReward(rewardStateDB *statedb.Sta
 	return nil
 }
 
-func (blockchain *BlockChain) buildRewardInstructionByEpoch(curView *BeaconBestState, blkHeight, epoch uint64, rewardStateDB *statedb.StateDB) ([][]string, error) {
+func (blockchain *BlockChain) buildRewardInstructionByEpoch(curView *BeaconBestState, blkHeight, epoch uint64, rewardStateDB *statedb.StateDB, isSplitRewardForCustodian bool) ([][]string, map[common.Hash]uint64, error) {
 	var resInst [][]string
 	var err error
 	var instRewardForBeacons [][]string
