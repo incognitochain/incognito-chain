@@ -39,7 +39,15 @@ func getBTCRelayingChain(btcRelayingChainID string) (*btcrelaying.BlockChain, er
 		blockchain.TestnetBTCChainID: btcrelaying.GetTestNet3Params(),
 		blockchain.MainnetBTCChainID: btcrelaying.GetMainNetParams(),
 	}
-	return btcrelaying.GetChainV2(filepath.Join(cfg.DataDir, "btcrelaying"), relayingChainParams[btcRelayingChainID])
+	relayingChainGenesisBlkHeight := map[string]int32{
+		blockchain.TestnetBTCChainID: int32(1720520),
+		blockchain.MainnetBTCChainID: int32(623600),
+	}
+	return btcrelaying.GetChainV2(
+		filepath.Join(cfg.DataDir, "btcrelayingv2"),
+		relayingChainParams[btcRelayingChainID],
+		relayingChainGenesisBlkHeight[btcRelayingChainID],
+	)
 }
 
 
