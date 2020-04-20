@@ -24,7 +24,8 @@ func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*ch
 		return nil, err
 	}
 
-	chainParams := chaincfg.MainNetParams
+	// chainParams := chaincfg.MainNetParams
+	chainParams := chaincfg.TestNet3Params
 	chainParams.GenesisBlock = blk.MsgBlock()
 	chainParams.GenesisHash = blk.Hash()
 	return &chainParams, nil
@@ -66,8 +67,8 @@ func getAllTxsFromCypherBlock(blockHeight int) (string, []string, error) {
 }
 
 func TestRelayBTCHeaders(t *testing.T) {
-	networkName := "main"
-	genesisBlockHeight := int(308568)
+	networkName := "test3"
+	genesisBlockHeight := int(1719640)
 
 	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
 	if err != nil {
@@ -75,7 +76,7 @@ func TestRelayBTCHeaders(t *testing.T) {
 		return
 	}
 	dbName := "btc-blocks-test"
-	btcChain1, err := GetChain(dbName, chainParams)
+	btcChain1, err := GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
 	defer tearDownRelayBTCHeadersTest(dbName)
 	if err != nil {
 		t.Errorf("Could not get chain instance with err: %v", err)
@@ -105,8 +106,12 @@ func TestRelayBTCHeaders(t *testing.T) {
 	fmt.Printf("Session 1: best block hash %s and block height %d\n", btcChain1.BestSnapshot().Hash.String(), btcChain1.BestSnapshot().Height)
 	btcChain1.db.Close()
 
+	hh, _ := json.Marshal(btcChain1.BestSnapshot())
+	fmt.Println("best state: ", string(hh))
+	return
+
 	// simulate new session
-	btcChain2, err := GetChain(dbName, chainParams)
+	btcChain2, err := GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
 	if err != nil {
 		t.Errorf("Could not get chain instance (for session 2) with err: %v", err)
 		return
@@ -207,14 +212,14 @@ func TestBuildBTCBlockFromTestNetCypher(t *testing.T) {
 }
 
 func TestBuildBTCBlockFromCypher(t *testing.T) {
-	blk, err := buildBTCBlockFromCypher("main", 623600)
-	// blk, err := buildBTCBlockFromCypher("test3", 1696534)
+	// blk, err := buildBTCBlockFromCypher("main", 623600)
+	blk, err := buildBTCBlockFromCypher("test3", 1720520)
 	if err != nil {
 		t.Errorf("Could not build btc block from cypher - with err: %v", err)
 		return
 	}
 	unixTs := blk.MsgBlock().Header.Timestamp.Unix()
-	// fmt.Println("unixTs: ", unixTs)
+	fmt.Println("unixTs: ", unixTs)
 	if unixTs != 1585564707 {
 		t.Errorf("Wrong timestamp: expected %d, got %d", 1585564707, unixTs)
 		return

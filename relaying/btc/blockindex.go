@@ -101,7 +101,7 @@ type blockNode struct {
 // calculating the height and workSum from the respective fields on the parent.
 // This function is NOT safe for concurrent access.  It must only be called when
 // initially creating a node.
-func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *blockNode) {
+func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *blockNode, genesisHeight int32) {
 	*node = blockNode{
 		hash:       blockHeader.BlockHash(),
 		workSum:    CalcWork(blockHeader.Bits),
@@ -116,14 +116,17 @@ func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *block
 		node.height = parent.height + 1
 		node.workSum = node.workSum.Add(parent.workSum, node.workSum)
 	}
+	if parent == nil && genesisHeight > 0 {
+		node.height = genesisHeight
+	}
 }
 
 // newBlockNode returns a new block node for the given block header and parent
 // node, calculating the height and workSum from the respective fields on the
 // parent. This function is NOT safe for concurrent access.
-func newBlockNode(blockHeader *wire.BlockHeader, parent *blockNode) *blockNode {
+func newBlockNode(blockHeader *wire.BlockHeader, parent *blockNode, genesisHeight int32) *blockNode {
 	var node blockNode
-	initBlockNode(&node, blockHeader, parent)
+	initBlockNode(&node, blockHeader, parent, genesisHeight)
 	return &node
 }
 

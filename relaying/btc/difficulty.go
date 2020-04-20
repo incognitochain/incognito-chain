@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
 )
 
 var (
@@ -214,7 +215,8 @@ func (b *BlockChain) findPrevTestNetDifficulty(startNode *blockNode) uint32 {
 // This function differs from the exported CalcNextRequiredDifficulty in that
 // the exported version uses the current best chain as the previous block node
 // while this function accepts any block node.
-func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTime time.Time) (uint32, error) {
+func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, header *wire.BlockHeader) (uint32, error) {
+	newBlockTime := header.Timestamp
 	// Genesis block.
 	if lastNode == nil {
 		return b.chainParams.PowLimitBits, nil
@@ -251,6 +253,9 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 	// worth of blocks).
 	firstNode := lastNode.RelativeAncestor(b.blocksPerRetarget - 1)
 	if firstNode == nil {
+		if b.genesisBlkHeight > lastNode.height+1-b.blocksPerRetarget {
+			return header.Bits, nil
+		}
 		return 0, AssertError("unable to obtain previous retarget block")
 	}
 
@@ -300,9 +305,9 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 // rules.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) CalcNextRequiredDifficulty(timestamp time.Time) (uint32, error) {
-	b.chainLock.Lock()
-	difficulty, err := b.calcNextRequiredDifficulty(b.bestChain.Tip(), timestamp)
-	b.chainLock.Unlock()
-	return difficulty, err
-}
+// func (b *BlockChain) CalcNextRequiredDifficulty(timestamp time.Time) (uint32, error) {
+// 	b.chainLock.Lock()
+// 	difficulty, err := b.calcNextRequiredDifficulty(b.bestChain.Tip(), timestamp)
+// 	b.chainLock.Unlock()
+// 	return difficulty, err
+// }
