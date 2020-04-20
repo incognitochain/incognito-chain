@@ -72,6 +72,7 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 			case f := <-s.actionCh:
 				f()
 			case beaconPeerState := <-s.beaconPeerStateCh:
+				Logger.Debugf("Got new peerstate, last height %v", beaconPeerState.Beacon.Height)
 				s.beaconPeerStates[beaconPeerState.SenderID] = BeaconPeerState{
 					Timestamp:      beaconPeerState.Timestamp,
 					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
@@ -210,7 +211,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			time.AfterFunc(time.Second*2, s.insertBeaconBlockFromPool)
 		}
 	}()
-
+	Logger.Debugf("insertBeaconBlockFromPool Start")
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.chain.GetAllViewHash() {
 		blks := s.beaconPool.GetBlockByPrevHash(viewHash)
@@ -218,14 +219,14 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			if blk == nil {
 				continue
 			}
-
+			Logger.Debugf("insertBeaconBlockFromPool blk %v %v", blk.GetHeight(), blk.Hash().String())
 			//if already insert and error, last time insert is < 10s then we skip
 			insertTime, ok := insertBeaconTimeCache.Get(viewHash.String())
 			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
 				continue
 			}
 
-			fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
+			Logger.Infof("Syncker: Insert beacon from pool %v", blk.(common.BlockInterface).GetHeight())
 			if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
 				return
 			}
@@ -312,7 +313,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk >= len(blockBuffer) {
 							break
 						}
