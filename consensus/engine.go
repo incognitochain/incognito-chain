@@ -91,8 +91,9 @@ func (s *Engine) WatchCommitteeChange() {
 	} else {
 		panic("User Mining State Error")
 	}
+
 	for _, BFTProcess := range s.BFTProcess {
-		if role == "" || chainID != BFTProcess.GetChainID() {
+		if role != "committee" || chainID != BFTProcess.GetChainID() {
 			BFTProcess.Stop()
 		}
 	}
