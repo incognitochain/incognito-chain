@@ -156,3 +156,20 @@ func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Ha
 	}
 	return diffHashes
 }
+
+func GetBlksByPrevHash(
+	prevHash string,
+	byHash map[string]common.BlockPoolInterface,
+	byPrevHash map[string][]string,
+) (
+	res []common.BlockPoolInterface,
+) {
+	if hashes, ok := byPrevHash[prevHash]; ok {
+		for _, hash := range hashes {
+			if blk, exist := byHash[hash]; exist {
+				res = append(res, blk)
+			}
+		}
+	}
+	return res
+}
