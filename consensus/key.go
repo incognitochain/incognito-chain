@@ -14,8 +14,6 @@ import (
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	fmt.Println("Start LoadMiningKey keysString", keysString)
-	defer fmt.Println("End LoadMiningKey")
 	if len(keysString) > 0 {
 		keys := strings.Split(keysString, "|")
 		if len(keys) > 0 {

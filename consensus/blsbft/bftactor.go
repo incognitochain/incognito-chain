@@ -73,7 +73,7 @@ func (e *BLSBFT) GetChainID() int {
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)
-		close(e.StopCh)
+		e.StopCh <- struct{}{}
 		e.isStarted = false
 		e.isOngoing = false
 		return nil
@@ -96,6 +96,7 @@ func (e *BLSBFT) Start() error {
 	e.InitRoundData()
 
 	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
+
 	go func() {
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
@@ -104,6 +105,7 @@ func (e *BLSBFT) Start() error {
 		for { //actor loop
 			select {
 			case <-e.StopCh:
+				e.logger.Info("Exit BFT")
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
 				block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
