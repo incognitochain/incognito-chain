@@ -104,12 +104,14 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldValidate bool) error {
+	blockHash := shardBlock.Header.Hash()
+	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
+
+	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+vt \n", shardID, blockHeight, blockHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 
-	blockHash := shardBlock.Header.Hash()
-	blockHeight := shardBlock.Header.Height
 	committeeChange := newCommitteeChange()
 
 	//check if view is committed

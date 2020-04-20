@@ -2197,8 +2197,10 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 	go func(stream proto.HighwayService_StreamBlockByHeightClient, ctx context.Context) {
 		for {
 			blkData, err := stream.Recv()
-			if err != nil || err == io.EOF {
-				Logger.log.Errorf("[stream] %v", err)
+			if err != nil {
+				if err != io.EOF {
+					Logger.log.Errorf("[stream] %v", err)
+				}
 				closeChannel()
 				return
 			}

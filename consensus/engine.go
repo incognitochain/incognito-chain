@@ -2,13 +2,14 @@ package consensus
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	blsbft2 "github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type Engine struct {
@@ -70,6 +71,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 	//extract role, layer, chainID
 	role, chainID := s.config.Node.GetUserMiningState()
+	Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
 	s.curringMiningState.chainID = chainID
 	s.curringMiningState.role = role
 
@@ -89,8 +91,9 @@ func (s *Engine) WatchCommitteeChange() {
 	} else {
 		panic("User Mining State Error")
 	}
+
 	for _, BFTProcess := range s.BFTProcess {
-		if role == "" || chainID != BFTProcess.GetChainID() {
+		if role != "committee" || chainID != BFTProcess.GetChainID() {
 			BFTProcess.Stop()
 		}
 	}
@@ -123,10 +126,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 		}
 
-		if err := s.BFTProcess[chainID].Start(); err != nil {
-			return
-		}
-
+		s.BFTProcess[chainID].Start()
 		miningProcess = s.BFTProcess[chainID]
 		s.currentMiningProcess = s.BFTProcess[chainID]
 		if err := s.LoadMiningKeys(s.userKeyListString); err != nil {
@@ -154,8 +154,7 @@ func (engine *Engine) Init(config *EngineConfig) {
 }
 
 func (engine *Engine) Start() error {
-
-	fmt.Println("CONSENSUS: Start")
+	defer fmt.Println("CONSENSUS: Start", engine.userKeyListString)
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {
@@ -184,6 +183,10 @@ func (engine *Engine) Stop() error {
 }
 
 func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
+	if engine.currentMiningProcess == nil {
+		Logger.Log.Warnf("Current mining process still nil")
+		return
+	}
 	if engine.currentMiningProcess.GetChainKey() == msg.ChainKey {
 		engine.currentMiningProcess.ProcessBFTMsg(msg)
 	}
