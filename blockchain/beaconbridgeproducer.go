@@ -3,9 +3,10 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"

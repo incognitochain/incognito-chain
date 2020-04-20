@@ -14,6 +14,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	PedersenPrivateKeyIndex = operation.PedersenPrivateKeyIndex
+	PedersenValueIndex      = operation.PedersenValueIndex
+	PedersenSndIndex        = operation.PedersenSndIndex
+	PedersenShardIDIndex    = operation.PedersenShardIDIndex
+	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
+)
+
+var PedCom operation.PedersenCommitment = operation.PedCom
+
 func TestCoinV1CommitAllThenSwitchV2(t *testing.T) {
 	coin := new(CoinV1).Init()
 	seedKey := operation.RandomScalar().ToBytesS()

@@ -3,7 +3,9 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -99,7 +101,7 @@ func buildTradeResTx(
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
+		TokenInput:  []*coin.PlainCoinV1{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -280,7 +282,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		Amount:      wdAcceptedContent.DeductingPoolValue,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
+		TokenInput:  []*coin.PlainCoinV1{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -376,7 +378,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		Amount:      refundContribution.ContributedAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
+		TokenInput:  []*coin.PlainCoinV1{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -473,7 +475,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		Amount:      matchedNReturnedContribution.ReturnedContributedAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
+		TokenInput:  []*coin.PlainCoinV1{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}

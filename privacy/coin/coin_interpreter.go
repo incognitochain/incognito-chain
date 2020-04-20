@@ -1,21 +1,9 @@
 package coin
 
-import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
-)
-
-type Coin interface {
-	Init() *Coin
-	GetVersion() uint8
-	Bytes() []byte
-	SetBytes([]byte) error
-	GetPubKeyLastByte() byte
-	GetCoinValue(key.PrivateKey) uint64
-}
+import "github.com/incognitochain/incognito-chain/privacy/operation"
 
 // Commit coin only with g^v * h^r
-func ParseCommitmentToV2WithCoin(c *CoinV1) *operation.Point {
+func ParseCommitmentToV2WithCoin(c *PlainCoinV1) *operation.Point {
 	return operation.PedCom.CommitAtIndex(
 		new(operation.Scalar).FromUint64(c.GetValue()),
 		c.GetRandomness(),

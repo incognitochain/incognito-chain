@@ -4,69 +4,80 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	henc "github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 )
 
 // Coin represents a coin
-type CoinV1 struct {
-	publicKey      *operation.Point
-	coinCommitment *operation.Point
-	snDerivator    *operation.Scalar
-	serialNumber   *operation.Point
-	randomness     *operation.Scalar
-	value          uint64
-	info           []byte //256 bytes
-}
-
-func (*CoinV1) GetVersion() uint8                       { return 1 }
-func (coin CoinV1) GetPublicKey() *operation.Point      { return coin.publicKey }
-func (coin CoinV1) GetCoinCommitment() *operation.Point { return coin.coinCommitment }
-func (coin CoinV1) GetSNDerivator() *operation.Scalar   { return coin.snDerivator }
-func (coin CoinV1) GetSerialNumber() *operation.Point   { return coin.serialNumber }
-func (coin CoinV1) GetRandomness() *operation.Scalar    { return coin.randomness }
-func (coin CoinV1) GetValue() uint64                    { return coin.value }
-func (coin CoinV1) GetInfo() []byte                     { return coin.info }
-
-func (coin *CoinV1) SetPublicKey(v *operation.Point)      { coin.publicKey = v }
-func (coin *CoinV1) SetCoinCommitment(v *operation.Point) { coin.coinCommitment = v }
-func (coin *CoinV1) SetSNDerivator(v *operation.Scalar)   { coin.snDerivator = v }
-func (coin *CoinV1) SetSerialNumber(v *operation.Point)   { coin.serialNumber = v }
-func (coin *CoinV1) SetRandomness(v *operation.Scalar)    { coin.randomness = v }
-func (coin *CoinV1) SetValue(v uint64)                    { coin.value = v }
-
-func (coin *CoinV1) SetInfo(v []byte) {
-	coin.info = make([]byte, len(v))
-	copy(coin.info, v)
+type PlainCoinV1 struct {
+	publicKey    *operation.Point
+	commitment   *operation.Point
+	snDerivator  *operation.Scalar
+	serialNumber *operation.Point
+	randomness   *operation.Scalar
+	value        uint64
+	info         []byte //256 bytes
 }
 
 // Init (Coin) initializes a coin
-func (coin *CoinV1) Init() *CoinV1 {
-	if coin == nil {
-		coin = new(CoinV1)
+func (c *PlainCoinV1) Init() *PlainCoinV1 {
+	if c == nil {
+		c = new(PlainCoinV1)
 	}
-	coin.value = 0
-	coin.randomness = new(operation.Scalar)
-	coin.publicKey = new(operation.Point).Identity()
-	coin.serialNumber = new(operation.Point).Identity()
-	coin.coinCommitment = new(operation.Point).Identity()
-	coin.snDerivator = new(operation.Scalar).FromUint64(0)
-	return coin
+	c.value = 0
+	c.randomness = new(operation.Scalar)
+	c.publicKey = new(operation.Point).Identity()
+	c.serialNumber = new(operation.Point).Identity()
+	c.snDerivator = new(operation.Scalar).FromUint64(0)
+	c.commitment = nil
+	return c
+}
+
+func (*PlainCoinV1) GetVersion() uint8 { return 1 }
+func (c *PlainCoinV1) GetShardID() uint8 {
+	pubKeyBytes := c.publicKey.ToBytes()
+	lastByte := pubKeyBytes[operation.Ed25519KeySize-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
+	return shardID
+}
+
+func (c PlainCoinV1) GetCommitment() *operation.Point   { return c.commitment }
+func (c PlainCoinV1) GetPublicKey() *operation.Point    { return c.publicKey }
+func (c PlainCoinV1) GetSNDerivator() *operation.Scalar { return c.snDerivator }
+func (c PlainCoinV1) GetKeyImage() *operation.Point     { return c.serialNumber }
+func (c PlainCoinV1) GetRandomness() *operation.Scalar  { return c.randomness }
+func (c PlainCoinV1) GetValue() uint64                  { return c.value }
+func (c PlainCoinV1) GetInfo() []byte                   { return c.info }
+
+func (c *PlainCoinV1) SetPublicKey(v *operation.Point)    { c.publicKey = v }
+func (c *PlainCoinV1) SetCommitment(v *operation.Point)   { c.commitment = v }
+func (c *PlainCoinV1) SetSNDerivator(v *operation.Scalar) { c.snDerivator = v }
+func (c *PlainCoinV1) SetKeyImage(v *operation.Point)     { c.serialNumber = v }
+func (c *PlainCoinV1) SetRandomness(v *operation.Scalar)  { c.randomness = v }
+func (c *PlainCoinV1) SetValue(v uint64)                  { c.value = v }
+
+func (c *PlainCoinV1) SetInfo(v []byte) {
+	c.info = make([]byte, len(v))
+	copy(c.info, v)
 }
 
 // GetPubKeyLastByte returns the last byte of public key
-func (coin *CoinV1) GetPubKeyLastByte() byte {
-	pubKeyBytes := coin.publicKey.ToBytes()
-	return pubKeyBytes[operation.Ed25519KeySize-1]
-}
+// func (c *PlainCoinV1) GetPubKeyLastByte() byte {
+// 	pubKeyBytes := c.publicKey.ToBytes()
+// 	return pubKeyBytes[operation.Ed25519KeySize-1]
+// }
 
 // MarshalJSON (CoinV1) converts coin to bytes array,
 // base58 check encode that bytes array into string
 // json.Marshal the string
-func (coin CoinV1) MarshalJSON() ([]byte, error) {
-	data := coin.Bytes()
+func (c PlainCoinV1) MarshalJSON() ([]byte, error) {
+	data := c.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
@@ -75,99 +86,98 @@ func (coin CoinV1) MarshalJSON() ([]byte, error) {
 // json.Unmarshal the bytes array to string
 // base58 check decode that string to bytes array
 // and set bytes array to coin
-func (coin *CoinV1) UnmarshalJSON(data []byte) error {
+func (c *PlainCoinV1) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	if err != nil {
 		return err
 	}
-	coin.SetBytes(temp)
+	c.SetBytes(temp)
 	return nil
 }
 
 // HashH returns the SHA3-256 hashing of coin bytes array
-func (coin *CoinV1) HashH() *common.Hash {
-	hash := common.HashH(coin.Bytes())
+func (c *PlainCoinV1) HashH() *common.Hash {
+	hash := common.HashH(c.Bytes())
 	return &hash
 }
 
 //CommitAll commits a coin with 5 attributes include:
 // public key, value, serial number derivator, shardID form last byte public key, randomness
-func (coin *CoinV1) CommitAll() error {
-	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+func (c *PlainCoinV1) CommitAll() error {
+	var err error
 	values := []*operation.Scalar{
 		new(operation.Scalar).FromUint64(0),
-		new(operation.Scalar).FromUint64(coin.value),
-		coin.snDerivator,
-		new(operation.Scalar).FromUint64(uint64(shardID)),
-		coin.randomness,
+		new(operation.Scalar).FromUint64(c.value),
+		c.snDerivator,
+		new(operation.Scalar).FromUint64(uint64(c.GetShardID())),
+		c.randomness,
 	}
-	commitment, err := operation.PedCom.CommitAll(values)
+	c.commitment, err = operation.PedCom.CommitAll(values)
 	if err != nil {
 		return err
 	}
-	coin.coinCommitment = commitment
-	coin.coinCommitment.Add(coin.coinCommitment, coin.publicKey)
+	c.commitment.Add(c.commitment, c.publicKey)
 
 	return nil
 }
 
 // Bytes converts a coin's details to a bytes array
 // Each fields in coin is saved in len - body format
-func (coin *CoinV1) Bytes() []byte {
+func (c *PlainCoinV1) Bytes() []byte {
 	var coinBytes []byte
 
-	if coin.publicKey != nil {
-		publicKey := coin.publicKey.ToBytesS()
+	if c.publicKey != nil {
+		publicKey := c.publicKey.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.coinCommitment != nil {
-		coinCommitment := coin.coinCommitment.ToBytesS()
+	if c.commitment != nil {
+		commitment := c.commitment.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
-		coinBytes = append(coinBytes, coinCommitment...)
+		coinBytes = append(coinBytes, commitment...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.snDerivator != nil {
+	if c.snDerivator != nil {
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
-		coinBytes = append(coinBytes, coin.snDerivator.ToBytesS()...)
+		coinBytes = append(coinBytes, c.snDerivator.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.serialNumber != nil {
-		serialNumber := coin.serialNumber.ToBytesS()
+	if c.serialNumber != nil {
+		serialNumber := c.serialNumber.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.randomness != nil {
+	if c.randomness != nil {
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
-		coinBytes = append(coinBytes, coin.randomness.ToBytesS()...)
+		coinBytes = append(coinBytes, c.randomness.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.value > 0 {
-		value := new(big.Int).SetUint64(coin.value).Bytes()
+	if c.value > 0 {
+		value := new(big.Int).SetUint64(c.value).Bytes()
 		coinBytes = append(coinBytes, byte(len(value)))
 		coinBytes = append(coinBytes, value...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if len(coin.info) > 0 {
-		byteLengthInfo := byte(getMin(len(coin.info), MaxSizeInfoCoin))
+	if len(c.info) > 0 {
+		byteLengthInfo := byte(getMin(len(c.info), MaxSizeInfoCoin))
 		coinBytes = append(coinBytes, byteLengthInfo)
-		infoBytes := coin.info[0:byteLengthInfo]
+		infoBytes := c.info[0:byteLengthInfo]
 		coinBytes = append(coinBytes, infoBytes...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -178,30 +188,30 @@ func (coin *CoinV1) Bytes() []byte {
 
 // SetBytes receives a coinBytes (in bytes array), and
 // reverts coinBytes to a Coin object
-func (coin *CoinV1) SetBytes(coinBytes []byte) error {
+func (c *PlainCoinV1) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
 		return errors.New("coinBytes is empty")
 	}
 	var err error
 
 	offset := 0
-	coin.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
+	c.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 publicKey error: " + err.Error())
 	}
-	coin.coinCommitment, err = parsePointForSetBytes(&coinBytes, &offset)
+	c.commitment, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV1 coinCommitment error: " + err.Error())
+		return errors.New("SetBytes CoinV1 commitment error: " + err.Error())
 	}
-	coin.snDerivator, err = parseScalarForSetBytes(&coinBytes, &offset)
+	c.snDerivator, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 snDerivator error: " + err.Error())
 	}
-	coin.serialNumber, err = parsePointForSetBytes(&coinBytes, &offset)
+	c.serialNumber, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 serialNumber error: " + err.Error())
 	}
-	coin.randomness, err = parseScalarForSetBytes(&coinBytes, &offset)
+	c.randomness, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 serialNumber error: " + err.Error())
 	}
@@ -216,17 +226,277 @@ func (coin *CoinV1) SetBytes(coinBytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse PublicKey")
 		}
-		coin.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
+		c.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 
-	coin.info, err = parseInfoForSetBytes(&coinBytes, &offset)
+	c.info, err = parseInfoForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 info error: " + err.Error())
 	}
 	return nil
 }
 
-// func (coin *CoinV1) GetCoinValue(privateKey *key.PrivateKey) uint64 {
-// 	return coin.GetValue()
+// func (c *PlainCoinV1) GetCoinValue(privateKey *key.PrivateKey) uint64 {
+// 	return c.GetValue()
 // }
+
+type CoinObject struct {
+	PublicKey      string `json:"PublicKey"`
+	CoinCommitment string `json:"CoinCommitment"`
+	SNDerivator    string `json:"SNDerivator"`
+	SerialNumber   string `json:"SerialNumber"`
+	Randomness     string `json:"Randomness"`
+	Value          string `json:"Value"`
+	Info           string `json:"Info"`
+}
+
+// SetBytes (InputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a InputCoin object
+func (pc *PlainCoinV1) ParseCoinObjectToInputCoin(coinObj CoinObject) error {
+	if pc == nil {
+		pc = new(PlainCoinV1).Init()
+	}
+	if coinObj.PublicKey != "" {
+		publicKey, _, err := base58.Base58Check{}.Decode(coinObj.PublicKey)
+		if err != nil {
+			return err
+		}
+
+		publicKeyPoint, err := new(operation.Point).FromBytesS(publicKey)
+		if err != nil {
+			return err
+		}
+		pc.SetPublicKey(publicKeyPoint)
+	}
+
+	if coinObj.CoinCommitment != "" {
+		coinCommitment, _, err := base58.Base58Check{}.Decode(coinObj.CoinCommitment)
+		if err != nil {
+			return err
+		}
+
+		coinCommitmentPoint, err := new(operation.Point).FromBytesS(coinCommitment)
+		if err != nil {
+			return err
+		}
+		pc.SetCommitment(coinCommitmentPoint)
+	}
+
+	if coinObj.SNDerivator != "" {
+		snderivator, _, err := base58.Base58Check{}.Decode(coinObj.SNDerivator)
+		if err != nil {
+			return err
+		}
+
+		snderivatorScalar := new(operation.Scalar).FromBytesS(snderivator)
+		if err != nil {
+			return err
+		}
+		pc.SetSNDerivator(snderivatorScalar)
+	}
+
+	if coinObj.SerialNumber != "" {
+		serialNumber, _, err := base58.Base58Check{}.Decode(coinObj.SerialNumber)
+		if err != nil {
+			return err
+		}
+
+		serialNumberPoint, err := new(operation.Point).FromBytesS(serialNumber)
+		if err != nil {
+			return err
+		}
+		pc.SetKeyImage(serialNumberPoint)
+	}
+
+	if coinObj.Randomness != "" {
+		randomness, _, err := base58.Base58Check{}.Decode(coinObj.Randomness)
+		if err != nil {
+			return err
+		}
+
+		randomnessScalar := new(operation.Scalar).FromBytesS(randomness)
+		if err != nil {
+			return err
+		}
+		pc.SetRandomness(randomnessScalar)
+	}
+
+	if coinObj.Value != "" {
+		value, err := strconv.ParseUint(coinObj.Value, 10, 64)
+		if err != nil {
+			return err
+		}
+		pc.SetValue(value)
+	}
+
+	if coinObj.Info != "" {
+		infoBytes, _, err := base58.Base58Check{}.Decode(coinObj.Info)
+		if err != nil {
+			return err
+		}
+		pc.SetInfo(infoBytes)
+	}
+	return nil
+}
+
+// OutputCoin represents a output coin of transaction
+// It contains CoinDetails and CoinDetailsEncrypted (encrypted value and randomness)
+// CoinDetailsEncrypted is nil when you send tx without privacy
+type CoinV1 struct {
+	CoinDetails          *PlainCoinV1
+	CoinDetailsEncrypted *henc.HybridCipherText
+}
+
+func (c CoinV1) GetVersion() uint8                 { return 1 }
+func (c CoinV1) GetPublicKey() *operation.Point    { return c.CoinDetails.GetPublicKey() }
+func (c CoinV1) GetCommitment() *operation.Point   { return c.CoinDetails.GetCommitment() }
+func (c CoinV1) GetKeyImage() *operation.Point     { return c.CoinDetails.GetKeyImage() }
+func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSNDerivator() }
+func (c CoinV1) GetShardID() uint8                 { return c.CoinDetails.GetShardID() }
+func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
+
+// Init (OutputCoin) initializes a output coin
+func (c *CoinV1) Init() *CoinV1 {
+	if c == nil {
+		c = new(CoinV1)
+	}
+	c.CoinDetails = new(PlainCoinV1).Init()
+	c.CoinDetailsEncrypted = new(henc.HybridCipherText)
+	return c
+}
+
+// Bytes (OutputCoin) converts a output coin's details to a bytes array
+// Each fields in coin is saved in len - body format
+func (c *CoinV1) Bytes() []byte {
+	var outCoinBytes []byte
+
+	if c.CoinDetailsEncrypted != nil {
+		coinDetailsEncryptedBytes := c.CoinDetailsEncrypted.Bytes()
+		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes)))
+		outCoinBytes = append(outCoinBytes, coinDetailsEncryptedBytes...)
+	} else {
+		outCoinBytes = append(outCoinBytes, byte(0))
+	}
+
+	coinDetailBytes := c.CoinDetails.Bytes()
+
+	lenCoinDetailBytes := []byte{}
+	if len(coinDetailBytes) <= 255 {
+		lenCoinDetailBytes = []byte{byte(len(coinDetailBytes))}
+	} else {
+		lenCoinDetailBytes = common.IntToBytes(len(coinDetailBytes))
+	}
+
+	outCoinBytes = append(outCoinBytes, lenCoinDetailBytes...)
+	outCoinBytes = append(outCoinBytes, coinDetailBytes...)
+	return outCoinBytes
+}
+
+// SetBytes (OutputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a OutputCoin object
+func (c *CoinV1) SetBytes(bytes []byte) error {
+	if len(bytes) == 0 {
+		return errors.New("coinBytes is empty")
+	}
+
+	offset := 0
+	lenCoinDetailEncrypted := int(bytes[0])
+	offset += 1
+
+	if lenCoinDetailEncrypted > 0 {
+		if offset+lenCoinDetailEncrypted > len(bytes) {
+			// out of range
+			return errors.New("out of range Parse CoinDetailsEncrypted")
+		}
+		outputCoin.CoinDetailsEncrypted = new(henc.HybridCipherText)
+		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
+		if err != nil {
+			return err
+		}
+		offset += lenCoinDetailEncrypted
+	}
+
+	// try get 1-byte for len
+	if offset > len(bytes) {
+		// out of range
+		return errors.New("out of range Parse CoinDetails")
+	}
+	lenOutputCoin := int(bytes[offset])
+	outputCoin.CoinDetails = new(CoinV1)
+	if lenOutputCoin != 0 {
+		offset += 1
+		if offset+lenOutputCoin > len(bytes) {
+			// out of range
+			return errors.New("out of range Parse output coin details")
+		}
+		err := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
+		if err != nil {
+			// 1-byte is wrong
+			// try get 2-byte for len
+			if offset+1 > len(bytes) {
+				// out of range
+				return errors.New("out of range Parse output coin details")
+			}
+			lenOutputCoin = common.BytesToInt(bytes[offset-1 : offset+1])
+			offset += 1
+			if offset+lenOutputCoin > len(bytes) {
+				// out of range
+				return errors.New("out of range Parse output coin details")
+			}
+			err1 := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
+			return err1
+		}
+	} else {
+		// 1-byte is wrong
+		// try get 2-byte for len
+		if offset+2 > len(bytes) {
+			// out of range
+			return errors.New("out of range Parse output coin details")
+		}
+		lenOutputCoin = common.BytesToInt(bytes[offset : offset+2])
+		offset += 2
+		if offset+lenOutputCoin > len(bytes) {
+			// out of range
+			return errors.New("out of range Parse output coin details")
+		}
+		err1 := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
+		return err1
+	}
+
+	return nil
+}
+
+// Encrypt returns a ciphertext encrypting for a coin using a hybrid cryptosystem,
+// in which AES encryption scheme is used as a data encapsulation scheme,
+// and ElGamal cryptosystem is used as a key encapsulation scheme.
+func (c *CoinV1) Encrypt(recipientTK key.TransmissionKey) *errhandler.PrivacyError {
+	// 32-byte first: Randomness, the rest of msg is value of coin
+	msg := append(outputCoin.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
+
+	pubKeyPoint, err := new(operation.Point).FromBytesS(recipientTK)
+	if err != nil {
+		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
+	}
+
+	outputCoin.CoinDetailsEncrypted, err = henc.HybridEncrypt(msg, pubKeyPoint)
+	if err != nil {
+		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
+	}
+
+	return nil
+}
+
+// Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
+func (c *CoinV1) Decrypt(viewingKey key.ViewingKey) *errhandler.PrivacyError {
+	msg, err := henc.HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(operation.Scalar).FromBytesS(viewingKey.Rk))
+	if err != nil {
+		return errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+	}
+
+	// Assign randomness and value to outputCoin details
+	outputCoin.CoinDetails.randomness = new(operation.Scalar).FromBytesS(msg[0:operation.Ed25519KeySize])
+	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[operation.Ed25519KeySize:]).Uint64()
+
+	return nil
+}

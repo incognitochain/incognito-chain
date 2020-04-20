@@ -5,9 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -240,7 +242,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		Amount:         issuingAcceptedInst.DepositedAmount,
 		TokenTxType:    transaction.CustomTokenInit,
 		Receiver:       []*privacy.PaymentInfo{receiver},
-		TokenInput:     []*privacy.InputCoin{},
+		TokenInput:     []*coin.PlainCoinV1{},
 		Mintable:       true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -302,7 +304,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		Amount:      issuingETHAcceptedInst.IssuingAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
+		TokenInput:  []*coin.PlainCoinV1{},
 		Mintable:    true,
 	}
 
