@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type BeaconPeerState struct {
@@ -212,27 +213,29 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.chain.GetAllViewHash() {
-		blk := s.beaconPool.GetBlock(viewHash)
-		if blk == nil {
-			continue
-		}
+		blks := s.beaconPool.GetBlockByPrevHash(viewHash)
+		for _, blk := range blks {
+			if blk == nil {
+				continue
+			}
 
-		//if already insert and error, last time insert is < 10s then we skip
-		insertTime, ok := insertBeaconTimeCache.Get(viewHash.String())
-		if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
-			continue
-		}
+			//if already insert and error, last time insert is < 10s then we skip
+			insertTime, ok := insertBeaconTimeCache.Get(viewHash.String())
+			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+				continue
+			}
 
-		fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
-		if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
-			return
+			fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
+			if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
+				return
+			}
+			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
+			insertCnt++
+			if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
+				return
+			}
+			s.beaconPool.RemoveBlock(blk.Hash())
 		}
-		insertBeaconTimeCache.Add(viewHash.String(), time.Now())
-		insertCnt++
-		if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
-			return
-		}
-		s.beaconPool.RemoveBlock(blk.Hash())
 	}
 
 }
