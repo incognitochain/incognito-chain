@@ -138,28 +138,31 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
-		blk := s.shardPool.GetBlock(viewHash)
-		if blk == nil {
-			continue
-		}
-		//if already insert and error, last time insert is < 10s then we skip
-		insertTime, ok := insertShardTimeCache.Get(viewHash.String())
-		if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
-			continue
-		}
+		blks := s.shardPool.GetBlockByPrevHash(viewHash)
+		for _, blk := range blks {
+			if blk == nil {
+				continue
+			}
+			//if already insert and error, last time insert is < 10s then we skip
+			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
+			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+				continue
+			}
 
-		fmt.Println("Syncker: Insert shard", s.shardID, "from pool", blk.(common.BlockInterface).GetHeight())
-		if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
-			return
+			fmt.Println("Syncker: Insert shard", s.shardID, "from pool", blk.(common.BlockInterface).GetHeight())
+			if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+				return
+			}
+			insertShardTimeCache.Add(viewHash.String(), time.Now())
+			insertCnt++
+			if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
+				return
+			}
+			s.shardPool.RemoveBlock(blk.Hash())
 		}
-		insertShardTimeCache.Add(viewHash.String(), time.Now())
-		insertCnt++
-		if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
-			return
-		}
-		s.shardPool.RemoveBlock(blk.Hash())
 	}
 }
+
 func (s *ShardSyncProcess) syncShardProcess() {
 	for {
 		requestCnt := 0
@@ -222,6 +225,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		case blk := <-ch:
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
+				Logger.Infof("Syncker beacon receive block %v", blk.GetHeight())
 				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 					time.Sleep(5 * time.Second)
 				}

@@ -72,14 +72,11 @@ func (e *BLSBFT) GetChainID() int {
 
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
-		select {
-		case <-e.StopCh:
-			return nil
-		default:
-			close(e.StopCh)
-		}
+		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)
+		close(e.StopCh)
 		e.isStarted = false
 		e.isOngoing = false
+		return nil
 	}
 	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
 }

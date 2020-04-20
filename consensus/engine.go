@@ -152,7 +152,6 @@ func (engine *Engine) Init(config *EngineConfig) {
 }
 
 func (engine *Engine) Start() error {
-
 	fmt.Println("CONSENSUS: Start")
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
