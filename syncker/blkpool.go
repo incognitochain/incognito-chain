@@ -178,7 +178,7 @@ func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInter
 func (pool *BlkPool) GetBlockByPrevHash(prevHash common.Hash) []common.BlockPoolInterface {
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
-		res <- GetBlksByPrevHash(prevHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
+		res <- GetBlksByPrevHash(prevHash.String(), pool.blkPoolByHash, pool.blkPoolByPrevHash)
 	}
 	return <-res
 }

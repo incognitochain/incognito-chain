@@ -171,4 +171,5 @@ func GetBlksByPrevHash(
 			}
 		}
 	}
+	return res
 }
