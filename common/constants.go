@@ -129,7 +129,7 @@ const (
 	PortalReqPTokenRejectedStatus = 2
 
 	PortalPortingTxRequestAcceptedStatus = 1
-	PortalPortingTxRequestRejectedStatus = 2
+	PortalPortingTxRequestRejectedStatus = 3
 
 	PortalPortingReqSuccessStatus    = 1
 	PortalPortingReqWaitingStatus    = 2
