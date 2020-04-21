@@ -36,8 +36,8 @@ type PaymentProof struct {
 	// for proving each value and sum of them are less than a threshold value
 	aggregatedRangeProof *aggregatedrange.AggregatedRangeProof
 
-	inputCoins  []*coin.InputCoin
-	outputCoins []*coin.OutputCoin
+	inputCoins  []*coin.PlainCoinV1
+	outputCoins []*coin.CoinV1
 
 	commitmentOutputValue   []*operation.Point
 	commitmentOutputSND     []*operation.Point
@@ -57,65 +57,44 @@ func (proof *PaymentProof) GetVersion() uint8 { return 1 }
 func (proof PaymentProof) GetOneOfManyProof() []*oneoutofmany.OneOutOfManyProof {
 	return proof.oneOfManyProof
 }
-
 func (proof PaymentProof) GetSerialNumberProof() []*serialnumberprivacy.SNPrivacyProof {
 	return proof.serialNumberProof
 }
-
 func (proof PaymentProof) GetSerialNumberNoPrivacyProof() []*serialnumbernoprivacy.SNNoPrivacyProof {
 	return proof.serialNumberNoPrivacyProof
 }
-
 func (proof PaymentProof) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
 	return proof.aggregatedRangeProof
 }
-
 func (proof PaymentProof) GetCommitmentOutputValue() []*operation.Point {
 	return proof.commitmentOutputValue
 }
-
 func (proof PaymentProof) GetCommitmentOutputSND() []*operation.Point {
 	return proof.commitmentOutputSND
 }
-
 func (proof PaymentProof) GetCommitmentOutputShardID() []*operation.Point {
 	return proof.commitmentOutputShardID
 }
-
 func (proof PaymentProof) GetCommitmentInputSecretKey() *operation.Point {
 	return proof.commitmentInputSecretKey
 }
-
 func (proof PaymentProof) GetCommitmentInputValue() []*operation.Point {
 	return proof.commitmentInputValue
 }
-
-func (proof PaymentProof) GetCommitmentInputSND() []*operation.Point {
-	return proof.commitmentInputSND
-}
-
+func (proof PaymentProof) GetCommitmentInputSND() []*operation.Point { return proof.commitmentInputSND }
 func (proof PaymentProof) GetCommitmentInputShardID() *operation.Point {
 	return proof.commitmentInputShardID
 }
+func (proof PaymentProof) GetCommitmentIndices() []uint64     { return proof.commitmentIndices }
+func (proof PaymentProof) GetInputCoins() []*coin.PlainCoinV1 { return proof.inputCoins }
+func (proof PaymentProof) GetOutputCoins() []*coin.CoinV1     { return proof.outputCoins }
 
-func (proof PaymentProof) GetCommitmentIndices() []uint64 {
-	return proof.commitmentIndices
-}
-
-func (proof PaymentProof) GetInputCoins() []*coin.InputCoin {
-	return proof.inputCoins
-}
-
-func (proof PaymentProof) GetOutputCoins() []*coin.OutputCoin {
-	return proof.outputCoins
-}
-
-func (proof *PaymentProof) SetInputCoins(v []*coin.InputCoin) error {
+func (proof *PaymentProof) SetInputCoins(v []*coin.PlainCoinV1) error {
 	n := len(v)
-	inputCoins := make([]*coin.InputCoin, n)
+	inputCoins := make([]*coin.PlainCoinV1, n)
 	for i := 0; i < n; i += 1 {
 		b := v[i].Bytes()
-		inputCoins[i] = new(coin.InputCoin)
+		inputCoins[i] = new(coin.PlainCoinV1)
 		err := inputCoins[i].SetBytes(b)
 		if err != nil {
 			return err
@@ -125,12 +104,12 @@ func (proof *PaymentProof) SetInputCoins(v []*coin.InputCoin) error {
 	return nil
 }
 
-func (proof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) error {
+func (proof *PaymentProof) SetOutputCoins(v []*coin.CoinV1) error {
 	n := len(v)
-	outputCoins := make([]*coin.OutputCoin, n)
+	outputCoins := make([]*coin.CoinV1, n)
 	for i := 0; i < n; i += 1 {
 		b := v[i].Bytes()
-		outputCoins[i] = new(coin.OutputCoin)
+		outputCoins[i] = new(coin.CoinV1)
 		err := outputCoins[i].SetBytes(b)
 		if err != nil {
 			return err
@@ -149,8 +128,8 @@ func (proof *PaymentProof) Init() {
 	proof.oneOfManyProof = []*oneoutofmany.OneOutOfManyProof{}
 	proof.serialNumberProof = []*serialnumberprivacy.SNPrivacyProof{}
 	proof.aggregatedRangeProof = aggregatedRangeProof
-	proof.inputCoins = []*coin.InputCoin{}
-	proof.outputCoins = []*coin.OutputCoin{}
+	proof.inputCoins = []*coin.PlainCoinV1{}
+	proof.outputCoins = []*coin.CoinV1{}
 
 	proof.commitmentOutputValue = []*operation.Point{}
 	proof.commitmentOutputSND = []*operation.Point{}
@@ -422,13 +401,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 		offset += lenComOutputMultiRangeProof
 	}
 
-	//InputCoins  []*privacy.InputCoin
+	//InputCoins  []*coin.PlainCoinV1
 	if offset >= len(proofbytes) {
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 	}
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.inputCoins = make([]*coin.InputCoin, lenInputCoinsArray)
+	proof.inputCoins = make([]*coin.PlainCoinV1, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
@@ -436,7 +415,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
-		proof.inputCoins[i] = new(coin.InputCoin)
+		proof.inputCoins[i] = new(coin.PlainCoinV1)
 		if offset+lenInputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
@@ -453,9 +432,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	}
 	lenOutputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.outputCoins = make([]*coin.OutputCoin, lenOutputCoinsArray)
+	proof.outputCoins = make([]*coin.CoinV1, lenOutputCoinsArray)
 	for i := 0; i < lenOutputCoinsArray; i++ {
-		proof.outputCoins[i] = new(coin.OutputCoin)
+		proof.outputCoins[i] = new(coin.CoinV1)
 		// try get 1-byte for len
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
@@ -677,27 +656,27 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shar
 		}
 
 		// Check input coins' cm is calculated correctly
-		cmSK := proof.inputCoins[i].CoinDetails.GetPublicKey()
-		cmValue := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.inputCoins[i].CoinDetails.GetValue()))
-		cmSND := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenSndIndex], proof.inputCoins[i].CoinDetails.GetSNDerivator())
-		cmRandomness := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())
+		cmSK := proof.inputCoins[i].GetPublicKey()
+		cmValue := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.inputCoins[i].GetValue()))
+		cmSND := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenSndIndex], proof.inputCoins[i].GetSNDerivator())
+		cmRandomness := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], proof.inputCoins[i].GetRandomness())
 		cmTmp := new(operation.Point).Add(cmSK, cmValue)
 		cmTmp.Add(cmTmp, cmSND)
 		cmTmp.Add(cmTmp, cmShardIDSender)
 		cmTmp.Add(cmTmp, cmRandomness)
 
-		if !operation.IsPointEqual(cmTmp, proof.inputCoins[i].CoinDetails.GetCoinCommitment()) {
+		if !operation.IsPointEqual(cmTmp, proof.inputCoins[i].GetCommitment()) {
 			Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
 			return false, errhandler.NewPrivacyErr(errhandler.VerifyCoinCommitmentInputFailedErr, nil)
 		}
 
 		// Calculate sum of input values
-		sumInputValue += proof.inputCoins[i].CoinDetails.GetValue()
+		sumInputValue += proof.inputCoins[i].GetValue()
 	}
 
 	for i := 0; i < len(proof.outputCoins); i++ {
 		// Check output coins' cm is calculated correctly
-		shardID := common.GetShardIDFromLastByte(proof.outputCoins[i].CoinDetails.GetPubKeyLastByte())
+		shardID := proof.outputCoins[i].GetShardID()
 		cmSK := proof.outputCoins[i].CoinDetails.GetPublicKey()
 		cmValue := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.outputCoins[i].CoinDetails.GetValue()))
 		cmSND := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenSndIndex], proof.outputCoins[i].CoinDetails.GetSNDerivator())
@@ -709,7 +688,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shar
 		cmTmp.Add(cmTmp, cmShardID)
 		cmTmp.Add(cmTmp, cmRandomness)
 
-		if !operation.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
+		if !operation.IsPointEqual(cmTmp, proof.outputCoins[i].GetCommitment()) {
 			Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
 			return false, errhandler.NewPrivacyErr(errhandler.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
@@ -779,7 +758,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 		cmTmp.Add(cmTmp, proof.commitmentOutputSND[i])
 		cmTmp.Add(cmTmp, proof.commitmentOutputShardID[i])
 
-		if !operation.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
+		if !operation.IsPointEqual(cmTmp, proof.outputCoins[i].GetCommitment()) {
 			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
 			return false, errhandler.NewPrivacyErr(errhandler.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
@@ -868,7 +847,7 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 
 		// check input coins with privacy
 		for i := 0; i < len(proof.GetInputCoins()); i++ {
-			if !proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
+			if !proof.GetInputCoins()[i].GetKeyImage().PointValid() {
 				return false, errors.New("validate sanity Serial number of input coin failed")
 			}
 		}
@@ -877,7 +856,7 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 			if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
 				return false, errors.New("validate sanity Public key of output coin failed")
 			}
-			if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+			if !proof.GetOutputCoins()[i].CoinDetails.GetCommitment().PointValid() {
 				return false, errors.New("validate sanity Coin commitment of output coin failed")
 			}
 			if !proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
@@ -937,27 +916,26 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 		}
 		// check input coins without privacy
 		for i := 0; i < len(proof.GetInputCoins()); i++ {
-			if !proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+			if !proof.GetInputCoins()[i].GetCommitment().PointValid() {
 				return false, errors.New("validate sanity CoinCommitment of input coin failed")
 			}
-			if !proof.GetInputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
+			if !proof.GetInputCoins()[i].GetPublicKey().PointValid() {
 				return false, errors.New("validate sanity PublicKey of input coin failed")
 			}
-			if !proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
+			if !proof.GetInputCoins()[i].GetKeyImage().PointValid() {
 				return false, errors.New("validate sanity Serial number of input coin failed")
 			}
-			if !proof.GetInputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
+			if !proof.GetInputCoins()[i].GetRandomness().ScalarValid() {
 				return false, errors.New("validate sanity Randomness of input coin failed")
 			}
-			if !proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+			if !proof.GetInputCoins()[i].GetSNDerivator().ScalarValid() {
 				return false, errors.New("validate sanity SNDerivator of input coin failed")
 			}
-
 		}
 
 		// check output coins without privacy
 		for i := 0; i < len(proof.GetOutputCoins()); i++ {
-			if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+			if !proof.GetOutputCoins()[i].CoinDetails.GetCommitment().PointValid() {
 				return false, errors.New("validate sanity CoinCommitment of output coin failed")
 			}
 			if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {

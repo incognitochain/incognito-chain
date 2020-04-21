@@ -18,8 +18,8 @@ import (
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
 	privateKey          *operation.Scalar
-	inputCoins          []*coin.InputCoin
-	outputCoins         []*coin.OutputCoin
+	inputCoins          []*coin.PlainCoinV1
+	outputCoins         []*coin.CoinV1
 	commitmentIndices   []uint64
 	myCommitmentIndices []uint64
 
@@ -48,8 +48,8 @@ func (paymentWitness PaymentWitness) GetRandSecretKey() *operation.Scalar {
 type PaymentWitnessParam struct {
 	HasPrivacy              bool
 	PrivateKey              *operation.Scalar
-	InputCoins              []*coin.InputCoin
-	OutputCoins             []*coin.OutputCoin
+	InputCoins              []*coin.PlainCoinV1
+	OutputCoins             []*coin.CoinV1
 	PublicKeyLastByteSender byte
 	Commitments             []*operation.Point
 	CommitmentIndices       []uint64
@@ -81,15 +81,15 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		}
 		lenInputs := len(wit.inputCoins)
 		if lenInputs > 0 {
-			publicKey := wit.inputCoins[0].CoinDetails.GetPublicKey()
+			publicKey := wit.inputCoins[0].GetPublicKey()
 			wit.serialNumberNoPrivacyWitness = make([]*serialnumbernoprivacy.SNNoPrivacyWitness, lenInputs)
 			for i := 0; i < len(wit.inputCoins); i++ {
 				/***** Build witness for proving that serial number is derived from the committed derivator *****/
 				if wit.serialNumberNoPrivacyWitness[i] == nil {
 					wit.serialNumberNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)
 				}
-				wit.serialNumberNoPrivacyWitness[i].Set(wit.inputCoins[i].CoinDetails.GetSerialNumber(), publicKey,
-					wit.inputCoins[i].CoinDetails.GetSNDerivator(), wit.privateKey)
+				wit.serialNumberNoPrivacyWitness[i].Set(wit.inputCoins[i].GetKeyImage(), publicKey,
+					wit.inputCoins[i].GetSNDerivator(), wit.privateKey)
 			}
 		}
 		return nil
@@ -142,8 +142,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		// commit each component of coin commitment
 		randInputSND[i] = operation.RandomScalar()
 
-		wit.comInputValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], operation.PedersenValueIndex)
-		wit.comInputSerialNumberDerivator[i] = operation.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], operation.PedersenSndIndex)
+		wit.comInputValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(inputCoin.GetValue()), randInputValue[i], operation.PedersenValueIndex)
+		wit.comInputSerialNumberDerivator[i] = operation.PedCom.CommitAtIndex(inputCoin.GetSNDerivator(), randInputSND[i], operation.PedersenSndIndex)
 
 		cmInputValueAll.Add(cmInputValueAll, wit.comInputValue[i])
 		randInputValueAll.Add(randInputValueAll, randInputValue[i])
@@ -164,7 +164,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		commitmentTemps[i] = make([]*operation.Point, privacy_util.CommitmentRingSize)
 
 		randInputIsZero[i] = new(operation.Scalar).FromUint64(0)
-		randInputIsZero[i].Sub(inputCoin.CoinDetails.GetRandomness(), randInputSum[i])
+		randInputIsZero[i].Sub(inputCoin.GetRandomness(), randInputSum[i])
 
 		for j := 0; j < privacy_util.CommitmentRingSize; j++ {
 			commitmentTemps[i][j] = new(operation.Point).Sub(commitments[preIndex+j], cmInputSum[i])
@@ -184,8 +184,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 			wit.serialNumberWitness[i] = new(serialnumberprivacy.SNPrivacyWitness)
 		}
 		stmt := new(serialnumberprivacy.SerialNumberPrivacyStatement)
-		stmt.Set(inputCoin.CoinDetails.GetSerialNumber(), cmInputSK, wit.comInputSerialNumberDerivator[i])
-		wit.serialNumberWitness[i].Set(stmt, wit.privateKey, randInputSK, inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i])
+		stmt.Set(inputCoin.GetKeyImage(), cmInputSK, wit.comInputSerialNumberDerivator[i])
+		wit.serialNumberWitness[i].Set(stmt, wit.privateKey, randInputSK, inputCoin.GetSNDerivator(), randInputSND[i])
 		// ---------------------------------------------------
 	}
 
@@ -218,7 +218,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		cmOutputValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputCoin.CoinDetails.GetValue()), randOutputValue[i], operation.PedersenValueIndex)
 		cmOutputSND[i] = operation.PedCom.CommitAtIndex(outputCoin.CoinDetails.GetSNDerivator(), randOutputSND[i], operation.PedersenSndIndex)
 
-		receiverShardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
+		receiverShardID := outputCoins[i].GetShardID()
 		cmOutputShardID[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(uint64(receiverShardID)), randOutputShardID[i], operation.PedersenShardIDIndex)
 
 		randOutputSum[i] = new(operation.Scalar).FromUint64(0)
@@ -227,14 +227,14 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 
 		cmOutputSum[i] = new(operation.Point).Identity()
 		cmOutputSum[i].Add(cmOutputValue[i], cmOutputSND[i])
-		cmOutputSum[i].Add(cmOutputSum[i], outputCoins[i].CoinDetails.GetPublicKey())
+		cmOutputSum[i].Add(cmOutputSum[i], outputCoins[i].GetPublicKey())
 		cmOutputSum[i].Add(cmOutputSum[i], cmOutputShardID[i])
 
 		cmOutputValueAll.Add(cmOutputValueAll, cmOutputValue[i])
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
 
 		// calculate final commitment for output coins
-		outputCoins[i].CoinDetails.SetCoinCommitment(cmOutputSum[i])
+		outputCoins[i].CoinDetails.SetCommitment(cmOutputSum[i])
 		outputCoins[i].CoinDetails.SetRandomness(randOutputSum[i])
 
 		cmOutputSumAll.Add(cmOutputSumAll, cmOutputSum[i])
@@ -345,18 +345,14 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo
 		if err.(*errhandler.PrivacyError) != nil {
 			return nil, err.(*errhandler.PrivacyError)
 		}
-		proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
+		proof.GetOutputCoins()[i].CoinDetails.SetKeyImage(nil)
 		proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
 		proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
 	}
 
 	// hide information of input coins except serial number of input coins
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetValue(0)
-		proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
+		proof.GetInputCoins()[i].ConcealData()
 	}
 
 	//privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")

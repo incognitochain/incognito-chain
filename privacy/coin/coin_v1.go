@@ -61,17 +61,19 @@ func (c *PlainCoinV1) SetSNDerivator(v *operation.Scalar) { c.snDerivator = v }
 func (c *PlainCoinV1) SetKeyImage(v *operation.Point)     { c.serialNumber = v }
 func (c *PlainCoinV1) SetRandomness(v *operation.Scalar)  { c.randomness = v }
 func (c *PlainCoinV1) SetValue(v uint64)                  { c.value = v }
-
 func (c *PlainCoinV1) SetInfo(v []byte) {
 	c.info = make([]byte, len(v))
 	copy(c.info, v)
 }
 
-// GetPubKeyLastByte returns the last byte of public key
-// func (c *PlainCoinV1) GetPubKeyLastByte() byte {
-// 	pubKeyBytes := c.publicKey.ToBytes()
-// 	return pubKeyBytes[operation.Ed25519KeySize-1]
-// }
+// Conceal data leaving serialnumber
+func (c *PlainCoinV1) ConcealData() {
+	c.SetCommitment(nil)
+	c.SetValue(0)
+	c.SetSNDerivator(nil)
+	c.SetPublicKey(nil)
+	c.SetRandomness(nil)
+}
 
 // MarshalJSON (CoinV1) converts coin to bytes array,
 // base58 check encode that bytes array into string
@@ -472,14 +474,14 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (c *CoinV1) Encrypt(recipientTK key.TransmissionKey) *errhandler.PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
-	msg := append(outputCoin.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
+	msg := append(c.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(c.CoinDetails.value).Bytes()...)
 
 	pubKeyPoint, err := new(operation.Point).FromBytesS(recipientTK)
 	if err != nil {
 		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
 	}
 
-	outputCoin.CoinDetailsEncrypted, err = henc.HybridEncrypt(msg, pubKeyPoint)
+	c.CoinDetailsEncrypted, err = henc.HybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
 		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
 	}
@@ -489,14 +491,14 @@ func (c *CoinV1) Encrypt(recipientTK key.TransmissionKey) *errhandler.PrivacyErr
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (c *CoinV1) Decrypt(viewingKey key.ViewingKey) *errhandler.PrivacyError {
-	msg, err := henc.HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(operation.Scalar).FromBytesS(viewingKey.Rk))
+	msg, err := henc.HybridDecrypt(c.CoinDetailsEncrypted, new(operation.Scalar).FromBytesS(viewingKey.Rk))
 	if err != nil {
 		return errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 
 	// Assign randomness and value to outputCoin details
-	outputCoin.CoinDetails.randomness = new(operation.Scalar).FromBytesS(msg[0:operation.Ed25519KeySize])
-	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[operation.Ed25519KeySize:]).Uint64()
+	c.CoinDetails.randomness = new(operation.Scalar).FromBytesS(msg[0:operation.Ed25519KeySize])
+	c.CoinDetails.value = new(big.Int).SetBytes(msg[operation.Ed25519KeySize:]).Uint64()
 
 	return nil
 }

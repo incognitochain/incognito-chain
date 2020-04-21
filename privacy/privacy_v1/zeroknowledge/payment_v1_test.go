@@ -19,8 +19,8 @@ type CoinObject struct {
 	Info           string
 }
 
-func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*coin.InputCoin, uint64) {
-	coins := make([]*coin.InputCoin, len(coinObjects))
+func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*coin.PlainCoinV1, uint64) {
+	coins := make([]*coin.PlainCoinV1, len(coinObjects))
 	sumValue := uint64(0)
 
 	for i := 0; i < len(coins); i++ {
@@ -43,13 +43,13 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*coin.InputCoin, uint6
 		randomness, _, _ := base58.Base58Check{}.Decode(coinObjects[i].Randomness)
 		randomnessBN := new(operation.Scalar).FromBytesS(randomness)
 
-		coins[i] = new(coin.InputCoin).Init()
-		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
-		coins[i].CoinDetails.SetCoinCommitment(coinCommitmentPoint)
-		coins[i].CoinDetails.SetSNDerivator(sndBN)
-		coins[i].CoinDetails.SetSerialNumber(serialNumberPoint)
-		coins[i].CoinDetails.SetRandomness(randomnessBN)
-		coins[i].CoinDetails.SetValue(coinObjects[i].Value)
+		coins[i] = new(coin.PlainCoinV1).Init()
+		coins[i].SetPublicKey(publicKeyPoint)
+		coins[i].SetCommitment(coinCommitmentPoint)
+		coins[i].SetSNDerivator(sndBN)
+		coins[i].SetKeyImage(serialNumberPoint)
+		coins[i].SetRandomness(randomnessBN)
+		coins[i].SetValue(coinObjects[i].Value)
 
 		sumValue += coinObjects[i].Value
 
@@ -136,8 +136,8 @@ func TestPaymentProofToBytes(t *testing.T) {
 
 	amountTransfer := uint64(1000000000)
 
-	outputCoins := make([]*coin.OutputCoin, 2)
-	outputCoins[0] = new(coin.OutputCoin)
+	outputCoins := make([]*coin.CoinV1, 2)
+	outputCoins[0] = new(coin.CoinV1)
 	outputCoins[0].Init()
 	outputCoins[0].CoinDetails.SetValue(uint64(amountTransfer))
 	outputCoins[0].CoinDetails.SetPublicKey(receiverPublicKeyPoint)
@@ -145,7 +145,7 @@ func TestPaymentProofToBytes(t *testing.T) {
 
 	changeAmount := sumValue - amountTransfer
 
-	outputCoins[1] = new(coin.OutputCoin)
+	outputCoins[1] = new(coin.CoinV1)
 	outputCoins[1].Init()
 	outputCoins[1].CoinDetails.SetValue(changeAmount)
 	outputCoins[1].CoinDetails.SetPublicKey(senderPKPoint)
@@ -153,7 +153,7 @@ func TestPaymentProofToBytes(t *testing.T) {
 
 	//HasPrivacy              bool
 	//PrivateKey              *big.Int
-	//InputCoins              []*privacy.InputCoin
+	//InputCoins              []*coin.PlainCoinV1
 	//OutputCoins             []*privacy.OutputCoin
 	//PublicKeyLastByteSender byte
 	//Commitments             []*privacy.Point

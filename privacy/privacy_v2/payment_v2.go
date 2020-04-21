@@ -18,22 +18,21 @@ import (
 type PaymentProofV2 struct {
 	Version              uint8
 	aggregatedRangeProof *bulletproofs.AggregatedRangeProof
-	inputCoins           []*coin.InputCoin
-	outputCoins          []*coin.OutputCoin
+	inputCoins           []*coin.PlainCoinV2
+	outputCoins          []*coin.CoinV2
 }
 
 func (proof *PaymentProofV2) GetVersion() uint8                 { return 2 }
-func (proof PaymentProofV2) GetInputCoins() []*coin.InputCoin   { return proof.inputCoins }
-func (proof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin { return proof.outputCoins }
+func (proof PaymentProofV2) GetInputCoins() []*coin.PlainCoinV2 { return proof.inputCoins }
+func (proof PaymentProofV2) GetOutputCoins() []*coin.CoinV2     { return proof.outputCoins }
 
 func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
-
-func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin) error {
+func (proof *PaymentProofV2) SetInputCoins(v []*coin.PlainCoinV2) error {
 	n := len(v)
-	inputCoins := make([]*coin.InputCoin, n)
+	inputCoins := make([]*coin.PlainCoinV2, n)
 	for i := 0; i < n; i += 1 {
 		b := v[i].Bytes()
-		inputCoins[i] = new(coin.InputCoin)
+		inputCoins[i] = new(coin.PlainCoinV2)
 		err := inputCoins[i].SetBytes(b)
 		if err != nil {
 			return err
@@ -42,12 +41,13 @@ func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin) error {
 	proof.inputCoins = inputCoins
 	return nil
 }
-func (proof *PaymentProofV2) SetOutputCoins(v []*coin.OutputCoin) error {
+
+func (proof *PaymentProofV2) SetOutputCoins(v []*coin.CoinV2) error {
 	n := len(v)
-	outputCoins := make([]*coin.OutputCoin, n)
+	outputCoins := make([]*coin.CoinV2, n)
 	for i := 0; i < n; i += 1 {
 		b := v[i].Bytes()
-		outputCoins[i] = new(coin.OutputCoin)
+		outputCoins[i] = new(coin.CoinV2)
 		err := outputCoins[i].SetBytes(b)
 		if err != nil {
 			return err
@@ -65,8 +65,8 @@ func (proof *PaymentProofV2) Init() {
 	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
 	proof.aggregatedRangeProof = aggregatedRangeProof
-	proof.inputCoins = []*coin.InputCoin{}
-	proof.outputCoins = []*coin.OutputCoin{}
+	proof.inputCoins = []*coin.PlainCoinV2{}
+	proof.outputCoins = []*coin.CoinV2{}
 }
 
 // MarshalJSON - override function
@@ -166,13 +166,13 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 		offset += lenComOutputMultiRangeProof
 	}
 
-	//InputCoins  []*privacy.InputCoin
+	//InputCoins  []*coin.PlainCoinV1
 	if offset >= len(proofbytes) {
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 	}
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.inputCoins = make([]*coin.InputCoin, lenInputCoinsArray)
+	proof.inputCoins = make([]*coin.PlainCoinV2, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
@@ -180,7 +180,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
-		proof.inputCoins[i] = new(coin.InputCoin)
+		proof.inputCoins[i] = new(coin.PlainCoinV2)
 		if offset+lenInputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
@@ -197,9 +197,9 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	}
 	lenOutputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.outputCoins = make([]*coin.OutputCoin, lenOutputCoinsArray)
+	proof.outputCoins = make([]*coin.CoinV2, lenOutputCoinsArray)
 	for i := 0; i < lenOutputCoinsArray; i++ {
-		proof.outputCoins[i] = new(coin.OutputCoin)
+		proof.outputCoins[i] = new(coin.CoinV2)
 		// try get 1-byte for len
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
@@ -255,10 +255,10 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 
 	// check output coins with privacy
 	for i := 0; i < len(proof.GetOutputCoins()); i++ {
-		if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
+		if !proof.GetOutputCoins()[i].GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
 		}
-		if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+		if !proof.GetOutputCoins()[i].GetCommitment().PointValid() {
 			return false, errors.New("validate sanity Coin commitment of output coin failed")
 		}
 	}
@@ -266,7 +266,7 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 }
 
 // Privacy TODO: update version 2 remember to fix this
-func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, paymentInfoPtr *[]*key.PaymentInfo) (*PaymentProofV2, error) {
+func Prove(inp *[]*coin.PlainCoinV2, out *[]*coin.CoinV2, hasPrivacy bool, paymentInfoPtr *[]*key.PaymentInfo) (*PaymentProofV2, error) {
 	paymentInfo := *paymentInfoPtr
 	inputCoins := *inp
 	outputCoins := *out
@@ -295,8 +295,8 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 	outputValues := make([]uint64, n)
 	outputRands := make([]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
-		outputValues[i] = outputCoins[i].CoinDetails.GetValue()
-		outputRands[i] = outputCoins[i].CoinDetails.GetRandomness()
+		outputValues[i] = outputCoins[i].GetValue()
+		outputRands[i] = outputCoins[i].GetMask()
 	}
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
@@ -322,12 +322,7 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 	}
 
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.GetInputCoins()[i].CoinDetails.SetSerialNumber(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetValue(0)
-		proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
-		proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
+		proof.GetInputCoins()[i].ConcealData()
 	}
 
 	return proof, nil
