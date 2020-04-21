@@ -86,6 +86,6 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetr
 	return [][]string{}, nil
 }
 
-func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, txr Transaction, bcr ChainRetriever, accumulatedValues *AccumulatedValues, retriever ShardViewRetriever, viewRetriever BeaconViewRetriever) (bool, error) {
+func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
 }
