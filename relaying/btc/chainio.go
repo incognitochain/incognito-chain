@@ -1194,7 +1194,7 @@ func (b *BlockChain) initChainState() error {
 			// Initialize the block node for the block, connect it,
 			// and add it to the block index.
 			node := &blockNodes[i]
-			initBlockNode(node, header, parent, 0)
+			initBlockNode(node, header, parent, b.genesisBlkHeight)
 			node.status = status
 			b.index.addNode(node)
 

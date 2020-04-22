@@ -1869,8 +1869,6 @@ func New(config *Config, genesisBlkHeight int32) (*BlockChain, error) {
 	targetTimespan := int64(params.TargetTimespan / time.Second)
 	targetTimePerBlock := int64(params.TargetTimePerBlock / time.Second)
 
-	fmt.Println("haha blocksPerRetarget: ", int32(targetTimespan / targetTimePerBlock))
-
 	adjustmentFactor := params.RetargetAdjustmentFactor
 	b := BlockChain{
 		genesisBlkHeight:    genesisBlkHeight,
