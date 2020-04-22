@@ -160,4 +160,5 @@ func (e *BLSBFT) InitRoundData() {
 	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
 	e.RoundData.TimeStart = time.Now()
 	e.UpdateCommitteeBLSList()
+	e.setState(newround)
 }
