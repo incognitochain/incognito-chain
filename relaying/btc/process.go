@@ -59,7 +59,6 @@ func (b *BlockChain) blockExists(hash *chainhash.Hash) (bool, error) {
 		// directly.
 		_, err = dbFetchHeightByHash(dbTx, hash)
 		if isNotInMainChainErr(err) {
-			fmt.Printf("haha The block %s is not on main chain", hash.String())
 			exists = false
 			return nil
 		}
