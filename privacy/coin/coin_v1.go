@@ -54,6 +54,7 @@ func (c PlainCoinV1) GetKeyImage() *operation.Point     { return c.serialNumber 
 func (c PlainCoinV1) GetRandomness() *operation.Scalar  { return c.randomness }
 func (c PlainCoinV1) GetValue() uint64                  { return c.value }
 func (c PlainCoinV1) GetInfo() []byte                   { return c.info }
+func (c PlainCoinV1) IsEncrypted() bool                 { return false }
 
 func (c *PlainCoinV1) SetPublicKey(v *operation.Point)    { c.publicKey = v }
 func (c *PlainCoinV1) SetCommitment(v *operation.Point)   { c.commitment = v }
@@ -357,6 +358,7 @@ func (c CoinV1) GetKeyImage() *operation.Point     { return c.CoinDetails.GetKey
 func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSNDerivator() }
 func (c CoinV1) GetShardID() uint8                 { return c.CoinDetails.GetShardID() }
 func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
+func (c CoinV1) IsEncrypted() bool                 { return true }
 
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {
@@ -411,8 +413,8 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse CoinDetailsEncrypted")
 		}
-		outputCoin.CoinDetailsEncrypted = new(henc.HybridCipherText)
-		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
+		c.CoinDetailsEncrypted = new(henc.HybridCipherText)
+		err := c.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
 		}
@@ -425,14 +427,14 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 		return errors.New("out of range Parse CoinDetails")
 	}
 	lenOutputCoin := int(bytes[offset])
-	outputCoin.CoinDetails = new(CoinV1)
+	c.CoinDetails = new(PlainCoinV1)
 	if lenOutputCoin != 0 {
 		offset += 1
 		if offset+lenOutputCoin > len(bytes) {
 			// out of range
 			return errors.New("out of range Parse output coin details")
 		}
-		err := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
+		err := c.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
 		if err != nil {
 			// 1-byte is wrong
 			// try get 2-byte for len
@@ -446,7 +448,7 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 				// out of range
 				return errors.New("out of range Parse output coin details")
 			}
-			err1 := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
+			err1 := c.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
 			return err1
 		}
 	} else {
@@ -462,7 +464,7 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse output coin details")
 		}
-		err1 := outputCoin.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
+		err1 := c.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
 		return err1
 	}
 

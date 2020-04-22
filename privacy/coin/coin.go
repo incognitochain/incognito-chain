@@ -14,6 +14,8 @@ type Coin interface {
 	GetKeyImage() *operation.Point
 	GetSNDerivator() *operation.Scalar
 
+	IsEncrypted() bool
+
 	Bytes() []byte
 	SetBytes([]byte) error
 }
@@ -35,8 +37,15 @@ type PlainCoin interface {
 	// ParseToCoin(interface{}) Coin
 	// ParseFromCoin(Coin) (PlainCoin, error)
 
+	IsEncrypted() bool
+
 	Bytes() []byte
 	SetBytes([]byte) error
+}
+
+func tes(c PlainCoin) error {
+	s := c.(*CoinV2)
+	return nil
 }
 
 // First byte should determine the version
@@ -73,7 +82,7 @@ func NewPlainCoinFromVersion(version uint8) PlainCoin {
 		pc.Init()
 		c = pc
 	} else if version == CoinVersion2 {
-		pc := new(PlainCoinV2)
+		pc := new(CoinV2)
 		pc.Init()
 		c = pc
 	}

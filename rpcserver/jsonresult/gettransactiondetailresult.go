@@ -9,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -76,8 +78,8 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Info:        string(tempTx.Info),
 			}
 			inputCoins := result.Proof.GetInputCoins()
-			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
+			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -112,8 +114,8 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				PrivacyCustomTokenFee:    tempTx.TxPrivacyTokenData.TxNormal.Fee,
 			}
 			inputCoins := result.Proof.GetInputCoins()
-			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
+			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -138,79 +140,128 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 }
 
 type ProofDetail struct {
-	InputCoins  []*CoinDetail
-	OutputCoins []*CoinDetail
+	InputCoins  []CoinRPC
+	OutputCoins []CoinRPC
 }
 
 func (proofDetail *ProofDetail) ConvertFromProof(proof privacy.Proof) {
-	proofDetail.InputCoins = make([]*CoinDetail, 0)
-	for _, input := range proof.GetInputCoins() {
-		in := CoinDetail{
-			CoinDetails: Coin{},
-		}
-		if input.CoinDetails != nil {
-			in.CoinDetails.Value = input.CoinDetails.GetValue()
-			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.GetInfo(), 0x0)
-			if input.CoinDetails.GetCoinCommitment() != nil {
-				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
-			}
-			if input.CoinDetails.GetRandomness() != nil {
-				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
-			}
-			if input.CoinDetails.GetSNDerivator() != nil {
-				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
-			}
-			if input.CoinDetails.GetSerialNumber() != nil {
-				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
-			}
-			if input.CoinDetails.GetPublicKey() != nil {
-				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
-			}
-		}
-		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
+	inputCoins := proof.GetInputCoins()
+	outputCoins := proof.GetOutputCoins()
+
+	proofDetail.InputCoins = make([]CoinRPC, len(inputCoins))
+	for i, input := range inputCoins {
+		proofDetail.InputCoins[i] = ParseCoinRPCInput(input)
 	}
 
-	for _, output := range proof.GetOutputCoins() {
-		out := CoinDetail{
-			CoinDetails: Coin{},
-		}
-		if output.CoinDetails != nil {
-			out.CoinDetails.Value = output.CoinDetails.GetValue()
-			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.GetInfo(), 0x0)
-			if output.CoinDetails.GetCoinCommitment() != nil {
-				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
-			}
-			if output.CoinDetails.GetRandomness() != nil {
-				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
-			}
-			if output.CoinDetails.GetSNDerivator() != nil {
-				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
-			}
-			if output.CoinDetails.GetSerialNumber() != nil {
-				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
-			}
-			if output.CoinDetails.GetPublicKey() != nil {
-				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
-			}
-			if output.CoinDetailsEncrypted != nil {
-				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)
-			}
-		}
-		proofDetail.OutputCoins = append(proofDetail.OutputCoins, &out)
+	proofDetail.OutputCoins = make([]CoinRPC, len(outputCoins))
+	for i, output := range outputCoins {
+		proofDetail.OutputCoins[i] = ParseCoinRPCOutput(output)
 	}
 }
 
-type CoinDetail struct {
-	CoinDetails          Coin
+func ParseCoinRPCInput(inputCoin coin.PlainCoin) CoinRPC {
+	var coinrpc CoinRPC
+	if inputCoin.GetVersion() == 1 {
+		coinrpc = new(CoinRPCV1)
+	} else {
+		coinrpc = new(CoinRPCV2)
+	}
+	return coinrpc.SetInputCoin(inputCoin)
+}
+
+func ParseCoinRPCOutput(outputCoin coin.Coin) CoinRPC {
+	var coinrpc CoinRPC
+	if outputCoin.GetVersion() == 1 {
+		coinrpc = new(CoinRPCV1)
+	} else {
+		coinrpc = new(CoinRPCV2)
+	}
+	return coinrpc.SetOutputCoin(outputCoin)
+}
+
+type CoinRPC interface {
+	SetInputCoin(coin.PlainCoin) CoinRPC
+	SetOutputCoin(coin.Coin) CoinRPC
+}
+
+func EncodeBase58Check(b []byte) string {
+	return base58.Base58Check{}.Encode(b, 0x0)
+}
+
+func (c *CoinRPCV1) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
+	coinv1 := inputCoin.(*coin.PlainCoinV1)
+
+	c.Version = coinv1.GetVersion()
+	c.ShardID = coinv1.GetShardID()
+	c.PublicKey = EncodeBase58Check(coinv1.GetPublicKey().ToBytesS())
+	c.Commitment = EncodeBase58Check(coinv1.GetCommitment().ToBytesS())
+	c.SNDerivator = *coinv1.GetSNDerivator()
+	c.KeyImage = EncodeBase58Check(coinv1.GetKeyImage().ToBytesS())
+	c.Randomness = *coinv1.GetRandomness()
+	c.Value = coinv1.GetValue()
+	c.Info = EncodeBase58Check(coinv1.GetInfo())
+	return c
+}
+
+func (c *CoinRPCV1) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
+	coinv1 := inputCoin.(*coin.CoinV1)
+
+	c.Version = coinv1.GetVersion()
+	c.ShardID = coinv1.GetShardID()
+	c.PublicKey = EncodeBase58Check(coinv1.GetPublicKey().ToBytesS())
+	c.Commitment = EncodeBase58Check(coinv1.GetCommitment().ToBytesS())
+	c.SNDerivator = *coinv1.GetSNDerivator()
+	c.KeyImage = EncodeBase58Check(coinv1.GetKeyImage().ToBytesS())
+	c.Randomness = *coinv1.CoinDetails.GetRandomness()
+	c.Value = coinv1.CoinDetails.GetValue()
+	c.Info = EncodeBase58Check(coinv1.GetInfo())
+	c.CoinDetailsEncrypted = EncodeBase58Check(coinv1.CoinDetailsEncrypted.Bytes())
+	return c
+}
+
+func (c *CoinRPCV2) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
+	return c.SetOutputCoin(inputCoin.(coin.Coin))
+}
+
+func (c *CoinRPCV2) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
+	coinv2 := inputCoin.(*coin.CoinV2)
+
+	c.Version = coinv2.GetVersion()
+	c.ShardID = coinv2.GetShardID()
+	c.Index = coinv2.GetIndex()
+	c.Info = EncodeBase58Check(coinv2.GetInfo())
+	c.PublicKey = EncodeBase58Check(coinv2.GetPublicKey().ToBytesS())
+	c.Commitment = EncodeBase58Check(coinv2.GetCommitment().ToBytesS())
+	c.KeyImage = EncodeBase58Check(coinv2.GetKeyImage().ToBytesS())
+	c.TxRandom = EncodeBase58Check(coinv2.GetTxRandom().ToBytesS())
+	c.Amount = *coinv2.GetAmount()
+	c.Mask = *coinv2.GetMask()
+	return c
+}
+
+type CoinRPCV1 struct {
+	Version              uint8
+	ShardID              uint8
+	PublicKey            string
+	Commitment           string
+	SNDerivator          privacy.Scalar
+	KeyImage             string
+	Randomness           privacy.Scalar
+	Value                uint64
+	Info                 string
 	CoinDetailsEncrypted string
 }
 
-type Coin struct {
-	PublicKey      string
-	CoinCommitment string
-	SNDerivator    privacy.Scalar
-	SerialNumber   string
-	Randomness     privacy.Scalar
-	Value          uint64
-	Info           string
+type CoinRPCV2 struct {
+	Version    uint8
+	ShardID    uint8
+	Index      uint8
+	Info       string
+	PublicKey  string
+	Commitment string
+	KeyImage   string
+	TxRandom   string
+
+	Amount privacy.Scalar
+	Mask   operation.Scalar
 }
