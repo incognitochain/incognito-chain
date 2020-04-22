@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"io/ioutil"
 	"log"
 	"net"
@@ -40,11 +41,11 @@ import (
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 
 	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -197,6 +198,7 @@ func (serverObj *Server) NewServer(
 	chainParams *blockchain.Params,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
+	bnbChainState *bnbrelaying.BNBChainState,
 	interrupt <-chan struct{},
 ) error {
 	// Init data for Server
@@ -326,10 +328,11 @@ func (serverObj *Server) NewServer(
 	)
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
-		BTCChain: btcChain,
-		ChainParams: serverObj.chainParams,
-		DataBase:    serverObj.dataBase,
-		MemCache:    serverObj.memCache,
+		BTCChain:      btcChain,
+		BNBChainState: bnbChainState,
+		ChainParams:   serverObj.chainParams,
+		DataBase:      serverObj.dataBase,
+		MemCache:      serverObj.memCache,
 		//MemCache:          nil,
 		BlockGen:          serverObj.blockgen,
 		Interrupt:         interrupt,

@@ -41,7 +41,7 @@ func TestB64EncodeMemo(t *testing.T) {
 
 func TestBuildAndPushBNBProof(t *testing.T) {
 	txIndex := 0
-	blockHeight := int64(77015994)
+	blockHeight := int64(78438580)
 	url := relaying.TestnetURLRemote
 
 	portingProof, err := BuildProof(txIndex, blockHeight, url)

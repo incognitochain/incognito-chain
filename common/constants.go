@@ -226,8 +226,6 @@ const (
 
 // Relaying header
 const (
-	RelayingHeaderConfirmedAcceptedChainStatus   = "confirmedAccepted"
-	RelayingHeaderUnconfirmedAcceptedChainStatus = "unconfirmedAccepted"
 	RelayingHeaderRejectedChainStatus            = "rejected"
 	RelayingHeaderConsideringChainStatus         = "considering"
 )
