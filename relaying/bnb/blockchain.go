@@ -70,6 +70,7 @@ func (b *BNBChainState) StoreBNBChainState() error {
 		err := blockStore.SaveBlock(block, block.MakePartSet(types.BlockPartSizeBytes), commit)
 		if err != nil {
 			Logger.log.Errorf("Error when store final blocks %v\n", err)
+			return NewBNBRelayingError(StoreBNBChainErr, err)
 		}
 	}
 	b.FinalBlocks = []*types.Block{}
