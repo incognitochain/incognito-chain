@@ -50,7 +50,7 @@ func (b *BlockChain) maybeAcceptBlockV2(block *btcutil.Block, flags BehaviorFlag
 	// if the block ultimately gets connected to the main chain, it starts out
 	// on a side chain.
 	blockHeader := &block.MsgBlock().Header
-	newNode := newBlockNode(blockHeader, prevNode, 0)
+	newNode := newBlockNode(blockHeader, prevNode, b.genesisBlkHeight)
 	newNode.status = statusDataStored
 
 	b.index.AddNode(newNode)
