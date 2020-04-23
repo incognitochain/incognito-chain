@@ -182,3 +182,11 @@ func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInter
 	}
 	return <-res
 }
+
+func (pool *BlkPool) GetBlockByPrevHash(prevHash common.Hash) []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		res <- GetBlksByPrevHash(prevHash.String(), pool.blkPoolByHash, pool.blkPoolByPrevHash)
+	}
+	return <-res
+}

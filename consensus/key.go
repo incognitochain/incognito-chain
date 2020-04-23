@@ -14,8 +14,6 @@ import (
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	fmt.Println("Start LoadMiningKey keysString", keysString)
-	defer fmt.Println("End LoadMiningKey")
 	if len(keysString) > 0 {
 		keys := strings.Split(keysString, "|")
 		if len(keys) > 0 {
@@ -44,7 +42,7 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 				if err != nil {
 					return errors.New("Key for this consensus can not load - " + keyConsensus)
 				}
-				engine.userMiningPublicKeys[availableConsensus] = f.GetUserPublicKey()
+				engine.SetMiningPublicKeys(availableConsensus, f.GetUserPublicKey())
 			}
 		}
 	}
@@ -52,9 +50,9 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 }
 
 func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
-	if engine != nil && engine.userMiningPublicKeys[engine.consensusName] != nil {
+	if engine != nil && engine.GetMiningPublicKeys() != nil {
 		name := engine.consensusName
-		pubkey := engine.userMiningPublicKeys[name].GetMiningKeyBase58(name)
+		pubkey := engine.GetMiningPublicKeys().GetMiningKeyBase58(name)
 		return pubkey, name
 	}
 	return "", ""
@@ -64,18 +62,17 @@ func (engine *Engine) GetMiningPublicKeyByConsensus(consensusName string) (publi
 	keyBytes := map[string][]byte{}
 	if engine != nil && engine.currentMiningProcess != nil {
 		keytype := engine.currentMiningProcess.GetConsensusName()
-		lightweightKey, exist := engine.userMiningPublicKeys[keytype].MiningPubKey[common.BridgeConsensus]
+		lightweightKey, exist := engine.GetMiningPublicKeys().MiningPubKey[common.BridgeConsensus]
 		if !exist {
 			return "", blsbft.NewConsensusError(blsbft.LoadKeyError, errors.New("Lightweight key not found"))
 		}
-		keyBytes[keytype], exist = engine.userMiningPublicKeys[keytype].MiningPubKey[keytype]
+		keyBytes[keytype], exist = engine.GetMiningPublicKeys().MiningPubKey[keytype]
 		if !exist {
 			return "", blsbft.NewConsensusError(blsbft.LoadKeyError, errors.New("Key not found"))
 		}
 		keyBytes[common.BridgeConsensus] = lightweightKey
 		// pubkey := engine.userMiningPublicKeys[keytype]
 		// return pubkey.GetMiningKeyBase58(keytype), keytype
-
 	}
 	res, err := json.Marshal(keyBytes)
 	if err != nil {
@@ -84,7 +81,24 @@ func (engine *Engine) GetMiningPublicKeyByConsensus(consensusName string) (publi
 	return string(res), nil
 }
 
+func (s *Engine) SetMiningPublicKeys(k string, v *incognitokey.CommitteePublicKey) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.userMiningPublicKeys[k] = v
+}
+
+func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.userMiningPublicKeys == nil || s.userMiningPublicKeys[s.consensusName] == nil {
+		return nil
+	}
+	return s.userMiningPublicKeys[s.consensusName]
+}
+
 func (engine *Engine) GetAllMiningPublicKeys() []string {
+	engine.lock.Lock()
+	defer engine.lock.Unlock()
 	var keys []string
 	for keyType, key := range engine.userMiningPublicKeys {
 		keys = append(keys, fmt.Sprintf("%v:%v", keyType, key.GetMiningKeyBase58(keyType)))

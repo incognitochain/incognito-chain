@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -28,6 +29,8 @@ type Engine struct {
 	}
 
 	version int
+
+	lock *sync.Mutex
 }
 
 func (engine *Engine) GetUserLayer() (string, int) {
@@ -50,13 +53,6 @@ func (engine *Engine) CommitteeChange(chainName string) {
 	return
 }
 
-func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
-	if s.userMiningPublicKeys == nil || s.userMiningPublicKeys[s.consensusName] == nil {
-		return nil
-	}
-	return s.userMiningPublicKeys[s.consensusName]
-}
-
 func (s *Engine) WatchCommitteeChange() {
 
 	defer func() {
@@ -71,6 +67,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 	//extract role, layer, chainID
 	role, chainID := s.config.Node.GetUserMiningState()
+	Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
 	s.curringMiningState.chainID = chainID
 	s.curringMiningState.role = role
 
@@ -90,8 +87,9 @@ func (s *Engine) WatchCommitteeChange() {
 	} else {
 		panic("User Mining State Error")
 	}
+
 	for _, BFTProcess := range s.BFTProcess {
-		if role == "" || chainID != BFTProcess.GetChainID() {
+		if role != "committee" || chainID != BFTProcess.GetChainID() {
 			BFTProcess.Stop()
 		}
 	}
@@ -142,6 +140,7 @@ func NewConsensusEngine() *Engine {
 		consensusName:        common.BlsConsensus,
 		userMiningPublicKeys: make(map[string]*incognitokey.CommitteePublicKey),
 		version:              1,
+		lock:                 new(sync.Mutex),
 	}
 	return engine
 }
@@ -152,8 +151,7 @@ func (engine *Engine) Init(config *EngineConfig) {
 }
 
 func (engine *Engine) Start() error {
-
-	fmt.Println("CONSENSUS: Start")
+	defer fmt.Println("CONSENSUS: Start", engine.userKeyListString)
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {

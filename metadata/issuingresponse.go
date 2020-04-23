@@ -62,7 +62,7 @@ func (iRes *IssuingResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, bcr ChainRetriever, ac *AccumulatedValues, retriever ShardViewRetriever, viewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not IssuingETHRequest instruction

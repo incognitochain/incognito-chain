@@ -81,6 +81,8 @@ CONTINUE_VERIFY:
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, shouldValidate bool) error {
+	blockHash := beaconBlock.Hash()
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 
@@ -103,8 +105,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	if beaconBlock.Header.Height != curView.BeaconHeight+1 {
 		return errors.New("Not expected height")
 	}
-	blockHash := beaconBlock.Hash()
-	Logger.log.Infof("BEACON | Begin insert new Beacon Block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+
 	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
