@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -28,6 +29,8 @@ type Engine struct {
 	}
 
 	version int
+
+	lock *sync.Mutex
 }
 
 func (engine *Engine) GetUserLayer() (string, int) {
@@ -48,13 +51,6 @@ func (engine *Engine) IsOngoing(chainName string) bool {
 //TODO: remove all places use this function
 func (engine *Engine) CommitteeChange(chainName string) {
 	return
-}
-
-func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
-	if s.userMiningPublicKeys == nil || s.userMiningPublicKeys[s.consensusName] == nil {
-		return nil
-	}
-	return s.userMiningPublicKeys[s.consensusName]
 }
 
 func (s *Engine) WatchCommitteeChange() {
@@ -144,6 +140,7 @@ func NewConsensusEngine() *Engine {
 		consensusName:        common.BlsConsensus,
 		userMiningPublicKeys: make(map[string]*incognitokey.CommitteePublicKey),
 		version:              1,
+		lock:                 new(sync.Mutex),
 	}
 	return engine
 }
