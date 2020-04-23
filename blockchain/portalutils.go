@@ -807,15 +807,13 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2PTokenByTokenId(pTokenId string
 func (c *ConvertExchangeRatesObject) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error) {
 	//convert to pusdt
 	total := new(big.Int).Mul(big.NewInt(int64(value)), big.NewInt(int64(ratesFrom)))
-	pUstd := new(big.Int).Div(total, big.NewInt(int64(math.Pow10(9)))) //value of nanno
 
 	if RatesTo <= 0 {
 		return 0, errors.New("Can not divide zero")
 	}
 
 	//pusdt -> new coin
-	result := new(big.Int).Mul(pUstd, big.NewInt(int64(math.Pow10(9)))) // (total * uint64(math.Pow10(9))) / RatesTo
-	roundNumber := new(big.Int).Div(result, big.NewInt(int64(RatesTo))) //round up
+	roundNumber := new(big.Int).Div(total, big.NewInt(int64(RatesTo)))
 	return roundNumber.Uint64(), nil
 
 }
