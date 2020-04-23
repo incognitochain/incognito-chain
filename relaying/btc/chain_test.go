@@ -297,8 +297,8 @@ func TestReorganizeChainV2(t *testing.T) {
 
 	fmt.Println(genBlk)
 
-	chain, err := GetChain("haveblock",
-		&chaincfg.MainNetParams)
+	chain, err := GetChainV2("haveblock",
+		&chaincfg.MainNetParams, 0)
 	if err != nil {
 		t.Errorf("Failed to setup chain instance: %v", err)
 		return
@@ -611,8 +611,8 @@ func TestGetChainInfo(t *testing.T) {
 	}
 	fmt.Println(genBlk)
 
-	chain, err := GetChain("haveblock",
-		&chaincfg.MainNetParams)
+	chain, err := GetChainV2("haveblock",
+		&chaincfg.MainNetParams, 0)
 	if err != nil {
 		t.Errorf("Failed to get chain instance: %v", err)
 		return

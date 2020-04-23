@@ -150,7 +150,6 @@ func chainSetup(dbName string, params *chaincfg.Params) (*BlockChain, func(), er
 		// _ = os.RemoveAll(dbPath)
 		ndb, err := database.Create(testDbType, dbPath, blockDataNet)
 		if err != nil {
-			fmt.Println("--------- come here -----------")
 			return nil, nil, fmt.Errorf("error creating db: %v", err)
 		}
 		db = ndb
@@ -175,7 +174,7 @@ func chainSetup(dbName string, params *chaincfg.Params) (*BlockChain, func(), er
 		Checkpoints: nil,
 		TimeSource:  NewMedianTime(),
 		SigCache:    txscript.NewSigCache(1000),
-	})
+	}, 0)
 	if err != nil {
 		teardown()
 		err := fmt.Errorf("failed to create chain instance: %v", err)
@@ -185,7 +184,7 @@ func chainSetup(dbName string, params *chaincfg.Params) (*BlockChain, func(), er
 }
 
 // GetChainV2 returns btcrelaying chain
-func GetChainV2(dbPath string, params *chaincfg.Params) (*BlockChain, error) {
+func GetChainV2(dbPath string, params *chaincfg.Params, genesisBlkHeight int32) (*BlockChain, error) {
 	if !isSupportedDbType(testDbType) {
 		return nil, fmt.Errorf("unsupported db type %v", testDbType)
 	}
@@ -220,66 +219,7 @@ func GetChainV2(dbPath string, params *chaincfg.Params) (*BlockChain, error) {
 		Checkpoints: nil,
 		TimeSource:  NewMedianTime(),
 		SigCache:    txscript.NewSigCache(1000),
-	})
-	if err != nil {
-		err := fmt.Errorf("failed to create chain instance: %v", err)
-		return nil, err
-	}
-	return chain, nil
-}
-
-func GetChain(dbName string, params *chaincfg.Params) (*BlockChain, error) {
-	if !isSupportedDbType(testDbType) {
-		return nil, fmt.Errorf("unsupported db type %v", testDbType)
-	}
-
-	// Handle memory database specially since it doesn't need the disk
-	// specific handling.
-	var db database.DB
-	if testDbType == "memdb" {
-		ndb, err := database.Create(testDbType)
-		if err != nil {
-			return nil, fmt.Errorf("error creating db: %v", err)
-		}
-		db = ndb
-	} else {
-		dbPath := filepath.Join(testDbRoot, dbName)
-		ndb, err := database.Open(testDbType, dbPath, blockDataNet)
-		if err != nil {
-			// Return the error if it's not because the database doesn't
-			// exist.
-			if dbErr, ok := err.(database.Error); !ok || dbErr.ErrorCode !=
-				database.ErrDbDoesNotExist {
-				return nil, err
-			}
-
-			// Create the db if it does not exist.
-			err = os.MkdirAll(testDbRoot, 0700)
-			if err != nil {
-				err := fmt.Errorf("unable to create test db "+
-					"root: %v", err)
-				return nil, err
-			}
-			ndb, err = database.Create(testDbType, dbPath, blockDataNet)
-			if err != nil {
-				return nil, fmt.Errorf("error creating db: %v", err)
-			}
-		}
-		db = ndb
-	}
-
-	// Copy the chain params to ensure any modifications the tests do to
-	// the chain parameters do not affect the global instance.
-	paramsCopy := *params
-
-	// Create the main chain instance.
-	chain, err := New(&Config{
-		DB:          db,
-		ChainParams: &paramsCopy,
-		Checkpoints: nil,
-		TimeSource:  NewMedianTime(),
-		SigCache:    txscript.NewSigCache(1000),
-	})
+	}, genesisBlkHeight)
 	if err != nil {
 		err := fmt.Errorf("failed to create chain instance: %v", err)
 		return nil, err
@@ -450,7 +390,7 @@ func (b *BlockChain) TstSetCoinbaseMaturity(maturity uint16) {
 func newFakeChain(params *chaincfg.Params) *BlockChain {
 	// Create a genesis block node and block index index populated with it
 	// for use when creating the fake chain below.
-	node := newBlockNode(&params.GenesisBlock.Header, nil)
+	node := newBlockNode(&params.GenesisBlock.Header, nil, 0)
 	index := newBlockIndex(nil, params)
 	index.AddNode(node)
 
@@ -480,5 +420,5 @@ func newFakeNode(parent *blockNode, blockVersion int32, bits uint32, timestamp t
 		Bits:      bits,
 		Timestamp: timestamp,
 	}
-	return newBlockNode(header, parent)
+	return newBlockNode(header, parent, 0)
 }

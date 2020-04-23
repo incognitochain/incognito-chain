@@ -64,6 +64,7 @@ require (
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/syndtr/goleveldb v1.0.0
+	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
 	go.opencensus.io v0.22.0 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4

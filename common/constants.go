@@ -129,7 +129,7 @@ const (
 	PortalReqPTokenRejectedStatus = 2
 
 	PortalPortingTxRequestAcceptedStatus = 1
-	PortalPortingTxRequestRejectedStatus = 2
+	PortalPortingTxRequestRejectedStatus = 3
 
 	PortalPortingReqSuccessStatus    = 1
 	PortalPortingReqWaitingStatus    = 2
@@ -226,15 +226,13 @@ const (
 
 // Relaying header
 const (
-	RelayingHeaderConfirmedAcceptedChainStatus   = "confirmedAccepted"
-	RelayingHeaderUnconfirmedAcceptedChainStatus = "unconfirmedAccepted"
 	RelayingHeaderRejectedChainStatus            = "rejected"
 	RelayingHeaderConsideringChainStatus         = "considering"
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 24 * time.Hour // 24 hours
-	PortalTimeOutWaitingPortingRequest     = 24 * time.Hour // 24 hours
+	PortalTimeOutCustodianSendPubTokenBack = 2 * time.Hour // 24 hours
+	PortalTimeOutWaitingPortingRequest     = 2 * time.Hour // 24 hours
 	PercentReceivedCollateralAmount        = 120            // users will be received 120% of redeem amount in PRV (if there is custodian liquidation for redeem request)
 	MinPercentUnlockedCollateralAmount     = 120            // minimum percent collateral amount will be unlocked after custodian return pubTokens for users
 	// todo: need to be updated before deploying

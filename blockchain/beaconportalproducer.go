@@ -528,7 +528,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-	db := blockchain.GetDatabase()
 
 	//check unique id from record from db
 	portingRequest, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(meta.UniquePortingID))
@@ -796,7 +795,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		}
 
 		// check minimum confirmations block of bnb proof
-		latestBNBBlockHeight, err2 := getLatestRelayingBNBBlockHeight(db, beaconHeight)
+		latestBNBBlockHeight, err2 := blockchain.GetLatestBNBBlockHeight()
 		if err2 != nil {
 			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
 			inst := buildReqPTokensInst(
@@ -829,8 +828,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			)
 			return [][]string{inst}, nil
 		}
-
-		isValid, err := txProofBNB.Verify(db)
+		bnbChainState := blockchain.GetBNBChainState()
+		isValid, err := txProofBNB.Verify(bnbChainState)
 		if !isValid || err != nil {
 			Logger.log.Errorf("Verify txProofBNB failed %v", err)
 			inst := buildReqPTokensInst(
@@ -1568,7 +1567,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		)
 		return [][]string{inst}, nil
 	}
-	db := blockchain.GetDatabase()
 
 	// check status of request unlock collateral by redeemID
 	redeemReqStatusBytes, err := statedb.GetPortalRedeemRequestStatus(stateDB, redeemID)
@@ -1895,7 +1893,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// check minimum confirmations block of bnb proof
-		latestBNBBlockHeight, err2 := getLatestRelayingBNBBlockHeight(db, beaconHeight)
+		latestBNBBlockHeight, err2 :=  blockchain.GetLatestBNBBlockHeight()
 		if err2 != nil {
 			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
 			inst := buildReqUnlockCollateralInst(
@@ -1931,7 +1929,8 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		isValid, err := txProofBNB.Verify(db)
+		bnbChainState := blockchain.GetBNBChainState()
+		isValid, err := txProofBNB.Verify(bnbChainState)
 		if !isValid || err != nil {
 			Logger.log.Errorf("Verify txProofBNB failed %v", err)
 			inst := buildReqUnlockCollateralInst(

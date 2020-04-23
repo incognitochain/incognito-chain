@@ -4,11 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/binance-chain/go-sdk/client/rpc"
 	bnbtx "github.com/binance-chain/go-sdk/types/tx"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 )
@@ -49,7 +46,6 @@ func GetBlock(blockHeight int64, url string) (*types.Block, *BNBRelayingError) {
 	}
 	defer client.Stop()
 	block, err := client.Block(&blockHeight)
-	fmt.Printf("block: %+v\n", block)
 
 	return block.Block, nil
 }
@@ -75,8 +71,8 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) *BNBRelayin
 	return nil
 }
 
-func (p *BNBProof) Verify(db incdb.Database) (bool, *BNBRelayingError) {
-	dataHash, err := rawdbv2.GetBNBDataHashByBlockHeight(db, uint64(p.BlockHeight))
+func (p *BNBProof) Verify(b *BNBChainState) (bool, *BNBRelayingError) {
+	dataHash, err := b.GetDataHashBNBBlockByHeight(p.BlockHeight)
 	if err != nil {
 		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
 	}

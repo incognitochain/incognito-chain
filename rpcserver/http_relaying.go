@@ -5,9 +5,8 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -128,38 +127,22 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithRelayingBTCHeader(params 
 }
 
 func (httpServer *HttpServer) handleGetRelayingBNBHeaderState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
-	}
-	data, ok := arrayParams[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
-	}
-	beaconHeight, ok := data["BeaconHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
-	}
 	bc := httpServer.config.BlockChain
-	relayingState, err := bc.InitRelayingHeaderChainStateFromDB(bc.GetDatabase(), uint64(beaconHeight))
+	relayingState, err := bc.InitRelayingHeaderChainStateFromDB()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
 	bnbRelayingHeader := relayingState.BNBHeaderChain
-	beaconBlocks, err := bc.GetBeaconBlockByHeight(uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
-	}
+
 	type RelayingBNBHeader struct {
-		LatestBlock       *types.Block   `json:"LatestBlock"`
-		UnconfirmedBlocks []*types.Block `json:"UnconfirmedBlocks"`
-		BeaconTimeStamp   int64          `json:"BeaconTimeStamp"`
+		LatestBlock     *types.Block             `json:"LatestBlock"`
+		CandidateBlocks []*types.Block           `json:"CandidateBlocks"`
+		OrphanBlocks    map[int64][]*types.Block `json:"OrphanBlocks"`
 	}
-	beaconBlock := beaconBlocks[0]
 	result := RelayingBNBHeader{
-		BeaconTimeStamp:   beaconBlock.Header.Timestamp,
-		LatestBlock:       bnbRelayingHeader.LatestBlock,
-		UnconfirmedBlocks: bnbRelayingHeader.UnconfirmedBlocks,
+		LatestBlock:     bnbRelayingHeader.LatestBlock,
+		CandidateBlocks: bnbRelayingHeader.CandidateNextBlocks,
+		OrphanBlocks:    bnbRelayingHeader.OrphanBlocks,
 	}
 	return result, nil
 }
@@ -177,21 +160,12 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
-	bnbHeaderBytes, err := rawdbv2.GetRelayingBNBHeaderChain(httpServer.GetBlockchain().GetDatabase(), uint64(blockHeight))
+
+	block, err := httpServer.config.BlockChain.GetBNBBlockByHeight(int64(blockHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
 	}
-
-	if len(bnbHeaderBytes) > 0 {
-		var bnbHeader types.Block
-		err = json.Unmarshal(bnbHeaderBytes, &bnbHeader)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
-		}
-
-		return bnbHeader, nil
-	}
-	return nil, nil
+	return block, nil
 }
 
 func (httpServer *HttpServer) handleGetBTCRelayingBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -205,34 +179,10 @@ func (httpServer *HttpServer) handleGetBTCRelayingBestState(params interface{}, 
 }
 
 func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	genesisBNBHeaderBlockHeight, _ := relaying.GetGenesisBNBHeaderBlockHeight(httpServer.config.ChainParams.BNBRelayingHeaderChainID)
-	latestBNBHeaderBlockHeight := genesisBNBHeaderBlockHeight
-
 	bc := httpServer.config.BlockChain
-	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	relayingState, err := bc.InitRelayingHeaderChainStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(latestBeaconHeight))
+	result, err := bc.GetLatestBNBBlockHeight()
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetLatestBNBHeaderBlockHeightError, err)
+		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.BNBRelayingHeaderChainID)
 	}
-	bnbLatestHeader := relayingState.BNBHeaderChain.LatestBlock
-	if bnbLatestHeader != nil {
-		latestBNBHeaderBlockHeight = bnbLatestHeader.Height
-	}
-
-	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(latestBeaconHeight)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetLatestBNBHeaderBlockHeightError, err)
-	}
-	beaconBlock := beaconBlocks[0]
-
-	type LatestBNBHeaderBlockHeight struct {
-		LatestBNBHeaderBlockHeight int64 `json:"LatestBNBHeaderBlockHeight"`
-		BeaconTimeStamp            int64 `json:"BeaconTimeStamp"`
-	}
-	result := LatestBNBHeaderBlockHeight{
-		LatestBNBHeaderBlockHeight: latestBNBHeaderBlockHeight,
-		BeaconTimeStamp:            beaconBlock.Header.Timestamp,
-	}
-
 	return result, nil
 }

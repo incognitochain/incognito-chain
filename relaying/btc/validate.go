@@ -654,7 +654,7 @@ func (b *BlockChain) checkBlockHeaderContext(header *wire.BlockHeader, prevNode 
 		// the calculated difficulty based on the previous block and
 		// difficulty retarget rules.
 		expectedDifficulty, err := b.calcNextRequiredDifficulty(prevNode,
-			header.Timestamp)
+			header)
 		if err != nil {
 			return err
 		}
@@ -736,6 +736,7 @@ func (b *BlockChain) checkBlockContext(block *btcutil.Block, prevNode *blockNode
 	if err != nil {
 		return err
 	}
+	return nil
 
 	fastAdd := flags&BFFastAdd == BFFastAdd
 	if !fastAdd {
