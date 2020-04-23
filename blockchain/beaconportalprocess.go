@@ -454,6 +454,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			IncogAddressStr: actionData.IncogAddressStr,
 			PortingAmount:   actionData.PortingAmount,
 			PortingProof:    actionData.PortingProof,
+			TxReqID:         actionData.TxReqID,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
 		err = statedb.StoreRequestPTokenStatus(
@@ -494,6 +495,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			IncogAddressStr: actionData.IncogAddressStr,
 			PortingAmount:   actionData.PortingAmount,
 			PortingProof:    actionData.PortingProof,
+			TxReqID:         actionData.TxReqID,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
 		err = statedb.StoreRequestPTokenStatus(
@@ -789,6 +791,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
 			Status:         common.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
+			TxReqID:        actionData.TxReqID,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -823,6 +826,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
 			Status:         common.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
+			TxReqID:        actionData.TxReqID,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -997,6 +1001,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 			RedeemAmount:        actionData.RedeemAmount,
 			UnlockAmount:        actionData.UnlockAmount,
 			RedeemProof:         actionData.RedeemProof,
+			TxReqID:             actionData.TxReqID,
 		}
 		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
 		err = statedb.StorePortalRequestUnlockCollateralStatus(
@@ -1019,6 +1024,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 			RedeemAmount:        actionData.RedeemAmount,
 			UnlockAmount:        actionData.UnlockAmount,
 			RedeemProof:         actionData.RedeemProof,
+			TxReqID:             actionData.TxReqID,
 		}
 		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
 		err = statedb.StorePortalRequestUnlockCollateralStatus(
