@@ -2,10 +2,11 @@ package netsync
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/syncker"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -41,8 +42,6 @@ type NetSyncConfig struct {
 	BlockChain            *blockchain.BlockChain
 	ChainParam            *blockchain.Params
 	TxMemPool             *mempool.TxPool
-	ShardToBeaconPool     blockchain.ShardToBeaconPool
-	CrossShardPool        map[byte]blockchain.CrossShardPool
 	PubSubManager         *pubsub.PubSubManager
 	TransactionEvent      pubsub.EventChannel // transaction event
 	RoleInCommitteesEvent pubsub.EventChannel // role in committees event

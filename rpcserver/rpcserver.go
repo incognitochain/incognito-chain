@@ -93,8 +93,6 @@ type RpcServerConfig struct {
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 	}
 	TxMemPool                   *mempool.TxPool
-	ShardToBeaconPool           *mempool.ShardToBeaconPool
-	CrossShardPool              *mempool.CrossShardPool
 	RPCMaxClients               int
 	RPCMaxWSClients             int
 	RPCLimitRequestPerDay       int

@@ -193,30 +193,31 @@ func (netSync *NetSync) GetBlockShardByHeight(fromPool bool, blkType byte, speci
 		if fromPool {
 			switch blkType {
 			case crossShard:
-				blkToSend := netSync.config.CrossShardPool[shardID].GetBlockByHeight(crossShardID, blkHeight)
-				if blkToSend == nil {
-					Logger.log.Error(err)
-					continue
-				}
+				// blkToSend := netSync.config.CrossShardPool[shardID].GetBlockByHeight(crossShardID, blkHeight)
+				// if blkToSend == nil {
+				// 	Logger.log.Error(err)
+				// 	continue
+				// }
 				blkMsg, err = wire.MakeEmptyMessage(wire.CmdCrossShard)
 				if err != nil {
 					Logger.log.Error(err)
 					continue
 				}
-				blkMsg.(*wire.MessageCrossShard).Block = blkToSend
+				// blkMsg.(*wire.MessageCrossShard).Block = blkToSend
 			case shardToBeacon:
-				blkToSend := netSync.config.ShardToBeaconPool.GetBlockByHeight(shardID, blkHeight)
-				if blkToSend == nil {
-					Logger.log.Error(err)
-					continue
-				}
+				// blkToSend := netSync.config.ShardToBeaconPool.GetBlockByHeight(shardID, blkHeight)
+				// if blkToSend == nil {
+				// 	Logger.log.Error(err)
+				// 	continue
+				// }
 				blkMsg, err = wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 				if err != nil {
 					Logger.log.Error(err)
 					continue
 				}
-				blkMsg.(*wire.MessageShardToBeacon).Block = blkToSend
+				// blkMsg.(*wire.MessageShardToBeacon).Block = blkToSend
 			}
+			blkMsgs = append(blkMsgs, blkMsg)
 		} else {
 			blks, err := netSync.config.BlockChain.GetShardBlockByHeight(blkHeight, shardID)
 			if err != nil {

@@ -151,6 +151,14 @@ func (pool *BlkPool) GetPoolInfo() []common.BlockPoolInterface {
 	return <-res
 }
 
+func (pool *BlkPool) GetLatestHeight(currentHash string) uint64 {
+	longest := pool.GetLongestChain(currentHash)
+	if len(longest) > 0 {
+		return longest[len(longest)-1].GetHeight()
+	}
+	return 0
+}
+
 // END OF COMMON FUNCTION =======================================================================
 
 // START OF SPECIAL CASE FUNCTION =======================================================================
