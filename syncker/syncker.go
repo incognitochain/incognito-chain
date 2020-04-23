@@ -529,3 +529,30 @@ func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []comm
 	}
 	return []common.BlockPoolInterface{}
 }
+
+func (synckerManager *SynckerManager) GetPoolLatestHeight(poolType byte, bestHash string, sID int) uint64 {
+	switch poolType {
+	case BeaconPoolType:
+		if synckerManager.BeaconSyncProcess != nil {
+			if synckerManager.BeaconSyncProcess.beaconPool != nil {
+				return synckerManager.BeaconSyncProcess.beaconPool.GetLatestHeight(bestHash)
+			}
+		}
+	case ShardPoolType:
+		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
+			if syncProcess.shardPool != nil {
+				return syncProcess.shardPool.GetLatestHeight(bestHash)
+			}
+		}
+	case S2BPoolType:
+		if synckerManager.S2BSyncProcess != nil {
+			if synckerManager.S2BSyncProcess.s2bPool != nil {
+				return synckerManager.S2BSyncProcess.s2bPool.GetLatestHeight(bestHash)
+			}
+		}
+	case CrossShardPoolType:
+		//TODO
+		return 0
+	}
+	return 0
+}

@@ -59,24 +59,20 @@ type Server struct {
 	started     int32
 	startupTime int64
 
-	protocolVersion   string
-	isEnableMining    bool
-	chainParams       *blockchain.Params
-	connManager       *connmanager.ConnManager
-	blockChain        *blockchain.BlockChain
-	dataBase          incdb.Database
-	syncker           *syncker.SynckerManager
-	memCache          *memcache.MemoryCache
-	rpcServer         *rpcserver.RpcServer
-	memPool           *mempool.TxPool
-	tempMemPool       *mempool.TxPool
-	beaconPool        *mempool.BeaconPool
-	shardPool         map[byte]blockchain.ShardPool
-	shardToBeaconPool *mempool.ShardToBeaconPool
-	crossShardPool    map[byte]blockchain.CrossShardPool
-	waitGroup         sync.WaitGroup
-	netSync           *netsync.NetSync
-	addrManager       *addrmanager.AddrManager
+	protocolVersion string
+	isEnableMining  bool
+	chainParams     *blockchain.Params
+	connManager     *connmanager.ConnManager
+	blockChain      *blockchain.BlockChain
+	dataBase        incdb.Database
+	syncker         *syncker.SynckerManager
+	memCache        *memcache.MemoryCache
+	rpcServer       *rpcserver.RpcServer
+	memPool         *mempool.TxPool
+	tempMemPool     *mempool.TxPool
+	waitGroup       sync.WaitGroup
+	netSync         *netsync.NetSync
+	addrManager     *addrmanager.AddrManager
 	// userKeySet        *incognitokey.KeySet
 	miningKeys      string
 	privateKey      string
@@ -225,10 +221,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	}
 	//pusub???
 	serverObj.pusubManager = pubsubManager
-	serverObj.beaconPool = mempool.GetBeaconPool()
-	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
-	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
-	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
 	serverObj.isEnableMining = cfg.EnableMining
 	// create mempool tx
@@ -340,15 +332,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	if err != nil {
 		return err
 	}
-	//init beacon pol
-	mempool.InitBeaconPool(serverObj.pusubManager, serverObj.blockChain)
-	//init shard pool
-	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
-	//init cross shard pool
-	mempool.InitCrossShardPool(serverObj.crossShardPool, db, serverObj.blockChain)
+	// //init beacon pol
+	// mempool.InitBeaconPool(serverObj.pusubManager, serverObj.blockChain)
+	// //init shard pool
+	// mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
+	// //init cross shard pool
+	// mempool.InitCrossShardPool(serverObj.crossShardPool, db, serverObj.blockChain)
 
-	//init shard to beacon bool
-	mempool.InitShardToBeaconPool()
+	// //init shard to beacon bool
+	// mempool.InitShardToBeaconPool()
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
@@ -435,17 +427,17 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}
 	serverObj.netSync.Init(&netsync.NetSyncConfig{
-		Syncker:           serverObj.syncker,
-		BlockChain:        serverObj.blockChain,
-		ChainParam:        chainParams,
-		TxMemPool:         serverObj.memPool,
-		Server:            serverObj,
-		Consensus:         serverObj.consensusEngine, // for onBFTMsg
-		ShardToBeaconPool: serverObj.shardToBeaconPool,
-		CrossShardPool:    serverObj.crossShardPool,
-		PubSubManager:     serverObj.pusubManager,
-		RelayShard:        relayShards,
-		RoleInCommittees:  -1,
+		Syncker:    serverObj.syncker,
+		BlockChain: serverObj.blockChain,
+		ChainParam: chainParams,
+		TxMemPool:  serverObj.memPool,
+		Server:     serverObj,
+		Consensus:  serverObj.consensusEngine, // for onBFTMsg
+		// ShardToBeaconPool: serverObj.shardToBeaconPool,
+		// CrossShardPool:    serverObj.crossShardPool,
+		PubSubManager:    serverObj.pusubManager,
+		RelayShard:       relayShards,
+		RoleInCommittees: -1,
 	})
 	// Create a connection manager.
 	var listenPeer *peer.Peer
@@ -721,10 +713,10 @@ func (serverObj Server) Start() {
 	if cfg.NodeMode != common.NodeModeRelay {
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
-		for _, shardPool := range serverObj.shardPool {
-			go shardPool.Start(serverObj.cQuit)
-		}
-		go serverObj.beaconPool.Start(serverObj.cQuit)
+		// for _, shardPool := range serverObj.shardPool {
+		// 	go shardPool.Start(serverObj.cQuit)
+		// }
+		// go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
 	//go serverObj.blockChain.Synker.Start()
@@ -1719,28 +1711,38 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	if err != nil {
 		return err
 	}
+	bBestState := serverObj.blockChain.GetBeaconBestState()
 	msg.(*wire.MessagePeerState).Beacon = wire.ChainState{
-		serverObj.blockChain.GetBeaconBestState().BestBlock.Header.Timestamp,
-		serverObj.blockChain.GetBeaconBestState().BeaconHeight,
-		serverObj.blockChain.GetBeaconBestState().BestBlockHash,
-		serverObj.blockChain.GetBeaconBestState().Hash(),
+		bBestState.BestBlock.Header.Timestamp,
+		bBestState.BeaconHeight,
+		bBestState.BestBlockHash,
+		bBestState.Hash(),
 	}
 
 	if userLayer != common.BeaconRole {
+		sBestState := serverObj.blockChain.GetBestStateShard(byte(shardID))
 		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = wire.ChainState{
-			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp,
-			serverObj.blockChain.GetBestStateShard(byte(shardID)).ShardHeight,
-			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlockHash,
-			serverObj.blockChain.GetBestStateShard(byte(shardID)).Hash(),
+			sBestState.BestBlock.Header.Timestamp,
+			sBestState.ShardHeight,
+			sBestState.BestBlockHash,
+			sBestState.Hash(),
 		}
 	} else {
-		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
+		s2bMap := make(map[byte][]uint64)
+		for sID := 0; sID < serverObj.chainParams.ActiveShards; sID++ {
+			s2bMap[byte(sID)] = []uint64{serverObj.syncker.GetPoolLatestHeight(
+				syncker.S2BPoolType,
+				bBestState.BestShardHash[byte(sID)].String(),
+				sID,
+			)}
+		}
+		msg.(*wire.MessagePeerState).ShardToBeaconPool = s2bMap
 		Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
-	if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
-		msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
-	}
+	// if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
+	// 	msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
+	// }
 
 	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()
 	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()

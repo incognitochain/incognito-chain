@@ -36,14 +36,14 @@ var HttpHandler = map[string]httpHandler{
 	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
-	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
-	getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
-	getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
-	getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
-	// ver.1
-	//getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
-	//getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
-	getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
+	// getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
+	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
+	// getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
+	// getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
+	// // ver.1
+	// //getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
+	// //getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
+	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
 	// block
 	getBestBlock:                (*HttpServer).handleGetBestBlock,
@@ -87,17 +87,17 @@ var HttpHandler = map[string]httpHandler{
 	//=================================
 
 	// Beststate
-	getCandidateList:              (*HttpServer).handleGetCandidateList,
-	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
-	getShardBestState:             (*HttpServer).handleGetShardBestState,
-	getShardBestStateDetail:       (*HttpServer).handleGetShardBestStateDetail,
-	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
-	getBeaconBestStateDetail:      (*HttpServer).handleGetBeaconBestStateDetail,
-	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
-	getShardPoolState:             (*HttpServer).handleGetShardPoolState,
-	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
-	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
-	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
+	getCandidateList:         (*HttpServer).handleGetCandidateList,
+	getCommitteeList:         (*HttpServer).handleGetCommitteeList,
+	getShardBestState:        (*HttpServer).handleGetShardBestState,
+	getShardBestStateDetail:  (*HttpServer).handleGetShardBestStateDetail,
+	getBeaconBestState:       (*HttpServer).handleGetBeaconBestState,
+	getBeaconBestStateDetail: (*HttpServer).handleGetBeaconBestStateDetail,
+	// getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
+	// getShardPoolState:             (*HttpServer).handleGetShardPoolState,
+	// getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
+	canPubkeyStake:      (*HttpServer).handleCanPubkeyStake,
+	getTotalTransaction: (*HttpServer).handleGetTotalTransaction,
 
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,

@@ -41,7 +41,6 @@ type HttpServer struct {
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
 	networkService    *rpcservice.NetworkService
-	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
 	synkerService     *rpcservice.SynkerService
@@ -87,7 +86,6 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		Wallet:     httpServer.config.Wallet,
 		BlockChain: httpServer.config.BlockChain,
 	}
-	httpServer.poolStateService = &rpcservice.PoolStateService{}
 	httpServer.synkerService = &rpcservice.SynkerService{
 		Synker: config.Syncker,
 	}
