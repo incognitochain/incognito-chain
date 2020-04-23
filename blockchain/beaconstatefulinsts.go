@@ -91,8 +91,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	pm := NewPortalManager()
-	db := blockchain.GetDatabase()
-	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
+	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB()
 	if err != nil {
 		Logger.log.Error(err)
 	}

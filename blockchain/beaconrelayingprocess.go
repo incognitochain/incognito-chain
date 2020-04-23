@@ -1,26 +1,20 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/types"
 	"strconv"
 )
 
 func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) error {
-	beaconHeight := block.Header.Height - 1
-	db := blockchain.GetDatabase()
-
-	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB(db, beaconHeight)
+	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB()
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -44,7 +38,7 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) er
 	}
 
 	// store updated relayingState to leveldb with new beacon height
-	err = storeRelayingHeaderStateToDB(db, beaconHeight+1, relayingState)
+	err = relayingState.BNBHeaderChain.StoreBNBChainState()
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -95,79 +89,38 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 	relayingState *RelayingHeaderChainState,
 ) error {
 	if relayingState == nil {
-		Logger.log.Errorf("relaying header state is nil")
-		return errors.New("relaying header state is nil")
+		Logger.log.Errorf("relaying block state is nil")
+		return errors.New("relaying block state is nil")
 	}
 	if len(instructions) != 4 {
 		return nil // skip the instruction
 	}
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.RelayingHeaderContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
+		Logger.log.Errorf("Can not unmarshal bnb block meta data %v - %v\n", instructions[3], err)
 		return err
 	}
 
-	var header types.Block
-	headerBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
+	var block types.Block
+	blockBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
 	if err != nil {
+		Logger.log.Errorf("Can not decode bnb block %v - %v\n", actionData.Header, err)
 		return err
 	}
-	err = json.Unmarshal(headerBytes, &header)
+	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
+		Logger.log.Errorf("Can not unmarshal bnb block %v - %v\n", string(blockBytes), err)
 		return err
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.RelayingHeaderUnconfirmedAcceptedChainStatus {
-		//update relaying state
-		relayingState.BNBHeaderChain.UnconfirmedBlocks = append(relayingState.BNBHeaderChain.UnconfirmedBlocks, &header)
-
-	} else if reqStatus == common.RelayingHeaderConfirmedAcceptedChainStatus {
-		// check newLatestBNBHeader is genesis header or not
-		genesisHeaderHeight, _ := bnb.GetGenesisBNBHeaderBlockHeight(blockchain.config.ChainParams.BNBRelayingHeaderChainID)
-
-		if header.Header.Height == genesisHeaderHeight {
-			relayingState.BNBHeaderChain.LatestBlock = &header
-
-			// store new confirmed header into db
-			newConfirmedheader := relayingState.BNBHeaderChain.LatestBlock
-			// don't need to store Data and Evidence into db
-			newConfirmedheader.Data = types.Data{}
-			newConfirmedheader.Evidence = types.EvidenceData{}
-			newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
-
-			err := rawdbv2.StoreRelayingBNBHeaderChain(db, uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
-			if err != nil {
-				Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
-				return err
-			}
-			return nil
-		}
-
-		// get new latest header
-		blockIDNewLatestHeader := header.Header.LastBlockID
-		for _, header := range relayingState.BNBHeaderChain.UnconfirmedBlocks {
-			if bytes.Equal(header.Hash().Bytes(), blockIDNewLatestHeader.Hash) {
-				relayingState.BNBHeaderChain.LatestBlock = header
-				break
-			}
-		}
-
-		//update relaying state
-		relayingState.BNBHeaderChain.UnconfirmedBlocks = []*types.Block{&header}
-
-		// store new confirmed header into db
-		newConfirmedheader := relayingState.BNBHeaderChain.LatestBlock
-		newConfirmedheader.Data = types.Data{}
-		newConfirmedheader.Evidence = types.EvidenceData{}
-		newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
-
-		err := rawdbv2.StoreRelayingBNBHeaderChain(db, uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
+	if reqStatus == common.RelayingHeaderConsideringChainStatus {
+		err := relayingState.BNBHeaderChain.ProcessNewBlock(&block, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
+			Logger.log.Errorf("Error when process new block %v\n", err)
 			return err
 		}
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -48,6 +49,19 @@ func getBTCRelayingChain(btcRelayingChainID string) (*btcrelaying.BlockChain, er
 		relayingChainParams[btcRelayingChainID],
 		relayingChainGenesisBlkHeight[btcRelayingChainID],
 	)
+}
+
+func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainState, error) {
+	bnbChainState := new(bnbrelaying.BNBChainState)
+	err := bnbChainState.LoadBNBChainState(
+		filepath.Join(cfg.DataDir, "bnbrelayingv2"),
+		bnbRelayingChainID,
+	)
+	if err != nil {
+		log.Printf("Error getBNBRelayingChainState: %v\n", err)
+		return nil, err
+	}
+	return bnbChainState, nil
 }
 
 
@@ -128,10 +142,18 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
+	// Create bnbrelaying chain state
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)
+	if err != nil {
+		Logger.log.Error("could not get or create bnb relaying chain state")
+		Logger.log.Error(err)
+		panic(err)
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)

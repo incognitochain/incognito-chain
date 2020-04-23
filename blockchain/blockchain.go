@@ -15,8 +15,9 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/transaction"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
 	"io"
@@ -45,6 +46,7 @@ type BestState struct {
 // Config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
 	BTCChain          *btcrelaying.BlockChain
+	BNBChainState     *bnbrelaying.BNBChainState
 	DataBase          incdb.Database
 	MemCache          *memcache.MemoryCache
 	Interrupt         <-chan struct{}

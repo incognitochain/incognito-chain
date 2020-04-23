@@ -5,6 +5,7 @@ const (
 	// fixed params
 	DenomBNB = "BNB"
 	MinConfirmationsBlock = 3
+	MaxOrphanBlocks = 1000
 
 	// mainnet
 	MainnetBNBChainID         = "Binance-Chain-Tigris"
@@ -23,5 +24,5 @@ const (
 	TestnetBNBChainID         = "Binance-Chain-Nile"
 	TestnetTotalVotingPowers  = 11000000000000
 	TestnetURLRemote          = "https://data-seed-pre-0-s1.binance.org:443"
-	TestnetGenesisBlockHeight = 77503400
+	TestnetGenesisBlockHeight = 78555000
 )

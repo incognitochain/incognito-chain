@@ -15,6 +15,12 @@ const (
 	ParseProofErr
 	ExistedNewHeaderErr
 	GetBNBDataHashErr
+
+	StoreBNBChainErr
+	GetBNBChainErr
+	FullOrphanBlockErr
+	AddBlockToOrphanBlockErr
+	CheckOrphanBlockErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -31,6 +37,12 @@ var ErrCodeMessage = map[int]struct {
 	ParseProofErr:                   {-14006, "Parse proof from json string error"},
 	ExistedNewHeaderErr:             {-14007, "New header is existed in list of unconfirmed headers error"},
 	GetBNBDataHashErr:               {-14008, "Can not get bnb data hash from db error"},
+
+	StoreBNBChainErr:         {-14009, "Store bnb chain to lvdb error"},
+	GetBNBChainErr:           {-14010, "Get latest block to lvdb error"},
+	FullOrphanBlockErr:       {-14011, "Full orphan blocks error"},
+	AddBlockToOrphanBlockErr: {-14012, "Add block to orphan blocks error"},
+	CheckOrphanBlockErr:      {-14013, "Check orphan blocks error"},
 }
 
 type BNBRelayingError struct {
