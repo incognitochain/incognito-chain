@@ -379,7 +379,41 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 					}
 				}
-
+			case metadata.PortalCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
+					newTx, err = curView.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalUserRequestPTokenMeta:
+				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
+					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				}
+				//custodian withdraw
+			case metadata.PortalCustodianWithdrawRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
+					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalRedeemRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
+					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				}
+				//liquidation: redeem ptoken
+			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
+				if len(l) >= 4 && l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+					newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalLiquidateCustodianMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
+					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalRequestWithdrawRewardMeta:
+				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
+					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				}
+				//liquidation: custodian deposit
+			case metadata.PortalLiquidationCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
+				}
 			default:
 				continue
 			}

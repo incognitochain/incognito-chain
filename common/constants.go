@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // for common
 const (
 	EmptyString       = ""
@@ -96,7 +98,7 @@ const (
 	EthAddrStr    = "0x0000000000000000000000000000000000000000"
 )
 
-// Bridge & PDE statuses for RPCs
+// Bridge, PDE & Portal statuses for RPCs
 const (
 	BridgeRequestNotFoundStatus   = 0
 	BridgeRequestProcessingStatus = 1
@@ -118,6 +120,52 @@ const (
 
 	MinTxFeesOnTokenRequirement                             = 10000000000000 // 10000 prv, this requirement is applied from beacon height 87301 mainnet
 	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 87301          // milestone of beacon height, when apply min fee on token requirement
+
+	//portal
+	PortalCustodianDepositAcceptedStatus = 1
+	PortalCustodianDepositRefundStatus   = 2
+
+	PortalReqPTokenAcceptedStatus = 1
+	PortalReqPTokenRejectedStatus = 2
+
+	PortalPortingTxRequestAcceptedStatus = 1
+	PortalPortingTxRequestRejectedStatus = 3
+
+	PortalPortingReqSuccessStatus    = 1
+	PortalPortingReqWaitingStatus    = 2
+	PortalPortingReqExpiredStatus    = 3
+	PortalPortingReqLiquidatedStatus = 4
+
+	PortalRedeemReqSuccessStatus    = 1
+	PortalRedeemReqWaitingStatus    = 2
+	PortalRedeemReqLiquidatedStatus = 3
+
+	PortalCustodianWithdrawReqAcceptedStatus = 1
+	PortalCustodianWithdrawReqRejectStatus   = 2
+
+	PortalReqUnlockCollateralAcceptedStatus = 1
+	PortalReqUnlockCollateralRejectedStatus = 2
+
+	PortalLiquidateCustodianSuccessStatus = 1
+	PortalLiquidateCustodianFailedStatus  = 2
+
+	PortalLiquidationTPExchangeRatesSuccessStatus = 1
+	PortalLiquidationTPExchangeRatesFailedStatus  = 2
+
+	PortalReqWithdrawRewardAcceptedStatus = 1
+	PortalReqWithdrawRewardRejectedStatus = 2
+
+	PortalRedeemLiquidateExchangeRatesSuccessStatus  = 1
+	PortalRedeemLiquidateExchangeRatesRejectedStatus = 2
+
+	PortalLiquidationCustodianDepositSuccessStatus  = 1
+	PortalLiquidationCustodianDepositRejectedStatus = 2
+
+	PortalExpiredPortingReqSuccessStatus = 1
+	PortalExpiredPortingReqFailedStatus  = 2
+
+	PortalExchangeRatesAcceptedStatus = 1
+	PortalExchangeRatesRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -133,6 +181,78 @@ const (
 	PDEWithdrawalAcceptedChainStatus = "accepted"
 	PDEWithdrawalRejectedChainStatus = "rejected"
 )
+
+// Portal status for chain
+const (
+	PortalCustodianDepositAcceptedChainStatus = "accepted"
+	PortalCustodianDepositRefundChainStatus   = "refund"
+
+	PortalReqPTokensAcceptedChainStatus = "accepted"
+	PortalReqPTokensRejectedChainStatus = "rejected"
+
+	PortalPortingRequestAcceptedChainStatus = "accepted"
+	PortalPortingRequestRejectedChainStatus = "rejected"
+
+	PortalExchangeRatesAcceptedChainStatus = "accepted"
+	PortalExchangeRatesRejectedChainStatus = "rejected"
+
+	PortalRedeemRequestAcceptedChainStatus = "accepted"
+	PortalRedeemRequestRejectedChainStatus = "rejected"
+
+	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
+	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
+
+	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
+	PortalReqUnlockCollateralRejectedChainStatus = "rejected"
+
+	PortalLiquidateCustodianSuccessChainStatus = "success"
+	PortalLiquidateCustodianFailedChainStatus  = "failed"
+
+	PortalLiquidateTPExchangeRatesSuccessChainStatus = "success"
+	PortalLiquidateTPExchangeRatesFailedChainStatus  = "rejected"
+
+	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
+	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
+
+	PortalRedeemLiquidateExchangeRatesSuccessChainStatus  = "success"
+	PortalRedeemLiquidateExchangeRatesRejectedChainStatus = "rejected"
+
+	PortalLiquidationCustodianDepositSuccessChainStatus  = "success"
+	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
+
+	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
+	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
+)
+
+// Relaying header
+const (
+	RelayingHeaderRejectedChainStatus            = "rejected"
+	RelayingHeaderConsideringChainStatus         = "considering"
+)
+
+const (
+	PortalTimeOutCustodianSendPubTokenBack = 2 * time.Hour // 24 hours
+	PortalTimeOutWaitingPortingRequest     = 2 * time.Hour // 24 hours
+	PercentReceivedCollateralAmount        = 120            // users will be received 120% of redeem amount in PRV (if there is custodian liquidation for redeem request)
+	MinPercentUnlockedCollateralAmount     = 120            // minimum percent collateral amount will be unlocked after custodian return pubTokens for users
+	// todo: need to be updated before deploying
+	PercentCustodianRewards = 10 // 10% of DAO funds per epoch
+
+	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
+	TP130 = 130
+
+	PercentPortingFeeAmount = 0.01 // %
+	PercentRedeemFeeAmount  = 0.01 // %
+)
+
+const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
+const PortalBNBIDStr = "b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"
+const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
+
+var PortalSupportedIncTokenIDs = []string{
+	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696", // pBTC
+	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", // pBNB
+}
 
 const (
 	HexEmptyRoot = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"

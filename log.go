@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"os"
 	"path/filepath"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -56,10 +57,11 @@ var (
 	randomLogger           = backendLog.Logger("RandomAPI log", false)
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
-	trieLogger             = backendLog.Logger("Trie log", true)
-	peerv2Logger           = backendLog.Logger("Peerv2 log", true)
-	wrapperLogger          = backendLog.Logger("Wrapper log", true)
-	daov2Logger            = backendLog.Logger("DAO log", true)
+	trieLogger             = backendLog.Logger("Trie log", false)
+	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	relayingLogger         = backendLog.Logger("Relaying log", false)
+	wrapperLogger          = backendLog.Logger("Wrapper log", false)
+	daov2Logger            = backendLog.Logger("DAO log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
 )
 
@@ -99,6 +101,7 @@ func init() {
 	metadata.Logger.Init(metadataLogger)
 	trie.Logger.Init(trieLogger)
 	peerv2.Logger.Init(peerv2Logger)
+	relaying.Logger.Init(relayingLogger)
 	wrapper.Logger.Init(wrapperLogger)
 	dataaccessobject.Logger.Init(daov2Logger)
 	syncker.Logger.Init(synckerLogger)

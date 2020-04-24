@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -11,6 +12,7 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/databasemp"
@@ -20,6 +22,8 @@ import (
 	"github.com/incognitochain/incognito-chain/limits"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wallet"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/btcsuite/btcd/chaincfg"
 )
 
 //go:generate mockery -dir=incdb/ -name=Database
@@ -30,6 +34,36 @@ var (
 // winServiceMain is only invoked on Windows.  It detects when incognito network is running
 // as a service and reacts accordingly.
 var winServiceMain func() (bool, error)
+
+func getBTCRelayingChain(btcRelayingChainID string) (*btcrelaying.BlockChain, error) {
+	relayingChainParams := map[string]*chaincfg.Params{
+		blockchain.TestnetBTCChainID: btcrelaying.GetTestNet3Params(),
+		blockchain.MainnetBTCChainID: btcrelaying.GetMainNetParams(),
+	}
+	relayingChainGenesisBlkHeight := map[string]int32{
+		blockchain.TestnetBTCChainID: int32(1720520),
+		blockchain.MainnetBTCChainID: int32(623600),
+	}
+	return btcrelaying.GetChainV2(
+		filepath.Join(cfg.DataDir, "btcrelayingv3"),
+		relayingChainParams[btcRelayingChainID],
+		relayingChainGenesisBlkHeight[btcRelayingChainID],
+	)
+}
+
+func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainState, error) {
+	bnbChainState := new(bnbrelaying.BNBChainState)
+	err := bnbChainState.LoadBNBChainState(
+		filepath.Join(cfg.DataDir, "bnbrelayingv2"),
+		bnbRelayingChainID,
+	)
+	if err != nil {
+		log.Printf("Error getBNBRelayingChainState: %v\n", err)
+		return nil, err
+	}
+	return bnbChainState, nil
+}
+
 
 // mainMaster is the real main function for Incognito network.  It is necessary to work around
 // the fact that deferred functions do not run when os.Exit() is called.  The
@@ -99,10 +133,27 @@ func mainMaster(serverChan chan<- *Server) error {
 			}
 		}
 	}
+
+	// Create btcrelaying chain
+	btcChain, err := getBTCRelayingChain(activeNetParams.Params.BTCRelayingHeaderChainID)
+	if err != nil {
+		Logger.log.Error("could not get or create btc relaying chain")
+		Logger.log.Error(err)
+		panic(err)
+	}
+
+	// Create bnbrelaying chain state
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)
+	if err != nil {
+		Logger.log.Error("could not get or create bnb relaying chain state")
+		Logger.log.Error(err)
+		panic(err)
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)

@@ -41,6 +41,38 @@ const (
 	PDEWithdrawalResponseMeta   = 94
 	PDEContributionResponseMeta = 95
 
+	// portal
+	PortalCustodianDepositMeta                 = 100
+	PortalUserRegisterMeta                     = 101
+	PortalUserRequestPTokenMeta                = 102
+	PortalCustodianDepositResponseMeta         = 103
+	PortalUserRequestPTokenResponseMeta        = 104
+	PortalExchangeRatesMeta                    = 105
+	PortalRedeemRequestMeta                    = 106
+	PortalRedeemRequestResponseMeta            = 107
+	PortalRequestUnlockCollateralMeta          = 108
+	PortalRequestUnlockCollateralResponseMeta  = 109
+	PortalCustodianWithdrawRequestMeta         = 110
+	PortalCustodianWithdrawResponseMeta        = 111
+	PortalLiquidateCustodianMeta               = 112
+	PortalLiquidateCustodianResponseMeta       = 113
+	PortalLiquidateTPExchangeRatesMeta         = 114
+	PortalLiquidateTPExchangeRatesResponseMeta = 115
+	PortalExpiredWaitingPortingReqMeta               = 116
+
+	PortalRewardMeta = 117
+	PortalRequestWithdrawRewardMeta = 118
+	PortalRequestWithdrawRewardResponseMeta = 119
+	PortalRedeemLiquidateExchangeRatesMeta = 120
+	PortalRedeemLiquidateExchangeRatesResponseMeta = 121
+	PortalLiquidationCustodianDepositMeta = 122
+	PortalLiquidationCustodianDepositResponseMeta = 123
+	PortalTotalRewardCustodianMeta = 124
+
+	// relaying
+	RelayingBNBHeaderMeta = 200
+	RelayingBTCHeaderMeta = 201
+
 	// incognito mode for smart contract
 	BurningForDepositToSCRequestMeta = 96
 	BurningConfirmForDepositToSCMeta = 97
@@ -56,6 +88,14 @@ var minerCreatedMetaTypes = []int{
 	PDETradeResponseMeta,
 	PDEWithdrawalResponseMeta,
 	PDEContributionResponseMeta,
+	PortalUserRequestPTokenResponseMeta,
+	PortalCustodianDepositResponseMeta,
+	PortalRedeemRequestResponseMeta,
+	PortalCustodianWithdrawResponseMeta,
+	PortalLiquidateCustodianResponseMeta,
+	PortalRequestWithdrawRewardResponseMeta,
+	PortalRedeemLiquidateExchangeRatesResponseMeta,
+	PortalLiquidationCustodianDepositResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

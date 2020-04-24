@@ -78,6 +78,11 @@ const (
 	DeleteTransactionByHashError
 	StoreTxByPublicKeyError
 	GetTxByPublicKeyError
+
+	// relaying - portal
+	StoreRelayingBNBHeaderError
+	GetRelayingBNBHeaderError
+	GetBNBDataHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -154,6 +159,11 @@ var ErrCodeMessage = map[int]struct {
 	DeleteShardFeatureRootHashError:         {-4027, "Delete Shard Feature Root Hash Error"},
 	DeleteShardSlashRootHashError:           {-4028, "Delete Shard Slash Root Hash Error"},
 	RestoreCrossShardNextHeightsError:       {-4029, "Restore Cross Shard Next Heights Error"},
+
+	// relaying
+	StoreRelayingBNBHeaderError:     {-5001, "Store relaying header bnb error"},
+	GetRelayingBNBHeaderError:       {-5002, "Get relaying header bnb error"},
+	GetBNBDataHashError:             {-5003, "Get bnb data hash by block height error"},
 }
 
 type RawdbError struct {
