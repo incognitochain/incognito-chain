@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
@@ -20,10 +22,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/wallet"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 //go:generate mockery -dir=incdb/ -name=Database
@@ -63,7 +63,6 @@ func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainS
 	}
 	return bnbChainState, nil
 }
-
 
 // mainMaster is the real main function for Incognito network.  It is necessary to work around
 // the fact that deferred functions do not run when os.Exit() is called.  The
@@ -185,14 +184,14 @@ func main() {
 	limitThreads := os.Getenv("CPU")
 	if limitThreads == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-		metrics.SetGlobalParam("CPU", runtime.NumCPU())
+		monitor.SetGlobalParam("CPU", runtime.NumCPU())
 	} else {
 		numThreads, err := strconv.Atoi(limitThreads)
 		if err != nil {
 			panic(err)
 		}
 		runtime.GOMAXPROCS(numThreads)
-		metrics.SetGlobalParam("CPU", numThreads)
+		monitor.SetGlobalParam("CPU", numThreads)
 	}
 	fmt.Println("NumCPU", runtime.NumCPU())
 	// Block and transaction processing can cause bursty allocations.  This

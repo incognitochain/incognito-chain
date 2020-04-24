@@ -1,4 +1,4 @@
-package metrics
+package grafana
 
 import (
 	"bytes"
@@ -71,7 +71,6 @@ func (grafana *Grafana) SendTimeSeriesMetricData(params map[string]interface{}) 
 	}
 	req, err := http.NewRequest(http.MethodPost, grafana.url, bytes.NewBuffer([]byte(dataBinary)))
 	if err != nil {
-		Logger.log.Debug("Create Request failed with err: ", err)
 		return
 	}
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
@@ -111,7 +110,6 @@ func (grafana *Grafana) SendTimeSeriesMetricDataWithTime(params map[string]inter
 	}
 	req, err := http.NewRequest(http.MethodPost, grafana.url, bytes.NewBuffer([]byte(dataBinary)))
 	if err != nil {
-		Logger.log.Debug("Create Request failed with err: ", err)
 		return
 	}
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)

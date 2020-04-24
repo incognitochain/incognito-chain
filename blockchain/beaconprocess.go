@@ -85,7 +85,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
-
+	startTimeStoreBeaconBlock := time.Now()
 	committeeChange := newCommitteeChange()
 
 	//check view if exited
@@ -265,6 +265,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 			newAllShardPending,
 		)
 	}
+	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
 	return nil
 }
 
@@ -304,7 +305,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
-
+	startTimeVerifyPreProcessingBeaconBlock := time.Now()
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
 	parentBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetDatabase(), previousBlockHash)
@@ -358,6 +359,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
 	}
 	// if pool does not have one of needed block, fail to verify
+	beaconVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlock)
 	if isPreSign {
 		if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock); err != nil {
 			return err
@@ -386,6 +388,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *BeaconBlock) error {
 	var err error
+	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 	rewardByEpochInstruction := [][]string{}
 	tempShardStates := make(map[byte][]ShardState)
 	stakeInstructions := [][]string{}
@@ -485,6 +488,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
 		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v", beaconBlock.Header.InstructionHash, tempInstructionHash, tempInstruction))
 	}
+	beaconVerifyPreprocesingForPreSignTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlockForSigning)
 	return nil
 }
 
@@ -502,6 +506,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 //  - New Stake public key must not found in beacon best state (candidate, pending validator, committee)
 func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *BeaconBlock, isVerifySig bool, chainParamEpoch uint64) error {
 	//verify producer via index
+	startTimeVerifyWithBestState := time.Now()
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.BeaconCommittee); err != nil {
 		return err
 	}
@@ -552,6 +557,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		}
 	}
 	//=============End Verify Stakers
+	beaconVerifyWithBestStateTimer.UpdateSince(startTimeVerifyWithBestState)
 	return nil
 }
 
@@ -565,7 +571,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	var (
 		strs []string
 	)
-
+	startTimeVerifyPostProcessingBeaconBlock := time.Now()
 	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
 	if err != nil {
 		panic(err)
@@ -661,6 +667,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 			}
 		}
 	}
+	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
 	return nil
 }
 
@@ -668,7 +675,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	Update Beststate with new Block
 */
 func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, chainParamEpoch uint64, chainParamAssignOffset int, randomTime uint64, committeeChange *committeeChange) (*BeaconBestState, error) {
-
+	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(oldBestState); err != nil {
 		return nil, err
@@ -806,6 +813,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 		return nil, NewBlockChainError(ProcessAutoStakingError, err)
 	}
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
+	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 	return beaconBestState, nil
 }
 
@@ -1223,7 +1231,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	snapshotRewardReceivers map[string]string,
 	committeeChange *committeeChange,
 ) error {
-
+	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
@@ -1418,9 +1426,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		panic("Backup shard view error")
 	}
-
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 	return nil
 }
