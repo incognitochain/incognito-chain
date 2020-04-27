@@ -134,6 +134,7 @@ func getShardAndBeaconBlocks(
 	if err != nil {
 		return nil, nil, err
 	}
+	fmt.Println("Bridge Instruction", bridgeInsts)
 	bridgeBlock.Body.Instructions = bridgeInsts
 	return bridgeBlock, beaconBlocks, nil
 }
