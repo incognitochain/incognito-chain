@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/tendermint/tendermint/types"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -185,4 +186,33 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.BNBRelayingHeaderChainID)
 	}
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetBTCBlockByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	bc := httpServer.config.BlockChain
+	btcChain := bc.GetConfig().BTCChain
+	if btcChain == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBTCBlockByHash, errors.New("BTC relaying chain should not be null"))
+	}
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
+
+	// get meta data from params
+	btcBlockHashStr, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("BTC block hash param is invalid"))
+	}
+
+	blkHash, err := chainhash.NewHashFromStr(btcBlockHashStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBTCBlockByHash, err)
+	}
+
+	btcBlock, err := btcChain.BlockByHash(blkHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBTCBlockByHash, err)
+	}
+	return btcBlock.MsgBlock(), nil
 }

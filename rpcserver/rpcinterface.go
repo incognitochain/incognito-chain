@@ -209,6 +209,7 @@ var HttpHandler = map[string]httpHandler{
 	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
 	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
 	getBTCRelayingBestState:              (*HttpServer).handleGetBTCRelayingBestState,
+	getBTCBlockByHash:              (*HttpServer).handleGetBTCBlockByHash,
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
