@@ -622,7 +622,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
-	//fmt.Println("crossdebug: getCrossShardData", allCrossShardBlock)
 	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {
 		for _, blk := range crossShardBlock {

@@ -124,12 +124,12 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	preHash := shardBlock.Header.PreviousBlockHash
 	preView := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
 	if preView == nil {
-		return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
+		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
 	curView := preView.(*ShardBestState)
 
 	if blockHeight != curView.ShardHeight+1 {
-		return errors.New("Not expected height")
+		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomming block height %+v", curView.ShardHeight, blockHeight))
 	}
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
@@ -212,31 +212,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
-	//shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
-	//go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-	//	metrics.Measurement:      metrics.NumOfBlockInsertToChain,
-	//	metrics.MeasurementValue: float64(1),
-	//	metrics.Tag:              metrics.ShardIDTag,
-	//	metrics.TagValue:         metrics.Shard + shardIDForMetric,
-	//	metrics.Time:             shardBlock.Header.Timestamp,
-	//})
-	//if shardBlock.Header.Height > 2 {
-	//	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-	//		metrics.Measurement:      metrics.NumOfRoundPerBlock,
-	//		metrics.MeasurementValue: float64(shardBlock.Header.Round),
-	//		metrics.Tag:              metrics.ShardIDTag,
-	//		metrics.TagValue:         metrics.Shard + shardIDForMetric,
-	//		metrics.Time:             shardBlock.Header.Timestamp,
-	//	})
-	//}
-	//if shardBlock.Header.Height != 1 {
-	//	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	//		metrics.Measurement:      metrics.TxInOneBlock,
-	//		metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
-	//		metrics.Tag:              metrics.BlockHeightTag,
-	//		metrics.TagValue:         fmt.Sprintf("%d-%d", shardBlock.Header.ShardID, shardBlock.Header.Height),
-	//	})
-	//}
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
 }
@@ -1122,17 +1097,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 //	- Remove Candiates in Mempool
 //	- Remove Transaction in Mempool and Block Generator
 func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock *ShardBlock, shardID byte) {
-	//remove staking txid in beststate shard
-	//go func() {
-	//	for _, l := range shardBlock.Body.Instructions {
-	//		if l[0] == SwapAction {
-	//			swapedCommittees := strings.Split(l[2], ",")
-	//			for _, v := range swapedCommittees {
-	//				delete(GetBestStateShard(shardID).StakingTx, v)
-	//			}
-	//		}
-	//	}
-	//}()
 	go func() {
 		//Remove Candidate In pool
 		candidates := []string{}
