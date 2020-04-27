@@ -54,6 +54,7 @@ type ConsensusInterface interface {
 	SignData(data []byte) (string, error)
 }
 
+//TODO: removed if unused
 type ChainInterface interface {
 	GetFinalView() multiview.View
 	GetBestView() multiview.View
