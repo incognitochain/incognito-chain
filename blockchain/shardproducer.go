@@ -625,48 +625,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 	//fmt.Println("crossdebug: getCrossShardData", allCrossShardBlock)
 	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {
-		//sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
-		//	return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
-		//})
-		////TODO: move validation code into function GetCrossShardBlocksForShardProducer
-		//indexs := []int{}
-		//startHeight := blockGenerator.chain.GetBestStateShard(toShard).BestCrossShard[fromShard]
-		//for index, crossShardBlock := range crossShardBlock {
-		//Logger.log.Critical("index cross shard block", index, crossShardBlock)
-		//if crossShardBlock.Header.Height <= startHeight {
-		//	break
-		//}
-		//nextHeight, err := rawdbv2.GetCrossShardNextHeight(blockGenerator.chain.GetDatabase(), fromShard, toShard, startHeight)
-		//if err != nil {
-		//	break
-		//}
-		//if nextHeight != crossShardBlock.Header.Height {
-		//	continue
-		//}
-		//startHeight = nextHeight
-		//beaconBlk, err := blockGenerator.chain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
-		//if err != nil {
-		//	Logger.log.Errorf("%+v", err)
-		//	break
-		//}
-		//consensusStateRootHash, err := blockGenerator.chain.GetBeaconConsensusRootHash(blockGenerator.chain.GetDatabase(), beaconBlk.GetHeight())
-		//if err != nil {
-		//	Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconBlk.GetHeight(), err)
-		//	break
-		//}
-		//consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetDatabase()))
-		//if err != nil {
-		//	Logger.log.Error(err)
-		//	break
-		//}
-		//shardCommittee := statedb.GetOneShardCommittee(consensusStateDB, crossShardBlock.Header.ShardID)
-		//err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee)
-		//if err != nil {
-		//	Logger.log.Error(err)
-		//	break
-		//}
-		//indexs = append(indexs, index)
-		//}
 		for _, blk := range crossShardBlock {
 			crossTransaction := CrossTransaction{
 				OutputCoin:       blk.CrossOutputCoin,
@@ -677,12 +635,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
 		}
 	}
-	//for _, crossTransaction := range crossTransactions {
-	//	sort.SliceStable(crossTransaction[:], func(i, j int) bool {
-	//		return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
-	//	})
-	//}
-	//fmt.Println("crossdebug: getCrossShardData", crossTransactions)
 	return crossTransactions
 }
 
@@ -696,7 +648,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	beaconHeight uint64,
 	curView *ShardBestState,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
-	//TODO: 0xmerman dynamic calculate spare time
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
