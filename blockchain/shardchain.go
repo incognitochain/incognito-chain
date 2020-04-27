@@ -17,10 +17,14 @@ type ShardChain struct {
 
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
-	Ready      bool
 	ChainName  string
+	Ready      bool
 
 	insertLock sync.Mutex
+}
+
+func NewShardChain(shardID int, multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *ShardChain {
+	return &ShardChain{shardID: shardID, multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
 }
 
 func (chain *ShardChain) GetFinalView() multiview.View {

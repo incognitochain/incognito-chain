@@ -66,14 +66,6 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
 	bc.cQuitSync = make(chan struct{})
-	//bc.BestState = &BestState{
-	//	//Beacon: &BeaconBestState{},
-	//	Shard: make(map[byte]*ShardBestState),
-	//}
-	//for i := 0; i < 255; i++ {
-	//	shardID := byte(i)
-	//	bc.GetBestStateShard(shardID) = &ShardBestState{}
-	//}
 	bc.GetBeaconBestState().Params = make(map[string]string)
 	bc.GetBeaconBestState().ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	bc.GetBeaconBestState().ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
@@ -110,41 +102,30 @@ func (blockchain *BlockChain) Init(config *Config) error {
 func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
-
-	blockchain.BeaconChain = &BeaconChain{
-		multiView:  multiview.NewMultiView(),
-		BlockGen:   blockchain.config.BlockGen,
-		ChainName:  common.BeaconChainKey,
-		Blockchain: blockchain,
-	}
-
+	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	if err := blockchain.RestoreBeaconViews(); err != nil {
-		fmt.Println("debug restore beacon fail, init", err)
+		Logger.log.Error("debug restore beacon fail, init", err)
 		err := blockchain.initBeaconState()
 		if err != nil {
-			fmt.Println("debug beacon state init error")
+			Logger.log.Error("debug beacon state init error")
 			return err
 		}
 	}
+	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetFinalViewHeight())
 
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
-		blockchain.ShardChain[shardID] = &ShardChain{
-			shardID:    shard - 1,
-			multiView:  multiview.NewMultiView(),
-			BlockGen:   blockchain.config.BlockGen,
-			ChainName:  common.GetShardChainKey(shardID),
-			Blockchain: blockchain,
-		}
+		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID))
 		if err := blockchain.RestoreShardViews(shardID); err != nil {
-			fmt.Println("debug restore shard fail, init")
+			Logger.log.Error("debug restore shard fail, init")
 			err := blockchain.initShardState(shardID)
 			if err != nil {
-				fmt.Println("debug shard state init error")
+				Logger.log.Error("debug shard state init error")
 				return err
 			}
 		}
+		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 
 	return nil
