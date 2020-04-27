@@ -516,7 +516,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	return err
 }
 
-func (e *BLSBFT_V2) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return nil, nil, NewConsensusError(UnExpectedError, err)

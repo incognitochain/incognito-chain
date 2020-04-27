@@ -208,8 +208,10 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 }
 
 func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
-	if engine.currentMiningProcess != nil {
-		return engine.currentMiningProcess.ExtractBridgeValidationData(block)
+	if block.GetVersion() == 1 {
+		return blsbft.ExtractBridgeValidationData(block)
+	} else if block.GetVersion() == 2 {
+		return blsbftv2.ExtractBridgeValidationData(block)
 	}
 	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }

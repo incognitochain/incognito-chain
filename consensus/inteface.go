@@ -52,8 +52,6 @@ type ConsensusInterface interface {
 	ValidateData(data []byte, sig string, publicKey string) error
 	// SignData - sign data with this consensus signature scheme
 	SignData(data []byte) (string, error)
-	// ExtractBridgeValidationData - extract bridge related field in validation data of block
-	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 }
 
 type ChainInterface interface {
