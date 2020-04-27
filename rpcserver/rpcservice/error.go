@@ -97,6 +97,7 @@ const (
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
 	GetBTCRelayingBestState
+	GetBTCBlockByHash
 	GetRelayingBNBHeaderError
 	GetLatestBNBHeaderBlockHeightError
 
@@ -208,9 +209,10 @@ var ErrCodeMessage = map[int]struct {
 	GetRelayingBNBHeaderError:              {-10002, "Get relaying bnb header error"},
 	GetBTCRelayingBestState:                {-10003, "Get BTC relaying best state error"},
 	GetLatestBNBHeaderBlockHeightError:     {-10004, "Get latest bnb header block height error"},
+	GetBTCBlockByHash:                      {-10005, "Get BTC block by hash error"},
 
 	// feature reward
-	GetRewardFeatureByFeatureNameError:     {-11001, "Get feature reward by feature name error"},
+	GetRewardFeatureByFeatureNameError: {-11001, "Get feature reward by feature name error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
