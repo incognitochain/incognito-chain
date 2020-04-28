@@ -225,6 +225,7 @@ const (
 	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
 	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
 	getBTCRelayingBestState              = "getbtcrelayingbeststate"
+	getBTCBlockByHash                    = "getbtcblockbyhash"
 	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc

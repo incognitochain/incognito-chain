@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"os"
 	"path/filepath"
 
@@ -62,6 +63,7 @@ var (
 	relayingLogger         = backendLog.Logger("Relaying log", false)
 	wrapperLogger          = backendLog.Logger("Wrapper log", false)
 	daov2Logger            = backendLog.Logger("DAO log", false)
+	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
 )
 
@@ -104,8 +106,8 @@ func init() {
 	relaying.Logger.Init(relayingLogger)
 	wrapper.Logger.Init(wrapperLogger)
 	dataaccessobject.Logger.Init(daov2Logger)
+	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
-
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -133,6 +135,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"TRIE":              trieLogger,
 	"PEERV2":            peerv2Logger,
 	"DAO":               daov2Logger,
+	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
 }
 
