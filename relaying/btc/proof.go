@@ -158,23 +158,18 @@ func (btcChain *BlockChain) VerifyTxWithMerkleProofs(
 ) (bool, error) {
 	btcBlock, err := btcChain.BlockByHash(btcProof.BlockHash)
 	if err != nil {
-		Logger.log.Errorf("Failed to get BTC block by hash %s - with error: %v\n", btcProof.BlockHash.String(), err)
 		return false, err
 	}
 
 	bestState := btcChain.BestSnapshot()
 	if bestState == nil || btcBlock == nil {
-		Logger.log.Errorf("Both BTC best state and BTC block by hash (%s) should not be null, but best state: %+v; block: %+v\n", btcProof.BlockHash.String(), bestState, btcBlock)
 		return false, nil
 	}
 	if bestState.Height < btcBlock.Height()+BTCBlockConfirmations {
-		Logger.log.Errorf("Need to wait for %d btc block confirmations, best state height: %d, targeting block height: %d\n", BTCBlockConfirmations, bestState.Height, btcBlock.Height())
 		return false, nil
 	}
 	merkleRoot := btcBlock.MsgBlock().Header.MerkleRoot
 	txHash := btcProof.BTCTx.TxHash()
-	Logger.log.Infof("VerifyTxWithMerkleProofs info - merkle root (%s)\n", merkleRoot.String())
-	Logger.log.Infof("VerifyTxWithMerkleProofs info - btcProof (%+v)\n", btcProof)
 	return verify(&merkleRoot, btcProof.MerkleProofs, &txHash), nil
 }
 
