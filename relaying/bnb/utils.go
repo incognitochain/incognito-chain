@@ -109,21 +109,21 @@ func getGenesisBNBBlockMainnet() *tdmtypes.Block {
 	}
 }
 
-// getGenesisBNBBlockTestnet returns Block 78555000 from Binance testnet
+// getGenesisBNBBlockTestnet returns Block 79473100 from Binance testnet
 func getGenesisBNBBlockTestnet() *tdmtypes.Block {
-	lastBlockIDHash, _ := hex.DecodeString("3A3CA3D4256C9312DD7D178232371B884EC6F41F795C835C11FBE6BFED1F3F6E")
-	partsHeaderHash, _ := hex.DecodeString("4B3B7AFA54D7988C90F2A927FBE38E357BC76BEE4B26D1ABCCDDE8A7CB0DE449")
-	lastCommitHash, _ := hex.DecodeString("13E5AF0CC491FA12B1F958956756EBC92F2DEA700175DF4EFC6D68C3077630CE")
+	lastBlockIDHash, _ := hex.DecodeString("C709E30E6F3A7D2C8C0E38D38D7402014E3463C64057E80BAAE3316886266145")
+	partsHeaderHash, _ := hex.DecodeString("BF1F250C37E9F77349230764C447EFACF692411B168292206573ADDCFCADD9C0")
+	lastCommitHash, _ := hex.DecodeString("D572594AFDC07168765DE24BFBEE231747C08C631965C655CBBA3160B1DC4A7F")
 	//dataHash, _ := hex.DecodeString("")
 	validatorsHash, _ := hex.DecodeString("80D9AB0FC10D18CA0E0832D5F4C063C5489EC1443DFB738252D038A82131B27A")
 	nextValidatorsHash, _ := hex.DecodeString("80D9AB0FC10D18CA0E0832D5F4C063C5489EC1443DFB738252D038A82131B27A")
 	consensusHash, _ := hex.DecodeString("294D8FBD0B94B767A7EBA9840F299A3586DA7FE6B5DEAD3B7EECBA193C400F93")
-	appHash, _ := hex.DecodeString("3F175D25DB99ABE3A934665BE3D98C00CEB4C23B6516C55DABE4A4EA254EC07F")
+	appHash, _ := hex.DecodeString("D118233FA9F24A9F63268F3D9A99932B454BEC148A68A66C9B506289AFAC92ED")
 	//lastResultsHash, _ := hex.DecodeString("")
 	//evidenceHash, _ := hex.DecodeString("")
-	proposerAddress, _ := hex.DecodeString("7B343E041CA130000A8BC00C35152BD7E7740037")
+	proposerAddress, _ := hex.DecodeString("18E69CC672973992BB5F76D049A5B2C5DDF77436")
 	blkTime := time.Time{}
-	blkTime.UnmarshalText([]byte("2020-04-23T02:43:21.750140426Z"))
+	blkTime.UnmarshalText([]byte("2020-04-28T07:38:47.455006399Z"))
 
 	return &tdmtypes.Block{
 		Header: tdmtypes.Header{
@@ -132,10 +132,10 @@ func getGenesisBNBBlockTestnet() *tdmtypes.Block {
 				App:   0,
 			},
 			ChainID:  TestnetBNBChainID,
-			Height:   78555000,
+			Height:   79473100,
 			Time:     blkTime,
 			NumTxs:   0,
-			TotalTxs: 50554615,
+			TotalTxs: 50579416,
 			LastBlockID: tdmtypes.BlockID{
 				Hash: lastBlockIDHash,
 				PartsHeader: tdmtypes.PartSetHeader{
