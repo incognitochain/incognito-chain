@@ -54,7 +54,7 @@ func getBTCRelayingChain(btcRelayingChainID string) (*btcrelaying.BlockChain, er
 func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainState, error) {
 	bnbChainState := new(bnbrelaying.BNBChainState)
 	err := bnbChainState.LoadBNBChainState(
-		filepath.Join(cfg.DataDir, "bnbrelayingv2"),
+		filepath.Join(cfg.DataDir, "bnbrelayingv3"),
 		bnbRelayingChainID,
 	)
 	if err != nil {
