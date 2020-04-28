@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -128,8 +129,9 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 	}
 
 	// validate redeem amount
-	if redeemReq.RedeemAmount <= 0 {
-		return false, false, errors.New("redeem amount should be larger than 0")
+	minAmount := common.MinAmountPortalPToken[redeemReq.TokenID]
+	if redeemReq.RedeemAmount < minAmount {
+		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}
 
 	// validate redeem fee
@@ -152,7 +154,6 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 	}
 
 	//validate RemoteAddress
-	// todo:
 	if len(redeemReq.RemoteAddress) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
 	}

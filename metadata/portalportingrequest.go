@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -120,8 +121,9 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 	}
 
 	// validate amount register
-	if portalUserRegister.RegisterAmount == 0 {
-		return false, false, errors.New("register amount should be larger than 0")
+	minAmount := common.MinAmountPortalPToken[portalUserRegister.PTokenId]
+	if portalUserRegister.RegisterAmount < minAmount {
+		return false, false, fmt.Errorf("register amount should be larger or equal to %v", minAmount)
 	}
 
 	//validation porting fee
