@@ -2,6 +2,7 @@ package coin
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/address"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
@@ -23,6 +24,46 @@ type CoinV2 struct {
 	// amount = value
 	mask   *operation.Scalar
 	amount *operation.Scalar
+}
+
+// Check whether the utxo is from this address
+func (c *CoinV2) IsBelongToAddress(addr *address.PrivateAddress) bool {
+	rK := new(operation.Point).ScalarMult(c.GetTxRandom(), addr.GetPrivateView())
+
+	hashed := operation.HashToScalar(
+		append(rK.ToBytesS(), c.GetIndex()),
+	)
+	HnG := new(operation.Point).ScalarMultBase(hashed)
+	KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
+
+	return operation.IsPointEqual(KCheck, addr.GetPublicSpend())
+}
+
+func ParseCommitmentFromMaskAndAmount(mask *operation.Scalar, amount *operation.Scalar) *operation.Point {
+	return operation.PedCom.CommitAtIndex(amount, mask, operation.PedersenRandomnessIndex)
+}
+
+func ParseOnetimeAddress(pubSpend, pubView *operation.Point, randomness *operation.Scalar, index uint8) *operation.Point {
+	rK := new(operation.Point).ScalarMult(pubView, randomness)
+	hash := operation.HashToScalar(append(rK.ToBytesS(), index))
+	HrKG := new(operation.Point).ScalarMultBase(hash)
+	return new(operation.Point).Add(HrKG, pubSpend)
+}
+
+func ArrayCoinToCoinV2(inputCoins []Coin) []*CoinV2 {
+	res := make([]*CoinV2, len(inputCoins))
+	for i := 0; i < len(inputCoins); i += 1 {
+		res[i] = inputCoins[i].(*CoinV2)
+	}
+	return res
+}
+
+func (c *CoinV2) ConcealData(additionalData interface{}) {
+
+	// Only conceal if the coin has not encrypted
+	if !c.IsEncrypted() {
+
+	}
 }
 
 // Init (OutputCoin) initializes a output coin

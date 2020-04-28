@@ -25,6 +25,22 @@ type PlainCoinV1 struct {
 	info         []byte //256 bytes
 }
 
+func ArrayPlainCoinToPlainCoinV1(inputCoins []PlainCoin) []*PlainCoinV1 {
+	res := make([]*PlainCoinV1, len(inputCoins))
+	for i := 0; i < len(inputCoins); i += 1 {
+		res[i] = inputCoins[i].(*PlainCoinV1)
+	}
+	return res
+}
+
+func ArrayCoinToCoinV1(inputCoins []Coin) []*CoinV1 {
+	res := make([]*CoinV1, len(inputCoins))
+	for i := 0; i < len(inputCoins); i += 1 {
+		res[i] = inputCoins[i].(*CoinV1)
+	}
+	return res
+}
+
 // Init (Coin) initializes a coin
 func (c *PlainCoinV1) Init() *PlainCoinV1 {
 	if c == nil {
@@ -68,7 +84,7 @@ func (c *PlainCoinV1) SetInfo(v []byte) {
 }
 
 // Conceal data leaving serialnumber
-func (c *PlainCoinV1) ConcealData() {
+func (c *PlainCoinV1) ConcealData(additionalData interface{}) {
 	c.SetCommitment(nil)
 	c.SetValue(0)
 	c.SetSNDerivator(nil)

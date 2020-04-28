@@ -340,19 +340,19 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo
 	// After Prove, we should hide all information in coin details.
 	// encrypt coin details (Randomness)
 	// hide information of output coins except coin commitments, public key, snDerivators
-	for i := 0; i < len(proof.GetOutputCoins()); i++ {
-		err = proof.GetOutputCoins()[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+	for i := 0; i < len(proof.outputCoins); i++ {
+		err = proof.outputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 		if err.(*errhandler.PrivacyError) != nil {
 			return nil, err.(*errhandler.PrivacyError)
 		}
-		proof.GetOutputCoins()[i].CoinDetails.SetKeyImage(nil)
-		proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
-		proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
+		proof.outputCoins[i].CoinDetails.SetKeyImage(nil)
+		proof.outputCoins[i].CoinDetails.SetValue(0)
+		proof.outputCoins[i].CoinDetails.SetRandomness(nil)
 	}
 
 	// hide information of input coins except serial number of input coins
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.GetInputCoins()[i].ConcealData()
+		proof.inputCoins[i].ConcealData(nil)
 	}
 
 	//privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")

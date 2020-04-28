@@ -43,6 +43,16 @@ type PaymentAddress struct {
 	Tk TransmissionKey // 33 bytes, use to encrypt pointByte
 }
 
+func (addr PaymentAddress) GetPublicSpend() *operation.Point {
+	pubSpend, _ := new(operation.Point).FromBytesS(addr.Pk)
+	return pubSpend
+}
+
+func (addr PaymentAddress) GetPublicView() *operation.Point {
+	pubView, _ := new(operation.Point).FromBytesS(addr.Tk)
+	return pubView
+}
+
 // PaymentInfo contains an address of a payee and a value of coins he/she will receive
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress

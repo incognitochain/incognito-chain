@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -18,12 +19,21 @@ import (
 
 type TxVersion1 struct{}
 
-func parseCommitments(params *TxPrivacyInitParams, shardID byte) (*[]uint64, *[]uint64, error) {
+func parsePlaincoinToPlaincoinV1(inputCoins []coin.PlainCoin) []*coin.PlainCoinV1 {
+	res := make([]*coin.PlainCoinV1, len(inputCoins))
+	for i := 0; i < len(inputCoins); i += 1 {
+		res[i] = inputCoins[i].(*coin.PlainCoinV1)
+	}
+	return res
+}
+
+func parseCommitments(params *TxPrivacyInitParams, shardID byte) ([]uint64, []uint64, error) {
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if params.hasPrivacy {
-		randomParams := NewRandomCommitmentsProcessParam(params.inputCoins, privacy.CommitmentRingSize, params.stateDB, shardID, params.tokenID)
+		inputCoins := parsePlaincoinToPlaincoinV1(params.inputCoins)
+		randomParams := NewRandomCommitmentsProcessParam(inputCoins, privacy.CommitmentRingSize, params.stateDB, shardID, params.tokenID)
 		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(randomParams)
 
 		// Check number of list of random commitments, list of random commitment indices
@@ -35,11 +45,10 @@ func parseCommitments(params *TxPrivacyInitParams, shardID byte) (*[]uint64, *[]
 			return nil, nil, NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
 		}
 	}
-	return &commitmentIndexs, &myCommitmentIndexs, nil
+	return commitmentIndexs, myCommitmentIndexs, nil
 }
 
-func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmentIndexsPtr *[]uint64) (*[]*privacy.Point, error) {
-	commitmentIndexs := *commitmentIndexsPtr
+func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmentIndexs []uint64) ([]*operation.Point, error) {
 	commitmentProving := make([]*privacy.Point, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		temp, err := statedb.GetCommitmentByIndex(params.stateDB, *params.tokenID, cmIndex, shardID)
@@ -54,15 +63,15 @@ func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmen
 			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, cmIndex, shardID, temp)
 		}
 	}
-	return &commitmentProving, nil
+	return commitmentProving, nil
 }
 
-func generateSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
+func generateSndOut(params *TxPrivacyInitParams) []*operation.Scalar {
 	ok := true
-	sndOuts := make([]*privacy.Scalar, 0)
+	sndOuts := make([]*operation.Scalar, 0)
 	for ok {
 		for i := 0; i < len(params.paymentInfo); i++ {
-			sndOut := privacy.RandomScalar()
+			sndOut := operation.RandomScalar()
 			for {
 				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.stateDB)
 				if err != nil {
@@ -70,7 +79,7 @@ func generateSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
-					sndOut = privacy.RandomScalar()
+					sndOut = operation.RandomScalar()
 				} else {
 					break
 				}
@@ -81,18 +90,18 @@ func generateSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
 		// if sndOuts has two elements that have same value, then re-generates it
 		ok = privacy.CheckDuplicateScalarArray(sndOuts)
 		if ok {
-			sndOuts = make([]*privacy.Scalar, 0)
+			sndOuts = make([]*operation.Scalar, 0)
 		}
 	}
-	return &sndOuts
+	return sndOuts
 }
 
-func parseOutputCoins(params *TxPrivacyInitParams) (*[]*privacy.OutputCoin, error) {
-	sndOuts := *generateSndOut(params)
-	outputCoins := make([]*privacy.OutputCoin, len(params.paymentInfo))
+func parseOutputCoins(params *TxPrivacyInitParams) ([]*coin.CoinV1, error) {
+	sndOuts := generateSndOut(params)
+	outputCoins := make([]*coin.CoinV1, len(params.paymentInfo))
 	for i, pInfo := range params.paymentInfo {
-		outputCoins[i] = new(privacy.OutputCoin)
-		outputCoins[i].CoinDetails = new(privacy.CoinV1)
+		outputCoins[i] = new(coin.CoinV1)
+		outputCoins[i].CoinDetails = new(coin.PlainCoinV1)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
 		if len(pInfo.Message) > 0 {
 			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
@@ -101,7 +110,7 @@ func parseOutputCoins(params *TxPrivacyInitParams) (*[]*privacy.OutputCoin, erro
 		}
 		outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
 
-		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
+		PK, err := new(operation.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
 			Logger.Log.Error(errors.New(fmt.Sprintf("can not decompress public key from %+v", pInfo.PaymentAddress)))
 			return nil, NewTransactionErr(DecompressPaymentAddressError, err, pInfo.PaymentAddress)
@@ -109,7 +118,7 @@ func parseOutputCoins(params *TxPrivacyInitParams) (*[]*privacy.OutputCoin, erro
 		outputCoins[i].CoinDetails.SetPublicKey(PK)
 		outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
 	}
-	return &outputCoins, nil
+	return outputCoins, nil
 }
 
 // This payment witness currently use one out of many
@@ -129,16 +138,18 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	if err != nil {
 		return nil, err
 	}
+	inputCoins := parsePlaincoinToPlaincoinV1(params.inputCoins)
+
 	// prepare witness for proving
 	paymentWitnessParam := zkp.PaymentWitnessParam{
 		HasPrivacy:              params.hasPrivacy,
 		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.senderSK),
-		InputCoins:              params.inputCoins,
-		OutputCoins:             *outputCoins,
+		InputCoins:              inputCoins,
+		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
-		Commitments:             *commitmentProving,
-		CommitmentIndices:       *commitmentIndexs,
-		MyCommitmentIndices:     *myCommitmentIndexs,
+		Commitments:             commitmentProving,
+		CommitmentIndices:       commitmentIndexs,
+		MyCommitmentIndices:     myCommitmentIndexs,
 		Fee:                     params.fee,
 	}
 	return &paymentWitnessParam, nil
@@ -208,13 +219,14 @@ func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM)
 			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, params.commitmentIndices[i], shardID, cmBytes)
 		}
 	}
+	inputCoins := parsePlaincoinToPlaincoinV1(params.txParam.inputCoins)
 
 	// prepare witness for proving
 	paymentWitnessParam := zkp.PaymentWitnessParam{
 		HasPrivacy:              params.txParam.hasPrivacy,
 		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.txParam.senderSK),
-		InputCoins:              params.txParam.inputCoins,
-		OutputCoins:             *outputCoins,
+		InputCoins:              inputCoins,
+		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
 		Commitments:             commitmentProving,
 		CommitmentIndices:       params.commitmentIndices,
@@ -278,10 +290,10 @@ func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
 	return tokenID, nil
 }
 
-func validateSndFromOutputCoin(outputCoins []*privacy.OutputCoin) error {
+func validateSndFromOutputCoin(outputCoins []*coin.CoinV1) error {
 	sndOutputs := make([]*privacy.Scalar, len(outputCoins))
 	for i := 0; i < len(outputCoins); i++ {
-		sndOutputs[i] = outputCoins[i].CoinDetails.GetSNDerivator()
+		sndOutputs[i] = outputCoins[i].GetSNDerivator()
 	}
 	if privacy.CheckDuplicateScalarArray(sndOutputs) {
 		Logger.Log.Errorf("Duplicate output coins' snd\n")
@@ -400,14 +412,15 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	}
 	inputCoins := tx.Proof.GetInputCoins()
 	outputCoins := tx.Proof.GetOutputCoins()
-	if err := validateSndFromOutputCoin(outputCoins); err != nil {
+	outputCoinsV2 := coin.ArrayCoinToCoinV1(outputCoins)
+	if err := validateSndFromOutputCoin(outputCoinsV2); err != nil {
 		return false, err
 	}
 
 	if isNewTransaction {
 		for i := 0; i < len(outputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].GetSNDerivator(), transactionStateDB); ok || err != nil {
 				if err != nil {
 					Logger.Log.Error(err)
 				}
@@ -420,7 +433,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
-			ok, err := tx.CheckCMExistence(inputCoins[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+			ok, err := tx.CheckCMExistence(inputCoins[i].GetCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
 			if !ok || err != nil {
 				if err != nil {
 					Logger.Log.Error(err)

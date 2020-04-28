@@ -34,18 +34,11 @@ type PlainCoin interface {
 	SetValue(uint64)
 	SetInfo([]byte)
 
-	// ParseToCoin(interface{}) Coin
-	// ParseFromCoin(Coin) (PlainCoin, error)
-
 	IsEncrypted() bool
+	ConcealData(additionalData interface{})
 
 	Bytes() []byte
 	SetBytes([]byte) error
-}
-
-func tes(c PlainCoin) error {
-	s := c.(*CoinV2)
-	return nil
 }
 
 // First byte should determine the version

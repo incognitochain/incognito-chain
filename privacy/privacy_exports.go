@@ -2,6 +2,8 @@ package privacy
 
 import (
 	"errors"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
@@ -125,14 +127,12 @@ type SchnorrPrivateKey = schnorr.SchnorrPrivateKey
 
 type Coin = coin.Coin
 type CoinV1 = coin.CoinV1
-type CoinV2 = coin.CoinV1
-type InputCoin = coin.InputCoin
-type OutputCoin = coin.OutputCoin
+type CoinV2 = coin.CoinV2
 type CoinObject = coin.CoinObject
 
 type Proof = proof.Proof
-type ProofV1 = proof.ProofV1
-type ProofV2 = proof.ProofV2
+type ProofV1 = zkp.PaymentProof
+type ProofV2 = privacy_v2.PaymentProofV2
 type AggregatedRangeProof = agg_interface.AggregatedRangeProof
 type AggregatedRangeProofV1 = aggregatedrange.AggregatedRangeProof
 type AggregatedRangeProofV2 = bulletproofs.AggregatedRangeProof
