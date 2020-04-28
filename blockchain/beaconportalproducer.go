@@ -184,9 +184,16 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
 		rewardAmount := custodian.GetRewardAmount()
 		remoteAddresses := custodian.GetRemoteAddresses()
-		for _, address := range meta.RemoteAddresses {
-			if existedAddr, _ := statedb.GetRemoteAddressByTokenID(remoteAddresses, address.GetPTokenID()); existedAddr == "" {
-				remoteAddresses = append(remoteAddresses, address)
+		// if total collateral is zero, custodians are able to update remote addresses
+		if custodian.GetTotalCollateral() == 0 {
+			if len(meta.RemoteAddresses) > 0 {
+				remoteAddresses = meta.RemoteAddresses
+			}
+		} else {
+			for _, address := range meta.RemoteAddresses {
+				if existedAddr, _ := statedb.GetRemoteAddressByTokenID(remoteAddresses, address.GetPTokenID()); existedAddr == "" {
+					remoteAddresses = append(remoteAddresses, address)
+				}
 			}
 		}
 
