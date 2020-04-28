@@ -153,7 +153,7 @@ func pickSingleCustodian(
 	custodianStateSlice []CustodianStateSlice,
 	currentPortalState *CurrentPortalState) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	//sort random slice
-	var cloneCustodianList []CustodianStateSlice
+	cloneCustodianList := make([]CustodianStateSlice, len(custodianStateSlice))
 	copy(cloneCustodianList, custodianStateSlice)
 
 	rand.Seed(time.Now().UnixNano())
