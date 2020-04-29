@@ -54,7 +54,7 @@ func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, c
 	arrayParams := common.InterfaceSlice(params)
 	shardID := byte(arrayParams[0].(float64))
 	epoch := uint64(arrayParams[1].(float64))
-	rewardStateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedRewardStateDB()
+	rewardStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconRewardStateDB()
 	amount, err := statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, shardID, common.PRVCoinID)
 	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }

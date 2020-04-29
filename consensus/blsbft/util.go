@@ -9,12 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
+
+func GetProposerIndexByRound(lastId, round, committeeSize int) int {
+	//return (lastId + round) % committeeSize
+	return 0
+}
 
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
@@ -116,10 +120,10 @@ func parseRoundKey(roundKey string) (uint64, int) {
 	return uint64(height), round
 }
 
-func (e *BLSBFT) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
-		return nil, nil, consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
 }
@@ -156,4 +160,5 @@ func (e *BLSBFT) InitRoundData() {
 	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
 	e.RoundData.TimeStart = time.Now()
 	e.UpdateCommitteeBLSList()
+	e.setState(newround)
 }

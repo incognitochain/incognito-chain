@@ -14,13 +14,32 @@ type BeaconBlock struct {
 	// ProducerSig   string  `json:"ProducerSig"`
 
 	ValidationData string `json:"ValidationData"`
+	Body           BeaconBody
+	Header         BeaconHeader
+}
 
-	Body   BeaconBody
-	Header BeaconHeader
+func (beaconBlock *BeaconBlock) GetVersion() int {
+	return beaconBlock.Header.Version
+}
+
+func (beaconBlock *BeaconBlock) GetPrevHash() common.Hash {
+	return beaconBlock.Header.PreviousBlockHash
 }
 
 func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
+}
+
+func (beaconBlock *BeaconBlock) GetProposer() string {
+	return beaconBlock.Header.Proposer
+}
+
+func (beaconBlock *BeaconBlock) GetProposeTime() int64 {
+	return beaconBlock.Header.ProposeTime
+}
+
+func (beaconBlock *BeaconBlock) GetProduceTime() int64 {
+	return beaconBlock.Header.Timestamp
 }
 
 func (beaconBlock BeaconBlock) Hash() *common.Hash {
@@ -35,6 +54,9 @@ func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
+func (beaconBlock BeaconBlock) GetShardID() int {
+	return -1
+}
 
 // func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
 // 	return string(beaconBlock.Header.ProducerAddress.Pk)
@@ -43,9 +65,8 @@ func (beaconBlock BeaconBlock) GetHeight() uint64 {
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
 		ValidationData string `json:"ValidationData"`
-
-		Header BeaconHeader
-		Body   BeaconBody
+		Header         BeaconHeader
+		Body           BeaconBody
 	}{}
 	err := json.Unmarshal(data, &tempBeaconBlock)
 	if err != nil {

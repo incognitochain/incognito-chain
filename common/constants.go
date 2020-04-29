@@ -226,8 +226,8 @@ const (
 
 // Relaying header
 const (
-	RelayingHeaderRejectedChainStatus            = "rejected"
-	RelayingHeaderConsideringChainStatus         = "considering"
+	RelayingHeaderRejectedChainStatus    = "rejected"
+	RelayingHeaderConsideringChainStatus = "considering"
 )
 
 const (

@@ -114,12 +114,7 @@ func NewIssuingETHRequestFromMap(
 	return req, nil
 }
 
-func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-	transactionStateDB *statedb.StateDB,
-) (bool, error) {
+func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return false, NewMetadataTxError(IssuingEthRequestValidateTxWithBlockChainError, err)
@@ -130,7 +125,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 
 	// check this is a normal pToken
 	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.IncTokenID) {
-		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
+		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
 		if !isBridgeToken {
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)
@@ -143,7 +138,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iReq IssuingETHRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(IssuingEthRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
@@ -172,7 +167,7 @@ func (iReq IssuingETHRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)

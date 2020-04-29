@@ -68,14 +68,14 @@ func NewRelayingHeader(
 //todo
 func (headerRelaying RelayingHeader) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (rh RelayingHeader) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(rh.IncogAddressStr)
 	if err != nil {
@@ -123,7 +123,7 @@ func (rh RelayingHeader) Hash() *common.Hash {
 	return &hash
 }
 
-func (rh *RelayingHeader) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (rh *RelayingHeader) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := RelayingHeaderAction{
 		Meta:    *rh,
 		TxReqID: *tx.Hash(),

@@ -9,11 +9,24 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
-func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
+func StoreLastBeaconHeightConfirmCrossShard(db incdb.Database, height uint64) error {
+	key := GetLastBeaconHeightConfirmCrossShardKey()
+	if err := db.Put(key, common.Uint64ToBytes(height)); err != nil {
+		return NewRawdbError(StoreCrossShardNextHeightError, err)
+	}
+	return nil
+}
+
+func GetLastBeaconHeightConfirmCrossShard(db incdb.Database) uint64 {
+	key := GetLastBeaconHeightConfirmCrossShardKey()
+	lastProcessHeight, _ := db.Get(key)
+	height, _ := common.BytesToUint64(lastProcessHeight)
+	return height
+}
+
+func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64, val []byte) error {
 	key := GetCrossShardNextHeightKey(fromShard, toShard, curHeight)
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, nextHeight)
-	if err := db.Put(key, buf); err != nil {
+	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreCrossShardNextHeightError, err)
 	}
 	return nil
@@ -28,21 +41,16 @@ func hasCrossShardNextHeight(db incdb.Database, key []byte) (bool, error) {
 	}
 }
 
-func GetCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64) (uint64, error) {
+func GetCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64) ([]byte, error) {
 	key := GetCrossShardNextHeightKey(fromShard, toShard, curHeight)
 	if _, err := hasCrossShardNextHeight(db, key); err != nil {
-		return 0, NewRawdbError(FetchCrossShardNextHeightError, err)
+		return nil, NewRawdbError(FetchCrossShardNextHeightError, err)
 	}
-	tempNextHeight, err := db.Get(key)
+	nextCrossShardInfo, err := db.Get(key)
 	if err != nil {
-		return 0, NewRawdbError(FetchCrossShardNextHeightError, err)
+		return nil, NewRawdbError(FetchCrossShardNextHeightError, err)
 	}
-	var nextHeight uint64
-	err = binary.Read(bytes.NewReader(tempNextHeight[:8]), binary.LittleEndian, &nextHeight)
-	if err != nil {
-		return 0, NewRawdbError(FetchCrossShardNextHeightError, err)
-	}
-	return nextHeight, nil
+	return nextCrossShardInfo, nil
 }
 
 func RestoreCrossShardNextHeights(db incdb.Database, fromShard byte, toShard byte, curHeight uint64) error {

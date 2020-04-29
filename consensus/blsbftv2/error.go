@@ -1,4 +1,4 @@
-package consensus
+package blsbftv2
 
 import (
 	"fmt"

@@ -60,7 +60,9 @@ func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amou
 
 func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
@@ -68,8 +70,8 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
 
@@ -87,12 +89,12 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(bcr Blockchain
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
+	if !bytes.Equal(tx.GetSigPubKey()[:], incogAddr.Pk[:]) {
 		return false, false, errors.New("custodian incognito address is not signer tx")
 	}
 
 	// check tx type
-	if txr.GetType() != common.TxNormalType {
+	if tx.GetType() != common.TxNormalType {
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
@@ -117,7 +119,7 @@ func (Withdraw PortalCustodianWithdrawRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalCustodianWithdrawRequestAction{
 		Meta:    *Withdraw,
 		TxReqID: *tx.Hash(),

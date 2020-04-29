@@ -14,9 +14,9 @@ import (
 
 type PortalLiquidationCustodianDeposit struct {
 	MetadataBase
-	IncogAddressStr string
-	PTokenId string
-	DepositedAmount uint64
+	IncogAddressStr        string
+	PTokenId               string
+	DepositedAmount        uint64
 	FreeCollateralSelected bool
 }
 
@@ -27,35 +27,35 @@ type PortalLiquidationCustodianDepositAction struct {
 }
 
 type PortalLiquidationCustodianDepositContent struct {
-	IncogAddressStr string
-	PTokenId string
-	DepositedAmount uint64
+	IncogAddressStr        string
+	PTokenId               string
+	DepositedAmount        uint64
 	FreeCollateralSelected bool
-	TxReqID         common.Hash
-	ShardID         byte
+	TxReqID                common.Hash
+	ShardID                byte
 }
 
 type LiquidationCustodianDepositStatus struct {
-	TxReqID common.Hash
-	IncogAddressStr string
-	PTokenId string
-	DepositAmount uint64
+	TxReqID                common.Hash
+	IncogAddressStr        string
+	PTokenId               string
+	DepositAmount          uint64
 	FreeCollateralSelected bool
-	Status byte
+	Status                 byte
 }
 
 func NewLiquidationCustodianDepositStatus(txReqID common.Hash, incogAddressStr string, PTokenId string, depositAmount uint64, freeCollateralSelected bool, status byte) *LiquidationCustodianDepositStatus {
 	return &LiquidationCustodianDepositStatus{TxReqID: txReqID, IncogAddressStr: incogAddressStr, PTokenId: PTokenId, DepositAmount: depositAmount, FreeCollateralSelected: freeCollateralSelected, Status: status}
 }
 
-func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, amount uint64, freeCollateralSelected bool) (*PortalLiquidationCustodianDeposit , error) {
+func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, amount uint64, freeCollateralSelected bool) (*PortalLiquidationCustodianDeposit, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	custodianDepositMeta := &PortalLiquidationCustodianDeposit {
-		IncogAddressStr: incognitoAddrStr,
-		PTokenId: pToken,
-		DepositedAmount: amount,
+	custodianDepositMeta := &PortalLiquidationCustodianDeposit{
+		IncogAddressStr:        incognitoAddrStr,
+		PTokenId:               pToken,
+		DepositedAmount:        amount,
 		FreeCollateralSelected: freeCollateralSelected,
 	}
 	custodianDepositMeta.MetadataBase = metadataBase
@@ -64,14 +64,14 @@ func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string,
 
 func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -96,7 +96,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(bcr
 	}
 
 	// check burning tx
-	if !txr.IsCoinsBurning(bcr, beaconHeight) {
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 		return false, false, errors.New("must send coin to burning address")
 	}
 
@@ -130,7 +130,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) Hash() *common.Hash {
 	return &hash
 }
 
-func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalLiquidationCustodianDepositAction{
 		Meta:    *custodianDeposit,
 		TxReqID: *tx.Hash(),

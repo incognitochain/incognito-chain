@@ -64,14 +64,14 @@ func NewPortalRequestWithdrawReward(
 
 func (meta PortalRequestWithdrawReward) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (meta PortalRequestWithdrawReward) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (meta PortalRequestWithdrawReward) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// validate CustodianAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(meta.CustodianAddressStr)
 	if err != nil {
@@ -106,7 +106,7 @@ func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
 	return &hash
 }
 
-func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalRequestWithdrawRewardAction{
 		Meta:    *meta,
 		TxReqID: *tx.Hash(),

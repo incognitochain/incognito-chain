@@ -17,12 +17,12 @@ type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
-	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db *statedb.StateDB) (bool, error)
-	ValidateSanityData(bcr BlockchainRetriever, tx Transaction, beaconHeight uint64) (bool, bool, error)
+	ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error)
+	ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool
-	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
+	BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error)
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -51,30 +51,30 @@ type MempoolRetriever interface {
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
-// Interface for blockchain which is used in metadata
-type BlockchainRetriever interface {
+type ChainRetriever interface {
 	GetStakingAmountShard() uint64
-	GetTxChainHeight(tx Transaction) (uint64, error)
-	GetChainHeight(byte) uint64
-	GetBeaconHeight() uint64
-	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
-	GetCurrentBeaconBlockHeight(byte) uint64
-	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
-	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
-	GetStakingTx(byte) map[string]string
-	GetAutoStakingList() map[string]bool
-	//GetDatabase() *statedb.StateDB
-	GetTxValue(txid string) (uint64, error)
-	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
-	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
-	GetShardRewardStateDB(shardID byte) *statedb.StateDB
-	GetShardFeatureStateDB(shardID byte) *statedb.StateDB
+	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
+	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
+}
+
+type BeaconViewRetriever interface {
+	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
+	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
+	GetAutoStakingList() map[string]bool
+	GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
+}
+
+type ShardViewRetriever interface {
+	GetStakingTx() map[string]string
+	ListShardPrivacyTokenAndPRV() []common.Hash
+	GetShardRewardStateDB() *statedb.StateDB
+	GetCopiedFeatureStateDB() *statedb.StateDB
 }
 
 // Interface for all type of transaction
@@ -100,7 +100,7 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
+	GetMetadataFromVinsTx(ChainRetriever, ShardViewRetriever, BeaconViewRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
 	ListSerialNumbersHashH() []common.Hash
 	Hash() *common.Hash
@@ -108,15 +108,15 @@ type Transaction interface {
 	CheckTxVersion(int8) bool
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)
-	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
-	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
-	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
+	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)
+	ValidateTxWithBlockChain(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
+	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
+	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, bool, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	ValidateType() bool
 	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	IsPrivacy() bool
-	IsCoinsBurning(BlockchainRetriever, uint64) bool
+	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
 }

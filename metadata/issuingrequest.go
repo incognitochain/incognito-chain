@@ -103,20 +103,15 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	)
 }
 
-func (iReq IssuingRequest) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-	transactionStateDB *statedb.StateDB,
-) (bool, error) {
-	keySet, err := wallet.Base58CheckDeserialize(bcr.GetCentralizedWebsitePaymentAddress())
-	if err != nil || !bytes.Equal(txr.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
+func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress())
+	if err != nil || !bytes.Equal(tx.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
 
 	// check this is a normal pToken
 	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.TokenID) {
-		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), iReq.TokenID, true)
+		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.TokenID, true)
 		if !isBridgeToken {
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)
@@ -128,7 +123,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iReq IssuingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if len(iReq.ReceiverAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's receiver address"))
 	}
@@ -160,7 +155,7 @@ func (iReq IssuingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
 		"meta":    *iReq,

@@ -45,12 +45,12 @@ func (iRes PortalRedeemRequestResponse) CheckTransactionFee(tr Transaction, minF
 	return true
 }
 
-func (iRes PortalRedeemRequestResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalRedeemRequestResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalRedeemRequestResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iRes PortalRedeemRequestResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -82,8 +82,10 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 	instUsed []int,
 	shardID byte,
 	tx Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever,
 	ac *AccumulatedValues,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {

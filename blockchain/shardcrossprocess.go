@@ -97,7 +97,7 @@ func (crossTransaction CrossTransaction) Hash() common.Hash {
 	- MerklePath
 */
 func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees, crossShardBlock.Header.ConsensusType); err != nil {
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {

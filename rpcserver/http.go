@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"io"
 	"io/ioutil"
 	"net"
@@ -16,6 +14,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -40,10 +41,10 @@ type HttpServer struct {
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
 	networkService    *rpcservice.NetworkService
-	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
 	portal     		  *rpcservice.PortalService
+	synkerService     *rpcservice.SynkerService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -86,7 +87,9 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		Wallet:     httpServer.config.Wallet,
 		BlockChain: httpServer.config.BlockChain,
 	}
-	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.synkerService = &rpcservice.SynkerService{
+		Synker: config.Syncker,
+	}
 
 	httpServer.portal = &rpcservice.PortalService{
 		BlockChain: httpServer.config.BlockChain,

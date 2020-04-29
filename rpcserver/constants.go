@@ -232,6 +232,11 @@ const (
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
 	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
 
+	getBeaconPoolInfo        = "getbeaconpoolinfo"
+	getShardToBeaconPoolInfo = "getshardtobeaconpoolinfo"
+	getShardPoolInfo         = "getshardpoolinfo"
+	getCrossShardPoolInfo    = "getcrossshardpoolinfo"
+
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
 )

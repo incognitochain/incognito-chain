@@ -131,6 +131,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	pdeTradeRequestAction, err := parseTradeRefundContent(contentStr)
 	if err != nil {
@@ -147,8 +149,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
-		blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
+		shardView.GetCopiedTransactionStateDB(),
+		beaconView.GetBeaconFeatureStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
@@ -163,6 +165,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	pdeTradeAcceptedContent, err := parseTradeAcceptedContent(contentStr)
 	if err != nil {
@@ -179,8 +183,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 		pdeTradeAcceptedContent.RequestedTxID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
-		blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
+		shardView.GetCopiedTransactionStateDB(),
+		beaconView.GetBeaconFeatureStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
@@ -195,6 +199,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Trade] Starting...")
 	if instStatus == common.PDETradeRefundChainStatus {
@@ -203,6 +209,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 			contentStr,
 			producerPrivateKey,
 			shardID,
+			shardView,
+			beaconView,
 		)
 	}
 	return blockGenerator.buildPDETradeAcceptedTx(
@@ -210,6 +218,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 		contentStr,
 		producerPrivateKey,
 		shardID,
+		shardView,
+		beaconView,
 	)
 }
 
@@ -217,6 +227,8 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Withdrawal] Starting...")
 	contentBytes := []byte(contentStr)
@@ -254,7 +266,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			wdAcceptedContent.DeductingPoolValue,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -291,13 +303,13 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
+			beaconView.GetBeaconFeatureStateDB(),
 		),
 	)
 	if initErr != nil {
@@ -311,6 +323,8 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Refund contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -349,7 +363,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			refundContribution.ContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -387,13 +401,13 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
+			beaconView.GetBeaconFeatureStateDB(),
 		),
 	)
 	if initErr != nil {
@@ -407,6 +421,8 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Matched and Returned contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -448,7 +464,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			matchedNReturnedContribution.ReturnedContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -484,13 +500,13 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
+			beaconView.GetBeaconFeatureStateDB(),
 		),
 	)
 	if initErr != nil {

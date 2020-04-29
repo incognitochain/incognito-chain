@@ -1,10 +1,10 @@
 package blockchain
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -239,7 +239,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{}, nil
 	}
 
-	stateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
+	stateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	//check unique id from record from db
 	portingRequestKeyExist, err := statedb.IsPortingRequestIdExist(stateDB, []byte(actionData.Meta.UniqueRegisterId))
 
@@ -819,7 +819,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			return [][]string{inst}, nil
 		}
 
-		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+		if latestBNBBlockHeight < txProofBNB.BlockHeight+bnb.MinConfirmationsBlock {
 			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
 				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
 			inst := buildReqPTokensInst(
@@ -1669,7 +1669,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			shardID,
 			actionData.TxReqID,
 			common.PortalReqUnlockCollateralRejectedChainStatus,
-
 		)
 		return [][]string{inst}, nil
 	}
@@ -1808,7 +1807,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			}
 		}
 
-		if !isChecked{
+		if !isChecked {
 			Logger.log.Error("BTC-TxProof is invalid")
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
@@ -1919,7 +1918,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+		if latestBNBBlockHeight < txProofBNB.BlockHeight+bnb.MinConfirmationsBlock {
 			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
 				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
 			inst := buildReqUnlockCollateralInst(
@@ -1995,7 +1994,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		expectedRedeemMemo := RedeemMemoBNB {
+		expectedRedeemMemo := RedeemMemoBNB{
 			RedeemID:                  redeemID,
 			CustodianIncognitoAddress: meta.CustodianAddressStr}
 		expectedRedeemMemoBytes, _ := json.Marshal(expectedRedeemMemo)
@@ -2152,7 +2151,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			shardID,
 			actionData.TxReqID,
 			common.PortalReqUnlockCollateralRejectedChainStatus,
-
 		)
 		return [][]string{inst}, nil
 	}

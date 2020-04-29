@@ -18,30 +18,30 @@ type PortalExpiredWaitingPortingReq struct {
 // It will be appended to beaconBlock
 type PortalExpiredWaitingPortingReqContent struct {
 	MetadataBase
-	UniquePortingID string
+	UniquePortingID      string
 	ExpiredByLiquidation bool
-	ShardID                byte
+	ShardID              byte
 }
 
 // PortalExpiredWaitingPortingReqStatus - Beacon tracks status of custodian liquidation into db
 type PortalExpiredWaitingPortingReqStatus struct {
-	Status                byte
-	UniquePortingID       string
-	ShardID               byte
+	Status               byte
+	UniquePortingID      string
+	ShardID              byte
 	ExpiredByLiquidation bool
-	ExpiredBeaconHeight   uint64
+	ExpiredBeaconHeight  uint64
 }
 
 func NewPortalExpiredWaitingPortingReq(
 	metaType int,
 	uniquePortingID string,
 	expiredByLiquidation bool,
-	) (*PortalExpiredWaitingPortingReq, error) {
+) (*PortalExpiredWaitingPortingReq, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	liquidCustodianMeta := &PortalExpiredWaitingPortingReq{
-		UniquePortingID:        uniquePortingID,
+		UniquePortingID:      uniquePortingID,
 		ExpiredByLiquidation: expiredByLiquidation,
 	}
 	liquidCustodianMeta.MetadataBase = metadataBase
@@ -50,14 +50,14 @@ func NewPortalExpiredWaitingPortingReq(
 
 func (expiredPortingReq PortalExpiredWaitingPortingReq) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (expiredPortingReq PortalExpiredWaitingPortingReq) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (expiredPortingReq PortalExpiredWaitingPortingReq) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	return true, true, nil
 }
 

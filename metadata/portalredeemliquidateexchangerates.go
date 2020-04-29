@@ -29,14 +29,14 @@ type PortalRedeemLiquidateExchangeRatesAction struct {
 }
 
 type PortalRedeemLiquidateExchangeRatesContent struct {
-	TokenID                 string // pTokenID in incognito chain
-	RedeemAmount            uint64
-	RedeemerIncAddressStr   string
-	RemoteAddress           string // btc/bnb/etc address
-	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	TxReqID                 common.Hash
-	ShardID                 byte
-	TotalPTokenReceived		uint64
+	TokenID               string // pTokenID in incognito chain
+	RedeemAmount          uint64
+	RedeemerIncAddressStr string
+	RemoteAddress         string // btc/bnb/etc address
+	RedeemFee             uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
+	TxReqID               common.Hash
+	ShardID               byte
+	TotalPTokenReceived   uint64
 }
 
 type RedeemLiquidateExchangeRatesStatus struct {
@@ -47,7 +47,7 @@ type RedeemLiquidateExchangeRatesStatus struct {
 	RedeemAmount          uint64
 	RedeemFee             uint64
 	Status                byte
-	TotalPTokenReceived	  uint64
+	TotalPTokenReceived   uint64
 }
 
 func NewRedeemLiquidateExchangeRatesStatus(txReqID common.Hash, tokenID string, redeemerAddress string, redeemerRemoteAddress string, redeemAmount uint64, redeemFee uint64, status byte, totalPTokenReceived uint64) *RedeemLiquidateExchangeRatesStatus {
@@ -64,7 +64,7 @@ func NewPortalRedeemLiquidateExchangeRates(
 ) (*PortalRedeemLiquidateExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
-	portalRedeemLiquidateExchangeRates := &PortalRedeemLiquidateExchangeRates {
+	portalRedeemLiquidateExchangeRates := &PortalRedeemLiquidateExchangeRates{
 		TokenID:               tokenID,
 		RedeemAmount:          redeemAmount,
 		RedeemerIncAddressStr: incAddressStr,
@@ -79,17 +79,17 @@ func NewPortalRedeemLiquidateExchangeRates(
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateTxWithBlockChain(
 	txr Transaction,
-	bcr BlockchainRetriever,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
 
-func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		if !txr.IsCoinsBurning(bcr, beaconHeight) {
+		if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 			return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
 		}
 		// validate value transfer of tx for redeem fee in prv
@@ -105,7 +105,6 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr Block
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Address incognito redeem is invalid"))
 	}
 
-
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Payment incognito address is invalid"))
@@ -119,7 +118,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr Block
 		return false, false, errors.New("tx redeem request must be TxCustomTokenPrivacyType")
 	}
 
-	if !txr.IsCoinsBurning(bcr, beaconHeight) {
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 		return false, false, errors.New("txprivacytoken in tx redeem request must be coin burning tx")
 	}
 
@@ -173,7 +172,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
 	return &hash
 }
 
-func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalRedeemLiquidateExchangeRatesAction{
 		Meta:    *redeemReq,
 		TxReqID: *tx.Hash(),
