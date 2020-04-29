@@ -299,9 +299,7 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 	if custodian.GetHoldingPublicTokens() == nil {
 		holdingPubTokensMapping[PTokenId] = amountPToken
 	} else {
-		for ptokenId, value := range custodian.GetHoldingPublicTokens() {
-			holdingPubTokensMapping[ptokenId] = value + amountPToken
-		}
+		holdingPubTokensMapping[PTokenId] += amountPToken
 	}
 	holdingPubTokens := holdingPubTokensMapping
 	custodian.SetHoldingPublicTokens(holdingPubTokens)
