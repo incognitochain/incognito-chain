@@ -26,6 +26,9 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	committee []string,
 ) map[string]uint8 {
 	slashLevels := blockchain.config.ChainParams.SlashLevels
+	if len(slashLevels) == 0 {
+		return make(map[string]uint8)
+	}
 	numOfBlocksByProducers := map[string]uint64{}
 	if isBeacon {
 		if blockchain.GetBeaconBestState() == nil {

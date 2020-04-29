@@ -57,7 +57,7 @@ type ChainRetriever interface {
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
 	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
-	//ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
+	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 }
 
 type BeaconViewRetriever interface {

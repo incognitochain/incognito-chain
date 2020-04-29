@@ -22,6 +22,10 @@ type BeaconChain struct {
 	insertLock sync.Mutex
 }
 
+func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
+	return &BeaconChain{multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
+}
+
 func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
 	for _, v := range chain.multiView.GetAllViewsWithBFS() {
 		res = append(res, *v.GetHash())

@@ -134,7 +134,7 @@ func (s *Engine) WatchCommitteeChange() {
 }
 
 func NewConsensusEngine() *Engine {
-	fmt.Println("CONSENSUS: NewConsensusEngine")
+	Logger.Log.Infof("CONSENSUS: NewConsensusEngine")
 	engine := &Engine{
 		BFTProcess:           make(map[int]ConsensusInterface),
 		consensusName:        common.BlsConsensus,
@@ -151,7 +151,7 @@ func (engine *Engine) Init(config *EngineConfig) {
 }
 
 func (engine *Engine) Start() error {
-	defer fmt.Println("CONSENSUS: Start", engine.userKeyListString)
+	defer Logger.Log.Infof("CONSENSUS: Start", engine.userKeyListString)
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {
@@ -170,7 +170,7 @@ func (engine *Engine) Start() error {
 }
 
 func (engine *Engine) Stop() error {
-	fmt.Println("CONSENSUS: Stop")
+	Logger.Log.Infof("CONSENSUS: Stop")
 	for _, BFTProcess := range engine.BFTProcess {
 		BFTProcess.Stop()
 		engine.currentMiningProcess = nil

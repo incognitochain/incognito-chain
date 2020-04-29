@@ -43,6 +43,7 @@ type HttpServer struct {
 	networkService    *rpcservice.NetworkService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
+	portal            *rpcservice.PortalService
 	synkerService     *rpcservice.SynkerService
 }
 
@@ -88,6 +89,10 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 	httpServer.synkerService = &rpcservice.SynkerService{
 		Synker: config.Syncker,
+	}
+
+	httpServer.portal = &rpcservice.PortalService{
+		BlockChain: httpServer.config.BlockChain,
 	}
 }
 

@@ -69,6 +69,40 @@ const (
 	RejectReplacementTx
 	TxPoolRejectTxError
 	RejectInvalidFeeError
+
+	//portal
+	GetFinalExchangeRatesError
+	ConvertExchangeRatesError
+	GetPortingRequestFeesError
+	GetExchangeRatesIsEmpty
+	GetPortingRequestError
+	GetPortingRequestIsEmpty
+
+	GetCustodianWithdrawError
+	GetReqPTokenStatusError
+	GetCustodianDepositError
+	GetPortalStateError
+	GetReqUnlockCollateralStatusError
+	GetReqRedeemStatusError
+	GetRequestWithdrawRewardStatusError
+	GetPortalRewardError
+
+	GetCustodianLiquidationStatusError
+	GetTpExchangeRatesLiquidationError
+	GetTpExchangeRatesLiquidationByTokenIdError
+	GetExchangeRatesLiquidationPoolError
+
+	GetAmountNeededForCustodianDepositLiquidationError
+
+	// relaying
+	GetRelayingBNBHeaderByBlockHeightError
+	GetBTCRelayingBestState
+	GetBTCBlockByHash
+	GetRelayingBNBHeaderError
+	GetLatestBNBHeaderBlockHeightError
+
+	// feature reward
+	GetRewardFeatureByFeatureNameError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -148,6 +182,37 @@ var ErrCodeMessage = map[int]struct {
 
 	// pde
 	GetPDEStateError: {-8000, "Get pde state error"},
+
+	//portal
+	GetFinalExchangeRatesError:                         {-9000, "Get get final exchange rates error"},
+	GetExchangeRatesIsEmpty:                            {-9001, "Exchange rates is empty"},
+	GetReqPTokenStatusError:                            {-9002, "Get request ptoken status error"},
+	GetCustodianDepositError:                           {-9003, "Get custodian deposit status error"},
+	GetPortalStateError:                                {-9004, "Get portal state error"},
+	GetPortingRequestError:                             {-9005, "Get portal request error"},
+	GetPortingRequestIsEmpty:                           {-9006, "Get portal request is empty"},
+	GetReqUnlockCollateralStatusError:                  {-9007, "Get status of request unlock collateral error"},
+	GetReqRedeemStatusError:                            {-9008, "Get status of request redeem by redeemId error"},
+	GetCustodianLiquidationStatusError:                 {-9009, "Get status of custodian liquidation error"},
+	GetAmountNeededForCustodianDepositLiquidationError: {-9010, "Get amount needed for custodian deposit liquidation error"},
+	GetTpExchangeRatesLiquidationError:                 {-9011, "Get top percentile exchange rates liquidation error"},
+	GetTpExchangeRatesLiquidationByTokenIdError:        {-9012, "Get top percentile exchange rates by token id error"},
+	GetExchangeRatesLiquidationPoolError:               {-9013, "Get exchange rates liquidation pool error"},
+	GetCustodianWithdrawError:                          {-9014, "Get custodian withdraw error"},
+	GetPortalRewardError:                               {-9015, "Get portal reward error"},
+	GetRequestWithdrawRewardStatusError:                {-9016, "Get request withdraw portal reward error"},
+	ConvertExchangeRatesError:                          {-9017, "Converting exchange rates error"},
+	GetPortingRequestFeesError:                         {-9018, "Get porting request fees error"},
+
+	// relaying
+	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},
+	GetRelayingBNBHeaderError:              {-10002, "Get relaying bnb header error"},
+	GetBTCRelayingBestState:                {-10003, "Get BTC relaying best state error"},
+	GetLatestBNBHeaderBlockHeightError:     {-10004, "Get latest bnb header block height error"},
+	GetBTCBlockByHash:                      {-10005, "Get BTC block by hash error"},
+
+	// feature reward
+	GetRewardFeatureByFeatureNameError: {-11001, "Get feature reward by feature name error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

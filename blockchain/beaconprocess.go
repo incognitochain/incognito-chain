@@ -395,10 +395,16 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	acceptedBlockRewardInstructions := [][]string{}
 	stopAutoStakingInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
-
+	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB())
+		featureStateDB := curView.GetBeaconFeatureStateDB()
+		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB, curView.BeaconHeight)
+		if err != nil {
+			return NewBlockChainError(GetTotalLockedCollateralError, err)
+		}
+		isSplitRewardForCustodian := totalLockedCollateral > 0
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian)
 		if err != nil {
 			return NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -454,7 +460,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height)
+	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,
@@ -486,7 +492,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 //  Get beacon state of this block
 //  For example, new blockHeight is 91 then beacon state of this block must have height 90
 //  OR new block has previous has is beacon best block hash
-//  - Get producer via index and compare with producer address in beacon block header
+//  - Get producer via index and compare with producer address in beacon block headerproce
 //  - Validate public key and signature sanity
 //  - Validate Agg Signature
 //  - Beacon Best State has best block is previous block of new beacon block
@@ -1312,6 +1318,17 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
+	// execute, store
+	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
+	if err != nil {
+		return NewBlockChainError(ProcessPortalInstructionError, err)
+	}
+	// execute, store
+	err = blockchain.processRelayingInstructions(beaconBlock)
+	if err != nil {
+		return NewBlockChainError(ProcessPortalRelayingError, err)
+	}
+
 	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err

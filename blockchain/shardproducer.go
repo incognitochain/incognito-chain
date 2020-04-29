@@ -379,7 +379,41 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 					}
 				}
-
+			case metadata.PortalCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
+					newTx, err = curView.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalUserRequestPTokenMeta:
+				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
+					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				}
+				//custodian withdraw
+			case metadata.PortalCustodianWithdrawRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
+					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalRedeemRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
+					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				}
+				//liquidation: redeem ptoken
+			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
+				if len(l) >= 4 && l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+					newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalLiquidateCustodianMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
+					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalRequestWithdrawRewardMeta:
+				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
+					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				}
+				//liquidation: custodian deposit
+			case metadata.PortalLiquidationCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
+				}
 			default:
 				continue
 			}
@@ -602,51 +636,8 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
-	//fmt.Println("crossdebug: getCrossShardData", allCrossShardBlock)
 	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {
-		//sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
-		//	return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
-		//})
-		////TODO: move validation code into function GetCrossShardBlocksForShardProducer
-		//indexs := []int{}
-		//startHeight := blockGenerator.chain.GetBestStateShard(toShard).BestCrossShard[fromShard]
-		//for index, crossShardBlock := range crossShardBlock {
-		//Logger.log.Critical("index cross shard block", index, crossShardBlock)
-		//if crossShardBlock.Header.Height <= startHeight {
-		//	break
-		//}
-		//nextHeight, err := rawdbv2.GetCrossShardNextHeight(blockGenerator.chain.GetDatabase(), fromShard, toShard, startHeight)
-		//if err != nil {
-		//	break
-		//}
-		//if nextHeight != crossShardBlock.Header.Height {
-		//	continue
-		//}
-		//startHeight = nextHeight
-		//beaconBlk, err := blockGenerator.chain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
-		//if err != nil {
-		//	Logger.log.Errorf("%+v", err)
-		//	break
-		//}
-		//consensusStateRootHash, err := blockGenerator.chain.GetBeaconConsensusRootHash(blockGenerator.chain.GetDatabase(), beaconBlk.GetHeight())
-		//if err != nil {
-		//	Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconBlk.GetHeight(), err)
-		//	break
-		//}
-		//consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetDatabase()))
-		//if err != nil {
-		//	Logger.log.Error(err)
-		//	break
-		//}
-		//shardCommittee := statedb.GetOneShardCommittee(consensusStateDB, crossShardBlock.Header.ShardID)
-		//err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee)
-		//if err != nil {
-		//	Logger.log.Error(err)
-		//	break
-		//}
-		//indexs = append(indexs, index)
-		//}
 		for _, blk := range crossShardBlock {
 			crossTransaction := CrossTransaction{
 				OutputCoin:       blk.CrossOutputCoin,
@@ -657,12 +648,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
 		}
 	}
-	//for _, crossTransaction := range crossTransactions {
-	//	sort.SliceStable(crossTransaction[:], func(i, j int) bool {
-	//		return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
-	//	})
-	//}
-	//fmt.Println("crossdebug: getCrossShardData", crossTransactions)
 	return crossTransactions
 }
 
@@ -676,7 +661,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	beaconHeight uint64,
 	curView *ShardBestState,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
-	//TODO: 0xmerman dynamic calculate spare time
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()

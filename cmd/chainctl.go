@@ -39,13 +39,6 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 	} else {
 		bcParams = &blockchain.ChainMainParam
 	}
-	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
-	shardPoolMap := make(map[byte]blockchain.ShardPool)
-	for i := 0; i < 255; i++ {
-		shardID := byte(i)
-		crossShardPoolMap[shardID] = mempool.GetCrossShardPool(shardID)
-		shardPoolMap[shardID] = mempool.GetShardPool(shardID)
-	}
 	pb := pubsub.NewPubSubManager()
 	txPool := &mempool.TxPool{}
 	txPool.Init(&mempool.Config{
@@ -55,16 +48,12 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 		ChainParams:   bcParams,
 	})
 	err = bc.Init(&blockchain.Config{
-		ChainParams:       bcParams,
-		DataBase:          db,
-		BeaconPool:        mempool.GetBeaconPool(),
-		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
-		PubSubManager:     pb,
-		CrossShardPool:    crossShardPoolMap,
-		ShardPool:         shardPoolMap,
-		TxPool:            txPool,
-		ConsensusEngine:   &consensus.Engine{},
-		Highway:           &peerv2.ConnManager{},
+		ChainParams:     bcParams,
+		DataBase:        db,
+		PubSubManager:   pb,
+		TxPool:          txPool,
+		ConsensusEngine: &consensus.Engine{},
+		Highway:         &peerv2.ConnManager{},
 	})
 	if err != nil {
 		return nil, err
