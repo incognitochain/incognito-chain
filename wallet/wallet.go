@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"io/ioutil"
 )
 
@@ -318,6 +319,7 @@ func (wallet *Wallet) GetAddressByAccName(accountName string, shardID *byte) Key
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 				PrivateKey:     account.Key.Base58CheckSerialize(PriKeyType),
+				ValidatorKey:   base58.Base58Check{}.Encode(common.HashB(common.HashB(account.Key.KeySet.PrivateKey)), common.ZeroByte),
 			}
 			return key
 		}
@@ -328,6 +330,7 @@ func (wallet *Wallet) GetAddressByAccName(accountName string, shardID *byte) Key
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 		PrivateKey:     newAccount.Key.Base58CheckSerialize(PriKeyType),
+		ValidatorKey:   base58.Base58Check{}.Encode(common.HashB(common.HashB(newAccount.Key.KeySet.PrivateKey)), common.ZeroByte),
 	}
 	return key
 }
@@ -342,6 +345,7 @@ func (wallet *Wallet) GetAddressesByAccName(accountName string) []KeySerializedD
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				ValidatorKey:   base58.Base58Check{}.Encode(common.HashB(common.HashB(account.Key.KeySet.PrivateKey)), common.ZeroByte),
 			}
 			result = append(result, item)
 		}
