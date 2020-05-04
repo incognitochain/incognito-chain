@@ -1076,7 +1076,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 			blks, _ := blockchain.GetShardBlockHashByHeight(startView.GetHeight(), shardID)
 			for _, hash := range blks {
 				if hash.String() != startView.GetPreviousHash().String() {
-					err := rawdbv2.DeleteBeaconBlock(blockchain.GetDatabase(), startView.GetHeight(), hash)
+					err := rawdbv2.DeleteShardBlock(blockchain.GetDatabase(), shardID, startView.GetHeight(), hash)
 					if err != nil {
 						//must not have error
 						panic(err)

@@ -24,9 +24,9 @@ func processLog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	filename := vars["filename"]
 	filename = strings.Replace(filename, "file.data.", "", -1)
-	fmt.Println(filename)
+	//fmt.Println(filename)
 	bs, _ := ioutil.ReadAll(r.Body)
-	fmt.Println(string(bs))
+	//fmt.Println(string(bs))
 	fd, e := os.OpenFile("/data/"+filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if e != nil {
 		fmt.Println(e)
