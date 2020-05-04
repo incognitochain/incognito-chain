@@ -77,6 +77,7 @@ const (
 	ProposerRole   = "proposer"
 	ValidatorRole  = "validator"
 	PendingRole    = "pending"
+	SyncingRole    = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole    = "waiting"
 	MaxShardNumber = 8
 
@@ -244,8 +245,7 @@ const (
 	PercentPortingFeeAmount = 0.01 // %
 	PercentRedeemFeeAmount  = 0.01 // %
 
-
-	MinRedeemAmount = 10
+	MinRedeemAmount  = 10
 	MinPortingAmount = 10
 )
 
@@ -261,8 +261,8 @@ var PortalSupportedIncTokenIDs = []string{
 // set MinAmountPortalPToken to avoid attacking with amount is less than smallest unit of cryptocurrency
 // such as satoshi in BTC
 var MinAmountPortalPToken = map[string]uint64{
-	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696" : 10,
-	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b" : 10,
+	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696": 10,
+	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": 10,
 }
 
 const (
