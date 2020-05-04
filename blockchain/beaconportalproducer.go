@@ -424,8 +424,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		totalPToken = totalPToken + eachCustodian.Amount
 	}
 
-	if totalPToken != actionData.Meta.RegisterAmount {
-		Logger.log.Errorf("Porting request, total custodian picked difference with total input PToken %v != %v", actionData.Meta.RegisterAmount, totalPToken)
+	if totalPToken < actionData.Meta.RegisterAmount {
+		Logger.log.Errorf("Porting request, total matching amount of picked custodians is less than porting amount %v != %v", totalPToken, actionData.Meta.RegisterAmount)
 
 		Logger.log.Errorf("Porting request, custodian not found")
 		inst := buildRequestPortingInst(

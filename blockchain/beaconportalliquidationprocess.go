@@ -511,7 +511,6 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		}
 
 		// remove waiting porting request from waiting list
-		// TODO:
 		delete(currentPortalState.WaitingPortingRequests, waitingPortingKeyStr)
 
 		// update status of porting ID  => expired/liquidated
