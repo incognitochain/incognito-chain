@@ -57,7 +57,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 	height := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.GetBeaconChainDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
@@ -106,7 +106,6 @@ func getSwapProofOnBeacon(
 func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
-	db incdb.Database,
 ) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
 	bridgeBlocks, err := bc.GetShardBlockByHeight(height, bridgeID)
@@ -125,7 +124,6 @@ func getShardAndBeaconBlocks(
 		bridgeBlock.Header.BeaconHeight,
 		bridgeBlock.Header.ShardID,
 		bc,
-		db,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -206,7 +204,6 @@ func getIncludedBeaconBlocks(
 	beaconHeight uint64,
 	shardID byte,
 	bc *blockchain.BlockChain,
-	db incdb.Database,
 ) ([]*blockchain.BeaconBlock, error) {
 	prevShardBlocks, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
@@ -217,7 +214,7 @@ func getIncludedBeaconBlocks(
 		previousShardBlock = temp
 	}
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
-		db,
+		bc.GetBeaconChainDatabase(),
 		previousShardBlock.Header.BeaconHeight+1,
 		beaconHeight,
 	)

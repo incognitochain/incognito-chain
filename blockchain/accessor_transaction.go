@@ -76,25 +76,35 @@ func storePRV(transactionStateRoot *statedb.StateDB) error {
 }
 
 func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
-	blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.config.DataBase, txHash)
-	if err != nil {
-		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
+		if err == nil {
+			return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+		}
+		shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
+		if err != nil {
+			return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+		}
+		return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
 	}
-	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
-	if err != nil {
-		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
-	}
-	return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
+	return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
 }
 
 // GetTransactionHashByReceiver - return list tx id which receiver get from any sender
 // this feature only apply on full node, because full node get all data from all shard
 func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
 	result := make(map[byte][]common.Hash)
-	var err error
-	result, err = rawdbv2.GetTxByPublicKey(blockchain.config.DataBase, keySet.PaymentAddress.Pk)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		var err error
+		result, err = rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk)
+		if err == nil {
+			if result == nil || len(result) == 0 {
+				continue
+			}
+			return result, nil
+		}
 	}
 	return result, nil
 }
@@ -391,7 +401,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 		return err
 	}
 
-	err = blockchain.StoreTxByPublicKey(blockchain.GetDatabase(), view)
+	err = blockchain.StoreTxByPublicKey(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), view)
 	if err != nil {
 		return err
 	}

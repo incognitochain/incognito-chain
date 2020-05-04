@@ -604,12 +604,12 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if err != nil {
 			return [][]string{}, err
 		}
-		rootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetDatabase(), newBeaconHeight-1)
+		beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), newBeaconHeight-1)
 		if err != nil {
 			return [][]string{}, err
 		}
-		slashStateDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(slashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
+		beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
 		if err != nil {
 			Logger.log.Error(err)
 		}

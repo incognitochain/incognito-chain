@@ -474,7 +474,7 @@ func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeC
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil, httpServer.GetDatabase())
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)

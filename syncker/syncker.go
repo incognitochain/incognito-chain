@@ -210,7 +210,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
-	db := synckerManager.config.Node.GetIncDatabase()
+	beaconDB := synckerManager.config.Node.GetBeaconChainDatabase()
 	lastRequestCrossShard := synckerManager.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
 	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
 		for {
@@ -223,7 +223,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 				break
 			}
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
-			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, *beaconHash)
+			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
 			if err != nil {
 				break
 			}

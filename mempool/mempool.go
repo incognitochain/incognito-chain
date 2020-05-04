@@ -34,7 +34,7 @@ const (
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	BlockChain        *blockchain.BlockChain       // Block chain of node
-	DataBase          incdb.Database               // main database of blockchain
+	DataBase          map[int]incdb.Database       // main database of blockchain
 	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
 	ChainParams       *blockchain.Params
 	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
