@@ -1835,6 +1835,8 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 				return pending
 			case common.WaitingRole:
 				return waiting
+			case common.SyncingRole:
+				return syncing
 			}
 		default:
 			return notmining
@@ -2345,6 +2347,11 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 			}
 		}
 
+		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+				return common.SyncingRole, chain.GetShardID()
+			}
+		}
 	}
 	return "", -2
 }
