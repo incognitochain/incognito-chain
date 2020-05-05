@@ -802,7 +802,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		}
 
 		// check minimum confirmations block of bnb proof
-		latestBNBBlockHeight, err2 := blockchain.GetLatestBNBBlockHeight()
+		latestBNBBlockHeight, err2 := blockchain.GetLatestBNBBlkHeight()
 		if err2 != nil {
 			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
 			inst := buildReqPTokensInst(
@@ -835,8 +835,25 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			)
 			return [][]string{inst}, nil
 		}
-		bnbChainState := blockchain.GetBNBChainState()
-		isValid, err := txProofBNB.Verify(bnbChainState)
+		dataHash, err2 := blockchain.GetBNBDataHash(txProofBNB.BlockHeight)
+		if err2 != nil {
+			Logger.log.Errorf("Error when get data hash in blockHeight %v - %v\n",
+				txProofBNB.BlockHeight, err2)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		isValid, err := txProofBNB.Verify(dataHash)
 		if !isValid || err != nil {
 			Logger.log.Errorf("Verify txProofBNB failed %v", err)
 			inst := buildReqPTokensInst(
@@ -1936,8 +1953,26 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		bnbChainState := blockchain.GetBNBChainState()
-		isValid, err := txProofBNB.Verify(bnbChainState)
+		dataHash, err2 := blockchain.GetBNBDataHash(txProofBNB.BlockHeight)
+		if err2 != nil {
+			Logger.log.Errorf("Error when get data hash in blockHeight %v - %v\n",
+				txProofBNB.BlockHeight, err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		isValid, err := txProofBNB.Verify(dataHash)
 		if !isValid || err != nil {
 			Logger.log.Errorf("Verify txProofBNB failed %v", err)
 			inst := buildReqUnlockCollateralInst(

@@ -29,7 +29,7 @@ func NewRPCClient() *RPCClient {
 	return fmt.Sprintf("%s://%s:%d", protocol, host, port)
 }*/
 
-func buildRPCServerAddress(protocol string, host string, port string) string {
+func BuildRPCServerAddress(protocol string, host string, port string) string {
 	url := host
 	if protocol != "" {
 		url = protocol + "://" + url
@@ -48,7 +48,7 @@ func (client *RPCClient) RPCCall(
 	params interface{},
 	rpcResponse interface{},
 ) (err error) {
-	rpcEndpoint := buildRPCServerAddress(rpcProtocol, rpcHost, rpcPortStr)
+	rpcEndpoint := BuildRPCServerAddress(rpcProtocol, rpcHost, rpcPortStr)
 
 	payload := map[string]interface{}{
 		"jsonrpc": "2.0",

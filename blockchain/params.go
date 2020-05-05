@@ -47,6 +47,9 @@ type Params struct {
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
+	BNBFullNodeProtocol              string
+	BNBFullNodeHost                  string
+	BNBFullNodePort                  string
 }
 
 type GenesisParams struct {
@@ -112,6 +115,9 @@ func init() {
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
+		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
+		BNBFullNodeHost:                TestnetBNBFullNodeHost,
+		BNBFullNodePort:                TestnetBNBFullNodePort,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -159,5 +165,8 @@ func init() {
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
+		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
+		BNBFullNodeHost:                MainnetBNBFullNodeHost,
+		BNBFullNodePort:                MainnetBNBFullNodePort,
 	}
 }
