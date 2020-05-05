@@ -761,6 +761,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 		// update custodian state
 		for _, cus := range actionData.MatchingCustodianDetail {
+			Logger.log.Infof("[processPortalRedeemRequest] cus.GetIncognitoAddress = %s in beaconHeight=%d", cus.GetIncognitoAddress(), beaconHeight)
 			custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cus.GetIncognitoAddress())
 			custodianStateKeyStr := custodianStateKey.String()
 			custodianState, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
