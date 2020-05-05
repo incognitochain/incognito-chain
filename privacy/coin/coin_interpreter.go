@@ -3,7 +3,7 @@ package coin
 import "github.com/incognitochain/incognito-chain/privacy/operation"
 
 // Commit coin only with g^v * h^r
-func ParseCommitmentToV2WithCoin(c *PlainCoinV1) *operation.Point {
+func ParseCommitmentToV2WithCoin(c PlainCoin) *operation.Point {
 	return operation.PedCom.CommitAtIndex(
 		new(operation.Scalar).FromUint64(c.GetValue()),
 		c.GetRandomness(),

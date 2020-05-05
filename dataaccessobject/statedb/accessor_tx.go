@@ -33,6 +33,7 @@ func HasSerialNumber(stateDB *StateDB, tokenID common.Hash, serialNumber []byte,
 	}
 	return has, nil
 }
+
 func ListSerialNumber(stateDB *StateDB, tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
 	tempSerialNumbers := stateDB.getAllSerialNumberByPrefix(tokenID, shardID)
 	m := make(map[string]struct{})
@@ -46,11 +47,10 @@ func ListSerialNumber(stateDB *StateDB, tokenID common.Hash, shardID byte) (map[
 func StoreCommitments(stateDB *StateDB,
 	tokenID common.Hash,
 	pubkey []byte,
-	mapComSnd *map[string][]byte,
+	comSnd map[string][]byte,
 	commitments [][]byte,
 	shardID byte) error {
 
-	comSnd := *mapComSnd
 	commitmentLengthKey := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 	commitmentLength, has, err := stateDB.getCommitmentLengthState(commitmentLengthKey)
 	if err != nil {
@@ -199,6 +199,27 @@ func ListCommitmentIndices(stateDB *StateDB, tokenID common.Hash, shardID byte) 
 	return reverseM, nil
 }
 
+func StoreOnetimeAddress(stateDB *StateDB, tokenID common.Hash, height uint64, outputCoins []byte, shardID byte) error {
+	heightBytes := common.Uint64ToBytes(height)
+	key := GenerateOnetimeAddressObjectKey(tokenID, shardID, heightBytes, outputCoins)
+	value := NewOnetimeAddressStateWithValue(tokenID, shardID, heightBytes, outputCoins)
+	err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreOnetimeAddressError, err)
+	}
+	return nil
+}
+
+func GetOnetimeAddressesByHeight(stateDB *StateDB, tokenID common.Hash, shardID byte, height uint64) ([][]byte, error) {
+	heightBytes := common.Uint64ToBytes(height)
+	onetimeAddressStates := stateDB.getAllOnetimeAddressByPrefix(tokenID, shardID, heightBytes)
+	onetimeAddressesBytes := [][]byte{}
+	for _, onetimeAddressState := range onetimeAddressStates {
+		onetimeAddressesBytes = append(onetimeAddressesBytes, onetimeAddressState.OutputCoin())
+	}
+	return onetimeAddressesBytes, nil
+}
+
 func StoreOutputCoins(stateDB *StateDB, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	for _, outputCoin := range outputCoins {
 		key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
@@ -210,6 +231,7 @@ func StoreOutputCoins(stateDB *StateDB, tokenID common.Hash, publicKey []byte, o
 	}
 	return nil
 }
+
 func GetOutcoinsByPubkey(stateDB *StateDB, tokenID common.Hash, publicKey []byte, shardID byte) ([][]byte, error) {
 	outputCoinStates := stateDB.getAllOutputCoinState(tokenID, shardID, publicKey)
 	o := [][]byte{}

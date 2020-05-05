@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type ShardBlock struct {
@@ -29,7 +29,7 @@ type CrossShardBlock struct {
 	ToShardID       byte
 	MerklePathShard []common.Hash
 	// Cross Shard data for PRV
-	CrossOutputCoin []privacy.OutputCoin
+	CrossOutputCoin []coin.Coin
 	// Cross Shard For Custom token privacy
 	CrossTxTokenPrivacyData []ContentCrossShardTokenPrivacyData
 }

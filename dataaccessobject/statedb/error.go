@@ -20,6 +20,7 @@ const (
 	ErrInvalidCommitmentStateType             = "invalid commitment state type"
 	ErrInvalidSNDerivatorStateType            = "invalid snderivator state type"
 	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
+	ErrInvalidOnetimeAddressStateType 		  = "invalid onetime address state type"
 	ErrInvalidTokenStateType                  = "invalid token state type"
 	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
 	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
@@ -58,6 +59,7 @@ const (
 	GetCommitmentLengthError
 	StoreOutputCoinError
 	GetOutputCoinError
+	StoreOnetimeAddressError
 	StoreSNDerivatorError
 	GetSNDerivatorError
 	StorePrivacyTokenError

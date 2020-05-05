@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -30,15 +32,15 @@ func (txTokenPrivacyData TxPrivacyTokenData) String() string {
 		inputCoins := txTokenPrivacyData.TxNormal.GetProof().GetInputCoins()
 		outputCoins := txTokenPrivacyData.TxNormal.GetProof().GetOutputCoins()
 		for _, out := range outputCoins {
-			record += string(out.CoinDetails.GetPublicKey().ToBytesS())
-			record += strconv.FormatUint(out.CoinDetails.GetValue(), 10)
+			record += string(out.GetPublicKey().ToBytesS())
+			record += strconv.FormatUint(out.GetValue(), 10)
 		}
 		for _, in := range inputCoins {
-			if in.CoinDetails.GetPublicKey() != nil {
-				record += string(in.CoinDetails.GetPublicKey().ToBytesS())
+			if in.GetPublicKey() != nil {
+				record += string(in.GetPublicKey().ToBytesS())
 			}
-			if in.CoinDetails.GetValue() > 0 {
-				record += strconv.FormatUint(in.CoinDetails.GetValue(), 10)
+			if in.GetValue() > 0 {
+				record += strconv.FormatUint(in.GetValue(), 10)
 			}
 		}
 	}
@@ -73,7 +75,7 @@ type CustomTokenPrivacyParamTx struct {
 	Amount         uint64                 `json:"TokenAmount"`
 	TokenTxType    int                    `json:"TokenTxType"`
 	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
-	TokenInput     []*privacy.InputCoin   `json:"TokenInput"`
+	TokenInput     []*coin.PlainCoinV1    `json:"TokenInput"`
 	Mintable       bool                   `json:"TokenMintable"`
 	Fee            uint64                 `json:"TokenFee"`
 }

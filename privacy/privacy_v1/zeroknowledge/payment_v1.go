@@ -102,34 +102,20 @@ func (proof PaymentProof) GetOutputCoins() []coin.Coin {
 	return res
 }
 
-func (proof *PaymentProof) SetInputCoins(v []coin.PlainCoin) error {
+func (proof *PaymentProof) SetInputCoins(v []coin.PlainCoin) {
 	n := len(v)
-	inputCoins := make([]*coin.PlainCoinV1, n)
+	proof.inputCoins = make([]*coin.PlainCoinV1, n)
 	for i := 0; i < n; i += 1 {
-		b := v[i].Bytes()
-		inputCoins[i] = new(coin.PlainCoinV1)
-		err := inputCoins[i].SetBytes(b)
-		if err != nil {
-			return err
-		}
+		proof.inputCoins[i] = v[i].(*coin.PlainCoinV1)
 	}
-	proof.inputCoins = inputCoins
-	return nil
 }
 
-func (proof *PaymentProof) SetOutputCoins(v []coin.Coin) error {
+func (proof *PaymentProof) SetOutputCoins(v []coin.Coin) {
 	n := len(v)
-	outputCoins := make([]*coin.CoinV1, n)
+	proof.outputCoins = make([]*coin.CoinV1, n)
 	for i := 0; i < n; i += 1 {
-		b := v[i].Bytes()
-		outputCoins[i] = new(coin.CoinV1)
-		err := outputCoins[i].SetBytes(b)
-		if err != nil {
-			return err
-		}
+		proof.outputCoins[i] = v[i].(*coin.CoinV1)
 	}
-	proof.outputCoins = outputCoins
-	return nil
 }
 
 // End GET/SET function

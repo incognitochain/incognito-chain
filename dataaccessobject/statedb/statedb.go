@@ -951,6 +951,26 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 	return outputCoins
 }
 
+// ================================= OnetimeAddress OBJECT =======================================
+
+func (stateDB *StateDB) getAllOnetimeAddressByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OnetimeAddressState {
+	temp := stateDB.trie.NodeIterator(GetOnetimeAddressPrefix(tokenID, shardID, height))
+	it := trie.NewIterator(temp)
+	onetimeAddresses := make([]*OnetimeAddressState, 0)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newOnetimeAddress := NewOnetimeAddressState()
+		err := json.Unmarshal(newValue, newOnetimeAddress)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		onetimeAddresses = append(onetimeAddresses, newOnetimeAddress)
+	}
+	return onetimeAddresses
+}
+
 // ================================= SNDerivator OBJECT =======================================
 func (stateDB *StateDB) getSNDerivatorState(key common.Hash) (*SNDerivatorState, bool, error) {
 	sndState, err := stateDB.getStateObject(SNDerivatorObjectType, key)

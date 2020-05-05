@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -19,7 +20,7 @@ type TxPrivacyInitParamsForASM struct {
 func NewTxPrivacyInitParamsForASM(
 	senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoins []*privacy.InputCoin,
+	inputCoins []coin.PlainCoin,
 	fee uint64,
 	hasPrivacy bool,
 	tokenID *common.Hash, // default is nil -> use for prv coin

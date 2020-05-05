@@ -37,6 +37,15 @@ type ViewingKey struct {
 	Rk ReceivingKey // 32 bytes, use to decrypt pointByte
 }
 
+func (viewKey ViewingKey) GetPublicSpend() *operation.Point {
+	pubSpend, _ := new(operation.Point).FromBytesS(viewKey.Pk)
+	return pubSpend
+}
+
+func (viewKey ViewingKey) GetPrivateView() *operation.Scalar {
+	return new(operation.Scalar).FromBytesS(viewKey.Rk)
+}
+
 // PaymentAddress is an address of a payee
 type PaymentAddress struct {
 	Pk PublicKey       // 33 bytes, use to receive coin

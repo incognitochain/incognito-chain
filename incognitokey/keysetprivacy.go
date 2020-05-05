@@ -3,9 +3,12 @@ package incognitokey
 import (
 	"errors"
 
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // KeySet is real raw data of wallet account, which user can use to
@@ -13,16 +16,16 @@ import (
 // - receive coin with payment address
 // - read tx data with readonly key
 type KeySet struct {
-	PrivateKey     privacy.PrivateKey
-	PaymentAddress privacy.PaymentAddress
-	ReadonlyKey    privacy.ViewingKey
+	PrivateKey     key.PrivateKey
+	PaymentAddress key.PaymentAddress
+	ReadonlyKey    key.ViewingKey
 }
 
 // GenerateKey generates key set from seed in byte array
 func (keySet *KeySet) GenerateKey(seed []byte) *KeySet {
-	keySet.PrivateKey = privacy.GeneratePrivateKey(seed)
-	keySet.PaymentAddress = privacy.GeneratePaymentAddress(keySet.PrivateKey[:])
-	keySet.ReadonlyKey = privacy.GenerateViewingKey(keySet.PrivateKey[:])
+	keySet.PrivateKey = key.GeneratePrivateKey(seed)
+	keySet.PaymentAddress = key.GeneratePaymentAddress(keySet.PrivateKey[:])
+	keySet.ReadonlyKey = key.GenerateViewingKey(keySet.PrivateKey[:])
 	return keySet
 }
 
@@ -35,22 +38,22 @@ func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
 	}
 
 	keySet.PrivateKey = privateKey
-	keySet.PaymentAddress = privacy.GeneratePaymentAddress(keySet.PrivateKey[:])
-	keySet.ReadonlyKey = privacy.GenerateViewingKey(keySet.PrivateKey[:])
+	keySet.PaymentAddress = key.GeneratePaymentAddress(keySet.PrivateKey[:])
+	keySet.ReadonlyKey = key.GenerateViewingKey(keySet.PrivateKey[:])
 	return nil
 }
 
 // InitFromPrivateKey receives private key in PrivateKey type,
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
-func (keySet *KeySet) InitFromPrivateKey(privateKey *privacy.PrivateKey) error {
+func (keySet *KeySet) InitFromPrivateKey(privateKey *key.PrivateKey) error {
 	if privateKey == nil || len(*privateKey) != common.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
 
 	keySet.PrivateKey = *privateKey
-	keySet.PaymentAddress = privacy.GeneratePaymentAddress(keySet.PrivateKey[:])
-	keySet.ReadonlyKey = privacy.GenerateViewingKey(keySet.PrivateKey[:])
+	keySet.PaymentAddress = key.GeneratePaymentAddress(keySet.PrivateKey[:])
+	keySet.ReadonlyKey = key.GenerateViewingKey(keySet.PrivateKey[:])
 
 	return nil
 }
@@ -63,8 +66,8 @@ func (keySet KeySet) Sign(data []byte) ([]byte, error) {
 	}
 
 	hash := common.HashB(data)
-	privateKeySig := new(privacy.SchnorrPrivateKey)
-	privateKeySig.Set(new(privacy.Scalar).FromBytesS(keySet.PrivateKey), new(privacy.Scalar).FromUint64(0))
+	privateKeySig := new(schnorr.SchnorrPrivateKey)
+	privateKeySig.Set(new(operation.Scalar).FromBytesS(keySet.PrivateKey), new(operation.Scalar).FromUint64(0))
 
 	signature, err := privateKeySig.Sign(hash)
 	if err != nil {
@@ -80,14 +83,14 @@ func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 	hash := common.HashB(data)
 	isValid := false
 
-	pubKeySig := new(privacy.SchnorrPublicKey)
-	PK, err := new(privacy.Point).FromBytesS(keySet.PaymentAddress.Pk)
+	pubKeySig := new(schnorr.SchnorrPublicKey)
+	PK, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	if err != nil {
 		return false, NewCashecError(InvalidVerificationKeyErr, nil)
 	}
 	pubKeySig.Set(PK)
 
-	signatureSetBytes := new(privacy.SchnSignature)
+	signatureSetBytes := new(schnorr.SchnSignature)
 	err = signatureSetBytes.SetBytes(signature)
 	if err != nil {
 		return false, err

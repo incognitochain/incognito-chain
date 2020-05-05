@@ -83,16 +83,10 @@ func txSigPubKeyFromBytes(b []byte) ([][]*big.Int, error) {
 	return indexes, nil
 }
 
-func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
-	inputCoins := *inp
-	outputCoins := *out
-
-	// Remember which coin commitment existed in inputCoin
-	// The coinCommitment is in the original format (have not changed it to ver2)
-	// The reason why it must be in original format is that we will query db these commitments
+func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
 	listUsableCommitments := make(map[common.Hash][]byte)
 	for _, in := range inputCoins {
-		usableCommitment := in.CoinDetails.GetCoinCommitment().ToBytesS()
+		usableCommitment := in.GetCommitment().ToBytesS()
 		commitmentInHash := common.HashH(usableCommitment)
 		listUsableCommitments[commitmentInHash] = usableCommitment
 	}
@@ -108,12 +102,8 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 
 	outputCommitments := new(operation.Point).Identity()
 	for i := 0; i < len(outputCoins); i += 1 {
-		commitment := coin.ParseCommitmentToV2WithCoin(outputCoins[i].CoinDetails)
-		outputCommitments.Add(outputCommitments, commitment)
+		outputCommitments.Add(outputCommitments, outputCoins[i].GetCommitment())
 	}
-
-	ring := make([][]*operation.Point, ringSize)
-	key := params.senderSK
 
 	feeCommitment := new(operation.Point).ScalarMult(
 		operation.PedCom.G[operation.PedersenValueIndex],
@@ -122,23 +112,23 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 
 	// The indexes array is for validator recheck
 	indexes := make([][]*big.Int, ringSize)
+	ring := make([][]*operation.Point, ringSize)
 	for i := 0; i < ringSize; i += 1 {
 		sumInputs := new(operation.Point).Identity()
 		sumInputs.Sub(sumInputs, feeCommitment)
+		sumInputs.Sub(sumInputs, outputCommitments)
 
 		row := make([]*operation.Point, len(inputCoins))
 		rowIndexes := make([]*big.Int, len(inputCoins))
-
 		if i == pi {
 			for j := 0; j < len(inputCoins); j += 1 {
-				privKey := new(operation.Scalar).FromBytesS(*key)
-				row[j] = new(operation.Point).ScalarMultBase(privKey)
+				row[j] = inputCoins[j].GetPublicKey()
 
-				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j].CoinDetails)
+				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j])
 				sumInputs.Add(sumInputs, coinCommitmentV2)
 
 				// Store index for validator recheck
-				coinCommitmentDB := inputCoins[j].CoinDetails.GetCoinCommitment()
+				coinCommitmentDB := inputCoins[j].GetCommitment()
 				commitmentBytes := coinCommitmentDB.ToBytesS()
 				rowIndexes[j], err = statedb.GetCommitmentIndex(params.stateDB, *params.tokenID, commitmentBytes, shardID)
 				if err != nil {
@@ -149,15 +139,13 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				for {
-					index, _ := common.RandBigIntMaxRange(lenCommitment)
-					rowIndexes[j] = index
-
-					ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+					rowIndexes[j], _ = common.RandBigIntMaxRange(lenCommitment)
+					ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
 					if !ok || err != nil {
 						Logger.Log.Errorf("Has commitment index error %v ", err)
 						return nil, nil, err
 					}
-					commitment, publicKey, snd, err := statedb.GetCommitmentPublicKeyAddditionalByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+					commitment, publicKey, snd, err := statedb.GetCommitmentPublicKeyAddditionalByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
 					if err != nil {
 						Logger.Log.Errorf("Get Commitment PublicKey and Additional by index error %v ", err)
 						return nil, nil, err
@@ -195,33 +183,33 @@ func generateMlsagRingWithIndexes(inp *[]*coin.InputCoin, out *[]*coin.OutputCoi
 				}
 			}
 		}
-		row = append(row, sumInputs.Sub(sumInputs, outputCommitments))
+		row = append(row, sumInputs)
 		ring[i] = row
 		indexes[i] = rowIndexes
 	}
-	mlsagring := mlsag.NewRing(ring)
-	return mlsagring, indexes, nil
+	return mlsag.NewRing(ring), indexes, nil
 }
 
-func createPrivKeyMlsag(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, senderSK *key.PrivateKey) *[]*operation.Scalar {
-	inputCoins := *inp
-	outputCoins := *out
-
+func createPrivKeyMlsag(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, senderSK *key.PrivateKey) ([]*operation.Scalar, error) {
 	sumRand := new(operation.Scalar).FromUint64(0)
 	for _, in := range inputCoins {
-		sumRand.Add(sumRand, in.CoinDetails.GetRandomness())
+		sumRand.Add(sumRand, in.GetRandomness())
 	}
 	for _, out := range outputCoins {
-		sumRand.Sub(sumRand, out.CoinDetails.GetRandomness())
+		sumRand.Sub(sumRand, out.GetRandomness())
 	}
 
-	sk := new(operation.Scalar).FromBytesS(*senderSK)
 	privKeyMlsag := make([]*operation.Scalar, len(inputCoins)+1)
 	for i := 0; i < len(inputCoins); i += 1 {
-		privKeyMlsag[i] = sk
+		var err error
+		privKeyMlsag[i], err = inputCoins[i].ParsePrivateKeyOfCoin(*senderSK)
+		if err != nil {
+			Logger.Log.Errorf("Cannot parse private key of coin %v", err)
+			return nil, err
+		}
 	}
 	privKeyMlsag[len(inputCoins)] = sumRand
-	return &privKeyMlsag
+	return privKeyMlsag, nil
 }
 
 func txSignatureToBytes(mlsagSignature *mlsag.MlsagSig) ([]byte, error) {
@@ -292,7 +280,7 @@ func txSignatureFromBytesAndKeyImages(b []byte, keyImages []*operation.Point) (*
 }
 
 // signTx - signs tx
-func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params *TxPrivacyInitParams) error {
+func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPrivacyInitParams) error {
 	if tx.Sig != nil {
 		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
@@ -310,19 +298,26 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 		Logger.Log.Errorf("generateMlsagRingWithIndexes got error %v ", err)
 		return err
 	}
-	privKeysMlsag := *createPrivKeyMlsag(inp, out, params.senderSK)
+	privKeysMlsag, err := createPrivKeyMlsag(inp, out, params.senderSK)
+	if err != nil {
+		Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
+		return err
+	}
+
 	keyImages := mlsag.ParseKeyImages(privKeysMlsag)
 	for i := 0; i < len(tx.Proof.GetInputCoins()); i += 1 {
-		tx.Proof.GetInputCoins()[i].CoinDetails.SetSerialNumber(keyImages[i])
+		tx.Proof.GetInputCoins()[i].SetKeyImage(keyImages[i])
 	}
 
 	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
 
-	tx.sigPrivKey, err = privacy.ArrayScalarToBytes(&privKeysMlsag)
-	if err != nil {
-		Logger.Log.Errorf("tx.SigPrivKey cannot parse arrayScalar to Bytes, error %v ", err)
-		return err
-	}
+	// TODO Privacy
+	// Should we put private key to tx??? why ????
+	//tx.sigPrivKey, err = privacy.ArrayScalarToBytes(&privKeysMlsag)
+	//if err != nil {
+	//	Logger.Log.Errorf("tx.SigPrivKey cannot parse arrayScalar to Bytes, error %v ", err)
+	//	return err
+	//}
 
 	tx.SigPubKey, err = txSigPubKeyToBytes(indexes)
 	if err != nil {
@@ -341,36 +336,60 @@ func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params 
 	return err
 }
 
+func parsePaymentToCoinVer2(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV2, error) {
+	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
+	for index, info := range paymentInfo {
+		c := new(coin.CoinV2)
+		c.SetVersion(2)
+
+		publicSpendKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
+		if err != nil {
+			Logger.Log.Errorf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
+			return nil, err
+		}
+		publicSpendKeyBytes := publicSpendKey.ToBytesS()
+		shardID := common.GetShardIDFromLastByte(publicSpendKeyBytes[len(publicSpendKeyBytes)-1])
+
+		c.SetShardID(shardID)
+		c.SetIndex(uint8(index))
+		c.SetInfo(info.Message)
+
+		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
+		r := operation.RandomScalar()
+		c.SetMask(r)
+		c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+		c.SetCommitment(coin.ParseCommitmentFromMaskAndAmount(
+			r,
+			c.GetAmount()),
+		)
+		c.SetPublicKey(coin.ParseOnetimeAddress(
+			info.PaymentAddress.GetPublicSpend(),
+			info.PaymentAddress.GetPublicView(),
+			r,
+			uint8(index&0xFF),
+		))
+		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+		outputCoins[index] = c
+	}
+	return outputCoins, nil
+}
+
 func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
-	fmt.Println("Proving")
-	fmt.Println("Proving")
-	fmt.Println("Proving")
-	fmt.Println("Proving")
-	outputCoins, err := parseOutputCoins(params)
+	outputCoins, err := parsePaymentToCoinVer2(params.paymentInfo)
 	if err != nil {
-		Logger.Log.Errorf("Cannot parse outputcoin, error %v ", err)
+		Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 		return err
 	}
-	for i := 0; i < len(*outputCoins); i += 1 {
-		(*outputCoins)[i].CoinDetails.SetRandomness(operation.RandomScalar())
-		(*outputCoins)[i].CoinDetails.SetCoinCommitment(
-			coin.ParseCommitmentToV2WithCoin((*outputCoins)[i].CoinDetails),
-		)
-	}
-	inputCoins := &params.inputCoins
 
-	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, &params.paymentInfo)
+	// inputCoins is plainCoin because it may have coinV1 with coinV2
+	inputCoins := params.inputCoins
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, params.paymentInfo)
 	if err != nil {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
 	}
 
 	err = signTxVer2(inputCoins, outputCoins, tx, params)
-	fmt.Println("Done Proving")
-	fmt.Println("Done Proving")
-	fmt.Println("Done Proving")
-	fmt.Println("Done Proving")
-	fmt.Println("Done Proving")
 	return err
 }
 
@@ -391,7 +410,7 @@ func getRingFromIndexesWithDatabase(tx *Tx, indexes [][]*big.Int, transactionSta
 	outputCoins := tx.Proof.GetOutputCoins()
 	outputCommitments := new(operation.Point).Identity()
 	for i := 0; i < len(outputCoins); i += 1 {
-		commitment := outputCoins[i].CoinDetails.GetCoinCommitment()
+		commitment := outputCoins[i].GetCommitment()
 		outputCommitments.Add(outputCommitments, commitment)
 	}
 	feeCommitment := new(operation.Point).ScalarMult(
@@ -449,23 +468,7 @@ func getRingFromIndexesWithDatabase(tx *Tx, indexes [][]*big.Int, transactionSta
 		}
 		ring[i] = row
 	}
-
-	// Why???
-	if isNewTransaction {
-		for i := 0; i < len(outputCoins); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
-				if err != nil {
-					Logger.Log.Error(err)
-				}
-				Logger.Log.Errorf("snd existed: %d\n", i)
-				return nil, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
-			}
-		}
-	}
-
-	mlsagRing := mlsag.NewRing(ring)
-	return mlsagRing, nil
+	return mlsag.NewRing(ring), nil
 }
 
 // verifySigTx - verify signature on tx
@@ -490,10 +493,10 @@ func verifySigTxVer2(tx *Tx, transactionStateDB *statedb.StateDB, shardID byte, 
 	inputCoins := tx.Proof.GetInputCoins()
 	keyImages := make([]*operation.Point, len(inputCoins)+1)
 	for i := 0; i < len(inputCoins); i += 1 {
-		keyImages[i] = inputCoins[i].CoinDetails.GetSerialNumber()
+		keyImages[i] = inputCoins[i].GetKeyImage()
 	}
 	// The last column is gone, so just fill in any value
-	keyImages[len(inputCoins)] = privacy.RandomPoint()
+	keyImages[len(inputCoins)] = operation.RandomPoint()
 
 	txSig, err := txSignatureFromBytesAndKeyImages(tx.Sig, keyImages)
 	if err != nil {
@@ -506,11 +509,6 @@ func verifySigTxVer2(tx *Tx, transactionStateDB *statedb.StateDB, shardID byte, 
 
 // TODO privacy
 func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	fmt.Println("Verifying")
-	fmt.Println("Verifying")
-	fmt.Println("Verifying")
-	fmt.Println("Verifying")
-
 	var valid bool
 	var err error
 
@@ -534,11 +532,6 @@ func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 
 	// Verify the payment proof
 	var txProofV2 *privacy.ProofV2 = tx.Proof.(*privacy.ProofV2)
-	fmt.Println("Done Verifying")
-	fmt.Println("Done Verifying")
-	fmt.Println("Done Verifying")
-	fmt.Println("Done Verifying")
-
 	valid, err = txProofV2.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil)
 	if !valid {
 		if err != nil {

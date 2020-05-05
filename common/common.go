@@ -277,6 +277,13 @@ func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
 }
 
+// RandBytes generates random bytes with length
+func RandBytes(length int) []byte {
+	rbytes := make([]byte, length)
+	rand.Read(rbytes)
+	return rbytes
+}
+
 // CompareStringArray receives 2 arrays of string
 // and check whether 2 arrays is the same or not
 func CompareStringArray(src []string, dst []string) bool {

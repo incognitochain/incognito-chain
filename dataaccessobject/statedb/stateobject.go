@@ -43,6 +43,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newCommitmentLengthObjectWithValue(db, hash, value)
 	case OutputCoinObjectType:
 		return newOutputCoinObjectWithValue(db, hash, value)
+	case OnetimeAddressObjectType:
+		return newOnetimeAddressObjectWithValue(db, hash, value)
 	case SNDerivatorObjectType:
 		return newSNDerivatorObjectWithValue(db, hash, value)
 	case WaitingPDEContributionObjectType:

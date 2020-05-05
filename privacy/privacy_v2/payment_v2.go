@@ -18,43 +18,44 @@ import (
 type PaymentProofV2 struct {
 	Version              uint8
 	aggregatedRangeProof *bulletproofs.AggregatedRangeProof
-	inputCoins           []*coin.PlainCoinV2
+	inputCoins           []*coin.CoinV2
 	outputCoins          []*coin.CoinV2
 }
 
-func (proof *PaymentProofV2) GetVersion() uint8                 { return 2 }
-func (proof PaymentProofV2) GetInputCoins() []*coin.PlainCoinV2 { return proof.inputCoins }
-func (proof PaymentProofV2) GetOutputCoins() []*coin.CoinV2     { return proof.outputCoins }
+func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
 
-func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
-func (proof *PaymentProofV2) SetInputCoins(v []*coin.PlainCoinV2) error {
-	n := len(v)
-	inputCoins := make([]*coin.PlainCoinV2, n)
-	for i := 0; i < n; i += 1 {
-		b := v[i].Bytes()
-		inputCoins[i] = new(coin.PlainCoinV2)
-		err := inputCoins[i].SetBytes(b)
-		if err != nil {
-			return err
-		}
+func (proof PaymentProofV2) GetInputCoins() []coin.PlainCoin {
+	res := make([]coin.PlainCoin, len(proof.inputCoins))
+	for i := 0; i < len(proof.inputCoins); i += 1 {
+		res[i] = proof.inputCoins[i]
 	}
-	proof.inputCoins = inputCoins
-	return nil
+	return res
 }
 
-func (proof *PaymentProofV2) SetOutputCoins(v []*coin.CoinV2) error {
-	n := len(v)
-	outputCoins := make([]*coin.CoinV2, n)
-	for i := 0; i < n; i += 1 {
-		b := v[i].Bytes()
-		outputCoins[i] = new(coin.CoinV2)
-		err := outputCoins[i].SetBytes(b)
-		if err != nil {
-			return err
-		}
+func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
+	res := make([]coin.Coin, len(proof.outputCoins))
+	for i := 0; i < len(proof.outputCoins); i += 1 {
+		res[i] = proof.outputCoins[i]
 	}
-	proof.outputCoins = outputCoins
-	return nil
+	return res
+}
+
+func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
+func (proof *PaymentProofV2) SetInputCoins(v []coin.PlainCoin) {
+	n := len(v)
+	proof.inputCoins = make([]*coin.CoinV2, n)
+	for i := 0; i < n; i += 1 {
+		proof.inputCoins[i] = v[i].(*coin.CoinV2)
+	}
+}
+
+func (proof *PaymentProofV2) SetOutputCoinsV2(v []*coin.CoinV2) { proof.outputCoins = v }
+func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) {
+	n := len(v)
+	proof.outputCoins = make([]*coin.CoinV2, n)
+	for i := 0; i < n; i += 1 {
+		proof.outputCoins[i] = v[i].(*coin.CoinV2)
+	}
 }
 
 func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
@@ -65,7 +66,7 @@ func (proof *PaymentProofV2) Init() {
 	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
 	proof.aggregatedRangeProof = aggregatedRangeProof
-	proof.inputCoins = []*coin.PlainCoinV2{}
+	proof.inputCoins = []*coin.CoinV2{}
 	proof.outputCoins = []*coin.CoinV2{}
 }
 
@@ -172,7 +173,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	}
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.inputCoins = make([]*coin.PlainCoinV2, lenInputCoinsArray)
+	proof.inputCoins = make([]*coin.CoinV2, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
@@ -180,7 +181,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
-		proof.inputCoins[i] = new(coin.PlainCoinV2)
+		proof.inputCoins[i] = new(coin.CoinV2)
 		if offset+lenInputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
@@ -266,24 +267,16 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 }
 
 // Privacy TODO: update version 2 remember to fix this
-func Prove(inp *[]*coin.PlainCoinV2, out *[]*coin.CoinV2, hasPrivacy bool, paymentInfoPtr *[]*key.PaymentInfo) (*PaymentProofV2, error) {
-	paymentInfo := *paymentInfoPtr
-	inputCoins := *inp
-	outputCoins := *out
-	// Init proof
+func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
+	var err error
+
 	proof := new(PaymentProofV2)
 	proof.SetVersion()
-
 	aggregateproof := new(bulletproofs.AggregatedRangeProof)
 	aggregateproof.Init()
 	proof.aggregatedRangeProof = aggregateproof
-
-	if err := proof.SetInputCoins(inputCoins); err != nil {
-		return nil, err
-	}
-	if err := proof.SetOutputCoins(outputCoins); err != nil {
-		return nil, err
-	}
+	proof.SetInputCoins(inputCoins)
+	proof.SetOutputCoinsV2(outputCoins)
 
 	// If not have privacy then don't need to prove range
 	if !hasPrivacy {
@@ -301,28 +294,17 @@ func Prove(inp *[]*coin.PlainCoinV2, out *[]*coin.CoinV2, hasPrivacy bool, payme
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
 	wit.Set(outputValues, outputRands)
-	var err error
 	proof.aggregatedRangeProof, err = wit.Prove()
 	if err != nil {
 		return nil, err
 	}
 
 	// After Prove, we should hide all information in coin details.
-	// encrypt coin details (Randomness)
-	// hide information of output coins except coin commitments, public key
-	for i := 0; i < len(proof.GetOutputCoins()); i++ {
-		err = proof.GetOutputCoins()[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
-		if err.(*errhandler.PrivacyError) != nil {
-			return nil, err.(*errhandler.PrivacyError)
-		}
-		// proof.GetOutputCoins()[i].CoinDetails.SetSNDerivator(nil)
-		proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
-		proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
-		proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
+	for i := 0; i < len(proof.outputCoins); i++ {
+		proof.outputCoins[i].ConcealData(paymentInfo[i].PaymentAddress.GetPublicView())
 	}
-
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.GetInputCoins()[i].ConcealData()
+		proof.inputCoins[i].ConcealData(paymentInfo[i].PaymentAddress.GetPublicView())
 	}
 
 	return proof, nil

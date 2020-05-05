@@ -1,10 +1,13 @@
 package coin
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -367,12 +370,16 @@ type CoinV1 struct {
 	CoinDetailsEncrypted *henc.HybridCipherText
 }
 
+// CoinV1 does not have index so return 0
+func (c CoinV1) GetIndex() uint8                   { return 0 }
 func (c CoinV1) GetVersion() uint8                 { return 1 }
 func (c CoinV1) GetPublicKey() *operation.Point    { return c.CoinDetails.GetPublicKey() }
 func (c CoinV1) GetCommitment() *operation.Point   { return c.CoinDetails.GetCommitment() }
 func (c CoinV1) GetKeyImage() *operation.Point     { return c.CoinDetails.GetKeyImage() }
+func (c CoinV1) GetRandomness() *operation.Scalar  { return c.CoinDetails.GetRandomness() }
 func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSNDerivator() }
 func (c CoinV1) GetShardID() uint8                 { return c.CoinDetails.GetShardID() }
+func (c CoinV1) GetValue() uint64                  { return c.CoinDetails.GetValue() }
 func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
 func (c CoinV1) IsEncrypted() bool                 { return true }
 
@@ -384,6 +391,17 @@ func (c *CoinV1) Init() *CoinV1 {
 	c.CoinDetails = new(PlainCoinV1).Init()
 	c.CoinDetailsEncrypted = new(henc.HybridCipherText)
 	return c
+}
+
+// For ver1, privateKey of coin is privateKey of user
+func (c PlainCoinV1) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
+	return new(operation.Scalar).FromBytesS(privKey), nil
+}
+
+func (c PlainCoinV1) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
+	k, _ := c.ParsePrivateKeyOfCoin(privKey)
+	Hp := operation.HashToPoint(c.GetPublicKey().ToBytesS())
+	return new(operation.Point).ScalarMult(Hp, k), nil
 }
 
 // Bytes (OutputCoin) converts a output coin's details to a bytes array
@@ -507,16 +525,38 @@ func (c *CoinV1) Encrypt(recipientTK key.TransmissionKey) *errhandler.PrivacyErr
 	return nil
 }
 
-// Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
-func (c *CoinV1) Decrypt(viewingKey key.ViewingKey) *errhandler.PrivacyError {
-	msg, err := henc.HybridDecrypt(c.CoinDetailsEncrypted, new(operation.Scalar).FromBytesS(viewingKey.Rk))
-	if err != nil {
-		return errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
+	if keySet == nil {
+		err := errors.New("Cannot decrypt coinv1 with empty key")
+		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
-
-	// Assign randomness and value to outputCoin details
-	c.CoinDetails.randomness = new(operation.Scalar).FromBytesS(msg[0:operation.Ed25519KeySize])
-	c.CoinDetails.value = new(big.Int).SetBytes(msg[operation.Ed25519KeySize:]).Uint64()
-
-	return nil
+	coinPubkey := c.GetPublicKey().ToBytesS()
+	if bytes.Equal(coinPubkey, keySet.PaymentAddress.Pk[:]) {
+		result := &CoinV1{
+			CoinDetails:          c.CoinDetails,
+			CoinDetailsEncrypted: c.CoinDetailsEncrypted,
+		}
+		if result.CoinDetailsEncrypted != nil && !result.CoinDetailsEncrypted.IsNil() {
+			if len(keySet.ReadonlyKey.Rk) > 0 {
+				msg, err := henc.HybridDecrypt(c.CoinDetailsEncrypted, new(operation.Scalar).FromBytesS(keySet.ReadonlyKey.Rk))
+				if err != nil {
+					return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+				}
+				// Assign randomness and value to outputCoin details
+				result.CoinDetails.randomness = new(operation.Scalar).FromBytesS(msg[0:operation.Ed25519KeySize])
+				result.CoinDetails.value = new(big.Int).SetBytes(msg[operation.Ed25519KeySize:]).Uint64()
+			}
+		}
+		if len(keySet.PrivateKey) > 0 {
+			// check spent with private key
+			keyImage := new(operation.Point).Derive(
+				operation.PedCom.G[operation.PedersenPrivateKeyIndex],
+				new(operation.Scalar).FromBytesS(keySet.PrivateKey),
+				result.CoinDetails.GetSNDerivator())
+			result.CoinDetails.SetKeyImage(keyImage)
+		}
+		return result.CoinDetails, nil
+	}
+	err := errors.New("coin publicKey does not equal keyset paymentAddress")
+	return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 }

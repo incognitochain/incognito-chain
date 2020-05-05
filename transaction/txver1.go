@@ -88,7 +88,7 @@ func generateSndOut(params *TxPrivacyInitParams) []*operation.Scalar {
 		}
 
 		// if sndOuts has two elements that have same value, then re-generates it
-		ok = privacy.CheckDuplicateScalarArray(sndOuts)
+		ok = operation.CheckDuplicateScalarArray(sndOuts)
 		if ok {
 			sndOuts = make([]*operation.Scalar, 0)
 		}
@@ -295,7 +295,7 @@ func validateSndFromOutputCoin(outputCoins []*coin.CoinV1) error {
 	for i := 0; i < len(outputCoins); i++ {
 		sndOutputs[i] = outputCoins[i].GetSNDerivator()
 	}
-	if privacy.CheckDuplicateScalarArray(sndOutputs) {
+	if operation.CheckDuplicateScalarArray(sndOutputs) {
 		Logger.Log.Errorf("Duplicate output coins' snd\n")
 		return NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 	}

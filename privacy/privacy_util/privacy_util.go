@@ -1,7 +1,6 @@
 package privacy_util
 
 import (
-	"crypto/rand"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -26,13 +25,6 @@ func BigIntToScalar(bi *big.Int) *operation.Scalar {
 		return nil
 	}
 	return sc
-}
-
-// RandBytes generates random bytes with length
-func RandBytes(length int) []byte {
-	rbytes := make([]byte, length)
-	rand.Read(rbytes)
-	return rbytes
 }
 
 // ConvertIntToBinary represents a integer number in binary array with little endian with size n

@@ -69,19 +69,25 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil || len(paramsArray) < 3 {
+	if paramsArray == nil || len(paramsArray) < 4 {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
+	heightTemp, ok := paramsArray[0].(float64)
+	if !ok {
+		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
+	}
+	shardHeight := uint64(heightTemp)
 
-	minTemp, ok := paramsArray[0].(float64)
+	minTemp, ok := paramsArray[1].(float64)
 	if !ok {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
 	}
 	min := int(minTemp)
 
-	maxTemp, ok := paramsArray[1].(float64)
+	maxTemp, ok := paramsArray[2].(float64)
 	if !ok {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
@@ -92,7 +98,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	_ = max
 
 	//#3: list key component
-	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	listKeyParams := common.InterfaceSlice(paramsArray[3])
 	if listKeyParams == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("list key is invalid"))
 	}
@@ -103,9 +109,9 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
 	}
-	if len(paramsArray) > 3 {
+	if len(paramsArray) > 4 {
 		var err1 error
-		tokenIdParam, ok := paramsArray[3].(string)
+		tokenIdParam, ok := paramsArray[4].(string)
 		if !ok {
 			Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
@@ -117,7 +123,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
 		}
 	}
-	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID)
+	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID, shardHeight)
 	if err1 != nil {
 		return nil, err1
 	}

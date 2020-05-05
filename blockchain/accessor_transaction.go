@@ -29,45 +29,21 @@ import (
 // in case private key: return unspent outputcoin tx
 // in case read only key: return all outputcoin tx with amount value
 // in case payment address: return all outputcoin tx with no amount value
-func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoinTemp coin.Coin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) coin.Coin {
-	version := outCoinTemp.GetVersion()
-	pubkeyCompress := outCoinTemp.GetPublicKey().ToBytesS()
-
-	if version == 1 {
-		outCoin := outCoinTemp.(*coin.CoinV1)
-		if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
-			result := &coin.CoinV1{
-				CoinDetails:          outCoin.CoinDetails,
-				CoinDetailsEncrypted: outCoin.CoinDetailsEncrypted,
-			}
-			if result.CoinDetailsEncrypted != nil && !result.CoinDetailsEncrypted.IsNil() {
-				if len(keySet.ReadonlyKey.Rk) > 0 {
-					// try to decrypt to get more data
-					err := result.Decrypt(keySet.ReadonlyKey)
-					if err != nil {
-						return nil
-					}
-				}
-			}
-			if len(keySet.PrivateKey) > 0 {
-				// check spent with private key
-				result.CoinDetails.SetKeyImage(
-					new(privacy.Point).Derive(
-						privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
-						new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
-						result.CoinDetails.GetSNDerivator()))
-				ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, result.CoinDetails.GetKeyImage().ToBytesS(), shardID)
-				if ok || err != nil {
-					return nil
-				}
-			}
-			return result
-		} else {
-			// TODO PRIVACY
+func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin coin.Coin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) (coin.PlainCoin, error) {
+	result, err := outCoin.Decrypt(keySet)
+	if err != nil {
+		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
+		return nil, err
+	}
+	keyImage := result.GetKeyImage()
+	if keyImage != nil {
+		ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, keyImage.ToBytesS(), shardID)
+		if ok || err != nil {
+			Logger.log.Errorf("There is something wrong when check key image %v", err)
+			return nil, err
 		}
 	}
-
-	return nil
+	return result, nil
 }
 
 func storePRV(transactionStateRoot *statedb.StateDB) error {
@@ -235,6 +211,40 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	return txsSpamRemoved, nil
 }
 
+func (blockchain *BlockChain) GetOutcoinsBytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
+	var err error
+	var outCoinsBytes [][]byte
+	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+
+	// Get outcoins in ver1 by publicSpend key
+	outCoinsBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
+	if err != nil {
+		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
+		return nil, err
+	}
+
+	// Get outcoins in ver2 by privateView key
+	currentHeight := blockchain.BestState.Shard[shardID].ShardHeight
+	for height := shardHeight; height <= currentHeight; height += 1 {
+		currentHeightCoins, err := statedb.GetOnetimeAddressesByHeight(transactionStateDB, *tokenID, shardID, shardHeight)
+		if err != nil {
+			Logger.log.Error("GetOutcoinsBytesByKeyset Get By Height", err)
+			return nil, err
+		}
+		for _, coinBytes := range currentHeightCoins {
+			c, err := coin.CreateCoinFromByte(coinBytes)
+			if err != nil {
+				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
+				return nil, err
+			}
+			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
+				outCoinsBytes = append(outCoinsBytes, currentHeightCoins...)
+			}
+		}
+	}
+	return outCoinsBytes, nil
+}
+
 //GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 //With private-key, we can check unspent tx by check serialNumber from database
 //- Param #1: keyset - (priv-key, payment-address, readonlykey)
@@ -242,7 +252,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 //in case readonly-key: return all outputcoin tx with amount value
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.Coin, error) {
+func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCoinsInBytes [][]byte
@@ -261,7 +271,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 		}
 		if len(outCoinsInBytes) == 0 {
 			// cached data is nil or fail -> get from database
-			outCoinsInBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
+			outCoinsInBytes, err = blockchain.GetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 			if len(outCoinsInBytes) > 0 {
 				// cache 1 day for result
 				cachedData, err = json.Marshal(outCoinsInBytes)
@@ -272,27 +282,21 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 		}
 	}
 	if len(outCoinsInBytes) == 0 {
-		outCoinsInBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
+		outCoinsInBytes, err = blockchain.GetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 		if err != nil {
 			return nil, err
 		}
-	}
-	// convert from []byte to object
-	outCoins := make([]coin.Coin, 0)
-	for _, item := range outCoinsInBytes {
-		outcoin, err := coin.CreateCoinFromByte(item)
-		if err != nil {
-			return nil, err
-		}
-		outCoins = append(outCoins, outcoin)
 	}
 	// loop on all outputcoin to decrypt data
-	results := make([]coin.Coin, 0)
-	for _, out := range outCoins {
-		decryptedOut := DecryptOutputCoinByKey(transactionStateDB, out, keyset, tokenID, shardID)
-		if decryptedOut == nil {
-			continue
-		} else {
+	results := make([]coin.PlainCoin, 0)
+	for _, item := range outCoinsInBytes {
+		outCoin, err := coin.CreateCoinFromByte(item)
+		if err != nil {
+			Logger.log.Errorf("Cannot create coin from byte %v", err)
+			return nil, err
+		}
+		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+		if decryptedOut != nil {
 			results = append(results, decryptedOut)
 		}
 	}
@@ -499,7 +503,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 
 			// commitment
 			commitmentsArray := view.mapCommitments[k]
-			err = statedb.StoreCommitments(stateDB, *view.tokenID, publicKeyBytes, &mapComSnd, commitmentsArray, view.shardID)
+			err = statedb.StoreCommitments(stateDB, *view.tokenID, publicKeyBytes, mapComSnd, commitmentsArray, view.shardID)
 			if err != nil {
 				return err
 			}

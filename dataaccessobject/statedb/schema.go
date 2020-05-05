@@ -3,9 +3,10 @@ package statedb
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 var (
@@ -24,6 +25,7 @@ var (
 	commitmentLengthPrefix             = []byte("com-length-")
 	snDerivatorPrefix                  = []byte("sn-derivator-")
 	outputCoinPrefix                   = []byte("output-coin-")
+	onetimeAddressPrefix			   = []byte("onetime-address-")
 	tokenPrefix                        = []byte("token-")
 	tokenTransactionPrefix             = []byte("token-transaction-")
 	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
@@ -115,6 +117,11 @@ func GetSNDerivatorPrefix(tokenID common.Hash) []byte {
 
 func GetOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
 	h := common.HashH(append(outputCoinPrefix, append(tokenID[:], append(publicKey, shardID)...)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOnetimeAddressPrefix(tokenID common.Hash, shardID byte, height []byte) []byte {
+	h := common.HashH(append(onetimeAddressPrefix, append(tokenID[:], append(height, shardID)...)...))
 	return h[:][:prefixHashKeyLength]
 }
 
