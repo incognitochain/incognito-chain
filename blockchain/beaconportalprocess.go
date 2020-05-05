@@ -761,9 +761,19 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 		// update custodian state
 		for _, cus := range actionData.MatchingCustodianDetail {
+			Logger.log.Infof("[processPortalRedeemRequest] cus.GetIncognitoAddress = %s in beaconHeight=%d", cus.GetIncognitoAddress(), beaconHeight)
 			custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cus.GetIncognitoAddress())
 			custodianStateKeyStr := custodianStateKey.String()
-			holdingPubTokenTmp := currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()
+			custodianState, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
+			if !ok {
+				Logger.log.Errorf("[processPortalRedeemRequest] custodianStateKeyStr %s is not found", custodianStateKeyStr)
+				return nil
+			}
+			if custodianState == nil {
+				Logger.log.Error("[processPortalRedeemRequest] custodianState is nil")
+				return nil
+			}
+			holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
 			if holdingPubTokenTmp[tokenID] < cus.GetAmount() {
 				Logger.log.Errorf("[processPortalRedeemRequest] Amount holding public tokens is less than matching redeem amount")
 				return nil
