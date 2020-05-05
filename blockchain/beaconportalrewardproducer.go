@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math/big"
+	"sort"
 	"strconv"
 )
 
@@ -88,9 +89,29 @@ func splitRewardForCustodians(
 	custodianState map[string]*statedb.CustodianState,
 	rewardInfos []*statedb.PortalRewardInfo) []*statedb.PortalRewardInfo {
 	totalLockedCollateral := lockedCollateralState.GetTotalLockedCollateralInEpoch()
-	for _, custodian := range custodianState {
+
+	// sort totalCustodianReward before processing
+	sortedTotalCustodianRewardKeys := make([]common.Hash, 0)
+	for key := range totalCustodianReward {
+		sortedTotalCustodianRewardKeys = append(sortedTotalCustodianRewardKeys, key)
+	}
+	sort.Slice(sortedTotalCustodianRewardKeys, func(i, j int) bool {
+		return sortedTotalCustodianRewardKeys[i].String() < sortedTotalCustodianRewardKeys[j].String()
+	})
+
+	// sort custodianState before processing
+	sortedCustodianKeys := make([]string, 0)
+	for key := range custodianState {
+		sortedCustodianKeys = append(sortedCustodianKeys, key)
+	}
+	sort.Strings(sortedCustodianKeys)
+
+	for _, key := range sortedCustodianKeys {
+		custodian := custodianState[key]
 		lockedCollateralCustodian := lockedCollateralState.GetLockedCollateralDetail()[custodian.GetIncognitoAddress()]
-		for tokenID, amount := range totalCustodianReward {
+		for _, totalRewardKey := range sortedTotalCustodianRewardKeys {
+			tokenID := totalRewardKey
+			amount := totalCustodianReward[totalRewardKey]
 			tmp := new(big.Int).Mul(new(big.Int).SetUint64(lockedCollateralCustodian), new(big.Int).SetUint64(amount))
 			splitedReward := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalLockedCollateral))
 			rewardInfos = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward.Uint64())
@@ -107,7 +128,14 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
 	// and split fees for matching custodians
-	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
+	// Note: need to sort maps before processing
+	sortedWaitingPortingReqKeys := make([]string, 0)
+	for key := range currentPortalState.WaitingPortingRequests {
+		sortedWaitingPortingReqKeys = append(sortedWaitingPortingReqKeys, key)
+	}
+	sort.Strings(sortedWaitingPortingReqKeys)
+	for _, key := range sortedWaitingPortingReqKeys {
+		waitingPortingReq := currentPortalState.WaitingPortingRequests[key]
 		if waitingPortingReq.BeaconHeight() == beaconHeight+1 {
 			rewardInfos = splitPortingFeeForMatchingCustodians(
 				waitingPortingReq.PortingFee(),
@@ -120,7 +148,13 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 	// get redeem fee from waiting redeem request at beaconHeight + 1 (new waiting redeem requests)
 	// and split fees for matching custodians
-	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
+	sortedWaitingRedeemReqKeys := make([]string, 0)
+	for key := range currentPortalState.WaitingRedeemRequests {
+		sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
+	}
+	sort.Strings(sortedWaitingRedeemReqKeys)
+	for _, key := range sortedWaitingRedeemReqKeys {
+		waitingRedeemReq := currentPortalState.WaitingRedeemRequests[key]
 		if waitingRedeemReq.GetBeaconHeight() == beaconHeight+1 {
 			rewardInfos = splitRedeemFeeForMatchingCustodians(
 				waitingRedeemReq.GetRedeemFee(),
@@ -145,7 +179,19 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 			// create instruction for total custodian rewards
 			totalCustodianRewardSlice := make([]*statedb.RewardInfoDetail, 0)
-			for tokenID, amount := range rewardForCustodianByEpoch {
+
+			// sort totalCustodianReward before processing
+			sortedCustodianRewardKeys := make([]common.Hash, 0)
+			for key := range rewardForCustodianByEpoch {
+				sortedCustodianRewardKeys = append(sortedCustodianRewardKeys, key)
+			}
+			sort.Slice(sortedCustodianRewardKeys, func(i, j int) bool {
+				return sortedCustodianRewardKeys[i].String() < sortedCustodianRewardKeys[j].String()
+			})
+
+			for _, key := range sortedCustodianRewardKeys {
+				tokenID := key
+				amount := rewardForCustodianByEpoch[key]
 				totalCustodianRewardSlice = append(totalCustodianRewardSlice,
 					statedb.NewRewardInfoDetailWithValue(tokenID.String(), amount))
 			}
