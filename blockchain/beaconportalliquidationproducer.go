@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -139,7 +140,13 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	liquidatedByExchangeRate := false
 
-	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
+	sortedWaitingRedeemReqKeys := make([]string, 0)
+	for key := range currentPortalState.WaitingRedeemRequests {
+		sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
+	}
+	sort.Strings(sortedWaitingRedeemReqKeys)
+	for _, redeemReqKey := range sortedWaitingRedeemReqKeys {
+		redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
 		if (beaconHeight+1) - redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutCustodianSendPubTokenBack) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
@@ -331,7 +338,13 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
 	insts := [][]string{}
-	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
+	sortedWaitingPortingReqKeys := make([]string, 0)
+	for key := range currentPortalState.WaitingPortingRequests {
+		sortedWaitingPortingReqKeys = append(sortedWaitingPortingReqKeys, key)
+	}
+	sort.Strings(sortedWaitingPortingReqKeys)
+	for _, portingReqKey := range sortedWaitingPortingReqKeys {
+		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
 		if (beaconHeight+1) - portingReq.BeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
@@ -386,7 +399,14 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 	// calculate minted amount prv for each matching redeem requests
 	// rely on percent matching redeem amount and total matching redeem amount
 	liquidatedByExchangeRate := true
-	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
+	sortedWaitingRedeemReqKeys := make([]string, 0)
+	for key := range currentPortalState.WaitingRedeemRequests {
+		sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
+	}
+	sort.Strings(sortedWaitingRedeemReqKeys)
+
+	for _, redeemReqKey := range sortedWaitingRedeemReqKeys {
+		redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
 		if redeemReq.GetTokenID() == tokenID {
 			for _, matchCustodian := range redeemReq.GetCustodians() {
 				if matchCustodian.GetIncognitoAddress() == liquidatedCustodianState.GetIncognitoAddress() {
@@ -453,7 +473,13 @@ func checkAndBuildInstForTPExchangeRatePortingRequest(
 ) ([][]string, error) {
 	insts := [][]string{}
 	// filter waiting porting request that has liquidated matching custodian by exchange rate drops down
-	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
+	sortedWaitingPortingReqKeys := make([]string, 0)
+	for key := range currentPortalState.WaitingPortingRequests {
+		sortedWaitingPortingReqKeys = append(sortedWaitingPortingReqKeys, key)
+	}
+	sort.Strings(sortedWaitingPortingReqKeys)
+	for _, portingReqKey := range sortedWaitingPortingReqKeys {
+		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
 		if portingReq.TokenID() == tokenID {
 			for _, cus := range portingReq.Custodians() {
 				if cus.IncAddress == liquidatedCustodianState.GetIncognitoAddress() {
