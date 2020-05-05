@@ -27,9 +27,18 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalLiquidateCustodianSuccessChainStatus {
 		// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
+		Logger.log.Infof("[processPortalLiquidateCustodian] actionData.CustodianIncAddressStr = %s in beaconHeight=%d", actionData.CustodianIncAddressStr, beaconHeight)
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianIncAddressStr)
 		cusStateKeyStr := cusStateKey.String()
-		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
+		custodianState, ok := currentPortalState.CustodianPoolState[cusStateKeyStr]
+		if !ok {
+			Logger.log.Errorf("[processPortalLiquidateCustodian] cusStateKeyStr %s can not found", cusStateKeyStr)
+			return nil
+		}
+		if custodianState == nil {
+			Logger.log.Errorf("[processPortalLiquidateCustodian] custodianState is nil")
+			return nil
+		}
 
 		if custodianState.GetTotalCollateral() < actionData.MintedCollateralAmount ||
 			custodianState.GetLockedAmountCollateral()[pTokenID] < actionData.MintedCollateralAmount {
