@@ -71,12 +71,8 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) *BNBRelayin
 	return nil
 }
 
-func (p *BNBProof) Verify(b *BNBChainState) (bool, *BNBRelayingError) {
-	dataHash, err := b.GetDataHashBNBBlockByHeight(p.BlockHeight)
-	if err != nil {
-		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
-	}
-	err = p.Proof.Validate(dataHash)
+func (p *BNBProof) Verify(dataHash []byte) (bool, *BNBRelayingError) {
+	err := p.Proof.Validate(dataHash)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidTxProofErr, err)
 	}

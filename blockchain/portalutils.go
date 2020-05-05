@@ -6,7 +6,10 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/rpc/client"
+	"github.com/tendermint/tendermint/types"
 	"math"
 	"math/big"
 	"sort"
@@ -922,4 +925,51 @@ func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, beaconHeig
 	}
 
 	return currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch(), nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height
+func(blockchain *BlockChain) GetBNBHeader(
+	blockHeight int64,
+) (*types.Header, error) {
+	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
+		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
+		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
+		blockchain.GetConfig().ChainParams.BNBFullNodePort,
+	)
+	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
+	result, err := bnbClient.Block(&blockHeight)
+	if err != nil {
+		Logger.log.Errorf("An error occured during calling status method: %s", err)
+		return nil, fmt.Errorf("error occured during calling status method: %s", err)
+	}
+	return &result.Block.Header, nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get bnb data hash in header
+func(blockchain *BlockChain) GetBNBDataHash(
+	blockHeight int64,
+) ([]byte, error) {
+	header, err := blockchain.GetBNBHeader(blockHeight)
+	if err != nil {
+		return nil, err
+	}
+	if header.DataHash == nil {
+		return nil, errors.New("Data hash is nil")
+	}
+	return header.DataHash, nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
+func(blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
+	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
+		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
+		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
+		blockchain.GetConfig().ChainParams.BNBFullNodePort)
+	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
+	result, err := bnbClient.Status()
+	if err != nil {
+		Logger.log.Errorf("An error occured during calling status method: %s", err)
+		return 0, fmt.Errorf("error occured during calling status method: %s", err)
+	}
+	return result.SyncInfo.LatestBlockHeight, nil
 }
