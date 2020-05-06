@@ -65,7 +65,7 @@ type RpcServerConfig struct {
 	BlockChain      *blockchain.BlockChain
 	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache
-	Database        incdb.Database
+	Database        map[int]incdb.Database
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager

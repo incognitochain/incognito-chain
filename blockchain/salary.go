@@ -30,7 +30,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 	if err != nil {
 		return nil, NewBlockChainError(DecodeHashError, err)
 	}
-	blockHash, index, err := rawdbv2.GetTransactionByHash(blockGenerator.chain.config.DataBase, *txHash)
+	blockHash, index, err := rawdbv2.GetTransactionByHash(blockGenerator.chain.GetShardChainDatabase(committeeShardID), *txHash)
 	if err != nil {
 		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
@@ -189,15 +189,15 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
 					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
-					consensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), height)
+					beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconChainDatabase(), height)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
 					}
-					consensusStateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+					beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					committees, rewardReceivers = statedb.GetAllCommitteeStateWithRewardReceiver(consensusStateDB, blockchain.GetShardIDs())
+					committees, rewardReceivers = statedb.GetAllCommitteeStateWithRewardReceiver(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
 				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo, committees[int(shardToProcess)], rewardReceivers)
 				if err != nil {

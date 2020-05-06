@@ -24,7 +24,7 @@ import (
 
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
-	DB         incdb.Database
+	DB         map[int]incdb.Database
 	TxMemPool  *mempool.TxPool
 	MemCache   *memcache.MemoryCache
 }
@@ -687,7 +687,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]uint64, error) {
 	m := make(map[string]map[common.Hash]uint64)
 	beaconBestState := blockchain.NewBeaconBestState()
-	data, err := rawdbv2.GetBeaconBestState(blockService.DB)
+	data, err := rawdbv2.GetBeaconBestState(blockService.DB[common.BeaconChainDataBaseID])
 	if err != nil {
 		return nil, err
 	}
@@ -958,11 +958,11 @@ func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte
 
 //============================= Slash ===============================
 func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
-	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetDatabase(), beaconHeight)
+	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetBeaconChainDatabase(), beaconHeight)
 	if err != nil {
 		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
 	}
-	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetDatabase()))
+	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetBeaconChainDatabase()))
 	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
 }
 

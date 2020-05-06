@@ -25,7 +25,7 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, nil, httpServer.GetDatabase())
+	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, nil)
 	if err != nil {
 		// return hex for a new tx
 		return nil, err
@@ -741,7 +741,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata, httpServer.GetDatabase())
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
@@ -847,7 +847,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata, httpServer.GetDatabase())
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}

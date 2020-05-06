@@ -1,12 +1,5 @@
 package blockchain
 
-import (
-	"github.com/incognitochain/incognito-chain/incdb"
-)
-
-func (blockchain *BlockChain) GetDatabase() incdb.Database {
-	return blockchain.config.DataBase
-}
 func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
 	return blockchain.config.ChainParams.StakingAmountShard
 }

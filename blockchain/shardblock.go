@@ -303,7 +303,7 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := rawdbv2.GetShardBlockByHash(bc.config.DataBase, shardBlock.Header.PreviousBlockHash)
+	previousShardBlockByte, err := rawdbv2.GetShardBlockByHash(bc.GetShardChainDatabase(shardBlock.Header.ShardID), shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
