@@ -74,6 +74,11 @@ const (
 	// relaying header chain
 	MainnetBNBChainID = "Binance-Chain-Tigris"
 	MainnetBTCChainID = "Bitcoin-Mainnet"
+
+	// BNB fullnode
+	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
+	MainnetBNBFullNodeProtocol = "https"
+	MainnetBNBFullNodePort     = "443"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -120,8 +125,12 @@ const (
 
 	// relaying header chain
 	TestnetBNBChainID = "Binance-Chain-Nile"
-	//TestnetBNBChainID = "Binance-Dev"
 	TestnetBTCChainID = "Bitcoin-Testnet"
+
+	// BNB fullnode
+	TestnetBNBFullNodeHost     = "data-seed-pre-0-s1.binance.org"
+	TestnetBNBFullNodeProtocol = "https"
+	TestnetBNBFullNodePort     = "443"
 )
 
 // VARIABLE for testnet

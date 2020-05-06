@@ -19,7 +19,7 @@ type RedeemMemoBNB struct {
 }
 
 func TestB64EncodeMemo(t *testing.T) {
-	portingID := "1"
+	portingID := "porting-10"
 	memoPorting := PortingMemoBNB{PortingID: portingID}
 	memoPortingBytes, err := json.Marshal(memoPorting)
 	fmt.Printf("err: %v\n", err)
@@ -29,7 +29,7 @@ func TestB64EncodeMemo(t *testing.T) {
 	// eyJQb3J0aW5nSUQiOiIyIn0= // 2
 	// eyJQb3J0aW5nSUQiOiIxIn0= // 1
 
-	redeemID := "12"
+	redeemID := "bnb13"
 	custodianIncAddr := "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy"
 	memoRedeem := RedeemMemoBNB{RedeemID: redeemID, CustodianIncognitoAddress: custodianIncAddr}
 	memoRedeemBytes, err := json.Marshal(memoRedeem)
@@ -41,7 +41,7 @@ func TestB64EncodeMemo(t *testing.T) {
 
 func TestBuildAndPushBNBProof(t *testing.T) {
 	txIndex := 0
-	blockHeight := int64(78438580)
+	blockHeight := int64(80536994)
 	url := relaying.TestnetURLRemote
 
 	portingProof, err := BuildProof(txIndex, blockHeight, url)

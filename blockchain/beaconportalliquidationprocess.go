@@ -27,9 +27,18 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalLiquidateCustodianSuccessChainStatus {
 		// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
+		Logger.log.Infof("[processPortalLiquidateCustodian] actionData.CustodianIncAddressStr = %s in beaconHeight=%d", actionData.CustodianIncAddressStr, beaconHeight)
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianIncAddressStr)
 		cusStateKeyStr := cusStateKey.String()
-		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
+		custodianState, ok := currentPortalState.CustodianPoolState[cusStateKeyStr]
+		if !ok {
+			Logger.log.Errorf("[processPortalLiquidateCustodian] cusStateKeyStr %s can not found", cusStateKeyStr)
+			return nil
+		}
+		if custodianState == nil {
+			Logger.log.Errorf("[processPortalLiquidateCustodian] custodianState is nil")
+			return nil
+		}
 
 		if custodianState.GetTotalCollateral() < actionData.MintedCollateralAmount ||
 			custodianState.GetLockedAmountCollateral()[pTokenID] < actionData.MintedCollateralAmount {
@@ -408,7 +417,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 		} else {
 			//deposit from free collateral DepositedAmount
 			lockedAmountTmp := custodian.GetLockedAmountCollateral()
-			lockedAmountTmp[actionData.PTokenId] = lockedAmountTmp[actionData.PTokenId] +  amountNeeded + totalFreeCollateralNeeded
+			lockedAmountTmp[actionData.PTokenId] = lockedAmountTmp[actionData.PTokenId] + amountNeeded + totalFreeCollateralNeeded
 			custodian.SetLockedAmountCollateral(lockedAmountTmp)
 
 			custodian.SetFreeCollateral(remainFreeCollateral + remainDepositAmount)
@@ -511,7 +520,6 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		}
 
 		// remove waiting porting request from waiting list
-		// TODO:
 		delete(currentPortalState.WaitingPortingRequests, waitingPortingKeyStr)
 
 		// update status of porting ID  => expired/liquidated

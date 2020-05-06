@@ -6,12 +6,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/rpc/client"
+	"github.com/tendermint/tendermint/types"
 	"math"
 	"math/big"
-	"math/rand"
 	"sort"
-	"time"
 )
 
 type CurrentPortalState struct {
@@ -152,60 +153,61 @@ func pickSingleCustodian(
 	exchangeRate *statedb.FinalExchangeRatesState,
 	custodianStateSlice []CustodianStateSlice,
 	currentPortalState *CurrentPortalState) ([]*statedb.MatchingPortingCustodianDetail, error) {
-	//sort random slice
-	cloneCustodianList := make([]CustodianStateSlice, len(custodianStateSlice))
-	copy(cloneCustodianList, custodianStateSlice)
-
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(cloneCustodianList), func(i, j int) {
-		cloneCustodianList[i],
-			cloneCustodianList[j] = cloneCustodianList[j],
-			cloneCustodianList[i]
-	})
-
 	//pToken to PRV
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	totalPTokenAfterUp150PercentUnit64 := up150Percent(metadata.RegisterAmount) //return nano pBTC, pBNB
-
-	totalPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
-
+	minMatchingFreeCollateral, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 	if err != nil {
 		Logger.log.Errorf("Convert PToken is error %v", err)
 		return nil, err
 	}
 
-	Logger.log.Infof("Porting request, pick single custodian ptoken: %v,  need prv %v for %v ptoken", metadata.PTokenId, totalPRV, metadata.RegisterAmount)
+	Logger.log.Infof("Porting request, pick single custodian ptoken: %v,  need prv %v for %v ptoken", metadata.PTokenId, minMatchingFreeCollateral, metadata.RegisterAmount)
 
-	for _, kv := range cloneCustodianList {
-		Logger.log.Infof("Porting request,  pick single custodian address %v, key %v, free collateral: %v", kv.Value.GetIncognitoAddress(), kv.Key, kv.Value.GetFreeCollateral())
-		if kv.Value.GetFreeCollateral() > 0 && kv.Value.GetFreeCollateral() >= totalPRV {
-			result := make([]*statedb.MatchingPortingCustodianDetail, 1)
+	// pick up one custodian that has enough minimum free collateral
+	// because custodianStateSlice was sorted increasing by free collateral before picking up
+	// so the last element of custodianStateSlice is the largest free collateral custodian
 
-			remoteAddr, err := statedb.GetRemoteAddressByTokenID(kv.Value.GetRemoteAddresses(), metadata.PTokenId)
-			if err != nil {
-				Logger.log.Errorf("Error when get remote address by tokenID %v", err)
-				return nil, err
-			}
-			result[0] = &statedb.MatchingPortingCustodianDetail{
-				IncAddress:             kv.Value.GetIncognitoAddress(),
-				RemoteAddress:          remoteAddr,
-				Amount:                 metadata.RegisterAmount,
-				LockedAmountCollateral: totalPRV,
-				RemainCollateral:       kv.Value.GetFreeCollateral() - totalPRV,
-			}
-
-			//update custodian state
-			err = UpdateCustodianWithNewAmount(currentPortalState, kv.Key, metadata.PTokenId, metadata.RegisterAmount, totalPRV)
-
-			if err != nil {
-				return nil, err
-			}
-
-			return result, nil
-		}
+	// not found any one custodian has free collateral greater than minMatchingFreeCollateral
+	if custodianStateSlice[len(custodianStateSlice)-1].Value.GetFreeCollateral() < minMatchingFreeCollateral {
+		Logger.log.Errorf("There is no any custodian has free collateral greater than 150% porting amount")
+		return nil, nil
 	}
 
-	return nil, nil
+	pickedCustodian := new(CustodianStateSlice)
+	for i := len(custodianStateSlice) - 1; i >= 0; i-- {
+		if custodianStateSlice[i].Value.GetFreeCollateral() >= minMatchingFreeCollateral {
+			continue
+		} else {
+			pickedCustodian = &custodianStateSlice[i+1]
+			break
+		}
+	}
+	if pickedCustodian.Key == "" {
+		pickedCustodian = &custodianStateSlice[0]
+	}
+
+	result := make([]*statedb.MatchingPortingCustodianDetail, 1)
+	remoteAddr, err := statedb.GetRemoteAddressByTokenID(pickedCustodian.Value.GetRemoteAddresses(), metadata.PTokenId)
+	if err != nil {
+		Logger.log.Errorf("Error when get remote address by tokenID %v", err)
+		return nil, err
+	}
+	result[0] = &statedb.MatchingPortingCustodianDetail{
+		IncAddress:             pickedCustodian.Value.GetIncognitoAddress(),
+		RemoteAddress:          remoteAddr,
+		Amount:                 metadata.RegisterAmount,
+		LockedAmountCollateral: minMatchingFreeCollateral,
+		RemainCollateral:       pickedCustodian.Value.GetFreeCollateral() - minMatchingFreeCollateral,
+	}
+
+	//update custodian state
+	err = UpdateCustodianStateAfterMatchingPortingRequest(
+		currentPortalState, pickedCustodian.Key, metadata.PTokenId, metadata.RegisterAmount, minMatchingFreeCollateral)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func pickMultipleCustodian(
@@ -275,7 +277,7 @@ func pickMultipleCustodian(
 			holdPToken = holdPToken + pTokenHolded
 
 			//update custodian state
-			err = UpdateCustodianWithNewAmount(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenHolded, totalPRV)
+			err = UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenHolded, totalPRV)
 			if err != nil {
 				return nil, err
 			}
@@ -285,7 +287,7 @@ func pickMultipleCustodian(
 	return multipleCustodian, nil
 }
 
-func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, amountPToken uint64, lockedAmountCollateral uint64) error {
+func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, amountPToken uint64, lockedAmountCollateral uint64) error {
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
 	if !ok {
 		return errors.New("Custodian not found")
@@ -299,9 +301,7 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 	if custodian.GetHoldingPublicTokens() == nil {
 		holdingPubTokensMapping[PTokenId] = amountPToken
 	} else {
-		for ptokenId, value := range custodian.GetHoldingPublicTokens() {
-			holdingPubTokensMapping[ptokenId] = value + amountPToken
-		}
+		holdingPubTokensMapping[PTokenId] += amountPToken
 	}
 	holdingPubTokens := holdingPubTokensMapping
 	custodian.SetHoldingPublicTokens(holdingPubTokens)
@@ -351,7 +351,7 @@ func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 	}
 
 	// can't use big int to calculate porting fee because of common.PercentRedeemFeeAmount < 1
-	redeemFee :=  uint64(math.Round(float64(redeemAmountInPRV) * common.PercentRedeemFeeAmount / 100))
+	redeemFee := uint64(math.Round(float64(redeemAmountInPRV) * common.PercentRedeemFeeAmount / 100))
 
 	return redeemFee, nil
 }
@@ -460,7 +460,7 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 			return nil, errors.New("Can not divide zero")
 		}
 		//todo: calculate
-		percentUp := new(big.Int).Mul(big.NewInt(int64(amountPRV)), big.NewInt(100)) //amountPRV * 100 / amountPTokenConverted
+		percentUp := new(big.Int).Mul(big.NewInt(int64(amountPRV)), big.NewInt(100))         //amountPRV * 100 / amountPTokenConverted
 		roundNumber := new(big.Int).Div(percentUp, big.NewInt(int64(amountPTokenConverted))) // math.Ceil(float64(percentUp))
 		result[key] = roundNumber.Uint64()
 	}
@@ -518,10 +518,10 @@ func ValidationExchangeRates(exchangeRates *statedb.FinalExchangeRatesState) err
 	return nil
 }
 
-func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians map[string]*statedb.CustodianState) []*CustodianStateSlice {
+func sortCustodiansByAmountHoldingPubTokenAscent(tokenID string, custodians map[string]*statedb.CustodianState) []*CustodianStateSlice {
 	sortedCustodians := make([]*CustodianStateSlice, 0)
 	for key, value := range custodians {
-		if value.GetHoldingPublicTokens()[tokenSymbol] > 0 {
+		if value.GetHoldingPublicTokens()[tokenID] > 0 {
 			item := CustodianStateSlice{
 				Key:   key,
 				Value: value,
@@ -531,7 +531,7 @@ func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians 
 	}
 
 	sort.Slice(sortedCustodians, func(i, j int) bool {
-		return sortedCustodians[i].Value.GetHoldingPublicTokens()[tokenSymbol] <= sortedCustodians[j].Value.GetHoldingPublicTokens()[tokenSymbol]
+		return sortedCustodians[i].Value.GetHoldingPublicTokens()[tokenID] <= sortedCustodians[j].Value.GetHoldingPublicTokens()[tokenID]
 	})
 
 	return sortedCustodians
@@ -539,35 +539,30 @@ func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians 
 
 func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *CurrentPortalState) ([]*statedb.MatchingRedeemCustodianDetail, error) {
 	custodianPoolState := portalState.CustodianPoolState
-
-	// case 1: pick one custodian
-	// filter custodians
-	// bigCustodians who holding amount public token greater than or equal to redeem amount
-	// smallCustodians who holding amount public token less than redeem amount
-	bigCustodians := make(map[string]*statedb.CustodianState, 0)
-	bigCustodianKeys := make([]string, 0)
-	smallCustodians := make(map[string]*statedb.CustodianState, 0)
 	matchedCustodians := make([]*statedb.MatchingRedeemCustodianDetail, 0)
 
-	for key, cus := range custodianPoolState {
-		holdingPubTokenAmount := cus.GetHoldingPublicTokens()[tokenID]
-		if holdingPubTokenAmount >= redeemAmount {
-			bigCustodians[key] = new(statedb.CustodianState)
-			bigCustodians[key] = cus
-			bigCustodianKeys = append(bigCustodianKeys, key)
-		} else if holdingPubTokenAmount > 0 {
-			smallCustodians[key] = new(statedb.CustodianState)
-			smallCustodians[key] = cus
-		}
+	// sort smallCustodians by amount holding public token
+	sortedCustodianSlice := sortCustodiansByAmountHoldingPubTokenAscent(tokenID, custodianPoolState)
+	if len(sortedCustodianSlice) == 0 {
+		Logger.log.Errorf("There is no suitable custodian in pool for redeem request")
+		return nil, errors.New("There is no suitable custodian in pool for redeem request")
 	}
 
-	// random to pick-up one custodian in bigCustodians
-	if len(bigCustodians) > 0 {
-		randomIndexCus := rand.Intn(len(bigCustodians))
-		custodianKey := bigCustodianKeys[randomIndexCus]
-		matchingCustodian := bigCustodians[custodianKey]
+	if sortedCustodianSlice[len(sortedCustodianSlice)-1].Value.GetHoldingPublicTokens()[tokenID] >= redeemAmount {
+		// case 1: pick one custodian that has enough minimum holding public token
+		pickedCustodian := new(CustodianStateSlice)
+		for i := len(sortedCustodianSlice) - 1; i >= 0; i-- {
+			if sortedCustodianSlice[i].Value.GetHoldingPublicTokens()[tokenID] >= redeemAmount {
+				continue
+			} else {
+				pickedCustodian = sortedCustodianSlice[i+1]
+			}
+		}
+		if pickedCustodian.Key == "" {
+			pickedCustodian = sortedCustodianSlice[0]
+		}
 
-		remoteAddr, err := statedb.GetRemoteAddressByTokenID(matchingCustodian.GetRemoteAddresses(), tokenID)
+		remoteAddr, err := statedb.GetRemoteAddressByTokenID(pickedCustodian.Value.GetRemoteAddresses(), tokenID)
 		if err != nil {
 			Logger.log.Errorf("Error when get remote address of custodian: %v", err)
 			return nil, err
@@ -575,50 +570,43 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *
 		matchedCustodians = append(
 			matchedCustodians,
 			statedb.NewMatchingRedeemCustodianDetailWithValue(
-				custodianPoolState[custodianKey].GetIncognitoAddress(), remoteAddr, redeemAmount))
+				custodianPoolState[pickedCustodian.Key].GetIncognitoAddress(), remoteAddr, redeemAmount))
 
 		return matchedCustodians, nil
-	}
+	} else {
+		// case 2: pick-up multiple custodians in smallCustodians
+		// get custodians util matching full redeemAmount
+		totalMatchedAmount := uint64(0)
+		for i := len(sortedCustodianSlice) - 1; i >= 0; i-- {
+			custodianKey := sortedCustodianSlice[i].Key
+			custodianValue := sortedCustodianSlice[i].Value
 
-	// case 2: pick-up multiple custodians in smallCustodians
-	if len(smallCustodians) == 0 {
-		Logger.log.Errorf("there is no custodian in custodian pool")
-		return nil, errors.New("there is no custodian in custodian pool")
-	}
-	// sort smallCustodians by amount holding public token
-	sortedCustodianSlice := sortCustodiansByAmountHoldingPubTokenAscent(tokenID, smallCustodians)
+			matchedAmount := custodianValue.GetHoldingPublicTokens()[tokenID]
+			amountNeedToBeMatched := redeemAmount - totalMatchedAmount
+			if matchedAmount > amountNeedToBeMatched {
+				matchedAmount = amountNeedToBeMatched
+			}
 
-	// get custodians util matching full redeemAmount
-	totalMatchedAmount := uint64(0)
-	for i := len(sortedCustodianSlice) - 1; i >= 0; i-- {
-		custodianKey := sortedCustodianSlice[i].Key
-		custodianValue := sortedCustodianSlice[i].Value
+			remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianValue.GetRemoteAddresses(), tokenID)
+			if err != nil {
+				Logger.log.Errorf("Error when get remote address of custodian: %v", err)
+				return nil, err
+			}
 
-		matchedAmount := custodianValue.GetHoldingPublicTokens()[tokenID]
-		amountNeedToBeMatched := redeemAmount - totalMatchedAmount
-		if matchedAmount > amountNeedToBeMatched {
-			matchedAmount = amountNeedToBeMatched
+			matchedCustodians = append(
+				matchedCustodians,
+				statedb.NewMatchingRedeemCustodianDetailWithValue(
+					custodianPoolState[custodianKey].GetIncognitoAddress(), remoteAddr, matchedAmount))
+
+			totalMatchedAmount += matchedAmount
+			if totalMatchedAmount >= redeemAmount {
+				return matchedCustodians, nil
+			}
 		}
 
-		remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianValue.GetRemoteAddresses(), tokenID)
-		if err != nil {
-			Logger.log.Errorf("Error when get remote address of custodian: %v", err)
-			return nil, err
-		}
-
-		matchedCustodians = append(
-			matchedCustodians,
-			statedb.NewMatchingRedeemCustodianDetailWithValue(
-				custodianPoolState[custodianKey].GetIncognitoAddress(), remoteAddr, matchedAmount))
-
-		totalMatchedAmount += matchedAmount
-		if totalMatchedAmount >= redeemAmount {
-			return matchedCustodians, nil
-		}
+		Logger.log.Errorf("Not enough amount public token to return user")
+		return nil, errors.New("Not enough amount public token to return user")
 	}
-
-	Logger.log.Errorf("Not enough amount public token to return user")
-	return nil, errors.New("Not enough amount public token to return user")
 }
 
 // convertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)
@@ -878,7 +866,7 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BNB(value uint64) (uint64, erro
 	return valueExchange, nil
 }
 
-func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState, custodianKey string, custodianState *statedb.CustodianState, detectTp map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)  {
+func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState, custodianKey string, custodianState *statedb.CustodianState, detectTp map[string]metadata.LiquidateTopPercentileExchangeRatesDetail) {
 	//update custodian
 	for pTokenId, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 		holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
@@ -930,11 +918,58 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, cur
 	//end
 }
 
-func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, beaconHeight uint64) (uint64, error){
+func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, beaconHeight uint64) (uint64, error) {
 	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB, beaconHeight)
 	if err != nil {
 		return 0, nil
 	}
 
 	return currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch(), nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height
+func(blockchain *BlockChain) GetBNBHeader(
+	blockHeight int64,
+) (*types.Header, error) {
+	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
+		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
+		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
+		blockchain.GetConfig().ChainParams.BNBFullNodePort,
+	)
+	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
+	result, err := bnbClient.Block(&blockHeight)
+	if err != nil {
+		Logger.log.Errorf("An error occured during calling status method: %s", err)
+		return nil, fmt.Errorf("error occured during calling status method: %s", err)
+	}
+	return &result.Block.Header, nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get bnb data hash in header
+func(blockchain *BlockChain) GetBNBDataHash(
+	blockHeight int64,
+) ([]byte, error) {
+	header, err := blockchain.GetBNBHeader(blockHeight)
+	if err != nil {
+		return nil, err
+	}
+	if header.DataHash == nil {
+		return nil, errors.New("Data hash is nil")
+	}
+	return header.DataHash, nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
+func(blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
+	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
+		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
+		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
+		blockchain.GetConfig().ChainParams.BNBFullNodePort)
+	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
+	result, err := bnbClient.Status()
+	if err != nil {
+		Logger.log.Errorf("An error occured during calling status method: %s", err)
+		return 0, fmt.Errorf("error occured during calling status method: %s", err)
+	}
+	return result.SyncInfo.LatestBlockHeight, nil
 }
