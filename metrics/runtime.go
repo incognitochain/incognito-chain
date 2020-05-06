@@ -4,7 +4,6 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"sync"
-	"time"
 )
 
 var (
@@ -56,11 +55,11 @@ var (
 
 // Capture new values for the Go runtime statistics exported in
 // runtime.MemStats.  This is designed to be called as a goroutine.
-func CaptureRuntimeMemStats(r Registry, d time.Duration) {
-	for _ = range time.Tick(d) {
-		CaptureRuntimeMemStatsOnce(r)
-	}
-}
+//func CaptureRuntimeMemStats(r Registry, d time.Duration) {
+//	for _ = range time.Tick(d) {
+//		CaptureRuntimeMemStatsOnce(r)
+//	}
+//}
 
 // Capture new values for the Go runtime statistics exported in
 // runtime.MemStats.  This is designed to be called in a background
@@ -70,7 +69,7 @@ func CaptureRuntimeMemStats(r Registry, d time.Duration) {
 // Be very careful with this because runtime.ReadMemStats calls the C
 // functions runtime·semacquire(&runtime·worldsema) and runtime·stoptheworld()
 // and that last one does what it says on the tin.
-func CaptureRuntimeMemStatsOnce(r Registry) {
+/*func CaptureRuntimeMemStatsOnce(r Registry) {
 	t := time.Now()
 	runtime.ReadMemStats(&memStats) // This takes 50-200us.
 	runtimeMetrics.ReadMemStats.UpdateSince(t)
@@ -142,7 +141,7 @@ func CaptureRuntimeMemStatsOnce(r Registry) {
 	runtimeMetrics.NumGoroutine.Update(int64(runtime.NumGoroutine()))
 
 	runtimeMetrics.NumThread.Update(int64(threadCreateProfile.Count()))
-}
+}*/
 
 // Register runtimeMetrics for the Go runtime statistics exported in runtime and
 // specifically runtime.MemStats.  The runtimeMetrics are named by their
