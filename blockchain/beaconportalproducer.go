@@ -766,6 +766,11 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 				return [][]string{inst}, nil
 			}
 		}
+		// update holding public token for custodians
+		for _, cusDetail := range custodians {
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
+			UpdateCustodianStateAfterUserRequestPToken(currentPortalState, custodianKey.String(), waitingPortingRequest.TokenID(), cusDetail.Amount)
+		}
 
 		inst := buildReqPTokensInst(
 			actionData.Meta.UniquePortingID,
@@ -1005,6 +1010,12 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			}
 		}
 
+		// update holding public token for custodians
+		for _, cusDetail := range custodians {
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
+			UpdateCustodianStateAfterUserRequestPToken(currentPortalState, custodianKey.String(), waitingPortingRequest.TokenID(), cusDetail.Amount)
+		}
+
 		inst := buildReqPTokensInst(
 			actionData.Meta.UniquePortingID,
 			actionData.Meta.TokenID,
@@ -1035,8 +1046,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-
-	return [][]string{}, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForExchangeRates(

@@ -203,7 +203,7 @@ func pickSingleCustodian(
 
 	//update custodian state
 	err = UpdateCustodianStateAfterMatchingPortingRequest(
-		currentPortalState, pickedCustodian.Key, metadata.PTokenId, metadata.RegisterAmount, minMatchingFreeCollateral)
+		currentPortalState, pickedCustodian.Key, metadata.PTokenId, minMatchingFreeCollateral)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func pickMultipleCustodian(
 			holdPToken = holdPToken + pTokenHolded
 
 			//update custodian state
-			err = UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenHolded, totalPRV)
+			err = UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, custodianItem.Key, metadata.PTokenId, totalPRV)
 			if err != nil {
 				return nil, err
 			}
@@ -287,7 +287,7 @@ func pickMultipleCustodian(
 	return multipleCustodian, nil
 }
 
-func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, amountPToken uint64, lockedAmountCollateral uint64) error {
+func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, lockedAmountCollateral uint64) error {
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
 	if !ok {
 		return errors.New("Custodian not found")
@@ -296,15 +296,7 @@ func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *Current
 	freeCollateral := custodian.GetFreeCollateral() - lockedAmountCollateral
 	custodian.SetFreeCollateral(freeCollateral)
 
-	//update ptoken holded
-	holdingPubTokensMapping := make(map[string]uint64)
-	if custodian.GetHoldingPublicTokens() == nil {
-		holdingPubTokensMapping[PTokenId] = amountPToken
-	} else {
-		holdingPubTokensMapping[PTokenId] += amountPToken
-	}
-	holdingPubTokens := holdingPubTokensMapping
-	custodian.SetHoldingPublicTokens(holdingPubTokens)
+	// don't update holding public tokens to avoid this custodian match to redeem request before receiving pubtokens from users
 
 	//update collateral holded
 	if custodian.GetLockedAmountCollateral() == nil {
@@ -319,6 +311,22 @@ func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *Current
 
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 
+	return nil
+}
+func UpdateCustodianStateAfterUserRequestPToken(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, amountPToken uint64) error {
+	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+	if !ok {
+		return errors.New("[UpdateCustodianStateAfterUserRequestPToken] Custodian not found")
+	}
+
+	holdingPubTokensTmp := custodian.GetHoldingPublicTokens()
+	if holdingPubTokensTmp == nil {
+		holdingPubTokensTmp = make(map[string]uint64)
+		holdingPubTokensTmp[PTokenId] = amountPToken
+	} else {
+		holdingPubTokensTmp[PTokenId] += amountPToken
+	}
+	currentPortalState.CustodianPoolState[custodianKey].SetHoldingPublicTokens(holdingPubTokensTmp)
 	return nil
 }
 
