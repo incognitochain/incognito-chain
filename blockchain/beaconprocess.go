@@ -1311,12 +1311,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 
-	if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1293000) {
-		// execute, store
-		err = blockchain.processPortalInstructions(tempBeaconBestState.featureStateDB, beaconBlock)
-		if err != nil {
-			return NewBlockChainError(ProcessPortalInstructionError, err)
-		}
+	// execute, store
+	err = blockchain.processPortalInstructions(tempBeaconBestState.featureStateDB, beaconBlock)
+	if err != nil {
+		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 
 	// execute, store
