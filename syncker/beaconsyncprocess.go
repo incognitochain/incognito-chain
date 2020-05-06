@@ -131,7 +131,7 @@ type NextCrossShardInfo struct {
 
 //watching confirm beacon block and update cross shard info (which beacon confirm crossshard block N of shard X)
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
-	lastBeaconHeightConfirmCrossX := rawdbv2.GetLastBeaconHeightConfirmCrossShard(s.server.GetIncDatabase())
+	lastBeaconHeightConfirmCrossX := rawdbv2.GetLastBeaconHeightConfirmCrossShard(s.server.GetBeaconChainDatabase())
 	if lastBeaconHeightConfirmCrossX == 0 {
 		lastBeaconHeightConfirmCrossX = 1
 	}
@@ -146,11 +146,11 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 			time.Sleep(time.Second * 5)
 			continue
 		}
-		err = processBeaconForConfirmmingCrossShard(s.server.GetIncDatabase(), beaconBlock, s.lastCrossShardState)
+		err = processBeaconForConfirmmingCrossShard(s.server.GetBeaconChainDatabase(), beaconBlock, s.lastCrossShardState)
 		if err == nil {
 			lastBeaconHeightConfirmCrossX++
 			if lastBeaconHeightConfirmCrossX%1000 == 0 {
-				rawdbv2.StoreLastBeaconHeightConfirmCrossShard(s.server.GetIncDatabase(), lastBeaconHeightConfirmCrossX)
+				rawdbv2.StoreLastBeaconHeightConfirmCrossShard(s.server.GetBeaconChainDatabase(), lastBeaconHeightConfirmCrossX)
 			}
 		} else {
 			fmt.Println(err)

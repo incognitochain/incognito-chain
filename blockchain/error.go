@@ -178,6 +178,8 @@ const (
 	ProcessPortalRelayingError
 	GetTotalLockedCollateralError
 	InsertShardBlockError
+	GetShardBlockHeightByHashError
+	GetShardBlockByHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -339,6 +341,8 @@ var ErrCodeMessage = map[int]struct {
 	ProcessAutoStakingError:                           {-1152, "Process Auto Staking Error"},
 	ProcessPortalRelayingError:                        {-1153, "Process Portal Relaying Error"},
 	InsertShardBlockError:                             {-1154, "Insert Shard Block Error"},
+	GetShardBlockHeightByHashError:                    {-1155, "Get Shard Block Height By Hash Error"},
+	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 }

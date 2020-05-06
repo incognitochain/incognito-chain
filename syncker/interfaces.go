@@ -29,7 +29,7 @@ type Server interface {
 	RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error)
 	//database
 	FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error)
-	GetIncDatabase() incdb.Database
+	GetBeaconChainDatabase() incdb.Database
 	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *NextCrossShardInfo
 	//StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
 	//FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -192,7 +192,7 @@ func (e *BLSBFT) Start() error {
 
 			case <-ticker.C:
 
-				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
+				monitor.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
@@ -220,7 +220,7 @@ func (e *BLSBFT) Start() error {
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
-						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
+						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 
 						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
@@ -292,7 +292,7 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
-						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
+						monitor.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
 						e.logger.Infof("Commit block (%d votes) %+v hash=%+v \n Wait for next round", len(e.RoundData.Votes), e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
 						e.enterNewRound()
@@ -311,8 +311,7 @@ func (e *BLSBFT) enterProposePhase() {
 	e.setState(proposePhase)
 	e.isOngoing = true
 	block, err := e.createNewBlock()
-	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
-
+	monitor.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 	if err != nil {
 		e.isOngoing = false
 		e.logger.Error("can't create block", err)

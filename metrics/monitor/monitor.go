@@ -1,10 +1,11 @@
-package metrics
+package monitor
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"os"
 	"syscall"
 
@@ -186,7 +187,7 @@ func (s *logKV) Write() {
 		req, err := http.NewRequest(http.MethodPost, "http://51.91.220.58:33333", bytes.NewBuffer(b))
 		req.Header.Set("Content-Type", "application/json")
 		if err != nil {
-			Logger.log.Debug("Create Request failed with err: ", err)
+			metrics.IncLogger.Log.Debug("Create Request failed with err: ", err)
 			return
 		}
 		ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)

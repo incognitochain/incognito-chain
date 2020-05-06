@@ -1,6 +1,8 @@
 package rpcserver
 
 import (
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/metrics/exp"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"log"
 	"os"
@@ -21,4 +23,9 @@ func (httpServer *HttpServer) handleStopProfiling(params interface{}, closeChan 
 	debug.FreeOSMemory()
 	pprof.StopCPUProfile()
 	return nil, nil
+}
+
+func (httpServer *HttpServer) handleExportMetrics(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	exporter := exp.NewExp(metrics.DefaultRegistry)
+	return exporter.Export(), nil
 }

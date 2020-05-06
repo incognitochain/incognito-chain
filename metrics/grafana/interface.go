@@ -1,4 +1,4 @@
-package metrics
+package grafana
 
 type MetricTool interface {
 	SendTimeSeriesMetricData(params map[string]interface{})

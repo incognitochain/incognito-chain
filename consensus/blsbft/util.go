@@ -2,7 +2,7 @@ package blsbft
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"reflect"
 	"strconv"
 	"strings"
@@ -93,8 +93,7 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 			delete(e.EarlyVotes, roundKey)
 		}
 	}
-
-	metrics.SetGlobalParam("NVote", len(e.RoundData.Votes))
+	monitor.SetGlobalParam("NVote", len(e.RoundData.Votes))
 	if len(e.RoundData.Votes) > 2*committeeSize/3 {
 		return true
 	}

@@ -6,6 +6,7 @@ const (
 	testHttpServer = "testrpcserver"
 	startProfiling = "startprofiling"
 	stopProfiling  = "stopprofiling"
+	exportMetrics  = "exportmetrics"
 
 	getNetworkInfo       = "getnetworkinfo"
 	getConnectionCount   = "getconnectioncount"

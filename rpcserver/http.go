@@ -77,7 +77,6 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		ConnMgr: httpServer.config.ConnMgr,
 	}
 	httpServer.txService = &rpcservice.TxService{
-		DB:           httpServer.config.Database,
 		BlockChain:   httpServer.config.BlockChain,
 		Wallet:       httpServer.config.Wallet,
 		FeeEstimator: httpServer.config.FeeEstimator,
@@ -617,9 +616,15 @@ func (httpServer *HttpServer) DecrementClients() {
 func (httpServer *HttpServer) IncrementClients() {
 	atomic.AddInt32(&httpServer.numClients, 1)
 }
-func (httpServer *HttpServer) GetDatabase() incdb.Database {
-	return httpServer.config.Database
+
+func (httpServer *HttpServer) GetBeaconChainDatabase() incdb.Database {
+	return httpServer.config.Database[common.BeaconChainDataBaseID]
 }
+
+func (httpServer *HttpServer) GetShardChainDatabase(shardID byte) incdb.Database {
+	return httpServer.config.Database[int(shardID)]
+}
+
 func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
 	return httpServer.config.BlockChain
 }

@@ -135,7 +135,7 @@ func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 }
 
 func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockChain) error {
-	db := bc.GetDatabase()
+	db := bc.GetBeaconChainDatabase()
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	if rootHash, err := bc.GetBeaconConsensusRootHash(db, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
@@ -173,7 +173,7 @@ func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockC
 }
 
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
-	db := bc.GetDatabase()
+	db := bc.GetBeaconChainDatabase()
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.ConsensusStateDBRootHash, dbAccessWarper)
@@ -805,17 +805,17 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetConsensusStateRootHash(db, height)
+	return rawdbv2.GetBeaconConsensusStateRootHash(db, height)
 }
 
 func (blockchain *BlockChain) GetBeaconRewardRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetRewardStateRootHash(db, height)
+	return rawdbv2.GetBeaconRewardStateRootHash(db, height)
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetFeatureStateRootHash(db, height)
+	return rawdbv2.GetBeaconFeatureStateRootHash(db, height)
 }
 
 func (blockchain *BlockChain) GetBeaconSlashRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetSlashStateRootHash(db, height)
+	return rawdbv2.GetBeaconSlashStateRootHash(db, height)
 }

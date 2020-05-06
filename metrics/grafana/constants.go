@@ -1,4 +1,4 @@
-package metrics
+package grafana
 
 const (
 	Measurement      = "Measurement"

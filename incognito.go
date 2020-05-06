@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
@@ -21,7 +22,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
-	"github.com/incognitochain/incognito-chain/metrics"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -89,7 +89,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if interruptRequested(interrupt) {
 		return nil
 	}
-	db, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
+	db, err := incdb.OpenMultipleDB("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")
@@ -184,14 +184,14 @@ func main() {
 	limitThreads := os.Getenv("CPU")
 	if limitThreads == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-		metrics.SetGlobalParam("CPU", runtime.NumCPU())
+		monitor.SetGlobalParam("CPU", runtime.NumCPU())
 	} else {
 		numThreads, err := strconv.Atoi(limitThreads)
 		if err != nil {
 			panic(err)
 		}
 		runtime.GOMAXPROCS(numThreads)
-		metrics.SetGlobalParam("CPU", numThreads)
+		monitor.SetGlobalParam("CPU", numThreads)
 	}
 	fmt.Println("NumCPU", runtime.NumCPU())
 	// Block and transaction processing can cause bursty allocations.  This
