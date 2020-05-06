@@ -1314,15 +1314,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store
-	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
-	if err != nil {
-		return NewBlockChainError(ProcessPDEInstructionError, err)
+	if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
+		err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
+		if err != nil {
+			return NewBlockChainError(ProcessPDEInstructionError, err)
+		}
 	}
+
 	// execute, store
 	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
+
 	// execute, store
 	err = blockchain.processRelayingInstructions(beaconBlock)
 	if err != nil {
