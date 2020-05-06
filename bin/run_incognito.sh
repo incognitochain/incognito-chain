@@ -4,7 +4,7 @@ cron
 
 
 if [ -z "$NAME" ]; then
-    name="miner"
+    NAME="miner"
 fi
 
 if [ "$1" = "y" ]; then
