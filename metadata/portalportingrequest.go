@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 // PortalUserRegister - User register porting public tokens
@@ -37,6 +38,7 @@ type PortalPortingRequestContent struct {
 	PortingFee       uint64
 	Custodian        []*statedb.MatchingPortingCustodianDetail
 	TxReqID          common.Hash
+	ShardID          byte
 }
 
 type PortingRequestStatus struct {
