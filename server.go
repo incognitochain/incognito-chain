@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -23,7 +24,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"cloud.google.com/go/storage"
@@ -65,7 +65,7 @@ type Server struct {
 	chainParams     *blockchain.Params
 	connManager     *connmanager.ConnManager
 	blockChain      *blockchain.BlockChain
-	dataBase        incdb.Database
+	dataBase        map[int]incdb.Database
 	syncker         *syncker.SynckerManager
 	memCache        *memcache.MemoryCache
 	rpcServer       *rpcserver.RpcServer
@@ -197,7 +197,7 @@ NewServer - create server object which control all process of node
 */
 func (serverObj *Server) NewServer(
 	listenAddrs string,
-	db incdb.Database,
+	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
 	chainParams *blockchain.Params,
 	protocolVer string,
@@ -303,9 +303,9 @@ func (serverObj *Server) NewServer(
 		},
 		BC: serverObj.blockChain,
 	}
-	metrics.SetBlockChainObj(serverObj.blockChain)
-	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
-	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
+	monitor.SetBlockChainObj(serverObj.blockChain)
+	monitor.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
+	monitor.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
 	serverObj.highway = peerv2.NewConnManager(
 		host,
@@ -358,7 +358,7 @@ func (serverObj *Server) NewServer(
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for shardID, _ := range serverObj.blockChain.ShardChain {
-			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase, byte(shardID))
+			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase[shardID], byte(shardID))
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
@@ -618,7 +618,7 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Debugf("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := rawdbv2.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
+			err := rawdbv2.StoreFeeEstimator(serverObj.dataBase[int(shardID)], feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
@@ -1718,7 +1718,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		return nil
 	}
 
-	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
+	monitor.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
@@ -2357,7 +2357,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 }
 
 func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *syncker.NextCrossShardInfo {
-	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase, byte(fromSID), byte(toSID), uint64(currentHeight))
+	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase[common.BeaconChainDataBaseID], byte(fromSID), byte(toSID), uint64(currentHeight))
 	if err != nil {
 		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
 		return nil
@@ -2374,6 +2374,10 @@ func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.Bea
 	return s.blockChain.GetBeaconBlockByHeightAndView(height, common.Hash{})
 }
 
-func (s *Server) GetIncDatabase() incdb.Database {
-	return s.dataBase
+func (s *Server) GetBeaconChainDatabase() incdb.Database {
+	return s.dataBase[common.BeaconChainDataBaseID]
+}
+
+func (s *Server) GetShardChainDatabase(shardID byte) incdb.Database {
+	return s.dataBase[int(shardID)]
 }

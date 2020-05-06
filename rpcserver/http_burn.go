@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
@@ -67,7 +66,7 @@ func getBurnProofByHeight(
 ) (interface{}, *rpcservice.RPCError) {
 
 	// Get bridge block and corresponding beacon blocks
-	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, httpServer.GetBlockchain(), httpServer.GetDatabase())
+	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, httpServer.GetBlockchain())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -79,7 +78,7 @@ func getBurnProofByHeight(
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.GetDatabase(), httpServer.config.ConsensusEngine)
+	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -116,7 +115,6 @@ func getBurnProofOnBridge(
 func getBurnProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
