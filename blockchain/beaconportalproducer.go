@@ -60,6 +60,7 @@ func buildRequestPortingInst(
 		PortingFee:       portingFee,
 		Custodian:        custodian,
 		TxReqID:          txReqID,
+		ShardID: shardID,
 	}
 
 	portingRequestContentBytes, _ := json.Marshal(portingRequestContent)
