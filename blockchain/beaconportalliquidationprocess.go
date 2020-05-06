@@ -140,12 +140,12 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 
 	Logger.log.Infof("start processLiquidationTopPercentileExchangeRates with data %#v", actionData)
 
-	keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate.String()]
-	if !ok {
-		Logger.log.Errorf("Exchange rate not found", err)
-		return nil
-	}
+	//keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	//exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate.String()]
+	//if !ok {
+	//	Logger.log.Errorf("Exchange rate not found", err)
+	//	return nil
+	//}
 
 	cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddress)
 	cusStateKeyStr := cusStateKey.String()
@@ -161,19 +161,20 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
 		Logger.log.Infof("custodian address %v, hold ptoken %+v, lock amount %+v", custodianState.GetIncognitoAddress(), custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
-		detectTPExchangeRates, err := calculateTPRatio(custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral(), exchangeRate)
-		if err != nil {
-			Logger.log.Errorf("Detect tp ratio error %v", err)
-			return nil
-		}
+		//detectTPExchangeRates, err := calculateTPRatio(custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral(), exchangeRate)
+		//if err != nil {
+		//	Logger.log.Errorf("Detect tp ratio error %v", err)
+		//	return nil
+		//}
+		//
+		//detectTp, err := detectTopPercentileLiquidation(custodianState, detectTPExchangeRates)
+		//
+		//if err != nil {
+		//	Logger.log.Errorf("ERROR: an error occurred while Get liquidate exchange rates change error %v", err)
+		//	return nil
+		//}
 
-		detectTp, err := detectTopPercentileLiquidation(custodianState, detectTPExchangeRates)
-
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while Get liquidate exchange rates change error %v", err)
-			return nil
-		}
-
+		detectTp := actionData.TP
 		if len(detectTp) > 0 {
 			//update current portal state
 			Logger.log.Infof("start update liquidation %#v", currentPortalState)

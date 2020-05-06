@@ -406,7 +406,13 @@ func detectTopPercentileLiquidation(custodian *statedb.CustodianState, tpList ma
 	}
 
 	liquidateExchangeRatesList := make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
-	for ptoken, tpValue := range tpList {
+	tpListKeys := make([]string, 0)
+	for key := range tpList {
+		tpListKeys = append(tpListKeys, key)
+	}
+	sort.Strings(tpListKeys)
+	for _, ptoken := range tpListKeys {
+		tpValue := tpList[ptoken]
 		if tp20, ok := IsTP120(tpValue); ok {
 			if tp20 {
 				liquidateExchangeRatesList[ptoken] = metadata.LiquidateTopPercentileExchangeRatesDetail{
@@ -440,7 +446,8 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 		}
 
 		if amountPRV <= 0 || amountPToken <= 0 {
-			return nil, errors.New("total PToken of custodian is zero")
+			Logger.log.Info("total PToken of custodian is zero")
+			return nil, nil
 		}
 
 		//(1): convert amount PToken to PRV

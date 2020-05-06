@@ -243,10 +243,6 @@ const (
 
 	PercentPortingFeeAmount = 0.01 // %
 	PercentRedeemFeeAmount  = 0.01 // %
-
-
-	MinRedeemAmount = 10
-	MinPortingAmount = 10
 )
 
 const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
