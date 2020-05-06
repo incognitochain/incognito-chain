@@ -1,13 +1,16 @@
 #!/bin/sh
 cron
 
-if [ "$1" == "y" ]; then
-    find /data -maxdepth 1 -mindepth 1 -type d | xargs rm -rf
-fi
+
 
 if [ -z "$NAME" ]; then
     echo "NO NAME"
     exit -1;
+fi
+
+if [ "$1" = "y" ]; then
+  echo "clear...."
+    find /data -maxdepth 2 -mindepth 1 -type d | xargs rm -rf
 fi
 
 mkdir -p /data/$NAME

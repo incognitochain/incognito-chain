@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -23,7 +24,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"cloud.google.com/go/storage"
@@ -303,9 +303,9 @@ func (serverObj *Server) NewServer(
 		},
 		BC: serverObj.blockChain,
 	}
-	metrics.SetBlockChainObj(serverObj.blockChain)
-	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
-	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
+	monitor.SetBlockChainObj(serverObj.blockChain)
+	monitor.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
+	monitor.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
 	serverObj.highway = peerv2.NewConnManager(
 		host,
@@ -1718,7 +1718,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		return nil
 	}
 
-	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
+	monitor.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
