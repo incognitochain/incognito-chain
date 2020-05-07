@@ -3,16 +3,16 @@ package blockchain
 import (
 	"encoding/binary"
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type CrossOutputCoin struct {
 	BlockHeight uint64
 	BlockHash   common.Hash
-	OutputCoin  []privacy.OutputCoin
+	OutputCoin  []coin.Coin
 }
 
 type CrossTokenPrivacyData struct {
@@ -24,10 +24,10 @@ type CrossTransaction struct {
 	BlockHeight      uint64
 	BlockHash        common.Hash
 	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-	OutputCoin       []privacy.OutputCoin
+	OutputCoin       []coin.Coin
 }
 type ContentCrossShardTokenPrivacyData struct {
-	OutputCoin     []privacy.OutputCoin
+	OutputCoin     []coin.Coin
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
 	PropertyName   string
 	PropertySymbol string

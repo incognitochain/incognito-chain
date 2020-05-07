@@ -383,7 +383,7 @@ func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSND
 func (c CoinV1) GetShardID() uint8                 { return c.CoinDetails.GetShardID() }
 func (c CoinV1) GetValue() uint64                  { return c.CoinDetails.GetValue() }
 func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
-func (c CoinV1) IsEncrypted() bool                 { return true }
+func (c CoinV1) IsEncrypted() bool                 { return c.CoinDetailsEncrypted != nil }
 
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {
