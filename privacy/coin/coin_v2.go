@@ -108,6 +108,11 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 	viewKey := keySet.ReadonlyKey
+	if len(viewKey.Rk) == 0 && len(keySet.PrivateKey) == 0 {
+		err := errors.New("Cannot Decrypt CoinV2: Keyset does not contain viewkey or privatekey")
+		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+	}
+
 	if len(viewKey.Rk) > 0 {
 		rK := new(operation.Point).ScalarMult(c.GetTxRandom(), viewKey.GetPrivateView())
 
@@ -199,16 +204,98 @@ func (c *CoinV2) SetInfo(b []byte) {
 	copy(c.info, b)
 }
 
-// Bytes converts a coin's details to a bytes array
-// Each fields in coin is saved in len - body format
-// TODO Privacy
-func (this *CoinV2) Bytes() []byte {
-	return nil
+func (c *CoinV2) Bytes() []byte {
+	coinBytes := []byte{c.GetVersion(), c.GetShardID(), c.GetIndex()}
+
+	info := c.GetInfo()
+	byteLengthInfo := byte(getMin(len(info), MaxSizeInfoCoin))
+	coinBytes = append(coinBytes,  byteLengthInfo)
+	coinBytes = append(coinBytes, info[:byteLengthInfo]...)
+
+	if c.publicKey != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.publicKey.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if c.commitment != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.commitment.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if c.keyImage != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.keyImage.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if c.txRandom != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.txRandom.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if c.mask != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.mask.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if c.amount != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.amount.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	return coinBytes
 }
 
-func (this *CoinV2) SetBytes(coinBytes []byte) error {
-	if this == nil {
-		this = new(CoinV2)
+func (c *CoinV2) SetBytes(coinBytes []byte) error {
+	var err error
+	if c == nil {
+		c = new(CoinV2)
+	}
+	if len(coinBytes) < 3 {
+		return errors.New("coinBytes length is too small < 3")
+	}
+	if coinBytes[0] != 2 {
+		return errors.New("coinBytes version is not 2")
+	}
+	c.SetVersion(coinBytes[0])
+	c.SetShardID(coinBytes[1])
+	c.SetIndex(coinBytes[2])
+
+	offset := 3
+	c.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 publicKey error: " + err.Error())
+	}
+	c.commitment, err = parsePointForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 commitment error: " + err.Error())
+	}
+	c.keyImage, err = parsePointForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 keyImage error: " + err.Error())
+	}
+	c.txRandom, err = parsePointForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 txRandom error: " + err.Error())
+	}
+	c.mask, err = parseScalarForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
+	}
+	c.amount, err = parseScalarForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 amount error: " + err.Error())
 	}
 	return nil
 }

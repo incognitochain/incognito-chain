@@ -66,6 +66,8 @@ func (c *PlainCoinV1) GetShardID() uint8 {
 	return shardID
 }
 
+// ver1 does not need to care for index
+func (c PlainCoinV1) GetIndex() uint8   { return 0 }
 func (c PlainCoinV1) GetCommitment() *operation.Point   { return c.commitment }
 func (c PlainCoinV1) GetPublicKey() *operation.Point    { return c.publicKey }
 func (c PlainCoinV1) GetSNDerivator() *operation.Scalar { return c.snDerivator }
@@ -530,8 +532,12 @@ func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		err := errors.New("Cannot decrypt coinv1 with empty key")
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
-	coinPubkey := c.GetPublicKey().ToBytesS()
-	if bytes.Equal(coinPubkey, keySet.PaymentAddress.Pk[:]) {
+	if len(keySet.ReadonlyKey.Rk) == 0 && len(keySet.PrivateKey) == 0 {
+		err := errors.New("Cannot Decrypt CoinV1: Keyset does not contain viewkey or privatekey")
+		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+	}
+
+	if bytes.Equal(c.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk[:]) {
 		result := &CoinV1{
 			CoinDetails:          c.CoinDetails,
 			CoinDetailsEncrypted: c.CoinDetailsEncrypted,

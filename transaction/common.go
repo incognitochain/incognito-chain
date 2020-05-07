@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"math/rand"
 
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,28 +16,15 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 )
 
-// Version1 uses this
-// ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
-func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*privacy.InputCoin {
-	var inputCoins []*privacy.InputCoin
-
-	for _, coin := range usableOutputsOfOld {
-		inCoin := new(privacy.InputCoin)
-		inCoin.CoinDetails = coin.CoinDetails
-		inputCoins = append(inputCoins, inCoin)
-	}
-	return inputCoins
-}
-
 type RandomCommitmentsProcessParam struct {
-	usableInputCoins []*privacy.InputCoin
+	usableInputCoins []*coin.PlainCoinV1
 	randNum          int
 	stateDB          *statedb.StateDB
 	shardID          byte
 	tokenID          *common.Hash
 }
 
-func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+func NewRandomCommitmentsProcessParam(usableInputCoins []*coin.PlainCoinV1, randNum int, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
 	return &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
@@ -63,7 +52,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	// tick index of each usable commitment with full db commitments
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
 	for i, in := range param.usableInputCoins {
-		usableCommitment := in.CoinDetails.GetCoinCommitment().ToBytesS()
+		usableCommitment := in.GetCommitment().ToBytesS()
 		commitmentInHash := common.HashH(usableCommitment)
 		listUsableCommitments[commitmentInHash] = usableCommitment
 		listUsableCommitmentsIndices[i] = commitmentInHash
@@ -89,7 +78,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	}
 	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
-		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
+		temp := param.usableInputCoins[0].GetCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}
 	} else {
 		for i := 0; i < cpRandNum; i++ {
@@ -284,7 +273,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 			Amount:         params.amount,
 			TokenTxType:    CustomTokenInit,
 			Receiver:       []*privacy.PaymentInfo{receiver},
-			TokenInput:     []*privacy.InputCoin{},
+			TokenInput:     []coin.PlainCoin{},
 			Mintable:       true,
 		}
 		tx := &TxCustomTokenPrivacy{}

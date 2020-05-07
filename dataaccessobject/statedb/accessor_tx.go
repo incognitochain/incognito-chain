@@ -199,13 +199,16 @@ func ListCommitmentIndices(stateDB *StateDB, tokenID common.Hash, shardID byte) 
 	return reverseM, nil
 }
 
-func StoreOnetimeAddress(stateDB *StateDB, tokenID common.Hash, height uint64, outputCoins []byte, shardID byte) error {
+func StoreOnetimeAddress(stateDB *StateDB, tokenID common.Hash, height uint64, outputCoins [][]byte, shardID byte) error {
 	heightBytes := common.Uint64ToBytes(height)
-	key := GenerateOnetimeAddressObjectKey(tokenID, shardID, heightBytes, outputCoins)
-	value := NewOnetimeAddressStateWithValue(tokenID, shardID, heightBytes, outputCoins)
-	err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
-	if err != nil {
-		return NewStatedbError(StoreOnetimeAddressError, err)
+	for _, outputCoin := range outputCoins {
+		key := GenerateOnetimeAddressObjectKey(tokenID, shardID, heightBytes, outputCoin)
+		value := NewOnetimeAddressStateWithValue(tokenID, shardID, heightBytes, outputCoin)
+
+		err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreOnetimeAddressError, err)
+		}
 	}
 	return nil
 }
@@ -230,6 +233,10 @@ func StoreOutputCoins(stateDB *StateDB, tokenID common.Hash, publicKey []byte, o
 		}
 	}
 	return nil
+}
+
+func CheckPublicKeyExistence(stateDB *StateDB, tokenID common.Hash, publicKey []byte, shardID byte) (bool, error) {
+	return stateDB.checkOnetimeAddressExistence(tokenID, shardID, publicKey)
 }
 
 func GetOutcoinsByPubkey(stateDB *StateDB, tokenID common.Hash, publicKey []byte, shardID byte) ([][]byte, error) {

@@ -75,7 +75,7 @@ type CustomTokenPrivacyParamTx struct {
 	Amount         uint64                 `json:"TokenAmount"`
 	TokenTxType    int                    `json:"TokenTxType"`
 	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
-	TokenInput     []*coin.PlainCoinV1    `json:"TokenInput"`
+	TokenInput     []coin.PlainCoin    `json:"TokenInput"`
 	Mintable       bool                   `json:"TokenMintable"`
 	Fee            uint64                 `json:"TokenFee"`
 }

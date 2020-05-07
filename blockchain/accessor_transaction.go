@@ -211,7 +211,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	return txsSpamRemoved, nil
 }
 
-func (blockchain *BlockChain) GetOutcoinsBytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
+func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
 	var err error
 	var outCoinsBytes [][]byte
 	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
@@ -245,21 +245,21 @@ func (blockchain *BlockChain) GetOutcoinsBytesByKeyset(keyset *incognitokey.KeyS
 	return outCoinsBytes, nil
 }
 
-//GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+//GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 //With private-key, we can check unspent tx by check serialNumber from database
 //- Param #1: keyset - (priv-key, payment-address, readonlykey)
 //in case priv-key: return unspent outputcoin tx
 //in case readonly-key: return all outputcoin tx with amount value
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCoinsInBytes [][]byte
 	var err error
 	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
 	if keyset == nil {
-		return nil, NewBlockChainError(GetListOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
 	if blockchain.config.MemCache != nil {
 		// get from cache
@@ -271,7 +271,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 		}
 		if len(outCoinsInBytes) == 0 {
 			// cached data is nil or fail -> get from database
-			outCoinsInBytes, err = blockchain.GetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
+			outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 			if len(outCoinsInBytes) > 0 {
 				// cache 1 day for result
 				cachedData, err = json.Marshal(outCoinsInBytes)
@@ -282,7 +282,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 		}
 	}
 	if len(outCoinsInBytes) == 0 {
-		outCoinsInBytes, err = blockchain.GetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
+		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -483,8 +483,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		if err != nil {
 			return err
 		}
-		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
-		publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
+		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
 			var mapComSnd map[string][]byte = make(map[string][]byte)
 
@@ -499,7 +498,15 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
+			err = statedb.StoreOnetimeAddress(stateDB, *view.tokenID, view.height, outputCoinBytesArray, publicKeyShardID)
+			if err != nil {
+				return err
+			}
+
 			err = statedb.StoreOutputCoins(stateDB, *view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+			if err != nil {
+				return err
+			}
 
 			// commitment
 			commitmentsArray := view.mapCommitments[k]

@@ -31,13 +31,15 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 		if err != nil {
 			return jsonresult.ListAccounts{}, NewRPCError(TokenIsInvalidError, err)
 		}
-		outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
+
+		// List account should get all balance so startHeight = 0
+		outCoins, err := walletService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID, 0)
 		if err != nil {
 			return jsonresult.ListAccounts{}, NewRPCError(UnexpectedError, err)
 		}
 		amount := uint64(0)
 		for _, out := range outCoins {
-			amount += out.CoinDetails.GetValue()
+			amount += out.GetValue()
 		}
 		result.Accounts[accountName] = amount
 	}
@@ -120,7 +122,9 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 	if err != nil {
 		return uint64(0), NewRPCError(TokenIsInvalidError, err)
 	}
-	outcoints, err := walletService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
+
+	// Get balance by private key should return all tokens belong to this private key, so start at 0
+	outcoints, err := walletService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID, 0)
 	log.Println(err)
 	if err != nil {
 		return uint64(0), NewRPCError(UnexpectedError, err)
@@ -128,7 +132,7 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 
 	balance := uint64(0)
 	for _, out := range outcoints {
-		balance += out.CoinDetails.GetValue()
+		balance += out.GetValue()
 	}
 	log.Println(balance)
 
@@ -146,7 +150,9 @@ func (walletService WalletService) GetBalanceByPaymentAddress(paymentAddress str
 	if err1 != nil {
 		return uint64(0), NewRPCError(TokenIsInvalidError, err1)
 	}
-	outcoints, err := walletService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
+
+	// Get balance should get all, so start from zero
+	outcoints, err := walletService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID, 0)
 	Logger.log.Debugf("OutCoins: %+v", outcoints)
 	Logger.log.Debugf("shardIDSender: %+v", shardIDSender)
 	Logger.log.Debugf("accountWithPaymentAddress.KeySet: %+v", keySet)
@@ -156,7 +162,7 @@ func (walletService WalletService) GetBalanceByPaymentAddress(paymentAddress str
 	}
 	balance := uint64(0)
 	for _, out := range outcoints {
-		balance += out.CoinDetails.GetValue()
+		balance += out.GetValue()
 	}
 
 	return balance, nil
@@ -175,12 +181,14 @@ func (walletService WalletService) GetBalance(accountName string) (uint64, *RPCE
 		for _, account := range walletService.Wallet.MasterAccount.Child {
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
+
+			// Get balance should get all, so start from zero
+			outCoins, err := walletService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID, 0)
 			if err != nil {
 				return uint64(0), NewRPCError(UnexpectedError, err)
 			}
 			for _, out := range outCoins {
-				balance += out.CoinDetails.GetValue()
+				balance += out.GetValue()
 			}
 		}
 	} else {
@@ -189,12 +197,14 @@ func (walletService WalletService) GetBalance(accountName string) (uint64, *RPCE
 				// get balance for accountName in wallet
 				lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 				shardIDSender := common.GetShardIDFromLastByte(lastByte)
-				outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
+
+				// Get balance should get all, so start from zero
+				outCoins, err := walletService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID, 0)
 				if err != nil {
 					return uint64(0), NewRPCError(UnexpectedError, err)
 				}
 				for _, out := range outCoins {
-					balance += out.CoinDetails.GetValue()
+					balance += out.GetValue()
 				}
 				break
 			}
@@ -216,12 +226,14 @@ func (walletService WalletService) GetReceivedByAccount(accountName string) (uin
 			if err1 != nil {
 				return uint64(0), NewRPCError(TokenIsInvalidError, err1)
 			}
-			outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
+
+			// Get balance should get all, so start from zero
+			outCoins, err := walletService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID, 0)
 			if err != nil {
 				return uint64(0), NewRPCError(UnexpectedError, err)
 			}
 			for _, out := range outCoins {
-				balance += out.CoinDetails.GetValue()
+				balance += out.GetValue()
 			}
 			break
 		}

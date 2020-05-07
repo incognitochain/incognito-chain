@@ -2,12 +2,12 @@ package jsonresult
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"log"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type ListOutputCoins struct {
@@ -15,14 +15,15 @@ type ListOutputCoins struct {
 }
 
 type OutCoin struct {
+	Version 			 string `json:"Version"`
+	Index 				 string `json:"Index"`
 	PublicKey            string `json:"PublicKey"`
-	CoinCommitment       string `json:"CoinCommitment"`
+	Commitment       	 string `json:"Commitment"`
 	SNDerivator          string `json:"SNDerivator"`
-	SerialNumber         string `json:"SerialNumber"`
+	KeyImage         	 string `json:"KeyImage"`
 	Randomness           string `json:"Randomness"`
 	Value                string `json:"Value"`
 	Info                 string `json:"Info"`
-	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 }
 
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
@@ -41,29 +42,22 @@ func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 	return &outcoin, nil
 }
 
-func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
-	serialNumber := ""
-
-	if outCoin.CoinDetails.GetSerialNumber() != nil && !outCoin.CoinDetails.GetSerialNumber().IsIdentity() {
-		serialNumber = base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte)
+func NewOutCoin(outCoin coin.PlainCoin) OutCoin {
+	keyImage := ""
+	if outCoin.GetKeyImage() != nil && !outCoin.GetKeyImage().IsIdentity() {
+		keyImage = base58.Base58Check{}.Encode(outCoin.GetKeyImage().ToBytesS(), common.ZeroByte)
 	}
 
 	result := OutCoin{
-		PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
-		Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
-		Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
-		CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().ToBytesS(), common.ZeroByte),
-		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().ToBytesS(), common.ZeroByte),
-		SerialNumber:   serialNumber,
+		Version: 		strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
+		Index: 			strconv.FormatUint(uint64(outCoin.GetIndex()), 10),
+		PublicKey:      base58.Base58Check{}.Encode(outCoin.GetPublicKey().ToBytesS(), common.ZeroByte),
+		Value:          strconv.FormatUint(outCoin.GetValue(), 10),
+		Info:           base58.Base58Check{}.Encode(outCoin.GetInfo()[:], common.ZeroByte),
+		Commitment: base58.Base58Check{}.Encode(outCoin.GetCommitment().ToBytesS(), common.ZeroByte),
+		SNDerivator:    base58.Base58Check{}.Encode(outCoin.GetSNDerivator().ToBytesS(), common.ZeroByte),
+		KeyImage:   keyImage,
+		Randomness: base58.Base58Check{}.Encode(outCoin.GetRandomness().ToBytesS(), common.ZeroByte),
 	}
-
-	if outCoin.CoinDetails.GetRandomness() != nil {
-		result.Randomness = base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().ToBytesS(), common.ZeroByte)
-	}
-	// return more data of CoinDetailsEncrypted
-	if outCoin.CoinDetailsEncrypted != nil {
-		result.CoinDetailsEncrypted = base58.Base58Check{}.Encode(outCoin.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
-	}
-
 	return result
 }

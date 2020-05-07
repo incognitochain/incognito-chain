@@ -78,16 +78,14 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		return err
 	}
 
-	// Execution time
-	// start := time.Now()
-
 	// Init tx and params (tx and params will be changed)
 	if err := initializeTxAndParamsASM(tx, params); err != nil {
 		return err
 	}
 
-	// startPrivacy := time.Now()
-	if err := proveAndSignVersionSwitcherASM(tx, params); err != nil {
+	// Prove based on tx.Version
+	prover := newTxVersionSwitcher(tx.Version)
+	if err := prover.ProveASM(tx, params); err != nil {
 		return err
 	}
 

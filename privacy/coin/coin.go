@@ -34,12 +34,14 @@ type Coin interface {
 type PlainCoin interface {
 	GetVersion() uint8
 	GetShardID() uint8
+	GetIndex() uint8
 	GetCommitment() *operation.Point
 	GetInfo() []byte
 	GetPublicKey() *operation.Point
 	GetValue() uint64
 	GetKeyImage() *operation.Point
 	GetRandomness() *operation.Scalar
+	GetSNDerivator() *operation.Scalar
 
 	SetKeyImage(*operation.Point)
 	SetPublicKey(*operation.Point)

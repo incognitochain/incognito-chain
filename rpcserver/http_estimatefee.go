@@ -43,13 +43,14 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
 	}
 
-	outCoins, err := httpServer.outputCoinService.ListOutputCoinsByKeySet(senderKeySet, shardIDSender)
+	// Should get outCoins from start
+	outCoins, err := httpServer.outputCoinService.ListDecryptedOutputCoinsByKeySet(senderKeySet, shardIDSender, 0)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
 
 	// remove out coin in mem pool
-	outCoins, err = httpServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(outCoins)
+	outCoins, err = httpServer.txMemPoolService.FilterMemPoolPlainCoinsToSpent(outCoins)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}

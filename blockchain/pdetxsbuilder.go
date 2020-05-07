@@ -101,7 +101,7 @@ func buildTradeResTx(
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*coin.PlainCoinV1{},
+		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -282,7 +282,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		Amount:      wdAcceptedContent.DeductingPoolValue,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*coin.PlainCoinV1{},
+		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -378,7 +378,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		Amount:      refundContribution.ContributedAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*coin.PlainCoinV1{},
+		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -475,7 +475,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		Amount:      matchedNReturnedContribution.ReturnedContributedAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*coin.PlainCoinV1{},
+		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}

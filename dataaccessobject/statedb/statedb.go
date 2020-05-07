@@ -933,6 +933,23 @@ func (stateDB *StateDB) getOutputCoinState(key common.Hash) (*OutputCoinState, b
 	return NewOutputCoinState(), false, nil
 }
 
+func (stateDB *StateDB) checkOnetimeAddressExistence(tokenID common.Hash, shardID byte, publicKey []byte) (bool, error) {
+	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
+	it := trie.NewIterator(temp)
+	if it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newOutputCoin := NewOutputCoinState()
+		err := json.Unmarshal(newValue, newOutputCoin)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte, publicKey []byte) []*OutputCoinState {
 	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
 	it := trie.NewIterator(temp)

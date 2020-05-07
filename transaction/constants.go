@@ -2,7 +2,9 @@ package transaction
 
 const (
 	// txVersion is the current latest supported transaction version.
-	txVersion                        = 2
+	currentTxVersion 				  = 2
+	txVersion1                        = 1
+	txVersion2                        = 2
 	ValidateTimeForOneoutOfManyProof = 1574985600 // GMT: Friday, November 29, 2019 12:00:00 AM
 )
 

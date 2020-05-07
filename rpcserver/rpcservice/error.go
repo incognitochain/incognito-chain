@@ -51,7 +51,7 @@ const (
 	GetPDEStateError
 	ListCommitteeRewardError
 	GetRewardAmountError
-	ListOutputCoinsByKeyError
+	ListDecryptedOutputCoinsByKeyError
 	ListUnspentOutputCoinsByKeyError
 	SendRawTransactionError
 	BuildTokenParamError
@@ -121,7 +121,7 @@ var ErrCodeMessage = map[int]struct {
 	SendTxDataError:                  {-4002, "Can not send tx"},
 	Base58ChedkDataOfTxInvalid:       {-4003, "Base58Check encode data of tx is invalid, can not decode"},
 	JsonDataOfTxInvalid:              {-4004, "Json string data of tx is invalid, can not unmarshal"},
-	ListOutputCoinsByKeyError:        {-4005, "List Output Coins By Key Error"},
+	ListDecryptedOutputCoinsByKeyError:        {-4005, "List Output Coins By Key Error"},
 	ListUnspentOutputCoinsByKeyError: {-4006, "List Unspent Output Coins By Key Error"},
 	SendRawTransactionError:          {-4007, "Send Raw Transaction Error"},
 	BuildTokenParamError:             {-4008, "Build Token Param Error"},

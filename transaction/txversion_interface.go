@@ -32,7 +32,7 @@ type TxVersionSwitcher interface {
 	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
 }
 
-func initTxVersionSwitcher(ver int8) TxVersionSwitcher {
+func newTxVersionSwitcher(ver int8) TxVersionSwitcher {
 	var versionSwitcher TxVersionSwitcher
 	if ver == 1 {
 		versionSwitcher = new(TxVersion1)
@@ -40,19 +40,4 @@ func initTxVersionSwitcher(ver int8) TxVersionSwitcher {
 		versionSwitcher = new(TxVersion2)
 	}
 	return versionSwitcher
-}
-
-// Used in Tx.Init
-// For Tx to be formed correctly by using privacy package
-func proveAndSignVersionSwitcher(tx *Tx, params *TxPrivacyInitParams) error {
-	return initTxVersionSwitcher(tx.Version).Prove(tx, params)
-}
-
-func verifierVersionSwitcher(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	vs := initTxVersionSwitcher(tx.Version)
-	return vs.Verify(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
-}
-
-func proveAndSignVersionSwitcherASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
-	return initTxVersionSwitcher(tx.Version).ProveASM(tx, params)
 }

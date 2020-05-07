@@ -165,7 +165,7 @@ const (
 	InitPDETradeResponseTransactionError
 	ProcessPDEInstructionError
 	InitBeaconStateError
-	GetListOutputCoinsByKeysetError
+	GetListDecryptedOutputCoinsByKeysetError
 	ProcessSalaryInstructionsError
 	GetShardIDFromTxError
 	GetValueFromTxError
@@ -332,7 +332,7 @@ var ErrCodeMessage = map[int]struct {
 	ValidateBlockWithPreviousBeaconBestStateError:     {-1149, "Validate Block With Previous Beacon Best State Error"},
 	BackupCurrentBeaconStateError:                     {-1150, "Backup Current Beacon State Error"},
 	ProcessAutoStakingError:                           {-1151, "Process Auto Staking Error"},
-	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
+	GetListDecryptedOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 }
 
 type BlockChainError struct {

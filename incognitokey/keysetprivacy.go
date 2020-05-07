@@ -105,6 +105,10 @@ func (keySet KeySet) GetPublicKeyInBase58CheckEncode() string {
 	return base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 }
 
+func (keySet KeySet) GetReadOnlyKeyInBase58CheckEncode() string {
+	return base58.Base58Check{}.Encode(keySet.ReadonlyKey.Rk, common.ZeroByte)
+}
+
 // SignDataInBase58CheckEncode receives data and
 // returns the signature that is base58 check encoded and is signed by private key in keySet
 func (keySet KeySet) SignDataInBase58CheckEncode(data []byte) (string, error) {

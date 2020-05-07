@@ -16,6 +16,7 @@ import (
 // TxViewPoint is used to contain data which is fetched from tx of every block
 type TxViewPoint struct {
 	tokenID           *common.Hash
+	height 			  uint64
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 
@@ -40,6 +41,7 @@ type TxViewPoint struct {
 func NewTxViewPoint(shardID byte) *TxViewPoint {
 	result := &TxViewPoint{
 		shardID:                     shardID,
+		height: 					 0,
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
 		mapOutputCoins:              make(map[string][]coin.Coin),
@@ -156,7 +158,9 @@ func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shard
 }
 
 func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, block *ShardBlock) error {
+	view.height = block.Header.Height
 	transactions := block.Body.Transactions
+
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
@@ -349,6 +353,8 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(stateDB *statedb.State
 }
 
 func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(stateDB *statedb.StateDB, block *ShardBlock) error {
+	view.height = block.Header.Height
+
 	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]coin.Coin)

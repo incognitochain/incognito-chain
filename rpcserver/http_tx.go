@@ -189,6 +189,8 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	return result, nil
 }
 
+// #1 param: privateKey string
+// #2 param: tokenID
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBalancePrivacyCustomToken params: %+v", params)

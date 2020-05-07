@@ -311,13 +311,11 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 
 	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
 
-	// TODO Privacy
-	// Should we put private key to tx??? why ????
-	//tx.sigPrivKey, err = privacy.ArrayScalarToBytes(&privKeysMlsag)
-	//if err != nil {
-	//	Logger.Log.Errorf("tx.SigPrivKey cannot parse arrayScalar to Bytes, error %v ", err)
-	//	return err
-	//}
+	tx.sigPrivKey, err = privacy.ArrayScalarToBytes(&privKeysMlsag)
+	if err != nil {
+		Logger.Log.Errorf("tx.SigPrivKey cannot parse arrayScalar to Bytes, error %v ", err)
+		return err
+	}
 
 	tx.SigPubKey, err = txSigPubKeyToBytes(indexes)
 	if err != nil {
@@ -336,46 +334,65 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 	return err
 }
 
-func parsePaymentToCoinVer2(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV2, error) {
+func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, shardID byte, index uint8) *coin.CoinV2 {
+	c := new(coin.CoinV2)
+	c.SetVersion(2)
+
+
+	c.SetShardID(shardID)
+	c.SetIndex(index)
+	c.SetInfo(info.Message)
+
+	// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
+	r := operation.RandomScalar()
+	c.SetMask(r)
+	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+	c.SetCommitment(coin.ParseCommitmentFromMaskAndAmount(
+		r,
+		c.GetAmount()),
+	)
+	c.SetPublicKey(coin.ParseOnetimeAddress(
+		info.PaymentAddress.GetPublicSpend(),
+		info.PaymentAddress.GetPublicView(),
+		r,
+		index,
+	))
+	c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+	return c
+}
+
+func parseCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
 	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
 	for index, info := range paymentInfo {
-		c := new(coin.CoinV2)
-		c.SetVersion(2)
-
-		publicSpendKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
+		receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 		if err != nil {
 			Logger.Log.Errorf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
 			return nil, err
 		}
-		publicSpendKeyBytes := publicSpendKey.ToBytesS()
-		shardID := common.GetShardIDFromLastByte(publicSpendKeyBytes[len(publicSpendKeyBytes)-1])
+		receiverPublicKeyBytes := receiverPublicKey.ToBytesS()
+		shardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes) - 1])
 
-		c.SetShardID(shardID)
-		c.SetIndex(uint8(index))
-		c.SetInfo(info.Message)
+		// Repeat generating one time address for new one time address
+		for true {
+			c := parseCoinBasedOnPaymentInfo(info, shardID, uint8(index&0xFF))
+			publicKeyBytes := c.GetPublicKey().ToBytesS()
+			found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes, shardID)
+			if err != nil {
+				Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
+				return nil, err
+			}
+			if !found {
+				outputCoins[index] = c
+				break
+			}
+		}
 
-		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
-		r := operation.RandomScalar()
-		c.SetMask(r)
-		c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
-		c.SetCommitment(coin.ParseCommitmentFromMaskAndAmount(
-			r,
-			c.GetAmount()),
-		)
-		c.SetPublicKey(coin.ParseOnetimeAddress(
-			info.PaymentAddress.GetPublicSpend(),
-			info.PaymentAddress.GetPublicView(),
-			r,
-			uint8(index&0xFF),
-		))
-		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
-		outputCoins[index] = c
 	}
 	return outputCoins, nil
 }
 
 func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
-	outputCoins, err := parsePaymentToCoinVer2(params.paymentInfo)
+	outputCoins, err := parseCoinArrayBasedOnPaymentInfoArray(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
 		Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 		return err

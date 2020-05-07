@@ -66,14 +66,14 @@ func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmen
 	return commitmentProving, nil
 }
 
-func generateSndOut(params *TxPrivacyInitParams) []*operation.Scalar {
+func generateSndOut(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash,stateDB *statedb.StateDB) []*operation.Scalar {
 	ok := true
 	sndOuts := make([]*operation.Scalar, 0)
 	for ok {
-		for i := 0; i < len(params.paymentInfo); i++ {
+		for i := 0; i < len(paymentInfo); i++ {
 			sndOut := operation.RandomScalar()
 			for {
-				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.stateDB)
+				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, stateDB)
 				if err != nil {
 					Logger.Log.Error(err)
 				}
@@ -96,10 +96,11 @@ func generateSndOut(params *TxPrivacyInitParams) []*operation.Scalar {
 	return sndOuts
 }
 
-func parseOutputCoins(params *TxPrivacyInitParams) ([]*coin.CoinV1, error) {
-	sndOuts := generateSndOut(params)
-	outputCoins := make([]*coin.CoinV1, len(params.paymentInfo))
-	for i, pInfo := range params.paymentInfo {
+
+func parseOutputCoins(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV1, error) {
+	sndOuts := generateSndOut(paymentInfo, tokenID, stateDB)
+	outputCoins := make([]*coin.CoinV1, len(paymentInfo))
+	for i, pInfo := range paymentInfo {
 		outputCoins[i] = new(coin.CoinV1)
 		outputCoins[i].CoinDetails = new(coin.PlainCoinV1)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
@@ -134,7 +135,7 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	if err != nil {
 		return nil, err
 	}
-	outputCoins, err := parseOutputCoins(params)
+	outputCoins, err := parseOutputCoins(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +205,7 @@ func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM) (*zkp.PaymentWitnessParam, error) {
 	// create SNDs for output coins
 	txParams := &params.txParam
-	outputCoins, err := parseOutputCoins(txParams)
+	outputCoins, err := parseOutputCoins(txParams.paymentInfo, txParams.tokenID, txParams.stateDB)
 	if err != nil {
 		return nil, err
 	}

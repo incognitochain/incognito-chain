@@ -242,7 +242,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		Amount:         issuingAcceptedInst.DepositedAmount,
 		TokenTxType:    transaction.CustomTokenInit,
 		Receiver:       []*privacy.PaymentInfo{receiver},
-		TokenInput:     []*coin.PlainCoinV1{},
+		TokenInput:     []coin.PlainCoin{},
 		Mintable:       true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -304,7 +304,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		Amount:      issuingETHAcceptedInst.IssuingAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*coin.PlainCoinV1{},
+		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
 
