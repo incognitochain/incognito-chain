@@ -140,40 +140,27 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.IncogAddressStr)
 		keyCustodianStateStr := keyCustodianState.String()
 
-		if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
+		newCustodian := new(statedb.CustodianState)
+		oldCustodianState := currentPortalState.CustodianPoolState[keyCustodianStateStr]
+		if oldCustodianState == nil {
 			// new custodian
-			newCustodian := statedb.NewCustodianStateWithValue(
+			newCustodian = statedb.NewCustodianStateWithValue(
 				actionData.IncogAddressStr, actionData.DepositedAmount, actionData.DepositedAmount,
 				nil, nil,
 				actionData.RemoteAddresses, nil)
-			currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 		} else {
 			// custodian deposited before
-			// update state of the custodian
-			custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
-			totalCollateral := custodian.GetTotalCollateral() + actionData.DepositedAmount
-			freeCollateral := custodian.GetFreeCollateral() + actionData.DepositedAmount
-			holdingPubTokens := custodian.GetHoldingPublicTokens()
-			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
-			rewardAmount := custodian.GetRewardAmount()
-			remoteAddresses := custodian.GetRemoteAddresses()
-			// if total collateral is zero, custodians are able to update remote addresses
-			if custodian.GetTotalCollateral() == 0 {
-				if len(actionData.RemoteAddresses) > 0 {
-					remoteAddresses = actionData.RemoteAddresses
-				}
-			} else {
-				for _, address := range actionData.RemoteAddresses {
-					if existedAddr, _ := statedb.GetRemoteAddressByTokenID(remoteAddresses, address.GetPTokenID()); existedAddr == "" {
-						remoteAddresses = append(remoteAddresses, address)
-					}
-				}
-			}
-
-			newCustodian := statedb.NewCustodianStateWithValue(actionData.IncogAddressStr, totalCollateral, freeCollateral,
+			totalCollateral := oldCustodianState.GetTotalCollateral() + actionData.DepositedAmount
+			freeCollateral := oldCustodianState.GetFreeCollateral() + actionData.DepositedAmount
+			holdingPubTokens := oldCustodianState.GetHoldingPublicTokens()
+			lockedAmountCollateral := oldCustodianState.GetLockedAmountCollateral()
+			rewardAmount := oldCustodianState.GetRewardAmount()
+			remoteAddresses := actionData.RemoteAddresses
+			newCustodian = statedb.NewCustodianStateWithValue(actionData.IncogAddressStr, totalCollateral, freeCollateral,
 				holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
-			currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 		}
+		// update state of the custodian
+		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 
 		// store custodian deposit status into DB
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
@@ -183,7 +170,6 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			RemoteAddresses: actionData.RemoteAddresses,
 		}
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-
 		err = statedb.StoreCustodianDepositStatus(
 			stateDB,
 			actionData.TxReqID.String(),
@@ -202,7 +188,6 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			RemoteAddresses: actionData.RemoteAddresses,
 		}
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-
 		err = statedb.StoreCustodianDepositStatus(
 			stateDB,
 			actionData.TxReqID.String(),
@@ -564,7 +549,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
-			return err
+			return nil
 		}
 
 		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.TxReqID.String()] = newExchangeRates
@@ -590,7 +575,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
-			return err
+			return nil
 		}
 	}
 
@@ -983,15 +968,11 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := finalExchangeRateKey.String()
-		_, err2 := updateFreeCollateralCustodian(
+		err := updateCustodianStateAfterReqUnlockCollateral(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			actionData.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
-		if err2 != nil {
-			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
-
+			 actionData.UnlockAmount, tokenID)
+		if err != nil {
+			Logger.log.Errorf("Error when update custodian state", err)
 			return nil
 		}
 

@@ -1,16 +1,11 @@
 package blockchain
 
 import (
-	"fmt"
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"strconv"
 )
 
@@ -168,16 +163,15 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.IncogAddressStr)
 	keyCustodianStateStr := keyCustodianState.String()
 
+	newCustodian := new(statedb.CustodianState)
 	if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
 		// new custodian
-		newCustodian := statedb.NewCustodianStateWithValue(
+		newCustodian = statedb.NewCustodianStateWithValue(
 			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
 			nil, nil,
 			meta.RemoteAddresses, nil)
-		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	} else {
 		// custodian deposited before
-		// update state of the custodian
 		custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
 		totalCollateral := custodian.GetTotalCollateral() + meta.DepositedAmount
 		freeCollateral := custodian.GetFreeCollateral() + meta.DepositedAmount
@@ -197,16 +191,16 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 				}
 			}
 		}
-
-		newCustodian := statedb.NewCustodianStateWithValue(meta.IncogAddressStr, totalCollateral, freeCollateral,
+		newCustodian = statedb.NewCustodianStateWithValue(meta.IncogAddressStr, totalCollateral, freeCollateral,
 			holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
-		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	}
+	// update state of the custodian
+	currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 
 	inst := buildCustodianDepositInst(
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.DepositedAmount,
-		actionData.Meta.RemoteAddresses,
+		newCustodian.GetRemoteAddresses(),
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -624,148 +618,392 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 
-	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain := blockchain.config.BTCChain
-		if btcChain == nil {
-			Logger.log.Error("BTC relaying chain should not be null")
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-		// parse PortingProof in meta
-		btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(meta.PortingProof)
-		if err != nil {
-			Logger.log.Errorf("PortingProof is invalid %v\n", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
-		if !isValid || err != nil {
-			Logger.log.Errorf("Verify btcTxProof failed %v", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		// extract attached message from txOut's OP_RETURN
-		btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-		if err != nil {
-			Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		encodedMsg := btcrelaying.HashAndEncodeBase58(meta.UniquePortingID)
-		if btcAttachedMsg != encodedMsg {
-			Logger.log.Errorf("PortingId in the btc attached message is not matched with portingID in metadata")
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		// check whether amount transfer in txBNB is equal porting amount or not
-		// check receiver and amount in tx
-		// get list matching custodians in waitingPortingRequest
+	//if meta.TokenID == common.PortalBTCIDStr {
+	//	btcChain := blockchain.config.BTCChain
+	//	if btcChain == nil {
+	//		Logger.log.Error("BTC relaying chain should not be null")
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//	// parse PortingProof in meta
+	//	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(meta.PortingProof)
+	//	if err != nil {
+	//		Logger.log.Errorf("PortingProof is invalid %v\n", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
+	//	if !isValid || err != nil {
+	//		Logger.log.Errorf("Verify btcTxProof failed %v", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	// extract attached message from txOut's OP_RETURN
+	//	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
+	//	if err != nil {
+	//		Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	encodedMsg := btcrelaying.HashAndEncodeBase58(meta.UniquePortingID)
+	//	if btcAttachedMsg != encodedMsg {
+	//		Logger.log.Errorf("PortingId in the btc attached message is not matched with portingID in metadata")
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	// check whether amount transfer in txBNB is equal porting amount or not
+	//	// check receiver and amount in tx
+	//	// get list matching custodians in waitingPortingRequest
+	//	custodians := waitingPortingRequest.Custodians()
+	//	outputs := btcTxProof.BTCTx.TxOut
+	//	for _, cusDetail := range custodians {
+	//		remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
+	//		amountNeedToBeTransfer := cusDetail.Amount
+	//		amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
+	//
+	//		isChecked := false
+	//		for _, out := range outputs {
+	//			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
+	//			if err != nil {
+	//				Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
+	//				continue
+	//			}
+	//			if addrStr != remoteAddressNeedToBeTransfer {
+	//				continue
+	//			}
+	//			if out.Value < amountNeedToBeTransferInBTC {
+	//				Logger.log.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
+	//				inst := buildReqPTokensInst(
+	//					meta.UniquePortingID,
+	//					meta.TokenID,
+	//					meta.IncogAddressStr,
+	//					meta.PortingAmount,
+	//					meta.PortingProof,
+	//					meta.Type,
+	//					shardID,
+	//					actionData.TxReqID,
+	//					common.PortalReqPTokensRejectedChainStatus,
+	//				)
+	//				return [][]string{inst}, nil
+	//			} else {
+	//				isChecked = true
+	//				break
+	//			}
+	//		}
+	//		if !isChecked {
+	//			Logger.log.Error("BTC-TxProof is invalid")
+	//			inst := buildReqPTokensInst(
+	//				meta.UniquePortingID,
+	//				meta.TokenID,
+	//				meta.IncogAddressStr,
+	//				meta.PortingAmount,
+	//				meta.PortingProof,
+	//				meta.Type,
+	//				shardID,
+	//				actionData.TxReqID,
+	//				common.PortalReqPTokensRejectedChainStatus,
+	//			)
+	//			return [][]string{inst}, nil
+	//		}
+	//	}
+	//	// update holding public token for custodians
+	//	for _, cusDetail := range custodians {
+	//		custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
+	//		UpdateCustodianStateAfterUserRequestPToken(currentPortalState, custodianKey.String(), waitingPortingRequest.TokenID(), cusDetail.Amount)
+	//	}
+	//
+	//	inst := buildReqPTokensInst(
+	//		actionData.Meta.UniquePortingID,
+	//		actionData.Meta.TokenID,
+	//		actionData.Meta.IncogAddressStr,
+	//		actionData.Meta.PortingAmount,
+	//		actionData.Meta.PortingProof,
+	//		actionData.Meta.Type,
+	//		shardID,
+	//		actionData.TxReqID,
+	//		common.PortalReqPTokensAcceptedChainStatus,
+	//	)
+	//
+	//	// remove waiting porting request from currentPortalState
+	//	deleteWaitingPortingRequest(currentPortalState, keyWaitingPortingRequestStr)
+	//	return [][]string{inst}, nil
+	//
+	//} else if meta.TokenID == common.PortalBNBIDStr {
+	//	// parse PortingProof in meta
+	//	txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.PortingProof)
+	//	if err != nil {
+	//		Logger.log.Errorf("PortingProof is invalid %v\n", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	// check minimum confirmations block of bnb proof
+	//	latestBNBBlockHeight, err2 := blockchain.GetLatestBNBBlkHeight()
+	//	if err2 != nil {
+	//		Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+	//		Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
+	//			bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//	dataHash, err2 := blockchain.GetBNBDataHash(txProofBNB.BlockHeight)
+	//	if err2 != nil {
+	//		Logger.log.Errorf("Error when get data hash in blockHeight %v - %v\n",
+	//			txProofBNB.BlockHeight, err2)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	isValid, err := txProofBNB.Verify(dataHash)
+	//	if !isValid || err != nil {
+	//		Logger.log.Errorf("Verify txProofBNB failed %v", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	// parse Tx from Data in txProofBNB
+	//	txBNB, err := bnb.ParseTxFromData(txProofBNB.Proof.Data)
+	//	if err != nil {
+	//		Logger.log.Errorf("Data in PortingProof is invalid %v", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	// check memo attach portingID req:
+	//	memo := txBNB.Memo
+	//	memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
+	//	if err2 != nil {
+	//		Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	var portingMemo PortingMemoBNB
+	//	err2 = json.Unmarshal(memoBytes, &portingMemo)
+	//	if err2 != nil {
+	//		Logger.log.Errorf("Can not unmarshal memo in tx bnb proof", err2)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	if portingMemo.PortingID != meta.UniquePortingID {
+	//		Logger.log.Errorf("PortingId in memoTx is not matched with portingID in metadata", err2)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	//
+	//	// check whether amount transfer in txBNB is equal porting amount or not
+	//	// check receiver and amount in tx
+	//	// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians()
-		outputs := btcTxProof.BTCTx.TxOut
-		for _, cusDetail := range custodians {
-			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
-			amountNeedToBeTransfer := cusDetail.Amount
-			amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
+	//	outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
+	//	for _, cusDetail := range custodians {
+	//		remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
+	//		amountNeedToBeTransfer := cusDetail.Amount
+	//		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
+	//
+	//		isChecked := false
+	//		for _, out := range outputs {
+	//			addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+	//			if addr != remoteAddressNeedToBeTransfer {
+	//				Logger.log.Errorf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
+	//				continue
+	//			}
+	//
+	//			// calculate amount that was transferred to custodian's remote address
+	//			amountTransfer := int64(0)
+	//			for _, coin := range out.Coins {
+	//				if coin.Denom == bnb.DenomBNB {
+	//					amountTransfer += coin.Amount
+	//				}
+	//			}
+	//			if amountTransfer < amountNeedToBeTransferInBNB {
+	//				Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
+	//					addr, amountNeedToBeTransferInBNB, amountTransfer)
+	//				inst := buildReqPTokensInst(
+	//					meta.UniquePortingID,
+	//					meta.TokenID,
+	//					meta.IncogAddressStr,
+	//					meta.PortingAmount,
+	//					meta.PortingProof,
+	//					meta.Type,
+	//					shardID,
+	//					actionData.TxReqID,
+	//					common.PortalReqPTokensRejectedChainStatus,
+	//				)
+	//				return [][]string{inst}, nil
+	//			} else {
+	//				isChecked = true
+	//				break
+	//			}
+	//		}
+	//		if !isChecked {
+	//			Logger.log.Errorf("TxProof-BNB is invalid - Receiver address is invalid, expected %v",
+	//				remoteAddressNeedToBeTransfer)
+	//			inst := buildReqPTokensInst(
+	//				meta.UniquePortingID,
+	//				meta.TokenID,
+	//				meta.IncogAddressStr,
+	//				meta.PortingAmount,
+	//				meta.PortingProof,
+	//				meta.Type,
+	//				shardID,
+	//				actionData.TxReqID,
+	//				common.PortalReqPTokensRejectedChainStatus,
+	//			)
+	//			return [][]string{inst}, nil
+	//		}
+	//	}
 
-			isChecked := false
-			for _, out := range outputs {
-				addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-				if err != nil {
-					Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-					continue
-				}
-				if addrStr != remoteAddressNeedToBeTransfer {
-					continue
-				}
-				if out.Value < amountNeedToBeTransferInBTC {
-					Logger.log.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
-					inst := buildReqPTokensInst(
-						meta.UniquePortingID,
-						meta.TokenID,
-						meta.IncogAddressStr,
-						meta.PortingAmount,
-						meta.PortingProof,
-						meta.Type,
-						shardID,
-						actionData.TxReqID,
-						common.PortalReqPTokensRejectedChainStatus,
-					)
-					return [][]string{inst}, nil
-				} else {
-					isChecked = true
-					break
-				}
-			}
-			if !isChecked {
-				Logger.log.Error("BTC-TxProof is invalid")
-				inst := buildReqPTokensInst(
-					meta.UniquePortingID,
-					meta.TokenID,
-					meta.IncogAddressStr,
-					meta.PortingAmount,
-					meta.PortingProof,
-					meta.Type,
-					shardID,
-					actionData.TxReqID,
-					common.PortalReqPTokensRejectedChainStatus,
-				)
-				return [][]string{inst}, nil
-			}
-		}
 		// update holding public token for custodians
 		for _, cusDetail := range custodians {
 			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
@@ -787,265 +1025,21 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// remove waiting porting request from currentPortalState
 		deleteWaitingPortingRequest(currentPortalState, keyWaitingPortingRequestStr)
 		return [][]string{inst}, nil
-
-	} else if meta.TokenID == common.PortalBNBIDStr {
-		// parse PortingProof in meta
-		txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.PortingProof)
-		if err != nil {
-			Logger.log.Errorf("PortingProof is invalid %v\n", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		// check minimum confirmations block of bnb proof
-		latestBNBBlockHeight, err2 := blockchain.GetLatestBNBBlkHeight()
-		if err2 != nil {
-			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
-			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
-				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-		dataHash, err2 := blockchain.GetBNBDataHash(txProofBNB.BlockHeight)
-		if err2 != nil {
-			Logger.log.Errorf("Error when get data hash in blockHeight %v - %v\n",
-				txProofBNB.BlockHeight, err2)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		isValid, err := txProofBNB.Verify(dataHash)
-		if !isValid || err != nil {
-			Logger.log.Errorf("Verify txProofBNB failed %v", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		// parse Tx from Data in txProofBNB
-		txBNB, err := bnb.ParseTxFromData(txProofBNB.Proof.Data)
-		if err != nil {
-			Logger.log.Errorf("Data in PortingProof is invalid %v", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		// check memo attach portingID req:
-		memo := txBNB.Memo
-		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
-		if err2 != nil {
-			Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		var portingMemo PortingMemoBNB
-		err2 = json.Unmarshal(memoBytes, &portingMemo)
-		if err2 != nil {
-			Logger.log.Errorf("Can not unmarshal memo in tx bnb proof", err2)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		if portingMemo.PortingID != meta.UniquePortingID {
-			Logger.log.Errorf("PortingId in memoTx is not matched with portingID in metadata", err2)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		// check whether amount transfer in txBNB is equal porting amount or not
-		// check receiver and amount in tx
-		// get list matching custodians in waitingPortingRequest
-		custodians := waitingPortingRequest.Custodians()
-		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
-		for _, cusDetail := range custodians {
-			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
-			amountNeedToBeTransfer := cusDetail.Amount
-			amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
-
-			isChecked := false
-			for _, out := range outputs {
-				addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
-				if addr != remoteAddressNeedToBeTransfer {
-					Logger.log.Errorf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
-					continue
-				}
-
-				// calculate amount that was transferred to custodian's remote address
-				amountTransfer := int64(0)
-				for _, coin := range out.Coins {
-					if coin.Denom == bnb.DenomBNB {
-						amountTransfer += coin.Amount
-					}
-				}
-				if amountTransfer < amountNeedToBeTransferInBNB {
-					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
-						addr, amountNeedToBeTransferInBNB, amountTransfer)
-					inst := buildReqPTokensInst(
-						meta.UniquePortingID,
-						meta.TokenID,
-						meta.IncogAddressStr,
-						meta.PortingAmount,
-						meta.PortingProof,
-						meta.Type,
-						shardID,
-						actionData.TxReqID,
-						common.PortalReqPTokensRejectedChainStatus,
-					)
-					return [][]string{inst}, nil
-				} else {
-					isChecked = true
-					break
-				}
-			}
-			if !isChecked {
-				Logger.log.Errorf("TxProof-BNB is invalid - Receiver address is invalid, expected %v",
-					remoteAddressNeedToBeTransfer)
-				inst := buildReqPTokensInst(
-					meta.UniquePortingID,
-					meta.TokenID,
-					meta.IncogAddressStr,
-					meta.PortingAmount,
-					meta.PortingProof,
-					meta.Type,
-					shardID,
-					actionData.TxReqID,
-					common.PortalReqPTokensRejectedChainStatus,
-				)
-				return [][]string{inst}, nil
-			}
-		}
-
-		// update holding public token for custodians
-		for _, cusDetail := range custodians {
-			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
-			UpdateCustodianStateAfterUserRequestPToken(currentPortalState, custodianKey.String(), waitingPortingRequest.TokenID(), cusDetail.Amount)
-		}
-
-		inst := buildReqPTokensInst(
-			actionData.Meta.UniquePortingID,
-			actionData.Meta.TokenID,
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.PortingAmount,
-			actionData.Meta.PortingProof,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqPTokensAcceptedChainStatus,
-		)
-
-		// remove waiting porting request from currentPortalState
-		deleteWaitingPortingRequest(currentPortalState, keyWaitingPortingRequestStr)
-		return [][]string{inst}, nil
-	} else {
-		Logger.log.Errorf("TokenID is not supported currently on Portal")
-		inst := buildReqPTokensInst(
-			meta.UniquePortingID,
-			meta.TokenID,
-			meta.IncogAddressStr,
-			meta.PortingAmount,
-			meta.PortingProof,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqPTokensRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
+	//} else {
+	//	Logger.log.Errorf("TokenID is not supported currently on Portal")
+	//	inst := buildReqPTokensInst(
+	//		meta.UniquePortingID,
+	//		meta.TokenID,
+	//		meta.IncogAddressStr,
+	//		meta.PortingAmount,
+	//		meta.PortingProof,
+	//		meta.Type,
+	//		shardID,
+	//		actionData.TxReqID,
+	//		common.PortalReqPTokensRejectedChainStatus,
+	//	)
+	//	return [][]string{inst}, nil
+	//}
 }
 
 func (blockchain *BlockChain) buildInstructionsForExchangeRates(
@@ -1702,7 +1696,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	}
 
 	// validate proof and memo in tx
-	if meta.TokenID == common.PortalBTCIDStr {
+	/*if meta.TokenID == common.PortalBTCIDStr {
 		btcChain := blockchain.config.BTCChain
 		if btcChain == nil {
 			Logger.log.Error("BTC relaying chain should not be null")
@@ -1852,20 +1846,33 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		// get tokenID from redeemTokenID
-		tokenID := meta.TokenID
-
-		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		// calculate unlock amount
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := finalExchangeRateKey.String()
-		unlockAmount, err2 := updateFreeCollateralCustodian(
+		unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
+		if err != nil {
+			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		err = updateCustodianStateAfterReqUnlockCollateral(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
-		if err2 != nil {
-			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
+			unlockAmount, meta.TokenID)
+		if err != nil {
+			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,
@@ -2128,22 +2135,35 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 				common.PortalReqUnlockCollateralRejectedChainStatus,
 			)
 			return [][]string{inst}, nil
-		}
+		}*/
 
-		// get tokenID from redeemTokenID
-		tokenID := meta.TokenID
-
-		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		// calculate unlock amount
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := finalExchangeRateKey.String()
-		unlockAmount, err2 := updateFreeCollateralCustodian(
-			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
+		unlockAmount, err2 := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
 		if err2 != nil {
-			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
+			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		err2 = updateCustodianStateAfterReqUnlockCollateral(
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
+			unlockAmount, meta.TokenID)
+		if err2 != nil {
+			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err2)
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,
@@ -2184,23 +2204,21 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		)
 
 		return [][]string{inst}, nil
-	} else {
-		Logger.log.Errorf("TokenID is not supported currently on Portal")
-		inst := buildReqUnlockCollateralInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.CustodianAddressStr,
-			meta.RedeemAmount,
-			0,
-			meta.RedeemProof,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqUnlockCollateralRejectedChainStatus,
-
-		)
-		return [][]string{inst}, nil
-	}
-
-	return [][]string{}, nil
+	//} else {
+	//	Logger.log.Errorf("TokenID is not supported currently on Portal")
+	//	inst := buildReqUnlockCollateralInst(
+	//		meta.UniqueRedeemID,
+	//		meta.TokenID,
+	//		meta.CustodianAddressStr,
+	//		meta.RedeemAmount,
+	//		0,
+	//		meta.RedeemProof,
+	//		meta.Type,
+	//		shardID,
+	//		actionData.TxReqID,
+	//		common.PortalReqUnlockCollateralRejectedChainStatus,
+	//
+	//	)
+	//	return [][]string{inst}, nil
+	//}
 }

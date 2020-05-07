@@ -402,7 +402,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 
 	meta := metadata.NewPortalLiquidateCustodianResponse(
 		liqCustodian.UniqueRedeemID,
-		liqCustodian.MintedCollateralAmount,
+		liqCustodian.LiquidatedCollateralAmount,
 		liqCustodian.RedeemerIncAddressStr,
 		liqCustodian.CustodianIncAddressStr,
 		metadata.PortalLiquidateCustodianResponseMeta,
@@ -418,7 +418,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 	// the returned currency is PRV
 	resTx := new(transaction.Tx)
 	err = resTx.InitTxSalary(
-		liqCustodian.MintedCollateralAmount,
+		liqCustodian.LiquidatedCollateralAmount,
 		&receiverAddr,
 		producerPrivateKey,
 		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),

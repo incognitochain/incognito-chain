@@ -231,10 +231,9 @@ const (
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 2 * time.Hour // 24 hours
-	PortalTimeOutWaitingPortingRequest     = 2 * time.Hour // 24 hours
-	PercentReceivedCollateralAmount        = 120            // users will be received 120% of redeem amount in PRV (if there is custodian liquidation for redeem request)
-	MinPercentUnlockedCollateralAmount     = 120            // minimum percent collateral amount will be unlocked after custodian return pubTokens for users
+	PortalTimeOutCustodianReturnPubToken = 5 * time.Minute // 24 hours
+	PortalTimeOutWaitingPortingRequest   = 2 * time.Hour // 24 hours
+	PercentReceivedCollateralAmount      = 105           // users will be received 105% of redeem amount in PRV (if there is custodian liquidation for redeem request)
 	// todo: need to be updated before deploying
 	PercentCustodianRewards = 10 // 10% of DAO funds per epoch
 

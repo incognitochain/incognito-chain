@@ -19,6 +19,7 @@ func buildCustodianRunAwayLiquidationInst(
 	tokenID string,
 	redeemPubTokenAmount uint64,
 	mintedCollateralAmount uint64,
+	remainUnlockAmountForCustodian uint64,
 	redeemerIncAddrStr string,
 	custodianIncAddrStr string,
 	liquidatedByExchangeRate bool,
@@ -27,14 +28,15 @@ func buildCustodianRunAwayLiquidationInst(
 	status string,
 ) []string {
 	liqCustodianContent := metadata.PortalLiquidateCustodianContent{
-		UniqueRedeemID:           redeemID,
-		TokenID:                  tokenID,
-		RedeemPubTokenAmount:     redeemPubTokenAmount,
-		MintedCollateralAmount:   mintedCollateralAmount,
-		RedeemerIncAddressStr:    redeemerIncAddrStr,
-		CustodianIncAddressStr:   custodianIncAddrStr,
-		LiquidatedByExchangeRate: liquidatedByExchangeRate,
-		ShardID:                  shardID,
+		UniqueRedeemID:                 redeemID,
+		TokenID:                        tokenID,
+		RedeemPubTokenAmount:           redeemPubTokenAmount,
+		LiquidatedCollateralAmount:     mintedCollateralAmount,
+		RemainUnlockAmountForCustodian: remainUnlockAmountForCustodian,
+		RedeemerIncAddressStr:          redeemerIncAddrStr,
+		CustodianIncAddressStr:         custodianIncAddrStr,
+		LiquidatedByExchangeRate:       liquidatedByExchangeRate,
+		ShardID:                        shardID,
 	}
 	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
 	return []string{
@@ -124,20 +126,22 @@ func buildLiquidationCustodianDepositInst(
 	}
 }
 
+// checkAndBuildInstForCustodianLiquidation checks and builds liquidation instructions
+// when custodians didn't return public token to users after timeout
 func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
-
 	insts := [][]string{}
 
 	// get exchange rate
 	exchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 	exchangeRate := currentPortalState.FinalExchangeRatesState[exchangeRateKey.String()]
 	if exchangeRate == nil {
-		//Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate")
+		Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate %v", exchangeRateKey.String())
+		return insts, nil
 	}
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
+
 	liquidatedByExchangeRate := false
 
 	sortedWaitingRedeemReqKeys := make([]string, 0)
@@ -147,7 +151,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	sort.Strings(sortedWaitingRedeemReqKeys)
 	for _, redeemReqKey := range sortedWaitingRedeemReqKeys {
 		redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
-		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutCustodianSendPubTokenBack) {
+		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutCustodianReturnPubToken) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -161,15 +165,21 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 			tokenID := redeemReq.GetTokenID()
 
 			for _, matchCusDetail := range redeemReq.GetCustodians() {
-				// calculate minted collateral amount
-				mintedAmountInPToken := matchCusDetail.GetAmount() * common.PercentReceivedCollateralAmount / 100
-				mintedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, mintedAmountInPToken)
+				custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchCusDetail.GetIncognitoAddress())
+				// calculate liquidated amount and remain unlocked amount for custodian
+				liquidatedAmount, remainUnlockAmount, err := CalUnlockCollateralAmountAfterLiquidation(
+					currentPortalState,
+					custodianStateKey.String(),
+					matchCusDetail,
+					tokenID,
+					exchangeRate)
 				if err != nil {
-					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when exchanging ptoken to prv amount %v\n: ", err)
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when calculating unlock collateral amount %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
 						redeemReq.GetUniqueRedeemID(),
 						redeemReq.GetTokenID(),
 						matchCusDetail.GetAmount(),
+						0,
 						0,
 						redeemReq.GetRedeemerAddress(),
 						matchCusDetail.GetIncognitoAddress(),
@@ -182,17 +192,18 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					continue
 				}
 
-				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
+				// update custodian state
 				cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchCusDetail.GetIncognitoAddress())
 				cusStateKeyStr := cusStateKey.String()
 				custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
-				if custodianState == nil {
-					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get custodian state with key %v\n: ", cusStateKey)
+				err = updateCustodianStateAfterLiquidateCustodian(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
+				if err != nil {
 					inst := buildCustodianRunAwayLiquidationInst(
 						redeemReq.GetUniqueRedeemID(),
 						redeemReq.GetTokenID(),
 						matchCusDetail.GetAmount(),
-						0,
+						liquidatedAmount,
+						remainUnlockAmount,
 						redeemReq.GetRedeemerAddress(),
 						matchCusDetail.GetIncognitoAddress(),
 						liquidatedByExchangeRate,
@@ -203,29 +214,6 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					insts = append(insts, inst)
 					continue
 				}
-
-				if custodianState.GetTotalCollateral() < mintedAmountInPRV ||
-					custodianState.GetLockedAmountCollateral()[tokenID] < mintedAmountInPRV {
-					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Total collateral %v, locked amount %v "+
-						"should be greater than minted amount %v\n: ",
-						custodianState.GetTotalCollateral(), custodianState.GetLockedAmountCollateral()[tokenID], mintedAmountInPRV)
-					inst := buildCustodianRunAwayLiquidationInst(
-						redeemReq.GetUniqueRedeemID(),
-						redeemReq.GetTokenID(),
-						matchCusDetail.GetAmount(),
-						mintedAmountInPRV,
-						redeemReq.GetRedeemerAddress(),
-						matchCusDetail.GetIncognitoAddress(),
-						liquidatedByExchangeRate,
-						metadata.PortalLiquidateCustodianMeta,
-						shardID,
-						common.PortalLiquidateCustodianFailedChainStatus,
-					)
-					insts = append(insts, inst)
-					continue
-				}
-
-				updateCustodianStateAfterLiquidateCustodian(custodianState, mintedAmountInPRV, tokenID)
 
 				// remove matching custodian from matching custodians list in waiting redeem request
 				updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
@@ -237,7 +225,8 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					redeemReq.GetUniqueRedeemID(),
 					redeemReq.GetTokenID(),
 					matchCusDetail.GetAmount(),
-					mintedAmountInPRV,
+					liquidatedAmount,
+					remainUnlockAmount,
 					redeemReq.GetRedeemerAddress(),
 					matchCusDetail.GetIncognitoAddress(),
 					liquidatedByExchangeRate,
@@ -429,11 +418,13 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 					currentPortalState.WaitingRedeemRequests[redeemReqKey].SetCustodians(updatedCustodians)
 
 					// build instruction
+					//todo: need to update remainUnlockAmount
 					inst := buildCustodianRunAwayLiquidationInst(
 						redeemReq.GetUniqueRedeemID(),
 						redeemReq.GetTokenID(),
 						matchCustodian.GetAmount(),
 						mintedAmountPRV,
+						0,
 						redeemReq.GetRedeemerAddress(),
 						matchCustodian.GetIncognitoAddress(),
 						liquidatedByExchangeRate,
