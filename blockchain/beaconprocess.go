@@ -1321,21 +1321,21 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
-	// execute, store
+	// execute, store PDE instruction
+	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
+	if err != nil {
+		return NewBlockChainError(ProcessPDEInstructionError, err)
+	}
+
+	// execute, store Portal Instruction
 	if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
-		err = blockchain.processPDEInstructions(beaconBlock, newBestState)
+		err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 		if err != nil {
-			return NewBlockChainError(ProcessPDEInstructionError, err)
+			return NewBlockChainError(ProcessPortalInstructionError, err)
 		}
 	}
 
-	// execute, store
-	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
-	if err != nil {
-		return NewBlockChainError(ProcessPortalInstructionError, err)
-	}
-
-	// execute, store
+	// execute, store Ralaying Instruction
 	err = blockchain.processRelayingInstructions(beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalRelayingError, err)
