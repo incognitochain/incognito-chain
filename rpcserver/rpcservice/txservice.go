@@ -1099,6 +1099,18 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	// param #4: hasPrivacyCoin flag: 1 or -1
 	hasPrivacyCoinParam := arrayParams[3].(float64)
 	hasPrivacyCoin := int(hasPrivacyCoinParam) > 0
+
+	maxDefragmentQuantity := 32
+	if len(arrayParams) >= 5 {
+		maxDefragmentQuantityTemp, ok := arrayParams[4].(float64)
+		if !ok {
+			maxDefragmentQuantityTemp = 32
+		}
+		if maxDefragmentQuantityTemp > 32 || maxDefragmentQuantityTemp <= 0 {
+			maxDefragmentQuantityTemp = 32
+		}
+		maxDefragmentQuantity = int(maxDefragmentQuantityTemp)
+	}
 	/********* END Fetch all component to *******/
 
 	// param #1: private key of sender
@@ -1121,7 +1133,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	if err != nil {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
-	outCoins, amount := txService.calculateOutputCoinsByMinValue(outCoins, maxVal)
+	outCoins, amount := txService.calculateOutputCoinsByMinValue(outCoins, maxVal, maxDefragmentQuantity)
 	if len(outCoins) == 0 {
 		return nil, NewRPCError(GetOutputCoinError, nil)
 	}
@@ -1169,13 +1181,16 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 }
 
 //calculateOutputCoinsByMinValue
-func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64) ([]*privacy.OutputCoin, uint64) {
+func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]*privacy.OutputCoin, uint64) {
 	outCoinsTmp := make([]*privacy.OutputCoin, 0)
 	amount := uint64(0)
 	for _, outCoin := range outCoins {
 		if outCoin.CoinDetails.GetValue() <= maxVal {
 			outCoinsTmp = append(outCoinsTmp, outCoin)
 			amount += outCoin.CoinDetails.GetValue()
+			if len(outCoinsTmp) >= maxDefragmentQuantityTemp {
+				break
+			}
 		}
 	}
 	return outCoinsTmp, amount
