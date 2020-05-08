@@ -477,11 +477,8 @@ func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestSta
 						if err != nil {
 							continue
 						}
-						txShardID, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
+						_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
 						if err != nil {
-							continue
-						}
-						if txShardID != shardID {
 							continue
 						}
 						// if transaction belong to this shard then add to shard beststate
@@ -499,11 +496,8 @@ func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestSta
 						if err != nil {
 							continue
 						}
-						txShardID, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
+						_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
 						if err != nil {
-							continue
-						}
-						if txShardID != shardID {
 							continue
 						}
 						// if transaction belong to this shard then add to shard beststate
