@@ -197,7 +197,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
-
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
@@ -218,7 +217,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if err := rawdbv2.StoreBeaconSlashStateRootHash(blockchain.GetBeaconChainDatabase(), initBlockHeight, common.EmptyRoot); err != nil {
 		return err
 	}
-
 	// Insert new block into beacon chain
 	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
 	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase()); err != nil {
@@ -430,6 +428,12 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err != nil {
 			panic(err)
 		}
+		currentPDEState, err := InitCurrentPDEStateFromDB(v.featureStateDB, v.BeaconHeight)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil
+		}
+		v.currentPDEState = currentPDEState
 	}
 	return nil
 }
