@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -305,18 +306,18 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	blockInstructions := shardBlock.Body.Instructions
 	previousShardBlockByte, err := rawdbv2.GetShardBlockByHash(bc.GetShardChainDatabase(shardBlock.Header.ShardID), shardBlock.Header.PreviousBlockHash)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
 		return nil
 	}
 	previousShardBlock := ShardBlock{}
 	err = json.Unmarshal(previousShardBlockByte, &previousShardBlock)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
 		return nil
 	}
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
 		return nil
 	}
 
