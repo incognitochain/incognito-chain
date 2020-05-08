@@ -79,12 +79,13 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
-		if err == nil {
-			return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+		if err != nil {
+			continue
 		}
+		// error is nil
 		shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
 		if err != nil {
-			return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+			continue
 		}
 		return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
 	}
