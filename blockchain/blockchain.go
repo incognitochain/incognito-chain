@@ -385,7 +385,7 @@ func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 	return blockchain.BestState.Beacon.BestBlock.Header.Height
 }
 
-func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*coin.PlainCoinV1, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
+func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []coin.PlainCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
 	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB(), shardID, tokenID)
 	return transaction.RandomCommitmentsProcess(param)
 }

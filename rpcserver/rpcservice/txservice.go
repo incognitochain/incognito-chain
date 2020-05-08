@@ -369,6 +369,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 		return nil, err1
 	}
 	// init tx
+
 	tx := transaction.Tx{}
 	err := tx.Init(
 		transaction.NewTxPrivacyInitParams(
@@ -940,7 +941,7 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 		return nil, nil, nil, NewRPCError(UnexpectedError, err)
 	}
 
-	usableCoin := make([]*coin.PlainCoinV1, len(outputs))
+	usableCoin := make([]coin.PlainCoin, len(outputs))
 	for index, item := range outputs {
 		out, err1 := jsonresult.NewOutcoinFromInterface(item)
 		if err1 != nil {

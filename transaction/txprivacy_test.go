@@ -3,6 +3,8 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -84,7 +86,7 @@ func TestInitTx(t *testing.T) {
 			shardID)
 
 		// get output coins from coin base tx to create new tx
-		coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
+		//coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
 
 		// init new tx without privacy
 		tx1 := Tx{}
@@ -105,7 +107,7 @@ func TestInitTx(t *testing.T) {
 		// message to receiver
 		msg := "Incognito-chain"
 		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
-		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+		msgCipherText, _ := hybridencryption.HybridEncrypt([]byte(msg), receiverTK)
 
 		fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
 		err = tx1.Init(
@@ -295,7 +297,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 			shardID)
 
 		// get output coins from coin base tx to create new tx
-		coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
+		//coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
 
 		// init new tx with privacy
 		tx1 := Tx{}
@@ -414,8 +416,8 @@ type CoinObject struct {
 	Info           string
 }
 
-func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, uint64) {
-	coins := make([]*privacy.InputCoin, len(coinObjects))
+func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*coin.PlainCoinV1, uint64) {
+	coins := make([]*coin.PlainCoinV1, len(coinObjects))
 	sumValue := uint64(0)
 
 	for i := 0; i < len(coins); i++ {
@@ -438,7 +440,7 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 		randomness, _, _ := base58.Base58Check{}.Decode(coinObjects[i].Randomness)
 		randomnessBN := new(privacy.Scalar).FromBytesS(randomness)
 
-		coins[i] = new(privacy.InputCoin).Init()
+		coins[i] = new(coin.PlainCoinV1).Init()
 		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
 		coins[i].CoinDetails.SetCoinCommitment(coinCommitmentPoint)
 		coins[i].CoinDetails.SetSNDerivator(sndBN)

@@ -8,7 +8,7 @@ import (
 
 type Coin interface {
 	GetVersion() uint8
-	GetShardID() byte
+	GetShardID() (uint8, error)
 	GetCommitment() *operation.Point
 	GetInfo() []byte
 	GetPublicKey() *operation.Point
@@ -33,7 +33,7 @@ type Coin interface {
 
 type PlainCoin interface {
 	GetVersion() uint8
-	GetShardID() uint8
+	GetShardID() (uint8, error)
 	GetIndex() uint8
 	GetCommitment() *operation.Point
 	GetInfo() []byte
@@ -61,45 +61,30 @@ type PlainCoin interface {
 	SetBytes([]byte) error
 }
 
-// First byte should determine the version
-func CreateCoinFromByte(b []byte) (Coin, error) {
+func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 	version := b[0]
-	var c Coin
-	if version == CoinVersion1 {
-		c = new(CoinV1)
-	} else if version == CoinVersion2 {
+	var c PlainCoin
+	if version == CoinVersion2 {
 		c = new(CoinV2)
+	} else {
+		c = new(PlainCoinV1)
 	}
 	err := c.SetBytes(b)
 	return c, err
 }
 
-func NewCoinFromVersion(version uint8) Coin {
-	var c Coin
-	if version == CoinVersion1 {
-		pc := new(CoinV1)
-		pc.Init()
-		c = pc
-	} else if version == CoinVersion2 {
-		pc := new(CoinV2)
-		pc.Init()
-		c = pc
-	}
-	return c
-}
+// First byte should determine the version
+func NewCoinFromByte(b []byte) (Coin, error) {
+	version := b[0]
 
-func NewPlainCoinFromVersion(version uint8) PlainCoin {
-	var c PlainCoin
-	if version == CoinVersion1 {
-		pc := new(PlainCoinV1)
-		pc.Init()
-		c = pc
-	} else if version == CoinVersion2 {
-		pc := new(CoinV2)
-		pc.Init()
-		c = pc
+	var c Coin
+	if version == CoinVersion2 {
+		c = new(CoinV2)
+	} else {
+		c = new(CoinV1)
 	}
-	return c
+	err := c.SetBytes(b)
+	return c, err
 }
 
 // Check whether the utxo is from this address

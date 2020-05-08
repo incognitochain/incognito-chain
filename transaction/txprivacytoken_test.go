@@ -3,6 +3,8 @@ package transaction
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -34,12 +36,12 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		// message to receiver
 		msg := "Incognito-chain"
 		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
-		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+		msgCipherText, _ := hybridencryption.HybridEncrypt([]byte(msg), receiverTK)
 
 		initAmount := uint64(10000)
 		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, Message: msgCipherText.Bytes()}}
 
-		inputCoinsPRV := []*privacy.InputCoin{}
+		inputCoinsPRV := []coin.PlainCoin{}
 		paymentInfoPRV := []*privacy.PaymentInfo{}
 
 		// token param for init new token
@@ -50,7 +52,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 			Amount:         initAmount,
 			TokenTxType:    CustomTokenInit,
 			Receiver:       paymentInfo,
-			TokenInput:     []*privacy.InputCoin{},
+			TokenInput:     []*coin.PlainCoinV1{},
 			Mintable:       false,
 			Fee:            0,
 		}
@@ -150,13 +152,13 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		// store init tx
 
 		// get output coin token from tx
-		outputCoins := ConvertOutputCoinToInputCoin(tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins())
+		//outputCoins := ConvertOutputCoinToInputCoin(tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins())
 
 		// calculate serial number for input coins
 		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
-			outputCoins[0].CoinDetails.GetSNDerivator())
-		outputCoins[0].CoinDetails.SetSerialNumber(serialNumber)
+			outputCoins[0].GetSNDerivator())
+		outputCoins[0].SetKeyImage(serialNumber)
 
 		db.StorePrivacyToken(*tx.GetTokenID(), tx.Hash()[:])
 		db.StoreCommitments(*tx.GetTokenID(), senderKey.KeySet.PaymentAddress.Pk[:], [][]byte{outputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()}, shardID)

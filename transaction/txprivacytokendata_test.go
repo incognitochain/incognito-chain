@@ -18,7 +18,7 @@ func TestTxTokenPrivacyData(t *testing.T) {
 	_ = proof.SetOutputCoins([]*privacy.OutputCoin{{
 		CoinDetails: coin1,
 	}})
-	_ = proof.SetInputCoins([]*privacy.InputCoin{{
+	_ = proof.SetInputCoins([]*coin.PlainCoinV1{{
 		CoinDetails: coin2,
 	}})
 	txNormal := Tx{Proof: &proof}

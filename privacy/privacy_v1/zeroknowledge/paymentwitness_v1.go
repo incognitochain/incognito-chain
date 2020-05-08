@@ -18,7 +18,7 @@ import (
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
 	privateKey          *operation.Scalar
-	inputCoins          []*coin.PlainCoinV1
+	inputCoins          []coin.PlainCoin
 	outputCoins         []*coin.CoinV1
 	commitmentIndices   []uint64
 	myCommitmentIndices []uint64
@@ -48,7 +48,7 @@ func (paymentWitness PaymentWitness) GetRandSecretKey() *operation.Scalar {
 type PaymentWitnessParam struct {
 	HasPrivacy              bool
 	PrivateKey              *operation.Scalar
-	InputCoins              []*coin.PlainCoinV1
+	InputCoins              []coin.PlainCoin
 	OutputCoins             []*coin.CoinV1
 	PublicKeyLastByteSender byte
 	Commitments             []*operation.Point
@@ -218,7 +218,11 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		cmOutputValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputCoin.CoinDetails.GetValue()), randOutputValue[i], operation.PedersenValueIndex)
 		cmOutputSND[i] = operation.PedCom.CommitAtIndex(outputCoin.CoinDetails.GetSNDerivator(), randOutputSND[i], operation.PedersenSndIndex)
 
-		receiverShardID := outputCoins[i].GetShardID()
+		receiverShardID, err := outputCoins[i].GetShardID()
+		if err != nil {
+			return errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("cannot parse shardID of outputCoins"))
+		}
+
 		cmOutputShardID[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(uint64(receiverShardID)), randOutputShardID[i], operation.PedersenShardIDIndex)
 
 		randOutputSum[i] = new(operation.Scalar).FromUint64(0)
@@ -350,11 +354,8 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo
 		proof.outputCoins[i].CoinDetails.SetRandomness(nil)
 	}
 
-	// hide information of input coins except serial number of input coins
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
 		proof.inputCoins[i].ConcealData(nil)
 	}
-
-	//privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")
 	return proof, nil
 }

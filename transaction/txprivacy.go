@@ -446,7 +446,6 @@ func (tx Tx) IsSalaryTx() bool {
 	return false
 }
 
-// TODO Privacy
 func (tx Tx) GetSender() []byte {
 	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
 		return nil
@@ -893,7 +892,7 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	}
 	// check output coin's coin commitment is calculated correctly
 	coin := outputCoins[0]
-	shardID2 := coin.GetShardID()
+	shardID2, _ := coin.GetShardID()
 	cmTmp2 := new(privacy.Point)
 	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivator()))

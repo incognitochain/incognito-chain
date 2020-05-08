@@ -36,7 +36,7 @@ type PaymentProof struct {
 	// for proving each value and sum of them are less than a threshold value
 	aggregatedRangeProof *aggregatedrange.AggregatedRangeProof
 
-	inputCoins  []*coin.PlainCoinV1
+	inputCoins  []coin.PlainCoin
 	outputCoins []*coin.CoinV1
 
 	commitmentOutputValue   []*operation.Point
@@ -86,14 +86,7 @@ func (proof PaymentProof) GetCommitmentInputShardID() *operation.Point {
 	return proof.commitmentInputShardID
 }
 func (proof PaymentProof) GetCommitmentIndices() []uint64 { return proof.commitmentIndices }
-func (proof PaymentProof) GetInputCoins() []coin.PlainCoin {
-	res := make([]coin.PlainCoin, len(proof.inputCoins))
-	for i := 0; i < len(proof.inputCoins); i += 1 {
-		res[i] = proof.inputCoins[i]
-	}
-	return res
-}
-
+func (proof PaymentProof) GetInputCoins() []coin.PlainCoin { return proof.inputCoins }
 func (proof PaymentProof) GetOutputCoins() []coin.Coin {
 	res := make([]coin.Coin, len(proof.outputCoins))
 	for i := 0; i < len(proof.outputCoins); i += 1 {
@@ -103,18 +96,20 @@ func (proof PaymentProof) GetOutputCoins() []coin.Coin {
 }
 
 func (proof *PaymentProof) SetInputCoins(v []coin.PlainCoin) {
-	n := len(v)
-	proof.inputCoins = make([]*coin.PlainCoinV1, n)
-	for i := 0; i < n; i += 1 {
-		proof.inputCoins[i] = v[i].(*coin.PlainCoinV1)
+	proof.inputCoins = make([]coin.PlainCoin, len(v))
+	for i := 0; i < len(v); i += 1 {
+		b := v[i].Bytes()
+		proof.inputCoins[i], _ = coin.NewPlainCoinFromByte(b)
 	}
 }
 
+// SetOutputCoins's input should be all coinv1
 func (proof *PaymentProof) SetOutputCoins(v []coin.Coin) {
-	n := len(v)
-	proof.outputCoins = make([]*coin.CoinV1, n)
-	for i := 0; i < n; i += 1 {
-		proof.outputCoins[i] = v[i].(*coin.CoinV1)
+	proof.outputCoins = make([]*coin.CoinV1, len(v))
+	for i := 0; i < len(v); i += 1 {
+		b := v[i].Bytes()
+		proof.outputCoins[i] = new(coin.CoinV1)
+		proof.outputCoins[i].SetBytes(b)
 	}
 }
 
@@ -127,7 +122,7 @@ func (proof *PaymentProof) Init() {
 	proof.oneOfManyProof = []*oneoutofmany.OneOutOfManyProof{}
 	proof.serialNumberProof = []*serialnumberprivacy.SNPrivacyProof{}
 	proof.aggregatedRangeProof = aggregatedRangeProof
-	proof.inputCoins = []*coin.PlainCoinV1{}
+	proof.inputCoins = []coin.PlainCoin{}
 	proof.outputCoins = []*coin.CoinV1{}
 
 	proof.commitmentOutputValue = []*operation.Point{}
@@ -140,7 +135,6 @@ func (proof *PaymentProof) Init() {
 	proof.commitmentInputShardID = new(operation.Point)
 }
 
-// MarshalJSON - override function
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
 	//temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
@@ -148,7 +142,6 @@ func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	return json.Marshal(temp)
 }
 
-// UnmarshalJSON - override function
 func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	dataStr := common.EmptyString
 	errJson := json.Unmarshal(data, &dataStr)
@@ -302,7 +295,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	if len(proofbytes) == 0 {
 		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
 	}
-
+	var err error
 	offset := 0
 
 	// Set OneOfManyProofSize
@@ -406,7 +399,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	}
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.inputCoins = make([]*coin.PlainCoinV1, lenInputCoinsArray)
+	proof.inputCoins = make([]coin.PlainCoin, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
@@ -414,13 +407,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
-		proof.inputCoins[i] = new(coin.PlainCoinV1)
 		if offset+lenInputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
-		err := proof.inputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
+		coinBytes := proofbytes[offset : offset+lenInputCoin]
+		proof.inputCoins[i], err = coin.NewPlainCoinFromByte(coinBytes)
 		if err != nil {
-			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Set byte to inputCoin got error"))
 		}
 		offset += lenInputCoin
 	}
@@ -471,7 +464,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	lenComOutputValueArray := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentOutputValue = make([]*operation.Point, lenComOutputValueArray)
-	var err error
 	for i := 0; i < lenComOutputValueArray; i++ {
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
@@ -675,7 +667,11 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shar
 
 	for i := 0; i < len(proof.outputCoins); i++ {
 		// Check output coins' cm is calculated correctly
-		shardID := proof.outputCoins[i].GetShardID()
+		shardID, err := proof.outputCoins[i].GetShardID()
+		if err != nil {
+			Logger.Log.Errorf("Cannot parse shardID of outputcoin error: %v", err)
+			return false, err
+		}
 		cmSK := proof.outputCoins[i].CoinDetails.GetPublicKey()
 		cmValue := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.outputCoins[i].CoinDetails.GetValue()))
 		cmSND := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenSndIndex], proof.outputCoins[i].CoinDetails.GetSNDerivator())

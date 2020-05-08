@@ -18,20 +18,13 @@ import (
 type PaymentProofV2 struct {
 	Version              uint8
 	aggregatedRangeProof *bulletproofs.AggregatedRangeProof
-	inputCoins           []*coin.CoinV2
+	inputCoins           []coin.PlainCoin
 	outputCoins          []*coin.CoinV2
 }
 
 func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
 
-func (proof PaymentProofV2) GetInputCoins() []coin.PlainCoin {
-	res := make([]coin.PlainCoin, len(proof.inputCoins))
-	for i := 0; i < len(proof.inputCoins); i += 1 {
-		res[i] = proof.inputCoins[i]
-	}
-	return res
-}
-
+func (proof PaymentProofV2) GetInputCoins() []coin.PlainCoin { return proof.inputCoins }
 func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 	res := make([]coin.Coin, len(proof.outputCoins))
 	for i := 0; i < len(proof.outputCoins); i += 1 {
@@ -42,19 +35,29 @@ func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 
 func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
 func (proof *PaymentProofV2) SetInputCoins(v []coin.PlainCoin) {
-	n := len(v)
-	proof.inputCoins = make([]*coin.CoinV2, n)
-	for i := 0; i < n; i += 1 {
-		proof.inputCoins[i] = v[i].(*coin.CoinV2)
+	proof.inputCoins = make([]coin.PlainCoin, len(v))
+	for i := 0; i < len(v); i += 1 {
+		b := v[i].Bytes()
+		proof.inputCoins[i], _ = coin.NewPlainCoinFromByte(b)
 	}
 }
 
-func (proof *PaymentProofV2) SetOutputCoinsV2(v []*coin.CoinV2) { proof.outputCoins = v }
+func (proof *PaymentProofV2) SetOutputCoinsV2(v []*coin.CoinV2) {
+	proof.outputCoins = make([]*coin.CoinV2, len(v))
+	for i := 0; i < len(v); i += 1 {
+		proof.outputCoins[i] = new(coin.CoinV2)
+		b := v[i].Bytes()
+		proof.outputCoins[i].SetBytes(b)
+	}
+}
+
+// v should be all coinv2 or else it would crash
 func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) {
-	n := len(v)
-	proof.outputCoins = make([]*coin.CoinV2, n)
-	for i := 0; i < n; i += 1 {
-		proof.outputCoins[i] = v[i].(*coin.CoinV2)
+	proof.outputCoins = make([]*coin.CoinV2, len(v))
+	for i := 0; i < len(v); i += 1 {
+		proof.outputCoins[i] = new(coin.CoinV2)
+		b := v[i].Bytes()
+		proof.outputCoins[i].SetBytes(b)
 	}
 }
 
@@ -66,11 +69,10 @@ func (proof *PaymentProofV2) Init() {
 	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
 	proof.aggregatedRangeProof = aggregatedRangeProof
-	proof.inputCoins = []*coin.CoinV2{}
+	proof.inputCoins = []coin.PlainCoin{}
 	proof.outputCoins = []*coin.CoinV2{}
 }
 
-// MarshalJSON - override function
 func (proof PaymentProofV2) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
 	//temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
@@ -78,7 +80,6 @@ func (proof PaymentProofV2) MarshalJSON() ([]byte, error) {
 	return json.Marshal(temp)
 }
 
-// UnmarshalJSON - override function
 func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	dataStr := common.EmptyString
 	errJson := json.Unmarshal(data, &dataStr)
@@ -141,7 +142,6 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	if proofbytes[0] != proof.GetVersion() {
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, nil)
 	}
-
 	proof.SetVersion()
 	offset := 1
 
@@ -173,19 +173,21 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	}
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
-	proof.inputCoins = make([]*coin.CoinV2, lenInputCoinsArray)
+	proof.inputCoins = make([]coin.PlainCoin, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
+		var err error
+
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
-		proof.inputCoins[i] = new(coin.CoinV2)
 		if offset+lenInputCoin > len(proofbytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
-		err := proof.inputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
+		coinBytes := proofbytes[offset : offset+lenInputCoin]
+		proof.inputCoins[i], err = coin.NewPlainCoinFromByte(coinBytes)
 		if err != nil {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
@@ -238,7 +240,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 }
 
 func (proof *PaymentProofV2) IsPrivacy() bool {
-	return true
+	return proof.GetOutputCoins()[0].IsEncrypted()
 }
 
 func (proof PaymentProofV2) ValidateSanity() (bool, error) {
@@ -266,7 +268,6 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	return true, nil
 }
 
-// Privacy TODO: update version 2 remember to fix this
 func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
 	var err error
 
@@ -300,9 +301,10 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 	}
 
 	// After Prove, we should hide all information in coin details.
-	for i := 0; i < len(proof.outputCoins); i++ {
+	for i := 0; i < len(outputCoins); i++ {
 		proof.outputCoins[i].ConcealData(paymentInfo[i].PaymentAddress.GetPublicView())
 	}
+
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
 		proof.inputCoins[i].ConcealData(paymentInfo[i].PaymentAddress.GetPublicView())
 	}

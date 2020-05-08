@@ -86,11 +86,11 @@ fetchTxViewPointFromBlock get list serialnumber and commitments, output coins fr
 return a tx view point which contains list new serialNumbers and new commitments from block
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 */
-func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shardID byte, proof privacy.Proof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]coin.Coin, map[string][]privacy.Scalar, error) {
+func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shardID byte, proof privacy.Proof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]coin.Coin, map[string][]*privacy.Scalar, error) {
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]coin.Coin)
-	acceptedSnD := make(map[string][]privacy.Scalar)
+	acceptedSnD := make(map[string][]*privacy.Scalar)
 	if proof == nil {
 		return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 	}
@@ -143,13 +143,13 @@ func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shard
 			snD := item.GetSNDerivator()
 			ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
 			if !ok && err == nil {
-				acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+				acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], snD)
 			}
 		} else if item.GetVersion() == 2 {
 			snD := item.GetSNDerivator()
-			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], snD)
 		} else {
-			err := errors.New("TODO Privacy")
+			err := errors.New("Version should be 1 or 2 only")
 			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 
@@ -196,7 +196,11 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 						acceptedSnD[pubkey] = make([][]byte, 0)
 					}
 					for _, snd := range data {
-						acceptedSnD[pubkey] = append(acceptedSnD[pubkey], snd.ToBytesS())
+						sndByte := []byte{}
+						if snd != nil {
+							sndByte = snd.ToBytesS()
+						}
+						acceptedSnD[pubkey] = append(acceptedSnD[pubkey], sndByte)
 					}
 				}
 			}
@@ -224,9 +228,11 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 					}
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
+
+				// TODO ??? I dont understand this code
 				for pubkey, data := range snDs {
 					if snDs[pubkey] == nil {
-						snDs[pubkey] = make([]privacy.Scalar, 0)
+						snDs[pubkey] = make([]*privacy.Scalar, 0)
 					}
 					snDs[pubkey] = append(snDs[pubkey], data...)
 				}
@@ -261,7 +267,10 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 						subView.mapSnD[pubkey] = make([][]byte, 0)
 					}
 					for _, b := range data {
-						temp := b.ToBytesS()
+						temp := []byte{}
+						if b != nil {
+							temp = b.ToBytesS()
+						}
 						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
 					}
 				}
@@ -343,7 +352,9 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(stateDB *statedb.State
 			}
 		} else if item.GetVersion() == 2 {
 			snD := item.GetSNDerivator()
-			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+			if snD != nil {
+				acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+			}
 		} else {
 			err := errors.New("TODO Privacy")
 			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err

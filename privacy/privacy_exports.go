@@ -98,9 +98,9 @@ type AggregatedRangeProofV2 = bulletproofs.AggregatedRangeProof
 func NewProofWithVersion(version int8) Proof {
 	var result Proof
 	if version == 1 {
-		result = &ProofV1{}
+		result = &zkp.PaymentProof{}
 	} else {
-		result = &ProofV2{}
+		result = &privacy_v2.PaymentProofV2{}
 	}
 	return result
 }

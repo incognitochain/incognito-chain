@@ -19,21 +19,12 @@ import (
 
 type TxVersion1 struct{}
 
-func parsePlaincoinToPlaincoinV1(inputCoins []coin.PlainCoin) []*coin.PlainCoinV1 {
-	res := make([]*coin.PlainCoinV1, len(inputCoins))
-	for i := 0; i < len(inputCoins); i += 1 {
-		res[i] = inputCoins[i].(*coin.PlainCoinV1)
-	}
-	return res
-}
-
 func parseCommitments(params *TxPrivacyInitParams, shardID byte) ([]uint64, []uint64, error) {
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if params.hasPrivacy {
-		inputCoins := parsePlaincoinToPlaincoinV1(params.inputCoins)
-		randomParams := NewRandomCommitmentsProcessParam(inputCoins, privacy.CommitmentRingSize, params.stateDB, shardID, params.tokenID)
+		randomParams := NewRandomCommitmentsProcessParam(params.inputCoins, privacy.CommitmentRingSize, params.stateDB, shardID, params.tokenID)
 		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(randomParams)
 
 		// Check number of list of random commitments, list of random commitment indices
@@ -66,7 +57,7 @@ func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmen
 	return commitmentProving, nil
 }
 
-func generateSndOut(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash,stateDB *statedb.StateDB) []*operation.Scalar {
+func generateSndOut(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) []*operation.Scalar {
 	ok := true
 	sndOuts := make([]*operation.Scalar, 0)
 	for ok {
@@ -95,7 +86,6 @@ func generateSndOut(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash,sta
 	}
 	return sndOuts
 }
-
 
 func parseOutputCoins(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV1, error) {
 	sndOuts := generateSndOut(paymentInfo, tokenID, stateDB)
@@ -139,13 +129,12 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	if err != nil {
 		return nil, err
 	}
-	inputCoins := parsePlaincoinToPlaincoinV1(params.inputCoins)
 
 	// prepare witness for proving
 	paymentWitnessParam := zkp.PaymentWitnessParam{
 		HasPrivacy:              params.hasPrivacy,
 		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.senderSK),
-		InputCoins:              inputCoins,
+		InputCoins:              params.inputCoins,
 		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
 		Commitments:             commitmentProving,
@@ -220,13 +209,12 @@ func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM)
 			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, params.commitmentIndices[i], shardID, cmBytes)
 		}
 	}
-	inputCoins := parsePlaincoinToPlaincoinV1(params.txParam.inputCoins)
 
 	// prepare witness for proving
 	paymentWitnessParam := zkp.PaymentWitnessParam{
 		HasPrivacy:              params.txParam.hasPrivacy,
 		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.txParam.senderSK),
-		InputCoins:              inputCoins,
+		InputCoins:              params.txParam.inputCoins,
 		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
 		Commitments:             commitmentProving,

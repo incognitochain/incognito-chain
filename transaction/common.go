@@ -17,14 +17,14 @@ import (
 )
 
 type RandomCommitmentsProcessParam struct {
-	usableInputCoins []*coin.PlainCoinV1
+	usableInputCoins []coin.PlainCoin
 	randNum          int
 	stateDB          *statedb.StateDB
 	shardID          byte
 	tokenID          *common.Hash
 }
 
-func NewRandomCommitmentsProcessParam(usableInputCoins []*coin.PlainCoinV1, randNum int, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+func NewRandomCommitmentsProcessParam(usableInputCoins []coin.PlainCoin, randNum int, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
 	return &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,

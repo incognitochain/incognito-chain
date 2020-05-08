@@ -59,15 +59,18 @@ func (c *PlainCoinV1) Init() *PlainCoinV1 {
 }
 
 func (*PlainCoinV1) GetVersion() uint8 { return 1 }
-func (c *PlainCoinV1) GetShardID() uint8 {
+func (c *PlainCoinV1) GetShardID() (uint8, error) {
+	if c.publicKey == nil {
+		return 255, errors.New("Cannot get ShardID because PublicKey of PlainCoin is concealed")
+	}
 	pubKeyBytes := c.publicKey.ToBytes()
 	lastByte := pubKeyBytes[operation.Ed25519KeySize-1]
 	shardID := common.GetShardIDFromLastByte(lastByte)
-	return shardID
+	return shardID, nil
 }
 
 // ver1 does not need to care for index
-func (c PlainCoinV1) GetIndex() uint8   { return 0 }
+func (c PlainCoinV1) GetIndex() uint8                   { return 0 }
 func (c PlainCoinV1) GetCommitment() *operation.Point   { return c.commitment }
 func (c PlainCoinV1) GetPublicKey() *operation.Point    { return c.publicKey }
 func (c PlainCoinV1) GetSNDerivator() *operation.Scalar { return c.snDerivator }
@@ -97,9 +100,9 @@ func (c *PlainCoinV1) ConcealData(additionalData interface{}) {
 	c.SetRandomness(nil)
 }
 
-// MarshalJSON (CoinV1) converts coin to bytes array,
-// base58 check encode that bytes array into string
-// json.Marshal the string
+//MarshalJSON (CoinV1) converts coin to bytes array,
+//base58 check encode that bytes array into string
+//json.Marshal the string
 func (c PlainCoinV1) MarshalJSON() ([]byte, error) {
 	data := c.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
@@ -130,12 +133,15 @@ func (c *PlainCoinV1) HashH() *common.Hash {
 //CommitAll commits a coin with 5 attributes include:
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (c *PlainCoinV1) CommitAll() error {
-	var err error
+	shardID, err := c.GetShardID()
+	if err != nil {
+		return err
+	}
 	values := []*operation.Scalar{
 		new(operation.Scalar).FromUint64(0),
 		new(operation.Scalar).FromUint64(c.value),
 		c.snDerivator,
-		new(operation.Scalar).FromUint64(uint64(c.GetShardID())),
+		new(operation.Scalar).FromUint64(uint64(shardID)),
 		c.randomness,
 	}
 	c.commitment, err = operation.PedCom.CommitAll(values)
@@ -380,7 +386,7 @@ func (c CoinV1) GetCommitment() *operation.Point   { return c.CoinDetails.GetCom
 func (c CoinV1) GetKeyImage() *operation.Point     { return c.CoinDetails.GetKeyImage() }
 func (c CoinV1) GetRandomness() *operation.Scalar  { return c.CoinDetails.GetRandomness() }
 func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSNDerivator() }
-func (c CoinV1) GetShardID() uint8                 { return c.CoinDetails.GetShardID() }
+func (c CoinV1) GetShardID() (uint8, error)                 { return c.CoinDetails.GetShardID() }
 func (c CoinV1) GetValue() uint64                  { return c.CoinDetails.GetValue() }
 func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
 func (c CoinV1) IsEncrypted() bool                 { return c.CoinDetailsEncrypted != nil }

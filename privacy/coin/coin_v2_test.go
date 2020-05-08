@@ -2,6 +2,8 @@ package coin
 
 import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func getRandomCoinV2() *CoinV2 {
@@ -18,20 +20,20 @@ func getRandomCoinV2() *CoinV2 {
 	return c
 }
 
-// func TestCoinV2BytesAndSetBytes(t *testing.T) {
-// 	for i := 0; i < 5; i += 1 {
-// 		coin := getRandomCoinV2()
-// 		b := coin.Bytes()
-// 		coinByBytes := new(CoinV2)
-// 		err := coinByBytes.SetBytes(b)
-// 		assert.Equal(t, nil, err, "Set Bytes should not have any error")
-// 		assert.Equal(t, coin.version, coinByBytes.version, "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.mask.ToBytesS(), coinByBytes.mask.ToBytesS(), "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.amount.ToBytesS(), coinByBytes.amount.ToBytesS(), "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.txRandom.ToBytesS(), coinByBytes.txRandom.ToBytesS(), "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.publicKey.ToBytesS(), coinByBytes.publicKey.ToBytesS(), "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.commitment.ToBytesS(), coinByBytes.commitment.ToBytesS(), "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.index, coinByBytes.index, "FromBytes then SetBytes should be equal")
-// 		assert.Equal(t, coin.info, coinByBytes.info, "FromBytes then SetBytes should be equal")
-// 	}
-// }
+func TestCoinV2BytesAndSetBytes(t *testing.T) {
+	for i := 0; i < 5; i += 1 {
+		coin := getRandomCoinV2()
+		b := coin.Bytes()
+		coinByBytes := new(CoinV2)
+		err := coinByBytes.SetBytes(b)
+		assert.Equal(t, nil, err, "Set Bytes should not have any error")
+		assert.Equal(t, coin.version, coinByBytes.version, "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.mask.ToBytesS(), coinByBytes.mask.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.amount.ToBytesS(), coinByBytes.amount.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.txRandom.ToBytesS(), coinByBytes.txRandom.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.publicKey.ToBytesS(), coinByBytes.publicKey.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.commitment.ToBytesS(), coinByBytes.commitment.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.index, coinByBytes.index, "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.info, coinByBytes.info, "FromBytes then SetBytes should be equal")
+	}
+}

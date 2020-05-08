@@ -17,24 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConvertOutputCoinToInputCoin(t *testing.T) {
-	key, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
-	assert.Equal(t, nil, err)
-	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
-	assert.Equal(t, nil, err)
-	paymentAddress := key.KeySet.PaymentAddress
-	tx := &Tx{}
-	err = tx.InitTxSalary(10, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
-	if err != nil {
-		t.Error(err)
-	}
-
-	outputCoins := tx.Proof.GetOutputCoins()
-	in := ConvertOutputCoinToInputCoin(outputCoins)
-	assert.Equal(t, 1, len(in))
-	assert.Equal(t, outputCoins[0].CoinDetails.GetValue(), in[0].CoinDetails.GetValue())
-}
-
 func TestEstimateTxSize(t *testing.T) {
 	key, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	assert.Equal(t, nil, err)
@@ -85,7 +67,7 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	}
 	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
 
-	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.GetOutputCoins())
+	//in1 := ConvertOutputCoinToInputCoin(tx1.Proof.GetOutputCoins())
 
 	cmmIndexs, myIndexs, cmm := RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in1, 0, db, 0, &common.Hash{}))
 	assert.Equal(t, 8, len(cmmIndexs))
@@ -101,7 +83,7 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	tx3 := &Tx{}
 	err = tx3.InitTxSalary(5, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
 	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
-	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.GetOutputCoins())
+	//in2 := ConvertOutputCoinToInputCoin(tx2.Proof.GetOutputCoins())
 	in := append(in1, in2...)
 
 	cmmIndexs, myIndexs, cmm = RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in, 0, db, 0, &common.Hash{}))

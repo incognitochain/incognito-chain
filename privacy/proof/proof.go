@@ -28,3 +28,4 @@ type Proof interface {
 
 	Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error)
 }
+

@@ -124,9 +124,6 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
 
-				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j])
-				sumInputs.Add(sumInputs, coinCommitmentV2)
-
 				// Store index for validator recheck
 				coinCommitmentDB := inputCoins[j].GetCommitment()
 				commitmentBytes := coinCommitmentDB.ToBytesS()
@@ -135,6 +132,9 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, err
 				}
+
+				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j])
+				sumInputs.Add(sumInputs, coinCommitmentV2)
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
@@ -298,10 +298,23 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 		Logger.Log.Errorf("generateMlsagRingWithIndexes got error %v ", err)
 		return err
 	}
+
 	privKeysMlsag, err := createPrivKeyMlsag(inp, out, params.senderSK)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
 		return err
+	}
+
+	fmt.Println("Privkey")
+	fmt.Println(privKeysMlsag[len(privKeysMlsag) - 1].ToBytesS())
+
+	for i := 0; i < len(privKeysMlsag); i += 1 {
+		fmt.Println(privKeysMlsag[i].ToBytesS())
+		if i < len(privKeysMlsag) - 1 {
+			fmt.Println(new(operation.Point).ScalarMultBase(privKeysMlsag[i]))
+		} else {
+			fmt.Println(new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], privKeysMlsag[i]))
+		}
 	}
 
 	keyImages := mlsag.ParseKeyImages(privKeysMlsag)
@@ -337,9 +350,6 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, shardID byte, index uint8) *coin.CoinV2 {
 	c := new(coin.CoinV2)
 	c.SetVersion(2)
-
-
-	c.SetShardID(shardID)
 	c.SetIndex(index)
 	c.SetInfo(info.Message)
 
@@ -347,10 +357,7 @@ func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, shardID byte, index 
 	r := operation.RandomScalar()
 	c.SetMask(r)
 	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
-	c.SetCommitment(coin.ParseCommitmentFromMaskAndAmount(
-		r,
-		c.GetAmount()),
-	)
+	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
 	c.SetPublicKey(coin.ParseOnetimeAddress(
 		info.PaymentAddress.GetPublicSpend(),
 		info.PaymentAddress.GetPublicView(),
@@ -376,6 +383,14 @@ func parseCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, t
 		for true {
 			c := parseCoinBasedOnPaymentInfo(info, shardID, uint8(index&0xFF))
 			publicKeyBytes := c.GetPublicKey().ToBytesS()
+
+			// Onetimeaddress's shardID should be the same with the publicKey of receiver
+			shardID, _ := c.GetShardID()
+			if publicKeyBytes[len(publicKeyBytes) - 1] != shardID {
+				continue
+			}
+
+			// Onetimeaddress should be unique
 			found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes, shardID)
 			if err != nil {
 				Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
@@ -524,7 +539,6 @@ func verifySigTxVer2(tx *Tx, transactionStateDB *statedb.StateDB, shardID byte, 
 	return mlsag.Verify(txSig, ring, message)
 }
 
-// TODO privacy
 func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var valid bool
 	var err error

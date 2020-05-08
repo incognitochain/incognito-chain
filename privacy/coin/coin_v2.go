@@ -2,6 +2,7 @@ package coin
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
@@ -15,7 +16,6 @@ import (
 type CoinV2 struct {
 	// Public
 	version    uint8
-	shardID    uint8
 	index      uint8
 	info       []byte
 	publicKey  *operation.Point
@@ -27,10 +27,6 @@ type CoinV2 struct {
 	// amount = value
 	mask   *operation.Scalar
 	amount *operation.Scalar
-}
-
-func ParseCommitmentFromMaskAndAmount(mask *operation.Scalar, amount *operation.Scalar) *operation.Point {
-	return operation.PedCom.CommitAtIndex(amount, mask, operation.PedersenRandomnessIndex)
 }
 
 func ParseOnetimeAddress(pubSpend, pubView *operation.Point, randomness *operation.Scalar, index uint8) *operation.Point {
@@ -150,7 +146,6 @@ func (c *CoinV2) Init() *CoinV2 {
 		c = new(CoinV2)
 	}
 	c.version = 2
-	c.shardID = 0
 	c.index = 0
 	c.info = []byte{}
 	c.publicKey = new(operation.Point).Identity()
@@ -166,12 +161,21 @@ func (c *CoinV2) Init() *CoinV2 {
 func (c CoinV2) GetSNDerivator() *operation.Scalar { return nil }
 
 func (c CoinV2) IsEncrypted() bool {
-	commitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenRandomnessIndex)
+	commitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
 	return !operation.IsPointEqual(commitment, c.commitment)
 }
 
 func (c CoinV2) GetVersion() uint8                { return 2 }
-func (c CoinV2) GetShardID() uint8                { return c.shardID }
+func (c CoinV2) GetShardID() (uint8, error) {
+	if c.publicKey == nil {
+		return 255, errors.New("Cannot get ShardID because PublicKey of PlainCoin is concealed")
+	}
+	pubKeyBytes := c.publicKey.ToBytes()
+	lastByte := pubKeyBytes[operation.Ed25519KeySize-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
+	return shardID, nil
+}
+
 func (c CoinV2) GetMask() *operation.Scalar       { return c.mask }
 func (c CoinV2) GetRandomness() *operation.Scalar { return c.mask }
 func (c CoinV2) GetAmount() *operation.Scalar     { return c.amount }
@@ -191,7 +195,6 @@ func (c CoinV2) GetValue() uint64 {
 func (c *CoinV2) SetVersion(uint8)                          { c.version = 2 }
 func (c *CoinV2) SetMask(mask *operation.Scalar)            { c.mask = mask }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)      { c.mask = mask }
-func (c *CoinV2) SetShardID(shardID uint8)                  { c.shardID = shardID }
 func (c *CoinV2) SetAmount(amount *operation.Scalar)        { c.amount = amount }
 func (c *CoinV2) SetTxRandom(txRandom *operation.Point)     { c.txRandom = txRandom }
 func (c *CoinV2) SetPublicKey(publicKey *operation.Point)   { c.publicKey = publicKey }
@@ -205,11 +208,11 @@ func (c *CoinV2) SetInfo(b []byte) {
 }
 
 func (c *CoinV2) Bytes() []byte {
-	coinBytes := []byte{c.GetVersion(), c.GetShardID(), c.GetIndex()}
+	coinBytes := []byte{c.GetVersion(), c.GetIndex()}
 
 	info := c.GetInfo()
 	byteLengthInfo := byte(getMin(len(info), MaxSizeInfoCoin))
-	coinBytes = append(coinBytes,  byteLengthInfo)
+	coinBytes = append(coinBytes, byteLengthInfo)
 	coinBytes = append(coinBytes, info[:byteLengthInfo]...)
 
 	if c.publicKey != nil {
@@ -269,10 +272,14 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		return errors.New("coinBytes version is not 2")
 	}
 	c.SetVersion(coinBytes[0])
-	c.SetShardID(coinBytes[1])
-	c.SetIndex(coinBytes[2])
+	c.SetIndex(coinBytes[1])
 
-	offset := 3
+	offset := 2
+	c.info, err = parseInfoForSetBytes(&coinBytes, &offset)
+	if err != nil {
+		return errors.New("SetBytes CoinV2 info error: " + err.Error())
+	}
+
 	c.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV2 publicKey error: " + err.Error())

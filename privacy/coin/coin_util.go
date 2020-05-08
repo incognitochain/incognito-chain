@@ -62,6 +62,7 @@ func parseInfoForSetBytes(coinBytes *[]byte, offset *int) ([]byte, error) {
 		}
 		info = make([]byte, lenField)
 		copy(info, b[*offset:*offset+int(lenField)])
+		*offset += int(lenField)
 	}
 	return info, nil
 }

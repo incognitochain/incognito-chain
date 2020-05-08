@@ -232,7 +232,7 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
-			c, err := coin.CreateCoinFromByte(coinBytes)
+			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
 				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
 				return nil, err
@@ -290,7 +290,7 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	// loop on all outputcoin to decrypt data
 	results := make([]coin.PlainCoin, 0)
 	for _, item := range outCoinsInBytes {
-		outCoin, err := coin.CreateCoinFromByte(item)
+		outCoin, err := coin.NewCoinFromByte(item)
 		if err != nil {
 			Logger.log.Errorf("Cannot create coin from byte %v", err)
 			return nil, err
@@ -494,7 +494,9 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 				commitment := outputCoin.GetCommitment()
 				commitmentBytes := commitment.ToBytesS()
 				snd := outputCoin.GetSNDerivator()
-				mapComSnd[string(commitmentBytes)] = snd.ToBytesS()
+				if snd != nil {
+					mapComSnd[string(commitmentBytes)] = snd.ToBytesS()
+				}
 
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
