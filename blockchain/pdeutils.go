@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,6 +16,20 @@ type CurrentPDEState struct {
 	DeletedWaitingPDEContributions map[string]*rawdbv2.PDEContribution
 	PDEPoolPairs                   map[string]*rawdbv2.PDEPoolForPair
 	PDEShares                      map[string]uint64
+}
+
+func (s *CurrentPDEState) Copy() *CurrentPDEState {
+	v := new(CurrentPDEState)
+	b := new(bytes.Buffer)
+	err := gob.NewEncoder(b).Encode(s)
+	if err != nil {
+		return nil
+	}
+	err = gob.NewDecoder(bytes.NewBuffer(b.Bytes())).Decode(v)
+	if err != nil {
+		return nil
+	}
+	return v
 }
 
 type DeductingAmountsByWithdrawal struct {
