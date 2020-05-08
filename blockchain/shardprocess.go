@@ -108,7 +108,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
 
-	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+vt \n", shardID, blockHeight, blockHash)
+	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 	//startTimeInsertShardBlock := time.Now()
@@ -178,15 +178,16 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 	//========Post verification: verify new beaconstate with corresponding block
-	if shouldValidate {
-		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
-			return err
-		}
-	} else {
-		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	//if shouldValidate {
+	Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+		fmt.Println("Instructions", shardBlock.Body.Instructions)
+		return err
 	}
-	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	//} else {
+	//	Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	//}
+
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	err = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
 	if err != nil {
@@ -1084,7 +1085,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		for {
 			blks, _ := blockchain.GetShardBlockHashByHeight(startView.GetHeight(), shardID)
 			for _, hash := range blks {
-				if hash.String() != startView.GetPreviousHash().String() {
+				if hash.String() != startView.GetHash().String() {
 					err := rawdbv2.DeleteShardBlock(blockchain.GetShardChainDatabase(shardID), shardID, startView.GetHeight(), hash)
 					if err != nil {
 						//must not have error
