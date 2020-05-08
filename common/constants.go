@@ -136,9 +136,11 @@ const (
 	PortalPortingReqExpiredStatus    = 3
 	PortalPortingReqLiquidatedStatus = 4
 
-	PortalRedeemReqSuccessStatus    = 1
-	PortalRedeemReqWaitingStatus    = 2
-	PortalRedeemReqLiquidatedStatus = 3
+	PortalRedeemReqSuccessStatus               = 1
+	PortalRedeemReqWaitingStatus               = 2
+	PortalRedeemReqLiquidatedStatus            = 3
+	PortalRedeemReqRejectedStatus              = 4
+	PortalRedeemReqRejectedByLiquidationStatus = 5
 
 	PortalCustodianWithdrawReqAcceptedStatus = 1
 	PortalCustodianWithdrawReqRejectStatus   = 2
@@ -196,8 +198,9 @@ const (
 	PortalExchangeRatesAcceptedChainStatus = "accepted"
 	PortalExchangeRatesRejectedChainStatus = "rejected"
 
-	PortalRedeemRequestAcceptedChainStatus = "accepted"
-	PortalRedeemRequestRejectedChainStatus = "rejected"
+	PortalRedeemRequestAcceptedChainStatus              = "accepted"
+	PortalRedeemRequestRejectedChainStatus              = "rejected"
+	PortalRedeemRequestRejectedByLiquidationChainStatus = "rejectedByLiquidation"
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
@@ -226,14 +229,14 @@ const (
 
 // Relaying header
 const (
-	RelayingHeaderRejectedChainStatus            = "rejected"
-	RelayingHeaderConsideringChainStatus         = "considering"
+	RelayingHeaderRejectedChainStatus    = "rejected"
+	RelayingHeaderConsideringChainStatus = "considering"
 )
 
 const (
-	PortalTimeOutCustodianReturnPubToken = 5 * time.Minute // 24 hours
-	PortalTimeOutWaitingPortingRequest   = 2 * time.Hour // 24 hours
-	PercentReceivedCollateralAmount      = 105           // users will be received 105% of redeem amount in PRV (if there is custodian liquidation for redeem request)
+	PortalTimeOutCustodianReturnPubToken = 2 * time.Hour   // 24 hours
+	PortalTimeOutWaitingPortingRequest   = 2 * time.Hour   // 24 hours
+	PercentReceivedCollateralAmount      = 105             // users will be received 105% of redeem amount in PRV (if there is custodian liquidation for redeem request)
 	// todo: need to be updated before deploying
 	PercentCustodianRewards = 10 // 10% of DAO funds per epoch
 
@@ -256,8 +259,8 @@ var PortalSupportedIncTokenIDs = []string{
 // set MinAmountPortalPToken to avoid attacking with amount is less than smallest unit of cryptocurrency
 // such as satoshi in BTC
 var MinAmountPortalPToken = map[string]uint64{
-	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696" : 10,
-	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b" : 10,
+	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696": 10,
+	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": 10,
 }
 
 const (

@@ -394,7 +394,7 @@ func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRa
 }
 
 //check value is tp120 or tp130
-func IsTP120(tpValue uint64) (bool, bool) {
+func checkTPRatio(tpValue uint64) (bool, bool) {
 	if tpValue > common.TP120 && tpValue <= common.TP130 {
 		return false, true
 	}
@@ -421,7 +421,7 @@ func detectTopPercentileLiquidation(custodian *statedb.CustodianState, tpList ma
 	sort.Strings(tpListKeys)
 	for _, ptoken := range tpListKeys {
 		tpValue := tpList[ptoken]
-		if tp20, ok := IsTP120(tpValue); ok {
+		if tp20, ok := checkTPRatio(tpValue); ok {
 			if tp20 {
 				liquidateExchangeRatesList[ptoken] = metadata.LiquidateTopPercentileExchangeRatesDetail{
 					TPKey:                    common.TP120,
@@ -1028,4 +1028,105 @@ func(blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
 		return 0, fmt.Errorf("error occured during calling status method: %s", err)
 	}
 	return result.SyncInfo.LatestBlockHeight, nil
+}
+
+func calAndCheckTPRatio(
+	portalState *CurrentPortalState,
+	custodianState *statedb.CustodianState,
+	finalExchange *statedb.FinalExchangeRatesState) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
+	result :=make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
+	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
+
+	holdingPubToken := custodianState.GetHoldingPublicTokens()
+	lockedAmount := custodianState.GetLockedAmountCollateral()
+
+	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		for _, matchingCus := range waitingPortingReq.Custodians() {
+			if matchingCus.IncAddress == custodianState.GetIncognitoAddress() {
+				lockedAmount[waitingPortingReq.TokenID()] -= matchingCus.LockedAmountCollateral
+				break
+			}
+		}
+	}
+
+	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
+		for _, matchingCus := range waitingRedeemReq.GetCustodians() {
+			if matchingCus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
+				holdingPubToken[waitingRedeemReq.GetTokenID()] += matchingCus.GetAmount()
+				break
+			}
+		}
+	}
+
+	tpListKeys := make([]string, 0)
+	for key := range holdingPubToken {
+		tpListKeys = append(tpListKeys, key)
+	}
+	sort.Strings(tpListKeys)
+	for _, tokenID := range tpListKeys {
+		amountPubToken := holdingPubToken[tokenID]
+		amountPRV, ok := lockedAmount[tokenID]
+		if !ok {
+			Logger.log.Errorf("Invalid locked amount with tokenID %v\n", tokenID)
+			return nil, fmt.Errorf("Invalid locked amount with tokenID %v", tokenID)
+		}
+		if amountPRV <= 0 || amountPubToken <= 0 {
+			continue
+		}
+
+		// convert amountPubToken to PRV
+		amountPTokenInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, amountPubToken)
+		if err != nil || amountPTokenInPRV == 0 {
+			Logger.log.Errorf("Error when convert exchange rate %v\n", err)
+			return nil, fmt.Errorf("Error when convert exchange rate %v", err)
+		}
+
+		// amountPRV * 100 / amountPTokenInPRV
+		tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPRV), big.NewInt(100))
+		percent := new(big.Int).Div(tmp, new(big.Int).SetUint64(amountPTokenInPRV)).Uint64()
+
+		if tp20, ok := checkTPRatio(percent); ok {
+			if tp20 {
+				result[tokenID] = metadata.LiquidateTopPercentileExchangeRatesDetail{
+					TPKey:                    common.TP120,
+					TPValue:                  percent,
+					HoldAmountFreeCollateral: lockedAmount[tokenID],
+					HoldAmountPubToken:       holdingPubToken[tokenID],
+				}
+			} else {
+				result[tokenID] = metadata.LiquidateTopPercentileExchangeRatesDetail{
+					TPKey:                    common.TP130,
+					TPValue:                  percent,
+					HoldAmountFreeCollateral: 0,
+					HoldAmountPubToken:       0,
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(portalState *CurrentPortalState, rejectedRedeemReq *statedb.WaitingRedeemRequest, beaconHeight uint64) error {
+	tokenID := rejectedRedeemReq.GetTokenID()
+	for _, matchingCus := range rejectedRedeemReq.GetCustodians() {
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchingCus.GetIncognitoAddress())
+		custodianStateKeyStr := custodianStateKey.String()
+		custodianState := portalState.CustodianPoolState[custodianStateKeyStr]
+		if custodianState == nil {
+			return fmt.Errorf("Custodian not found %v", custodianStateKeyStr)
+		}
+
+		holdPubTokens := custodianState.GetHoldingPublicTokens()
+		if holdPubTokens == nil {
+			holdPubTokens = make(map[string]uint64, 0)
+			holdPubTokens[tokenID] = matchingCus.GetAmount()
+		} else {
+			holdPubTokens[tokenID] += matchingCus.GetAmount()
+		}
+
+		portalState.CustodianPoolState[custodianStateKeyStr].SetHoldingPublicTokens(holdPubTokens)
+	}
+
+	return nil
 }
