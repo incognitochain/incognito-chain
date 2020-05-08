@@ -1323,7 +1323,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	// execute, store
 	if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
-		err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
+		err = blockchain.processPDEInstructions(beaconBlock, newBestState)
 		if err != nil {
 			return NewBlockChainError(ProcessPDEInstructionError, err)
 		}
