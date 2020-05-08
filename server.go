@@ -6,12 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
-	"github.com/incognitochain/incognito-chain/syncker"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,6 +17,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/peerv2"
 
@@ -1865,17 +1866,24 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.Chain
 }
 
 func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
+	var ok bool
 	if isBeacon {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		msg.(*wire.MessageBlockBeacon).Block = block.(*blockchain.BeaconBlock)
+		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*blockchain.BeaconBlock)
+		if !ok || msg.(*wire.MessageBlockBeacon).Block == nil {
+			return fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
+		}
 		serverObj.PushMessageToAll(msg)
 		return nil
 	} else {
-		shardBlock := block.(*blockchain.ShardBlock)
+		shardBlock, ok := block.(*blockchain.ShardBlock)
+		if !ok || shardBlock == nil {
+			return fmt.Errorf("Can not parse shard block or shard block is nil %v %v", ok, shardBlock == nil)
+		}
 		msgShard, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
 		if err != nil {
 			Logger.log.Error(err)
@@ -1885,6 +1893,9 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
 
 		shardToBeaconBlk := shardBlock.CreateShardToBeaconBlock(serverObj.blockChain)
+		if shardToBeaconBlk == nil {
+			return errors.New("CreateShardToBeaconBlock return block nil")
+		}
 		msgShardToBeacon, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
 		if err != nil {
 			Logger.log.Error(err)
