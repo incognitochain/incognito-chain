@@ -47,7 +47,7 @@ const (
 	DefaultTxPoolTTL                   = uint(15 * 60) // 15 minutes
 	DefaultTxPoolMaxTx                 = uint64(100000)
 	//DefaultLimitFee                    = uint64(1) // 1 nano PRV = 10^-9 PRV
-	DefaultLimitFee = uint64(200000) // 200000 nano PRV = 200000 * 10^-9 PRV
+	DefaultLimitFee = uint64(100000) // 100000 nano PRV = 100000 * 10^-9 PRV
 	// For wallet
 	DefaultWalletName     = "wallet"
 	DefaultPersistMempool = false
