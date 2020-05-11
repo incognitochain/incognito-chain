@@ -385,22 +385,14 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			nil,
 			actionData.TxReqID,
 		)
-
 		return [][]string{inst}, nil
 	}
 
-	//pick one
-	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
-	Logger.log.Infof("Porting request, pick single custodian result %v", len(pickCustodianResult))
-
-	//pick multiple
-	if len(pickCustodianResult) == 0 {
-		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
-		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
+	pickedCustodians, err := pickUpCustodians(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Porting request: an error occurred while picking up custodians for the porting request: %+v", err)
 	}
-	//end
-
-	if len(pickCustodianResult) == 0 {
+	if len(pickedCustodians) == 0 || err != nil {
 		Logger.log.Errorf("Porting request, custodian not found")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -411,16 +403,15 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.PTokenId,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
-			pickCustodianResult,
+			pickedCustodians,
 			actionData.TxReqID,
 		)
-
 		return [][]string{inst}, nil
 	}
 
 	//verify total amount
 	var totalPToken uint64 = 0
-	for _, eachCustodian := range pickCustodianResult {
+	for _, eachCustodian := range pickedCustodians {
 		totalPToken = totalPToken + eachCustodian.Amount
 	}
 
@@ -453,7 +444,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.PTokenId,
 		actionData.Meta.RegisterAmount,
 		actionData.Meta.PortingFee,
-		pickCustodianResult,
+		pickedCustodians,
 		actionData.TxReqID,
 	)
 
@@ -463,7 +454,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.PTokenId,
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.RegisterAmount,
-		pickCustodianResult,
+		pickedCustodians,
 		actionData.Meta.PortingFee,
 		common.PortalPortingReqWaitingStatus,
 		beaconHeight+1,

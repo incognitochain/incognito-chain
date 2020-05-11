@@ -300,7 +300,7 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
-// mints ptoken to return to user (ptoken that user burned)
+// mints ptoken along with redeem fee to return to user (ptoken that user burned)
 func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -338,7 +338,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
 	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
+	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
 		Amount:         receiveAmt,
 		PaymentAddress: receiverAddr,
 	}
@@ -349,7 +349,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		PropertyID: propID.String(),
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
+		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,
 	}
