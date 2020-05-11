@@ -314,5 +314,6 @@ func TestPrivateKeyToPaymentAddress(t *testing.T){
 	KeyWallet.KeySet.InitFromPrivateKey(&KeyWallet.KeySet.PrivateKey)
 	paymentAddStr := KeyWallet.Base58CheckSerialize(PaymentAddressType)
 	fmt.Printf("paymentAddStr: %v\n", paymentAddStr)
-
+	viewingKeyStr := KeyWallet.Base58CheckSerialize(ReadonlyKeyType)
+	fmt.Printf("viewingKeyStr: %v\n", viewingKeyStr)
 }
