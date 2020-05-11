@@ -56,3 +56,64 @@ func (httpServer *HttpServer) hanldeGetCrossShardPoolInfo(params interface{}, cl
 	Logger.log.Debugf("hanldeGetCrossShardPoolInfo result: %+v", result)
 	return result, nil
 }
+
+func (httpServer *HttpServer) hanldeGetAllView(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid param, param 0 must be shardid, 1 is number of blk estimate"))
+	}
+
+	shardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShardID component invalid"))
+	}
+	numOfBlks, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block height component invalid"))
+	}
+	Logger.log.Debugf("hanldeGetCrossShardPoolInfo params: %+v", params)
+	blkOnChain, err := httpServer.blockService.GetBlocks(int(shardID), int(numOfBlks))
+	if err != nil {
+		return nil, err
+	}
+	res := []jsonresult.GetViewResult{}
+	blksPool := []common.BlockPoolInterface{}
+	if shardID == -1 {
+		blks := blkOnChain.([]jsonresult.GetBeaconBlockResult)
+		if len(blks) == 0 {
+			return nil, nil
+		}
+		blksPool = httpServer.synkerService.GetAllViewBeaconByHash(blks[len(blks)-1].Hash)
+		for _, blk := range blks {
+			res = append(res, jsonresult.GetViewResult{
+				Hash:              blk.Hash,
+				PreviousBlockHash: blk.PreviousBlockHash,
+				Height:            blk.Height,
+				Round:             uint64(blk.Round),
+			})
+		}
+	} else {
+		blks := blkOnChain.([]jsonresult.GetShardBlockResult)
+		if len(blks) == 0 {
+			return nil, nil
+		}
+		blksPool = httpServer.synkerService.GetAllViewShardByHash(blks[len(blks)-1].Hash, int(shardID))
+		for _, blk := range blks {
+			res = append(res, jsonresult.GetViewResult{
+				Hash:              blk.Hash,
+				PreviousBlockHash: blk.PreviousBlockHash,
+				Height:            blk.Height,
+				Round:             uint64(blk.Round),
+			})
+		}
+	}
+	for _, blk := range blksPool {
+		res = append(res, jsonresult.GetViewResult{
+			Hash:              blk.Hash().String(),
+			PreviousBlockHash: blk.GetPrevHash().String(),
+			Height:            blk.GetHeight(),
+			Round:             uint64(blk.GetRound()),
+		})
+	}
+	return res, nil
+}
