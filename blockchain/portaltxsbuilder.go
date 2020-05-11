@@ -335,16 +335,11 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.RedeemAmount
-	redeemFeeAmt := redeemReqContent.RedeemFee
 	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
 	// in case the returned currency is privacy custom token
 	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
 		Amount:         receiveAmt,
-		PaymentAddress: receiverAddr,
-	}
-	refunedRedeemFeePaymentInfo := &privacy.PaymentInfo{
-		Amount:         redeemFeeAmt,
 		PaymentAddress: receiverAddr,
 	}
 	var propertyID [common.HashSize]byte
@@ -364,7 +359,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
-			[]*privacy.PaymentInfo{refunedRedeemFeePaymentInfo},
+			[]*privacy.PaymentInfo{},
 			nil,
 			0,
 			tokenParams,
