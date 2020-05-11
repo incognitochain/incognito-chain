@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -12,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"strconv"
+	"fmt"
 )
 
 // beacon build new instruction from instruction received from ShardToBeaconBlock
@@ -60,7 +60,7 @@ func buildRequestPortingInst(
 		PortingFee:       portingFee,
 		Custodian:        custodian,
 		TxReqID:          txReqID,
-		ShardID: shardID,
+		ShardID:          shardID,
 	}
 
 	portingRequestContentBytes, _ := json.Marshal(portingRequestContent)
@@ -168,16 +168,15 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.IncogAddressStr)
 	keyCustodianStateStr := keyCustodianState.String()
 
+	newCustodian := new(statedb.CustodianState)
 	if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
 		// new custodian
-		newCustodian := statedb.NewCustodianStateWithValue(
+		newCustodian = statedb.NewCustodianStateWithValue(
 			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
 			nil, nil,
 			meta.RemoteAddresses, nil)
-		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	} else {
 		// custodian deposited before
-		// update state of the custodian
 		custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
 		totalCollateral := custodian.GetTotalCollateral() + meta.DepositedAmount
 		freeCollateral := custodian.GetFreeCollateral() + meta.DepositedAmount
@@ -197,16 +196,16 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 				}
 			}
 		}
-
-		newCustodian := statedb.NewCustodianStateWithValue(meta.IncogAddressStr, totalCollateral, freeCollateral,
+		newCustodian = statedb.NewCustodianStateWithValue(meta.IncogAddressStr, totalCollateral, freeCollateral,
 			holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
-		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	}
+	// update state of the custodian
+	currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 
 	inst := buildCustodianDepositInst(
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.DepositedAmount,
-		actionData.Meta.RemoteAddresses,
+		newCustodian.GetRemoteAddresses(),
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -757,6 +756,11 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 				return [][]string{inst}, nil
 			}
 		}
+		// update holding public token for custodians
+		for _, cusDetail := range custodians {
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
+			UpdateCustodianStateAfterUserRequestPToken(currentPortalState, custodianKey.String(), waitingPortingRequest.TokenID(), cusDetail.Amount)
+		}
 
 		inst := buildReqPTokensInst(
 			actionData.Meta.UniquePortingID,
@@ -811,7 +815,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			return [][]string{inst}, nil
 		}
 
-		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+		if latestBNBBlockHeight < txProofBNB.BlockHeight+bnb.MinConfirmationsBlock {
 			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
 				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
 			inst := buildReqPTokensInst(
@@ -996,6 +1000,12 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			}
 		}
 
+		// update holding public token for custodians
+		for _, cusDetail := range custodians {
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cusDetail.IncAddress)
+			UpdateCustodianStateAfterUserRequestPToken(currentPortalState, custodianKey.String(), waitingPortingRequest.TokenID(), cusDetail.Amount)
+		}
+
 		inst := buildReqPTokensInst(
 			actionData.Meta.UniquePortingID,
 			actionData.Meta.TokenID,
@@ -1026,8 +1036,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-
-	return [][]string{}, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForExchangeRates(
@@ -1817,7 +1825,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			}
 		}
 
-		if !isChecked{
+		if !isChecked {
 			Logger.log.Error("BTC-TxProof is invalid")
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
@@ -1834,20 +1842,33 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		// get tokenID from redeemTokenID
-		tokenID := meta.TokenID
-
-		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		// calculate unlock amount
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := finalExchangeRateKey.String()
-		unlockAmount, err2 := updateFreeCollateralCustodian(
+		unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
+		if err != nil {
+			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		err = updateCustodianStateAfterReqUnlockCollateral(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
-		if err2 != nil {
-			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
+			unlockAmount, meta.TokenID)
+		if err != nil {
+			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,
@@ -1910,7 +1931,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// check minimum confirmations block of bnb proof
-		latestBNBBlockHeight, err2 :=  blockchain.GetLatestBNBBlkHeight()
+		latestBNBBlockHeight, err2 := blockchain.GetLatestBNBBlkHeight()
 		if err2 != nil {
 			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
 			inst := buildReqUnlockCollateralInst(
@@ -1928,7 +1949,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		if latestBNBBlockHeight < txProofBNB.BlockHeight + bnb.MinConfirmationsBlock {
+		if latestBNBBlockHeight < txProofBNB.BlockHeight+bnb.MinConfirmationsBlock {
 			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
 				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
 			inst := buildReqUnlockCollateralInst(
@@ -2022,7 +2043,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		expectedRedeemMemo := RedeemMemoBNB {
+		expectedRedeemMemo := RedeemMemoBNB{
 			RedeemID:                  redeemID,
 			CustodianIncognitoAddress: meta.CustodianAddressStr}
 		expectedRedeemMemoBytes, _ := json.Marshal(expectedRedeemMemo)
@@ -2112,20 +2133,33 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		// get tokenID from redeemTokenID
-		tokenID := meta.TokenID
-
-		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		// calculate unlock amount
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := finalExchangeRateKey.String()
-		unlockAmount, err2 := updateFreeCollateralCustodian(
-			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
+		unlockAmount, err2 := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
 		if err2 != nil {
-			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
+			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		err2 = updateCustodianStateAfterReqUnlockCollateral(
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
+			unlockAmount, meta.TokenID)
+		if err2 != nil {
+			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err2)
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,
@@ -2183,6 +2217,4 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		)
 		return [][]string{inst}, nil
 	}
-
-	return [][]string{}, nil
 }
