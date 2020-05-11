@@ -72,79 +72,57 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 	return result, nil
 }
 
-func getKeysetFromKeyParam(keyParam interface{}) (*incognitokey.KeySet, uint64, error) {
-	keys, ok := keyParam.(map[string]interface{})
-	if !ok {
-		return nil, 0, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid params: %+v", keyParam))
-	}
-	// get keyset only contain read only key by deserializing (optional)
-	var readonlyKey *wallet.KeyWallet
-	var err error
-	readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
-	if !ok || readonlyKeyStr == "" {
-		Logger.log.Info("Read onlyKey is optional")
-	} else {
-		readonlyKey, err = wallet.Base58CheckDeserialize(readonlyKeyStr)
-		if err != nil {
-			Logger.log.Debugf("Read onlyKey is invalid: err: %+v", err)
-			return nil, 0, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
-		}
-	}
-	// get keyset only contain public key by deserializing (required)
-	paymentAddressStr, ok := keys["PaymentAddress"].(string)
-	if !ok {
-		return nil, 0, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
-	}
-	paymentAddressKey, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-	if err != nil {
-		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-		return nil, 0, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
-	}
-	// create a key set
-	keySet := &incognitokey.KeySet{
-		PaymentAddress: paymentAddressKey.KeySet.PaymentAddress,
-	}
-	// readonly key is optional
-	if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
-		keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
-	}
-
-	fmt.Println("Checking readonlykey")
-	fmt.Println("Do they the same?????")
-	fmt.Println(keySet.GetReadOnlyKeyInBase58CheckEncode())
-	fmt.Println(readonlyKeyStr)
-	fmt.Println(readonlyKeyStr == keySet.GetReadOnlyKeyInBase58CheckEncode())
-	fmt.Println("==============================")
-
-	fmt.Println("Checking paymentAddressKey")
-	fmt.Println("Do they the same?????")
-	fmt.Println(keySet.GetPublicKeyInBase58CheckEncode())
-	fmt.Println(paymentAddressStr)
-	fmt.Println(paymentAddressStr == keySet.GetPublicKeyInBase58CheckEncode())
-	fmt.Println("==============================")
-
-	// get shard height
-	shardHeightTemp, ok := keys["StartHeight"].(float64)
-	if !ok {
-		return nil, 0, NewRPCError(RPCInvalidParamsError, errors.New("invalid height param"))
-	}
-	shardHeight := uint64(shardHeightTemp)
-
-	return keySet, shardHeight, nil
-}
-
 func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 	for _, keyParam := range listKeyParams {
-		keySet, shardHeight, err := getKeysetFromKeyParam(keyParam)
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid params: %+v", keyParam))
+		}
+		// get keyset only contain read only key by deserializing (optional)
+		var readonlyKey *wallet.KeyWallet
+		var err error
+		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+		if !ok || readonlyKeyStr == "" {
+			Logger.log.Info("Read onlyKey is optional")
+		} else {
+			readonlyKey, err = wallet.Base58CheckDeserialize(readonlyKeyStr)
+			if err != nil {
+				Logger.log.Debugf("Read onlyKey is invalid: err: %+v", err)
+				return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+			}
+		}
+		// get keyset only contain public key by deserializing (required)
+		paymentAddressStr, ok := keys["PaymentAddress"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+		}
+		paymentAddressKey, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			Logger.log.Debugf("ListDecryptedOutputCoinsByKeyError result: %+v, err: %+v", nil, err)
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 		}
-		shardID := common.GetShardIDFromLastByte(keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1])
-		outputCoins, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardID, &tokenID, shardHeight)
+
+		// Get start height
+		startHeightTemp, ok := keys["StartHeight"].(float64)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid start height"))
+		}
+		startHeight := uint64(startHeightTemp)
+
+		// create a key set
+		keySet := incognitokey.KeySet{
+			PaymentAddress: paymentAddressKey.KeySet.PaymentAddress,
+		}
+		// readonly key is optional
+		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
+			keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
+		}
+		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		outputCoins, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, startHeight)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
@@ -154,11 +132,10 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 		for _, outCoin := range outputCoins {
 			item = append(item, jsonresult.NewOutCoin(outCoin))
 		}
-
-		if len(keySet.ReadonlyKey.Rk) > 0 {
-			result.Outputs[keySet.GetReadOnlyKeyInBase58CheckEncode()] = item
+		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
+			result.Outputs[readonlyKeyStr] = item
 		} else {
-			result.Outputs[keySet.GetPublicKeyInBase58CheckEncode()] = item
+			result.Outputs[paymentAddressStr] = item
 		}
 	}
 	return result, nil

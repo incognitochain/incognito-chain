@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -16,7 +17,7 @@ import (
 // TxViewPoint is used to contain data which is fetched from tx of every block
 type TxViewPoint struct {
 	tokenID           *common.Hash
-	height 			  uint64
+	height            uint64
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 
@@ -41,7 +42,7 @@ type TxViewPoint struct {
 func NewTxViewPoint(shardID byte) *TxViewPoint {
 	result := &TxViewPoint{
 		shardID:                     shardID,
-		height: 					 0,
+		height:                      0,
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
 		mapOutputCoins:              make(map[string][]coin.Coin),

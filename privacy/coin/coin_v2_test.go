@@ -1,6 +1,7 @@
 package coin
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -37,3 +38,40 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		assert.Equal(t, coin.info, coinByBytes.info, "FromBytes then SetBytes should be equal")
 	}
 }
+
+func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, index uint8) (*coin.CoinV2, error) {
+	c := new(coin.CoinV2)
+	c.SetVersion(2)
+	c.SetIndex(index)
+	c.SetInfo(info.Message)
+
+	for true {
+		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
+		r := operation.RandomScalar()
+		c.SetMask(r)
+		c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
+		c.SetPublicKey(coin.ParseOnetimeAddress(
+			info.PaymentAddress.GetPublicSpend(),
+			info.PaymentAddress.GetPublicView(),
+			r,
+			index,
+		))
+		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+
+		currentShardID, err := c.GetShardID()
+		if err != nil {
+			Logger.Log.Errorf("Cannot get shardID of newly created coin with err %v", err)
+			return nil, err
+		}
+		if currentShardID != targetShardID {
+			continue
+		} else {
+			break
+		}
+	}
+
+	return c, nil
+}
+
+func TestCoinV2()

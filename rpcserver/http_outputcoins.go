@@ -69,7 +69,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil || len(paramsArray) < 4 {
+	if paramsArray == nil || len(paramsArray) < 3 {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}

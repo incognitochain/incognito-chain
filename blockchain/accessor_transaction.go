@@ -2,14 +2,11 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -224,19 +221,28 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 	}
 
 	// Get outcoins in ver2 by privateView key
+	fmt.Println("Getting outputcoins")
 	currentHeight := blockchain.BestState.Shard[shardID].ShardHeight
+	fmt.Println("StartHeight = ", shardHeight)
+	fmt.Println("Current Blockchain height = ", currentHeight)
 	for height := shardHeight; height <= currentHeight; height += 1 {
-		currentHeightCoins, err := statedb.GetOnetimeAddressesByHeight(transactionStateDB, *tokenID, shardID, shardHeight)
+		currentHeightCoins, err := statedb.GetOnetimeAddressesByHeight(transactionStateDB, *tokenID, shardID, height)
 		if err != nil {
 			Logger.log.Error("GetOutcoinsBytesByKeyset Get By Height", err)
 			return nil, err
 		}
+		fmt.Println("Querying height =", height)
+		fmt.Println("Got number of coins = ", len(currentHeightCoins))
 		for _, coinBytes := range currentHeightCoins {
 			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
 				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
 				return nil, err
 			}
+			fmt.Println("Found a coin")
+			fmt.Println("Version = ", c.GetVersion())
+			fmt.Println("Index = ", c.GetIndex())
+			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
 			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
 				outCoinsBytes = append(outCoinsBytes, currentHeightCoins...)
 			}
@@ -261,26 +267,26 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
-	if blockchain.config.MemCache != nil {
-		// get from cache
-		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
-		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
-		if cachedData != nil && len(cachedData) > 0 {
-			// try to parsing on outCointsInBytes
-			_ = json.Unmarshal(cachedData, &outCoinsInBytes)
-		}
-		if len(outCoinsInBytes) == 0 {
-			// cached data is nil or fail -> get from database
-			outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
-			if len(outCoinsInBytes) > 0 {
-				// cache 1 day for result
-				cachedData, err = json.Marshal(outCoinsInBytes)
-				if err == nil {
-					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
-				}
-			}
-		}
-	}
+	//if blockchain.config.MemCache != nil {
+	//	// get from cache
+	//	cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
+	//	cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
+	//	if cachedData != nil && len(cachedData) > 0 {
+	//		// try to parsing on outCointsInBytes
+	//		_ = json.Unmarshal(cachedData, &outCoinsInBytes)
+	//	}
+	//	if len(outCoinsInBytes) == 0 {
+	//		// cached data is nil or fail -> get from database
+	//		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
+	//		if len(outCoinsInBytes) > 0 {
+	//			// cache 1 day for result
+	//			cachedData, err = json.Marshal(outCoinsInBytes)
+	//			if err == nil {
+	//				blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+	//			}
+	//		}
+	//	}
+	//}
 	if len(outCoinsInBytes) == 0 {
 		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 		if err != nil {
@@ -496,6 +502,8 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 				snd := outputCoin.GetSNDerivator()
 				if snd != nil {
 					mapComSnd[string(commitmentBytes)] = snd.ToBytesS()
+				} else {
+					mapComSnd[string(commitmentBytes)] = []byte{}
 				}
 
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())

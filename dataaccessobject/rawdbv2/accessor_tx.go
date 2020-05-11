@@ -2,10 +2,11 @@ package rawdbv2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 func StoreTransactionIndex(db incdb.Database, txHash common.Hash, blockHash common.Hash, index int) error {

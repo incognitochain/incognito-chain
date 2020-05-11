@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
@@ -974,6 +975,9 @@ func (stateDB *StateDB) getAllOnetimeAddressByPrefix(tokenID common.Hash, shardI
 	temp := stateDB.trie.NodeIterator(GetOnetimeAddressPrefix(tokenID, shardID, height))
 	it := trie.NewIterator(temp)
 	onetimeAddresses := make([]*OnetimeAddressState, 0)
+
+	keyPrefix := GetOnetimeAddressPrefix(tokenID, shardID, height)
+	fmt.Println("KeyPrefix = ", keyPrefix)
 	for it.Next() {
 		value := it.Value
 		newValue := make([]byte, len(value))

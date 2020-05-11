@@ -156,7 +156,6 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 					}
 					row[j], err = new(operation.Point).FromBytesS(publicKey)
 					if err != nil {
-						fmt.Println(publicKey)
 						Logger.Log.Errorf("Parsing from byte to point error %v ", err)
 						return nil, nil, err
 					}
@@ -305,18 +304,6 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 		return err
 	}
 
-	fmt.Println("Privkey")
-	fmt.Println(privKeysMlsag[len(privKeysMlsag) - 1].ToBytesS())
-
-	for i := 0; i < len(privKeysMlsag); i += 1 {
-		fmt.Println(privKeysMlsag[i].ToBytesS())
-		if i < len(privKeysMlsag) - 1 {
-			fmt.Println(new(operation.Point).ScalarMultBase(privKeysMlsag[i]))
-		} else {
-			fmt.Println(new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], privKeysMlsag[i]))
-		}
-	}
-
 	keyImages := mlsag.ParseKeyImages(privKeysMlsag)
 	for i := 0; i < len(tx.Proof.GetInputCoins()); i += 1 {
 		tx.Proof.GetInputCoins()[i].SetKeyImage(keyImages[i])
@@ -347,25 +334,39 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 	return err
 }
 
-func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, shardID byte, index uint8) *coin.CoinV2 {
+func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, index uint8) (*coin.CoinV2, error) {
 	c := new(coin.CoinV2)
 	c.SetVersion(2)
 	c.SetIndex(index)
 	c.SetInfo(info.Message)
 
-	// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
-	r := operation.RandomScalar()
-	c.SetMask(r)
-	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
-	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
-	c.SetPublicKey(coin.ParseOnetimeAddress(
-		info.PaymentAddress.GetPublicSpend(),
-		info.PaymentAddress.GetPublicView(),
-		r,
-		index,
-	))
-	c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
-	return c
+	for true {
+		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
+		r := operation.RandomScalar()
+		c.SetMask(r)
+		c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
+		c.SetPublicKey(coin.ParseOnetimeAddress(
+			info.PaymentAddress.GetPublicSpend(),
+			info.PaymentAddress.GetPublicView(),
+			r,
+			index,
+		))
+		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+
+		currentShardID, err := c.GetShardID()
+		if err != nil {
+			Logger.Log.Errorf("Cannot get shardID of newly created coin with err %v", err)
+			return nil, err
+		}
+		if currentShardID != targetShardID {
+			continue
+		} else {
+			break
+		}
+	}
+
+	return c, nil
 }
 
 func parseCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
@@ -377,18 +378,11 @@ func parseCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, t
 			return nil, err
 		}
 		receiverPublicKeyBytes := receiverPublicKey.ToBytesS()
-		shardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes) - 1])
+		targetShardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes) - 1])
 
 		// Repeat generating one time address for new one time address
 		for true {
-			c := parseCoinBasedOnPaymentInfo(info, shardID, uint8(index&0xFF))
-			publicKeyBytes := c.GetPublicKey().ToBytesS()
-
-			// Onetimeaddress's shardID should be the same with the publicKey of receiver
-			shardID, _ := c.GetShardID()
-			if publicKeyBytes[len(publicKeyBytes) - 1] != shardID {
-				continue
-			}
+			c := parseCoinBasedOnPaymentInfo(info, targetShardID, uint8(index&0xFF))
 
 			// Onetimeaddress should be unique
 			found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes, shardID)

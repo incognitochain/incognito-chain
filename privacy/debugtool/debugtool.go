@@ -27,6 +27,15 @@ func (this *DebugTool) InitTestnet() *DebugTool {
 	return this
 }
 
+func (this *DebugTool) InitLocal() *DebugTool {
+	if this == nil {
+		this = new(DebugTool)
+	}
+	this.url = "http://127.0.0.1:9334"
+	return this
+}
+
+
 func (this *DebugTool) SendPostRequestWithQuery(query string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")

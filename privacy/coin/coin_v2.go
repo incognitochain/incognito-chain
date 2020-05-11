@@ -2,6 +2,7 @@ package coin
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -44,25 +45,6 @@ func ArrayCoinToCoinV2(inputCoins []Coin) []*CoinV2 {
 	return res
 }
 
-// AdditionalData of concealData should be publicView of the receiver
-func (c *CoinV2) ConcealData(additionalData interface{}) {
-	// Only conceal if the coin has not encrypted
-	if c.IsEncrypted() {
-		return
-	}
-	publicView := additionalData.(*operation.Point)
-	rK := new(operation.Point).ScalarMult(publicView, c.GetMask())
-	hash := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
-	hash = operation.HashToScalar(hash.ToBytesS())
-	mask := new(operation.Scalar).Add(c.GetMask(), hash)
-
-	hash = operation.HashToScalar(hash.ToBytesS())
-	amount := new(operation.Scalar).Add(c.GetAmount(), hash)
-
-	c.SetMask(mask)
-	c.SetAmount(amount)
-}
-
 func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
 	tempCoin := c
 	keySet := new(incognitokey.KeySet)
@@ -95,6 +77,25 @@ func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.
 	return new(operation.Point).ScalarMult(Hp, k), nil
 }
 
+// AdditionalData of concealData should be publicView of the receiver
+func (c *CoinV2) ConcealData(additionalData interface{}) {
+	// Only conceal if the coin has not encrypted
+	if c.IsEncrypted() {
+		return
+	}
+	publicView := additionalData.(*operation.Point)
+	rK := new(operation.Point).ScalarMult(publicView, c.GetMask())
+	hash := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
+	hash = operation.HashToScalar(hash.ToBytesS())
+	mask := new(operation.Scalar).Add(c.GetMask(), hash)
+
+	hash = operation.HashToScalar(hash.ToBytesS())
+	amount := new(operation.Scalar).Add(c.GetAmount(), hash)
+
+	c.SetMask(mask)
+	c.SetAmount(amount)
+}
+
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	if c.IsEncrypted() == false {
 		return c, nil
@@ -121,8 +122,10 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		hash = operation.HashToScalar(hash.ToBytesS())
 		value := c.GetAmount().Sub(c.GetAmount(), hash)
 
-		commitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenRandomnessIndex)
-		if commitment != c.GetCommitment() {
+		commitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
+		fmt.Println(commitment)
+		fmt.Println(c.GetCommitment())
+		if !operation.IsPointEqual(commitment, c.GetCommitment()) {
 			err := errors.New("Cannot Decrypt CoinV2: Commitment is not the same after decrypt")
 			return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 		}
@@ -165,7 +168,7 @@ func (c CoinV2) IsEncrypted() bool {
 	return !operation.IsPointEqual(commitment, c.commitment)
 }
 
-func (c CoinV2) GetVersion() uint8                { return 2 }
+func (c CoinV2) GetVersion() uint8 { return 2 }
 func (c CoinV2) GetShardID() (uint8, error) {
 	if c.publicKey == nil {
 		return 255, errors.New("Cannot get ShardID because PublicKey of PlainCoin is concealed")
