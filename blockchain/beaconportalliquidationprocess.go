@@ -487,7 +487,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 				continue
 			}
-			updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+			updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, tokenID)
 		}
 
 		// remove waiting porting request from waiting list

@@ -659,12 +659,7 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.Custodi
 }
 
 func updateCustodianStateAfterExpiredPortingReq(
-	custodianState *statedb.CustodianState, unlockedAmount uint64, unholdingPublicToken uint64, tokenID string) {
-
-	holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
-	holdingPubTokenTmp[tokenID] -= unholdingPublicToken
-	custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
-
+	custodianState *statedb.CustodianState, unlockedAmount uint64, tokenID string) {
 	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + unlockedAmount)
 
 	lockedAmountTmp := custodianState.GetLockedAmountCollateral()
