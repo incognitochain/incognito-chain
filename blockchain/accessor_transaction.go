@@ -221,30 +221,30 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 	}
 
 	// Get outcoins in ver2 by privateView key
-	fmt.Println("Getting outputcoins")
+	//fmt.Println("Getting outputcoins")
 	currentHeight := blockchain.BestState.Shard[shardID].ShardHeight
-	fmt.Println("StartHeight = ", shardHeight)
-	fmt.Println("Current Blockchain height = ", currentHeight)
+	//fmt.Println("StartHeight = ", shardHeight)
+	//fmt.Println("Current Blockchain height = ", currentHeight)
 	for height := shardHeight; height <= currentHeight; height += 1 {
 		currentHeightCoins, err := statedb.GetOnetimeAddressesByHeight(transactionStateDB, *tokenID, shardID, height)
 		if err != nil {
 			Logger.log.Error("GetOutcoinsBytesByKeyset Get By Height", err)
 			return nil, err
 		}
-		fmt.Println("Querying height =", height)
-		fmt.Println("Got number of coins = ", len(currentHeightCoins))
+		//fmt.Println("Querying height =", height)
+		//fmt.Println("Got number of coins = ", len(currentHeightCoins))
 		for _, coinBytes := range currentHeightCoins {
 			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
 				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
 				return nil, err
 			}
-			fmt.Println("Found a coin")
-			fmt.Println("Version = ", c.GetVersion())
-			fmt.Println("Index = ", c.GetIndex())
-			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
+			//fmt.Println("Found a coin")
+			//fmt.Println("Version = ", c.GetVersion())
+			//fmt.Println("Index = ", c.GetIndex())
+			//fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
 			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
-				outCoinsBytes = append(outCoinsBytes, currentHeightCoins...)
+				outCoinsBytes = append(outCoinsBytes, c.Bytes())
 			}
 		}
 	}

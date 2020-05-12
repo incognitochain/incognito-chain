@@ -3,7 +3,6 @@ package statedb
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -202,25 +201,23 @@ func ListCommitmentIndices(stateDB *StateDB, tokenID common.Hash, shardID byte) 
 
 func StoreOnetimeAddress(stateDB *StateDB, tokenID common.Hash, height uint64, outputCoins [][]byte, shardID byte) error {
 	heightBytes := common.Uint64ToBytes(height)
-	fmt.Println("Storing OnetimeAddress", height)
-	fmt.Println("Storing OnetimeAddress", height)
 	for _, outputCoin := range outputCoins {
-		fmt.Println(outputCoin)
+		//fmt.Println(outputCoin)
 		key := GenerateOnetimeAddressObjectKey(tokenID, shardID, heightBytes, outputCoin)
 		value := NewOnetimeAddressStateWithValue(tokenID, shardID, heightBytes, outputCoin)
 
-		fmt.Println("Key = ", key[:])
-		fmt.Println("Value = ", value)
-		fmt.Println("KeyPrefix = ", GetOnetimeAddressPrefix(tokenID, shardID, heightBytes))
-		keySuffix := common.HashH(outputCoin)
-		fmt.Println("KeySuffix = ", keySuffix[:][:20])
+		//fmt.Println("Key = ", key[:])
+		//fmt.Println("Value = ", value)
+		//fmt.Println("KeyPrefix = ", GetOnetimeAddressPrefix(tokenID, shardID, heightBytes))
+		//keySuffix := common.HashH(outputCoin)
+		//fmt.Println("KeySuffix = ", keySuffix[:][:20])
 
 		err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StoreOnetimeAddressError, err)
 		}
 	}
-	fmt.Println("===============")
+	//fmt.Println("===============")
 	return nil
 }
 
