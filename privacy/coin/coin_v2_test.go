@@ -1,10 +1,14 @@
 package coin
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy"
+	"errors"
+	"github.com/incognitochain/incognito-chain/common"
+	"testing"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func getRandomCoinV2() *CoinV2 {
@@ -39,21 +43,23 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 	}
 }
 
-func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, index uint8) (*coin.CoinV2, error) {
-	c := new(coin.CoinV2)
+func createNewCoin(amount uint64, paymentAddress key.PaymentAddress, targetShardID uint8, index uint8) (*CoinV2, error) {
+	if targetShardID >= common.MaxShardNumber {
+		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
+	}
+	c := new(CoinV2)
 	c.SetVersion(2)
 	c.SetIndex(index)
-	c.SetInfo(info.Message)
-
+	c.SetInfo([]byte{})
 	for true {
 		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
 		r := operation.RandomScalar()
 		c.SetMask(r)
-		c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+		c.SetAmount(new(operation.Scalar).FromUint64(amount))
 		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
-		c.SetPublicKey(coin.ParseOnetimeAddress(
-			info.PaymentAddress.GetPublicSpend(),
-			info.PaymentAddress.GetPublicView(),
+		c.SetPublicKey(ParseOnetimeAddress(
+			paymentAddress.GetPublicSpend(),
+			paymentAddress.GetPublicView(),
 			r,
 			index,
 		))
@@ -61,17 +67,34 @@ func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, 
 
 		currentShardID, err := c.GetShardID()
 		if err != nil {
-			Logger.Log.Errorf("Cannot get shardID of newly created coin with err %v", err)
 			return nil, err
 		}
-		if currentShardID != targetShardID {
-			continue
-		} else {
+		if currentShardID == targetShardID {
 			break
 		}
 	}
-
 	return c, nil
 }
 
-func TestCoinV2()
+func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
+	privateKey := key.GeneratePrivateKey([]byte{1})
+	keyset := new(incognitokey.KeySet)
+	err := keyset.InitFromPrivateKey(&privateKey)
+	assert.Equal(t, nil, err)
+
+	c, err := createNewCoin(10, keyset.PaymentAddress, 1, 0)
+	assert.NotEqual(t, nil, err)
+
+	c, err = createNewCoin(10, keyset.PaymentAddress, 0, 0)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, false, c.IsEncrypted())
+
+	// Conceal
+	c.ConcealData(keyset.PaymentAddress.GetPublicView())
+	assert.Equal(t, true, c.IsEncrypted())
+
+	var pc PlainCoin
+	pc, err = c.Decrypt(keyset)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, false, pc.IsEncrypted())
+}

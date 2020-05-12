@@ -49,7 +49,9 @@ func TestCoinV1CommitAllThenSwitchV2(t *testing.T) {
 	allcm := coin.GetCommitment()
 	cm := ParseCommitmentToV2WithCoin(coin)
 
-	shardID := coin.GetShardID()
+	shardID, shardIDerr := coin.GetShardID()
+	assert.Equal(t, nil, shardIDerr)
+
 	allcm = ParseCommitmentToV2(
 		allcm,
 		coin.GetPublicKey(),
@@ -80,7 +82,9 @@ func TestCoinV1CommitAll(t *testing.T) {
 		coin.info = []byte("Incognito chain")
 
 		cmTmp := coin.GetPublicKey()
-		shardID := coin.GetShardID()
+		shardID, shardIDerr := coin.GetShardID()
+		assert.Equal(t, nil, shardIDerr)
+
 		cmTmp.Add(cmTmp, new(operation.Point).ScalarMult(PedCom.G[PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(coin.GetValue()))))
 		cmTmp.Add(cmTmp, new(operation.Point).ScalarMult(PedCom.G[PedersenSndIndex], coin.snDerivator))
 		cmTmp.Add(cmTmp, new(operation.Point).ScalarMult(PedCom.G[PedersenShardIDIndex], new(operation.Scalar).FromUint64(uint64(shardID))))

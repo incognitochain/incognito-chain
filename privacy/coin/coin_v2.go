@@ -84,6 +84,9 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 		return
 	}
 	publicView := additionalData.(*operation.Point)
+	fmt.Println("Encrypting ", c.GetCommitment())
+	fmt.Println(publicView.ToBytesS())
+
 	rK := new(operation.Point).ScalarMult(publicView, c.GetMask())
 	hash := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
 	hash = operation.HashToScalar(hash.ToBytesS())
@@ -110,6 +113,10 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 
+	fmt.Println("Decrypting ", c.GetCommitment())
+	temp, _ := new(operation.Point).FromBytesS(keySet.PaymentAddress.Tk)
+	fmt.Println(temp.ToBytesS())
+
 	if len(viewKey.Rk) > 0 {
 		rK := new(operation.Point).ScalarMult(c.GetTxRandom(), viewKey.GetPrivateView())
 
@@ -135,8 +142,8 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	if len(keySet.PrivateKey) > 0 {
 		keyImage, err := c.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
 		if err != nil {
-			err := errors.New("Cannot parse key image with privateKey CoinV2")
-			return nil, errhandler.NewPrivacyErr(errhandler.ParseKeyImageWithPrivateKeyErr, err)
+			errReturn := errors.New("Cannot parse key image with privateKey CoinV2" + err.Error())
+			return nil, errhandler.NewPrivacyErr(errhandler.ParseKeyImageWithPrivateKeyErr, errReturn)
 		}
 		c.SetKeyImage(keyImage)
 	}

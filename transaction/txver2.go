@@ -335,6 +335,9 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 }
 
 func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, index uint8) (*coin.CoinV2, error) {
+	if targetShardID >= common.MaxShardNumber {
+		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
+	}
 	c := new(coin.CoinV2)
 	c.SetVersion(2)
 	c.SetIndex(index)
@@ -359,13 +362,10 @@ func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, 
 			Logger.Log.Errorf("Cannot get shardID of newly created coin with err %v", err)
 			return nil, err
 		}
-		if currentShardID != targetShardID {
-			continue
-		} else {
+		if currentShardID == targetShardID {
 			break
 		}
 	}
-
 	return c, nil
 }
 
@@ -381,11 +381,16 @@ func parseCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, t
 		targetShardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes) - 1])
 
 		// Repeat generating one time address for new one time address
-		for true {
-			c := parseCoinBasedOnPaymentInfo(info, targetShardID, uint8(index&0xFF))
+		for {
+			c, err := parseCoinBasedOnPaymentInfo(info, targetShardID, uint8(index&0xFF))
+			if err != nil {
+				Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
+				return nil, err
+			}
 
 			// Onetimeaddress should be unique
-			found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes, shardID)
+			publicKeyBytes := c.GetPublicKey().ToBytesS()
+			found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes, targetShardID)
 			if err != nil {
 				Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 				return nil, err

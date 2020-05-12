@@ -496,9 +496,9 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 			// outputs
 			outputCoinArray := view.mapOutputCoins[k]
 			outputCoinBytesArray := make([][]byte, 0)
+			onetimeAddressArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {
-				commitment := outputCoin.GetCommitment()
-				commitmentBytes := commitment.ToBytesS()
+				commitmentBytes := outputCoin.GetCommitment().ToBytesS()
 				snd := outputCoin.GetSNDerivator()
 				if snd != nil {
 					mapComSnd[string(commitmentBytes)] = snd.ToBytesS()
@@ -506,9 +506,13 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 					mapComSnd[string(commitmentBytes)] = []byte{}
 				}
 
-				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+				if outputCoin.GetVersion() == 1 {
+					outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+				} else if outputCoin.GetVersion() == 2 {
+					onetimeAddressArray = append(onetimeAddressArray, outputCoin.Bytes())
+				}
 			}
-			err = statedb.StoreOnetimeAddress(stateDB, *view.tokenID, view.height, outputCoinBytesArray, publicKeyShardID)
+			err = statedb.StoreOnetimeAddress(stateDB, *view.tokenID, view.height, onetimeAddressArray, publicKeyShardID)
 			if err != nil {
 				return err
 			}

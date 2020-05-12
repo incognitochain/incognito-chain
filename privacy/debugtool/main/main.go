@@ -16,7 +16,7 @@ func main() {
 	////paymentKeys := []string{"", "12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE", "12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9", "12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
 	//
 	tool := new(debugtool.DebugTool).InitLocal()
-	//sendTx(tool)
+	sendTx(tool)
 	//
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
