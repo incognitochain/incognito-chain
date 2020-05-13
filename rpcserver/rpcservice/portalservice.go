@@ -2,7 +2,6 @@ package rpcservice
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -184,13 +183,10 @@ func (portal *PortalService) GetLiquidateTpExchangeRates(stateDB *statedb.StateD
 	return liquidateTopPercentileExchangeRatesStatus, nil
 }
 
-func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(beaconHeight uint64, custodianAddress string, tokenSymbol string) (jsonresult.GetLiquidateTpExchangeRates, error) {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	newTPKey := beaconHeightBytes
-	newTPKey = append(newTPKey, []byte(custodianAddress)...)
+func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(stateDB *statedb.StateDB, custodianAddress string, tokenSymbol string) (jsonresult.GetLiquidateTpExchangeRates, error) {
+	newTPKey := []byte(custodianAddress)
 
-	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
+	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
 
 	if err != nil {
 		return jsonresult.GetLiquidateTpExchangeRates{}, err
@@ -219,10 +215,10 @@ func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(beaconHeight uin
 }
 
 func (portal *PortalService) GetLiquidateExchangeRatesPool(
+	stateDB *statedb.StateDB,
 	tokenID string,
 ) (jsonresult.GetLiquidateExchangeRates, error) {
-	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRatesPoolByKey(portalStateDB)
+	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRatesPoolByKey(stateDB)
 
 	if err != nil {
 		return jsonresult.GetLiquidateExchangeRates{}, err
