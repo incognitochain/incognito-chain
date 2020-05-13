@@ -78,7 +78,7 @@ type Syncker interface {
 	GetS2BBlocksForBeaconProducer(map[byte]common.Hash) map[byte][]interface{}
 	GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{}
 	GetS2BBlocksForBeaconValidator(bestViewShardHash map[byte]common.Hash, list map[byte][]common.Hash) (map[byte][]interface{}, error)
-	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]common.Hash) (map[byte][]interface{}, error)
+	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }
