@@ -85,7 +85,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 	}
 
-	currentPortalState, err := InitCurrentPortalStateFromDB(stateDB, beaconHeight-1)
+	currentPortalState, err := InitCurrentPortalStateFromDB(stateDB)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -810,7 +810,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	}
 	Logger.log.Infof("There are %v instruction for expired waiting porting in portal\n", len(expiredWaitingPortingInsts))
 
-	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
+	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianReturnPubToken
 	// get custodian's collateral to return user
 	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
 	if err != nil {

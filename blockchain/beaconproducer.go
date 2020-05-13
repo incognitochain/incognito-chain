@@ -95,7 +95,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
 		featureStateDB := beaconBestState.GetCopiedFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB, beaconBestState.BeaconHeight)
+		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}

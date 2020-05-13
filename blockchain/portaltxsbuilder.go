@@ -300,7 +300,7 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
-// mints ptoken to return to user (ptoken that user burned)
+// mints ptoken along with redeem fee to return to user (ptoken that user burned)
 func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -315,7 +315,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		return nil, nil
 	}
 	if redeemReqContent.ShardID != shardID {
-		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, redeemReqContent.ShardID)
+		Logger.log.Errorf("ERROR: unexpected ShardID, expect %v, but got %+v", shardID, redeemReqContent.ShardID)
 		return nil, nil
 	}
 
@@ -338,7 +338,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
 	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
+	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
 		Amount:         receiveAmt,
 		PaymentAddress: receiverAddr,
 	}
@@ -349,7 +349,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		PropertyID: propID.String(),
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
+		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,
 	}
@@ -377,7 +377,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		return nil, initErr
 	}
 
-	Logger.log.Errorf("Suucc: %+v", err)
+	Logger.log.Info("[Shard buildPortalRejectedRedeemRequestTx] Finished...")
 	return resTx, nil
 }
 
@@ -402,7 +402,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 
 	meta := metadata.NewPortalLiquidateCustodianResponse(
 		liqCustodian.UniqueRedeemID,
-		liqCustodian.MintedCollateralAmount,
+		liqCustodian.LiquidatedCollateralAmount,
 		liqCustodian.RedeemerIncAddressStr,
 		liqCustodian.CustodianIncAddressStr,
 		metadata.PortalLiquidateCustodianResponseMeta,
@@ -418,7 +418,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 	// the returned currency is PRV
 	resTx := new(transaction.Tx)
 	err = resTx.InitTxSalary(
-		liqCustodian.MintedCollateralAmount,
+		liqCustodian.LiquidatedCollateralAmount,
 		&receiverAddr,
 		producerPrivateKey,
 		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
@@ -524,4 +524,52 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 		}
 		return resTx, nil
 	}
+}
+
+// buildPortalRefundPortingFeeTx builds portal refund porting fee tx
+func (blockGenerator *BlockGenerator) buildPortalRefundPortingFeeTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[Portal refund porting fee] Starting...")
+	contentBytes := []byte(contentStr)
+	var portalPortingRequest metadata.PortalPortingRequestContent
+	err := json.Unmarshal(contentBytes, &portalPortingRequest)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal porting request content: %+v", err)
+		return nil, nil
+	}
+	if portalPortingRequest.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalFeeRefundResponse(
+		common.PortalPortingRequestRejectedChainStatus,
+		portalPortingRequest.TxReqID,
+		metadata.PortalPortingResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(portalPortingRequest.IncogAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing receiver address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		portalPortingRequest.PortingFee,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing portal refund porting fee tx: %+v", err)
+		return nil, nil
+	}
+	Logger.log.Info("[Portal refund porting fee] Finished...")
+	return resTx, nil
 }

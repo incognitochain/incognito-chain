@@ -1210,9 +1210,9 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 }
 
 // ================================= Portal OBJECT =======================================
-func (stateDB *StateDB) getWaitingPortingRequests(beaconHeight uint64) map[string]*WaitingPortingRequest {
+func (stateDB *StateDB) getWaitingPortingRequests() map[string]*WaitingPortingRequest {
 	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
-	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix(beaconHeight))
+	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
@@ -1264,9 +1264,9 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*Li
 	return NewLiquidateExchangeRatesPool(), false, nil
 }
 
-func (stateDB *StateDB) getLiquidateExchangeRatesPool(beaconHeight uint64) map[string]*LiquidateExchangeRatesPool {
+func (stateDB *StateDB) getLiquidateExchangeRatesPool() map[string]*LiquidateExchangeRatesPool {
 	liquidateExchangeRatesPoolList := make(map[string]*LiquidateExchangeRatesPool)
-	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix(beaconHeight))
+	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
@@ -1285,31 +1285,22 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPool(beaconHeight uint64) map[s
 	return liquidateExchangeRatesPoolList
 }
 
-func (stateDB *StateDB) getFinalExchangeRatesState(beaconHeight uint64) map[string]*FinalExchangeRatesState {
-	finalExchangeRatesState := make(map[string]*FinalExchangeRatesState)
-	temp := stateDB.trie.NodeIterator(GetFinalExchangeRatesStatePrefix(beaconHeight))
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		key := it.Key
-		keyHash, _ := common.Hash{}.NewHash(key)
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		object := NewFinalExchangeRatesState()
-		err := json.Unmarshal(newValue, object)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		finalExchangeRatesState[keyHash.String()] = object
+func (stateDB *StateDB) getFinalExchangeRatesState() (*FinalExchangeRatesState, error) {
+	key := GeneratePortalFinalExchangeRatesStateObjectKey()
+	finalRates, err := stateDB.getStateObject(PortalFinalExchangeRatesStateObjectType, key)
+	if err != nil {
+		return nil, err
 	}
-
-	return finalExchangeRatesState
+	if finalRates != nil {
+		return finalRates.GetValue().(*FinalExchangeRatesState), nil
+	}
+	return NewFinalExchangeRatesState(), nil
 }
 
 //B
-func (stateDB *StateDB) getAllWaitingRedeemRequest(beaconHeight uint64) map[string]*WaitingRedeemRequest {
+func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
 	waitingRedeemRequests := make(map[string]*WaitingRedeemRequest)
-	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix(beaconHeight))
+	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
@@ -1327,9 +1318,9 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest(beaconHeight uint64) map[stri
 	return waitingRedeemRequests
 }
 
-func (stateDB *StateDB) getAllCustodianStatePool(beaconHeight uint64) map[string]*CustodianState {
+func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
 	custodians := make(map[string]*CustodianState)
-	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix(beaconHeight))
+	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
@@ -1376,8 +1367,8 @@ func (stateDB *StateDB) getPortalStatusByKey(key common.Hash) (*PortalStatusStat
 	return NewPortalStatusState(), false, nil
 }
 
-func (stateDB *StateDB) getLockedCollateralState(beaconHeight uint64) (*LockedCollateralState, bool, error) {
-	key := GenerateLockedCollateralStateObjectKey(beaconHeight)
+func (stateDB *StateDB) getLockedCollateralState() (*LockedCollateralState, bool, error) {
+	key := GenerateLockedCollateralStateObjectKey()
 	lockedCollateralState, err := stateDB.getStateObject(LockedCollateralStateObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1418,8 +1409,8 @@ func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState,
 			panic("wrong expect type")
 		}
 
-		for _, r := range rewardFeature.totalRewards {
-			result.AddTotalRewards(r.tokenID, r.amount)
+		for tokenID, amount := range rewardFeature.totalRewards {
+			result.AddTotalRewards(tokenID, amount)
 		}
 	}
 	return result, true, nil

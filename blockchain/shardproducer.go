@@ -375,6 +375,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID)
 					}
 				}
+			// portal
+			case metadata.PortalUserRegisterMeta:
+				if len(l) >= 4 && l[2] == common.PortalPortingRequestRejectedChainStatus {
+					newTx, err = blockGenerator.buildPortalRefundPortingFeeTx(l[3], producerPrivateKey, shardID)
+				}
 			case metadata.PortalCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
 					newTx, err = blockGenerator.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
@@ -389,7 +394,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					newTx, err = blockGenerator.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
+				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemRequestRejectedByLiquidationChainStatus) {
 					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
@@ -427,9 +432,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				responsedTxs = append(responsedTxs, newTx)
 				responsedHashTxs = append(responsedHashTxs, newTxHash)
 			}
-}
-}
-return responsedTxs, errorInstructions, nil
+		}
+	}
+	return responsedTxs, errorInstructions, nil
 }
 
 // Process Instruction From Beacon Blocks:
