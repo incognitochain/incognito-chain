@@ -13,6 +13,7 @@ import (
 
 type ConsensusData interface {
 	GetUserRole() (string, string, int)
+	GetCurrentMiningPublicKey() (publickey string, keyType string)
 }
 
 // SubManager manages pubsub subscription of highway's topics
@@ -74,10 +75,16 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	if newRole == sub.role && !forced { // Not forced => no need to subscribe when role stays the same
 		return nil
 	}
+	pubKey, _ := sub.consensusData.GetCurrentMiningPublicKey()
+	if pubKey == "" {
+		return errors.Errorf("Can not load current mining key")
+	}
+	sub.pubkey = pubKey
 	Logger.Infof("Role changed: %v -> %v", sub.role, newRole)
 
 	// Registering
 	shardIDs := getWantedShardIDs(newRole, sub.nodeMode, sub.relayShard)
+	// Logger.Infof("[bftmsg] Regist", params ...interface{})
 	newTopics, roleOfTopics, err := sub.registerToProxy(
 		sub.pubkey,
 		newRole.layer,
