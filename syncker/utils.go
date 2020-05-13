@@ -157,6 +157,30 @@ func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Ha
 	return diffHashes
 }
 
+func compareListsByHeight(poolList map[byte][]interface{}, heightList map[byte][]uint64) (diffHeights map[byte][]uint64) {
+	diffHeights = make(map[byte][]uint64)
+	poolListsHeight := make(map[byte][]uint64)
+	for shardID, blkList := range poolList {
+		for _, blk := range blkList {
+			blkHeight := blk.(common.BlockPoolInterface).GetHeight()
+			poolListsHeight[shardID] = append(poolListsHeight[shardID], blkHeight)
+		}
+	}
+
+	for shardID, blockHeights := range heightList {
+		if blockList, ok := poolListsHeight[shardID]; ok {
+			for _, height := range blockHeights {
+				if exist, _ := common.SliceExists(blockList, height); !exist {
+					diffHeights[shardID] = append(diffHeights[shardID], height)
+				}
+			}
+		} else {
+			diffHeights[shardID] = blockHeights
+		}
+	}
+	return diffHeights
+}
+
 func GetBlksByPrevHash(
 	prevHash string,
 	byHash map[string]common.BlockPoolInterface,

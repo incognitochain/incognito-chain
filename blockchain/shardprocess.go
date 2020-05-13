@@ -491,10 +491,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	var toShardAllCrossShardBlock = make(map[byte][]*CrossShardBlock)
 
 	// blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, list map[byte]common.Hash) map[byte][]interface{}
-	crossShardRequired := make(map[byte][]common.Hash)
+	crossShardRequired := make(map[byte][]uint64)
 	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
 		for _, crossTransaction := range crossTransactions {
-			crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHash)
+			//fmt.Println("Crossshard from ", fromShard, crossTransaction.BlockHash)
+			crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHeight)
 		}
 	}
 	crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
