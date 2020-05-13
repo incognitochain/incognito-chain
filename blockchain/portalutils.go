@@ -16,10 +16,10 @@ import (
 )
 
 type CurrentPortalState struct {
-	CustodianPoolState         map[string]*statedb.CustodianState             // key : hash(beaconHeight || custodian_address)
-	WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest      // key : hash(beaconHeight || UniquePortingID)
-	WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest       // key : hash(beaconHeight || UniqueRedeemID)
-	FinalExchangeRatesState    map[string]*statedb.FinalExchangeRatesState    // key : hash(beaconHeight || TxID)
+	CustodianPoolState         map[string]*statedb.CustodianState        // key : hash(custodian_address)
+	WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest // key : hash(UniquePortingID)
+	WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest  // key : hash(UniqueRedeemID)
+	FinalExchangeRatesState    *statedb.FinalExchangeRatesState
 	LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool // key : hash(beaconHeight || TxID)
 	// it used for calculate reward for custodian at the end epoch
 	LockedCollateralState *statedb.LockedCollateralState
@@ -43,29 +43,28 @@ type PortingMemoBNB struct {
 
 func InitCurrentPortalStateFromDB(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 ) (*CurrentPortalState, error) {
-	custodianPoolState, err := statedb.GetCustodianPoolState(stateDB, beaconHeight)
+	custodianPoolState, err := statedb.GetCustodianPoolState(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	waitingPortingReqs, err := statedb.GetWaitingPortingRequests(stateDB, beaconHeight)
+	waitingPortingReqs, err := statedb.GetWaitingPortingRequests(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	waitingRedeemReqs, err := statedb.GetWaitingRedeemRequests(stateDB, beaconHeight)
+	waitingRedeemReqs, err := statedb.GetWaitingRedeemRequests(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB, beaconHeight)
+	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	liquidateExchangeRatesPool, err := statedb.GetLiquidateExchangeRatesPool(stateDB, beaconHeight)
+	liquidateExchangeRatesPool, err := statedb.GetLiquidateExchangeRatesPool(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	lockedCollateralState, err := statedb.GetLockedCollateralStateByBeaconHeight(stateDB, beaconHeight)
+	lockedCollateralState, err := statedb.GetLockedCollateralStateByBeaconHeight(stateDB)
 	if err != nil {
 		return nil, err
 	}
@@ -83,30 +82,29 @@ func InitCurrentPortalStateFromDB(
 
 func storePortalStateToDB(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) error {
-	err := statedb.StoreCustodianState(stateDB, beaconHeight, currentPortalState.CustodianPoolState)
+	err := statedb.StoreCustodianState(stateDB, currentPortalState.CustodianPoolState)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBulkWaitingPortingRequests(stateDB, beaconHeight, currentPortalState.WaitingPortingRequests)
+	err = statedb.StoreBulkWaitingPortingRequests(stateDB, currentPortalState.WaitingPortingRequests)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreWaitingRedeemRequests(stateDB, beaconHeight, currentPortalState.WaitingRedeemRequests)
+	err = statedb.StoreWaitingRedeemRequests(stateDB, currentPortalState.WaitingRedeemRequests)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBulkFinalExchangeRatesState(stateDB, beaconHeight, currentPortalState.FinalExchangeRatesState)
+	err = statedb.StoreBulkFinalExchangeRatesState(stateDB, currentPortalState.FinalExchangeRatesState)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBulkLiquidateExchangeRatesPool(stateDB, beaconHeight, currentPortalState.LiquidateExchangeRatesPool)
+	err = statedb.StoreBulkLiquidateExchangeRatesPool(stateDB, currentPortalState.LiquidateExchangeRatesPool)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreLockedCollateralState(stateDB, beaconHeight, currentPortalState.LockedCollateralState)
+	err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralState)
 	if err != nil {
 		return err
 	}
@@ -123,14 +121,7 @@ func sortCustodianByAmountAscent(
 	var result []CustodianStateSlice
 	for k, v := range custodianState {
 		//check pTokenId, select only ptokenid
-		tokenIdExist := false
-		for _, remoteAddr := range v.GetRemoteAddresses() {
-			if remoteAddr.GetPTokenID() == metadata.PTokenId {
-				tokenIdExist = true
-				break
-			}
-		}
-		if !tokenIdExist {
+		if v.GetRemoteAddresses()[metadata.PTokenId] == "" {
 			continue
 		}
 
@@ -190,10 +181,10 @@ func pickUpCustodians(
 		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenCustodianCanHold, neededCollaterals)
 
 		if freeCollaterals >= neededCollaterals {
-			remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianItem.Value.GetRemoteAddresses(), metadata.PTokenId)
-			if err != nil {
-				Logger.log.Errorf("Error when get remote address by tokenID %v", err)
-				return nil, err
+			remoteAddr := custodianItem.Value.GetRemoteAddresses()[metadata.PTokenId]
+			if remoteAddr == "" {
+				Logger.log.Errorf("Remote address in tokenID %v of custodian %v is null", metadata.PTokenId, custodianItem.Value.GetIncognitoAddress())
+				return nil, fmt.Errorf("Remote address in tokenID %v of custodian %v is null", metadata.PTokenId, custodianItem.Value.GetIncognitoAddress())
 			}
 			custodians = append(
 				custodians,
@@ -507,10 +498,10 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *
 			matchedAmount = amountNeedToBeMatched
 		}
 
-		remoteAddr, err := statedb.GetRemoteAddressByTokenID(custodianValue.GetRemoteAddresses(), tokenID)
-		if err != nil {
-			Logger.log.Errorf("Error when get remote address of custodian: %v", err)
-			return nil, err
+		remoteAddr := custodianValue.GetRemoteAddresses()[tokenID]
+		if remoteAddr == "" {
+			Logger.log.Errorf("Remote address in tokenID %v of custodian %v is null", tokenID, custodianValue.GetIncognitoAddress())
+			return nil, fmt.Errorf("Remote address in tokenID %v of custodian %v is null", tokenID, custodianValue.GetIncognitoAddress())
 		}
 
 		matchedCustodians = append(
@@ -583,16 +574,15 @@ func CalUnlockCollateralAmount(
 func CalUnlockCollateralAmountAfterLiquidation(
 	portalState *CurrentPortalState,
 	liquidatedCustodianStateKey string,
-	matchingCustodianInfo *statedb.MatchingRedeemCustodianDetail,
+	amountPubToken uint64,
 	tokenID string,
 	exchangeRate *statedb.FinalExchangeRatesState) (uint64, uint64, error) {
-	totalUnlockCollateralAmount, err := CalUnlockCollateralAmount(portalState, liquidatedCustodianStateKey, matchingCustodianInfo.GetAmount(), tokenID)
+	totalUnlockCollateralAmount, err := CalUnlockCollateralAmount(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID)
 	if err != nil {
 		return 0, 0, err
 	}
-
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
-	tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchingCustodianInfo.GetAmount()), new(big.Int).SetUint64(common.PercentReceivedCollateralAmount))
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPubToken), new(big.Int).SetUint64(common.PercentReceivedCollateralAmount))
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	liquidatedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, liquidatedAmountInPToken)
 	if err != nil {
@@ -646,7 +636,7 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.Custodi
 	custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidatedAmount)
 
 	lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-	if lockedAmountTmp[tokenID] < liquidatedAmount + remainUnlockAmountForCustodian {
+	if lockedAmountTmp[tokenID] < liquidatedAmount+remainUnlockAmountForCustodian {
 		Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodian] locked amount less than total unlock amount")
 		return errors.New("[updateCustodianStateAfterLiquidateCustodian] locked amount less than total unlock amount")
 	}
@@ -821,32 +811,44 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BNB(value uint64) (uint64, erro
 	return valueExchange, nil
 }
 
-func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState, custodianKey string, custodianState *statedb.CustodianState, detectTp map[string]metadata.LiquidateTopPercentileExchangeRatesDetail) {
-	//update custodian
-	for pTokenId, liquidateTopPercentileExchangeRatesDetail := range detectTp {
+func updateCurrentPortalStateOfLiquidationExchangeRates(
+	currentPortalState *CurrentPortalState,
+	custodianKey string,
+	custodianState *statedb.CustodianState,
+	tpRatios map[string]metadata.LiquidateTopPercentileExchangeRatesDetail,
+	remainUnlockAmounts map[string]uint64,
+) {
+	//update custodian state
+	for pTokenId, tpRatioDetail := range tpRatios {
 		holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
-		holdingPubTokenTmp[pTokenId] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
+		holdingPubTokenTmp[pTokenId] -= tpRatioDetail.HoldAmountPubToken
 		custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
 
 		lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-		lockedAmountTmp[pTokenId] -= liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
+		lockedAmountTmp[pTokenId] = lockedAmountTmp[pTokenId] - tpRatioDetail.HoldAmountFreeCollateral - remainUnlockAmounts[pTokenId]
 		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 
-		custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral)
+		custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - tpRatioDetail.HoldAmountFreeCollateral)
 	}
 
+	totalRemainUnlockAmount := uint64(0)
+	for _, amount := range remainUnlockAmounts {
+		totalRemainUnlockAmount += amount
+	}
+
+	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + totalRemainUnlockAmount)
 	currentPortalState.CustodianPoolState[custodianKey] = custodianState
 	//end
 
 	//update LiquidateExchangeRates
-	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey()
 	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
-	Logger.log.Infof("update LiquidateExchangeRatesPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, detectTp)
+	Logger.log.Infof("update LiquidateExchangeRatesPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, tpRatios)
 	if !ok {
 		item := make(map[string]statedb.LiquidateExchangeRatesDetail)
 
-		for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
+		for ptoken, liquidateTopPercentileExchangeRatesDetail := range tpRatios {
 			item[ptoken] = statedb.LiquidateExchangeRatesDetail{
 				HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 				HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
@@ -854,7 +856,7 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, cur
 		}
 		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
 	} else {
-		for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
+		for ptoken, liquidateTopPercentileExchangeRatesDetail := range tpRatios {
 			if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
 				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
 					HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
@@ -873,8 +875,8 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(beaconHeight uint64, cur
 	//end
 }
 
-func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, beaconHeight uint64) (uint64, error) {
-	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB, beaconHeight)
+func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, error) {
+	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB)
 	if err != nil {
 		return 0, nil
 	}
@@ -883,7 +885,7 @@ func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, beaconHeig
 }
 
 // GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height
-func(blockchain *BlockChain) GetBNBHeader(
+func (blockchain *BlockChain) GetBNBHeader(
 	blockHeight int64,
 ) (*types.Header, error) {
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
@@ -901,7 +903,7 @@ func(blockchain *BlockChain) GetBNBHeader(
 }
 
 // GetBNBHeader calls RPC to fullnode bnb to get bnb data hash in header
-func(blockchain *BlockChain) GetBNBDataHash(
+func (blockchain *BlockChain) GetBNBDataHash(
 	blockHeight int64,
 ) ([]byte, error) {
 	header, err := blockchain.GetBNBHeader(blockHeight)
@@ -915,7 +917,7 @@ func(blockchain *BlockChain) GetBNBDataHash(
 }
 
 // GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
-func(blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
+func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
 		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
 		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
@@ -933,7 +935,7 @@ func calAndCheckTPRatio(
 	portalState *CurrentPortalState,
 	custodianState *statedb.CustodianState,
 	finalExchange *statedb.FinalExchangeRatesState) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
-	result :=make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
+	result := make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
 
 	holdingPubToken := custodianState.GetHoldingPublicTokens()
@@ -1009,7 +1011,7 @@ func calAndCheckTPRatio(
 func UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(portalState *CurrentPortalState, rejectedRedeemReq *statedb.WaitingRedeemRequest, beaconHeight uint64) error {
 	tokenID := rejectedRedeemReq.GetTokenID()
 	for _, matchingCus := range rejectedRedeemReq.GetCustodians() {
-		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchingCus.GetIncognitoAddress())
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(matchingCus.GetIncognitoAddress())
 		custodianStateKeyStr := custodianStateKey.String()
 		custodianState := portalState.CustodianPoolState[custodianStateKeyStr]
 		if custodianState == nil {
@@ -1028,4 +1030,23 @@ func UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(portalState *Curr
 	}
 
 	return nil
+}
+
+func UpdateCustodianRewards(currentPortalState *CurrentPortalState, rewardInfos map[string]*statedb.PortalRewardInfo) {
+	for custodianKey, custodianState := range currentPortalState.CustodianPoolState {
+		custodianAddr := custodianState.GetIncognitoAddress()
+		if rewardInfos[custodianAddr] == nil {
+			continue
+		}
+
+		custodianReward := custodianState.GetRewardAmount()
+		if custodianReward == nil {
+			custodianReward = map[string]uint64{}
+		}
+
+		for tokenID, amount := range rewardInfos[custodianAddr].GetRewards() {
+			custodianReward[tokenID] += amount
+		}
+		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
+	}
 }
