@@ -129,11 +129,12 @@ func (sc *Scalar) FromUint64(i uint64) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) ToUint64() uint64 {
+func (sc *Scalar) ToUint64Little() uint64 {
 	if sc == nil {
 		return 0
 	}
-	keyBN := new(big.Int).SetBytes(sc.ToBytesS())
+	reversedKey := Reverse(sc.key)
+	keyBN := new(big.Int).SetBytes(reversedKey[:])
 	return keyBN.Uint64()
 }
 

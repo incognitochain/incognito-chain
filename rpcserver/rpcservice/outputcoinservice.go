@@ -127,6 +127,12 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 		}
+		fmt.Println("Found outputCoins: length = ", len(outputCoins))
+		for i := 0; i < len(outputCoins); i += 1 {
+			fmt.Println(outputCoins[i].GetCommitment())
+			fmt.Println(outputCoins[i].GetValue())
+			fmt.Println("===")
+		}
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {

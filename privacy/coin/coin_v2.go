@@ -2,7 +2,6 @@ package coin
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -79,13 +78,10 @@ func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.
 
 // AdditionalData of concealData should be publicView of the receiver
 func (c *CoinV2) ConcealData(additionalData interface{}) {
-	// Only conceal if the coin has not encrypted
 	if c.IsEncrypted() {
 		return
 	}
 	publicView := additionalData.(*operation.Point)
-	fmt.Println("Encrypting ", c.GetCommitment())
-	fmt.Println(publicView.ToBytesS())
 
 	rK := new(operation.Point).ScalarMult(publicView, c.GetMask())
 	hash := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
@@ -94,7 +90,6 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 
 	hash = operation.HashToScalar(hash.ToBytesS())
 	amount := new(operation.Scalar).Add(c.GetAmount(), hash)
-
 	c.SetMask(mask)
 	c.SetAmount(amount)
 }
@@ -113,10 +108,6 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 
-	fmt.Println("Decrypting ", c.GetCommitment())
-	temp, _ := new(operation.Point).FromBytesS(keySet.PaymentAddress.Tk)
-	fmt.Println(temp.ToBytesS())
-
 	if len(viewKey.Rk) > 0 {
 		rK := new(operation.Point).ScalarMult(c.GetTxRandom(), viewKey.GetPrivateView())
 
@@ -130,8 +121,6 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		value := c.GetAmount().Sub(c.GetAmount(), hash)
 
 		commitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
-		fmt.Println(commitment)
-		fmt.Println(c.GetCommitment())
 		if !operation.IsPointEqual(commitment, c.GetCommitment()) {
 			err := errors.New("Cannot Decrypt CoinV2: Commitment is not the same after decrypt")
 			return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
@@ -199,7 +188,7 @@ func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
 		return 0
 	}
-	return c.amount.ToUint64()
+	return c.amount.ToUint64Little()
 }
 
 func (c *CoinV2) SetVersion(uint8)                          { c.version = 2 }

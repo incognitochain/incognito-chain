@@ -152,3 +152,43 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
 
 	return this.SendPostRequestWithQuery(query)
 }
+
+func (this *DebugTool) ListUnspentOutputCoins(privKeyStr string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	query := fmt.Sprintf(`{  
+	   "jsonrpc":"1.0",
+	   "method":"listunspentoutputcoins",
+	   "params":[  
+		  0,
+		  999999,
+		  [  
+			 {  
+				"PrivateKey":"%s",
+				"StartHeight": 0
+			 }
+			 
+		  ]
+	   ],
+	   "id":1
+	}`, privKeyStr)
+
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	query := fmt.Sprintf(`{  
+	   "jsonrpc":"1.0",
+	   "method":"getbalancebyprivatekey",
+	   "params":["%s"],
+	   "id":1
+	}`, privKeyStr)
+
+	return this.SendPostRequestWithQuery(query)
+}

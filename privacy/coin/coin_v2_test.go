@@ -2,10 +2,11 @@ package coin
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/common"
+
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
@@ -77,24 +78,33 @@ func createNewCoin(amount uint64, paymentAddress key.PaymentAddress, targetShard
 }
 
 func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
-	privateKey := key.GeneratePrivateKey([]byte{1})
-	keyset := new(incognitokey.KeySet)
-	err := keyset.InitFromPrivateKey(&privateKey)
-	assert.Equal(t, nil, err)
+	for i := 0; i < 20; i += 1 {
+		privateKey := key.GeneratePrivateKey([]byte{1})
+		keyset := new(incognitokey.KeySet)
+		err := keyset.InitFromPrivateKey(&privateKey)
+		assert.Equal(t, nil, err)
 
-	c, err := createNewCoin(10, keyset.PaymentAddress, 1, 0)
-	assert.NotEqual(t, nil, err)
+		r := common.RandBytes(8)
+		val, errB := common.BytesToUint64(r)
+		assert.Equal(t, nil, errB)
 
-	c, err = createNewCoin(10, keyset.PaymentAddress, 0, 0)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, false, c.IsEncrypted())
+		c, errNewCoin := createNewCoin(val, keyset.PaymentAddress, 1, 0)
+		assert.NotEqual(t, nil, errNewCoin)
 
-	// Conceal
-	c.ConcealData(keyset.PaymentAddress.GetPublicView())
-	assert.Equal(t, true, c.IsEncrypted())
+		c, err = createNewCoin(val, keyset.PaymentAddress, 0, 0)
+		assert.Equal(t, val, c.GetValue())
+		assert.Equal(t, nil, err)
+		assert.Equal(t, false, c.IsEncrypted())
 
-	var pc PlainCoin
-	pc, err = c.Decrypt(keyset)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, false, pc.IsEncrypted())
+		// Conceal
+		c.ConcealData(keyset.PaymentAddress.GetPublicView())
+		assert.Equal(t, true, c.IsEncrypted())
+		assert.NotEqual(t, val, c.GetValue())
+
+		var pc PlainCoin
+		pc, err = c.Decrypt(keyset)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, false, pc.IsEncrypted())
+		assert.Equal(t, val, c.GetValue())
+	}
 }

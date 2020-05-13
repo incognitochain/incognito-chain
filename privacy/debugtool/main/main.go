@@ -20,7 +20,10 @@ func main() {
 	//
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
-	b, _ := tool.GetListOutputCoins(privateKeys[1])
+	//b, _ := tool.GetListOutputCoins(privateKeys[1])
+	//fmt.Println(string(b))
+
+	b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
 	fmt.Println(string(b))
 
 	//b, _ := tool.GetRawMempool()
