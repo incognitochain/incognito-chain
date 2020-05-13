@@ -562,7 +562,19 @@ func CalUnlockCollateralAmount(
 		}
 	}
 
-	tmp := new(big.Int).Mul(new(big.Int).SetUint64(redeemAmount), new(big.Int).SetUint64(custodianState.GetLockedAmountCollateral()[tokenID]))
+	totalLockedAmountInWaitingPortings := uint64(0)
+	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		for _, cus := range waitingPortingReq.Custodians() {
+			if cus.IncAddress == custodianState.GetIncognitoAddress() {
+				totalLockedAmountInWaitingPortings += cus.LockedAmountCollateral
+				break
+			}
+		}
+	}
+
+	tmp := new(big.Int).Mul(
+		new(big.Int).SetUint64(redeemAmount),
+		new(big.Int).SetUint64(custodianState.GetLockedAmountCollateral()[tokenID] - totalLockedAmountInWaitingPortings))
 	unlockAmount := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalHoldingPubToken)).Uint64()
 	if unlockAmount <= 0 {
 		Logger.log.Errorf("Can not calculate unlock amount for custodian %v\n", unlockAmount)
