@@ -170,7 +170,7 @@ func (e *BLSBFT_V2) Start() error {
 				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot)
 				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 
-				if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlockTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
+				if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
 					//using block hash as key of best view -> check if this best view we propose or not
 					if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
 
