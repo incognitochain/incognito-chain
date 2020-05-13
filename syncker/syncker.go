@@ -219,6 +219,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			}
 			requestHeight := lastRequestCrossShard[byte(i)]
 			nextCrossShardInfo := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
+			//Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 			if nextCrossShardInfo == nil {
 				break
 			}
@@ -299,18 +300,19 @@ func (synckerManager *SynckerManager) StreamMissingShardToBeaconBlock(ctx contex
 }
 
 //Get Crossshard Block for validating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]common.Hash) (map[byte][]interface{}, error) {
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
 	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard)
 
-	missingBlocks := compareLists(crossShardPoolLists, list)
+	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
-		fmt.Println("debug finish stream missing s2b block")
+		//Logger.Info("debug finish stream missing crossX block")
 
 		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard)
-		missingBlocks = compareLists(crossShardPoolLists, list)
+		//Logger.Info("get crosshshard block for shard producer", crossShardPoolLists)
+		missingBlocks = compareListsByHeight(crossShardPoolLists, list)
 
 		if len(missingBlocks) > 0 {
 			return nil, errors.New("Unable to sync required block in time")
@@ -320,37 +322,83 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 }
 
 //Stream Missing CrossShard Block
-func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.Context, toShard byte, missingBlock map[byte][]common.Hash) {
-	fmt.Println("debug stream missing crossshard block", missingBlock)
-	wg := sync.WaitGroup{}
-	for i, v := range missingBlock {
-		wg.Add(1)
-		go func(sid byte, list []common.Hash) {
-			defer wg.Done()
-			hashes := [][]byte{}
-			for _, h := range list {
-				hashes = append(hashes, h.Bytes())
-			}
-			ch, err := synckerManager.config.Node.RequestCrossShardBlocksByHashViaStream(ctx, "", int(sid), int(toShard), hashes)
-			if err != nil {
-				fmt.Println("Syncker: create channel fail")
-				return
-			}
-			//receive
-			for {
-				select {
-				case blk := <-ch:
-					if !isNil(blk) {
-						synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.BlockPoolInterface))
-					} else {
-						return
-					}
+func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.Context, toShard byte, missingBlock map[byte][]uint64) {
+	for fromShard, missingHeight := range missingBlock {
+		//fmt.Println("debug stream missing crossshard block", int(fromShard), int(toShard), missingHeight)
+		ch, err := synckerManager.config.Node.RequestCrossShardBlocksViaStream(ctx, "", int(fromShard), int(toShard), missingHeight)
+		if err != nil {
+			fmt.Println("Syncker: create channel fail")
+			return
+		}
+		//receive
+		for {
+			select {
+			case blk := <-ch:
+				if !isNil(blk) {
+					Logger.Infof("Receive crosshard block from shard %v ->  %v, hash %v", fromShard, toShard, blk.(common.BlockPoolInterface).Hash().String())
+					synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.BlockPoolInterface))
+				} else {
+					//Logger.Info("Block is nil, break stream")
+					return
 				}
 			}
-		}(i, v)
+		}
 	}
-	wg.Wait()
 }
+
+////Get Crossshard Block for validating shardblock block
+//func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidatorByHash(toShard byte, list map[byte][]common.Hash) (map[byte][]interface{}, error) {
+//	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard)
+//
+//	missingBlocks := compareLists(crossShardPoolLists, list)
+//	// synckerManager.config.Server.
+//	if len(missingBlocks) > 0 {
+//		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+//		synckerManager.StreamMissingCrossShardBlockByHash(ctx, toShard, missingBlocks)
+//		fmt.Println("debug finish stream missing s2b block")
+//
+//		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard)
+//		missingBlocks = compareLists(crossShardPoolLists, list)
+//
+//		if len(missingBlocks) > 0 {
+//			return nil, errors.New("Unable to sync required block in time")
+//		}
+//	}
+//	return crossShardPoolLists, nil
+//}
+//
+////Stream Missing CrossShard Block
+//func (synckerManager *SynckerManager) StreamMissingCrossShardBlockByHash(ctx context.Context, toShard byte, missingBlock map[byte][]common.Hash) {
+//	fmt.Println("debug stream missing crossshard block", missingBlock)
+//	wg := sync.WaitGroup{}
+//	for i, v := range missingBlock {
+//		wg.Add(1)
+//		go func(sid byte, list []common.Hash) {
+//			defer wg.Done()
+//			hashes := [][]byte{}
+//			for _, h := range list {
+//				hashes = append(hashes, h.Bytes())
+//			}
+//			ch, err := synckerManager.config.Node.RequestCrossShardBlocksByHashViaStream(ctx, "", int(sid), int(toShard), hashes)
+//			if err != nil {
+//				fmt.Println("Syncker: create channel fail")
+//				return
+//			}
+//			//receive
+//			for {
+//				select {
+//				case blk := <-ch:
+//					if !isNil(blk) {
+//						synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.BlockPoolInterface))
+//					} else {
+//						return
+//					}
+//				}
+//			}
+//		}(i, v)
+//	}
+//	wg.Wait()
+//}
 
 //Sync missing beacon block  from a hash to our final view (skip if we already have)
 func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash) {

@@ -3,25 +3,26 @@ package rawdbv2
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
-func StoreLastBeaconHeightConfirmCrossShard(db incdb.Database, height uint64) error {
+func StoreLastBeaconStateConfirmCrossShard(db incdb.Database, state interface{}) error {
 	key := GetLastBeaconHeightConfirmCrossShardKey()
-	if err := db.Put(key, common.Uint64ToBytes(height)); err != nil {
+	val, _ := json.Marshal(state)
+	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreCrossShardNextHeightError, err)
 	}
 	return nil
 }
 
-func GetLastBeaconHeightConfirmCrossShard(db incdb.Database) uint64 {
+func GetLastBeaconStateConfirmCrossShard(db incdb.Database) []byte {
 	key := GetLastBeaconHeightConfirmCrossShardKey()
-	lastProcessHeight, _ := db.Get(key)
-	height, _ := common.BytesToUint64(lastProcessHeight)
-	return height
+	lastState, _ := db.Get(key)
+	return lastState
 }
 
 func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64, val []byte) error {
