@@ -12,19 +12,22 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func (blockchain *BlockChain) processPDEInstructions(beaconBlock *BeaconBlock, newBestState *BeaconBestState) error {
+func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *BeaconBlock) error {
 	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
 		return nil
 	}
 	beaconHeight := beaconBlock.Header.Height - 1
-	currentPDEState := newBestState.currentPDEState
-	pdexStateDB := newBestState.featureStateDB
-	newCurrentPDEState := new(CurrentPDEState)
+	currentPDEState, err := InitCurrentPDEStateFromDB(pdexStateDB, beaconHeight)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
+	backUpCurrentPDEState := new(CurrentPDEState)
 	temp, err := json.Marshal(currentPDEState)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(temp, newCurrentPDEState)
+	err = json.Unmarshal(temp, backUpCurrentPDEState)
 	if err != nil {
 		return err
 	}
@@ -35,26 +38,25 @@ func (blockchain *BlockChain) processPDEInstructions(beaconBlock *BeaconBlock, n
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.PDEContributionMeta):
-			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, newCurrentPDEState)
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDETradeRequestMeta):
-			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, newCurrentPDEState)
+			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
-			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, newCurrentPDEState)
+			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
 			Logger.log.Error(err)
 			return nil
 		}
 	}
-	if reflect.DeepEqual(newCurrentPDEState, currentPDEState) {
+	if reflect.DeepEqual(backUpCurrentPDEState, currentPDEState) {
 		return nil
 	}
 	// store updated currentPDEState to leveldb with new beacon height
-	err = storePDEStateToDB(pdexStateDB, beaconHeight+1, newCurrentPDEState)
+	err = storePDEStateToDB(pdexStateDB, beaconHeight+1, currentPDEState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	newBestState.currentPDEState = newCurrentPDEState
 	return nil
 }
 
