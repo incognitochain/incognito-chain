@@ -288,6 +288,13 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	//	}
 	//}
 	if len(outCoinsInBytes) == 0 {
+		fmt.Println("Querying DB")
+		fmt.Println("Querying DB")
+		fmt.Println("Querying DB")
+		fmt.Println("Querying DB")
+		fmt.Println("With tokenID =", tokenID)
+		fmt.Println("With tokenID =", tokenID)
+		fmt.Println("With tokenID =", tokenID)
 		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 		if err != nil {
 			return nil, err
@@ -325,7 +332,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 	if err != nil {
 		return err
 	}
-	view := NewTxViewPoint(shardBlock.Header.ShardID)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
 	err = view.fetchTxViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
@@ -386,6 +393,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 			return err
 		}
 
+		fmt.Println("About to store privacy custom token sub view")
+		fmt.Println("About to store privacy custom token sub view")
+		fmt.Println("About to store privacy custom token sub view")
+		fmt.Println("About to store privacy custom token sub view")
+		fmt.Println("About to store privacy custom token sub view")
 		err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
 		if err != nil {
 			return err
@@ -495,9 +507,22 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 
 			// outputs
 			outputCoinArray := view.mapOutputCoins[k]
+			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
+			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
+			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
+			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
 			outputCoinBytesArray := make([][]byte, 0)
 			onetimeAddressArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {
+				shardIDcoin, _ := outputCoin.GetShardID()
+				fmt.Println("Coin Version =", outputCoin.GetVersion())
+				fmt.Println("Coin ShardID =", shardIDcoin)
+				fmt.Println("Coin ShardID =", shardIDcoin)
+				fmt.Println("Coin Index =", outputCoin.GetIndex())
+				fmt.Println("Coin Value =", outputCoin.GetValue())
+				fmt.Println("Coin Info =", outputCoin.GetInfo())
+				fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
+				fmt.Println("TokenID of coin =", view.tokenID)
 				commitmentBytes := outputCoin.GetCommitment().ToBytesS()
 				snd := outputCoin.GetSNDerivator()
 				if snd != nil {
@@ -550,7 +575,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
-	view := NewTxViewPoint(shardBlock.Header.ShardID)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
 	err := view.fetchCrossTransactionViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock ", err)

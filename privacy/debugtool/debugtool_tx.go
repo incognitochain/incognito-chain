@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -152,10 +157,6 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
 
-	//fmt.Println("Calling listoutputcoins of")
-	//fmt.Println("PaymentAddress: ", paymentAddStr)
-	//fmt.Println("ReadonlyKey: ", viewingKeyStr)
-
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
 		"method": "listoutputcoins",
@@ -215,5 +216,105 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 	   "id":1
 	}`, privKeyStr)
 
+	return this.SendPostRequestWithQuery(query)
+}
+
+func parseCoinBasedOnPaymentInfo(amount uint64, publicSpend *operation.Point, publicView *operation.Point, targetShardID byte, index uint8) (*coin.CoinV2, error) {
+	if targetShardID >= common.MaxShardNumber {
+		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
+	}
+	c := new(coin.CoinV2)
+	c.SetVersion(2)
+	c.SetIndex(index)
+
+	for true {
+		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
+		r := operation.RandomScalar()
+		c.SetRandomness(r)
+		c.SetAmount(new(operation.Scalar).FromUint64(amount))
+		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
+		c.SetPublicKey(coin.ParseOnetimeAddress(
+			publicSpend,
+			publicView,
+			r,
+			index,
+		))
+		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+
+		currentShardID, err := c.GetShardID()
+		if err != nil {
+			return nil, err
+		}
+		if currentShardID == targetShardID {
+			break
+		}
+	}
+	return c, nil
+}
+
+func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string, privKeyStrB string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+
+	publicView := keyWallet.KeySet.PaymentAddress.GetPublicView()
+	publicSpend := keyWallet.KeySet.PaymentAddress.GetPublicSpend()
+	targetShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk) - 1])
+	c, _ := parseCoinBasedOnPaymentInfo(1, publicSpend, publicView, targetShardID, 0)
+	ota := c.GetPublicKey()
+	paymentAddr := wallet.KeyWallet{
+		KeySet: incognitokey.KeySet{
+			PaymentAddress: privacy.PaymentAddress{
+				Pk: ota.ToBytesS(),
+				Tk: nil,
+			},
+		},
+	}
+	paymentAddrStr := paymentAddr.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "createandsendprivacycustomtokentransaction",
+		"params": [
+			"%s",
+			{},
+			5,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "",
+				"TokenName": "token_test",
+				"TokenSymbol": "pTTT",
+				"TokenFee": 0,
+				"TokenTxType": 0,
+				"TokenAmount": 1000000000000000000,
+				"TokenReceivers": {
+					"%s": 1000000000000000000
+				}
+			}
+			]
+	}`, privKeyStrA, paymentAddrStr)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) ListPrivacyCustomToken() ([]byte, error) {
+	query := `{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "listprivacycustomtoken",
+		"params": []
+	}`
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) GetBalancePrivacyCustomToken(privKeyStr string, tokenID string) ([]byte, error) {
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "getbalanceprivacycustomtoken",
+		"params": [
+			"%s",
+			"%s"
+		]
+	}`, privKeyStr, tokenID)
 	return this.SendPostRequestWithQuery(query)
 }

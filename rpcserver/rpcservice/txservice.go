@@ -866,16 +866,28 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		}
 	}
 	if isExisted {
+		fmt.Println("it is existed")
+		fmt.Println("it is existed")
+		fmt.Println("it is existed")
+		fmt.Println("it is existed")
+		fmt.Println("it is existed")
+		fmt.Println("We have tokenID =", tokenIDStr)
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		// Get balance privacy custom token should use 0 as start height, because we do not use this in production anyway
 		// Get from 0 to get all the coins starting from begin to end
-		outcoints, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID, uint64(0))
+		outcoins, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID, uint64(0))
+		fmt.Println("Found", len(outcoins), "coins")
+		for i := 0; i < len(outcoins); i += 1 {
+			fmt.Println("Coin[", i, "]")
+			fmt.Println(outcoins[i].GetVersion())
+			fmt.Println(outcoins[i].GetValue())
+		}
 		if err != nil {
 			Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 			return uint64(0), NewRPCError(UnexpectedError, err)
 		}
-		for _, out := range outcoints {
+		for _, out := range outcoins {
 			totalValue += out.GetValue()
 		}
 	}
