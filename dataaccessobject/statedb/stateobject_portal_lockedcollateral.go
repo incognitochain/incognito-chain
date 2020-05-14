@@ -135,10 +135,9 @@ func newLockedCollateralStateObjectWithValue(db *StateDB, key common.Hash, data 
 	}, nil
 }
 
-func GenerateLockedCollateralStateObjectKey(beaconHeight uint64) common.Hash {
+func GenerateLockedCollateralStateObjectKey() common.Hash {
 	prefixHash := GetLockedCollateralStatePrefix()
-	valueHash := common.HashH([]byte(fmt.Sprintf("%d", beaconHeight)))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+	return common.BytesToHash(prefixHash)
 }
 
 func (t LockedCollateralStateObject) GetVersion() int {

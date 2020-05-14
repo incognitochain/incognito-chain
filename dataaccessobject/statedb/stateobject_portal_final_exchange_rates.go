@@ -31,9 +31,9 @@ func NewFinalExchangeRatesStateWithValue(rates map[string]FinalExchangeRatesDeta
 	return &FinalExchangeRatesState{rates: rates}
 }
 
-func GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
+func GeneratePortalFinalExchangeRatesStateObjectKey() common.Hash {
 	suffix := "exchangerates"
-	prefixHash := GetFinalExchangeRatesStatePrefix(beaconHeight)
+	prefixHash := GetFinalExchangeRatesStatePrefix()
 	valueHash := common.HashH([]byte(suffix))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
@@ -42,7 +42,7 @@ func (f *FinalExchangeRatesState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Rates map[string]FinalExchangeRatesDetail
 	}{
-		Rates:	f.rates,
+		Rates: f.rates,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -50,7 +50,7 @@ func (f *FinalExchangeRatesState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (f *FinalExchangeRatesState) UnmarshalJSON(data[]byte) error {
+func (f *FinalExchangeRatesState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Rates map[string]FinalExchangeRatesDetail
 	}{}
@@ -62,15 +62,14 @@ func (f *FinalExchangeRatesState) UnmarshalJSON(data[]byte) error {
 	return nil
 }
 
-
 type FinalExchangeRatesStateObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version                     int
-	finalExchangeRatesStateHash  common.Hash
-	finalExchangeRatesState *FinalExchangeRatesState
+	finalExchangeRatesStateHash common.Hash
+	finalExchangeRatesState     *FinalExchangeRatesState
 	objectType                  int
 	deleted                     bool
 
@@ -186,8 +185,3 @@ func (f FinalExchangeRatesStateObject) IsEmpty() bool {
 	temp := NewPDEStatusState()
 	return reflect.DeepEqual(temp, f.finalExchangeRatesState) || f.finalExchangeRatesState == nil
 }
-
-
-
-
-

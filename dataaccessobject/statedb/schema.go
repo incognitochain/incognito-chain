@@ -260,8 +260,8 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 
 // Portal
 //A
-func GetFinalExchangeRatesStatePrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(portalFinaExchangeRatesStatePrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
+func GetFinalExchangeRatesStatePrefix() []byte {
+	h := common.HashH(portalFinaExchangeRatesStatePrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -293,24 +293,24 @@ func PortalLiquidationRedeemRequestStatusPrefix() []byte {
 	return portalLiquidationRedeemRequestStatusPrefix
 }
 
-func GetPortalWaitingPortingRequestPrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(portalWaitingPortingRequestPrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
+func GetPortalWaitingPortingRequestPrefix() []byte {
+	h := common.HashH(portalWaitingPortingRequestPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPortalLiquidationExchangeRatesPoolPrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(portalLiquidationExchangeRatesPoolPrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
+func GetPortalLiquidationExchangeRatesPoolPrefix() []byte {
+	h := common.HashH(portalLiquidationExchangeRatesPoolPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
 //B
-func GetPortalCustodianStatePrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(portalCustodianStatePrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
+func GetPortalCustodianStatePrefix() []byte {
+	h := common.HashH(portalCustodianStatePrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetWaitingRedeemRequestPrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(portalWaitingRedeemRequestsPrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
+func GetWaitingRedeemRequestPrefix() []byte {
+	h := common.HashH(portalWaitingRedeemRequestsPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

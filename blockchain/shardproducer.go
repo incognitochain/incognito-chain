@@ -378,6 +378,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 					}
 				}
+			// portal
+			case metadata.PortalUserRegisterMeta:
+				if len(l) >= 4 && l[2] == common.PortalPortingRequestRejectedChainStatus {
+					newTx, err = curView.buildPortalRefundPortingFeeTx(l[3], producerPrivateKey, shardID)
+				}
 			case metadata.PortalCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
 					newTx, err = curView.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
@@ -392,7 +397,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
+				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemRequestRejectedByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken

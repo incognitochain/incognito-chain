@@ -58,16 +58,17 @@ const (
 	PortalLiquidateCustodianResponseMeta       = 113
 	PortalLiquidateTPExchangeRatesMeta         = 114
 	PortalLiquidateTPExchangeRatesResponseMeta = 115
-	PortalExpiredWaitingPortingReqMeta               = 116
+	PortalExpiredWaitingPortingReqMeta         = 116
 
-	PortalRewardMeta = 117
-	PortalRequestWithdrawRewardMeta = 118
-	PortalRequestWithdrawRewardResponseMeta = 119
-	PortalRedeemLiquidateExchangeRatesMeta = 120
+	PortalRewardMeta                               = 117
+	PortalRequestWithdrawRewardMeta                = 118
+	PortalRequestWithdrawRewardResponseMeta        = 119
+	PortalRedeemLiquidateExchangeRatesMeta         = 120
 	PortalRedeemLiquidateExchangeRatesResponseMeta = 121
-	PortalLiquidationCustodianDepositMeta = 122
-	PortalLiquidationCustodianDepositResponseMeta = 123
-	PortalTotalRewardCustodianMeta = 124
+	PortalLiquidationCustodianDepositMeta          = 122
+	PortalLiquidationCustodianDepositResponseMeta  = 123
+	PortalTotalRewardCustodianMeta                 = 124
+	PortalPortingResponseMeta                      = 125
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
@@ -96,6 +97,7 @@ var minerCreatedMetaTypes = []int{
 	PortalRequestWithdrawRewardResponseMeta,
 	PortalRedeemLiquidateExchangeRatesResponseMeta,
 	PortalLiquidationCustodianDepositResponseMeta,
+	PortalPortingResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

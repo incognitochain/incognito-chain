@@ -140,6 +140,11 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
+	defer func() {
+		Logger.log.Warn("Gracefully shutting down the btc database...")
+		db := btcChain.GetDB()
+		db.Close()
+	}()
 
 	// Create bnbrelaying chain state
 	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)

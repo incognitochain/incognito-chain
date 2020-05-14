@@ -3,8 +3,10 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -135,12 +137,16 @@ func (httpServer *HttpServer) handleGetPortalFinalExchangeRates(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
 	}
 
-	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconChainDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetFinalExchangeRatesError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetFinalExchangeRatesError, err)
 	}
 
-	result, err := httpServer.portal.GetFinalExchangeRates(uint64(beaconHeight))
+	result, err := httpServer.portal.GetFinalExchangeRates(stateDB, uint64(beaconHeight))
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetFinalExchangeRatesError, err)
@@ -190,7 +196,13 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.ConvertExchangeRates(tokenID, uint64(valuePToken), uint64(beaconHeight))
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconChainDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+
+	result, err := httpServer.portal.ConvertExchangeRates(stateDB, tokenID, uint64(valuePToken))
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, err)
@@ -232,16 +244,21 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 	}
 
 	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
-	}
 
 	if !common.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetPortingFees(tokenID, uint64(valuePToken), uint64(beaconHeight))
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconChainDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
+	}
 
+	result, err := httpServer.portal.GetPortingFees(stateDB, tokenID, uint64(valuePToken))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
 	}
