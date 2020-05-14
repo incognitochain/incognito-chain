@@ -238,7 +238,8 @@ const (
 	PortalTimeOutWaitingPortingRequest   = 1 * time.Hour // 24 hours
 	PercentReceivedCollateralAmount      = 105           // users will be received 105% of redeem amount in PRV (if there is custodian liquidation for redeem request)
 	// todo: need to be updated before deploying
-	PercentCustodianRewards = 10 // 10% of DAO funds per epoch
+	PercentCustodianRewards  = 10 // 10% of DAO funds per epoch
+	MinPercentLockCollateral = 150
 
 	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 	TP130 = 130

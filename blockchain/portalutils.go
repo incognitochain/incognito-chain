@@ -292,14 +292,14 @@ func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 	up 150%
 */
 func up150Percent(amount uint64) uint64 {
-	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(150))
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(common.MinPercentLockCollateral))
 	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	return result //return nano pBTC, pBNB
 }
 
 func down150Percent(amount uint64) uint64 {
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(100))
-	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(150)).Uint64()
+	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(common.MinPercentLockCollateral)).Uint64()
 	return result
 }
 
