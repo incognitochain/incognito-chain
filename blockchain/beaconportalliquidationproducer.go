@@ -548,10 +548,12 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 		tpRatios, err := calAndCheckTPRatio(currentPortalState, custodianState, exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Error when calculating and checking tp ratio %v", err)
+			continue
 		}
 
 		// reject waiting redeem requests that matching with liquidated custodians
 		if len(tpRatios) > 0 {
+			//Logger.log.Errorf("[buildInstForLiquidationTopPercentileExchangeRates] tpRatios after checking : %+v\n, tpRatios")
 			sortedTPRatioKeys := make([]string, 0)
 			for key := range tpRatios {
 				sortedTPRatioKeys = append(sortedTPRatioKeys, key)
@@ -568,7 +570,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 						pTokenID,
 					)
 					if err != nil {
-						Logger.log.Errorf("Error when check and build instruction from redeem request %tpRatioDetail\n", err)
+						Logger.log.Errorf("Error when check and build instruction from redeem request %v\n", err)
 						continue
 					}
 					if len(instsFromRedeemRequest) > 0 {
@@ -580,26 +582,32 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 
 			remainUnlockAmounts := map[string]uint64{}
 			for _, pTokenID := range sortedTPRatioKeys {
+				if tpRatios[pTokenID].TPKey == common.TP130 {
+					continue
+				}
+
 				// calculate liquidated amount and remain unlocked amount for custodian
-				_, remainUnlockAmount, err := CalUnlockCollateralAmountAfterLiquidation(
+				liquidatedAmountInPRV, remainUnlockAmount, err := CalUnlockCollateralAmountAfterLiquidation(
 					currentPortalState,
 					custodianKey,
 					tpRatios[pTokenID].HoldAmountPubToken,
 					pTokenID,
 					exchangeRate)
 				if err != nil {
-					Logger.log.Errorf("Error when calculating unlock collateral amount \n", err)
+					Logger.log.Errorf("Error when calculating unlock collateral amount %v\n", err)
 					continue
 				}
-				remainUnlockAmounts[pTokenID] = remainUnlockAmount
+				remainUnlockAmounts[pTokenID] += remainUnlockAmount
 				if remainUnlockAmount > 0 {
 					tpRatios[pTokenID] = metadata.LiquidateTopPercentileExchangeRatesDetail{
 						TPKey:                    tpRatios[pTokenID].TPKey,
 						TPValue:                  tpRatios[pTokenID].TPValue,
-						HoldAmountFreeCollateral: tpRatios[pTokenID].HoldAmountFreeCollateral - remainUnlockAmount,
+						HoldAmountFreeCollateral: liquidatedAmountInPRV,
 						HoldAmountPubToken:       tpRatios[pTokenID].HoldAmountPubToken,
 					}
 				}
+				Logger.log.Infof("[buildInstForLiquidationTopPercentileExchangeRates] unlock amount : %v\n ", remainUnlockAmounts)
+				Logger.log.Infof("[buildInstForLiquidationTopPercentileExchangeRates] liquidated : %v\n ", liquidatedAmountInPRV)
 			}
 
 			//update current portal state

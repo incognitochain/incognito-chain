@@ -2090,7 +2090,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 				if coin.Denom == bnb.DenomBNB {
 					amountTransfer += coin.Amount
 					// note: log error for debug
-					Logger.log.Errorf("TxProof-BNB coin.Amount %d",
+					Logger.log.Infof("TxProof-BNB coin.Amount %d",
 						coin.Amount)
 				}
 			}

@@ -554,6 +554,9 @@ func CalUnlockCollateralAmount(
 
 	totalHoldingPubToken := custodianState.GetHoldingPublicTokens()[tokenID]
 	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
+		if waitingRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
 		for _, cus := range waitingRedeemReq.GetCustodians() {
 			if cus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
 				totalHoldingPubToken += cus.GetAmount()
@@ -564,12 +567,21 @@ func CalUnlockCollateralAmount(
 
 	totalLockedAmountInWaitingPortings := uint64(0)
 	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != tokenID {
+			continue
+		}
 		for _, cus := range waitingPortingReq.Custodians() {
 			if cus.IncAddress == custodianState.GetIncognitoAddress() {
 				totalLockedAmountInWaitingPortings += cus.LockedAmountCollateral
 				break
 			}
 		}
+	}
+
+	if custodianState.GetLockedAmountCollateral()[tokenID] < totalLockedAmountInWaitingPortings {
+		Logger.log.Errorf("custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
+		Logger.log.Errorf("totalLockedAmountInWaitingPortings %v\n", totalLockedAmountInWaitingPortings)
+		return  0, errors.New("Lock amount is invalid")
 	}
 
 	tmp := new(big.Int).Mul(
@@ -591,6 +603,7 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	exchangeRate *statedb.FinalExchangeRatesState) (uint64, uint64, error) {
 	totalUnlockCollateralAmount, err := CalUnlockCollateralAmount(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID)
 	if err != nil {
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error : %v\n", err)
 		return 0, 0, err
 	}
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
@@ -598,6 +611,7 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	liquidatedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, liquidatedAmountInPToken)
 	if err != nil {
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error converting rate : %v\n", err)
 		return 0, 0, err
 	}
 	if liquidatedAmountInPRV > totalUnlockCollateralAmount {
@@ -950,8 +964,18 @@ func calAndCheckTPRatio(
 	result := make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
 
-	holdingPubToken := custodianState.GetHoldingPublicTokens()
-	lockedAmount := custodianState.GetLockedAmountCollateral()
+	Logger.log.Errorf("custodianState.GetHoldingPublicTokens() before: %v\n", custodianState.GetHoldingPublicTokens())
+	Logger.log.Errorf("custodianState.GetLockedAmountCollateral() before: %v\n", custodianState.GetLockedAmountCollateral())
+
+	lockedAmount := make(map[string]uint64)
+	for tokenID, amount := range custodianState.GetLockedAmountCollateral() {
+		lockedAmount[tokenID]= amount
+	}
+
+	holdingPubToken := make(map[string]uint64)
+	for tokenID, amount := range custodianState.GetHoldingPublicTokens() {
+		holdingPubToken[tokenID]= amount
+	}
 
 	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
 		for _, matchingCus := range waitingPortingReq.Custodians() {
@@ -1016,6 +1040,9 @@ func calAndCheckTPRatio(
 			}
 		}
 	}
+
+	Logger.log.Errorf("custodianState.GetHoldingPublicTokens() after: %v\n", custodianState.GetHoldingPublicTokens())
+	Logger.log.Errorf("custodianState.GetLockedAmountCollateral() after: %v\n", custodianState.GetLockedAmountCollateral())
 
 	return result, nil
 }
