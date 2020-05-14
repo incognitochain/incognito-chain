@@ -207,10 +207,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 			}
 		case common.TxCustomTokenPrivacyType:
 			{
-				// Warning
-				var p interface{} = tx
-				tx := p.(transaction.TxCustomTokenPrivacy)
-
+				tx := tx.(*transaction.TxCustomTokenPrivacy)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, tx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
@@ -281,7 +278,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				}*/
 
 				view.privacyCustomTokenViewPoint[int32(indexTx)] = subView
-				view.privacyCustomTokenTxs[int32(indexTx)] = &tx
+				view.privacyCustomTokenTxs[int32(indexTx)] = tx
 			}
 		default:
 			{

@@ -216,39 +216,39 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				Amount:         params.tokenParams.Amount,
 			}
 
-			// issue token with data of privacy
 			temp := Tx{}
+			temp.Version = txVersion2
 			temp.Type = common.TxNormalType
-			temp.Proof = privacy.NewProofWithVersion(txCustomTokenPrivacy.Version)
-			temp.Proof.Init()
 
-			c := new(privacy.CoinV1)
-			c.CoinDetails.SetValue(params.tokenParams.Amount)
-			PK, err := new(privacy.Point).FromBytesS(params.tokenParams.Receiver[0].PaymentAddress.Pk)
+			r := operation.RandomScalar()
+			c := new(coin.CoinV2).Init()
+			c.SetVersion(2)
+			c.SetIndex(0)
+			c.SetValue(params.tokenParams.Amount)
+			c.SetRandomness(r)
+			c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
+			c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+			// The public key should be onetimeadddress already
+			publicKey, err := new(operation.Point).FromBytesS(params.tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
 				return NewTransactionErr(DecompressPaymentAddressError, err)
 			}
-			c.CoinDetails.SetPublicKey(PK)
-			c.CoinDetails.SetRandomness(privacy.RandomScalar())
-
-			// set info coin for output coin
+			c.SetPublicKey(publicKey)
+			// Set Info
 			if len(params.tokenParams.Receiver[0].Message) > 0 {
-				if len(params.tokenParams.Receiver[0].Message) > privacy.MaxSizeInfoCoin {
+				if len(params.tokenParams.Receiver[0].Message) > coin.MaxSizeInfoCoin {
 					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
 				}
-				c.CoinDetails.SetInfo(params.tokenParams.Receiver[0].Message)
+				c.SetInfo(params.tokenParams.Receiver[0].Message)
 			}
-			c.CoinDetails.SetSNDerivator(operation.RandomScalar())
-			err = c.CoinDetails.CommitAll()
-			if err != nil {
-				return NewTransactionErr(CommitOutputCoinError, err)
-			}
+
 			tempOutputCoin := make([]coin.Coin, 1)
 			tempOutputCoin[0] = c
+			proof := new(privacy.ProofV2)
+			proof.Init()
+			proof.SetOutputCoins(tempOutputCoin)
 
-			temp.Proof.SetOutputCoins(tempOutputCoin)
-
-			// get last byte
+			temp.Proof = proof
 			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
 
 			// sign Tx
@@ -293,6 +293,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
+
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 			existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, *propertyID)
 			if !existed {

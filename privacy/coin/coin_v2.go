@@ -90,7 +90,7 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 
 	hash = operation.HashToScalar(hash.ToBytesS())
 	amount := new(operation.Scalar).Add(c.GetAmount(), hash)
-	c.SetMask(mask)
+	c.SetRandomness(mask)
 	c.SetAmount(amount)
 }
 
@@ -125,7 +125,7 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 			err := errors.New("Cannot Decrypt CoinV2: Commitment is not the same after decrypt")
 			return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 		}
-		c.SetMask(randomness)
+		c.SetRandomness(randomness)
 		c.SetAmount(value)
 	}
 	if len(keySet.PrivateKey) > 0 {
@@ -192,7 +192,6 @@ func (c CoinV2) GetValue() uint64 {
 }
 
 func (c *CoinV2) SetVersion(uint8)                          { c.version = 2 }
-func (c *CoinV2) SetMask(mask *operation.Scalar)            { c.mask = mask }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)      { c.mask = mask }
 func (c *CoinV2) SetAmount(amount *operation.Scalar)        { c.amount = amount }
 func (c *CoinV2) SetTxRandom(txRandom *operation.Point)     { c.txRandom = txRandom }

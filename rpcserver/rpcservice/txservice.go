@@ -663,7 +663,6 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
-
 	return tx, nil
 }
 

@@ -86,7 +86,6 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		return parseErr
 	}
 	tx.SetMetadata(meta)
-
 	proof, proofErr := parseProof(temp.Proof, tx.Version)
 	if proofErr != nil {
 		Logger.Log.Error(proofErr)
@@ -241,7 +240,6 @@ func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {
 	tx.Version = currentTxVersion
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.metaData
-	// tx.Proof = &privacy.Proof{}
 	tx.Info, err = getTxInfo(params.info)
 	if err != nil {
 		return err
@@ -804,56 +802,40 @@ func (tx Tx) CalculateTxValue() uint64 {
 // #3 - privKey:
 // #4 - snDerivators:
 func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
-	tx.Version = txVersion1
+	tx.Version = txVersion2
 	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
 	}
 
+	// Create onetimeaddress coin
 	var err error
-	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
-	tx.Proof = new(zkp.PaymentProof)
-	tempOutputCoin := make([]coin.Coin, 1)
-
-	c := new(coin.CoinV1).Init()
-	publicKey, err := new(privacy.Point).FromBytesS(receiverAddr.Pk)
+	r := operation.RandomScalar()
+	c := new(coin.CoinV2).Init()
+	c.SetVersion(2)
+	c.SetIndex(0)
+	c.SetValue(salary)
+	c.SetRandomness(r)
+	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
+	c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+	// The public key should be onetimeadddress already
+	publicKey, err := new(operation.Point).FromBytesS(receiverAddr.Pk)
 	if err != nil {
 		return err
 	}
-	c.CoinDetails.SetPublicKey(publicKey)
-	c.CoinDetails.SetValue(salary)
-	c.CoinDetails.SetRandomness(privacy.RandomScalar())
+	c.SetPublicKey(publicKey)
 
-	sndOut := privacy.RandomScalar()
-	for {
-		tokenID := &common.Hash{}
-		err := tokenID.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
-		}
-		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, stateDB)
-		if err != nil {
-			return NewTransactionErr(SndExistedError, err)
-		}
-		if ok {
-			sndOut = privacy.RandomScalar()
-		} else {
-			break
-		}
-	}
-	c.CoinDetails.SetSNDerivator(sndOut)
-	// create coin commitment
-	err = c.CoinDetails.CommitAll()
-	if err != nil {
-		return NewTransactionErr(CommitOutputCoinError, err)
-	}
-	tx.Proof.SetOutputCoins(tempOutputCoin)
+	tempOutputCoin := make([]coin.Coin, 1)
+	tempOutputCoin[0] = c
 
-	// get last byte
+	proof := new(privacy.ProofV2)
+	proof.Init()
+	proof.SetOutputCoins(tempOutputCoin)
+	tx.Proof = proof
 	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 
-	// sign Tx
+	// sign Tx using ver1 schnorr
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privateKey
 	tx.SetMetadata(metaData)
@@ -861,7 +843,6 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 	if err != nil {
 		return NewTransactionErr(SignTxError, err)
 	}
-
 	return nil
 }
 
@@ -886,24 +867,30 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
 
+	// Check commitment
 	outputCoins := tx.Proof.GetOutputCoins()
-	if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[0].GetSNDerivator(), stateDB); ok || err != nil {
-		return false, err
+	coin := outputCoins[0].(*coin.CoinV2)
+	cmpCommitment := operation.PedCom.CommitAtIndex(coin.GetAmount(), coin.GetRandomness(), operation.PedersenValueIndex)
+	if !operation.IsPointEqual(cmpCommitment, coin.GetCommitment()) {
+		return false, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
 	}
-	// check output coin's coin commitment is calculated correctly
-	coin := outputCoins[0]
-	shardID2, _ := coin.GetShardID()
-	cmTmp2 := new(privacy.Point)
-	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
-	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivator()))
-	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID2))))
-	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
 
-	ok := operation.IsPointEqual(cmTmp2, outputCoins[0].GetCommitment())
-	if !ok {
-		return ok, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
+	// Check shardID
+	coinShardID, errShard := coin.GetShardID()
+	if errShard != nil {
+		errStr := fmt.Sprintf("error when getting coin shardID, err: %v", errShard)
+		return false, NewTransactionErr(UnexpectedError, errors.New(errStr))
 	}
-	return ok, nil
+	if coinShardID != tx.PubKeyLastByteSender {
+		return false, NewTransactionErr(UnexpectedError, errors.New("output coin's shardID is different from tx pubkey last byte"))
+	}
+
+	// Check TxRandom
+	txRandom := new(operation.Point).ScalarMultBase(coin.GetRandomness())
+	if !operation.IsPointEqual(txRandom, coin.GetTxRandom()) {
+		return false, NewTransactionErr(UnexpectedError, errors.New("output coin's TxRandom isn't calculated correctly"))
+	}
+	return true, nil
 }
 
 func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {

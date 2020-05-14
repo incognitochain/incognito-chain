@@ -117,6 +117,31 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
+func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, privKeyB string, amount string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "createandsendtransaction",
+		"params": [
+			"%s", 
+			{
+				"%s": %s
+			}, 
+			1,   
+			1
+		],
+		"id": 1
+	}`, privKeyA, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
 func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")

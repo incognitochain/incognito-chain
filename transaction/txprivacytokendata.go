@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
@@ -32,16 +33,20 @@ func (txTokenPrivacyData TxPrivacyTokenData) String() string {
 		inputCoins := txTokenPrivacyData.TxNormal.GetProof().GetInputCoins()
 		outputCoins := txTokenPrivacyData.TxNormal.GetProof().GetOutputCoins()
 		for _, out := range outputCoins {
-			record += string(out.GetPublicKey().ToBytesS())
+			publicKeyBytes := []byte{}
+			if out.GetPublicKey() != nil {
+				publicKeyBytes = out.GetPublicKey().ToBytesS()
+			}
+			record += string(publicKeyBytes)
 			record += strconv.FormatUint(out.GetValue(), 10)
 		}
 		for _, in := range inputCoins {
+			publicKeyBytes := []byte{}
 			if in.GetPublicKey() != nil {
-				record += string(in.GetPublicKey().ToBytesS())
+				publicKeyBytes = in.GetPublicKey().ToBytesS()
 			}
-			if in.GetValue() > 0 {
-				record += strconv.FormatUint(in.GetValue(), 10)
-			}
+			record += string(publicKeyBytes)
+			record += strconv.FormatUint(in.GetValue(), 10)
 		}
 	}
 	return record
@@ -58,7 +63,7 @@ func (txTokenPrivacyData TxPrivacyTokenData) JSONString() string {
 
 // Hash - return hash of custom token data, be used as Token ID
 func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
-	point := privacy.HashToPoint([]byte(txTokenPrivacyData.String()))
+	point := operation.HashToPoint([]byte(txTokenPrivacyData.String()))
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
 	if err != nil {

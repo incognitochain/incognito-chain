@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -243,9 +244,9 @@ func signTx(tx *Tx) error {
 	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
-	sk := new(privacy.Scalar).FromBytesS(tx.sigPrivKey[:common.BigIntSize])
-	r := new(privacy.Scalar).FromBytesS(tx.sigPrivKey[common.BigIntSize:])
-	sigKey := new(privacy.SchnorrPrivateKey)
+	sk := new(operation.Scalar).FromBytesS(tx.sigPrivKey[:common.BigIntSize])
+	r := new(operation.Scalar).FromBytesS(tx.sigPrivKey[common.BigIntSize:])
+	sigKey := new(schnorr.SchnorrPrivateKey)
 	sigKey.Set(sk, r)
 
 	// save public key for verification signature tx

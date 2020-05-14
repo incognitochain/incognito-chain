@@ -68,6 +68,7 @@ func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRa
 func (proof *PaymentProofV2) Init() {
 	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
+	proof.Version = 2
 	proof.aggregatedRangeProof = aggregatedRangeProof
 	proof.inputCoins = []coin.PlainCoin{}
 	proof.outputCoins = []*coin.CoinV2{}

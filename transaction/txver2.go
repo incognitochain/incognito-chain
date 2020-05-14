@@ -346,7 +346,7 @@ func parseCoinBasedOnPaymentInfo(info *privacy.PaymentInfo, targetShardID byte, 
 	for true {
 		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
 		r := operation.RandomScalar()
-		c.SetMask(r)
+		c.SetRandomness(r)
 		c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
 		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
 		c.SetPublicKey(coin.ParseOnetimeAddress(
