@@ -11,8 +11,6 @@ type View interface {
 	GetHash() *common.Hash
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64
-	//GetTimeSlot() uint64
-	GetBlockTime() int64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey
 	GetBlock() common.BlockInterface
@@ -126,38 +124,47 @@ func (multiView *MultiView) updateViewState(newView View) {
 	if newView.GetHeight() > multiView.bestView.GetHeight() {
 		multiView.bestView = newView
 	}
-	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlockTime() < multiView.bestView.GetBlockTime() {
-		multiView.finalView = newView
+
+	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlock().GetProduceTime() < multiView.bestView.GetBlock().GetProduceTime() {
+		multiView.bestView = newView
 	}
 
-	//update finalView: consensus 1
-	prev1Hash := multiView.bestView.GetPreviousHash()
-	if prev1Hash == nil {
-		return
-	}
-	prev1View := multiView.viewByHash[*prev1Hash]
-	if prev1View == nil {
-		return
-	}
-	multiView.finalView = prev1View
+	if newView.GetBlock().GetVersion() == 1 {
+		//update finalView: consensus 1
+		prev1Hash := multiView.bestView.GetPreviousHash()
+		if prev1Hash == nil {
+			return
+		}
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil {
+			return
+		}
+		multiView.finalView = prev1View
+	} else if newView.GetBlock().GetVersion() == 2 {
+		////update finalView: consensus 2
+		prev1Hash := multiView.bestView.GetPreviousHash()
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil || multiView.finalView.GetHeight() == prev1View.GetHeight() {
+			return
+		}
 
-	////update finalView: consensus 2
-	//prev1Hash := multiView.bestView.GetPreviousHash()
-	//prev1View := multiView.viewByHash[*prev1Hash]
-	//if prev1View == nil {
-	//	return
-	//}
-	//
-	//prev2Hash := prev1View.GetPreviousHash()
-	//prev2View := multiView.viewByHash[*prev2Hash]
-	//if prev2View == nil {
-	//	return
-	//}
-	//
-	//if prev1View.GetTimeSlot()+1 == multiView.bestView.GetTimeSlot() && prev2View.GetTimeSlot()+2 == multiView.bestView.GetTimeSlot() {
-	//	multiView.finalView = prev2View
-	//}
-	fmt.Println("Debug bestview", multiView.bestView.GetHeight())
+		prev2Hash := prev1View.GetPreviousHash()
+		prev2View := multiView.viewByHash[*prev2Hash]
+		if prev2View == nil || multiView.finalView.GetHeight() == prev2View.GetHeight() {
+			return
+		}
+
+		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		prev2TimeSlot := common.CalculateTimeSlot(prev2View.GetBlock().GetProposeTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot && prev2TimeSlot+2 == bestViewTimeSlot { //three sequential time slot
+			multiView.finalView = prev2View
+		}
+	} else {
+		fmt.Println("Block version is not correct")
+	}
+
+	//fmt.Println("Debug bestview", multiView.bestView.GetHeight())
 	return
 }
 

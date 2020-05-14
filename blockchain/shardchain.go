@@ -234,3 +234,7 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
 	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), byte(block.(*ShardBlock).GetShardID()))
 }
+
+func (chain *ShardChain) GetAllView() []multiview.View {
+	return chain.multiView.GetAllViewsWithBFS()
+}

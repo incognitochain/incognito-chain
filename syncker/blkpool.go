@@ -190,3 +190,11 @@ func (pool *BlkPool) GetBlockByPrevHash(prevHash common.Hash) []common.BlockPool
 	}
 	return <-res
 }
+
+func (pool *BlkPool) GetAllViewByHash(rHash string) []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		res <- GetAllViewFromHash(rHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
+	}
+	return <-res
+}

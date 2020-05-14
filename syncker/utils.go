@@ -197,3 +197,26 @@ func GetBlksByPrevHash(
 	}
 	return res
 }
+
+func GetAllViewFromHash(
+	rHash string,
+	byHash map[string]common.BlockPoolInterface,
+	byPrevHash map[string][]string,
+) (
+	res []common.BlockPoolInterface,
+) {
+	hashes := []string{rHash}
+	for {
+		if len(hashes) == 0 {
+			return res
+		}
+		hash := hashes[0]
+		hashes = hashes[1:]
+		for h, blk := range byHash {
+			if blk.GetPrevHash().String() == hash {
+				hashes = append(hashes, h)
+				res = append(res, blk)
+			}
+		}
+	}
+}

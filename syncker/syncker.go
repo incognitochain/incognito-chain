@@ -519,6 +519,7 @@ type TmpBlock struct {
 	BlkHash *common.Hash
 	PreHash common.Hash
 	ShardID int
+	Round   int
 }
 
 func (blk *TmpBlock) GetHeight() uint64 {
@@ -535,6 +536,9 @@ func (blk *TmpBlock) GetPrevHash() common.Hash {
 
 func (blk *TmpBlock) GetShardID() int {
 	return blk.ShardID
+}
+func (blk *TmpBlock) GetRound() int {
+	return 1
 }
 
 func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []common.BlockPoolInterface {
@@ -603,4 +607,25 @@ func (synckerManager *SynckerManager) GetPoolLatestHeight(poolType byte, bestHas
 		return 0
 	}
 	return 0
+}
+
+func (synckerManager *SynckerManager) GetAllViewByHash(poolType byte, bestHash string, sID int) []common.BlockPoolInterface {
+	switch poolType {
+	case BeaconPoolType:
+		if synckerManager.BeaconSyncProcess != nil {
+			if synckerManager.BeaconSyncProcess.beaconPool != nil {
+				return synckerManager.BeaconSyncProcess.beaconPool.GetAllViewByHash(bestHash)
+			}
+		}
+	case ShardPoolType:
+		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
+			if syncProcess.shardPool != nil {
+				return syncProcess.shardPool.GetAllViewByHash(bestHash)
+			}
+		}
+	default:
+		//TODO
+		return []common.BlockPoolInterface{}
+	}
+	return []common.BlockPoolInterface{}
 }

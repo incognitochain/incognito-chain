@@ -218,6 +218,8 @@ var HttpHandler = map[string]httpHandler{
 	getShardToBeaconPoolInfo: (*HttpServer).handleGetShardToBeaconPoolInfo,
 	getShardPoolInfo:         (*HttpServer).hanldeGetShardPoolInfo,
 	getCrossShardPoolInfo:    (*HttpServer).hanldeGetCrossShardPoolInfo,
+	getAllView:               (*HttpServer).hanldeGetAllView,
+	getAllViewDetail:         (*HttpServer).hanldeGetAllViewDetail,
 
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,

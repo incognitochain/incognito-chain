@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewardInfos []*statedb.PortalRewardInfo) []string {
+func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewardInfos map[string]*statedb.PortalRewardInfo) []string {
 	portalRewardContent := metadata.NewPortalReward(beaconHeight, rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
@@ -25,7 +25,7 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewa
 	return inst
 }
 
-func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos []*statedb.RewardInfoDetail) []string {
+func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos map[string]uint64) []string {
 	portalRewardContent := metadata.NewPortalTotalCustodianReward(rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
@@ -40,19 +40,17 @@ func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos []*state
 }
 
 func updatePortalRewardInfos(
-	rewardInfos []*statedb.PortalRewardInfo,
+	rewardInfos map[string]*statedb.PortalRewardInfo,
 	custodianAddress string,
-	tokenID string, amount uint64) []*statedb.PortalRewardInfo {
-	for i := 0; i < len(rewardInfos); i++ {
-		if rewardInfos[i].GetCustodianIncAddr() == custodianAddress {
-			rewardInfos[i].AddPortalRewardInfo(tokenID, amount)
-			return rewardInfos
-		}
+	tokenID string, amount uint64) map[string]*statedb.PortalRewardInfo {
+	if rewardInfos == nil {
+		rewardInfos = make(map[string]*statedb.PortalRewardInfo)
 	}
-	rewardInfos = append(rewardInfos,
-		statedb.NewPortalRewardInfoWithValue(custodianAddress,
-			[]*statedb.RewardInfoDetail{statedb.NewRewardInfoDetailWithValue(tokenID, amount)}))
+	if rewardInfos[custodianAddress] == nil {
+		rewardInfos[custodianAddress] = new(statedb.PortalRewardInfo)
+	}
 
+	rewardInfos[custodianAddress].AddPortalRewardInfo(tokenID, amount)
 	return rewardInfos
 }
 
@@ -60,7 +58,7 @@ func splitPortingFeeForMatchingCustodians(
 	feeAmount uint64,
 	portingAmount uint64,
 	matchingCustodianAddresses []*statedb.MatchingPortingCustodianDetail,
-	rewardInfos []*statedb.PortalRewardInfo) []*statedb.PortalRewardInfo {
+	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.Amount), new(big.Int).SetUint64(feeAmount))
 		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(portingAmount))
@@ -73,7 +71,7 @@ func splitRedeemFeeForMatchingCustodians(
 	feeAmount uint64,
 	redeemAmount uint64,
 	matchingCustodianAddresses []*statedb.MatchingRedeemCustodianDetail,
-	rewardInfos []*statedb.PortalRewardInfo) []*statedb.PortalRewardInfo {
+	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.GetAmount()), new(big.Int).SetUint64(feeAmount))
 		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(redeemAmount))
@@ -87,31 +85,31 @@ func splitRewardForCustodians(
 	totalCustodianReward map[common.Hash]uint64,
 	lockedCollateralState *statedb.LockedCollateralState,
 	custodianState map[string]*statedb.CustodianState,
-	rewardInfos []*statedb.PortalRewardInfo) []*statedb.PortalRewardInfo {
+	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
 	totalLockedCollateral := lockedCollateralState.GetTotalLockedCollateralInEpoch()
 
 	// sort totalCustodianReward before processing
-	sortedTotalCustodianRewardKeys := make([]common.Hash, 0)
-	for key := range totalCustodianReward {
-		sortedTotalCustodianRewardKeys = append(sortedTotalCustodianRewardKeys, key)
-	}
-	sort.Slice(sortedTotalCustodianRewardKeys, func(i, j int) bool {
-		return sortedTotalCustodianRewardKeys[i].String() < sortedTotalCustodianRewardKeys[j].String()
-	})
+	//sortedTotalCustodianRewardKeys := make([]common.Hash, 0)
+	//for key := range totalCustodianReward {
+	//	sortedTotalCustodianRewardKeys = append(sortedTotalCustodianRewardKeys, key)
+	//}
+	//sort.Slice(sortedTotalCustodianRewardKeys, func(i, j int) bool {
+	//	return sortedTotalCustodianRewardKeys[i].String() < sortedTotalCustodianRewardKeys[j].String()
+	//})
+	//
+	//// sort custodianState before processing
+	//sortedCustodianKeys := make([]string, 0)
+	//for key := range custodianState {
+	//	sortedCustodianKeys = append(sortedCustodianKeys, key)
+	//}
+	//sort.Strings(sortedCustodianKeys)
 
-	// sort custodianState before processing
-	sortedCustodianKeys := make([]string, 0)
-	for key := range custodianState {
-		sortedCustodianKeys = append(sortedCustodianKeys, key)
-	}
-	sort.Strings(sortedCustodianKeys)
-
-	for _, key := range sortedCustodianKeys {
-		custodian := custodianState[key]
+	for _, custodian := range custodianState {
+		//custodian := custodianState[key]
 		lockedCollateralCustodian := lockedCollateralState.GetLockedCollateralDetail()[custodian.GetIncognitoAddress()]
-		for _, totalRewardKey := range sortedTotalCustodianRewardKeys {
-			tokenID := totalRewardKey
-			amount := totalCustodianReward[totalRewardKey]
+		for tokenID, amount := range totalCustodianReward {
+			//tokenID := totalRewardKey
+			//amount := totalCustodianReward[totalRewardKey]
 			tmp := new(big.Int).Mul(new(big.Int).SetUint64(lockedCollateralCustodian), new(big.Int).SetUint64(amount))
 			splitedReward := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalLockedCollateral))
 			rewardInfos = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward.Uint64())
@@ -124,18 +122,18 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState, rewardForCustodianByEpoch map[common.Hash]uint64) ([][]string, error) {
 
 	// rewardInfos are map custodians' addresses and reward amount
-	rewardInfos := make([]*statedb.PortalRewardInfo, 0)
+	rewardInfos := make(map[string]*statedb.PortalRewardInfo, 0)
 
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
 	// and split fees for matching custodians
 	// Note: need to sort maps before processing
-	sortedWaitingPortingReqKeys := make([]string, 0)
-	for key := range currentPortalState.WaitingPortingRequests {
-		sortedWaitingPortingReqKeys = append(sortedWaitingPortingReqKeys, key)
-	}
-	sort.Strings(sortedWaitingPortingReqKeys)
-	for _, key := range sortedWaitingPortingReqKeys {
-		waitingPortingReq := currentPortalState.WaitingPortingRequests[key]
+	//sortedWaitingPortingReqKeys := make([]string, 0)
+	//for key := range currentPortalState.WaitingPortingRequests {
+	//	sortedWaitingPortingReqKeys = append(sortedWaitingPortingReqKeys, key)
+	//}
+	//sort.Strings(sortedWaitingPortingReqKeys)
+	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
+		//waitingPortingReq := currentPortalState.WaitingPortingRequests[key]
 		if waitingPortingReq.BeaconHeight() == beaconHeight+1 {
 			rewardInfos = splitPortingFeeForMatchingCustodians(
 				waitingPortingReq.PortingFee(),
@@ -148,13 +146,13 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 	// get redeem fee from waiting redeem request at beaconHeight + 1 (new waiting redeem requests)
 	// and split fees for matching custodians
-	sortedWaitingRedeemReqKeys := make([]string, 0)
-	for key := range currentPortalState.WaitingRedeemRequests {
-		sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
-	}
-	sort.Strings(sortedWaitingRedeemReqKeys)
-	for _, key := range sortedWaitingRedeemReqKeys {
-		waitingRedeemReq := currentPortalState.WaitingRedeemRequests[key]
+	//sortedWaitingRedeemReqKeys := make([]string, 0)
+	//for key := range currentPortalState.WaitingRedeemRequests {
+	//	sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
+	//}
+	//sort.Strings(sortedWaitingRedeemReqKeys)
+	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
+		//waitingRedeemReq := currentPortalState.WaitingRedeemRequests[key]
 		if waitingRedeemReq.GetBeaconHeight() == beaconHeight+1 {
 			rewardInfos = splitRedeemFeeForMatchingCustodians(
 				waitingRedeemReq.GetRedeemFee(),
@@ -178,7 +176,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 				rewardInfos)
 
 			// create instruction for total custodian rewards
-			totalCustodianRewardSlice := make([]*statedb.RewardInfoDetail, 0)
+			totalRewardForCustodians := make(map[string]uint64, 0)
 
 			// sort totalCustodianReward before processing
 			sortedCustodianRewardKeys := make([]common.Hash, 0)
@@ -188,37 +186,42 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 			sort.Slice(sortedCustodianRewardKeys, func(i, j int) bool {
 				return sortedCustodianRewardKeys[i].String() < sortedCustodianRewardKeys[j].String()
 			})
-
 			for _, key := range sortedCustodianRewardKeys {
 				tokenID := key
 				amount := rewardForCustodianByEpoch[key]
-				totalCustodianRewardSlice = append(totalCustodianRewardSlice,
-					statedb.NewRewardInfoDetailWithValue(tokenID.String(), amount))
+				totalRewardForCustodians[tokenID.String()] = amount
 			}
-			instTotalReward := blockchain.buildInstForPortalTotalReward(totalCustodianRewardSlice)
+			instTotalReward := blockchain.buildInstForPortalTotalReward(totalRewardForCustodians)
 			rewardInsts = append(rewardInsts, instTotalReward)
 		}
 	}
 
 	// update reward amount for custodian
-	for custodianKey, custodianState := range currentPortalState.CustodianPoolState {
-		custodianAddr := custodianState.GetIncognitoAddress()
-		custodianReward := custodianState.GetRewardAmount()
-		if custodianReward == nil {
-			custodianReward = map[string]uint64{}
-		}
-		for _, rewardInfo := range rewardInfos {
-			if rewardInfo.GetCustodianIncAddr() == custodianAddr {
-				for _, rewardDetail := range rewardInfo.GetRewards() {
-					custodianReward[rewardDetail.GetTokenID()] += rewardDetail.GetAmount()
-				}
-				break
-			}
-		}
-		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
-	}
+	UpdateCustodianRewards(currentPortalState, rewardInfos)
 
-	inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
+	sortedRewardInfos := make(map[string]*statedb.PortalRewardInfo, 0)
+	custodianAddrKeys := make([]string, 0)
+
+	for custodianAddr := range rewardInfos {
+		custodianAddrKeys = append(custodianAddrKeys, custodianAddr)
+	}
+	sort.Strings(custodianAddrKeys)
+	for _, key := range custodianAddrKeys {
+		rewardInfo := rewardInfos[key].GetRewards()
+		tokenIDs := make([]string, 0)
+		for tokenID := range rewardInfo {
+			tokenIDs = append(tokenIDs, tokenID)
+		}
+		sort.Strings(tokenIDs)
+		rewardInfoTmp := map[string]uint64{}
+		for _, tokenID := range tokenIDs {
+			rewardInfoTmp[tokenID] = rewardInfo[tokenID]
+		}
+
+		sortedRewardInfos[key] = new(statedb.PortalRewardInfo)
+		sortedRewardInfos[key].SetRewards(rewardInfoTmp)
+	}
+	inst := blockchain.buildInstForPortalReward(beaconHeight+1, sortedRewardInfos)
 	rewardInsts = append(rewardInsts, inst)
 
 	return rewardInsts, nil
@@ -287,7 +290,7 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 	}
 	meta := actionData.Meta
 
-	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
+	keyCustodianState := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
 	keyCustodianStateStr := keyCustodianState.String()
 	custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
 	if custodian == nil {

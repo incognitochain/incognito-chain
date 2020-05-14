@@ -115,7 +115,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 
 		custodianAddrStrFromInst = liqCustodianContent.CustodianIncAddressStr
 		redeemerIncAddressStrFromInst = liqCustodianContent.RedeemerIncAddressStr
-		mintedCollateralAmountFromInst = liqCustodianContent.MintedCollateralAmount
+		mintedCollateralAmountFromInst = liqCustodianContent.LiquidatedCollateralAmount
 		shardIDFromInst = liqCustodianContent.ShardID
 
 		if shardIDFromInst != shardID {

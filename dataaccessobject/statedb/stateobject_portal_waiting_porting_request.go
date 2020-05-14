@@ -107,8 +107,8 @@ func NewWaitingPortingRequestWithValue(uniquePortingID string, txReqID common.Ha
 	return &WaitingPortingRequest{uniquePortingID: uniquePortingID, txReqID: txReqID, tokenID: tokenID, porterAddress: porterAddress, amount: amount, custodians: custodians, portingFee: portingFee, status: status, beaconHeight: beaconHeight}
 }
 
-func GeneratePortalWaitingPortingRequestObjectKey(beaconHeight uint64, portingRequestId string) common.Hash {
-	prefixHash := GetPortalWaitingPortingRequestPrefix(beaconHeight)
+func GeneratePortalWaitingPortingRequestObjectKey(portingRequestId string) common.Hash {
+	prefixHash := GetPortalWaitingPortingRequestPrefix()
 	valueHash := common.HashH([]byte(portingRequestId))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }

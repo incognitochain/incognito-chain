@@ -794,7 +794,7 @@ type CustodianDepositTestCase struct {
 
 func buildPortalCustodianDepositAction(
 	incogAddressStr string,
-	remoteAddresses []statedb.RemoteAddress,
+	remoteAddresses map[string]string,
 	depositedAmount uint64,
 ) []string {
 	custodianDepositMeta, _ := metadata.NewPortalCustodianDeposit(
@@ -893,7 +893,7 @@ func getTestCasesForCustodianDeposit() []*CustodianDepositTestCase {
 			testcases[i].Input.RemoteAddresses,
 			testcases[i].Input.DepositedAmount)
 
-		custodianKey := statedb.GenerateCustodianStateObjectKey(uint64(BeaconHeight), testcases[i].Input.IncognitoAddress)
+		custodianKey := statedb.GenerateCustodianStateObjectKey(testcases[i].Input.IncognitoAddress)
 		if custodianPool[custodianKey.String()] == nil {
 			custodianState := statedb.NewCustodianStateWithValue(
 				testcases[i].Input.IncognitoAddress,

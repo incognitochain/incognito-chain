@@ -6,21 +6,21 @@ import (
 
 type PortalRewardContent struct {
 	BeaconHeight uint64
-	Rewards      []*statedb.PortalRewardInfo
+	Rewards      map[string]*statedb.PortalRewardInfo // custodian incognito address : reward infos
 }
 
-func NewPortalReward(beaconHeight uint64, receivers []*statedb.PortalRewardInfo) *PortalRewardContent {
+func NewPortalReward(beaconHeight uint64, rewardInfos map[string]*statedb.PortalRewardInfo) *PortalRewardContent {
 	return &PortalRewardContent{
 		BeaconHeight: beaconHeight,
-		Rewards:      receivers,
+		Rewards:      rewardInfos,
 	}
 }
 
 type PortalTotalCustodianReward struct {
-	Rewards []*statedb.RewardInfoDetail
+	Rewards map[string]uint64
 }
 
-func NewPortalTotalCustodianReward(rewards []*statedb.RewardInfoDetail) *PortalTotalCustodianReward {
+func NewPortalTotalCustodianReward(rewards map[string]uint64) *PortalTotalCustodianReward {
 	return &PortalTotalCustodianReward{
 		Rewards: rewards,
 	}

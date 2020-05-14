@@ -9,6 +9,7 @@ type BlockPoolInterface interface {
 	Hash() *Hash
 	GetHeight() uint64
 	GetShardID() int
+	GetRound() int
 }
 
 type BlockInterface interface {

@@ -237,6 +237,8 @@ const (
 	getShardToBeaconPoolInfo = "getshardtobeaconpoolinfo"
 	getShardPoolInfo         = "getshardpoolinfo"
 	getCrossShardPoolInfo    = "getcrossshardpoolinfo"
+	getAllView               = "getallview"
+	getAllViewDetail         = "getallviewdetail"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"

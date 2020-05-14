@@ -23,22 +23,7 @@ func (blockchain *BlockChain) processPortalReward(
 	reqStatus := instructions[2]
 	if reqStatus == "portalRewardInst" {
 		// update reward amount for custodian
-		for custodianKey, custodianState := range currentPortalState.CustodianPoolState {
-			custodianAddr := custodianState.GetIncognitoAddress()
-			custodianReward := custodianState.GetRewardAmount()
-			if custodianReward == nil {
-				custodianReward = map[string]uint64{}
-			}
-			for _, rewardInfo := range actionData.Rewards {
-				if rewardInfo.GetCustodianIncAddr() == custodianAddr {
-					for _, rewardDetail := range rewardInfo.GetRewards() {
-						custodianReward[rewardDetail.GetTokenID()] += rewardDetail.GetAmount()
-					}
-					break
-				}
-			}
-			currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
-		}
+		UpdateCustodianRewards(currentPortalState, actionData.Rewards)
 
 		// at the end of epoch
 		if (beaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
@@ -93,7 +78,7 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqWithdrawRewardAcceptedChainStatus {
 		// update reward amount of custodian
-		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
+		cusStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
 		cusStateKeyStr := cusStateKey.String()
 		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 		if custodianState == nil {
@@ -171,8 +156,8 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 		}
 
 		// update total custodian reward
-		for _, r := range actionData.Rewards {
-			oldCustodianRewards.AddTotalRewards(r.GetTokenID(), r.GetAmount())
+		for tokenID, amount := range actionData.Rewards {
+			oldCustodianRewards.AddTotalRewards(tokenID, amount)
 		}
 
 		// store total custodian reward into db

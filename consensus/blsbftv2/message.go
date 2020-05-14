@@ -2,6 +2,7 @@ package blsbftv2
 
 import (
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -34,7 +35,7 @@ type BFTRequestBlock struct {
 	PeerID    string
 }
 
-func MakeBFTProposeMsg(proposeCtn *BFTPropose, chainKey string, ts int64) (wire.Message, error) {
+func MakeBFTProposeMsg(proposeCtn *BFTPropose, chainKey string, ts int64, height uint64) (wire.Message, error) {
 	proposeCtnBytes, err := json.Marshal(proposeCtn)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
@@ -44,10 +45,11 @@ func MakeBFTProposeMsg(proposeCtn *BFTPropose, chainKey string, ts int64) (wire.
 	msg.(*wire.MessageBFT).Content = proposeCtnBytes
 	msg.(*wire.MessageBFT).Type = MSG_PROPOSE
 	msg.(*wire.MessageBFT).TimeSlot = ts
+	msg.(*wire.MessageBFT).Timestamp = int64(height)
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64) (wire.Message, error) {
+func MakeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64, height uint64) (wire.Message, error) {
 	voteCtnBytes, err := json.Marshal(vote)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
@@ -57,6 +59,7 @@ func MakeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64) (wire.Message, err
 	msg.(*wire.MessageBFT).Content = voteCtnBytes
 	msg.(*wire.MessageBFT).Type = MSG_VOTE
 	msg.(*wire.MessageBFT).TimeSlot = ts
+	msg.(*wire.MessageBFT).Timestamp = int64(height)
 	return msg, nil
 }
 

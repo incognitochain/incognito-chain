@@ -7,18 +7,17 @@ import (
 )
 
 //======================  Redeem  ======================
-func GetWaitingRedeemRequests(stateDB *StateDB, beaconHeight uint64) (map[string]*WaitingRedeemRequest, error) {
-	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest(beaconHeight)
+func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*WaitingRedeemRequest, error) {
+	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
 	return waitingRedeemRequests, nil
 }
 
 // StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func StoreWaitingRedeemRequests(
 	stateDB *StateDB,
-	beaconHeight uint64,
 	waitingRedeemReqs map[string]*WaitingRedeemRequest) error {
 	for _, waitingReq := range waitingRedeemReqs {
-		key := GenerateWaitingRedeemRequestObjectKey(beaconHeight, waitingReq.uniqueRedeemID)
+		key := GenerateWaitingRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
 		value := NewWaitingRedeemRequestWithValue(
 			waitingReq.uniqueRedeemID,
 			waitingReq.tokenID,
@@ -39,12 +38,9 @@ func StoreWaitingRedeemRequests(
 	return nil
 }
 
-func DeleteWaitingRedeemRequest(stateDB *StateDB, deletedWaitingRedeemRequests map[string]*WaitingRedeemRequest) {
-	for key, _ := range deletedWaitingRedeemRequests {
-		keyHash := common.Hash{}
-		copy(keyHash[:], key)
-		stateDB.MarkDeleteStateObject(WaitingRedeemRequestObjectType, keyHash)
-	}
+func DeleteWaitingRedeemRequest(stateDB *StateDB, redeemID string) {
+	key := GenerateWaitingRedeemRequestObjectKey(redeemID)
+	stateDB.MarkDeleteStateObject(WaitingRedeemRequestObjectType, key)
 }
 
 func StorePortalRedeemRequestStatus(stateDB *StateDB, redeemID string, statusContent []byte) error {
@@ -95,19 +91,17 @@ func GetPortalRedeemRequestByTxIDStatus(stateDB *StateDB, txID string) ([]byte, 
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetCustodianPoolState(
 	stateDB *StateDB,
-	beaconHeight uint64,
 ) (map[string]*CustodianState, error) {
-	waitingRedeemRequests := stateDB.getAllCustodianStatePool(beaconHeight)
+	waitingRedeemRequests := stateDB.getAllCustodianStatePool()
 	return waitingRedeemRequests, nil
 }
 
 // StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func StoreCustodianState(
 	stateDB *StateDB,
-	beaconHeight uint64,
 	custodians map[string]*CustodianState) error {
 	for _, cus := range custodians {
-		key := GenerateCustodianStateObjectKey(beaconHeight, cus.incognitoAddress)
+		key := GenerateCustodianStateObjectKey(cus.incognitoAddress)
 		value := NewCustodianStateWithValue(
 			cus.incognitoAddress,
 			cus.totalCollateral,
@@ -156,14 +150,14 @@ func GetCustodianDepositStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
-func GetOneCustodian(stateDB *StateDB, beaconHeight uint64, custodianAddress string) (*CustodianState, error) {
-	key := GenerateCustodianStateObjectKey(beaconHeight, custodianAddress)
+func GetOneCustodian(stateDB *StateDB, custodianAddress string) (*CustodianState, error) {
+	key := GenerateCustodianStateObjectKey(custodianAddress)
 	custodianState, has, err := stateDB.getCustodianByKey(key)
 	if err != nil {
 		return nil, NewStatedbError(GetPortalStatusError, err)
 	}
 	if !has {
-		return nil, NewStatedbError(GetPortalStatusError, fmt.Errorf("key with beacon height %+v, custodian address %+v not found", beaconHeight, custodianAddress))
+		return nil, NewStatedbError(GetPortalStatusError, fmt.Errorf("key with custodian address %+v not found", custodianAddress))
 	}
 
 	return custodianState, nil
@@ -172,35 +166,21 @@ func GetOneCustodian(stateDB *StateDB, beaconHeight uint64, custodianAddress str
 //======================  Exchange rate  ======================
 func GetFinalExchangeRatesState(
 	stateDB *StateDB,
-	beaconHeight uint64,
-) (map[string]*FinalExchangeRatesState, error) {
-	finalExchangeRates := stateDB.getFinalExchangeRatesState(beaconHeight)
-	return finalExchangeRates, nil
-}
-
-func GetFinalExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error) {
-	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
+) (*FinalExchangeRatesState, error) {
+	finalExchangeRates, err := stateDB.getFinalExchangeRatesState()
 	if err != nil {
-		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, err)
+		return nil, err
 	}
-	if !has {
-		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
-	}
-
 	return finalExchangeRates, nil
 }
 
 func StoreBulkFinalExchangeRatesState(
 	stateDB *StateDB,
-	beaconHeight uint64,
-	finalExchangeRatesState map[string]*FinalExchangeRatesState) error {
-	for _, exchangeRates := range finalExchangeRatesState {
-		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		err := stateDB.SetStateObject(PortalFinalExchangeRatesStateObjectType, key, exchangeRates)
-		if err != nil {
-			return NewStatedbError(StoreFinalExchangeRatesStateError, err)
-		}
+	finalExchangeRatesState *FinalExchangeRatesState) error {
+	key := GeneratePortalFinalExchangeRatesStateObjectKey()
+	err := stateDB.SetStateObject(PortalFinalExchangeRatesStateObjectType, key, finalExchangeRatesState)
+	if err != nil {
+		return NewStatedbError(StoreFinalExchangeRatesStateError, err)
 	}
 	return nil
 }
@@ -252,19 +232,17 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID str
 
 func GetLiquidateExchangeRatesPool(
 	stateDB *StateDB,
-	beaconHeight uint64,
 ) (map[string]*LiquidateExchangeRatesPool, error) {
-	liquidateExchangeRates := stateDB.getLiquidateExchangeRatesPool(beaconHeight)
+	liquidateExchangeRates := stateDB.getLiquidateExchangeRatesPool()
 	return liquidateExchangeRates, nil
 }
 
 func StoreBulkLiquidateExchangeRatesPool(
 	stateDB *StateDB,
-	beaconHeight uint64,
 	liquidateExchangeRates map[string]*LiquidateExchangeRatesPool,
 ) error {
 	for _, value := range liquidateExchangeRates {
-		key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+		key := GeneratePortalLiquidateExchangeRatesPoolObjectKey()
 		err := stateDB.SetStateObject(PortalLiquidationExchangeRatesPoolObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StoreLiquidateExchangeRatesPoolError, err)
@@ -273,14 +251,14 @@ func StoreBulkLiquidateExchangeRatesPool(
 	return nil
 }
 
-func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error) {
-	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB) (*LiquidateExchangeRatesPool, error) {
+	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey()
 	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
 	if err != nil {
 		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, err)
 	}
 	if !has {
-		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, fmt.Errorf("key %+v not found", key))
 	}
 
 	return liquidateExchangeRates, nil
@@ -370,19 +348,17 @@ func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetWaitingPortingRequests(
 	stateDB *StateDB,
-	beaconHeight uint64,
 ) (map[string]*WaitingPortingRequest, error) {
-	waitingPortingRequestList := stateDB.getWaitingPortingRequests(beaconHeight)
+	waitingPortingRequestList := stateDB.getWaitingPortingRequests()
 	return waitingPortingRequestList, nil
 }
 
 // StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func StoreBulkWaitingPortingRequests(
 	stateDB *StateDB,
-	beaconHeight uint64,
 	waitingPortingRequest map[string]*WaitingPortingRequest) error {
 	for _, items := range waitingPortingRequest {
-		key := GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, items.UniquePortingID())
+		key := GeneratePortalWaitingPortingRequestObjectKey(items.UniquePortingID())
 		err := stateDB.SetStateObject(PortalWaitingPortingRequestObjectType, key, items)
 		if err != nil {
 			return NewStatedbError(StoreWaitingPortingRequestError, err)
@@ -392,7 +368,7 @@ func StoreBulkWaitingPortingRequests(
 }
 
 func StoreWaitingPortingRequests(stateDB *StateDB, beaconHeight uint64, portingRequestId string, statusContent *WaitingPortingRequest) error {
-	key := GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingRequestId)
+	key := GeneratePortalWaitingPortingRequestObjectKey(portingRequestId)
 	err := stateDB.SetStateObject(PortalWaitingPortingRequestObjectType, key, statusContent)
 	if err != nil {
 		return NewStatedbError(StoreWaitingPortingRequestError, err)
@@ -401,12 +377,9 @@ func StoreWaitingPortingRequests(stateDB *StateDB, beaconHeight uint64, portingR
 	return nil
 }
 
-func DeleteWaitingPortingRequest(stateDB *StateDB, deletedWaitingPortingRequests map[string]*WaitingPortingRequest) {
-	for key, _ := range deletedWaitingPortingRequests {
-		keyHash := common.Hash{}
-		copy(keyHash[:], key)
-		stateDB.MarkDeleteStateObject(PortalWaitingPortingRequestObjectType, keyHash)
-	}
+func DeleteWaitingPortingRequest(stateDB *StateDB, portingRequestId string) {
+	key := GeneratePortalWaitingPortingRequestObjectKey(portingRequestId)
+	stateDB.MarkDeleteStateObject(PortalWaitingPortingRequestObjectType, key)
 }
 
 //======================  Portal status  ======================
@@ -490,14 +463,10 @@ func GetPortalRewardsByBeaconHeight(
 func StorePortalRewards(
 	stateDB *StateDB,
 	beaconHeight uint64,
-	portalRewardInfos []*PortalRewardInfo) error {
-	for _, info := range portalRewardInfos {
-		key := GeneratePortalRewardInfoObjectKey(beaconHeight, info.custodianIncAddr)
-		value := NewPortalRewardInfoWithValue(
-			info.custodianIncAddr,
-			info.rewards,
-		)
-		err := stateDB.SetStateObject(PortalRewardInfoObjectType, key, value)
+	portalRewardInfos map[string]*PortalRewardInfo) error {
+	for custodianAddr, info := range portalRewardInfos {
+		key := GeneratePortalRewardInfoObjectKey(beaconHeight, custodianAddr)
+		err := stateDB.SetStateObject(PortalRewardInfoObjectType, key, info)
 		if err != nil {
 			return NewStatedbError(StorePortalRewardError, err)
 		}
@@ -530,9 +499,8 @@ func GetPortalRequestWithdrawRewardStatus(stateDB *StateDB, txID string) ([]byte
 
 func GetLockedCollateralStateByBeaconHeight(
 	stateDB *StateDB,
-	beaconHeight uint64,
 ) (*LockedCollateralState, error) {
-	lockedCollateralState, _, err := stateDB.getLockedCollateralState(beaconHeight)
+	lockedCollateralState, _, err := stateDB.getLockedCollateralState()
 	if err != nil {
 		return nil, NewStatedbError(GetLockedCollateralStateError, err)
 	}
@@ -542,9 +510,8 @@ func GetLockedCollateralStateByBeaconHeight(
 // StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func StoreLockedCollateralState(
 	stateDB *StateDB,
-	beaconHeight uint64,
 	lockedCollateralState *LockedCollateralState) error {
-	key := GenerateLockedCollateralStateObjectKey(beaconHeight)
+	key := GenerateLockedCollateralStateObjectKey()
 	err := stateDB.SetStateObject(LockedCollateralStateObjectType, key, lockedCollateralState)
 	if err != nil {
 		return NewStatedbError(StorePortalRewardError, err)
@@ -557,7 +524,7 @@ func StoreLockedCollateralState(
 func StoreRewardFeatureState(
 	stateDB *StateDB,
 	featureName string,
-	rewardInfo []*RewardInfoDetail,
+	rewardInfo map[string]uint64,
 	epoch uint64) error {
 	key := GenerateRewardFeatureStateObjectKey(featureName, epoch)
 	value := NewRewardFeatureStateWithValue(rewardInfo)
@@ -582,13 +549,9 @@ func GetRewardFeatureAmountByTokenID(
 		return uint64(0), NewStatedbError(GetRewardFeatureAmountByTokenIDError, err)
 	}
 	totalRewards := allRewardFeature.GetTotalRewards()
-	for i := 0; i < len(totalRewards); i++ {
-		if totalRewards[i].GetTokenID() == tokenID {
-			totalAmount = totalRewards[i].GetAmount()
-			break
-		}
+	if totalRewards != nil {
+		totalAmount = totalRewards[tokenID]
 	}
-
 	return totalAmount, nil
 }
 

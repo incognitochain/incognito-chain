@@ -1,10 +1,11 @@
 package metadata
 
 type PortalLiquidateTopPercentileExchangeRatesContent struct {
-	CustodianAddress string
-	Status           string
-	MetaType         int
-	TP               map[string]LiquidateTopPercentileExchangeRatesDetail
+	CustodianAddress   string
+	Status             string
+	MetaType           int
+	TP                 map[string]LiquidateTopPercentileExchangeRatesDetail
+	RemainUnlockAmount map[string]uint64
 }
 
 type LiquidateTopPercentileExchangeRatesDetail struct {
