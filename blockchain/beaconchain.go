@@ -285,3 +285,7 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 	}
 	return &beaconBlk, nil
 }
+
+func (chain *BeaconChain) GetAllView() []multiview.View {
+	return chain.multiView.GetAllViewsWithBFS()
+}

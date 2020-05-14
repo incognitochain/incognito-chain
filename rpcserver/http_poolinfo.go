@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -113,6 +114,43 @@ func (httpServer *HttpServer) hanldeGetAllView(params interface{}, closeChan <-c
 			PreviousBlockHash: blk.GetPrevHash().String(),
 			Height:            blk.GetHeight(),
 			Round:             uint64(blk.GetRound()),
+		})
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) hanldeGetAllViewDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid param, param 0 must be shardid"))
+	}
+
+	shardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShardID component invalid"))
+	}
+	// numOfBlks, ok := arrayParams[1].(float64)
+	// if !ok {
+	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block height component invalid"))
+	// }
+
+	res := []jsonresult.GetViewResult{}
+	var views []multiview.View
+	if shardID == -1 {
+		views = httpServer.config.BlockChain.BeaconChain.GetAllView()
+	} else {
+		sChain := httpServer.config.BlockChain.ShardChain[int(shardID)]
+		if sChain != nil {
+			views = sChain.GetAllView()
+		}
+	}
+
+	for _, view := range views {
+		res = append(res, jsonresult.GetViewResult{
+			Hash:              view.GetHash().String(),
+			PreviousBlockHash: view.GetPreviousHash().String(),
+			Height:            view.GetHeight(),
+			Round:             uint64(view.GetBlock().GetRound()),
 		})
 	}
 	return res, nil

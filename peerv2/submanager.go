@@ -76,10 +76,14 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		return nil
 	}
 	pubKey, _ := sub.consensusData.GetCurrentMiningPublicKey()
-	if pubKey == "" {
-		return errors.Errorf("Can not load current mining key")
+	if (sub.role.role != "") && (sub.role.role != "dummyRole") {
+		if pubKey == "" {
+			return errors.Errorf("Can not load current mining key, pub key %v role %v", pubKey, sub.role.role)
+		} else {
+			sub.pubkey = pubKey
+		}
 	}
-	sub.pubkey = pubKey
+
 	Logger.Infof("Role changed: %v -> %v", sub.role, newRole)
 
 	// Registering
