@@ -121,5 +121,4 @@ type GetViewResult struct {
 	Height            uint64 `json:"Height"`
 	PreviousBlockHash string `json:"PreviousBlockHash"`
 	Round             uint64 `json:"Round"`
-	BlockTime         uint64 `json:"BlockTime"`
 }
