@@ -24,12 +24,12 @@ type PortalProducerSuite struct {
 
 func (suite *PortalProducerSuite) SetupTest() {
 	suite.currentPortalState = &CurrentPortalState{
-		CustodianPoolState:      map[string]*statedb.CustodianState{},
-		ExchangeRatesRequests:   map[string]*metadata.ExchangeRatesRequestStatus{},
-		FinalExchangeRatesState: map[string]*statedb.FinalExchangeRatesState{},
-		WaitingPortingRequests:  map[string]*statedb.WaitingPortingRequest{},
-		WaitingRedeemRequests:   map[string]*statedb.WaitingRedeemRequest{},
-		LiquidateExchangeRatesPool:   map[string]*statedb.LiquidateExchangeRatesPool{},
+		CustodianPoolState:         map[string]*statedb.CustodianState{},
+		ExchangeRatesRequests:      map[string]*metadata.ExchangeRatesRequestStatus{},
+		FinalExchangeRatesState:    map[string]*statedb.FinalExchangeRatesState{},
+		WaitingPortingRequests:     map[string]*statedb.WaitingPortingRequest{},
+		WaitingRedeemRequests:      map[string]*statedb.WaitingRedeemRequest{},
+		LiquidateExchangeRatesPool: map[string]*statedb.LiquidateExchangeRatesPool{},
 	}
 }
 
@@ -42,10 +42,10 @@ type PortingRequestExcepted struct {
 }
 
 type LiquidationExchangeRatesExcepted struct {
-	TpValue int
-	Custodian1  []string
-	Custodian2  []string
-	LiquidationPool  []uint64
+	TpValue         int
+	Custodian1      []string
+	Custodian2      []string
+	LiquidationPool []uint64
 }
 
 type PortingRequestTestCase struct {
@@ -166,7 +166,7 @@ func (suite *PortalProducerSuite) SetupMultipleCustodianContainPToken(beaconHeig
 	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(suite.currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()])
-	totalPTokenAfterUp150PercentUnit64 := up150Percent(1000) //return nano pBTC, pBNB
+	totalPTokenAfterUp150PercentUnit64 := up150Percent(1000)   //return nano pBTC, pBNB
 	totalPTokenAfterUp150PercentUnit64_2 := up150Percent(2000) //return nano pBTC, pBNB
 
 	totalPRV, _ := convertExchangeRatesObj.ExchangePToken2PRVByTokenId("b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", totalPTokenAfterUp150PercentUnit64)
@@ -339,20 +339,20 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
-						"0", //free collateral
-						"1667",  //hold pToken
+						"0",      //free collateral
+						"1667",   //hold pToken
 						"100000", //lock prv amount
 					},
 					Custodian2: []string{
 						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
 						"70000", //free collateral
-						"333",  //hold pToken
+						"333",   //hold pToken
 						"20000", //lock prv amount
 					},
 				}
 			},
 		},
-	    {
+		{
 			"pick_a_custodian_case_2",
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
@@ -377,8 +377,8 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
-						"0", //free collateral
-						"1667",  //hold pToken
+						"0",      //free collateral
+						"1667",   //hold pToken
 						"100000", //lock prv amount
 					},
 					Custodian2: []string{
@@ -397,7 +397,6 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 	suite.SetupExchangeRates(1)
 	suite.SetupMultipleCustodian(1)
 	suite.verifyPortingRequest(pickMultipleCustodianCases)
-
 
 	waitingPortingRequest := []PortingRequestTestCase{
 		{
@@ -425,14 +424,14 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
-						"0", //free collateral
-						"1667",  //hold pToken
+						"0",      //free collateral
+						"1667",   //hold pToken
 						"100000", //lock prv amount
 					},
 					Custodian2: []string{
 						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
 						"70000", //free collateral
-						"333",  //hold pToken
+						"333",   //hold pToken
 						"20000", //lock prv amount
 					},
 				}
@@ -484,7 +483,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeR
 	exchangeRatesChange := []AutoLiquidationExchangeRatesTestCase{
 		{
 			"liquidation_exchange_rates_none_tp150_1",
-			map[string]uint64 {
+			map[string]uint64{
 				"btc": 8000000000,
 				"bnb": 20000000,
 				"prv": 500000,
@@ -495,8 +494,8 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeR
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"100000", //free collateral
-						"1000",  //hold pToken
-						"60000", //lock prv amount
+						"1000",   //hold pToken
+						"60000",  //lock prv amount
 					},
 					Custodian2: nil,
 					LiquidationPool: []uint64{
@@ -508,7 +507,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeR
 		},
 		{
 			"liquidation_exchange_rates_tp130_2",
-			map[string]uint64 {
+			map[string]uint64{
 				"btc": 8000000000,
 				"bnb": 23000000,
 				"prv": 500000,
@@ -519,8 +518,8 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeR
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"100000", //free collateral
-						"1000",  //hold pToken
-						"60000", //lock prv amount
+						"1000",   //hold pToken
+						"60000",  //lock prv amount
 					},
 					Custodian2: nil,
 					LiquidationPool: []uint64{
@@ -532,7 +531,7 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeR
 		},
 		{
 			"liquidation_exchange_rates_tp120_3",
-			map[string]uint64 {
+			map[string]uint64{
 				"btc": 8000000000,
 				"bnb": 25000000,
 				"prv": 500000,
@@ -543,17 +542,17 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForLiquidationTPExchangeR
 					Custodian1: []string{
 						"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ", //address
 						"100000", //free collateral
-						"0",  //hold pToken
-						"0", //lock prv amount
+						"0",      //hold pToken
+						"0",      //lock prv amount
 					},
 					Custodian2: []string{
 						"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy", //address
 						"90000", //free collateral
-						"0",  //hold pToken
-						"0", //lock prv amount
+						"0",     //hold pToken
+						"0",     //lock prv amount
 					},
 					LiquidationPool: []uint64{
-						3000, //lock ptoken
+						3000,   //lock ptoken
 						180000, //lock amount collateral
 					},
 				}
@@ -571,7 +570,7 @@ func (suite *PortalProducerSuite) verifyAutoLiquidationExchangeRates(testCases [
 	beaconHeight := uint64(1)
 
 	for _, testCase := range testCases {
-		suite.SetupExchangeRatesWithValue(beaconHeight, testCase.Input["btc"], testCase.Input["bnb"], testCase.Input["prv"],)
+		suite.SetupExchangeRatesWithValue(beaconHeight, testCase.Input["btc"], testCase.Input["bnb"], testCase.Input["prv"])
 
 		value, _ := buildInstForLiquidationTopPercentileExchangeRates(
 			beaconHeight,
@@ -585,7 +584,7 @@ func (suite *PortalProducerSuite) verifyAutoLiquidationExchangeRates(testCases [
 			var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
 			json.Unmarshal([]byte(value[0][3]), &actionData)
 
-			if actionData.TP["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].TPKey != testCase.Output().TpValue {    //free collateral
+			if actionData.TP["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].TPKey != testCase.Output().TpValue { //free collateral
 				suite.T().Errorf("tp is not equal, %v != %v", actionData.TP["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].TPKey, testCase.Output().TpValue)
 			}
 		}
@@ -608,7 +607,7 @@ func (suite *PortalProducerSuite) verifyAutoLiquidationExchangeRates(testCases [
 			i2, _ := strconv.ParseUint(testCase.Output().Custodian1[2], 10, 64)
 			i3, _ := strconv.ParseUint(testCase.Output().Custodian1[3], 10, 64)
 
-			if i1 != freeCollateral {    //free collateral
+			if i1 != freeCollateral { //free collateral
 				suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
 			}
 
@@ -638,7 +637,7 @@ func (suite *PortalProducerSuite) verifyAutoLiquidationExchangeRates(testCases [
 			i2, _ := strconv.ParseUint(testCase.Output().Custodian2[2], 10, 64)
 			i3, _ := strconv.ParseUint(testCase.Output().Custodian2[3], 10, 64)
 
-			if i1 != freeCollateral {    //free collateral
+			if i1 != freeCollateral { //free collateral
 				suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
 			}
 
@@ -728,7 +727,7 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 				i2, _ := strconv.ParseUint(testCase.Output().Custodian1[2], 10, 64)
 				i3, _ := strconv.ParseUint(testCase.Output().Custodian1[3], 10, 64)
 
-				if i1 != freeCollateral {    //free collateral
+				if i1 != freeCollateral { //free collateral
 					suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
 				}
 
@@ -752,7 +751,7 @@ func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingReques
 				i2, _ := strconv.ParseUint(testCase.Output().Custodian2[2], 10, 64)
 				i3, _ := strconv.ParseUint(testCase.Output().Custodian2[3], 10, 64)
 
-				if i1 != freeCollateral {    //free collateral
+				if i1 != freeCollateral { //free collateral
 					suite.T().Errorf("free collateral is not equal, %v != %v", i1, freeCollateral)
 				}
 
@@ -795,7 +794,7 @@ type CustodianDepositTestCase struct {
 
 func buildPortalCustodianDepositAction(
 	incogAddressStr string,
-	remoteAddresses []statedb.RemoteAddress,
+	remoteAddresses map[string]string,
 	depositedAmount uint64,
 ) []string {
 	custodianDepositMeta, _ := metadata.NewPortalCustodianDeposit(
@@ -894,7 +893,7 @@ func getTestCasesForCustodianDeposit() []*CustodianDepositTestCase {
 			testcases[i].Input.RemoteAddresses,
 			testcases[i].Input.DepositedAmount)
 
-		custodianKey := statedb.GenerateCustodianStateObjectKey(uint64(BeaconHeight), testcases[i].Input.IncognitoAddress)
+		custodianKey := statedb.GenerateCustodianStateObjectKey(testcases[i].Input.IncognitoAddress)
 		if custodianPool[custodianKey.String()] == nil {
 			custodianState := statedb.NewCustodianStateWithValue(
 				testcases[i].Input.IncognitoAddress,
@@ -954,20 +953,20 @@ func (suite *PortalProducerSuite) TestCustodianDeposit() {
 
 /************************ Redeem request test ************************/
 type RedeemRequestOutput struct {
-	MetadataType            string
-	ChainStatus             string
+	MetadataType         string
+	ChainStatus          string
 	RedeemRequestContent string
-	CustodianPool           map[string]*statedb.CustodianState
-	WaitingRedeemRequest    map[string]*statedb.WaitingRedeemRequest
+	CustodianPool        map[string]*statedb.CustodianState
+	WaitingRedeemRequest map[string]*statedb.WaitingRedeemRequest
 }
 
 type RedeemRequestInput struct {
-	UniqueRedeemID string
-	TokenID string
-	RedeemAmount uint64
+	UniqueRedeemID     string
+	TokenID            string
+	RedeemAmount       uint64
 	RedeemerIncAddress string
 	RedeemerRemoteAddr string
-	RedeemFee uint64
+	RedeemFee          uint64
 }
 
 type RedeemRequestTestCase struct {
@@ -1057,26 +1056,26 @@ func (suite *PortalProducerSuite) SetupRedeemRequest(beaconHeight uint64) {
 	custodianStates := []*statedb.CustodianState{
 		statedb.NewCustodianStateWithValue(
 			"12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ",
-			1000 * 1e9,
-			400 * 1e9,
+			1000*1e9,
+			400*1e9,
 			map[string]uint64{
-				BNBTokenID: 10 * 1e9,    		// hold 10 BNB
+				BNBTokenID: 10 * 1e9, // hold 10 BNB
 			},
 			map[string]uint64{
-				BNBTokenID: 600 * 1e9,    		// lock 600 PRV
+				BNBTokenID: 600 * 1e9, // lock 600 PRV
 			},
 			remoteAddresses,
 			0,
 		),
 		statedb.NewCustodianStateWithValue(
 			"12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy",
-			5000 * 1e9,
-			2000 * 1e9,
+			5000*1e9,
+			2000*1e9,
 			map[string]uint64{
-				BNBTokenID: 50 * 1e9,    		// hold 50 BNB
+				BNBTokenID: 50 * 1e9, // hold 50 BNB
 			},
 			map[string]uint64{
-				BNBTokenID: 3000 * 1e9,    		// lock 3000 PRV
+				BNBTokenID: 3000 * 1e9, // lock 3000 PRV
 			},
 			remoteAddresses,
 			0,
@@ -1105,8 +1104,8 @@ func getTestCasesForRedeemRequest() []*RedeemRequestTestCase {
 				RedeemFee:          0.004 * 1e9,
 			},
 			Output: RedeemRequestOutput{
-				MetadataType:            strconv.Itoa(metadata.PortalRedeemRequestMeta),
-				ChainStatus:             common.PortalRedeemRequestAcceptedChainStatus,
+				MetadataType:         strconv.Itoa(metadata.PortalRedeemRequestMeta),
+				ChainStatus:          common.PortalRedeemRequestAcceptedChainStatus,
 				RedeemRequestContent: "",
 			},
 		},
@@ -1121,8 +1120,8 @@ func getTestCasesForRedeemRequest() []*RedeemRequestTestCase {
 				RedeemFee:          0.204 * 1e9,
 			},
 			Output: RedeemRequestOutput{
-				MetadataType:            strconv.Itoa(metadata.PortalRedeemRequestMeta),
-				ChainStatus:             common.PortalRedeemRequestAcceptedChainStatus,
+				MetadataType:         strconv.Itoa(metadata.PortalRedeemRequestMeta),
+				ChainStatus:          common.PortalRedeemRequestAcceptedChainStatus,
 				RedeemRequestContent: "",
 			},
 		},
@@ -1137,8 +1136,8 @@ func getTestCasesForRedeemRequest() []*RedeemRequestTestCase {
 				RedeemFee:          0.003 * 1e9,
 			},
 			Output: RedeemRequestOutput{
-				MetadataType:            strconv.Itoa(metadata.PortalRedeemRequestMeta),
-				ChainStatus:             common.PortalRedeemRequestRejectedChainStatus,
+				MetadataType:         strconv.Itoa(metadata.PortalRedeemRequestMeta),
+				ChainStatus:          common.PortalRedeemRequestRejectedChainStatus,
 				RedeemRequestContent: "",
 			},
 		},

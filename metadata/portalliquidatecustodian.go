@@ -23,28 +23,30 @@ type PortalLiquidateCustodian struct {
 // It will be appended to beaconBlock
 type PortalLiquidateCustodianContent struct {
 	MetadataBase
-	UniqueRedeemID           string
-	TokenID                  string // pTokenID in incognito chain
-	RedeemPubTokenAmount     uint64
-	MintedCollateralAmount   uint64 // minted PRV amount for sending back to users
-	RedeemerIncAddressStr    string
-	CustodianIncAddressStr   string
-	LiquidatedByExchangeRate bool
-	ShardID                  byte
+	UniqueRedeemID                 string
+	TokenID                        string // pTokenID in incognito chain
+	RedeemPubTokenAmount           uint64
+	LiquidatedCollateralAmount     uint64 // minted PRV amount for sending back to users
+	RemainUnlockAmountForCustodian uint64
+	RedeemerIncAddressStr          string
+	CustodianIncAddressStr         string
+	LiquidatedByExchangeRate       bool
+	ShardID                        byte
 }
 
 // PortalLiquidateCustodianStatus - Beacon tracks status of custodian liquidation into db
 type PortalLiquidateCustodianStatus struct {
-	Status                   byte
-	UniqueRedeemID           string
-	TokenID                  string // pTokenID in incognito chain
-	RedeemPubTokenAmount     uint64
-	MintedCollateralAmount   uint64 // minted PRV amount for sending back to users
-	RedeemerIncAddressStr    string
-	CustodianIncAddressStr   string
-	LiquidatedByExchangeRate bool
-	ShardID                  byte
-	LiquidatedBeaconHeight   uint64
+	Status                         byte
+	UniqueRedeemID                 string
+	TokenID                        string // pTokenID in incognito chain
+	RedeemPubTokenAmount           uint64
+	LiquidatedCollateralAmount     uint64 // minted PRV amount for sending back to users
+	RemainUnlockAmountForCustodian uint64
+	RedeemerIncAddressStr          string
+	CustodianIncAddressStr         string
+	LiquidatedByExchangeRate       bool
+	ShardID                        byte
+	LiquidatedBeaconHeight         uint64
 }
 
 func NewPortalLiquidateCustodian(

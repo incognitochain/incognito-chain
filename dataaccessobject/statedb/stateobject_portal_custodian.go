@@ -2,7 +2,6 @@ package statedb
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
@@ -14,13 +13,8 @@ type CustodianState struct {
 	freeCollateral         uint64            // prv
 	holdingPubTokens       map[string]uint64 // tokenID : amount
 	lockedAmountCollateral map[string]uint64 // tokenID : amount
-	remoteAddresses        []RemoteAddress
+	remoteAddresses        map[string]string // tokenID : remote address
 	rewardAmount           map[string]uint64 // tokenID : amount
-}
-
-type RemoteAddress struct {
-	pTokenID string
-	address  string
 }
 
 func (cs CustodianState) GetIncognitoAddress() string {
@@ -55,11 +49,11 @@ func (cs *CustodianState) SetLockedAmountCollateral(lockedAmountCollateral map[s
 	cs.lockedAmountCollateral = lockedAmountCollateral
 }
 
-func (cs CustodianState) GetRemoteAddresses() []RemoteAddress {
+func (cs CustodianState) GetRemoteAddresses() map[string]string {
 	return cs.remoteAddresses
 }
 
-func (cs *CustodianState) SetRemoteAddresses(remoteAddresses []RemoteAddress) {
+func (cs *CustodianState) SetRemoteAddresses(remoteAddresses map[string]string) {
 	cs.remoteAddresses = remoteAddresses
 }
 
@@ -86,7 +80,7 @@ func (cs CustodianState) MarshalJSON() ([]byte, error) {
 		FreeCollateral         uint64
 		HoldingPubTokens       map[string]uint64
 		LockedAmountCollateral map[string]uint64
-		RemoteAddresses        []RemoteAddress
+		RemoteAddresses        map[string]string
 		RewardAmount           map[string]uint64
 	}{
 		IncognitoAddress:       cs.incognitoAddress,
@@ -110,7 +104,7 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 		FreeCollateral         uint64
 		HoldingPubTokens       map[string]uint64
 		LockedAmountCollateral map[string]uint64
-		RemoteAddresses        []RemoteAddress
+		RemoteAddresses        map[string]string
 		RewardAmount           map[string]uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -127,60 +121,16 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r RemoteAddress) GetPTokenID() string {
-	return r.pTokenID
-}
-
-func (r *RemoteAddress) SetPTokenID(pTokenID string) {
-	r.pTokenID = pTokenID
-}
-
-func (r RemoteAddress) GetAddress() string {
-	return r.address
-}
-
-func (r *RemoteAddress) SetAddress(address string) {
-	r.address = address
-}
-
-func (r RemoteAddress) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		PTokenID string
-		Address  string
-	}{
-		PTokenID: r.pTokenID,
-		Address:  r.address,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (r *RemoteAddress) UnmarshalJSON(data []byte) error {
-	temp := struct {
-		PTokenID string
-		Address  string
-	}{}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-	r.pTokenID = temp.PTokenID
-	r.address = temp.Address
-	return nil
-}
-
 // GetRemoteAddressByTokenID returns remote address for tokenID
-func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
-	for _, addr := range addresses {
-		if addr.GetPTokenID() == tokenID {
-			return addr.GetAddress(), nil
-		}
-	}
-
-	return "", errors.New("Can not found address with tokenID")
-}
+//func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
+//	for _, addr := range addresses {
+//		if addr.GetPTokenID() == tokenID {
+//			return addr.GetAddress(), nil
+//		}
+//	}
+//
+//	return "", errors.New("Can not found address with tokenID")
+//}
 
 func NewCustodianState() *CustodianState {
 	return &CustodianState{
@@ -196,7 +146,7 @@ func NewCustodianStateWithValue(
 	freeCollateral uint64,
 	holdingPubTokens map[string]uint64,
 	lockedAmountCollateral map[string]uint64,
-	remoteAddresses []RemoteAddress,
+	remoteAddresses map[string]string,
 	rewardAmount map[string]uint64) *CustodianState {
 
 	return &CustodianState{
@@ -208,10 +158,6 @@ func NewCustodianStateWithValue(
 		remoteAddresses:        remoteAddresses,
 		rewardAmount:           rewardAmount,
 	}
-}
-
-func NewRemoteAddressWithValue(pToken string, address string) *RemoteAddress {
-	return &RemoteAddress{pTokenID: pToken, address: address}
 }
 
 type CustodianStateObject struct {
@@ -269,8 +215,8 @@ func newCustodianStateObjectWithValue(db *StateDB, key common.Hash, data interfa
 	}, nil
 }
 
-func GenerateCustodianStateObjectKey(beaconHeight uint64, custodianIncognitoAddress string) common.Hash {
-	prefixHash := GetPortalCustodianStatePrefix(beaconHeight)
+func GenerateCustodianStateObjectKey(custodianIncognitoAddress string) common.Hash {
+	prefixHash := GetPortalCustodianStatePrefix()
 	valueHash := common.HashH([]byte(custodianIncognitoAddress))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }

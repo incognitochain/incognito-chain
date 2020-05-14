@@ -182,8 +182,14 @@ type BlockChain struct {
 	notifications     []NotificationCallback
 }
 
+// GetChainParams returns btc chain params
 func (b *BlockChain) GetChainParams() *chaincfg.Params {
 	return b.chainParams
+}
+
+// GetDB returns btc db
+func (b *BlockChain) GetDB() database.DB {
+	return b.db
 }
 
 // HaveBlock returns whether or not the chain instance has the block represented

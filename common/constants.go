@@ -143,9 +143,11 @@ const (
 	PortalPortingReqExpiredStatus    = 3
 	PortalPortingReqLiquidatedStatus = 4
 
-	PortalRedeemReqSuccessStatus    = 1
-	PortalRedeemReqWaitingStatus    = 2
-	PortalRedeemReqLiquidatedStatus = 3
+	PortalRedeemReqSuccessStatus               = 1
+	PortalRedeemReqWaitingStatus               = 2
+	PortalRedeemReqLiquidatedStatus            = 3
+	PortalRedeemReqRejectedStatus              = 4
+	PortalRedeemReqRejectedByLiquidationStatus = 5
 
 	PortalCustodianWithdrawReqAcceptedStatus = 1
 	PortalCustodianWithdrawReqRejectStatus   = 2
@@ -203,8 +205,9 @@ const (
 	PortalExchangeRatesAcceptedChainStatus = "accepted"
 	PortalExchangeRatesRejectedChainStatus = "rejected"
 
-	PortalRedeemRequestAcceptedChainStatus = "accepted"
-	PortalRedeemRequestRejectedChainStatus = "rejected"
+	PortalRedeemRequestAcceptedChainStatus              = "accepted"
+	PortalRedeemRequestRejectedChainStatus              = "rejected"
+	PortalRedeemRequestRejectedByLiquidationChainStatus = "rejectedByLiquidation"
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
@@ -238,21 +241,18 @@ const (
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 24 * time.Hour // 24 hours
-	PortalTimeOutWaitingPortingRequest     = 24 * time.Hour // 24 hours
-	PercentReceivedCollateralAmount        = 120            // users will be received 120% of redeem amount in PRV (if there is custodian liquidation for redeem request)
-	MinPercentUnlockedCollateralAmount     = 120            // minimum percent collateral amount will be unlocked after custodian return pubTokens for users
+	PortalTimeOutCustodianReturnPubToken = 1 * time.Hour // 24 hours
+	PortalTimeOutWaitingPortingRequest   = 1 * time.Hour // 24 hours
+	PercentReceivedCollateralAmount      = 105           // users will be received 105% of redeem amount in PRV (if there is custodian liquidation for redeem request)
 	// todo: need to be updated before deploying
-	PercentCustodianRewards = 10 // 10% of DAO funds per epoch
+	PercentCustodianRewards  = 10 // 10% of DAO funds per epoch
+	MinPercentLockCollateral = 150
 
 	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 	TP130 = 130
 
 	PercentPortingFeeAmount = 0.01 // %
 	PercentRedeemFeeAmount  = 0.01 // %
-
-	MinRedeemAmount  = 10
-	MinPortingAmount = 10
 )
 
 const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
