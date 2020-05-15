@@ -70,7 +70,7 @@ func (c *PlainCoinV1) GetShardID() (uint8, error) {
 }
 
 // ver1 does not need to care for index
-func (c PlainCoinV1) GetIndex() uint8                   { return 0 }
+func (c PlainCoinV1) GetIndex() uint32                   { return 0 }
 func (c PlainCoinV1) GetCommitment() *operation.Point   { return c.commitment }
 func (c PlainCoinV1) GetPublicKey() *operation.Point    { return c.publicKey }
 func (c PlainCoinV1) GetSNDerivator() *operation.Scalar { return c.snDerivator }
@@ -379,7 +379,7 @@ type CoinV1 struct {
 }
 
 // CoinV1 does not have index so return 0
-func (c CoinV1) GetIndex() uint8                   { return 0 }
+func (c CoinV1) GetIndex() uint32                   { return 0 }
 func (c CoinV1) GetVersion() uint8                 { return 1 }
 func (c CoinV1) GetPublicKey() *operation.Point    { return c.CoinDetails.GetPublicKey() }
 func (c CoinV1) GetCommitment() *operation.Point   { return c.CoinDetails.GetCommitment() }

@@ -231,18 +231,18 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 			Logger.log.Error("GetOutcoinsBytesByKeyset Get By Height", err)
 			return nil, err
 		}
-		//fmt.Println("Querying height =", height)
-		//fmt.Println("Got number of coins = ", len(currentHeightCoins))
+		fmt.Println("Querying height =", height)
+		fmt.Println("Got number of coins = ", len(currentHeightCoins))
 		for _, coinBytes := range currentHeightCoins {
 			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
 				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
 				return nil, err
 			}
-			//fmt.Println("Found a coin")
-			//fmt.Println("Version = ", c.GetVersion())
-			//fmt.Println("Index = ", c.GetIndex())
-			//fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
+			fmt.Println("Found a coin")
+			fmt.Println("Version = ", c.GetVersion())
+			fmt.Println("Index = ", c.GetIndex())
+			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
 			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
 				outCoinsBytes = append(outCoinsBytes, c.Bytes())
 			}

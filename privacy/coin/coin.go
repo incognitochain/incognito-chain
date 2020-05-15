@@ -1,6 +1,7 @@
 package coin
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -16,7 +17,7 @@ type Coin interface {
 	GetSNDerivator() *operation.Scalar
 	GetValue() uint64
 	GetRandomness() *operation.Scalar
-	GetIndex() uint8
+	GetIndex() uint32
 
 	IsEncrypted() bool
 
@@ -34,7 +35,7 @@ type Coin interface {
 type PlainCoin interface {
 	GetVersion() uint8
 	GetShardID() (uint8, error)
-	GetIndex() uint8
+	GetIndex() uint32
 	GetCommitment() *operation.Point
 	GetInfo() []byte
 	GetPublicKey() *operation.Point
@@ -99,7 +100,7 @@ func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
 		rK := new(operation.Point).ScalarMult(c.GetTxRandom(), viewKey.GetPrivateView())
 
 		hashed := operation.HashToScalar(
-			append(rK.ToBytesS(), c.GetIndex()),
+			append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...),
 		)
 		HnG := new(operation.Point).ScalarMultBase(hashed)
 		KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
