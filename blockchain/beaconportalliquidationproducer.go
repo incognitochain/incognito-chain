@@ -133,6 +133,7 @@ func buildLiquidationCustodianDepositInst(
 func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	insts := [][]string{}
 
@@ -152,7 +153,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	sort.Strings(sortedWaitingRedeemReqKeys)
 	for _, redeemReqKey := range sortedWaitingRedeemReqKeys {
 		redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
-		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutCustodianReturnPubToken) {
+		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(portalParams.TimeOutCustodianReturnPubToken) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -173,7 +174,8 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					custodianStateKey.String(),
 					matchCusDetail.GetAmount(),
 					tokenID,
-					exchangeRate)
+					exchangeRate,
+					portalParams)
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when calculating unlock collateral amount %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
@@ -326,6 +328,7 @@ func (blockchain *BlockChain) convertPortalTimeOutToBeaconBlocks(duration time.D
 func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	insts := [][]string{}
 	sortedWaitingPortingReqKeys := make([]string, 0)
@@ -335,7 +338,7 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	sort.Strings(sortedWaitingPortingReqKeys)
 	for _, portingReqKey := range sortedWaitingPortingReqKeys {
 		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
-		if (beaconHeight+1)-portingReq.BeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(common.PortalTimeOutWaitingPortingRequest) {
+		if (beaconHeight+1)-portingReq.BeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
@@ -355,6 +358,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 	exchangeRate *statedb.FinalExchangeRatesState,
 	liquidatedCustodianState *statedb.CustodianState,
 	tokenID string,
+	portalParams PortalParams,
 ) ([][]string, error) {
 
 	insts := [][]string{}
@@ -380,7 +384,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 		return insts, err
 	}
 
-	totalMintedTmp := new(big.Int).Mul(new(big.Int).SetUint64(totalMatchingRedeemAmountPubTokenInPRV), new(big.Int).SetUint64(common.PercentReceivedCollateralAmount))
+	totalMintedTmp := new(big.Int).Mul(new(big.Int).SetUint64(totalMatchingRedeemAmountPubTokenInPRV), new(big.Int).SetUint64(portalParams.MaxPercentLiquidatedCollateralAmount))
 	totalMintedAmountPRV := new(big.Int).Div(totalMintedTmp, new(big.Int).SetUint64(100)).Uint64()
 
 	if totalMintedAmountPRV > liquidatedCustodianState.GetLockedAmountCollateral()[tokenID] {
@@ -459,6 +463,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 	currentPortalState *CurrentPortalState,
 	liquidatedCustodianState *statedb.CustodianState,
 	tokenID string,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	insts := [][]string{}
 
@@ -524,7 +529,10 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 Top percentile (TP): 150 (TP150), 130 (TP130), 120 (TP120)
 if TP down, we are need liquidation custodian and notify to custodians (or users)
 */
-func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+func buildInstForLiquidationTopPercentileExchangeRates(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) ([][]string, error) {
 	if len(currentPortalState.CustodianPoolState) <= 0 {
 		return [][]string{}, nil
 	}
@@ -545,7 +553,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 
 	for _, custodianKey := range sortedCustodianStateKeys {
 		custodianState := custodianPoolState[custodianKey]
-		tpRatios, err := calAndCheckTPRatio(currentPortalState, custodianState, exchangeRate)
+		tpRatios, err := calAndCheckTPRatio(currentPortalState, custodianState, exchangeRate, portalParams)
 		if err != nil {
 			Logger.log.Errorf("Error when calculating and checking tp ratio %v", err)
 			continue
@@ -568,6 +576,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 						currentPortalState,
 						custodianState,
 						pTokenID,
+						portalParams,
 					)
 					if err != nil {
 						Logger.log.Errorf("Error when check and build instruction from redeem request %v\n", err)
@@ -582,7 +591,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 
 			remainUnlockAmounts := map[string]uint64{}
 			for _, pTokenID := range sortedTPRatioKeys {
-				if tpRatios[pTokenID].TPKey == common.TP130 {
+				if tpRatios[pTokenID].TPKey == int(portalParams.TP130) {
 					continue
 				}
 
@@ -592,7 +601,8 @@ func buildInstForLiquidationTopPercentileExchangeRates(beaconHeight uint64, curr
 					custodianKey,
 					tpRatios[pTokenID].HoldAmountPubToken,
 					pTokenID,
-					exchangeRate)
+					exchangeRate,
+					portalParams)
 				if err != nil {
 					Logger.log.Errorf("Error when calculating unlock collateral amount %v\n", err)
 					continue
@@ -632,6 +642,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -684,7 +695,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 		return [][]string{inst}, nil
 	}
 
-	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, meta.TokenID, exchangeRatesState)
+	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, meta.TokenID, exchangeRatesState, portalParams.MinPercentRedeemFee)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v", err)
 		inst := buildRedeemLiquidateExchangeRatesInst(
@@ -825,6 +836,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -913,7 +925,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	tpRatios, err := calAndCheckTPRatio(currentPortalState, custodian, exchangeRate)
+	tpRatios, err := calAndCheckTPRatio(currentPortalState, custodian, exchangeRate, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Custodian deposit: cal tp ratio error %v", err)
 		inst := buildLiquidationCustodianDepositInst(
@@ -932,7 +944,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 
 	tpItem, ok := tpRatios[actionData.Meta.PTokenId]
 
-	if tpItem.TPKey != common.TP130 || !ok {
+	if tpItem.TPKey != int(portalParams.TP130) || !ok {
 		Logger.log.Errorf("TP value is must TP130")
 		inst := buildLiquidationCustodianDepositInst(
 			actionData.Meta.PTokenId,
@@ -948,7 +960,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.Meta.PTokenId, actionData.Meta.FreeCollateralSelected)
+	amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(currentPortalState, custodian, exchangeRate, actionData.Meta.PTokenId, actionData.Meta.FreeCollateralSelected, portalParams)
 
 	if err != nil {
 		Logger.log.Errorf("Calculate amount needed deposit err %v", err)
