@@ -264,7 +264,7 @@ type CoinRPCV1 struct {
 
 type CoinRPCV2 struct {
 	Version    uint8
-	Index      uint8
+	Index      uint32
 	Info       string
 	PublicKey  string
 	Commitment string

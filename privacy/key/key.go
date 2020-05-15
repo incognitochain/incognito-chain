@@ -69,6 +69,14 @@ type PaymentInfo struct {
 	Message        []byte // 512 bytes
 }
 
+func InitPaymentInfo(addr PaymentAddress, amount uint64, message []byte) *PaymentInfo {
+	return &PaymentInfo{
+		PaymentAddress: addr,
+		Amount: amount,
+		Message: message,
+	}
+}
+
 // GeneratePrivateKey generates a random 32-byte spending key
 func GeneratePrivateKey(seed []byte) PrivateKey {
 	bip32PrivKey := operation.HashToScalar(seed)

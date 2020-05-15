@@ -2,7 +2,6 @@ package coin
 
 import (
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
@@ -16,7 +15,7 @@ import (
 type CoinV2 struct {
 	// Public
 	version    uint8
-	index      uint8
+	index      uint32
 	info       []byte
 	publicKey  *operation.Point
 	commitment *operation.Point
@@ -29,19 +28,44 @@ type CoinV2 struct {
 	amount *operation.Scalar
 }
 
-func ParseOnetimeAddress(pubSpend, pubView *operation.Point, randomness *operation.Scalar, index uint8) *operation.Point {
-	rK := new(operation.Point).ScalarMult(pubView, randomness)
-	hash := operation.HashToScalar(append(rK.ToBytesS(), index))
-	HrKG := new(operation.Point).ScalarMultBase(hash)
-	return new(operation.Point).Add(HrKG, pubSpend)
-}
-
-func ArrayCoinToCoinV2(inputCoins []Coin) []*CoinV2 {
-	res := make([]*CoinV2, len(inputCoins))
-	for i := 0; i < len(inputCoins); i += 1 {
-		res[i] = inputCoins[i].(*CoinV2)
+func NewCoinBasedOnPaymentInfo(info *key.PaymentInfo, targetShardID byte) (*CoinV2, error) {
+	if targetShardID >= common.MaxShardNumber {
+		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
 	}
-	return res
+	randomness := operation.RandomScalar()
+	c := new(CoinV2)
+	c.SetVersion(2)
+	c.SetRandomness(randomness)
+	c.SetTxRandom(new(operation.Point).ScalarMultBase(randomness)) // rG
+	c.SetInfo(info.Message)
+	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), randomness, operation.PedersenValueIndex))
+
+	publicView := info.PaymentAddress.GetPublicView()
+	publicSpend := info.PaymentAddress.GetPublicSpend()
+
+	// Increase index until have the right shardID
+	index := uint32(0)
+	rK := new(operation.Point).ScalarMult(publicView, randomness)
+	for {
+		index += 1
+		c.SetIndex(index)
+
+		// Get publickey
+		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
+		HrKG := new(operation.Point).ScalarMultBase(hash)
+		publicKey := new(operation.Point).Add(HrKG, publicSpend)
+		c.SetPublicKey(publicKey)
+
+		currentShardID, err := c.GetShardID()
+		if err != nil {
+			return nil, err
+		}
+		if currentShardID == targetShardID {
+			break
+		}
+	}
+	return c, nil
 }
 
 func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
@@ -58,7 +82,7 @@ func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar
 	publicView := paymentAddress.GetPublicView()
 
 	rK := new(operation.Point).ScalarMult(publicView, tempPlainCoin.GetRandomness())
-	H := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
+	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
 
 	k := new(operation.Scalar).FromBytesS(privKey)
 	return new(operation.Scalar).Add(H, k), nil
@@ -84,7 +108,7 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 	publicView := additionalData.(*operation.Point)
 
 	rK := new(operation.Point).ScalarMult(publicView, c.GetMask())
-	hash := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
+	hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
 	hash = operation.HashToScalar(hash.ToBytesS())
 	mask := new(operation.Scalar).Add(c.GetMask(), hash)
 
@@ -112,7 +136,7 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		rK := new(operation.Point).ScalarMult(c.GetTxRandom(), viewKey.GetPrivateView())
 
 		// Hash multiple times
-		hash := operation.HashToScalar(append(rK.ToBytesS(), c.GetIndex()))
+		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
 		hash = operation.HashToScalar(hash.ToBytesS())
 		randomness := c.GetMask().Sub(c.GetMask(), hash)
 
@@ -182,7 +206,7 @@ func (c CoinV2) GetTxRandom() *operation.Point    { return c.txRandom }
 func (c CoinV2) GetPublicKey() *operation.Point   { return c.publicKey }
 func (c CoinV2) GetCommitment() *operation.Point  { return c.commitment }
 func (c CoinV2) GetKeyImage() *operation.Point    { return c.keyImage }
-func (c CoinV2) GetIndex() uint8                  { return c.index }
+func (c CoinV2) GetIndex() uint32                  { return c.index }
 func (c CoinV2) GetInfo() []byte                  { return c.info }
 func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
@@ -198,7 +222,7 @@ func (c *CoinV2) SetTxRandom(txRandom *operation.Point)     { c.txRandom = txRan
 func (c *CoinV2) SetPublicKey(publicKey *operation.Point)   { c.publicKey = publicKey }
 func (c *CoinV2) SetCommitment(commitment *operation.Point) { c.commitment = commitment }
 func (c *CoinV2) SetKeyImage(keyImage *operation.Point)     { c.keyImage = keyImage }
-func (c *CoinV2) SetIndex(index uint8)                      { c.index = index }
+func (c *CoinV2) SetIndex(index uint32)                      { c.index = index }
 func (c *CoinV2) SetValue(value uint64)                     { c.amount = new(operation.Scalar).FromUint64(value) }
 func (c *CoinV2) SetInfo(b []byte) {
 	c.info = make([]byte, len(b))
@@ -206,7 +230,8 @@ func (c *CoinV2) SetInfo(b []byte) {
 }
 
 func (c *CoinV2) Bytes() []byte {
-	coinBytes := []byte{c.GetVersion(), c.GetIndex()}
+	coinBytes := []byte{c.GetVersion()}
+	coinBytes = append(coinBytes, common.Uint32ToBytes(c.GetIndex())...)
 
 	info := c.GetInfo()
 	byteLengthInfo := byte(getMin(len(info), MaxSizeInfoCoin))
@@ -263,16 +288,26 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 	if c == nil {
 		c = new(CoinV2)
 	}
-	if len(coinBytes) < 3 {
-		return errors.New("coinBytes length is too small < 3")
+	if len(coinBytes) == 0 {
+		return errors.New("coinBytes is empty")
 	}
 	if coinBytes[0] != 2 {
 		return errors.New("coinBytes version is not 2")
 	}
 	c.SetVersion(coinBytes[0])
-	c.SetIndex(coinBytes[1])
 
-	offset := 2
+	offset := 1
+
+	if offset + common.Uint32Size > len(coinBytes) {
+		return errors.New("SetBytes CoinV2 index error, byte is too short")
+	}
+	index, err := common.BytesToUint32(coinBytes[offset : offset + common.Uint32Size])
+	if err != nil {
+		return errors.New("Error when converting bytes to uint32: " + err.Error())
+	}
+	c.SetIndex(index)
+	offset += common.Uint32Size
+
 	c.info, err = parseInfoForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV2 info error: " + err.Error())

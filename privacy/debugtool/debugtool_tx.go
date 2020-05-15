@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -219,6 +219,7 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 	return this.SendPostRequestWithQuery(query)
 }
 
+<<<<<<< HEAD
 func parseCoinBasedOnPaymentInfo(amount uint64, publicSpend *operation.Point, publicView *operation.Point, targetShardID byte, index uint8) (*coin.CoinV2, error) {
 	if targetShardID >= common.MaxShardNumber {
 		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
@@ -291,18 +292,22 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 
-	publicView := keyWallet.KeySet.PaymentAddress.GetPublicView()
-	publicSpend := keyWallet.KeySet.PaymentAddress.GetPublicSpend()
 	targetShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk) - 1])
-
-
-	c, _ := parseCoinBasedOnPaymentInfo(1, publicSpend, publicView, targetShardID, 0)
+	paymentInfo := key.InitPaymentInfo(keyWallet.KeySet.PaymentAddress, 100, []byte{})
+	c, _ := coin.NewCoinBasedOnPaymentInfo(paymentInfo, targetShardID)
 	ota := c.GetPublicKey()
+
+	b := make([]byte, 32)
+	for i := 0; i < 32; i += 1 {
+		b[i] = 0
+	}
+	fmt.Println(ota.ToBytesS())
+	fmt.Println(ota.ToBytesS())
 	paymentAddr := wallet.KeyWallet{
 		KeySet: incognitokey.KeySet{
 			PaymentAddress: privacy.PaymentAddress{
 				Pk: ota.ToBytesS(),
-				Tk: nil,
+				Tk: b,
 			},
 		},
 	}

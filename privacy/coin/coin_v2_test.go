@@ -45,36 +45,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 }
 
 func createNewCoin(amount uint64, paymentAddress key.PaymentAddress, targetShardID uint8, index uint8) (*CoinV2, error) {
-	if targetShardID >= common.MaxShardNumber {
-		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
-	}
-	c := new(CoinV2)
-	c.SetVersion(2)
-	c.SetIndex(index)
-	c.SetInfo([]byte{})
-	for true {
-		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
-		r := operation.RandomScalar()
-		c.SetRandomness(r)
-		c.SetAmount(new(operation.Scalar).FromUint64(amount))
-		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
-		c.SetPublicKey(ParseOnetimeAddress(
-			paymentAddress.GetPublicSpend(),
-			paymentAddress.GetPublicView(),
-			r,
-			index,
-		))
-		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
 
-		currentShardID, err := c.GetShardID()
-		if err != nil {
-			return nil, err
-		}
-		if currentShardID == targetShardID {
-			break
-		}
-	}
-	return c, nil
 }
 
 func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
