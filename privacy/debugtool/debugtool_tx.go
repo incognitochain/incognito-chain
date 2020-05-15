@@ -251,6 +251,41 @@ func parseCoinBasedOnPaymentInfo(amount uint64, publicSpend *operation.Point, pu
 	}
 	return c, nil
 }
+func (this *DebugTool) ParsePaymentAddress(paymentAddressStr string) (*privacy.PaymentAddress, error) {
+	keyWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, errors.New("Invalid payment address string")
+	}
+	return &keyWallet.KeySet.PaymentAddress, nil
+}
+
+func (this *DebugTool) GenerateOTAFromPaymentAddress(paymentAdd *privacy.PaymentAddress, numberAdd uint8) ([]string, error) {
+	publicView := paymentAdd.GetPublicView()
+	publicSpend := paymentAdd.GetPublicSpend()
+	targetShardID := common.GetShardIDFromLastByte(paymentAdd.Pk[len(paymentAdd.Pk) - 1])
+
+
+	lsPaymentAdd := make([]string, numberAdd)
+	for i := 0; i < int(numberAdd); i++ {
+		random := privacy.RandomScalar()
+		pubKey := coin.ParseOnetimeAddress(publicSpend, publicView, random, targetShardID)
+		tmpPaymentAdd := wallet.KeyWallet{
+			KeySet: incognitokey.KeySet{
+				PaymentAddress: privacy.PaymentAddress{
+					Pk: pubKey.ToBytesS(),
+					Tk: nil,
+				},
+			},
+		}
+		lsPaymentAdd[i] = tmpPaymentAdd.Base58CheckSerialize((wallet.PaymentAddressType))
+	}
+
+	return lsPaymentAdd, nil
+}
 
 func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string, privKeyStrB string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
@@ -259,6 +294,8 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 	publicView := keyWallet.KeySet.PaymentAddress.GetPublicView()
 	publicSpend := keyWallet.KeySet.PaymentAddress.GetPublicSpend()
 	targetShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk) - 1])
+
+
 	c, _ := parseCoinBasedOnPaymentInfo(1, publicSpend, publicView, targetShardID, 0)
 	ota := c.GetPublicKey()
 	paymentAddr := wallet.KeyWallet{
@@ -283,7 +320,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 				"Privacy": true,
 				"TokenID": "",
 				"TokenName": "token_test",
-				"TokenSymbol": "pTTT",
+				"TokenSymbol": paymentAddrStr"pTTT",
 				"TokenFee": 0,
 				"TokenTxType": 0,
 				"TokenAmount": 1000000000000000000,
@@ -292,7 +329,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 				}
 			}
 			]
-	}`, privKeyStrA, paymentAddrStr)
+	}`, privKeyStrA, )
 	return this.SendPostRequestWithQuery(query)
 }
 
