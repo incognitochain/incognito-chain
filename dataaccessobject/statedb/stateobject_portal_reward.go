@@ -23,6 +23,7 @@ func (p *PortalRewardInfo) AddPortalRewardInfo(tokenID string, amount uint64) {
 	if p.rewards == nil {
 		p.rewards = make(map[string]uint64)
 		p.rewards[tokenID] = amount
+		return
 	}
 	p.rewards[tokenID] += amount
 }

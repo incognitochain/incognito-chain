@@ -10,6 +10,19 @@ type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
 }
+type PortalParams struct {
+	TimeOutCustodianReturnPubToken       time.Duration
+	TimeOutWaitingPortingRequest         time.Duration
+	MaxPercentLiquidatedCollateralAmount uint64
+	MaxPercentCustodianRewards           uint64
+	MinPercentCustodianRewards           uint64
+	MinLockCollateralAmountInEpoch       uint64
+	MinPercentLockedCollateral           uint64
+	TP120                                uint64
+	TP130                                uint64
+	MinPercentPortingFee                 float64
+	MinPercentRedeemFee                  float64
+}
 
 /*
 Params defines a network by its component. These component may be used by Applications
@@ -50,6 +63,7 @@ type Params struct {
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
+	PortalParams                     map[uint64]PortalParams
 }
 
 type GenesisParams struct {
@@ -118,6 +132,21 @@ func init() {
 		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                TestnetBNBFullNodeHost,
 		BNBFullNodePort:                TestnetBNBFullNodePort,
+		PortalParams: map[uint64]PortalParams{
+			0: {
+				TimeOutCustodianReturnPubToken:       1 * time.Hour,
+				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				MaxPercentLiquidatedCollateralAmount: 105,
+				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+				MinPercentCustodianRewards:           1,
+				MinLockCollateralAmountInEpoch:       5000 * 1e9, // 5000 prv
+				MinPercentLockedCollateral:           150,
+				TP120:                                120,
+				TP130:                                130,
+				MinPercentPortingFee:                 0.01,
+				MinPercentRedeemFee:                  0.01,
+			},
+		},
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -168,5 +197,20 @@ func init() {
 		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                MainnetBNBFullNodeHost,
 		BNBFullNodePort:                MainnetBNBFullNodePort,
+		PortalParams: map[uint64]PortalParams{
+			0: {
+				TimeOutCustodianReturnPubToken:       24 * time.Hour,
+				TimeOutWaitingPortingRequest:         24 * time.Hour,
+				MaxPercentLiquidatedCollateralAmount: 105,
+				MaxPercentCustodianRewards:           10,
+				MinPercentCustodianRewards:           1,
+				MinPercentLockedCollateral:           150,
+				MinLockCollateralAmountInEpoch:       17500 * 1e9, // 17500 prv
+				TP120:                                120,
+				TP130:                                130,
+				MinPercentPortingFee:                 0.01,
+				MinPercentRedeemFee:                  0.01,
+			},
+		},
 	}
 }
