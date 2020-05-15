@@ -399,6 +399,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	stopAutoStakingInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
+
+	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
+
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
@@ -407,7 +410,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 			return NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 		isSplitRewardForCustodian := totalLockedCollateral > 0
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian)
+		percentCustodianRewards := portalParams.MaxPercentCustodianRewards
+		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
+			percentCustodianRewards = portalParams.MinPercentCustodianRewards
+		}
+
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
 		if err != nil {
 			return NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -463,7 +471,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch)
+	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,

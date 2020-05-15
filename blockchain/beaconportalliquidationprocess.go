@@ -9,8 +9,10 @@ import (
 
 func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalLiquidateCustodianContent
@@ -116,8 +118,12 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	return nil
 }
 
-func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
@@ -196,7 +202,13 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState, updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
+func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
+	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -314,7 +326,12 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -342,7 +359,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 			return nil
 		}
 
-		amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(custodian, currentPortalState.FinalExchangeRatesState, actionData.PTokenId, actionData.FreeCollateralSelected)
+		amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(currentPortalState, custodian, currentPortalState.FinalExchangeRatesState, actionData.PTokenId, actionData.FreeCollateralSelected, portalParams)
 
 		if err != nil {
 			Logger.log.Errorf("Calculate amount needed deposit err %v", err)
@@ -428,7 +445,11 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 }
 
 func (blockchain *BlockChain) processPortalExpiredPortingRequest(
-	stateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil

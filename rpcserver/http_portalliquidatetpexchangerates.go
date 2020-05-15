@@ -205,7 +205,9 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
 	}
 
-	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(stateDB, custodianAddress, pTokenID, isFreeCollateralSelected)
+	portalParam := httpServer.config.BlockChain.GetPortalParams(uint64(beaconHeight))
+
+	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(stateDB, custodianAddress, pTokenID, isFreeCollateralSelected, portalParam)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
 	}

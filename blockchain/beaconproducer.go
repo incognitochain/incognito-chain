@@ -81,6 +81,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	BLogger.log.Infof("Producing block: %d (epoch %d)", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
+	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 
 	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
@@ -90,13 +91,18 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 			return nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 		isSplitRewardForCustodian := totalLockedCollateral > 0
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian)
+		percentCustodianRewards := portalParams.MaxPercentCustodianRewards
+		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
+			percentCustodianRewards = portalParams.MinPercentCustodianRewards
+		}
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
 	}
 
-	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, rewardForCustodianByEpoch)
+	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, rewardForCustodianByEpoch, portalParams)
+
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
@@ -243,7 +249,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 // 4. bridge instructions
 // 5. accepted reward instructions
 // 6. stop auto staking instructions
-func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, rewardForCustodianByEpoch map[common.Hash]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
+func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, rewardForCustodianByEpoch map[common.Hash]uint64, portalParams PortalParams) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
 	validStakeInstructions := [][]string{}
 	validStakePublicKeys := []string{}
@@ -310,7 +316,7 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	}
 
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch)
+	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	return shardStates, validStakeInstructions, validSwapInstructions, bridgeInstructions, acceptedRewardInstructions, validStopAutoStakingInstructions
 }

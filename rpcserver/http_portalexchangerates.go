@@ -243,8 +243,6 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
 	}
 
-	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
-
 	if !common.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
@@ -258,7 +256,9 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
 	}
 
-	result, err := httpServer.portal.GetPortingFees(stateDB, tokenID, uint64(valuePToken))
+	portalParams := httpServer.config.BlockChain.GetPortalParams(uint64(beaconHeight))
+
+	result, err := httpServer.portal.GetPortingFees(stateDB, tokenID, uint64(valuePToken), portalParams)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
 	}

@@ -144,6 +144,7 @@ func pickUpCustodians(
 	exchangeRate *statedb.FinalExchangeRatesState,
 	custodianStateSlice []CustodianStateSlice,
 	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
 ) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	//get multiple custodian
 	custodians := make([]*statedb.MatchingPortingCustodianDetail, 0)
@@ -164,7 +165,7 @@ func pickUpCustodians(
 			return nil, err
 		}
 
-		pTokenCustodianCanHold := down150Percent(collateralsInPToken)
+		pTokenCustodianCanHold := down150Percent(collateralsInPToken, uint64(portalParams.MinPercentLockedCollateral))
 		if pTokenCustodianCanHold > remainPTokens {
 			pTokenCustodianCanHold = remainPTokens
 			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenCustodianCanHold)
@@ -172,7 +173,7 @@ func pickUpCustodians(
 			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenCustodianCanHold)
 		}
 
-		totalPTokenAfterUp150Percent := up150Percent(pTokenCustodianCanHold)
+		totalPTokenAfterUp150Percent := up150Percent(pTokenCustodianCanHold, uint64(portalParams.MinPercentLockedCollateral))
 		neededCollaterals, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150Percent)
 		if err != nil {
 			Logger.log.Errorf("Failed to convert PToken to prv - with error %v", err)
@@ -254,13 +255,13 @@ func UpdateCustodianStateAfterUserRequestPToken(currentPortalState *CurrentPorta
 	return nil
 }
 
-func CalculatePortingFees(totalPToken uint64) uint64 {
-	result := common.PercentPortingFeeAmount * float64(totalPToken) / 100
+func CalculatePortingFees(totalPToken uint64, minPercent float64) uint64 {
+	result := minPercent * float64(totalPToken) / 100
 	roundNumber := math.Round(result)
 	return uint64(roundNumber)
 }
 
-func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState) (uint64, error) {
+func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState, minPercent float64) (uint64, error) {
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	portingAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenSymbol, portingAmountInPToken)
 	if err != nil {
@@ -268,13 +269,13 @@ func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchange
 		return 0, err
 	}
 
-	// can't use big int to calculate porting fee because of common.PercentPortingFeeAmount < 1
-	portingFee := uint64(math.Round(float64(portingAmountInPRV) * common.PercentPortingFeeAmount / 100))
+	// can't use big int to calculate porting fee because of common.MinPercentPortingFee < 1
+	portingFee := uint64(math.Round(float64(portingAmountInPRV) * minPercent / 100))
 
 	return portingFee, nil
 }
 
-func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState) (uint64, error) {
+func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState, minPercent float64) (uint64, error) {
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	redeemAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenSymbol, redeemAmountInPToken)
 	if err != nil {
@@ -282,8 +283,8 @@ func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 		return 0, err
 	}
 
-	// can't use big int to calculate porting fee because of common.PercentRedeemFeeAmount < 1
-	redeemFee := uint64(math.Round(float64(redeemAmountInPRV) * common.PercentRedeemFeeAmount / 100))
+	// can't use big int to calculate porting fee because of common.MinPercentRedeemFee < 1
+	redeemFee := uint64(math.Round(float64(redeemAmountInPRV) * minPercent / 100))
 
 	return redeemFee, nil
 }
@@ -291,15 +292,15 @@ func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 /*
 	up 150%
 */
-func up150Percent(amount uint64) uint64 {
-	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(common.MinPercentLockCollateral))
+func up150Percent(amount uint64, percent uint64) uint64 {
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(percent))
 	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	return result //return nano pBTC, pBNB
 }
 
-func down150Percent(amount uint64) uint64 {
+func down150Percent(amount uint64, percent uint64) uint64 {
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(100))
-	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(common.MinPercentLockCollateral)).Uint64()
+	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(percent)).Uint64()
 	return result
 }
 
@@ -318,12 +319,12 @@ func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRa
 }
 
 //check value is tp120 or tp130
-func checkTPRatio(tpValue uint64) (bool, bool) {
-	if tpValue > common.TP120 && tpValue <= common.TP130 {
+func checkTPRatio(tpValue uint64, portalParams PortalParams) (bool, bool) {
+	if tpValue > portalParams.TP120 && tpValue <= portalParams.TP130 {
 		return false, true
 	}
 
-	if tpValue <= common.TP120 {
+	if tpValue <= portalParams.TP120 {
 		return true, true
 	}
 
@@ -331,89 +332,33 @@ func checkTPRatio(tpValue uint64) (bool, bool) {
 	return false, false
 }
 
-//filter TP for ptoken each custodian
-func detectTopPercentileLiquidation(custodian *statedb.CustodianState, tpList map[string]uint64) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
-	if custodian == nil {
-		return nil, errors.New("Custodian not found")
+func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, custodian *statedb.CustodianState, exchangeRates *statedb.FinalExchangeRatesState, pTokenId string, isFreeCollateralSelected bool, portalParams PortalParams) (uint64, uint64, uint64, error) {
+	if custodian.GetHoldingPublicTokens() == nil {
+		return 0, 0, 0, nil
 	}
-
-	liquidateExchangeRatesList := make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
-	tpListKeys := make([]string, 0)
-	for key := range tpList {
-		tpListKeys = append(tpListKeys, key)
-	}
-	sort.Strings(tpListKeys)
-	for _, ptoken := range tpListKeys {
-		tpValue := tpList[ptoken]
-		if tp20, ok := checkTPRatio(tpValue); ok {
-			if tp20 {
-				liquidateExchangeRatesList[ptoken] = metadata.LiquidateTopPercentileExchangeRatesDetail{
-					TPKey:                    common.TP120,
-					TPValue:                  tpValue,
-					HoldAmountFreeCollateral: custodian.GetLockedAmountCollateral()[ptoken],
-					HoldAmountPubToken:       custodian.GetHoldingPublicTokens()[ptoken],
-				}
-			} else {
-				liquidateExchangeRatesList[ptoken] = metadata.LiquidateTopPercentileExchangeRatesDetail{
-					TPKey:                    common.TP130,
-					TPValue:                  tpValue,
-					HoldAmountFreeCollateral: 0,
-					HoldAmountPubToken:       0,
-				}
+	totalHoldingPublicToken := custodian.GetHoldingPublicTokens()[pTokenId]
+	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
+		if waitingRedeemReq.GetTokenID() != pTokenId {
+			continue
+		}
+		for _, matchingCustodian := range waitingRedeemReq.GetCustodians() {
+			if matchingCustodian.GetIncognitoAddress() != custodian.GetIncognitoAddress() {
+				continue
 			}
+			totalHoldingPublicToken += waitingRedeemReq.GetRedeemAmount()
+			break
 		}
 	}
 
-	return liquidateExchangeRatesList, nil
-}
-
-//detect tp by hold ptoken and hold prv each custodian
-func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *statedb.FinalExchangeRatesState) (map[string]uint64, error) {
-	result := make(map[string]uint64)
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
-	for key, amountPToken := range holdPToken {
-		amountPRV, ok := holdPRV[key]
-		if !ok {
-			return nil, errors.New("Ptoken not found")
-		}
-
-		if amountPRV <= 0 || amountPToken <= 0 {
-			Logger.log.Info("total PToken of custodian is zero")
-			return nil, nil
-		}
-
-		//(1): convert amount PToken to PRV
-		amountPTokenConverted, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(key, amountPToken)
-
-		if err != nil {
-			return nil, errors.New("Exchange rates error")
-		}
-
-		//(2): calculate % up-down from amount PRV and (1)
-		// total1: total ptoken was converted ex: 1BNB = 1000 PRV
-		// total2: total prv (was up 150%)
-		// 1500 ------ ?
-		//1000 ------ 100%
-		// => 1500 * 100 / 1000 = 150%
-		if amountPTokenConverted <= 0 {
-			return nil, errors.New("Can not divide zero")
-		}
-		//todo: calculate
-		percentUp := new(big.Int).Mul(big.NewInt(int64(amountPRV)), big.NewInt(100))         //amountPRV * 100 / amountPTokenConverted
-		roundNumber := new(big.Int).Div(percentUp, big.NewInt(int64(amountPTokenConverted))) // math.Ceil(float64(percentUp))
-		result[key] = roundNumber.Uint64()
-	}
-
-	return result, nil
-}
-
-func CalAmountNeededDepositLiquidate(custodian *statedb.CustodianState, exchangeRates *statedb.FinalExchangeRatesState, pTokenId string, isFreeCollateralSelected bool) (uint64, uint64, uint64, error) {
-	totalPToken := up150Percent(custodian.GetHoldingPublicTokens()[pTokenId])
+	totalPToken := up150Percent(totalHoldingPublicToken, portalParams.MinPercentLockedCollateral)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRates)
 	totalPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(pTokenId, totalPToken)
-
 	if err != nil {
 		return 0, 0, 0, err
+	}
+
+	if custodian.GetLockedAmountCollateral()[pTokenId] >= totalPRV {
+		return 0, 0, 0, nil
 	}
 
 	totalAmountNeeded := totalPRV - custodian.GetLockedAmountCollateral()[pTokenId]
@@ -435,26 +380,6 @@ func CalAmountNeededDepositLiquidate(custodian *statedb.CustodianState, exchange
 	}
 
 	return totalAmountNeeded, 0, 0, nil
-}
-
-func ValidationExchangeRates(exchangeRates *statedb.FinalExchangeRatesState) error {
-	if exchangeRates == nil || exchangeRates.Rates() == nil {
-		return errors.New("Exchange rates not found")
-	}
-
-	if _, ok := exchangeRates.Rates()[common.PortalBTCIDStr]; !ok {
-		return errors.New("BTC rates is not exist")
-	}
-
-	if _, ok := exchangeRates.Rates()[common.PortalBNBIDStr]; !ok {
-		return errors.New("BNB rates is not exist")
-	}
-
-	if _, ok := exchangeRates.Rates()[common.PRVIDStr]; !ok {
-		return errors.New("PRV rates is not exist")
-	}
-
-	return nil
 }
 
 func sortCustodiansByAmountHoldingPubTokenAscent(tokenID string, custodians map[string]*statedb.CustodianState) []*CustodianStateSlice {
@@ -554,6 +479,9 @@ func CalUnlockCollateralAmount(
 
 	totalHoldingPubToken := custodianState.GetHoldingPublicTokens()[tokenID]
 	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
+		if waitingRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
 		for _, cus := range waitingRedeemReq.GetCustodians() {
 			if cus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
 				totalHoldingPubToken += cus.GetAmount()
@@ -564,12 +492,21 @@ func CalUnlockCollateralAmount(
 
 	totalLockedAmountInWaitingPortings := uint64(0)
 	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != tokenID {
+			continue
+		}
 		for _, cus := range waitingPortingReq.Custodians() {
 			if cus.IncAddress == custodianState.GetIncognitoAddress() {
 				totalLockedAmountInWaitingPortings += cus.LockedAmountCollateral
 				break
 			}
 		}
+	}
+
+	if custodianState.GetLockedAmountCollateral()[tokenID] < totalLockedAmountInWaitingPortings {
+		Logger.log.Errorf("custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
+		Logger.log.Errorf("totalLockedAmountInWaitingPortings %v\n", totalLockedAmountInWaitingPortings)
+		return  0, errors.New("Lock amount is invalid")
 	}
 
 	tmp := new(big.Int).Mul(
@@ -588,16 +525,19 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	liquidatedCustodianStateKey string,
 	amountPubToken uint64,
 	tokenID string,
-	exchangeRate *statedb.FinalExchangeRatesState) (uint64, uint64, error) {
+	exchangeRate *statedb.FinalExchangeRatesState,
+	portalParams PortalParams) (uint64, uint64, error) {
 	totalUnlockCollateralAmount, err := CalUnlockCollateralAmount(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID)
 	if err != nil {
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error : %v\n", err)
 		return 0, 0, err
 	}
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
-	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPubToken), new(big.Int).SetUint64(common.PercentReceivedCollateralAmount))
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPubToken), new(big.Int).SetUint64(uint64(portalParams.MaxPercentLiquidatedCollateralAmount)))
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	liquidatedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, liquidatedAmountInPToken)
 	if err != nil {
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error converting rate : %v\n", err)
 		return 0, 0, err
 	}
 	if liquidatedAmountInPRV > totalUnlockCollateralAmount {
@@ -645,13 +585,14 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.Custodi
 		Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodian] total collateral less than liquidated amount")
 		return errors.New("[updateCustodianStateAfterLiquidateCustodian] total collateral less than liquidated amount")
 	}
-	custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidatedAmount)
-
 	lockedAmountTmp := custodianState.GetLockedAmountCollateral()
 	if lockedAmountTmp[tokenID] < liquidatedAmount+remainUnlockAmountForCustodian {
 		Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodian] locked amount less than total unlock amount")
 		return errors.New("[updateCustodianStateAfterLiquidateCustodian] locked amount less than total unlock amount")
 	}
+
+	custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - liquidatedAmount)
+
 	lockedAmountTmp[tokenID] = lockedAmountTmp[tokenID] - liquidatedAmount - remainUnlockAmountForCustodian
 	custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 
@@ -946,12 +887,20 @@ func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
 func calAndCheckTPRatio(
 	portalState *CurrentPortalState,
 	custodianState *statedb.CustodianState,
-	finalExchange *statedb.FinalExchangeRatesState) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
+	finalExchange *statedb.FinalExchangeRatesState,
+	portalParams PortalParams) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
 	result := make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
 
-	holdingPubToken := custodianState.GetHoldingPublicTokens()
-	lockedAmount := custodianState.GetLockedAmountCollateral()
+	lockedAmount := make(map[string]uint64)
+	for tokenID, amount := range custodianState.GetLockedAmountCollateral() {
+		lockedAmount[tokenID]= amount
+	}
+
+	holdingPubToken := make(map[string]uint64)
+	for tokenID, amount := range custodianState.GetHoldingPublicTokens() {
+		holdingPubToken[tokenID]= amount
+	}
 
 	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
 		for _, matchingCus := range waitingPortingReq.Custodians() {
@@ -998,17 +947,17 @@ func calAndCheckTPRatio(
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPRV), big.NewInt(100))
 		percent := new(big.Int).Div(tmp, new(big.Int).SetUint64(amountPTokenInPRV)).Uint64()
 
-		if tp20, ok := checkTPRatio(percent); ok {
+		if tp20, ok := checkTPRatio(percent, portalParams); ok {
 			if tp20 {
 				result[tokenID] = metadata.LiquidateTopPercentileExchangeRatesDetail{
-					TPKey:                    common.TP120,
+					TPKey:                    int(portalParams.TP120),
 					TPValue:                  percent,
 					HoldAmountFreeCollateral: lockedAmount[tokenID],
 					HoldAmountPubToken:       holdingPubToken[tokenID],
 				}
 			} else {
 				result[tokenID] = metadata.LiquidateTopPercentileExchangeRatesDetail{
-					TPKey:                    common.TP130,
+					TPKey:                    int(portalParams.TP130),
 					TPValue:                  percent,
 					HoldAmountFreeCollateral: 0,
 					HoldAmountPubToken:       0,
@@ -1062,3 +1011,4 @@ func UpdateCustodianRewards(currentPortalState *CurrentPortalState, rewardInfos 
 		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 	}
 }
+
