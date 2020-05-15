@@ -146,19 +146,6 @@ func init() {
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
 			},
-			100: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
-				MaxPercentLiquidatedCollateralAmount: 105,
-				MaxPercentCustodianRewards:           10,
-				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       5000 * 1e9, // 5000 prv
-				MinPercentLockedCollateral:           200,
-				TP120:                                120,
-				TP130:                                130,
-				MinPercentPortingFee:                 0.01,
-				MinPercentRedeemFee:                  0.01,
-			},
 		},
 	}
 	// END TESTNET
