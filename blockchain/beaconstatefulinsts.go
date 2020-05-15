@@ -257,6 +257,21 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, pdeInsts...)
 	}
 
+	// auto-liquidation portal instructions
+	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
+		beaconHeight-1,
+		currentPortalState,
+		portalParams,
+	)
+
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(portalLiquidationInsts) > 0 {
+		instructions = append(instructions, portalLiquidationInsts...)
+	}
+
 	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
 		stateDB,
@@ -286,21 +301,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	relayingInsts := blockchain.handleRelayingInsts(relayingHeaderState, pm)
 	if len(relayingInsts) > 0 {
 		instructions = append(instructions, relayingInsts...)
-	}
-
-	// auto-liquidation portal instructions
-	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
-		beaconHeight-1,
-		currentPortalState,
-		portalParams,
-	)
-
-	if err != nil {
-		Logger.log.Error(err)
-		return instructions
-	}
-	if len(portalLiquidationInsts) > 0 {
-		instructions = append(instructions, portalLiquidationInsts...)
 	}
 
 	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
