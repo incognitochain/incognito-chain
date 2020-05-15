@@ -10,7 +10,8 @@ import (
 func (blockchain *BlockChain) processPortalReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRewardContent
@@ -65,7 +66,8 @@ func (blockchain *BlockChain) processPortalReward(
 func (blockchain *BlockChain) processPortalWithdrawReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestWithdrawRewardContent
@@ -135,7 +137,8 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 func (blockchain *BlockChain) processPortalTotalCustodianReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalTotalCustodianReward
