@@ -86,7 +86,7 @@ func splitRewardForCustodians(
 	lockedCollateralState *statedb.LockedCollateralState,
 	custodianState map[string]*statedb.CustodianState,
 	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
-	totalLockedCollateral := lockedCollateralState.GetTotalLockedCollateralInEpoch()
+	totalLockedCollateral := lockedCollateralState.GetTotalLockedCollateralForRewards()
 
 	// sort totalCustodianReward before processing
 	//sortedTotalCustodianRewardKeys := make([]common.Hash, 0)
@@ -167,11 +167,11 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	// split reward for custodians
 	rewardInsts := [][]string{}
 	if rewardForCustodianByEpoch != nil && len(rewardForCustodianByEpoch) > 0 {
-		if currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() > 0 {
+		if currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards() > 0 {
 			// split reward for custodians
 			rewardInfos = splitRewardForCustodians(
 				rewardForCustodianByEpoch,
-				currentPortalState.LockedCollateralState,
+				currentPortalState.LockedCollateralForRewards,
 				currentPortalState.CustodianPoolState,
 				rewardInfos)
 

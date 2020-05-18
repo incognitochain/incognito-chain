@@ -232,13 +232,13 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	beaconBlock := beaconBlocks[0]
 
 	type CurrentPortalState struct {
-		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest      `json:"WaitingPortingRequests"`
-		WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest       `json:"WaitingRedeemRequests"`
-		CustodianPool              map[string]*statedb.CustodianState             `json:"CustodianPool"`
-		FinalExchangeRatesState    *statedb.FinalExchangeRatesState               `json:"FinalExchangeRatesState"`
-		LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool `json:"LiquidateExchangeRatesPool"`
-		LockedCollateralState      *statedb.LockedCollateralState                 `json:"LockedCollateralState"`
-		BeaconTimeStamp            int64                                          `json:"BeaconTimeStamp"`
+		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest `json:"WaitingPortingRequests"`
+		WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest  `json:"WaitingRedeemRequests"`
+		CustodianPool              map[string]*statedb.CustodianState        `json:"CustodianPool"`
+		FinalExchangeRatesState    *statedb.FinalExchangeRatesState          `json:"FinalExchangeRatesState"`
+		LiquidationPool            map[string]*statedb.LiquidationPool       `json:"LiquidationPool"`
+		LockedCollateralForRewards *statedb.LockedCollateralState            `json:"LockedCollateralForRewards"`
+		BeaconTimeStamp            int64                                     `json:"BeaconTimeStamp"`
 	}
 
 	result := CurrentPortalState{
@@ -247,8 +247,8 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		WaitingRedeemRequests:      portalState.WaitingRedeemRequests,
 		CustodianPool:              portalState.CustodianPoolState,
 		FinalExchangeRatesState:    portalState.FinalExchangeRatesState,
-		LiquidateExchangeRatesPool: portalState.LiquidateExchangeRatesPool,
-		LockedCollateralState:      portalState.LockedCollateralState,
+		LiquidationPool:            portalState.LiquidationPool,
+		LockedCollateralForRewards: portalState.LockedCollateralForRewards,
 	}
 	return result, nil
 }
