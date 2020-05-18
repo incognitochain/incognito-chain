@@ -27,7 +27,7 @@ if [ -z "$NODE_PORT" ]; then
 fi
 
 if [ -z "$LIMIT_FEE" ]; then
-    LIMIT_FEE=1;
+    LIMIT_FEE=100000;
 fi
 
 if [ -z "$PUBLIC_IP" ]; then
