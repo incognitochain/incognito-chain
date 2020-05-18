@@ -198,7 +198,7 @@ func (e *BLSBFT_V2) Start() error {
 							e.Logger.Critical(err)
 
 						} else {
-							e.Logger.Infof("[Monitor] proposer block", createdBlk.GetHeight(), "time slot ", e.currentTimeSlot, " with hash", createdBlk.Hash().String())
+							e.Logger.Infof("[Monitor] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
 						}
 					}
 				}
