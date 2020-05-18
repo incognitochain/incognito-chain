@@ -45,7 +45,7 @@ run()
   # OR eth with geth
   # docker run --restart=always --net inc_net -d --name eth_mainnet -p 8545:8545 -p 30303:30303 -v $PWD/${eth_data_dir_geth}:/geth -it ethereum/client-go --syncmode light --datadir /geth --rpcaddr 0.0.0.0 --rpcport 8545 --rpc --rpccorsdomain "*"
 
-  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=eth_mainnet -e MININGKEY=${validator_key} -e TESTNET=false -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
+  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=eth_mainnet -e MININGKEY=${validator_key} -e TESTNET=false -e LIMIT_FEE=1 -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
 
   if [ $is_shipping_logs -eq 1 ]
   then
