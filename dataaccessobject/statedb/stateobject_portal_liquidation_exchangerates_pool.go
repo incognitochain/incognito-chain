@@ -7,41 +7,41 @@ import (
 	"reflect"
 )
 
-type LiquidateExchangeRatesDetail struct {
-	HoldAmountFreeCollateral uint64
-	HoldAmountPubToken       uint64
+type LiquidationPoolDetail struct {
+	CollateralAmount uint64
+	PubTokenAmount   uint64
 }
 
-type LiquidateExchangeRatesPool struct {
-	rates map[string]LiquidateExchangeRatesDetail //ptoken | detail
+type LiquidationPool struct {
+	rates map[string]LiquidationPoolDetail //ptoken | detail
 }
 
-func (l *LiquidateExchangeRatesPool) Rates() map[string]LiquidateExchangeRatesDetail {
+func (l *LiquidationPool) Rates() map[string]LiquidationPoolDetail {
 	return l.rates
 }
 
-func (l *LiquidateExchangeRatesPool) SetRates(rates map[string]LiquidateExchangeRatesDetail) {
+func (l *LiquidationPool) SetRates(rates map[string]LiquidationPoolDetail) {
 	l.rates = rates
 }
 
-func NewLiquidateExchangeRatesPool() *LiquidateExchangeRatesPool {
-	return &LiquidateExchangeRatesPool{}
+func NewLiquidationPool() *LiquidationPool {
+	return &LiquidationPool{}
 }
 
-func NewLiquidateExchangeRatesPoolWithValue(rates map[string]LiquidateExchangeRatesDetail) *LiquidateExchangeRatesPool {
-	return &LiquidateExchangeRatesPool{rates: rates}
+func NewLiquidationPoolWithValue(rates map[string]LiquidationPoolDetail) *LiquidationPool {
+	return &LiquidationPool{rates: rates}
 }
 
-func GeneratePortalLiquidateExchangeRatesPoolObjectKey() common.Hash {
+func GeneratePortalLiquidationPoolObjectKey() common.Hash {
 	suffix := "liquidation"
-	prefixHash := GetPortalLiquidationExchangeRatesPoolPrefix()
+	prefixHash := GetPortalLiquidationPoolPrefix()
 	valueHash := common.HashH([]byte(suffix))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (l *LiquidateExchangeRatesPool) MarshalJSON() ([]byte, error) {
+func (l *LiquidationPool) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Rates map[string]LiquidateExchangeRatesDetail
+		Rates map[string]LiquidationPoolDetail
 	}{
 		Rates: l.rates,
 	})
@@ -51,9 +51,9 @@ func (l *LiquidateExchangeRatesPool) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (l *LiquidateExchangeRatesPool) UnmarshalJSON(data []byte) error {
+func (l *LiquidationPool) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Rates map[string]LiquidateExchangeRatesDetail
+		Rates map[string]LiquidationPoolDetail
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -63,14 +63,14 @@ func (l *LiquidateExchangeRatesPool) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type LiquidateExchangeRatesPoolObject struct {
+type LiquidationPoolObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version     int
 	keyObject   common.Hash
-	valueObject *LiquidateExchangeRatesPool
+	valueObject *LiquidationPool
 	objectType  int
 	deleted     bool
 
@@ -82,8 +82,8 @@ type LiquidateExchangeRatesPoolObject struct {
 	dbErr error
 }
 
-func newLiquidateExchangeRatesPoolObjectWithValue(db *StateDB, keyObject common.Hash, valueObject interface{}) (*LiquidateExchangeRatesPoolObject, error) {
-	var content = NewLiquidateExchangeRatesPool()
+func newLiquidationPoolObjectWithValue(db *StateDB, keyObject common.Hash, valueObject interface{}) (*LiquidationPoolObject, error) {
+	var content = NewLiquidationPool()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = valueObject.([]byte); ok {
@@ -92,49 +92,49 @@ func newLiquidateExchangeRatesPoolObjectWithValue(db *StateDB, keyObject common.
 			return nil, err
 		}
 	} else {
-		content, ok = valueObject.(*LiquidateExchangeRatesPool)
+		content, ok = valueObject.(*LiquidationPool)
 		if !ok {
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidLiquidationExchangeRatesType, reflect.TypeOf(valueObject))
 		}
 	}
-	return &LiquidateExchangeRatesPoolObject{
+	return &LiquidationPoolObject{
 		db:          db,
 		version:     defaultVersion,
 		keyObject:   keyObject,
 		valueObject: content,
-		objectType:  PortalLiquidationExchangeRatesPoolObjectType,
+		objectType:  PortalLiquidationPoolObjectType,
 		deleted:     false,
 	}, nil
 }
 
-func newLiquidateExchangeRatesPoolObject(db *StateDB, keyObject common.Hash) *LiquidateExchangeRatesPoolObject {
-	return &LiquidateExchangeRatesPoolObject{
+func newLiquidationPoolObject(db *StateDB, keyObject common.Hash) *LiquidationPoolObject {
+	return &LiquidationPoolObject{
 		db:          db,
 		version:     defaultVersion,
 		keyObject:   keyObject,
-		valueObject: NewLiquidateExchangeRatesPool(),
-		objectType:  PortalLiquidationExchangeRatesPoolObjectType,
+		valueObject: NewLiquidationPool(),
+		objectType:  PortalLiquidationPoolObjectType,
 		deleted:     false,
 	}
 }
 
-func (l LiquidateExchangeRatesPoolObject) GetVersion() int {
+func (l LiquidationPoolObject) GetVersion() int {
 	return l.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (l *LiquidateExchangeRatesPoolObject) SetError(err error) {
+func (l *LiquidationPoolObject) SetError(err error) {
 	if l.dbErr == nil {
 		l.dbErr = err
 	}
 }
 
-func (l LiquidateExchangeRatesPoolObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (l LiquidationPoolObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return l.trie
 }
 
-func (l *LiquidateExchangeRatesPoolObject) SetValue(data interface{}) error {
-	valueObject, ok := data.(*LiquidateExchangeRatesPool)
+func (l *LiquidationPoolObject) SetValue(data interface{}) error {
+	valueObject, ok := data.(*LiquidationPool)
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidLiquidationExchangeRatesType, reflect.TypeOf(data))
 	}
@@ -142,47 +142,47 @@ func (l *LiquidateExchangeRatesPoolObject) SetValue(data interface{}) error {
 	return nil
 }
 
-func (l LiquidateExchangeRatesPoolObject) GetValue() interface{} {
+func (l LiquidationPoolObject) GetValue() interface{} {
 	return l.valueObject
 }
 
-func (l LiquidateExchangeRatesPoolObject) GetValueBytes() []byte {
-	valueObject, ok := l.GetValue().(*LiquidateExchangeRatesPool)
+func (l LiquidationPoolObject) GetValueBytes() []byte {
+	valueObject, ok := l.GetValue().(*LiquidationPool)
 	if !ok {
 		panic("wrong expected value type")
 	}
 	value, err := json.Marshal(valueObject)
 	if err != nil {
-		panic("failed to marshal LiquidateExchangeRatesPool")
+		panic("failed to marshal LiquidationPool")
 	}
 	return value
 }
 
-func (l LiquidateExchangeRatesPoolObject) GetHash() common.Hash {
+func (l LiquidationPoolObject) GetHash() common.Hash {
 	return l.keyObject
 }
 
-func (l LiquidateExchangeRatesPoolObject) GetType() int {
+func (l LiquidationPoolObject) GetType() int {
 	return l.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (l *LiquidateExchangeRatesPoolObject) MarkDelete() {
+func (l *LiquidationPoolObject) MarkDelete() {
 	l.deleted = true
 }
 
 // reset all shard committee value into default value
-func (l *LiquidateExchangeRatesPoolObject) Reset() bool {
-	l.valueObject = NewLiquidateExchangeRatesPool()
+func (l *LiquidationPoolObject) Reset() bool {
+	l.valueObject = NewLiquidationPool()
 	return true
 }
 
-func (l LiquidateExchangeRatesPoolObject) IsDeleted() bool {
+func (l LiquidationPoolObject) IsDeleted() bool {
 	return l.deleted
 }
 
 // value is either default or nil
-func (l LiquidateExchangeRatesPoolObject) IsEmpty() bool {
-	temp := NewLiquidateExchangeRatesPool()
+func (l LiquidationPoolObject) IsEmpty() bool {
+	temp := NewLiquidationPool()
 	return reflect.DeepEqual(temp, l.valueObject) || l.valueObject == nil
 }

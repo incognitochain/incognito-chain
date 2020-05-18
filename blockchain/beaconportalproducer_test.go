@@ -24,12 +24,12 @@ type PortalProducerSuite struct {
 
 func (suite *PortalProducerSuite) SetupTest() {
 	suite.currentPortalState = &CurrentPortalState{
-		CustodianPoolState:         map[string]*statedb.CustodianState{},
-		ExchangeRatesRequests:      map[string]*metadata.ExchangeRatesRequestStatus{},
-		FinalExchangeRatesState:    map[string]*statedb.FinalExchangeRatesState{},
-		WaitingPortingRequests:     map[string]*statedb.WaitingPortingRequest{},
-		WaitingRedeemRequests:      map[string]*statedb.WaitingRedeemRequest{},
-		LiquidateExchangeRatesPool: map[string]*statedb.LiquidateExchangeRatesPool{},
+		CustodianPoolState:      map[string]*statedb.CustodianState{},
+		ExchangeRatesRequests:   map[string]*metadata.ExchangeRatesRequestStatus{},
+		FinalExchangeRatesState: map[string]*statedb.FinalExchangeRatesState{},
+		WaitingPortingRequests:  map[string]*statedb.WaitingPortingRequest{},
+		WaitingRedeemRequests:   map[string]*statedb.WaitingRedeemRequest{},
+		LiquidationPool:         map[string]*statedb.LiquidationPool{},
 	}
 }
 
@@ -652,15 +652,15 @@ func (suite *PortalProducerSuite) verifyAutoLiquidationExchangeRates(testCases [
 
 		//liquidation pool
 		if testCase.Output().LiquidationPool != nil {
-			liquidationPoolKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-			liquidationPool, ok := suite.currentPortalState.LiquidateExchangeRatesPool[liquidationPoolKey.String()]
+			liquidationPoolKey := statedb.GeneratePortalLiquidationPoolObjectKey(beaconHeight)
+			liquidationPool, ok := suite.currentPortalState.LiquidationPool[liquidationPoolKey.String()]
 
-			if ok && testCase.Output().LiquidationPool[0] != liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountPubToken {
-				suite.T().Errorf("hold public token is not equal, %v != %v", testCase.Output().LiquidationPool[0], liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountPubToken)
+			if ok && testCase.Output().LiquidationPool[0] != liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].PubTokenAmount {
+				suite.T().Errorf("hold public token is not equal, %v != %v", testCase.Output().LiquidationPool[0], liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].PubTokenAmount)
 			}
 
-			if ok && testCase.Output().LiquidationPool[1] != liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountFreeCollateral {
-				suite.T().Errorf("hold amount collateral is not equal, %v != %v", testCase.Output().LiquidationPool[1], liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].HoldAmountFreeCollateral)
+			if ok && testCase.Output().LiquidationPool[1] != liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].CollateralAmount {
+				suite.T().Errorf("hold amount collateral is not equal, %v != %v", testCase.Output().LiquidationPool[1], liquidationPool.Rates()["b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"].CollateralAmount)
 			}
 		}
 	}

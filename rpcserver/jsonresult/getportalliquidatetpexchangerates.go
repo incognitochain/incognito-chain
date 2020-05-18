@@ -12,8 +12,8 @@ type GetLiquidateTpExchangeRates struct {
 }
 
 type GetLiquidateExchangeRates struct {
-	TokenId     string                               `json:"TokenId"`
-	Liquidation statedb.LiquidateExchangeRatesDetail `json:"Liquidation"`
+	TokenId     string                        `json:"TokenId"`
+	Liquidation statedb.LiquidationPoolDetail `json:"Liquidation"`
 }
 
 type GetLiquidateAmountNeededCustodianDeposit struct {

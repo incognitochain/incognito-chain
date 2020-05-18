@@ -35,7 +35,7 @@ const (
 	//waiting porting request
 	PortalWaitingPortingRequestObjectType
 	//liquidation
-	PortalLiquidationExchangeRatesPoolObjectType
+	PortalLiquidationPoolObjectType
 
 	//B
 	PortalStatusObjectType
