@@ -255,6 +255,37 @@ func (this *DebugTool) ListPrivacyCustomToken() ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
+func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "createandsendprivacycustomtokentransaction",
+		"params": [
+			"%s",
+			{},
+			0,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "%s",
+				"TokenName": "",
+				"TokenSymbol": "",
+				"TokenFee": 10,
+				"TokenTxType": 1,
+				"TokenAmount": 0,
+				"TokenReceivers": {
+					"%s": %s
+				}
+			}
+			]
+	}`, privKeyStrA, tokenID, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
 func (this *DebugTool) GetBalancePrivacyCustomToken(privKeyStr string, tokenID string) ([]byte, error) {
 	query := fmt.Sprintf(`{
 		"id": 1,

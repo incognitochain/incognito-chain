@@ -176,6 +176,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
+	fmt.Println("Fee =", params.feeNativeCoin)
 	err = normalTx.Init(NewTxPrivacyInitParams(
 		params.senderKey,
 		params.paymentInfo,
@@ -240,11 +241,6 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			proof := new(privacy.ProofV2)
 			proof.Init()
 			proof.SetOutputCoins(tempOutputCoin)
-
-			fmt.Println("Creating txprivacytoken Proof")
-			fmt.Println("Creating txprivacytoken Proof")
-			fmt.Println("Creating txprivacytoken Proof")
-			fmt.Println("Creating txprivacytoken Proof")
 
 			temp.Proof = proof
 			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
@@ -325,6 +321,19 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				PropertyID:     *propertyID,
 				Mintable:       params.tokenParams.Mintable,
 			}
+			//fmt.Println("Checking input coins")
+			//fmt.Println(len(params.tokenParams.TokenInput))
+			for i := 0; i < len(params.tokenParams.TokenInput); i += 1 {
+				//fmt.Println("Version =", params.tokenParams.TokenInput[i].GetVersion())
+				//fmt.Println("Commitment =", params.tokenParams.TokenInput[i].GetCommitment())
+				//fmt.Println("Value =", params.tokenParams.TokenInput[i].GetValue())
+
+				KI := params.tokenParams.TokenInput[i].GetKeyImage()
+				fmt.Println("KeyImage =", KI)
+
+				//ok, err := statedb.HasSerialNumber(params.transactionStateDB, *propertyID, KI.ToBytesS(), 0)
+			}
+
 			err := temp.Init(NewTxPrivacyInitParams(params.senderKey,
 				params.tokenParams.Receiver,
 				params.tokenParams.TokenInput,

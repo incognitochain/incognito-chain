@@ -231,22 +231,22 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 			Logger.log.Error("GetOutcoinsBytesByKeyset Get By Height", err)
 			return nil, err
 		}
-		fmt.Println("Querying height =", height)
-		fmt.Println("Got number of coins = ", len(currentHeightCoins))
+		//fmt.Println("Querying height =", height)
+		//fmt.Println("Got number of coins = ", len(currentHeightCoins))
 		for _, coinBytes := range currentHeightCoins {
 			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
 				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
 				return nil, err
 			}
-			fmt.Println("Found a coin")
-			fmt.Println("Version = ", c.GetVersion())
-			fmt.Println("Index = ", c.GetIndex())
-			fmt.Println("Commitment = ", c.GetCommitment())
-			fmt.Println("PublicKey = ", c.GetPublicKey())
-			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
-			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
-			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
+			//fmt.Println("Found a coin")
+			//fmt.Println("Version = ", c.GetVersion())
+			//fmt.Println("Index = ", c.GetIndex())
+			//fmt.Println("Commitment = ", c.GetCommitment())
+			//fmt.Println("PublicKey = ", c.GetPublicKey())
+			//fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
+			//fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
+			//fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
 			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
 				outCoinsBytes = append(outCoinsBytes, c.Bytes())
 			}
@@ -292,13 +292,6 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	//	}
 	//}
 	if len(outCoinsInBytes) == 0 {
-		fmt.Println("Querying DB")
-		fmt.Println("Querying DB")
-		fmt.Println("Querying DB")
-		fmt.Println("Querying DB")
-		fmt.Println("With tokenID =", tokenID)
-		fmt.Println("With tokenID =", tokenID)
-		fmt.Println("With tokenID =", tokenID)
 		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
 		if err != nil {
 			return nil, err

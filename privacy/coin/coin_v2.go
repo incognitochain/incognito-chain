@@ -147,10 +147,8 @@ func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar
 func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
 	k, err := c.ParsePrivateKeyOfCoin(privKey)
 	if err != nil {
-		if err != nil {
-			err := errors.New("Cannot init keyset from privateKey")
-			return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, err)
-		}
+		err := errors.New("Cannot init keyset from privateKey")
+		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, err)
 	}
 	Hp := operation.HashToPoint(c.GetPublicKey().ToBytesS())
 	return new(operation.Point).ScalarMult(Hp, k), nil
@@ -177,6 +175,15 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 }
 
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
+	// Must parse keyImage first in any situation
+	if len(keySet.PrivateKey) > 0 {
+		keyImage, err := c.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
+		if err != nil {
+			errReturn := errors.New("Cannot parse key image with privateKey CoinV2" + err.Error())
+			return nil, errhandler.NewPrivacyErr(errhandler.ParseKeyImageWithPrivateKeyErr, errReturn)
+		}
+		c.SetKeyImage(keyImage)
+	}
 	if c.IsEncrypted() == false {
 		return c, nil
 	}
@@ -209,14 +216,6 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		}
 		c.SetRandomness(randomness)
 		c.SetAmount(value)
-	}
-	if len(keySet.PrivateKey) > 0 {
-		keyImage, err := c.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
-		if err != nil {
-			errReturn := errors.New("Cannot parse key image with privateKey CoinV2" + err.Error())
-			return nil, errhandler.NewPrivacyErr(errhandler.ParseKeyImageWithPrivateKeyErr, errReturn)
-		}
-		c.SetKeyImage(keyImage)
 	}
 	return c, nil
 }
