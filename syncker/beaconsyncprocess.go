@@ -324,6 +324,9 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 				for {
 					time1 := time.Now()
 					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
+						if successBlk == 0 {
+							fmt.Println(err)
+						}
 						return
 					} else {
 						insertBlkCnt += successBlk

@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"sort"
 )
 
 func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -36,19 +37,21 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	if len(remoteAddressesMap) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses must be at least one"))
 	}
-	remoteAddresses := make([]statedb.RemoteAddress, 0)
+	remoteAddresses := make(map[string]string, 0)
+	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
 		if !common.IsPortalToken(pTokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 		}
-		addr, ok := remoteAddress.(string)
+		_, ok := remoteAddress.(string)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses is invalid"))
 		}
-		remoteAddresses = append(
-			remoteAddresses,
-			*statedb.NewRemoteAddressWithValue(pTokenID, addr),
-		)
+		tokenIDKeys = append(tokenIDKeys, pTokenID)
+	}
+	sort.Strings(tokenIDKeys)
+	for _, pTokenID := range tokenIDKeys {
+		remoteAddresses[pTokenID] = remoteAddressesMap[pTokenID].(string)
 	}
 	depositedAmountData, ok := data["DepositedAmount"].(float64)
 	if !ok {
@@ -217,7 +220,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 
-	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
@@ -232,7 +235,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest      `json:"WaitingPortingRequests"`
 		WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest       `json:"WaitingRedeemRequests"`
 		CustodianPool              map[string]*statedb.CustodianState             `json:"CustodianPool"`
-		FinalExchangeRatesState    map[string]*statedb.FinalExchangeRatesState    `json:"FinalExchangeRatesState"`
+		FinalExchangeRatesState    *statedb.FinalExchangeRatesState               `json:"FinalExchangeRatesState"`
 		LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool `json:"LiquidateExchangeRatesPool"`
 		LockedCollateralState      *statedb.LockedCollateralState                 `json:"LockedCollateralState"`
 		BeaconTimeStamp            int64                                          `json:"BeaconTimeStamp"`
@@ -721,7 +724,7 @@ func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeCha
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 
-	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB, latestBeaconHeight)
+	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, err)
 	}

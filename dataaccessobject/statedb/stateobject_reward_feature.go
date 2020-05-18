@@ -8,39 +8,32 @@ import (
 )
 
 type RewardFeatureState struct {
-	totalRewards []*RewardInfoDetail
+	totalRewards map[string]uint64
 }
 
-func (rfs RewardFeatureState) GetTotalRewards() []*RewardInfoDetail {
+func (rfs RewardFeatureState) GetTotalRewards() map[string]uint64 {
 	return rfs.totalRewards
 }
 
-func (rfs *RewardFeatureState) SetTotalRewards(totalRewards []*RewardInfoDetail) {
+func (rfs *RewardFeatureState) SetTotalRewards(totalRewards map[string]uint64) {
 	rfs.totalRewards = totalRewards
 }
 
 func (rfs *RewardFeatureState) AddTotalRewards(tokenID string, amount uint64) {
-	for i := 0; i < len(rfs.totalRewards); i++ {
-		if rfs.totalRewards[i].tokenID == tokenID {
-			rfs.totalRewards[i].amount += amount
-			return
-		}
+	if rfs.totalRewards == nil {
+		rfs.totalRewards = make(map[string]uint64, 0)
+		rfs.totalRewards[tokenID] = amount
 	}
-	rfs.totalRewards = append(rfs.totalRewards, NewRewardInfoDetailWithValue(tokenID, amount))
+	rfs.totalRewards[tokenID] += amount
 }
 
 func (rfs *RewardFeatureState) ResetTotalRewardByTokenID(tokenID string) {
-	for i := 0; i < len(rfs.totalRewards); i++ {
-		if rfs.totalRewards[i].tokenID == tokenID {
-			rfs.totalRewards[i].amount = 0
-			return
-		}
-	}
+	rfs.totalRewards[tokenID] = 0
 }
 
 func (rfs RewardFeatureState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TotalRewards []*RewardInfoDetail
+		TotalRewards map[string]uint64
 	}{
 		TotalRewards: rfs.totalRewards,
 	})
@@ -52,7 +45,7 @@ func (rfs RewardFeatureState) MarshalJSON() ([]byte, error) {
 
 func (rfs *RewardFeatureState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TotalRewards []*RewardInfoDetail
+		TotalRewards map[string]uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -67,7 +60,7 @@ func NewRewardFeatureState() *RewardFeatureState {
 }
 
 func NewRewardFeatureStateWithValue(
-	totalRewards []*RewardInfoDetail,
+	totalRewards map[string]uint64,
 ) *RewardFeatureState {
 	return &RewardFeatureState{
 		totalRewards: totalRewards,
