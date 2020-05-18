@@ -12,19 +12,17 @@ type MatchingPortingCustodianDetail struct {
 	RemoteAddress          string
 	Amount                 uint64
 	LockedAmountCollateral uint64
-	RemainCollateral       uint64
 }
 
 type WaitingPortingRequest struct {
 	uniquePortingID string
-	txReqID         common.Hash
 	tokenID         string
 	porterAddress   string
 	amount          uint64
 	custodians      []*MatchingPortingCustodianDetail
 	portingFee      uint64
-	status          int
 	beaconHeight    uint64
+	txReqID         common.Hash
 }
 
 func (w *WaitingPortingRequest) BeaconHeight() uint64 {
@@ -33,14 +31,6 @@ func (w *WaitingPortingRequest) BeaconHeight() uint64 {
 
 func (w *WaitingPortingRequest) SetBeaconHeight(beaconHeight uint64) {
 	w.beaconHeight = beaconHeight
-}
-
-func (w *WaitingPortingRequest) Status() int {
-	return w.status
-}
-
-func (w *WaitingPortingRequest) SetStatus(status int) {
-	w.status = status
 }
 
 func (w *WaitingPortingRequest) PortingFee() uint64 {
@@ -103,8 +93,16 @@ func NewWaitingPortingRequest() *WaitingPortingRequest {
 	return &WaitingPortingRequest{}
 }
 
-func NewWaitingPortingRequestWithValue(uniquePortingID string, txReqID common.Hash, tokenID string, porterAddress string, amount uint64, custodians []*MatchingPortingCustodianDetail, portingFee uint64, status int, beaconHeight uint64) *WaitingPortingRequest {
-	return &WaitingPortingRequest{uniquePortingID: uniquePortingID, txReqID: txReqID, tokenID: tokenID, porterAddress: porterAddress, amount: amount, custodians: custodians, portingFee: portingFee, status: status, beaconHeight: beaconHeight}
+func NewWaitingPortingRequestWithValue(
+	uniquePortingID string,
+	txReqID common.Hash,
+	tokenID string,
+	porterAddress string,
+	amount uint64,
+	custodians []*MatchingPortingCustodianDetail,
+	portingFee uint64,
+	beaconHeight uint64) *WaitingPortingRequest {
+	return &WaitingPortingRequest{uniquePortingID: uniquePortingID, txReqID: txReqID, tokenID: tokenID, porterAddress: porterAddress, amount: amount, custodians: custodians, portingFee: portingFee, beaconHeight: beaconHeight}
 }
 
 func GeneratePortalWaitingPortingRequestObjectKey(portingRequestId string) common.Hash {
@@ -122,7 +120,6 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		Amount          uint64
 		Custodians      []*MatchingPortingCustodianDetail
 		PortingFee      uint64
-		Status          int
 		BeaconHeight    uint64
 	}{
 		UniquePortingID: w.uniquePortingID,
@@ -132,7 +129,6 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		Amount:          w.amount,
 		Custodians:      w.custodians,
 		PortingFee:      w.portingFee,
-		Status:          w.status,
 		BeaconHeight:    w.beaconHeight,
 	})
 	if err != nil {
@@ -150,7 +146,6 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 		Amount          uint64
 		Custodians      []*MatchingPortingCustodianDetail
 		PortingFee      uint64
-		Status          int
 		BeaconHeight    uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -165,7 +160,6 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 	w.amount = temp.Amount
 	w.custodians = temp.Custodians
 	w.portingFee = temp.PortingFee
-	w.status = temp.Status
 	w.beaconHeight = temp.BeaconHeight
 
 	return nil

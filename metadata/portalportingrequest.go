@@ -53,7 +53,16 @@ type PortingRequestStatus struct {
 	BeaconHeight    uint64
 }
 
-func NewPortingRequestStatus(uniquePortingID string, txReqID common.Hash, tokenID string, porterAddress string, amount uint64, custodians []*statedb.MatchingPortingCustodianDetail, portingFee uint64, status int, beaconHeight uint64) *PortingRequestStatus {
+func NewPortingRequestStatus(
+	uniquePortingID string,
+	txReqID common.Hash,
+	tokenID string,
+	porterAddress string,
+	amount uint64,
+	custodians []*statedb.MatchingPortingCustodianDetail,
+	portingFee uint64,
+	status int,
+	beaconHeight uint64) *PortingRequestStatus {
 	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight}
 }
 

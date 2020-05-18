@@ -280,7 +280,6 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 		)
 

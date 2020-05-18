@@ -16,13 +16,13 @@ import (
 )
 
 type CurrentPortalState struct {
-	CustodianPoolState         map[string]*statedb.CustodianState        // key : hash(custodian_address)
-	WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest // key : hash(UniquePortingID)
-	WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest  // key : hash(UniqueRedeemID)
-	FinalExchangeRatesState    *statedb.FinalExchangeRatesState
-	LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool // key : hash(beaconHeight || TxID)
+	CustodianPoolState      map[string]*statedb.CustodianState        // key : hash(custodian_address)
+	WaitingPortingRequests  map[string]*statedb.WaitingPortingRequest // key : hash(UniquePortingID)
+	WaitingRedeemRequests   map[string]*statedb.WaitingRedeemRequest  // key : hash(UniqueRedeemID)
+	FinalExchangeRatesState *statedb.FinalExchangeRatesState
+	LiquidationPool         map[string]*statedb.LiquidationPool // key : hash(beaconHeight || TxID)
 	// it used for calculate reward for custodian at the end epoch
-	LockedCollateralState *statedb.LockedCollateralState
+	LockedCollateralForRewards *statedb.LockedCollateralState
 	//Store temporary exchange rates requests
 	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 }
@@ -75,8 +75,8 @@ func InitCurrentPortalStateFromDB(
 		WaitingRedeemRequests:      waitingRedeemReqs,
 		FinalExchangeRatesState:    finalExchangeRates,
 		ExchangeRatesRequests:      make(map[string]*metadata.ExchangeRatesRequestStatus),
-		LiquidateExchangeRatesPool: liquidateExchangeRatesPool,
-		LockedCollateralState:      lockedCollateralState,
+		LiquidationPool:            liquidateExchangeRatesPool,
+		LockedCollateralForRewards: lockedCollateralState,
 	}, nil
 }
 
@@ -100,11 +100,11 @@ func storePortalStateToDB(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBulkLiquidateExchangeRatesPool(stateDB, currentPortalState.LiquidateExchangeRatesPool)
+	err = statedb.StoreBulkLiquidateExchangeRatesPool(stateDB, currentPortalState.LiquidationPool)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralState)
+	err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralForRewards)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,6 @@ func pickUpCustodians(
 					RemoteAddress:          remoteAddr,
 					Amount:                 pTokenCustodianCanHold,
 					LockedAmountCollateral: neededCollaterals,
-					RemainCollateral:       freeCollaterals - neededCollaterals,
 				},
 			)
 
@@ -304,17 +303,17 @@ func down150Percent(amount uint64, percent uint64) uint64 {
 	return result
 }
 
-func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates statedb.LiquidateExchangeRatesDetail) (uint64, error) {
+func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates statedb.LiquidationPoolDetail) (uint64, error) {
 	//todo: need review divide operator
 	// prv  ------   total token
 	// ?		     amount token
 
-	if liquidateExchangeRates.HoldAmountPubToken <= 0 {
+	if liquidateExchangeRates.PubTokenAmount <= 0 {
 		return 0, errors.New("Can not divide 0")
 	}
 
-	tmp := new(big.Int).Mul(big.NewInt(int64(liquidateExchangeRates.HoldAmountFreeCollateral)), big.NewInt(int64(RedeemAmount)))
-	totalPrv := new(big.Int).Div(tmp, big.NewInt(int64(liquidateExchangeRates.HoldAmountPubToken)))
+	tmp := new(big.Int).Mul(big.NewInt(int64(liquidateExchangeRates.CollateralAmount)), big.NewInt(int64(RedeemAmount)))
+	totalPrv := new(big.Int).Div(tmp, big.NewInt(int64(liquidateExchangeRates.PubTokenAmount)))
 	return totalPrv.Uint64(), nil
 }
 
@@ -794,36 +793,36 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(
 	//end
 
 	//update LiquidateExchangeRates
-	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey()
-	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
+	liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
 
-	Logger.log.Infof("update LiquidateExchangeRatesPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, tpRatios)
+	Logger.log.Infof("update LiquidationPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, tpRatios)
 	if !ok {
-		item := make(map[string]statedb.LiquidateExchangeRatesDetail)
+		item := make(map[string]statedb.LiquidationPoolDetail)
 
 		for ptoken, liquidateTopPercentileExchangeRatesDetail := range tpRatios {
-			item[ptoken] = statedb.LiquidateExchangeRatesDetail{
-				HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-				HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+			item[ptoken] = statedb.LiquidationPoolDetail{
+				CollateralAmount: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+				PubTokenAmount:   liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 			}
 		}
-		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
+		currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidationPoolWithValue(item)
 	} else {
 		for ptoken, liquidateTopPercentileExchangeRatesDetail := range tpRatios {
 			if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
-				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-					HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-					HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidationPoolDetail{
+					CollateralAmount: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+					PubTokenAmount:   liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 				}
 			} else {
-				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
-					HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-					HoldAmountPubToken:       liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+				liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidationPoolDetail{
+					CollateralAmount: liquidateExchangeRates.Rates()[ptoken].CollateralAmount + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+					PubTokenAmount:   liquidateExchangeRates.Rates()[ptoken].PubTokenAmount + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 				}
 			}
 		}
 
-		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
+		currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 	}
 	//end
 }
@@ -834,7 +833,7 @@ func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, e
 		return 0, nil
 	}
 
-	return currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch(), nil
+	return currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards(), nil
 }
 
 // GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height

@@ -228,8 +228,8 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
-		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey()
-		liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
+		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
+		liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
 
 		if !ok {
 			Logger.log.Errorf("Liquidate exchange rates not found")
@@ -244,12 +244,12 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 
 		totalPrv := actionData.TotalPTokenReceived
 
-		liquidateExchangeRates.Rates()[actionData.TokenID] = statedb.LiquidateExchangeRatesDetail{
-			HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
-			HoldAmountPubToken:       liquidateByTokenID.HoldAmountPubToken - actionData.RedeemAmount,
+		liquidateExchangeRates.Rates()[actionData.TokenID] = statedb.LiquidationPoolDetail{
+			CollateralAmount: liquidateByTokenID.CollateralAmount - totalPrv,
+			PubTokenAmount:   liquidateByTokenID.PubTokenAmount - actionData.RedeemAmount,
 		}
 
-		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
+		currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 
 		Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", actionData.RedeemAmount, totalPrv)
 
@@ -503,7 +503,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 			portingReqStatus = common.PortalPortingReqLiquidatedStatus
 		}
 
-		newPortingRequestStatus := statedb.NewWaitingPortingRequestWithValue(
+		newPortingRequestStatus := metadata.NewPortingRequestStatus(
 			waitingPortingReq.UniquePortingID(),
 			waitingPortingReq.TxReqID(),
 			tokenID,
@@ -512,8 +512,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 			waitingPortingReq.Custodians(),
 			waitingPortingReq.PortingFee(),
 			portingReqStatus,
-			waitingPortingReq.BeaconHeight(),
-		)
+			waitingPortingReq.BeaconHeight())
 
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
 		err = statedb.TrackPortalStateStatusMultiple(
