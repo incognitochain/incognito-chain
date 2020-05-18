@@ -67,6 +67,8 @@ const (
 	RejectTxMedataWithBlockChain
 
 	GetCommitmentsInDatabaseError
+	InvalidPaymentAddressError
+	OnetimeAddressAlreadyExists
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -134,7 +136,9 @@ var ErrCodeMessage = map[int]struct {
 	NormalTokenPRVJsonError: {-4000, "Json data error"},
 	NormalTokenJsonError:    {-4001, "Json data error"},
 
-	GetCommitmentsInDatabaseError: {-5000, ""},
+	GetCommitmentsInDatabaseError: {-5000, "Get commitments from database got error"},
+	InvalidPaymentAddressError: {-5001, "Payment address is null"},
+	OnetimeAddressAlreadyExists: { -5002, "OnetimeAddress is already exists in database"},
 }
 
 type TransactionError struct {

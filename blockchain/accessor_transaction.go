@@ -242,6 +242,10 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 			fmt.Println("Found a coin")
 			fmt.Println("Version = ", c.GetVersion())
 			fmt.Println("Index = ", c.GetIndex())
+			fmt.Println("Commitment = ", c.GetCommitment())
+			fmt.Println("PublicKey = ", c.GetPublicKey())
+			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
+			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
 			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
 			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
 				outCoinsBytes = append(outCoinsBytes, c.Bytes())

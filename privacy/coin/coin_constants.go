@@ -4,6 +4,7 @@ const (
 	MaxSizeInfoCoin = 255
 	CoinVersion1    = 1
 	CoinVersion2    = 2
+	TxRandomGroupSize = 36
 )
 
 func getMin(a, b int) int {

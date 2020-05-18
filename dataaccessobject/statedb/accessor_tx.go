@@ -243,7 +243,8 @@ func StoreOutputCoins(stateDB *StateDB, tokenID common.Hash, publicKey []byte, o
 	return nil
 }
 
-func CheckPublicKeyExistence(stateDB *StateDB, tokenID common.Hash, publicKey []byte, shardID byte) (bool, error) {
+func CheckPublicKeyExistence(stateDB *StateDB, tokenID common.Hash, publicKey []byte) (bool, error) {
+	shardID := common.GetShardIDFromLastByte(publicKey[len(publicKey) - 1])
 	return stateDB.checkOnetimeAddressExistence(tokenID, shardID, publicKey)
 }
 

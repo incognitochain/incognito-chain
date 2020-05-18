@@ -801,7 +801,7 @@ func (tx Tx) CalculateTxValue() uint64 {
 // #2 - receiverAddr:
 // #3 - privKey:
 // #4 - snDerivators:
-func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
+func (tx *Tx) InitTxSalary(salary uint64, txRandom *coin.TxRandom, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
 	tx.Version = txVersion2
 	tx.Type = common.TxRewardType
 
@@ -811,14 +811,14 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 
 	// Create onetimeaddress coin
 	var err error
-	r := operation.RandomScalar()
 	c := new(coin.CoinV2).Init()
 	c.SetVersion(2)
-	c.SetIndex(0)
 	c.SetValue(salary)
-	c.SetRandomness(r)
-	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
-	c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
+	c.SetTxRandom(txRandom)
+	c.SetSharedRandom(nil)
+	c.SetRandomness(operation.RandomScalar())
+	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
+	c.SetInfo([]byte{})
 	// The public key should be onetimeadddress already
 	publicKey, err := new(operation.Point).FromBytesS(receiverAddr.Pk)
 	if err != nil {
@@ -883,12 +883,6 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	}
 	if coinShardID != tx.PubKeyLastByteSender {
 		return false, NewTransactionErr(UnexpectedError, errors.New("output coin's shardID is different from tx pubkey last byte"))
-	}
-
-	// Check TxRandom
-	txRandom := new(operation.Point).ScalarMultBase(coin.GetRandomness())
-	if !operation.IsPointEqual(txRandom, coin.GetTxRandom()) {
-		return false, NewTransactionErr(UnexpectedError, errors.New("output coin's TxRandom isn't calculated correctly"))
 	}
 	return true, nil
 }

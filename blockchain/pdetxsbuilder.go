@@ -76,6 +76,7 @@ func buildTradeResTx(
 		resTx := new(transaction.Tx)
 		err = resTx.InitTxSalary(
 			receiveAmt,
+			coin.NewTxRandom(), //TODO Privacy
 			&receiverAddr,
 			producerPrivateKey,
 			transactionStateDB,
@@ -254,6 +255,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		resTx := new(transaction.Tx)
 		err = resTx.InitTxSalary(
 			wdAcceptedContent.DeductingPoolValue,
+			coin.NewTxRandom(), //TODO PRIVACY
 			&receiverAddr,
 			producerPrivateKey,
 			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
@@ -349,6 +351,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		resTx := new(transaction.Tx)
 		err = resTx.InitTxSalary(
 			refundContribution.ContributedAmount,
+			coin.NewTxRandom(), //TODO Privacy
 			&receiverAddr,
 			producerPrivateKey,
 			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
@@ -448,6 +451,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		resTx := new(transaction.Tx)
 		err = resTx.InitTxSalary(
 			matchedNReturnedContribution.ReturnedContributedAmount,
+			coin.NewTxRandom(), //TODO Privacy
 			&receiverAddr,
 			producerPrivateKey,
 			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
