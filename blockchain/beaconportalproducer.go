@@ -461,7 +461,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.RegisterAmount,
 		pickedCustodians,
 		actionData.Meta.PortingFee,
-		common.PortalPortingReqWaitingStatus,
 		beaconHeight+1,
 	)
 

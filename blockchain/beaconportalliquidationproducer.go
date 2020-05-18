@@ -731,8 +731,8 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 	}
 
 	//check redeem amount
-	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey()
-	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
+	liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
 
 	if !ok {
 		Logger.log.Errorf("Liquidate exchange rates not found")
@@ -790,8 +790,8 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 	}
 
 	//todo: review
-	if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral || liquidateByTokenID.HoldAmountFreeCollateral <= 0 {
-		Logger.log.Errorf("amout free collateral not enough, need prv %v != hold amount free collateral %v", totalPrv, liquidateByTokenID.HoldAmountFreeCollateral)
+	if totalPrv > liquidateByTokenID.CollateralAmount || liquidateByTokenID.CollateralAmount <= 0 {
+		Logger.log.Errorf("amout free collateral not enough, need prv %v != hold amount free collateral %v", totalPrv, liquidateByTokenID.CollateralAmount)
 		inst := buildRedeemLiquidateExchangeRatesInst(
 			meta.TokenID,
 			meta.RedeemAmount,
@@ -808,12 +808,12 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 	}
 
 	Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", meta.RedeemAmount, totalPrv)
-	liquidateExchangeRates.Rates()[meta.TokenID] = statedb.LiquidateExchangeRatesDetail{
-		HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
-		HoldAmountPubToken:       liquidateByTokenID.HoldAmountPubToken - meta.RedeemAmount,
+	liquidateExchangeRates.Rates()[meta.TokenID] = statedb.LiquidationPoolDetail{
+		CollateralAmount: liquidateByTokenID.CollateralAmount - totalPrv,
+		PubTokenAmount:   liquidateByTokenID.PubTokenAmount - meta.RedeemAmount,
 	}
 
-	currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
+	currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 
 	inst := buildRedeemLiquidateExchangeRatesInst(
 		meta.TokenID,

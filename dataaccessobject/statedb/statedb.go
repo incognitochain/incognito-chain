@@ -1253,20 +1253,20 @@ func (stateDB *StateDB) getFinalExchangeRatesByKey(key common.Hash) (*FinalExcha
 	return NewFinalExchangeRatesState(), false, nil
 }
 
-func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*LiquidateExchangeRatesPool, bool, error) {
-	liquidateExchangeRates, err := stateDB.getStateObject(PortalLiquidationExchangeRatesPoolObjectType, key)
+func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*LiquidationPool, bool, error) {
+	liquidateExchangeRates, err := stateDB.getStateObject(PortalLiquidationPoolObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if liquidateExchangeRates != nil {
-		return liquidateExchangeRates.GetValue().(*LiquidateExchangeRatesPool), true, nil
+		return liquidateExchangeRates.GetValue().(*LiquidationPool), true, nil
 	}
-	return NewLiquidateExchangeRatesPool(), false, nil
+	return NewLiquidationPool(), false, nil
 }
 
-func (stateDB *StateDB) getLiquidateExchangeRatesPool() map[string]*LiquidateExchangeRatesPool {
-	liquidateExchangeRatesPoolList := make(map[string]*LiquidateExchangeRatesPool)
-	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix())
+func (stateDB *StateDB) getLiquidateExchangeRatesPool() map[string]*LiquidationPool {
+	liquidateExchangeRatesPoolList := make(map[string]*LiquidationPool)
+	temp := stateDB.trie.NodeIterator(GetPortalLiquidationPoolPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
@@ -1274,7 +1274,7 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPool() map[string]*LiquidateExc
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		object := NewLiquidateExchangeRatesPool()
+		object := NewLiquidationPool()
 		err := json.Unmarshal(newValue, object)
 		if err != nil {
 			panic("wrong expect type")

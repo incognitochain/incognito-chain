@@ -28,11 +28,11 @@ func (blockchain *BlockChain) processPortalReward(
 
 		// at the end of epoch
 		if (beaconHeight+1) % blockchain.config.ChainParams.Epoch == 1 {
-			currentPortalState.LockedCollateralState.Reset()
+			currentPortalState.LockedCollateralForRewards.Reset()
 		}
 
 		totalLockedCollateralAmount := uint64(0)
-		lockedCollateralDetails := currentPortalState.LockedCollateralState.GetLockedCollateralDetail()
+		lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
 		for _, custodianState := range currentPortalState.CustodianPoolState {
 			for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
 				totalLockedCollateralAmount += lockedAmount
@@ -40,9 +40,9 @@ func (blockchain *BlockChain) processPortalReward(
 			}
 		}
 
-		currentPortalState.LockedCollateralState.SetTotalLockedCollateralInEpoch(
-			currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() + totalLockedCollateralAmount)
-		currentPortalState.LockedCollateralState.SetLockedCollateralDetail(
+		currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(
+			currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards() + totalLockedCollateralAmount)
+		currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(
 			lockedCollateralDetails)
 
 		// store reward at beacon height into db
