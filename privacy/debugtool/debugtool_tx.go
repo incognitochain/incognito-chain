@@ -219,75 +219,6 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 	return this.SendPostRequestWithQuery(query)
 }
 
-<<<<<<< HEAD
-func parseCoinBasedOnPaymentInfo(amount uint64, publicSpend *operation.Point, publicView *operation.Point, targetShardID byte, index uint8) (*coin.CoinV2, error) {
-	if targetShardID >= common.MaxShardNumber {
-		return nil, errors.New("Cannot create new coin with targetShardID, targetShardID is larger than max shard number")
-	}
-	c := new(coin.CoinV2)
-	c.SetVersion(2)
-	c.SetIndex(index)
-
-	for true {
-		// Mask and Amount will temporary visible by everyone, until after we done proving things, then will hide it.
-		r := operation.RandomScalar()
-		c.SetRandomness(r)
-		c.SetAmount(new(operation.Scalar).FromUint64(amount))
-		c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
-		c.SetPublicKey(coin.ParseOnetimeAddress(
-			publicSpend,
-			publicView,
-			r,
-			index,
-		))
-		c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
-
-		currentShardID, err := c.GetShardID()
-		if err != nil {
-			return nil, err
-		}
-		if currentShardID == targetShardID {
-			break
-		}
-	}
-	return c, nil
-}
-func (this *DebugTool) ParsePaymentAddress(paymentAddressStr string) (*privacy.PaymentAddress, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return nil, errors.New("Invalid payment address string")
-	}
-	return &keyWallet.KeySet.PaymentAddress, nil
-}
-
-func (this *DebugTool) GenerateOTAFromPaymentAddress(paymentAdd *privacy.PaymentAddress, numberAdd uint8) ([]string, error) {
-	publicView := paymentAdd.GetPublicView()
-	publicSpend := paymentAdd.GetPublicSpend()
-	targetShardID := common.GetShardIDFromLastByte(paymentAdd.Pk[len(paymentAdd.Pk) - 1])
-
-
-	lsPaymentAdd := make([]string, numberAdd)
-	for i := 0; i < int(numberAdd); i++ {
-		random := privacy.RandomScalar()
-		pubKey := coin.ParseOnetimeAddress(publicSpend, publicView, random, targetShardID)
-		tmpPaymentAdd := wallet.KeyWallet{
-			KeySet: incognitokey.KeySet{
-				PaymentAddress: privacy.PaymentAddress{
-					Pk: pubKey.ToBytesS(),
-					Tk: nil,
-				},
-			},
-		}
-		lsPaymentAdd[i] = tmpPaymentAdd.Base58CheckSerialize((wallet.PaymentAddressType))
-	}
-
-	return lsPaymentAdd, nil
-}
-
 func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string, privKeyStrB string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
@@ -325,7 +256,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 				"Privacy": true,
 				"TokenID": "",
 				"TokenName": "token_test",
-				"TokenSymbol": paymentAddrStr"pTTT",
+				"TokenSymbol": "pTTT",
 				"TokenFee": 0,
 				"TokenTxType": 0,
 				"TokenAmount": 1000000000000000000,
@@ -334,7 +265,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 				}
 			}
 			]
-	}`, privKeyStrA, )
+	}`, privKeyStrA, paymentAddrStr)
 	return this.SendPostRequestWithQuery(query)
 }
 
