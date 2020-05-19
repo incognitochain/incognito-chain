@@ -163,6 +163,8 @@ const (
 	StorePortalRequestWithdrawRewardStatusError
 	StoreLockedCollateralStateError
 	GetLockedCollateralStateError
+	StorePortalReqMatchingRedeemByTxIDStatusError
+	GetPortalReqMatchingRedeemByTxIDStatusError
 
 	//porting request
 	GetPortingRequestTxStatusError
@@ -329,6 +331,8 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalCustodianWithdrawStatusError:               {-14045, "Get portal custodian withdraw status error"},
 	StoreLockedCollateralStateError:                     {-14046, "Store locked collateral state error"},
 	GetLockedCollateralStateError:                       {-14047, "Get locked collateral state error"},
+	StorePortalReqMatchingRedeemByTxIDStatusError:       {-14048, "Store req matching redeem request error"},
+	GetPortalReqMatchingRedeemByTxIDStatusError:         {-14049, "Get req matching redeem request error"},
 
 	StoreRewardFeatureError:              {-15000, "Store reward feature state error"},
 	GetRewardFeatureError:                {-15001, "Get reward feature state error"},

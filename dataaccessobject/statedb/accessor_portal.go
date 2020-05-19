@@ -87,6 +87,28 @@ func GetPortalRedeemRequestByTxIDStatus(stateDB *StateDB, txID string) ([]byte, 
 	return data, nil
 }
 
+func StorePortalReqMatchingRedeemByTxIDStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalReqMatchingRedeemStatusByTxReqIDPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalReqMatchingRedeemByTxIDStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalReqMatchingRedeemByTxIDStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalReqMatchingRedeemStatusByTxReqIDPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalReqMatchingRedeemByTxIDStatusError, err)
+	}
+
+	return data, nil
+}
+
 //======================  Custodian pool  ======================
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetCustodianPoolState(

@@ -19,6 +19,7 @@ type CurrentPortalState struct {
 	CustodianPoolState      map[string]*statedb.CustodianState        // key : hash(custodian_address)
 	WaitingPortingRequests  map[string]*statedb.WaitingPortingRequest // key : hash(UniquePortingID)
 	WaitingRedeemRequests   map[string]*statedb.WaitingRedeemRequest  // key : hash(UniqueRedeemID)
+	MatchedRedeemRequests  map[string]*statedb.WaitingRedeemRequest // key : hash(UniquePortingID)
 	FinalExchangeRatesState *statedb.FinalExchangeRatesState
 	LiquidationPool         map[string]*statedb.LiquidationPool // key : hash(beaconHeight || TxID)
 	// it used for calculate reward for custodian at the end epoch
@@ -1009,5 +1010,92 @@ func UpdateCustodianRewards(currentPortalState *CurrentPortalState, rewardInfos 
 		}
 		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 	}
+}
+
+// MatchCustodianToWaitingRedeemReq returns amount matching of custodian in redeem request if valid
+func MatchCustodianToWaitingRedeemReq(
+	custodianAddr string,
+	redeemID string,
+	portalState *CurrentPortalState) (uint64, bool, error){
+	// check redeemID is in waiting redeem requests or not
+	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(redeemID).String()
+	waitingRedeemRequest := portalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	if waitingRedeemRequest == nil {
+		return 0, false, fmt.Errorf("RedeemID is not existed in waiting matching redeem requests list %v\n", redeemID)
+	}
+
+	// check Incognito Address is an custodian or not
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState := portalState.CustodianPoolState[custodianStateKey]
+	if custodianState == nil {
+		return 0, false, fmt.Errorf("custodianState not found %v\n", custodianAddr)
+	}
+
+	// calculate amount need to be matched
+	totalMatchedAmount := uint64(0)
+	for _, cus := range waitingRedeemRequest.GetCustodians() {
+		totalMatchedAmount += cus.GetAmount()
+	}
+	neededMatchingAmountInPToken := waitingRedeemRequest.GetRedeemAmount() - totalMatchedAmount
+	if neededMatchingAmountInPToken <= 0 {
+		return 0, false, errors.New("Amount need to be matched is not greater than zero")
+	}
+
+	holdPubTokenMap := custodianState.GetHoldingPublicTokens()
+	if holdPubTokenMap == nil || len(holdPubTokenMap) == 0 {
+		return 0, false, errors.New("Holding public token amount of custodian is not valid")
+	}
+	holdPubTokenAmount := holdPubTokenMap[waitingRedeemRequest.GetTokenID()]
+	if holdPubTokenAmount == 0 {
+		return 0, false, errors.New("Holding public token amount of custodian is not available")
+	}
+
+	if holdPubTokenAmount >= neededMatchingAmountInPToken {
+		return neededMatchingAmountInPToken, true, nil
+	} else {
+		return holdPubTokenAmount, false, nil
+	}
+}
+
+func UpdatePortalStateAfterCustodianReqMatchingRedeem(
+	custodianAddr string,
+	redeemID string,
+	matchedAmount uint64,
+	isEnoughCustodians bool,
+	portalState *CurrentPortalState) (*statedb.WaitingRedeemRequest, error) {
+	// check redeemID is in waiting redeem requests or not
+	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(redeemID).String()
+	waitingRedeemRequest := portalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	if waitingRedeemRequest == nil {
+		return nil, fmt.Errorf("RedeemID is not existed in waiting matching redeem requests list %v\n", redeemID)
+	}
+
+	// check Incognito Address is an custodian or not
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState := portalState.CustodianPoolState[custodianStateKey]
+	if custodianState == nil {
+		return nil, fmt.Errorf("custodianState not found %v\n", custodianAddr)
+	}
+
+	// update custodian state
+	holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
+	holdingPubTokenTmp[waitingRedeemRequest.GetTokenID()] -= matchedAmount
+	custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
+
+	// update matching custodians in waiting redeem request
+	matchingCus := waitingRedeemRequest.GetCustodians()
+	if matchingCus == nil {
+		matchingCus = make([]*statedb.MatchingRedeemCustodianDetail, 0)
+	}
+	matchingCus = append(matchingCus,
+		statedb.NewMatchingRedeemCustodianDetailWithValue(custodianAddr, custodianState.GetIncognitoAddress(), matchedAmount))
+	waitingRedeemRequest.SetCustodians(matchingCus)
+
+	if isEnoughCustodians {
+		deleteWaitingRedeemRequest(portalState, keyWaitingRedeemRequest)
+		portalState.MatchedRedeemRequests[keyWaitingRedeemRequest] = waitingRedeemRequest
+	}
+
+	return waitingRedeemRequest, nil
 }
 

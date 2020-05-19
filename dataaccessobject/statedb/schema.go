@@ -41,7 +41,6 @@ var (
 	burnPrefix                         = []byte("burn-")
 
 	// portal
-	//A
 	portalFinaExchangeRatesStatePrefix            = []byte("portalfinalexchangeratesstate-")
 	portalExchangeRatesRequestStatusPrefix        = []byte("portalexchangeratesrequeststatus-")
 	portalPortingRequestStatusPrefix              = []byte("portalportingrequeststatus-")
@@ -52,8 +51,6 @@ var (
 	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
 	portalLiquidationRedeemRequestStatusPrefix    = []byte("portalliquidationredeemrequeststatus-")
 	portalWaitingPortingRequestPrefix             = []byte("portalwaitingportingrequest-")
-
-	//B
 	portalCustodianStatePrefix        = []byte("portalcustodian-")
 	portalWaitingRedeemRequestsPrefix = []byte("portalwaitingredeemrequest-")
 
@@ -64,6 +61,7 @@ var (
 	portalRedeemRequestStatusByTxReqIDPrefix  = []byte("redeemrequestbytxid-")
 	portalRequestUnlockCollateralStatusPrefix = []byte("requestunlockcollateral-")
 	portalRequestWithdrawRewardStatusPrefix   = []byte("requestwithdrawportalreward-")
+	portalReqMatchingRedeemStatusByTxReqIDPrefix  = []byte("reqmatchredeembytxid-")
 
 	// liquidation for portal
 	portalLiquidateCustodianRunAwayPrefix = []byte("portalliquidaterunaway-")
@@ -364,6 +362,10 @@ func PortalLiquidateCustodianRunAwayPrefix() []byte {
 
 func PortalExpiredPortingReqPrefix() []byte {
 	return portalExpiredPortingReqPrefix
+}
+
+func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
+	return portalReqMatchingRedeemStatusByTxReqIDPrefix
 }
 
 var _ = func() (_ struct{}) {

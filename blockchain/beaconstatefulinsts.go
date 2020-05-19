@@ -120,6 +120,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
 	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
 	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
+	portalReqMatchingRedeemActionsByShardID := map[byte][][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -225,6 +226,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalReqMatchingRedeemMeta:
+				portalReqMatchingRedeemActionsByShardID = groupPortalActionsByShardID(
+					portalReqMatchingRedeemActionsByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -286,6 +293,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalReqUnlockCollateralActionsByShardID,
 		portalRedeemLiquidateExchangeRatesActionByShardID,
 		portalLiquidationCustodianDepositActionByShardID,
+		portalReqMatchingRedeemActionsByShardID,
 		portalParams,
 	)
 
@@ -501,6 +509,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
 	portalLiquidationCustodianDepositActionByShardID map[byte][][]string,
+	portalReqMatchingRedeemActionByShardID map[byte][][]string,
 	portalParams PortalParams,
 ) ([][]string, error) {
 	instructions := [][]string{}
@@ -774,6 +783,38 @@ func (blockchain *BlockChain) handlePortalInsts(
 				contentStr,
 				shardID,
 				metadata.PortalLiquidationCustodianDepositMeta,
+				currentPortalState,
+				beaconHeight,
+				portalParams,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// handle portal req matching redeem inst
+	var reqMatchRedeemShardIDKeys []int
+	for k := range portalReqMatchingRedeemActionByShardID {
+		reqMatchRedeemShardIDKeys = append(reqMatchRedeemShardIDKeys, int(k))
+	}
+
+	sort.Ints(reqMatchRedeemShardIDKeys)
+	for _, value := range reqMatchRedeemShardIDKeys {
+		shardID := byte(value)
+		actions := portalReqMatchingRedeemActionByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForReqMatchingRedeem(
+				stateDB,
+				contentStr,
+				shardID,
+				metadata.PortalReqMatchingRedeemMeta,
 				currentPortalState,
 				beaconHeight,
 				portalParams,

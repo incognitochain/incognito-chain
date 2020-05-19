@@ -75,6 +75,9 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		// total custodian reward instruction
 		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
 			err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		// custodian request matching waiting redeem requests
+		case strconv.Itoa(metadata.PortalReqMatchingRedeemMeta):
+			err = blockchain.processPortalReqMatchingRedeem(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
@@ -862,7 +865,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
 		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
 		redeemReq := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
-		if redeemReq == nil{
+		if redeemReq == nil {
 			Logger.log.Errorf("[processPortalRedeemRequest] redeemReq with ID %v not found: %v\n", actionData.UniqueRedeemID)
 			return nil
 		}
@@ -1048,7 +1051,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		custodianStateKeyStr := custodianStateKey.String()
 		err := updateCustodianStateAfterReqUnlockCollateral(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			 actionData.UnlockAmount, tokenID)
+			actionData.UnlockAmount, tokenID)
 		if err != nil {
 			Logger.log.Errorf("Error when update custodian state", err)
 			return nil
@@ -1123,5 +1126,104 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		}
 	}
 
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalReqMatchingRedeem(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData metadata.PortalReqMatchingRedeemContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	if reqStatus == common.PortalReqMatchingRedeemAcceptedChainStatus {
+		updatedRedeemRequest, err := UpdatePortalStateAfterCustodianReqMatchingRedeem(
+			actionData.CustodianAddressStr,
+			actionData.RedeemID,
+			actionData.MatchingAmount,
+			actionData.IsFullCustodian,
+			currentPortalState)
+		if err != nil {
+			Logger.log.Errorf("Error when updating portal state of request matching redeem request %v", err)
+			return nil
+		}
+
+		newStatus := common.PortalRedeemReqWaitingStatus
+		if actionData.IsFullCustodian {
+			statedb.DeleteWaitingRedeemRequest(stateDB, actionData.RedeemID)
+			newStatus = common.PortalRedeemReqMatchedStatus
+		}
+
+		// update status of redeem ID by redeemID and matching custodians
+		redeemRequest := metadata.PortalRedeemRequestStatus{
+			Status:                  byte(newStatus),
+			UniqueRedeemID:          updatedRedeemRequest.GetUniqueRedeemID(),
+			TokenID:                 updatedRedeemRequest.GetTokenID(),
+			RedeemAmount:            updatedRedeemRequest.GetRedeemAmount(),
+			RedeemerIncAddressStr:   updatedRedeemRequest.GetRedeemerAddress(),
+			RemoteAddress:           updatedRedeemRequest.GetRedeemerRemoteAddress(),
+			RedeemFee:               updatedRedeemRequest.GetRedeemFee(),
+			MatchingCustodianDetail: updatedRedeemRequest.GetCustodians(),
+			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
+		}
+		newRedeemRequest, err := json.Marshal(redeemRequest)
+		if err != nil {
+			Logger.log.Errorf("Error when marshaling status of redeem request %v", err)
+			return nil
+		}
+		err = statedb.StorePortalRedeemRequestStatus(stateDB, actionData.RedeemID, newRedeemRequest)
+		if err != nil {
+			Logger.log.Errorf("Error when storing status of redeem request %v", err)
+			return err
+		}
+
+		// track status of req matching redeem request by txReqID
+		redeemRequestByTxIDStatus := metadata.PortalReqMatchingRedeemStatus{
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			RedeemID:            actionData.RedeemID,
+			MatchingAmount:      actionData.MatchingAmount,
+			Status:              common.PortalReqMatchingRedeemAcceptedStatus,
+		}
+		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
+		err = statedb.StorePortalReqMatchingRedeemByTxIDStatus(
+			stateDB, actionData.TxReqID.String(), redeemRequestByTxIDStatusBytes)
+		if err != nil {
+			Logger.log.Errorf("[processPortalReqMatchingRedeem] Error when tracking status of redeem request by txReqID: %v\n", err)
+			return nil
+		}
+
+	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
+		// track status of req matching redeem request by txReqID
+		redeemRequestByTxIDStatus := metadata.PortalReqMatchingRedeemStatus{
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			RedeemID:            actionData.RedeemID,
+			MatchingAmount:      actionData.MatchingAmount,
+			Status:              common.PortalReqMatchingRedeemRejectedStatus,
+		}
+		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
+		err = statedb.StorePortalReqMatchingRedeemByTxIDStatus(
+			stateDB, actionData.TxReqID.String(), redeemRequestByTxIDStatusBytes)
+		if err != nil {
+			Logger.log.Errorf("[processPortalReqMatchingRedeem] Error when tracking status of redeem request by txReqID: %v\n", err)
+			return nil
+		}
+
+	}
 	return nil
 }

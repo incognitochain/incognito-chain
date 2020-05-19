@@ -202,6 +202,7 @@ var HttpHandler = map[string]httpHandler{
 	getLiquidationTpExchangeRates:                 (*HttpServer).handleGetLiquidationTpExchangeRates,
 	getPortalReward:                               (*HttpServer).handleGetPortalReward,
 	getRequestWithdrawPortalRewardStatus:          (*HttpServer).handleGetRequestWithdrawPortalRewardStatus,
+	createAndSendTxWithReqMatchingRedeem:          (*HttpServer).handleCreateAndSendTxWithReqMatchingRedeem,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
@@ -209,7 +210,7 @@ var HttpHandler = map[string]httpHandler{
 	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
 	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
 	getBTCRelayingBestState:              (*HttpServer).handleGetBTCRelayingBestState,
-	getBTCBlockByHash:              (*HttpServer).handleGetBTCBlockByHash,
+	getBTCBlockByHash:                    (*HttpServer).handleGetBTCBlockByHash,
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc

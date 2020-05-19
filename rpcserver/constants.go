@@ -218,6 +218,7 @@ const (
 	getLiquidationExchangeRatesPool               = "getliquidationtpexchangeratespool"
 	getPortalReward                               = "getportalreward"
 	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
+	createAndSendTxWithReqMatchingRedeem          = "createandsendtxwithreqmatchingredeem"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

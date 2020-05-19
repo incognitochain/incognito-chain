@@ -2225,3 +2225,117 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		return [][]string{inst}, nil
 	}
 }
+
+func buildReqMatchingRedeemInst(
+	redeemID string,
+	incAddressStr string,
+	matchingAmount uint64,
+	isFullCustodian bool,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	reqMatchingRedeemContent := metadata.PortalReqMatchingRedeemContent{
+		CustodianAddressStr: incAddressStr,
+		RedeemID:            redeemID,
+		MatchingAmount:      matchingAmount,
+		IsFullCustodian:     isFullCustodian,
+		TxReqID:             txReqID,
+		ShardID:             shardID,
+	}
+	reqMatchingRedeemContentBytes, _ := json.Marshal(reqMatchingRedeemContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(reqMatchingRedeemContentBytes),
+	}
+}
+
+func (blockchain *BlockChain) buildInstructionsForReqMatchingRedeem(
+	stateDB *statedb.StateDB,
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	portalParams PortalParams,
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal req matching redeem action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalReqMatchingRedeemAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal req matching redeem action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	meta := actionData.Meta
+	if currentPortalState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForRedeemRequest]: Current Portal state is null.")
+		inst := buildReqMatchingRedeemInst(
+			meta.RedeemID,
+			meta.CustodianAddressStr,
+			0,
+			false,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalReqMatchingRedeemRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	redeemID := meta.RedeemID
+
+	amountMatching, isEnoughCustodians, err := MatchCustodianToWaitingRedeemReq(meta.CustodianAddressStr, redeemID, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Error when processing matching custodian and redeemID %v\n", err)
+		inst := buildReqMatchingRedeemInst(
+			meta.RedeemID,
+			meta.CustodianAddressStr,
+			0,
+			false,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalReqMatchingRedeemRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	// if custodian is valid to matching, append custodian in matchingCustodians of redeem request
+	// update custodian state
+	_, err = UpdatePortalStateAfterCustodianReqMatchingRedeem(meta.CustodianAddressStr, redeemID, amountMatching, isEnoughCustodians, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Error when updating portal state %v\n", err)
+		inst := buildReqMatchingRedeemInst(
+			meta.RedeemID,
+			meta.CustodianAddressStr,
+			0,
+			false,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalReqMatchingRedeemRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	inst := buildReqMatchingRedeemInst(
+		meta.RedeemID,
+		meta.CustodianAddressStr,
+		amountMatching,
+		isEnoughCustodians,
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		common.PortalReqMatchingRedeemAcceptedChainStatus,
+	)
+	return [][]string{inst}, nil
+}
