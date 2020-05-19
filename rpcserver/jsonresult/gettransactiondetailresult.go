@@ -244,9 +244,9 @@ func (c *CoinRPCV2) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
 	c.PublicKey = OperationPointPtrToBase58(coinv2.GetPublicKey())
 	c.Commitment = OperationPointPtrToBase58(coinv2.GetCommitment())
 	c.KeyImage = OperationPointPtrToBase58(coinv2.GetKeyImage())
-	c.TxRandom = OperationPointPtrToBase58(coinv2.GetTxRandom())
+	c.TxRandom = OperationPointPtrToBase58(coinv2.GetTxRandomPoint())
 	c.Amount = OperationScalarPtrToScalar(coinv2.GetAmount())
-	c.Mask = OperationScalarPtrToScalar(coinv2.GetMask())
+	c.Randomness = OperationScalarPtrToScalar(coinv2.GetRandomness())
 	return c
 }
 
@@ -271,6 +271,6 @@ type CoinRPCV2 struct {
 	KeyImage   string
 	TxRandom   string
 
-	Amount operation.Scalar
-	Mask   operation.Scalar
+	Amount 		 operation.Scalar
+	Randomness   operation.Scalar
 }

@@ -1,9 +1,9 @@
 package coin
 
 import (
-	"errors"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 
@@ -18,10 +18,9 @@ func getRandomCoinV2() *CoinV2 {
 	c.version = uint8(2)
 	c.mask = operation.RandomScalar()
 	c.amount = operation.RandomScalar()
-	c.txRandom = operation.RandomPoint()
+	c.txRandom = NewTxRandom()
 	c.publicKey = operation.RandomPoint()
 	c.commitment = operation.RandomPoint()
-	c.index = uint8(0)
 	c.info = []byte{1, 2, 3, 4, 5}
 	return c
 }
@@ -30,22 +29,18 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 	for i := 0; i < 5; i += 1 {
 		coin := getRandomCoinV2()
 		b := coin.Bytes()
-		coinByBytes := new(CoinV2)
+		coinByBytes := new(CoinV2).Init()
 		err := coinByBytes.SetBytes(b)
 		assert.Equal(t, nil, err, "Set Bytes should not have any error")
-		assert.Equal(t, coin.version, coinByBytes.version, "FromBytes then SetBytes should be equal")
-		assert.Equal(t, coin.mask.ToBytesS(), coinByBytes.mask.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetVersion(), coinByBytes.GetVersion(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetRandomness().ToBytesS(), coinByBytes.GetRandomness().ToBytesS(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.amount.ToBytesS(), coinByBytes.amount.ToBytesS(), "FromBytes then SetBytes should be equal")
-		assert.Equal(t, coin.txRandom.ToBytesS(), coinByBytes.txRandom.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetTxRandomPoint().ToBytesS(), coinByBytes.GetTxRandomPoint().ToBytesS(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.publicKey.ToBytesS(), coinByBytes.publicKey.ToBytesS(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.commitment.ToBytesS(), coinByBytes.commitment.ToBytesS(), "FromBytes then SetBytes should be equal")
-		assert.Equal(t, coin.index, coinByBytes.index, "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetIndex(), coinByBytes.GetIndex(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.info, coinByBytes.info, "FromBytes then SetBytes should be equal")
 	}
-}
-
-func createNewCoin(amount uint64, paymentAddress key.PaymentAddress, targetShardID uint8, index uint8) (*CoinV2, error) {
-
 }
 
 func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
@@ -59,10 +54,9 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 		val, errB := common.BytesToUint64(r)
 		assert.Equal(t, nil, errB)
 
-		c, errNewCoin := createNewCoin(val, keyset.PaymentAddress, 1, 0)
-		assert.NotEqual(t, nil, errNewCoin)
+		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, val, []byte{})
 
-		c, err = createNewCoin(val, keyset.PaymentAddress, 0, 0)
+		c, err := NewCoinBasedOnPaymentInfo(paymentInfo)
 		assert.Equal(t, val, c.GetValue())
 		assert.Equal(t, nil, err)
 		assert.Equal(t, false, c.IsEncrypted())
@@ -70,6 +64,7 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 		// Conceal
 		c.ConcealData(keyset.PaymentAddress.GetPublicView())
 		assert.Equal(t, true, c.IsEncrypted())
+		assert.Equal(t, true, c.GetSharedRandom() == nil)
 		assert.NotEqual(t, val, c.GetValue())
 
 		var pc PlainCoin
@@ -77,5 +72,26 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 		assert.Equal(t, nil, err)
 		assert.Equal(t, false, pc.IsEncrypted())
 		assert.Equal(t, val, c.GetValue())
+	}
+}
+
+func TestTxRandomGroup(t *testing.T) {
+	for i := 0; i < 5; i += 1 {
+		group := NewTxRandom()
+
+		r := operation.RandomPoint()
+		i := uint32(common.RandInt() & ((1 << 32) - 1))
+		group.SetTxRandomPoint(r)
+		group.SetIndex(i)
+		assert.Equal(t, true, operation.IsPointEqual(group.GetTxRandomPoint(), r))
+		assert.Equal(t, i, group.GetIndex())
+
+		b := group.Bytes()
+		var group2 TxRandom
+		err := group2.SetBytes(b)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, true, operation.IsPointEqual(group.GetTxRandomPoint(), group2.GetTxRandomPoint()))
+		assert.Equal(t, i, group2.GetIndex())
+		assert.Equal(t, group.GetTxRandomPoint(), group2.GetTxRandomPoint())
 	}
 }

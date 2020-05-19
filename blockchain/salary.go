@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -57,6 +58,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(swapPublicKey s
 	returnStakingTx := new(transaction.Tx)
 	err = returnStakingTx.InitTxSalary(
 		txData.CalculateTxValue(),
+		coin.NewTxRandom(), // TODO Privacy
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
 		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),

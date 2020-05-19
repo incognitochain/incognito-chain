@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"math"
 	"sort"
 	"strconv"
@@ -176,6 +176,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
+	fmt.Println("Fee =", params.feeNativeCoin)
 	err = normalTx.Init(NewTxPrivacyInitParams(
 		params.senderKey,
 		params.paymentInfo,
@@ -220,28 +221,21 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			temp.Version = txVersion2
 			temp.Type = common.TxNormalType
 
-			r := operation.RandomScalar()
-			c := new(coin.CoinV2).Init()
-			c.SetVersion(2)
-			c.SetIndex(0)
-			c.SetValue(params.tokenParams.Amount)
-			c.SetRandomness(r)
-			c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), r, operation.PedersenValueIndex))
-			c.SetTxRandom(new(operation.Point).ScalarMultBase(r)) // rG
-			// The public key should be onetimeadddress already
-			publicKey, err := new(operation.Point).FromBytesS(params.tokenParams.Receiver[0].PaymentAddress.Pk)
-			if err != nil {
-				return NewTransactionErr(DecompressPaymentAddressError, err)
-			}
-			c.SetPublicKey(publicKey)
+			// Amount, Randomness, SharedRandom is transparency until we call concealData
+			message := []byte{}
 			// Set Info
 			if len(params.tokenParams.Receiver[0].Message) > 0 {
 				if len(params.tokenParams.Receiver[0].Message) > coin.MaxSizeInfoCoin {
 					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
 				}
-				c.SetInfo(params.tokenParams.Receiver[0].Message)
+				message = params.tokenParams.Receiver[0].Message
 			}
-
+			tempPaymentInfo := key.InitPaymentInfo(params.tokenParams.Receiver[0].PaymentAddress, params.tokenParams.Amount, message)
+			c, errCoin := coin.NewCoinBasedOnPaymentInfo(tempPaymentInfo)
+			if errCoin != nil {
+				Logger.Log.Errorf("Cannot create new coin based on payment info err %v", errCoin)
+				return errCoin
+			}
 			tempOutputCoin := make([]coin.Coin, 1)
 			tempOutputCoin[0] = c
 			proof := new(privacy.ProofV2)
@@ -327,6 +321,19 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				PropertyID:     *propertyID,
 				Mintable:       params.tokenParams.Mintable,
 			}
+			//fmt.Println("Checking input coins")
+			//fmt.Println(len(params.tokenParams.TokenInput))
+			for i := 0; i < len(params.tokenParams.TokenInput); i += 1 {
+				//fmt.Println("Version =", params.tokenParams.TokenInput[i].GetVersion())
+				//fmt.Println("Commitment =", params.tokenParams.TokenInput[i].GetCommitment())
+				//fmt.Println("Value =", params.tokenParams.TokenInput[i].GetValue())
+
+				KI := params.tokenParams.TokenInput[i].GetKeyImage()
+				fmt.Println("KeyImage =", KI)
+
+				//ok, err := statedb.HasSerialNumber(params.transactionStateDB, *propertyID, KI.ToBytesS(), 0)
+			}
+
 			err := temp.Init(NewTxPrivacyInitParams(params.senderKey,
 				params.tokenParams.Receiver,
 				params.tokenParams.TokenInput,

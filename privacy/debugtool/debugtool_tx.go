@@ -4,11 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -222,27 +217,8 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string, privKeyStrB string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
-	targetShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk) - 1])
-	paymentInfo := key.InitPaymentInfo(keyWallet.KeySet.PaymentAddress, 100, []byte{})
-	c, _ := coin.NewCoinBasedOnPaymentInfo(paymentInfo, targetShardID)
-	ota := c.GetPublicKey()
-
-	b := make([]byte, 32)
-	for i := 0; i < 32; i += 1 {
-		b[i] = 0
-	}
-	fmt.Println(ota.ToBytesS())
-	fmt.Println(ota.ToBytesS())
-	paymentAddr := wallet.KeyWallet{
-		KeySet: incognitokey.KeySet{
-			PaymentAddress: privacy.PaymentAddress{
-				Pk: ota.ToBytesS(),
-				Tk: b,
-			},
-		},
-	}
-	paymentAddrStr := paymentAddr.Base58CheckSerialize(wallet.PaymentAddressType)
 	query := fmt.Sprintf(`{
 		"id": 1,
 		"jsonrpc": "1.0",
@@ -265,7 +241,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 				}
 			}
 			]
-	}`, privKeyStrA, paymentAddrStr)
+	}`, privKeyStrA, paymentAddStr)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -276,6 +252,37 @@ func (this *DebugTool) ListPrivacyCustomToken() ([]byte, error) {
 		"method": "listprivacycustomtoken",
 		"params": []
 	}`
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "createandsendprivacycustomtokentransaction",
+		"params": [
+			"%s",
+			{},
+			0,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "%s",
+				"TokenName": "",
+				"TokenSymbol": "",
+				"TokenFee": 10,
+				"TokenTxType": 1,
+				"TokenAmount": 0,
+				"TokenReceivers": {
+					"%s": %s
+				}
+			}
+			]
+	}`, privKeyStrA, tokenID, paymentAddStr, amount)
 	return this.SendPostRequestWithQuery(query)
 }
 

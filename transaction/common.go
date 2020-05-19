@@ -217,6 +217,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress       *privacy.PaymentAddress
 	amount             uint64
+	txRandom		   *coin.TxRandom
 	payByPrivateKey    *privacy.PrivateKey
 	transactionStateDB *statedb.StateDB
 	bridgeStateDB      *statedb.StateDB
@@ -256,7 +257,8 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 	switch params.txType {
 	case NormalCoinType:
 		tx := &Tx{}
-		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.transactionStateDB, params.meta)
+		// TODO Privacy
+		err := tx.InitTxSalary(params.amount, coin.NewTxRandom(), params.payToAddress, params.payByPrivateKey, params.transactionStateDB, params.meta)
 		return tx, err
 	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte

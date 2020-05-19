@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -64,7 +65,9 @@ func initTx(amount string, privateKey string, stateDB *statedb.StateDB) []string
 		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
 		testSalaryTX := transaction.Tx{}
-		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
+
+		// TODO Privacy
+		testSalaryTX.InitTxSalary(uint64(initAmount), coin.NewTxRandom(), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
 			stateDB,
 			nil,
 		)

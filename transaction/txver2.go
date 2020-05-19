@@ -334,44 +334,42 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 	return err
 }
 
-func parseCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
-	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
-	for index, info := range paymentInfo {
-		receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
+func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, error) {
+	for {
+		c, err := coin.NewCoinBasedOnPaymentInfo(paymentInfo)
 		if err != nil {
-			Logger.Log.Errorf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
+			Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
 			return nil, err
 		}
-		receiverPublicKeyBytes := receiverPublicKey.ToBytesS()
-		targetShardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes) - 1])
 
-		// Repeat generating one time address for new one time address
-		for {
-			c, err := coin.NewCoinBasedOnPaymentInfo(info, targetShardID)
-			if err != nil {
-				Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
-				return nil, err
-			}
-
-			// Onetimeaddress should be unique
-			publicKeyBytes := c.GetPublicKey().ToBytesS()
-			found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes, targetShardID)
-			if err != nil {
-				Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
-				return nil, err
-			}
-			if !found {
-				outputCoins[index] = c
-				break
-			}
+		// Onetimeaddress should be unique
+		publicKeyBytes := c.GetPublicKey().ToBytesS()
+		found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes)
+		if err != nil {
+			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
+			return nil, err
 		}
+		if !found {
+			return c, nil
+		}
+	}
+}
 
+func newCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
+	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
+	for index, info := range paymentInfo {
+		var err error
+		outputCoins[index], err = newCoinUniqueOTABasedOnPaymentInfo(info, tokenID, stateDB)
+		if err != nil {
+			Logger.Log.Errorf("Cannot create coin with unique OTA, error: %v", err)
+			return nil, err
+		}
 	}
 	return outputCoins, nil
 }
 
 func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
-	outputCoins, err := parseCoinArrayBasedOnPaymentInfoArray(params.paymentInfo, params.tokenID, params.stateDB)
+	outputCoins, err := newCoinArrayBasedOnPaymentInfoArray(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
 		Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 		return err
@@ -385,6 +383,10 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 		return err
 	}
 
+	fmt.Println("About to signnnnnnn")
+	fmt.Println("About to signnnnnnn")
+	fmt.Println("About to signnnnnnn")
+	fmt.Println("About to signnnnnnn")
 	err = signTxVer2(inputCoins, outputCoins, tx, params)
 	return err
 }

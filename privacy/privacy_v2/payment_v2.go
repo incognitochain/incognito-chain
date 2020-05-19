@@ -291,7 +291,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 	outputRands := make([]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
 		outputValues[i] = outputCoins[i].GetValue()
-		outputRands[i] = outputCoins[i].GetMask()
+		outputRands[i] = outputCoins[i].GetRandomness()
 	}
 
 	wit := new(bulletproofs.AggregatedRangeWitness)

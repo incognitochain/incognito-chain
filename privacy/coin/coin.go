@@ -97,7 +97,7 @@ func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
 		if err == false {
 			return false
 		}
-		rK := new(operation.Point).ScalarMult(c.GetTxRandom(), viewKey.GetPrivateView())
+		rK := new(operation.Point).ScalarMult(c.GetTxRandomPoint(), viewKey.GetPrivateView())
 
 		hashed := operation.HashToScalar(
 			append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...),
