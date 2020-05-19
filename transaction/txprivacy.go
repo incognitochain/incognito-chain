@@ -46,10 +46,15 @@ type Tx struct {
 }
 
 func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
+	// If transaction is nonPrivacyNonInput then we do not have proof, so parse it as nil
+	if p == nil {
+		return nil, nil
+	}
 	proofInBytes, err := json.Marshal(p)
 	if err != nil {
 		return nil, err
 	}
+
 	var res privacy.Proof
 	if ver == 1 {
 		res = &zkp.PaymentProof{}
@@ -58,6 +63,7 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 	} else {
 		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2")
 	}
+
 	err = json.Unmarshal(proofInBytes, res)
 	if err != nil {
 		return nil, err
@@ -229,7 +235,8 @@ func parseSenderFullKey(params *TxPrivacyInitParams) (*incognitokey.KeySet, erro
 	return &senderFullKey, nil
 }
 
-func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {
+// return bool indicates whether we should continue "Init" function or not
+func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) (bool, error) {
 	var err error
 
 	// Tx: initialize some values
@@ -242,21 +249,23 @@ func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {
 	tx.Metadata = params.metaData
 	tx.Info, err = getTxInfo(params.info)
 	if err != nil {
-		return err
+		return false, err
 	}
 	tx.PubKeyLastByteSender, err = parseLastByteSender(params)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if isNonPrivacy, err := tx.isNonPrivacyNonInput(params); isNonPrivacy {
-		return err
+
+	// we should stop if it isNonPrivacyNonInput or have error
+	if isNonPrivacy, err := tx.isNonPrivacyNonInput(params); err != nil || isNonPrivacy {
+		return !isNonPrivacy, err
 	}
 
 	// Params: update balance if overbalance
 	if err = updateParamsWhenOverBalance(params); err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
 // Init - init value for tx from inputcoin(old output coin from old tx)
@@ -273,7 +282,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	start := time.Now()
 
 	// Init tx and params (tx and params will be changed)
-	if err := initializeTxAndParams(tx, params); err != nil {
+	if toContinue, err := initializeTxAndParams(tx, params); err != nil || !toContinue {
 		return err
 	}
 
@@ -729,6 +738,10 @@ func (tx Tx) GetProof() privacy.Proof {
 }
 
 func (tx Tx) IsPrivacy() bool {
+	// In the case of NonPrivacyNonInput, we do not have proof
+	if tx.Proof == nil {
+		return false
+	}
 	return tx.Proof.IsPrivacy()
 }
 

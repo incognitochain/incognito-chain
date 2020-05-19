@@ -18,14 +18,15 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string) {
 
 	//b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[1], privateKeys[2])
 	//fmt.Println(string(b))
-	//
+
 	b, _ := tool.ListPrivacyCustomToken()
+	//fmt.Println(string(b))
 	res := new(debugtool.ListCustomToken)
 	_ = json.Unmarshal(b, res)
 	tokenID := res.Result.ListCustomToken[0].ID
-
 	b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
 	fmt.Println(string(b))
+
 	//b, _ = tool.GetBalancePrivacyCustomToken(privateKeys[2], tokenID)
 	//fmt.Println(string(b))
 }

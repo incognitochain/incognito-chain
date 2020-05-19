@@ -231,7 +231,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 			{
 				"Privacy": true,
 				"TokenID": "",
-				"TokenName": "token_test",
+				"TokenName": "abcxyz",
 				"TokenSymbol": "pTTT",
 				"TokenFee": 0,
 				"TokenTxType": 0,

@@ -55,20 +55,21 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 	param.txParam.metaData = meta
 }
 
-func initializeTxAndParamsASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
+// return bool indicates that after initialization, should we continue the function "Init" or not
+func initializeTxAndParamsASM(tx *Tx, params *TxPrivacyInitParamsForASM) (bool, error) {
 	txParams := &params.txParam
-	err := initializeTxAndParams(tx, txParams)
+	toContinue, err := initializeTxAndParams(tx, txParams)
 	if txParams.hasPrivacy {
 		// Check number of list of random commitments, list of random commitment indices
 		if len(params.commitmentIndices) != len(params.txParam.inputCoins)*privacy.CommitmentRingSize {
-			return NewTransactionErr(RandomCommitmentError, nil)
+			return false, NewTransactionErr(RandomCommitmentError, nil)
 		}
 
 		if len(params.myCommitmentIndices) != len(params.txParam.inputCoins) {
-			return NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
+			return false, NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
 		}
 	}
-	return err
+	return toContinue, err
 }
 
 func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
@@ -79,7 +80,8 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	}
 
 	// Init tx and params (tx and params will be changed)
-	if err := initializeTxAndParamsASM(tx, params); err != nil {
+	// If we should not continue, return
+	if toContinue, err := initializeTxAndParamsASM(tx, params); err != nil || !toContinue {
 		return err
 	}
 

@@ -383,10 +383,6 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 		return err
 	}
 
-	fmt.Println("About to signnnnnnn")
-	fmt.Println("About to signnnnnnn")
-	fmt.Println("About to signnnnnnn")
-	fmt.Println("About to signnnnnnn")
 	err = signTxVer2(inputCoins, outputCoins, tx, params)
 	return err
 }
