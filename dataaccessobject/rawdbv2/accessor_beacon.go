@@ -2,10 +2,7 @@ package rawdbv2
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 )
@@ -235,22 +232,22 @@ func GetBeaconBlockByHash(db incdb.KeyValueReader, hash common.Hash) ([]byte, er
 //	return nil
 //}
 
-func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, error) {
-	beaconBlockHashes := []common.Hash{}
-	indexPrefix := GetBeaconIndexToBlockHashPrefix(index)
-	iterator := db.NewIteratorWithPrefix(indexPrefix)
-	for iterator.Next() {
-		key := iterator.Key()
-		strs := strings.Split(string(key), string(splitter))
-		tempHash := []byte(strs[len(strs)-1])
-		hash := common.BytesToHash(tempHash)
-		beaconBlockHashes = append(beaconBlockHashes, hash)
-	}
-	if len(beaconBlockHashes) == 0 {
-		return beaconBlockHashes, errors.New("beacon block hash not found")
-	}
-	return beaconBlockHashes, nil
-}
+//func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, error) {
+//	beaconBlockHashes := []common.Hash{}
+//	indexPrefix := GetBeaconIndexToBlockHashPrefix(index)
+//	iterator := db.NewIteratorWithPrefix(indexPrefix)
+//	for iterator.Next() {
+//		key := iterator.Key()
+//		strs := strings.Split(string(key), string(splitter))
+//		tempHash := []byte(strs[len(strs)-1])
+//		hash := common.BytesToHash(tempHash)
+//		beaconBlockHashes = append(beaconBlockHashes, hash)
+//	}
+//	if len(beaconBlockHashes) == 0 {
+//		return beaconBlockHashes, errors.New("beacon block hash not found")
+//	}
+//	return beaconBlockHashes, nil
+//}
 
 func StoreBeaconViews(db incdb.KeyValueWriter, val []byte) error {
 	key := GetBeaconViewsKey()
