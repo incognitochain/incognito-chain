@@ -686,15 +686,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 
 func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]uint64, error) {
 	m := make(map[string]map[common.Hash]uint64)
-	beaconBestState := blockchain.NewBeaconBestState()
-	data, err := rawdbv2.GetBeaconBestState(blockService.DB[common.BeaconChainDataBaseID])
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(data, beaconBestState)
-	if err != nil {
-		return nil, err
-	}
+	beaconBestState := blockService.BlockChain.GetBeaconBestState()
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
 		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
