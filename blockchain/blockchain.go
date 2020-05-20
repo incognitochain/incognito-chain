@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/multiview"
 
@@ -354,7 +355,7 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 }
 
 func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
-	bestStateBytes, err := rawdbv2.GetBeaconBestState(blockchain.GetBeaconChainDatabase())
+	bestStateBytes, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
@@ -404,7 +405,7 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
 	b, _ := json.Marshal(allViews)
-	return rawdbv2.StoreBeaconBestState(db, b)
+	return rawdbv2.StoreBeaconViews(db, b)
 }
 
 /*
@@ -412,7 +413,7 @@ Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
 	allViews := []*BeaconBestState{}
-	b, err := rawdbv2.GetBeaconBestState(blockchain.GetBeaconChainDatabase())
+	b, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
@@ -495,6 +496,34 @@ func (blockchain *BlockChain) GetWantedShard() map[byte]struct{} {
 // GetConfig returns blockchain's config
 func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
+}
+
+// GetPortalParams returns portal params in beaconheight
+func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams {
+	portalParamMap := blockchain.GetConfig().ChainParams.PortalParams
+	// only has one value - default value
+	if len(portalParamMap) == 1 {
+		return portalParamMap[0]
+	}
+
+	bchs := []uint64{}
+	for bch := range portalParamMap {
+		bchs = append(bchs, bch)
+	}
+	sort.Slice(bchs, func(i, j int) bool {
+		return bchs[i] < bchs[j]
+	})
+
+	bchKey := bchs[len(bchs)-1]
+	for i := len(bchs) - 1; i >= 0; i-- {
+		if beaconHeight < bchs[i] {
+			continue
+		}
+		bchKey = bchs[i]
+		break
+	}
+
+	return portalParamMap[bchKey]
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {

@@ -120,14 +120,14 @@ func (portal *PortalService) ConvertExchangeRates(stateDB *statedb.StateDB, toke
 	return result, nil
 }
 
-func (portal *PortalService) GetPortingFees(stateDB *statedb.StateDB, tokenID string, valuePToken uint64) (map[string]uint64, error) {
+func (portal *PortalService) GetPortingFees(stateDB *statedb.StateDB, tokenID string, valuePToken uint64, portalParam blockchain.PortalParams) (map[string]uint64, error) {
 	result := make(map[string]uint64)
 	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB)
 	if err != nil {
 		return result, err
 	}
 
-	exchangePortingFees, err := blockchain.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates)
+	exchangePortingFees, err := blockchain.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates, portalParam.MinPercentPortingFee)
 
 	if err != nil {
 		return result, err
@@ -138,9 +138,13 @@ func (portal *PortalService) GetPortingFees(stateDB *statedb.StateDB, tokenID st
 	return result, nil
 }
 
-func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(stateDB *statedb.StateDB, custodianAddress string, pTokenId string, isFreeCollateralSelected bool) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
+func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(
+	stateDB *statedb.StateDB,
+	custodianAddress string,
+	pTokenId string,
+	isFreeCollateralSelected bool,
+	portalParam blockchain.PortalParams) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
 	custodian, err := statedb.GetOneCustodian(stateDB, custodianAddress)
-
 	if err != nil {
 		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
 	}
@@ -150,7 +154,12 @@ func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(st
 		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
 	}
 
-	amountNeeded, _, _, err := blockchain.CalAmountNeededDepositLiquidate(custodian, finalExchangeRates, pTokenId, isFreeCollateralSelected)
+	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
+	if err != nil {
+		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
+	}
+
+	amountNeeded, _, _, err := blockchain.CalAmountNeededDepositLiquidate(currentPortalState, custodian, finalExchangeRates, pTokenId, isFreeCollateralSelected, portalParam)
 
 	result := jsonresult.GetLiquidateAmountNeededCustodianDeposit{
 		IsFreeCollateralSelected: isFreeCollateralSelected,

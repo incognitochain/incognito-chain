@@ -593,7 +593,17 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.Cha
 	//  validate receiver with burning address
 	senderPKBytes := []byte{}
 	if len(proof.GetInputCoins()) > 0 {
-		senderPKBytes = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
+		coinDetails := proof.GetInputCoins()[0].CoinDetails
+		if coinDetails == nil {
+			Logger.log.Errorf("coin details is nil\n")
+			return false
+		}
+		publicKey := coinDetails.GetPublicKey()
+		if publicKey == nil {
+			Logger.log.Errorf("public key is nil\n")
+			return false
+		}
+		senderPKBytes = publicKey.ToBytesS()
 	}
 
 	//get burning address

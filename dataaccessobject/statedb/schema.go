@@ -298,7 +298,7 @@ func GetPortalWaitingPortingRequestPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPortalLiquidationExchangeRatesPoolPrefix() []byte {
+func GetPortalLiquidationPoolPrefix() []byte {
 	h := common.HashH(portalLiquidationExchangeRatesPoolPrefix)
 	return h[:][:prefixHashKeyLength]
 }
