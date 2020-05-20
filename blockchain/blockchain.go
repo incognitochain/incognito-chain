@@ -355,7 +355,7 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 }
 
 func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
-	bestStateBytes, err := rawdbv2.GetBeaconBestState(blockchain.GetBeaconChainDatabase())
+	bestStateBytes, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
@@ -405,7 +405,7 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
 	b, _ := json.Marshal(allViews)
-	return rawdbv2.StoreBeaconBestState(db, b)
+	return rawdbv2.StoreBeaconViews(db, b)
 }
 
 /*
@@ -413,7 +413,7 @@ Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
 	allViews := []*BeaconBestState{}
-	b, err := rawdbv2.GetBeaconBestState(blockchain.GetBeaconChainDatabase())
+	b, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
