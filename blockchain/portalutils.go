@@ -356,11 +356,30 @@ func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, cus
 		return 0, 0, 0, err
 	}
 
-	if custodian.GetLockedAmountCollateral()[pTokenId] >= totalPRV {
+	totalLockedAmountInWaitingPorting := uint64(0)
+	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != pTokenId {
+			continue
+		}
+		for _, matchingCustodian := range waitingPortingReq.Custodians() {
+			if matchingCustodian.IncAddress != custodian.GetIncognitoAddress() {
+				continue
+			}
+			totalLockedAmountInWaitingPorting += matchingCustodian.LockedAmountCollateral
+			break
+		}
+	}
+
+	lockedAmountMap := custodian.GetLockedAmountCollateral()
+	if lockedAmountMap == nil {
+		return 0, 0, 0, errors.New("Locked amount is nil")
+	}
+	lockedAmount := lockedAmountMap[pTokenId]
+	if lockedAmount >= totalPRV {
 		return 0, 0, 0, nil
 	}
 
-	totalAmountNeeded := totalPRV - custodian.GetLockedAmountCollateral()[pTokenId]
+	totalAmountNeeded := totalPRV - lockedAmount
 	var remainAmountFreeCollateral uint64
 	var totalFreeCollateralNeeded uint64
 
