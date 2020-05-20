@@ -374,7 +374,7 @@ func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, cus
 	if lockedAmountMap == nil {
 		return 0, 0, 0, errors.New("Locked amount is nil")
 	}
-	lockedAmount := lockedAmountMap[pTokenId]
+	lockedAmount := lockedAmountMap[pTokenId] - totalLockedAmountInWaitingPorting
 	if lockedAmount >= totalPRV {
 		return 0, 0, 0, nil
 	}
