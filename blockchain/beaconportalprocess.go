@@ -815,7 +815,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemReqWaitingStatus,
+			Status:         common.PortalRedeemRequestTxAcceptedStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 			TxReqID:        actionData.TxReqID,
 		}
@@ -850,7 +850,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemReqRejectedStatus,
+			Status:         common.PortalRedeemRequestTxRejectedStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 			TxReqID:        actionData.TxReqID,
 		}

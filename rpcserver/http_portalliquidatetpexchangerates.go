@@ -46,7 +46,7 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
 	}
 
-	result, err := httpServer.portal.GetLiquidateTpExchangeRates(stateDB, custodianAddress)
+	result, err := httpServer.portal.GetLiquidateTpExchangeRates(stateDB, custodianAddress, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
 	}
@@ -100,7 +100,7 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRatesByTokenId(param
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)
 	}
 
-	result, err := httpServer.portal.GetLiquidateTpExchangeRatesByToken(stateDB, custodianAddress, pTokenID)
+	result, err := httpServer.portal.GetLiquidateTpExchangeRatesByToken(stateDB, custodianAddress, pTokenID, uint64(beaconHeight))
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)

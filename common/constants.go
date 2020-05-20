@@ -137,9 +137,11 @@ const (
 	PortalRedeemReqSuccessStatus               = 1
 	PortalRedeemReqWaitingStatus               = 2
 	PortalRedeemReqLiquidatedStatus            = 3
-	PortalRedeemReqRejectedStatus              = 4
-	PortalRedeemReqRejectedByLiquidationStatus = 5
-	PortalRedeemReqMatchedStatus = 6
+	PortalRedeemReqRejectedByLiquidationStatus = 4
+	PortalRedeemReqMatchedStatus               = 5
+
+	PortalRedeemRequestTxAcceptedStatus = 1
+	PortalRedeemRequestTxRejectedStatus = 2
 
 	PortalCustodianWithdrawReqAcceptedStatus = 1
 	PortalCustodianWithdrawReqRejectStatus   = 2

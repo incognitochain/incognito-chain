@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -12,7 +13,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams PortalParams,) error {
+	portalParams PortalParams, ) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalLiquidateCustodianContent
@@ -51,7 +52,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		// remove redeem request from waiting redeem requests list
 		if len(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians()) == 0 {
 			deleteWaitingRedeemRequest(currentPortalState, waitingRedeemReqKeyStr)
-			statedb.DeleteWaitingRedeemRequest(stateDB,  actionData.UniqueRedeemID)
+			statedb.DeleteWaitingRedeemRequest(stateDB, actionData.UniqueRedeemID)
 
 			// update status of redeem request with redeemID to liquidated status
 			err = updateRedeemRequestStatusByRedeemId(actionData.UniqueRedeemID, common.PortalRedeemReqLiquidatedStatus, stateDB)
@@ -156,7 +157,9 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(
 			Logger.log.Infof("end update liquidation %#v", currentPortalState)
 
 			//save db
-			newTPKey := []byte(custodianState.GetIncognitoAddress())
+			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+			newTPKey := beaconHeightBytes
+			newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
 			newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
 				custodianState.GetIncognitoAddress(),
 				common.PortalLiquidationTPExchangeRatesSuccessStatus,
@@ -178,7 +181,9 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(
 			}
 		}
 	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
-		newTPKey := []byte(custodianState.GetIncognitoAddress())
+		beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+		newTPKey := beaconHeightBytes
+		newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
 		newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
 			custodianState.GetIncognitoAddress(),
 			common.PortalLiquidationTPExchangeRatesFailedStatus,
