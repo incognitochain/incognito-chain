@@ -356,11 +356,30 @@ func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, cus
 		return 0, 0, 0, err
 	}
 
-	if custodian.GetLockedAmountCollateral()[pTokenId] >= totalPRV {
+	totalLockedAmountInWaitingPorting := uint64(0)
+	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != pTokenId {
+			continue
+		}
+		for _, matchingCustodian := range waitingPortingReq.Custodians() {
+			if matchingCustodian.IncAddress != custodian.GetIncognitoAddress() {
+				continue
+			}
+			totalLockedAmountInWaitingPorting += matchingCustodian.LockedAmountCollateral
+			break
+		}
+	}
+
+	lockedAmountMap := custodian.GetLockedAmountCollateral()
+	if lockedAmountMap == nil {
+		return 0, 0, 0, errors.New("Locked amount is nil")
+	}
+	lockedAmount := lockedAmountMap[pTokenId]
+	if lockedAmount >= totalPRV {
 		return 0, 0, 0, nil
 	}
 
-	totalAmountNeeded := totalPRV - custodian.GetLockedAmountCollateral()[pTokenId]
+	totalAmountNeeded := totalPRV - lockedAmount
 	var remainAmountFreeCollateral uint64
 	var totalFreeCollateralNeeded uint64
 
@@ -472,7 +491,7 @@ func CalUnlockCollateralAmount(
 	tokenID string) (uint64, error) {
 	custodianState := portalState.CustodianPoolState[custodianStateKey]
 	if custodianState == nil {
-		Logger.log.Errorf("Custodian not found %v\n", custodianStateKey)
+		Logger.log.Errorf("[CalUnlockCollateralAmount] Custodian not found %v\n", custodianStateKey)
 		return 0, fmt.Errorf("Custodian not found %v\n", custodianStateKey)
 	}
 
@@ -505,7 +524,12 @@ func CalUnlockCollateralAmount(
 	if custodianState.GetLockedAmountCollateral()[tokenID] < totalLockedAmountInWaitingPortings {
 		Logger.log.Errorf("custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
 		Logger.log.Errorf("totalLockedAmountInWaitingPortings %v\n", totalLockedAmountInWaitingPortings)
-		return  0, errors.New("Lock amount is invalid")
+		return  0, errors.New("[CalUnlockCollateralAmount] Lock amount is invalid")
+	}
+
+	if totalHoldingPubToken == 0 {
+		Logger.log.Errorf("[CalUnlockCollateralAmount] Total holding public token amount of custodianAddr %v is zero", custodianState.GetIncognitoAddress())
+		return 0, errors.New("[CalUnlockCollateralAmount] Total holding public token amount is zero")
 	}
 
 	tmp := new(big.Int).Mul(
@@ -513,8 +537,8 @@ func CalUnlockCollateralAmount(
 		new(big.Int).SetUint64(custodianState.GetLockedAmountCollateral()[tokenID] - totalLockedAmountInWaitingPortings))
 	unlockAmount := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalHoldingPubToken)).Uint64()
 	if unlockAmount <= 0 {
-		Logger.log.Errorf("Can not calculate unlock amount for custodian %v\n", unlockAmount)
-		return 0, errors.New("Can not calculate unlock amount for custodian")
+		Logger.log.Errorf("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian %v\n", unlockAmount)
+		return 0, errors.New("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian")
 	}
 	return unlockAmount, nil
 }

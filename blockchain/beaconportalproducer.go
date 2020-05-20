@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -11,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"strconv"
-	"fmt"
 )
 
 // beacon build new instruction from instruction received from ShardToBeaconBlock
@@ -956,7 +956,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			for _, out := range outputs {
 				addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 				if addr != remoteAddressNeedToBeTransfer {
-					Logger.log.Errorf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
+					Logger.log.Warnf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 					continue
 				}
 
@@ -1673,11 +1673,31 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// check redeem amount of matching custodian
 	amountMatchingCustodian := uint64(0)
+	isFoundCustodian := false
 	for _, cus := range waitingRedeemRequest.GetCustodians() {
 		if cus.GetIncognitoAddress() == meta.CustodianAddressStr {
 			amountMatchingCustodian = cus.GetAmount()
+			isFoundCustodian = true
 			break
 		}
+	}
+
+	if !isFoundCustodian {
+		Logger.log.Errorf("Custodian address %v is not in redeemID req %v", meta.CustodianAddressStr, meta.UniqueRedeemID)
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+
+		)
+		return [][]string{inst}, nil
 	}
 
 	if meta.RedeemAmount != amountMatchingCustodian {
