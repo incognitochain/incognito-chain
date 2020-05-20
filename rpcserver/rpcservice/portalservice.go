@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -171,8 +172,10 @@ func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(
 	return result, nil
 }
 
-func (portal *PortalService) GetLiquidateTpExchangeRates(stateDB *statedb.StateDB, custodianAddress string) (interface{}, error) {
-	newTPKey := []byte(custodianAddress)
+func (portal *PortalService) GetLiquidateTpExchangeRates(stateDB *statedb.StateDB, custodianAddress string, beaconHeight uint64) (interface{}, error) {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	newTPKey := beaconHeightBytes
+	newTPKey = append(newTPKey, []byte(custodianAddress)...)
 	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(
 		stateDB,
 		statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
@@ -192,8 +195,10 @@ func (portal *PortalService) GetLiquidateTpExchangeRates(stateDB *statedb.StateD
 	return liquidateTopPercentileExchangeRatesStatus, nil
 }
 
-func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(stateDB *statedb.StateDB, custodianAddress string, tokenSymbol string) (jsonresult.GetLiquidateTpExchangeRates, error) {
-	newTPKey := []byte(custodianAddress)
+func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(stateDB *statedb.StateDB, custodianAddress string, tokenSymbol string, beaconHeight uint64) (jsonresult.GetLiquidateTpExchangeRates, error) {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	newTPKey := beaconHeightBytes
+	newTPKey = append(newTPKey, []byte(custodianAddress)...)
 
 	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
 
