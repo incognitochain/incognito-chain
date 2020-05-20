@@ -528,7 +528,7 @@ func CalUnlockCollateralAmount(
 	}
 
 	if totalHoldingPubToken == 0 {
-		Logger.log.Errorf("[CalUnlockCollateralAmount] Total holding public token amount is zero")
+		Logger.log.Errorf("[CalUnlockCollateralAmount] Total holding public token amount of custodianAddr %v is zero", custodianState.GetIncognitoAddress())
 		return 0, errors.New("[CalUnlockCollateralAmount] Total holding public token amount is zero")
 	}
 
