@@ -87,7 +87,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
-	beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().consensusStateDB, beaconHeight)
+	beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
-		newBeaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().consensusStateDB, beaconHeight)
+		newBeaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
 		if err != nil {
 			return nil, err
 		}

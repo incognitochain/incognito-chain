@@ -145,7 +145,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBl
 		return []*BeaconBlock{}, nil
 	}
 	beaconBlocks := []*BeaconBlock{}
-	beaconBlockHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().consensusStateDB, height)
+	beaconBlockHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), height)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 }
 
 func (blockchain *BlockChain) GetShardBlockHashByHeight(height uint64, shardID byte) (common.Hash, error) {
-	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB, shardID, height)
+	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB.Copy(), shardID, height)
 	if err != nil {
 		return hash, err
 	}
@@ -197,7 +197,7 @@ func (blockchain *BlockChain) GetShardBlockHashByHeight(height uint64, shardID b
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*ShardBlock, error) {
 	shardBlockMap := make(map[common.Hash]*ShardBlock)
-	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB, shardID, height)
+	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB.Copy(), shardID, height)
 	if err != nil {
 		return nil, err
 	}

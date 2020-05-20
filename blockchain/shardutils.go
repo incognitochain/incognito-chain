@@ -36,7 +36,7 @@ func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().consensusStateDB, i)
+		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), i)
 		if err != nil {
 			return nil, err
 		}
