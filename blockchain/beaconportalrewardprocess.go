@@ -10,7 +10,8 @@ import (
 func (blockchain *BlockChain) processPortalReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRewardContent
@@ -27,11 +28,11 @@ func (blockchain *BlockChain) processPortalReward(
 
 		// at the end of epoch
 		if (beaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
-			currentPortalState.LockedCollateralState.Reset()
+			currentPortalState.LockedCollateralForRewards.Reset()
 		}
 
 		totalLockedCollateralAmount := uint64(0)
-		lockedCollateralDetails := currentPortalState.LockedCollateralState.GetLockedCollateralDetail()
+		lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
 		for _, custodianState := range currentPortalState.CustodianPoolState {
 			for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
 				totalLockedCollateralAmount += lockedAmount
@@ -39,9 +40,9 @@ func (blockchain *BlockChain) processPortalReward(
 			}
 		}
 
-		currentPortalState.LockedCollateralState.SetTotalLockedCollateralInEpoch(
-			currentPortalState.LockedCollateralState.GetTotalLockedCollateralInEpoch() + totalLockedCollateralAmount)
-		currentPortalState.LockedCollateralState.SetLockedCollateralDetail(
+		currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(
+			currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards() + totalLockedCollateralAmount)
+		currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(
 			lockedCollateralDetails)
 
 		// store reward at beacon height into db
@@ -65,7 +66,8 @@ func (blockchain *BlockChain) processPortalReward(
 func (blockchain *BlockChain) processPortalWithdrawReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestWithdrawRewardContent
@@ -135,7 +137,8 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 func (blockchain *BlockChain) processPortalTotalCustodianReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalTotalCustodianReward

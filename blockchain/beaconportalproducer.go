@@ -135,6 +135,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -220,11 +221,13 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 }
 
 func (blockchain *BlockChain) buildInstructionsForPortingRequest(
+	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -244,7 +247,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{}, nil
 	}
 
-	stateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	//check unique id from record from db
 	portingRequestKeyExist, err := statedb.IsPortingRequestIdExist(stateDB, []byte(actionData.Meta.UniqueRegisterId))
 
@@ -365,7 +367,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	//validation porting fees
-	exchangePortingFees, err := CalMinPortingFee(actionData.Meta.RegisterAmount, actionData.Meta.PTokenId, exchangeRatesState)
+	exchangePortingFees, err := CalMinPortingFee(actionData.Meta.RegisterAmount, actionData.Meta.PTokenId, exchangeRatesState, portalParams.MinPercentPortingFee)
 	if err != nil {
 		Logger.log.Errorf("Calculate Porting fee is error %v", err)
 		return [][]string{}, nil
@@ -391,7 +393,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	pickedCustodians, err := pickUpCustodians(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
+	pickedCustodians, err := pickUpCustodians(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while picking up custodians for the porting request: %+v", err)
 	}
@@ -459,7 +461,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.RegisterAmount,
 		pickedCustodians,
 		actionData.Meta.PortingFee,
-		common.PortalPortingReqWaitingStatus,
 		beaconHeight+1,
 	)
 
@@ -477,6 +478,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 
 	// parse instruction
@@ -1047,6 +1049,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -1168,6 +1171,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -1283,7 +1287,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		)
 		return [][]string{inst}, nil
 	}
-	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState)
+	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState, portalParams.MinPercentRedeemFee)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
 		inst := buildRedeemRequestInst(
@@ -1410,6 +1414,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -1538,6 +1543,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	portalParams PortalParams,
 ) ([][]string, error) {
 
 	// parse instruction
@@ -2089,7 +2095,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 				if coin.Denom == bnb.DenomBNB {
 					amountTransfer += coin.Amount
 					// note: log error for debug
-					Logger.log.Errorf("TxProof-BNB coin.Amount %d",
+					Logger.log.Infof("TxProof-BNB coin.Amount %d",
 						coin.Amount)
 				}
 			}

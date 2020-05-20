@@ -232,18 +232,18 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID str
 
 func GetLiquidateExchangeRatesPool(
 	stateDB *StateDB,
-) (map[string]*LiquidateExchangeRatesPool, error) {
+) (map[string]*LiquidationPool, error) {
 	liquidateExchangeRates := stateDB.getLiquidateExchangeRatesPool()
 	return liquidateExchangeRates, nil
 }
 
 func StoreBulkLiquidateExchangeRatesPool(
 	stateDB *StateDB,
-	liquidateExchangeRates map[string]*LiquidateExchangeRatesPool,
+	liquidateExchangeRates map[string]*LiquidationPool,
 ) error {
 	for _, value := range liquidateExchangeRates {
-		key := GeneratePortalLiquidateExchangeRatesPoolObjectKey()
-		err := stateDB.SetStateObject(PortalLiquidationExchangeRatesPoolObjectType, key, value)
+		key := GeneratePortalLiquidationPoolObjectKey()
+		err := stateDB.SetStateObject(PortalLiquidationPoolObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StoreLiquidateExchangeRatesPoolError, err)
 		}
@@ -251,8 +251,8 @@ func StoreBulkLiquidateExchangeRatesPool(
 	return nil
 }
 
-func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB) (*LiquidateExchangeRatesPool, error) {
-	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey()
+func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB) (*LiquidationPool, error) {
+	key := GeneratePortalLiquidationPoolObjectKey()
 	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
 	if err != nil {
 		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, err)

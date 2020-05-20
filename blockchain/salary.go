@@ -232,7 +232,8 @@ func (blockchain *BlockChain) addShardCommitteeReward(rewardStateDB *statedb.Sta
 	return nil
 }
 
-func (blockchain *BlockChain) buildRewardInstructionByEpoch(curView *BeaconBestState, blkHeight, epoch uint64, rewardStateDB *statedb.StateDB, isSplitRewardForCustodian bool) ([][]string, map[common.Hash]uint64, error) {
+func (blockchain *BlockChain) buildRewardInstructionByEpoch(curView *BeaconBestState, blkHeight, epoch uint64, rewardStateDB *statedb.StateDB, isSplitRewardForCustodian bool, percentCustodianRewards uint64) ([][]string, map[common.Hash]uint64, error) {
+
 	var resInst [][]string
 	var err error
 	var instRewardForBeacons [][]string
@@ -259,7 +260,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(curView *BeaconBestS
 				delete(totalRewards[ID], coinID)
 			}
 		}
-		rewardForBeacon, rewardForIncDAO, rewardForCustodian, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO, isSplitRewardForCustodian)
+		rewardForBeacon, rewardForIncDAO, rewardForCustodian, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO, isSplitRewardForCustodian, percentCustodianRewards)
 		if err != nil {
 			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n", err)
 		}
@@ -372,6 +373,7 @@ func splitReward(
 	numberOfActiveShards int,
 	devPercent int,
 	isSplitRewardForCustodian bool,
+	percentCustodianRewards uint64,
 ) (
 	*map[common.Hash]uint64,
 	*map[common.Hash]uint64,
@@ -386,7 +388,7 @@ func splitReward(
 		rewardForBeacon[key] = 2 * (uint64(100-devPercent) * value) / ((uint64(numberOfActiveShards) + 2) * 100)
 		totalRewardForDAOAndCustodians := uint64(devPercent) * value / uint64(100)
 		if isSplitRewardForCustodian {
-			rewardForCustodian[key] = uint64(common.PercentCustodianRewards) * totalRewardForDAOAndCustodians / uint64(100)
+			rewardForCustodian[key] = uint64(percentCustodianRewards) * totalRewardForDAOAndCustodians / uint64(100)
 			rewardForIncDAO[key] = totalRewardForDAOAndCustodians - rewardForCustodian[key]
 		} else {
 			rewardForIncDAO[key] = totalRewardForDAOAndCustodians

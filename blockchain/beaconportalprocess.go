@@ -17,6 +17,8 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		return nil
 	}
 
+	portalParams := blockchain.GetPortalParams(block.GetHeight())
+
 	// re-use update info of bridge
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 
@@ -30,49 +32,49 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		switch inst[0] {
 		//porting request
 		case strconv.Itoa(metadata.PortalUserRegisterMeta):
-			err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//exchange rates
 		case strconv.Itoa(metadata.PortalExchangeRatesMeta):
-			err = blockchain.processPortalExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//custodian withdraw
 		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
-			err = blockchain.processPortalCustodianWithdrawRequest(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalCustodianWithdrawRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation exchange rates
 		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
-			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation custodian deposit
 		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMeta):
-			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation user redeem
 		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
-			err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		//custodian deposit
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
-			err = blockchain.processPortalCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// request ptoken
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
-			err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// redeem request
 		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
-			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// request unlock collateral
 		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
-			err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// liquidation custodian run away
 		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
-			err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// portal reward
 		case strconv.Itoa(metadata.PortalRewardMeta):
-			err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// request withdraw reward
 		case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
-			err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// expired waiting porting request
 		case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
-			err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// total custodian reward instruction
 		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
-			err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
@@ -119,7 +121,11 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 }
 
 func (blockchain *BlockChain) processPortalCustodianDeposit(
-	stateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -204,7 +210,9 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 func (blockchain *BlockChain) processPortalUserRegister(
 	portalStateDB *statedb.StateDB,
-	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
@@ -272,7 +280,6 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 		)
 
@@ -382,6 +389,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
 	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
@@ -513,7 +521,12 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processPortalExchangeRates(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -711,6 +724,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
 	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
@@ -916,7 +930,8 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -1013,7 +1028,8 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(
 func (blockchain *BlockChain) processPortalUnlockCollateral(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
-	currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestUnlockCollateralContent

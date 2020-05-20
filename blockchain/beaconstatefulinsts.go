@@ -79,7 +79,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	stateDB *statedb.StateDB,
 	statefulActionsByShardID map[byte][][]string,
 	beaconHeight uint64,
-	rewardForCustodianByEpoch map[common.Hash]uint64) [][]string {
+	rewardForCustodianByEpoch map[common.Hash]uint64,
+	portalParams PortalParams) [][]string {
 	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -256,6 +257,21 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, pdeInsts...)
 	}
 
+	// auto-liquidation portal instructions
+	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
+		beaconHeight-1,
+		currentPortalState,
+		portalParams,
+	)
+
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(portalLiquidationInsts) > 0 {
+		instructions = append(instructions, portalLiquidationInsts...)
+	}
+
 	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
 		stateDB,
@@ -270,6 +286,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalReqUnlockCollateralActionsByShardID,
 		portalRedeemLiquidateExchangeRatesActionByShardID,
 		portalLiquidationCustodianDepositActionByShardID,
+		portalParams,
 	)
 
 	if err != nil {
@@ -284,20 +301,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	relayingInsts := blockchain.handleRelayingInsts(relayingHeaderState, pm)
 	if len(relayingInsts) > 0 {
 		instructions = append(instructions, relayingInsts...)
-	}
-
-	// auto-liquidation portal instructions
-	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
-		beaconHeight-1,
-		currentPortalState,
-	)
-
-	if err != nil {
-		Logger.log.Error(err)
-		return instructions
-	}
-	if len(portalLiquidationInsts) > 0 {
-		instructions = append(instructions, portalLiquidationInsts...)
 	}
 
 	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
@@ -498,6 +501,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
 	portalLiquidationCustodianDepositActionByShardID map[byte][][]string,
+	portalParams PortalParams,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
@@ -519,6 +523,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalCustodianDepositMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -546,11 +551,13 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForPortingRequest(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalUserRegisterMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -581,6 +588,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalUserRequestPTokenMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -612,6 +620,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalRedeemRequestMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -642,6 +651,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalExchangeRatesMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -670,9 +680,9 @@ func (blockchain *BlockChain) handlePortalInsts(
 				contentStr,
 				shardID,
 				metadata.PortalCustodianWithdrawRequestMeta,
-
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -704,6 +714,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalRequestUnlockCollateralMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -734,6 +745,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalRedeemLiquidateExchangeRatesMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -764,6 +776,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalLiquidationCustodianDepositMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
 			)
 
 			if err != nil {
@@ -795,13 +808,15 @@ func groupRelayingActionsByShardID(
 }
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
-	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) ([][]string, error) {
 	//Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
 
 	insts := [][]string{}
 
 	// check there is any waiting porting request timeout
-	expiredWaitingPortingInsts, err := blockchain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState)
+	expiredWaitingPortingInsts, err := blockchain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -810,9 +825,9 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	}
 	Logger.log.Infof("There are %v instruction for expired waiting porting in portal\n", len(expiredWaitingPortingInsts))
 
-	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianReturnPubToken
+	// case 1: check there is any custodian doesn't send public tokens back to user after TimeOutCustodianReturnPubToken
 	// get custodian's collateral to return user
-	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
+	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -823,7 +838,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 
-	exchangeRatesLiqInsts, err := buildInstForLiquidationTopPercentileExchangeRates(beaconHeight, currentPortalState)
+	exchangeRatesLiqInsts, err := buildInstForLiquidationTopPercentileExchangeRates(beaconHeight, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build exchange rates liquidation %v\n", err)
 	}

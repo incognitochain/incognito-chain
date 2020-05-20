@@ -1,7 +1,5 @@
 package common
 
-import "time"
-
 // for common
 const (
 	EmptyString       = ""
@@ -238,21 +236,6 @@ const (
 const (
 	RelayingHeaderRejectedChainStatus    = "rejected"
 	RelayingHeaderConsideringChainStatus = "considering"
-)
-
-const (
-	PortalTimeOutCustodianReturnPubToken = 1 * time.Hour // 24 hours
-	PortalTimeOutWaitingPortingRequest   = 1 * time.Hour // 24 hours
-	PercentReceivedCollateralAmount      = 105           // users will be received 105% of redeem amount in PRV (if there is custodian liquidation for redeem request)
-	// todo: need to be updated before deploying
-	PercentCustodianRewards  = 10 // 10% of DAO funds per epoch
-	MinPercentLockCollateral = 150
-
-	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
-	TP130 = 130
-
-	PercentPortingFeeAmount = 0.01 // %
-	PercentRedeemFeeAmount  = 0.01 // %
 )
 
 const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
