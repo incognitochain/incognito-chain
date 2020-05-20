@@ -78,6 +78,8 @@ const (
 	GetPrivacyTokenTxsError
 	PrivacyTokenIDExistedError
 	// Consensus Related Error
+	StoreBlockHashError
+	GetBlockHashError
 	StoreBeaconCommitteeError
 	GetBeaconCommitteeError
 	StoreShardCommitteeError

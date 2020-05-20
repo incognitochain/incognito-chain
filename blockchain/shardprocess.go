@@ -984,6 +984,10 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	if err := statedb.StoreShardBlockHashByIndex(newShardState.consensusStateDB, shardID, blockHeight, blockHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
 	// consensus root hash
 	consensusRootHash, err := newShardState.consensusStateDB.Commit(true)
 	if err != nil {
@@ -1056,35 +1060,32 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(batchData, shardID, blockHeight, blockHash, shardBlock); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	if err := rawdbv2.StoreShardBlockIndex(batchData, shardID, blockHeight, blockHash); err != nil {
+	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	finalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
+	//finalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
-	newFinalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
-	if finalView != nil && newFinalView.GetHash().String() != finalView.GetHash().String() {
-		startView := newFinalView
-		for {
-			blks, _ := blockchain.GetShardBlockHashByHeight(startView.GetHeight(), shardID)
-			for _, hash := range blks {
-				if hash.String() != startView.GetHash().String() {
-					err := rawdbv2.DeleteShardBlock(blockchain.GetShardChainDatabase(shardID), shardID, startView.GetHeight(), hash)
-					if err != nil {
-						//must not have error
-						panic(err)
-					}
-				}
-			}
-			startView = blockchain.ShardChain[shardBlock.Header.ShardID].GetViewByHash(*startView.GetPreviousHash())
-			if startView == nil || startView.GetHeight() == finalView.GetHeight() {
-				break
-			}
-		}
-	}
+	//newFinalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
+	//if finalView != nil && newFinalView.GetHash().String() != finalView.GetHash().String() {
+	//	startView := newFinalView
+	//	for {
+	//		blks, _ := blockchain.GetShardBlockHashByHeight(startView.GetHeight(), shardID)
+	//		for _, hash := range blks {
+	//			if hash.String() != startView.GetHash().String() {
+	//				err := rawdbv2.DeleteShardBlock(blockchain.GetShardChainDatabase(shardID), shardID, startView.GetHeight(), hash)
+	//				if err != nil {
+	//					//must not have error
+	//					panic(err)
+	//				}
+	//			}
+	//		}
+	//		startView = blockchain.ShardChain[shardBlock.Header.ShardID].GetViewByHash(*startView.GetPreviousHash())
+	//		if startView == nil || startView.GetHeight() == finalView.GetHeight() {
+	//			break
+	//		}
+	//	}
+	//}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {

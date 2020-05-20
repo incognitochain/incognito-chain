@@ -43,14 +43,10 @@ func GetFinalizedShardBlock(db incdb.Database, shardID byte) (common.Hash, error
 // StoreShardBlock store block hash => block value and block index => block hash
 // record1: prefix-shardid-index-hash => empty
 // record2: prefix-hash => block value
-func StoreShardBlock(db incdb.KeyValueWriter, shardID byte, index uint64, hash common.Hash, v interface{}) error {
+func StoreShardBlock(db incdb.KeyValueWriter, hash common.Hash, v interface{}) error {
 	keyHash := GetShardHashToBlockKey(hash)
-	keyIndex := GetShardIndexToBlockHashKey(shardID, index, hash)
 	val, err := json.Marshal(v)
 	if err != nil {
-		return NewRawdbError(StoreShardBlockError, err)
-	}
-	if err := db.Put(keyIndex, []byte{}); err != nil {
 		return NewRawdbError(StoreShardBlockError, err)
 	}
 	if err := db.Put(keyHash, val); err != nil {
@@ -147,19 +143,19 @@ func DeleteShardBlockByView(db incdb.Database, view common.Hash) error {
 // StoreShardBlockIndex store block hash => block index
 // key: i-{hash}
 // value: {index-shardID}
-func StoreShardBlockIndex(db incdb.KeyValueWriter, shardID byte, index uint64, hash common.Hash) error {
-	key := GetShardBlockHashToIndexKey(hash)
-	buf := make([]byte, 9)
-	tempBuf := common.Uint64ToBytes(index)
-	copy(buf, tempBuf)
-	buf[8] = shardID
-	//{i-[hash]}:index-shardID
-	if err := db.Put(key, buf); err != nil {
-		return NewRawdbError(StoreShardBlockIndexError, err)
-	}
-
-	return nil
-}
+//func StoreShardBlockIndex(db incdb.KeyValueWriter, shardID byte, index uint64, hash common.Hash) error {
+//	key := GetShardBlockHashToIndexKey(hash)
+//	buf := make([]byte, 9)
+//	tempBuf := common.Uint64ToBytes(index)
+//	copy(buf, tempBuf)
+//	buf[8] = shardID
+//	//{i-[hash]}:index-shardID
+//	if err := db.Put(key, buf); err != nil {
+//		return NewRawdbError(StoreShardBlockIndexError, err)
+//	}
+//
+//	return nil
+//}
 
 func HasShardBlock(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
 	keyHash := GetShardHashToBlockKey(hash)
@@ -203,31 +199,31 @@ func GetShardBlockByHash(db incdb.KeyValueReader, hash common.Hash) ([]byte, err
 	return ret, nil
 }
 
-func GetShardBlockByIndex(db incdb.Database, shardID byte, index uint64) (map[common.Hash][]byte, error) {
-	m := make(map[common.Hash][]byte)
-	indexPrefix := GetShardIndexToBlockHashPrefix(shardID, index)
-	iterator := db.NewIteratorWithPrefix(indexPrefix)
-	for iterator.Next() {
-		key := iterator.Key()
-		strs := strings.Split(string(key), string(splitter))
-		tempHash := []byte(strs[len(strs)-1])
-		hash := common.BytesToHash(tempHash)
-		keyHash := GetShardHashToBlockKey(hash)
-		if ok, err := db.Has(keyHash); err != nil {
-			return nil, NewRawdbError(GetShardBlockByIndexError, fmt.Errorf("has key %+v failed", keyHash))
-		} else if !ok {
-			return nil, NewRawdbError(GetShardBlockByIndexError, fmt.Errorf("block %+v not exist", hash))
-		}
-		block, err := db.Get(keyHash)
-		if err != nil {
-			return nil, NewRawdbError(GetShardBlockByIndexError, err)
-		}
-		ret := make([]byte, len(block))
-		copy(ret, block)
-		m[hash] = ret
-	}
-	return m, nil
-}
+//func GetShardBlockByIndex(db incdb.Database, shardID byte, index uint64) (map[common.Hash][]byte, error) {
+//	m := make(map[common.Hash][]byte)
+//	indexPrefix := GetShardIndexToBlockHashPrefix(shardID, index)
+//	iterator := db.NewIteratorWithPrefix(indexPrefix)
+//	for iterator.Next() {
+//		key := iterator.Key()
+//		strs := strings.Split(string(key), string(splitter))
+//		tempHash := []byte(strs[len(strs)-1])
+//		hash := common.BytesToHash(tempHash)
+//		keyHash := GetShardHashToBlockKey(hash)
+//		if ok, err := db.Has(keyHash); err != nil {
+//			return nil, NewRawdbError(GetShardBlockByIndexError, fmt.Errorf("has key %+v failed", keyHash))
+//		} else if !ok {
+//			return nil, NewRawdbError(GetShardBlockByIndexError, fmt.Errorf("block %+v not exist", hash))
+//		}
+//		block, err := db.Get(keyHash)
+//		if err != nil {
+//			return nil, NewRawdbError(GetShardBlockByIndexError, err)
+//		}
+//		ret := make([]byte, len(block))
+//		copy(ret, block)
+//		m[hash] = ret
+//	}
+//	return m, nil
+//}
 
 func GetIndexOfBlock(db incdb.KeyValueReader, hash common.Hash) (uint64, byte, error) {
 	var index uint64
