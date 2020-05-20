@@ -189,6 +189,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.BeaconCommittee, initBeaconBestState.RewardReceiver, initBeaconBestState.AutoStaking); err != nil {
 		return err
 	}
+	if err := statedb.StoreBeaconBlockHashByIndex(initBeaconBestState.consensusStateDB, initBlockHeight, initBlockHash); err != nil {
+		return err
+	}
+
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -200,9 +204,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBeaconBestState.consensusStateDB.ClearObjects()
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
-		return err
-	}
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash); err != nil {
 		return err
 	}
 	// State Root Hash

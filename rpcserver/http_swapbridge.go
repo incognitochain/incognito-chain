@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	}
 	height := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.GetBeaconChainDatabase(), httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
+	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
