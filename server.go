@@ -2392,3 +2392,17 @@ func (s *Server) GetBeaconChainDatabase() incdb.Database {
 func (s *Server) GetShardChainDatabase(shardID byte) incdb.Database {
 	return s.dataBase[int(shardID)]
 }
+
+func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	for _, hashBytes := range hashes {
+		if chainName == common.BeaconChainKey {
+			serverObj.syncker.SyncMissingBeaconBlock(ctx, peerID, common.BytesToHash(hashBytes))
+		} else {
+			serverObj.syncker.SyncMissingShardBlock(ctx, peerID, byte(fromCID), common.BytesToHash(hashBytes))
+		}
+	}
+	return nil
+}
