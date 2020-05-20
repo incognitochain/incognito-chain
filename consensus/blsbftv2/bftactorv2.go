@@ -135,8 +135,8 @@ func (e *BLSBFT_V2) Start() error {
 
 				proposeView := e.Chain.GetViewByHash(block.GetPrevHash())
 				if proposeView == nil {
-					e.Logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String())
-					//e.Node.RequestSyncBlock(proposeMsg.PeerID, e.Chain.GetFinalView().Hash().String(), block.GetPreviousBlockHash().String())
+					e.Logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
+					e.Node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, e.Chain.GetShardID(), e.Chain.GetChainName())
 				}
 
 			case voteMsg := <-e.VoteMessageCh:
@@ -213,6 +213,7 @@ func (e *BLSBFT_V2) Start() error {
 						continue
 					}
 					bestViewHeight := bestView.GetHeight()
+					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
 					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 					}
