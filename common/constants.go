@@ -204,7 +204,6 @@ const (
 
 	PortalRedeemRequestAcceptedChainStatus              = "accepted"
 	PortalRedeemRequestRejectedChainStatus              = "rejected"
-	PortalRedeemRequestRejectedByLiquidationChainStatus = "rejectedByLiquidation"
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"

@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalRedeemRequestResponse struct {
@@ -97,7 +98,7 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		}
 		instReqStatus := inst[2]
 		if iRes.RequestStatus != "rejected" ||
-			(instReqStatus != common.PortalRedeemRequestRejectedChainStatus && instReqStatus != common.PortalRedeemRequestRejectedByLiquidationChainStatus) {
+			instReqStatus != common.PortalRedeemRequestRejectedChainStatus {
 			continue
 		}
 
