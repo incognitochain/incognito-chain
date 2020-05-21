@@ -64,6 +64,7 @@ var HttpHandler = map[string]httpHandler{
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
 	createRawTransaction:                    (*HttpServer).handleCreateRawTransaction,
 	sendRawTransaction:                      (*HttpServer).handleSendRawTransaction,
+	createConvertCoinVer1ToVer2Transaction:		 (*HttpServer).handleCreateConvertCoinVer1ToVer2Transaction,
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,

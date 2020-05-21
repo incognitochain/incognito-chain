@@ -208,27 +208,27 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	return txsSpamRemoved, nil
 }
 
-func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
-	var err error
-	var outCoinsBytes [][]byte
+func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([][]byte, error) {
 	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
-
-	// Get outcoins in ver1 by publicSpend key
-	outCoinsBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
+	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
 		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
 		return nil, err
 	}
+	return outCoinsBytes, nil
+}
 
-	// Get outcoins in ver2 by privateView key
-	//fmt.Println("Getting outputcoins")
+func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
+	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
 	currentHeight := blockchain.BestState.Shard[shardID].ShardHeight
+
 	//fmt.Println("StartHeight = ", shardHeight)
 	//fmt.Println("Current Blockchain height = ", currentHeight)
+	var outCoinsBytes [][]byte
 	for height := shardHeight; height <= currentHeight; height += 1 {
 		currentHeightCoins, err := statedb.GetOnetimeAddressesByHeight(transactionStateDB, *tokenID, shardID, height)
 		if err != nil {
-			Logger.log.Error("GetOutcoinsBytesByKeyset Get By Height", err)
+			Logger.log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
 			return nil, err
 		}
 		//fmt.Println("Querying height =", height)
@@ -236,7 +236,7 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 		for _, coinBytes := range currentHeightCoins {
 			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
-				Logger.log.Error("GetOutcoinsBytesByKeyset Parse Coin From Bytes", err)
+				Logger.log.Error("Get outcoins ver 2 bytes by keyset Parse Coin From Bytes", err)
 				return nil, err
 			}
 			//fmt.Println("Found a coin")
@@ -253,6 +253,97 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 		}
 	}
 	return outCoinsBytes, nil
+}
+
+func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
+	outCoinByBytesVer1, err := blockchain.QueryDBToGetOutcoinsVer1BytesByKeyset(keyset, shardID, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	outCoinByBytesVer2, err := blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, shardHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
+}
+
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsV1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
+	var outCoinsInBytes [][]byte
+	var err error
+	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	if keyset == nil {
+		return nil, NewBlockChainError(GetListDecryptedOutputCoinsV1ByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+	}
+	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
+	if err != nil {
+		return nil, err
+	}
+	// loop on all outputcoin to decrypt data
+	results := make([]coin.PlainCoin, 0)
+	for _, item := range outCoinsInBytes {
+		outCoin, err := coin.NewCoinFromByte(item)
+		if err != nil {
+			Logger.log.Errorf("Cannot create coin from byte %v", err)
+			return nil, err
+		}
+		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+		if decryptedOut != nil {
+			results = append(results, decryptedOut)
+		}
+	}
+	return results, nil
+}
+
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
+	var outCoinsInBytes [][]byte
+	var err error
+	if keyset == nil {
+		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+	}
+	//if blockchain.config.MemCache != nil {
+	//	// get from cache
+	//	cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
+	//	cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
+	//	if cachedData != nil && len(cachedData) > 0 {
+	//		// try to parsing on outCointsInBytes
+	//		_ = json.Unmarshal(cachedData, &outCoinsInBytes)
+	//	}
+	//	if len(outCoinsInBytes) == 0 {
+	//		// cached data is nil or fail -> get from database
+	//		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
+	//		if len(outCoinsInBytes) > 0 {
+	//			// cache 1 day for result
+	//			cachedData, err = json.Marshal(outCoinsInBytes)
+	//			if err == nil {
+	//				blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+	//			}
+	//		}
+	//	}
+	//}
+	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsVer1BytesByKeyset(keyset, shardID, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	// loop on all outputcoin to decrypt data
+	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	results := make([]coin.PlainCoin, 0)
+	for _, item := range outCoinsInBytes {
+		outCoin, err := coin.NewCoinFromByte(item)
+		if err != nil {
+			Logger.log.Errorf("Cannot create coin from byte %v", err)
+			return nil, err
+		}
+		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+		if decryptedOut != nil {
+			results = append(results, decryptedOut)
+		}
+	}
+	return results, nil
 }
 
 //GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.

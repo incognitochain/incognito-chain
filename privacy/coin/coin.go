@@ -8,8 +8,7 @@ import (
 )
 
 type Coin interface {
-	// Override
-	MarshalJSON() ([]byte, error)
+	MarshalJSON() ([]byte, errocr)
 	UnmarshalJSON(data []byte) error
 
 	GetVersion() uint8
@@ -37,7 +36,7 @@ type Coin interface {
 }
 
 type PlainCoin interface {
-	// Override
+	// Overide
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON(data []byte) error
 

@@ -26,6 +26,7 @@ const (
 	ListTokenNotFoundError
 	CanNotSignError
 	GetOutputCoinError
+	GetOutputCoinsVer1Error
 	CreateTxDataError
 	SendTxDataError
 	Base58ChedkDataOfTxInvalid
@@ -58,6 +59,7 @@ const (
 	BuildPrivacyTokenParamError
 	GetListPrivacyCustomTokenBalanceError
 	// reject tx
+	RejectInvalidTxFeeTooLargeError
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError
 	RejectInvalidTxTypeError
@@ -103,6 +105,8 @@ var ErrCodeMessage = map[int]struct {
 	TokenIsInvalidError:                   {-1018, "Token is invalid"},
 	GetKeySetFromPrivateKeyError:          {-1019, "Get KeySet From Private Key Error"},
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
+	GetOutputCoinsVer1Error: 			   {-1021, "Get output coins of ver 1 Error"},
+
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},
@@ -142,6 +146,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectSanityTxLocktime:       {-6008, "Reject wrong tx by locktime"},
 	RejectReplacementTx:          {-6009, "Reject error replacement or cancel transaction"},
 	RejectInvalidFeeError:        {-6010, "Reject Invalid Fee Error"},
+	RejectInvalidTxFeeTooLargeError: {-6011, "Reject invalid tx fee because fee is too large"},
 
 	// decentralized bridge
 	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},

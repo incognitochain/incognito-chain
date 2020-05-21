@@ -166,6 +166,7 @@ const (
 	ProcessPDEInstructionError
 	InitBeaconStateError
 	GetListDecryptedOutputCoinsByKeysetError
+	GetListDecryptedOutputCoinsV1ByKeysetError
 	ProcessSalaryInstructionsError
 	GetShardIDFromTxError
 	GetValueFromTxError
@@ -333,6 +334,7 @@ var ErrCodeMessage = map[int]struct {
 	BackupCurrentBeaconStateError:                     {-1150, "Backup Current Beacon State Error"},
 	ProcessAutoStakingError:                           {-1151, "Process Auto Staking Error"},
 	GetListDecryptedOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
+	GetListDecryptedOutputCoinsV1ByKeysetError: 	   {-2001, "Get List Output Coins Ver 1 By Ketset Error"},
 }
 
 type BlockChainError struct {

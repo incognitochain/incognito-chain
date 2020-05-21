@@ -36,6 +36,26 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateRawConvertVer1ToVer2Transaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction params: %+v", params)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxSwitchVer1ToVer2Param(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawConvertVer1ToVer2Transaction(createRawTxParam, nil, httpServer.GetDatabase())
+	if err != nil {
+		// return hex for a new tx
+		return nil, err
+	}
+
+	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
+	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction result: %+v", result)
+	return result, nil
+}
+
 // handleSendTransaction implements the sendtransaction command.
 // Parameter #1—a serialized transaction to broadcast
 // Parameter #2–whether to allow high fees
@@ -67,6 +87,28 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 
 	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	Logger.log.Debugf("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2Transaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction params: %+v", params)
+	var err error
+	data, err := httpServer.handleCreateRawConvertVer1ToVer2Transaction(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction result: %+v, err: %+v", nil, err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction result: %+v, err: %+v", nil, err)
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction result: %+v", result)
 	return result, nil
 }
 

@@ -1,6 +1,34 @@
 package coin
 
-import "github.com/incognitochain/incognito-chain/privacy/operation"
+import (
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+)
+
+const (
+	MaxSizeInfoCoin = 255
+	CoinVersion1    = 1
+	CoinVersion2    = 2
+	TxRandomGroupSize = 36
+)
+
+func getMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+
+func CreatePaymentInfosFromPlainCoinsAndAddress(c []PlainCoin, paymentAddress key.PaymentAddress, message []byte) []*key.PaymentInfo {
+	sumAmount := uint64(0)
+	for i := 0; i < len(c); i += 1 {
+		sumAmount += c[i].GetValue()
+	}
+	paymentInfos := make([]*key.PaymentInfo, 1)
+	paymentInfos[0] = key.InitPaymentInfo(paymentAddress, c[i].GetValue(), message)
+	return paymentInfos
+}
 
 // Commit coin only with g^v * h^r
 func ParseCommitmentToV2WithCoin(c PlainCoin) *operation.Point {

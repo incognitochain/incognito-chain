@@ -70,7 +70,7 @@ func (c *PlainCoinV1) GetShardID() (uint8, error) {
 }
 
 // ver1 does not need to care for index
-func (c PlainCoinV1) GetIndex() uint32                   { return 0 }
+func (c PlainCoinV1) GetIndex() uint32                  { return 0 }
 func (c PlainCoinV1) GetCommitment() *operation.Point   { return c.commitment }
 func (c PlainCoinV1) GetPublicKey() *operation.Point    { return c.publicKey }
 func (c PlainCoinV1) GetSNDerivator() *operation.Scalar { return c.snDerivator }
@@ -382,14 +382,14 @@ type CoinV1 struct {
 }
 
 // CoinV1 does not have index so return 0
-func (c CoinV1) GetIndex() uint32                   { return 0 }
+func (c CoinV1) GetIndex() uint32                  { return 0 }
 func (c CoinV1) GetVersion() uint8                 { return 1 }
 func (c CoinV1) GetPublicKey() *operation.Point    { return c.CoinDetails.GetPublicKey() }
 func (c CoinV1) GetCommitment() *operation.Point   { return c.CoinDetails.GetCommitment() }
 func (c CoinV1) GetKeyImage() *operation.Point     { return c.CoinDetails.GetKeyImage() }
 func (c CoinV1) GetRandomness() *operation.Scalar  { return c.CoinDetails.GetRandomness() }
 func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSNDerivator() }
-func (c CoinV1) GetShardID() (uint8, error)                 { return c.CoinDetails.GetShardID() }
+func (c CoinV1) GetShardID() (uint8, error)        { return c.CoinDetails.GetShardID() }
 func (c CoinV1) GetValue() uint64                  { return c.CoinDetails.GetValue() }
 func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
 func (c CoinV1) IsEncrypted() bool                 { return c.CoinDetailsEncrypted != nil }

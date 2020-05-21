@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -74,8 +75,8 @@ type CoinV2 struct {
 
 	// sharedRandom and txRandom is shared secret between receiver and giver
 	// sharedRandom is only visible when creating coins, when it is broadcast to network, it will be set to null
-	sharedRandom 	   *operation.Scalar // r
-	txRandom   		   *TxRandom  // rG
+	sharedRandom *operation.Scalar // r
+	txRandom     *TxRandom         // rG
 
 	// mask = randomness
 	// amount = value
@@ -91,7 +92,7 @@ func NewCoinBasedOnPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 		return nil, errors.New(errStr)
 	}
 	receiverPublicKeyBytes := receiverPublicKey.ToBytesS()
-	targetShardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes) - 1])
+	targetShardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes)-1])
 
 	c := new(CoinV2).Init()
 	c.SetVersion(2)
@@ -99,7 +100,7 @@ func NewCoinBasedOnPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	// Amount, Randomness, SharedRandom is transparency until we call concealData
 	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
 	c.SetRandomness(operation.RandomScalar())
-	c.SetSharedRandom(operation.RandomScalar()) // r
+	c.SetSharedRandom(operation.RandomScalar())                                  // r
 	c.SetTxRandomPoint(new(operation.Point).ScalarMultBase(c.GetSharedRandom())) // rG
 
 	c.SetInfo(info.Message)
@@ -140,7 +141,7 @@ func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar
 		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, err)
 	}
 	rK := new(operation.Point).ScalarMult(c.GetTxRandomPoint(), keySet.ReadonlyKey.GetPrivateView()) //rG * k = rK
-	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...)) // Hash(rK, index)
+	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))        // Hash(rK, index)
 
 	k := new(operation.Scalar).FromBytesS(privKey)
 	return new(operation.Scalar).Add(H, k), nil // Hash(rK, index) + privSpend
@@ -258,16 +259,16 @@ func (c CoinV2) GetShardID() (uint8, error) {
 	return shardID, nil
 }
 
-func (c CoinV2) GetRandomness() *operation.Scalar { return c.mask }
-func (c CoinV2) GetAmount() *operation.Scalar     { return c.amount }
+func (c CoinV2) GetRandomness() *operation.Scalar   { return c.mask }
+func (c CoinV2) GetAmount() *operation.Scalar       { return c.amount }
 func (c CoinV2) GetSharedRandom() *operation.Scalar { return c.sharedRandom }
-func (c CoinV2) GetTxRandom() *TxRandom    { return c.txRandom }
-func (c CoinV2) GetTxRandomPoint() *operation.Point    { return c.txRandom.GetTxRandomPoint() }
-func (c CoinV2) GetPublicKey() *operation.Point   { return c.publicKey }
-func (c CoinV2) GetCommitment() *operation.Point  { return c.commitment }
-func (c CoinV2) GetKeyImage() *operation.Point    { return c.keyImage }
-func (c CoinV2) GetIndex() uint32                  { return c.txRandom.GetIndex() }
-func (c CoinV2) GetInfo() []byte                  { return c.info }
+func (c CoinV2) GetTxRandom() *TxRandom             { return c.txRandom }
+func (c CoinV2) GetTxRandomPoint() *operation.Point { return c.txRandom.GetTxRandomPoint() }
+func (c CoinV2) GetPublicKey() *operation.Point     { return c.publicKey }
+func (c CoinV2) GetCommitment() *operation.Point    { return c.commitment }
+func (c CoinV2) GetKeyImage() *operation.Point      { return c.keyImage }
+func (c CoinV2) GetIndex() uint32                   { return c.txRandom.GetIndex() }
+func (c CoinV2) GetInfo() []byte                    { return c.info }
 func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
 		return 0
@@ -275,19 +276,21 @@ func (c CoinV2) GetValue() uint64 {
 	return c.amount.ToUint64Little()
 }
 
-func (c *CoinV2) SetVersion(uint8)                          { c.version = 2 }
-func (c *CoinV2) SetRandomness(mask *operation.Scalar)      { c.mask = mask }
-func (c *CoinV2) SetAmount(amount *operation.Scalar)        { c.amount = amount }
+func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }
+func (c *CoinV2) SetRandomness(mask *operation.Scalar)           { c.mask = mask }
+func (c *CoinV2) SetAmount(amount *operation.Scalar)             { c.amount = amount }
 func (c *CoinV2) SetSharedRandom(sharedRandom *operation.Scalar) { c.sharedRandom = sharedRandom }
-func (c *CoinV2) SetTxRandom(txRandom *TxRandom)     {
+func (c *CoinV2) SetTxRandom(txRandom *TxRandom) {
 	c.txRandom = NewTxRandom()
 	c.txRandom.SetBytes(txRandom.Bytes())
 }
-func (c *CoinV2) SetTxRandomPoint(txRandomPoint *operation.Point)     { c.txRandom.SetTxRandomPoint(txRandomPoint) }
+func (c *CoinV2) SetTxRandomPoint(txRandomPoint *operation.Point) {
+	c.txRandom.SetTxRandomPoint(txRandomPoint)
+}
 func (c *CoinV2) SetPublicKey(publicKey *operation.Point)   { c.publicKey = publicKey }
 func (c *CoinV2) SetCommitment(commitment *operation.Point) { c.commitment = commitment }
 func (c *CoinV2) SetKeyImage(keyImage *operation.Point)     { c.keyImage = keyImage }
-func (c *CoinV2) SetIndex(index uint32)                      { c.txRandom.SetIndex(index) }
+func (c *CoinV2) SetIndex(index uint32)                     { c.txRandom.SetIndex(index) }
 func (c *CoinV2) SetValue(value uint64)                     { c.amount = new(operation.Scalar).FromUint64(value) }
 func (c *CoinV2) SetInfo(b []byte) {
 	c.info = make([]byte, len(b))
@@ -393,11 +396,11 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of TxRandomGroup is not correct")
 	}
 	offset += 1
-	if offset + TxRandomGroupSize > len(coinBytes) {
+	if offset+TxRandomGroupSize > len(coinBytes) {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of coinBytes is too small")
 	}
 	c.txRandom = NewTxRandom()
-	err = c.txRandom.SetBytes(coinBytes[offset : offset + TxRandomGroupSize])
+	err = c.txRandom.SetBytes(coinBytes[offset : offset+TxRandomGroupSize])
 	if err != nil {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: " + err.Error())
 	}
@@ -423,7 +426,6 @@ func (c *CoinV2) HashH() *common.Hash {
 	return &hash
 }
 
-// Override
 func (c CoinV2) MarshalJSON() ([]byte, error) {
 	data := c.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
