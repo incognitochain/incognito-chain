@@ -260,6 +260,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(curView *BeaconBestS
 				delete(totalRewards[ID], coinID)
 			}
 		}
+		Logger.log.Infof("[test-salary] ShardID %v\n", ID)
 		rewardForBeacon, rewardForIncDAO, rewardForCustodian, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO, isSplitRewardForCustodian, percentCustodianRewards)
 		if err != nil {
 			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n", err)
@@ -387,6 +388,7 @@ func splitReward(
 	for key, value := range *totalReward {
 		rewardForBeacon[key] = 2 * (uint64(100-devPercent) * value) / ((uint64(numberOfActiveShards) + 2) * 100)
 		totalRewardForDAOAndCustodians := uint64(devPercent) * value / uint64(100)
+		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
 		if isSplitRewardForCustodian {
 			rewardForCustodian[key] = uint64(percentCustodianRewards) * totalRewardForDAOAndCustodians / uint64(100)
 			rewardForIncDAO[key] = totalRewardForDAOAndCustodians - rewardForCustodian[key]

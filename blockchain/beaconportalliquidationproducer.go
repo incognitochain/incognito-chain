@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math/big"
 	"sort"
 	"strconv"
 	"time"
@@ -166,12 +165,15 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 			// get tokenID from redeemTokenID
 			tokenID := redeemReq.GetTokenID()
 
+			updatedCustodians := make([]*statedb.MatchingRedeemCustodianDetail, 0)
 			for _, matchCusDetail := range redeemReq.GetCustodians() {
-				custodianStateKey := statedb.GenerateCustodianStateObjectKey(matchCusDetail.GetIncognitoAddress())
+				Logger.log.Errorf("matchCusDetail.GetIncognitoAddress(): %v\n", matchCusDetail.GetIncognitoAddress())
+				custodianStateKey := statedb.GenerateCustodianStateObjectKey(matchCusDetail.GetIncognitoAddress()).String()
+				Logger.log.Errorf("custodianStateKey: %v\n", custodianStateKey)
 				// calculate liquidated amount and remain unlocked amount for custodian
 				liquidatedAmount, remainUnlockAmount, err := CalUnlockCollateralAmountAfterLiquidation(
 					currentPortalState,
-					custodianStateKey.String(),
+					custodianStateKey,
 					matchCusDetail.GetAmount(),
 					tokenID,
 					exchangeRate,
@@ -196,11 +198,10 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// update custodian state
-				cusStateKey := statedb.GenerateCustodianStateObjectKey(matchCusDetail.GetIncognitoAddress())
-				cusStateKeyStr := cusStateKey.String()
-				custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
+				custodianState := currentPortalState.CustodianPoolState[custodianStateKey]
 				err = updateCustodianStateAfterLiquidateCustodian(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
 				if err != nil {
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating custodian state %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
 						redeemReq.GetUniqueRedeemID(),
 						redeemReq.GetTokenID(),
@@ -219,9 +220,26 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// remove matching custodian from matching custodians list in waiting redeem request
-				updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+				updatedCustodians, err = removeCustodianFromMatchingRedeemCustodians(
 					currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians(), matchCusDetail.GetIncognitoAddress())
-				currentPortalState.WaitingRedeemRequests[redeemReqKey].SetCustodians(updatedCustodians)
+				if err != nil {
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when removing custodian from matching custodians %v\n: ", err)
+					inst := buildCustodianRunAwayLiquidationInst(
+						redeemReq.GetUniqueRedeemID(),
+						redeemReq.GetTokenID(),
+						matchCusDetail.GetAmount(),
+						liquidatedAmount,
+						remainUnlockAmount,
+						redeemReq.GetRedeemerAddress(),
+						matchCusDetail.GetIncognitoAddress(),
+						liquidatedByExchangeRate,
+						metadata.PortalLiquidateCustodianMeta,
+						shardID,
+						common.PortalLiquidateCustodianFailedChainStatus,
+					)
+					insts = append(insts, inst)
+					continue
+				}
 
 				// build instruction
 				inst := buildCustodianRunAwayLiquidationInst(
@@ -241,6 +259,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 			}
 
 			// remove redeem request from waiting redeem requests list
+			currentPortalState.WaitingRedeemRequests[redeemReqKey].SetCustodians(updatedCustodians)
 			if len(currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians()) == 0 {
 				deleteWaitingRedeemRequest(currentPortalState, redeemReqKey)
 			}
@@ -348,112 +367,6 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 			insts = append(insts, inst...)
 		}
 	}
-
-	return insts, nil
-}
-
-func checkAndBuildInstForTPExchangeRateRedeemRequest(
-	beaconHeight uint64,
-	currentPortalState *CurrentPortalState,
-	exchangeRate *statedb.FinalExchangeRatesState,
-	liquidatedCustodianState *statedb.CustodianState,
-	tokenID string,
-	portalParams PortalParams,
-) ([][]string, error) {
-
-	insts := [][]string{}
-
-	// calculate total amount of matching redeem amount with the liquidated custodian
-	totalMatchingRedeemAmountPubToken := uint64(0)
-	for _, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if redeemReq.GetTokenID() == tokenID {
-			for _, cus := range redeemReq.GetCustodians() {
-				if cus.GetIncognitoAddress() == liquidatedCustodianState.GetIncognitoAddress() {
-					totalMatchingRedeemAmountPubToken += cus.GetAmount()
-				}
-			}
-		}
-	}
-
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
-
-	// calculate total minted amount prv for liquidate (maximum 120% amount)
-	totalMatchingRedeemAmountPubTokenInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, totalMatchingRedeemAmountPubToken)
-	if err != nil {
-		Logger.log.Errorf("[checkAndBuildInstForTPExchangeRateRedeemRequest] Error when convert total amount public token to prv %v", err)
-		return insts, err
-	}
-
-	totalMintedTmp := new(big.Int).Mul(new(big.Int).SetUint64(totalMatchingRedeemAmountPubTokenInPRV), new(big.Int).SetUint64(portalParams.MaxPercentLiquidatedCollateralAmount))
-	totalMintedAmountPRV := new(big.Int).Div(totalMintedTmp, new(big.Int).SetUint64(100)).Uint64()
-
-	if totalMintedAmountPRV > liquidatedCustodianState.GetLockedAmountCollateral()[tokenID] {
-		totalMintedAmountPRV = liquidatedCustodianState.GetLockedAmountCollateral()[tokenID]
-	}
-
-	// calculate minted amount prv for each matching redeem requests
-	// rely on percent matching redeem amount and total matching redeem amount
-	liquidatedByExchangeRate := true
-	sortedWaitingRedeemReqKeys := make([]string, 0)
-	for key := range currentPortalState.WaitingRedeemRequests {
-		sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
-	}
-	sort.Strings(sortedWaitingRedeemReqKeys)
-
-	for _, redeemReqKey := range sortedWaitingRedeemReqKeys {
-		redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
-		if redeemReq.GetTokenID() == tokenID {
-			for _, matchCustodian := range redeemReq.GetCustodians() {
-				if matchCustodian.GetIncognitoAddress() == liquidatedCustodianState.GetIncognitoAddress() {
-					tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodian.GetAmount()), new(big.Int).SetUint64(totalMintedAmountPRV))
-					mintedAmountPRV := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalMatchingRedeemAmountPubToken)).Uint64()
-
-					// get shardId of redeemer
-					redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
-					if err != nil {
-						Logger.log.Errorf("[checkAndBuildInstForTPExchangeRateRedeemRequest] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
-							redeemReq.GetUniqueRedeemID(), err)
-						continue
-					}
-					shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
-
-					// remove matching custodian from matching custodians list in waiting redeem request
-					updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
-						currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians(), matchCustodian.GetIncognitoAddress())
-					currentPortalState.WaitingRedeemRequests[redeemReqKey].SetCustodians(updatedCustodians)
-
-					// build instruction
-					//todo: need to update remainUnlockAmount
-					inst := buildCustodianRunAwayLiquidationInst(
-						redeemReq.GetUniqueRedeemID(),
-						redeemReq.GetTokenID(),
-						matchCustodian.GetAmount(),
-						mintedAmountPRV,
-						0,
-						redeemReq.GetRedeemerAddress(),
-						matchCustodian.GetIncognitoAddress(),
-						liquidatedByExchangeRate,
-						metadata.PortalLiquidateCustodianMeta,
-						shardID,
-						common.PortalLiquidateCustodianSuccessChainStatus,
-					)
-					insts = append(insts, inst)
-
-				}
-			}
-			// remove redeem request from waiting redeem requests list
-			if len(currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians()) == 0 {
-				deleteWaitingRedeemRequest(currentPortalState, redeemReqKey)
-			}
-		}
-	}
-	// update custodian state (update locked amount, holding public token amount)
-	custodianStateKey := statedb.GenerateCustodianStateObjectKey(liquidatedCustodianState.GetIncognitoAddress())
-	custodianStateKeyStr := custodianStateKey.String()
-
-	lockedAmountTmp := currentPortalState.CustodianPoolState[custodianStateKeyStr].GetLockedAmountCollateral()
-	lockedAmountTmp[tokenID] -= totalMintedAmountPRV
-	currentPortalState.CustodianPoolState[custodianStateKeyStr].SetLockedAmountCollateral(lockedAmountTmp)
 
 	return insts, nil
 }

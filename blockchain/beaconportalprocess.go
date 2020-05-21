@@ -812,7 +812,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemReqWaitingStatus,
+			Status:         common.PortalRedeemRequestTxAcceptedStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 			TxReqID:        actionData.TxReqID,
 		}
@@ -847,7 +847,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemReqRejectedStatus,
+			Status:         common.PortalRedeemRequestTxRejectedStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 			TxReqID:        actionData.TxReqID,
 		}
@@ -1059,8 +1059,12 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		newCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+		newCustodians, err := removeCustodianFromMatchingRedeemCustodians(
 			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), actionData.CustodianAddressStr)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while removing custodian %v from matching custodians", actionData.CustodianAddressStr)
+			return nil
+		}
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(newCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
