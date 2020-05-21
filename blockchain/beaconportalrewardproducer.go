@@ -59,10 +59,17 @@ func splitPortingFeeForMatchingCustodians(
 	portingAmount uint64,
 	matchingCustodianAddresses []*statedb.MatchingPortingCustodianDetail,
 	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
-	for _, matchCustodianDetail := range matchingCustodianAddresses {
+	totalSplitFee := uint64(0)
+	for i, matchCustodianDetail := range matchingCustodianAddresses {
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.Amount), new(big.Int).SetUint64(feeAmount))
-		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(portingAmount))
-		rewardInfos = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.IncAddress, common.PRVIDStr, splitedFee.Uint64())
+		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(portingAmount)).Uint64()
+		if i == len(matchingCustodianAddresses) - 1 {
+			if splitedFee + totalSplitFee < feeAmount {
+				splitedFee = feeAmount - totalSplitFee
+			}
+		}
+		totalSplitFee += splitedFee
+		rewardInfos = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.IncAddress, common.PRVIDStr, splitedFee)
 	}
 	return rewardInfos
 }
@@ -72,10 +79,17 @@ func splitRedeemFeeForMatchingCustodians(
 	redeemAmount uint64,
 	matchingCustodianAddresses []*statedb.MatchingRedeemCustodianDetail,
 	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
-	for _, matchCustodianDetail := range matchingCustodianAddresses {
+	totalSplitFee := uint64(0)
+	for i, matchCustodianDetail := range matchingCustodianAddresses {
 		tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchCustodianDetail.GetAmount()), new(big.Int).SetUint64(feeAmount))
-		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(redeemAmount))
-		rewardInfos = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.GetIncognitoAddress(), common.PRVIDStr, splitedFee.Uint64())
+		splitedFee := new(big.Int).Div(tmp, new(big.Int).SetUint64(redeemAmount)).Uint64()
+		if i == len(matchingCustodianAddresses) - 1 {
+			if splitedFee + totalSplitFee < feeAmount {
+				splitedFee = feeAmount - totalSplitFee
+			}
+		}
+		totalSplitFee += splitedFee
+		rewardInfos = updatePortalRewardInfos(rewardInfos, matchCustodianDetail.GetIncognitoAddress(), common.PRVIDStr, splitedFee)
 	}
 
 	return rewardInfos
@@ -88,32 +102,31 @@ func splitRewardForCustodians(
 	rewardInfos map[string]*statedb.PortalRewardInfo) map[string]*statedb.PortalRewardInfo {
 	totalLockedCollateral := lockedCollateralState.GetTotalLockedCollateralForRewards()
 
-	// sort totalCustodianReward before processing
-	//sortedTotalCustodianRewardKeys := make([]common.Hash, 0)
-	//for key := range totalCustodianReward {
-	//	sortedTotalCustodianRewardKeys = append(sortedTotalCustodianRewardKeys, key)
-	//}
-	//sort.Slice(sortedTotalCustodianRewardKeys, func(i, j int) bool {
-	//	return sortedTotalCustodianRewardKeys[i].String() < sortedTotalCustodianRewardKeys[j].String()
-	//})
-	//
-	//// sort custodianState before processing
-	//sortedCustodianKeys := make([]string, 0)
-	//for key := range custodianState {
-	//	sortedCustodianKeys = append(sortedCustodianKeys, key)
-	//}
-	//sort.Strings(sortedCustodianKeys)
-
+	totalLockCollateralSplited := uint64(0)
+	totalRewardSplited := map[common.Hash]uint64{}
 	for _, custodian := range custodianState {
-		//custodian := custodianState[key]
-		lockedCollateralCustodian := lockedCollateralState.GetLockedCollateralDetail()[custodian.GetIncognitoAddress()]
-		for tokenID, amount := range totalCustodianReward {
-			//tokenID := totalRewardKey
-			//amount := totalCustodianReward[totalRewardKey]
-			tmp := new(big.Int).Mul(new(big.Int).SetUint64(lockedCollateralCustodian), new(big.Int).SetUint64(amount))
-			splitedReward := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalLockedCollateral))
-			rewardInfos = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward.Uint64())
+		lockedCollateralCustodian, ok := lockedCollateralState.GetLockedCollateralDetail()[custodian.GetIncognitoAddress()]
+		if !ok || lockedCollateralCustodian == 0 {
+			continue
 		}
+
+		isFinalCustodian := false
+		if totalLockCollateralSplited + lockedCollateralCustodian == totalLockedCollateral {
+			isFinalCustodian = true
+		}
+
+		for tokenID, amount := range totalCustodianReward {
+			tmp := new(big.Int).Mul(new(big.Int).SetUint64(lockedCollateralCustodian), new(big.Int).SetUint64(amount))
+			splitedReward := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalLockedCollateral)).Uint64()
+			if isFinalCustodian {
+				if splitedReward + totalRewardSplited[tokenID] < amount {
+					splitedReward = amount - totalRewardSplited[tokenID]
+				}
+			}
+			rewardInfos = updatePortalRewardInfos(rewardInfos, custodian.GetIncognitoAddress(), tokenID.String(), splitedReward)
+			totalRewardSplited[tokenID] += splitedReward
+		}
+		totalLockCollateralSplited += lockedCollateralCustodian
 	}
 	return rewardInfos
 }
@@ -126,14 +139,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
 	// and split fees for matching custodians
-	// Note: need to sort maps before processing
-	//sortedWaitingPortingReqKeys := make([]string, 0)
-	//for key := range currentPortalState.WaitingPortingRequests {
-	//	sortedWaitingPortingReqKeys = append(sortedWaitingPortingReqKeys, key)
-	//}
-	//sort.Strings(sortedWaitingPortingReqKeys)
 	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
-		//waitingPortingReq := currentPortalState.WaitingPortingRequests[key]
 		if waitingPortingReq.BeaconHeight() == beaconHeight+1 {
 			rewardInfos = splitPortingFeeForMatchingCustodians(
 				waitingPortingReq.PortingFee(),
@@ -146,13 +152,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 	// get redeem fee from waiting redeem request at beaconHeight + 1 (new waiting redeem requests)
 	// and split fees for matching custodians
-	//sortedWaitingRedeemReqKeys := make([]string, 0)
-	//for key := range currentPortalState.WaitingRedeemRequests {
-	//	sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
-	//}
-	//sort.Strings(sortedWaitingRedeemReqKeys)
 	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
-		//waitingRedeemReq := currentPortalState.WaitingRedeemRequests[key]
 		if waitingRedeemReq.GetBeaconHeight() == beaconHeight+1 {
 			rewardInfos = splitRedeemFeeForMatchingCustodians(
 				waitingRedeemReq.GetRedeemFee(),
