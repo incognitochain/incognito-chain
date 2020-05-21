@@ -45,9 +45,13 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		waitingRedeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
 		waitingRedeemReqKeyStr := waitingRedeemReqKey.String()
 
-		updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+		updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
 			currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians(), actionData.CustodianIncAddressStr)
 		currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].SetCustodians(updatedCustodians)
+		if err != nil {
+			Logger.log.Errorf("[processPortalLiquidateCustodian] Error when removing custodian from matching custodians %v", err)
+			return nil
+		}
 
 		// remove redeem request from waiting redeem requests list
 		if len(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians()) == 0 {
