@@ -133,7 +133,13 @@ func sortCustodianByAmountAscent(
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Value.GetFreeCollateral() <= result[j].Value.GetFreeCollateral()
+		if result[i].Value.GetFreeCollateral() < result[j].Value.GetFreeCollateral() {
+			return true
+		} else if (result[i].Value.GetFreeCollateral() == result[j].Value.GetFreeCollateral()) &&
+			(result[i].Value.GetIncognitoAddress() < result[j].Value.GetIncognitoAddress()) {
+			return true
+		}
+		return false
 	})
 
 	*custodianStateSlice = result
@@ -413,7 +419,13 @@ func sortCustodiansByAmountHoldingPubTokenAscent(tokenID string, custodians map[
 	}
 
 	sort.Slice(sortedCustodians, func(i, j int) bool {
-		return sortedCustodians[i].Value.GetHoldingPublicTokens()[tokenID] <= sortedCustodians[j].Value.GetHoldingPublicTokens()[tokenID]
+		if sortedCustodians[i].Value.GetHoldingPublicTokens()[tokenID] < sortedCustodians[j].Value.GetHoldingPublicTokens()[tokenID] {
+			return true
+		} else if (sortedCustodians[i].Value.GetHoldingPublicTokens()[tokenID] == sortedCustodians[j].Value.GetHoldingPublicTokens()[tokenID]) &&
+			(sortedCustodians[i].Value.GetIncognitoAddress() < sortedCustodians[j].Value.GetIncognitoAddress()) {
+			return true
+		}
+		return false
 	})
 
 	return sortedCustodians
