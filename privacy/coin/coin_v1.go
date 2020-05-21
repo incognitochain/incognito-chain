@@ -120,7 +120,10 @@ func (c *PlainCoinV1) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	c.SetBytes(temp)
+	err = c.SetBytes(temp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -571,4 +574,31 @@ func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	}
 	err := errors.New("coin publicKey does not equal keyset paymentAddress")
 	return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+}
+
+//MarshalJSON (CoinV1) converts coin to bytes array,
+//base58 check encode that bytes array into string
+//json.Marshal the string
+func (c CoinV1) MarshalJSON() ([]byte, error) {
+	data := c.Bytes()
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	return json.Marshal(temp)
+}
+
+// UnmarshalJSON (Coin) receives bytes array of coin (it was be MarshalJSON before),
+// json.Unmarshal the bytes array to string
+// base58 check decode that string to bytes array
+// and set bytes array to coin
+func (c *CoinV1) UnmarshalJSON(data []byte) error {
+	dataStr := ""
+	_ = json.Unmarshal(data, &dataStr)
+	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	if err != nil {
+		return err
+	}
+	err = c.SetBytes(temp)
+	if err != nil {
+		return err
+	}
+	return nil
 }

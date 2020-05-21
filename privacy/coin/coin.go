@@ -8,6 +8,10 @@ import (
 )
 
 type Coin interface {
+	// Override
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON(data []byte) error
+
 	GetVersion() uint8
 	GetShardID() (uint8, error)
 	GetCommitment() *operation.Point
@@ -33,6 +37,10 @@ type Coin interface {
 }
 
 type PlainCoin interface {
+	// Override
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON(data []byte) error
+
 	GetVersion() uint8
 	GetShardID() (uint8, error)
 	GetIndex() uint32

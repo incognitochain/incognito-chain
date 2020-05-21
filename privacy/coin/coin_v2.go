@@ -1,9 +1,11 @@
 package coin
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -416,7 +418,28 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 }
 
 // HashH returns the SHA3-256 hashing of coin bytes array
-func (this *CoinV2) HashH() *common.Hash {
-	hash := common.HashH(this.Bytes())
+func (c *CoinV2) HashH() *common.Hash {
+	hash := common.HashH(c.Bytes())
 	return &hash
+}
+
+// Override
+func (c CoinV2) MarshalJSON() ([]byte, error) {
+	data := c.Bytes()
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	return json.Marshal(temp)
+}
+
+func (c *CoinV2) UnmarshalJSON(data []byte) error {
+	dataStr := ""
+	_ = json.Unmarshal(data, &dataStr)
+	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	if err != nil {
+		return err
+	}
+	err = c.SetBytes(temp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
