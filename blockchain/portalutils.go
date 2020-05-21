@@ -528,7 +528,7 @@ func CalUnlockCollateralAmount(
 	if custodianState.GetLockedAmountCollateral()[tokenID] < totalLockedAmountInWaitingPortings {
 		Logger.log.Errorf("custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
 		Logger.log.Errorf("totalLockedAmountInWaitingPortings %v\n", totalLockedAmountInWaitingPortings)
-		return  0, errors.New("[CalUnlockCollateralAmount] Lock amount is invalid")
+		return 0, errors.New("[CalUnlockCollateralAmount] Lock amount is invalid")
 	}
 
 	if totalHoldingPubToken == 0 {
@@ -538,7 +538,7 @@ func CalUnlockCollateralAmount(
 
 	tmp := new(big.Int).Mul(
 		new(big.Int).SetUint64(redeemAmount),
-		new(big.Int).SetUint64(custodianState.GetLockedAmountCollateral()[tokenID] - totalLockedAmountInWaitingPortings))
+		new(big.Int).SetUint64(custodianState.GetLockedAmountCollateral()[tokenID]-totalLockedAmountInWaitingPortings))
 	unlockAmount := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalHoldingPubToken)).Uint64()
 	if unlockAmount <= 0 {
 		Logger.log.Errorf("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian %v\n", unlockAmount)
@@ -643,36 +643,19 @@ func updateCustodianStateAfterExpiredPortingReq(
 	custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 }
 
-func removeCustodianFromMatchingPortingCustodians(matchingCustodians []*statedb.MatchingPortingCustodianDetail, custodianIncAddr string) bool {
-	for i, cus := range matchingCustodians {
-		if cus.IncAddress == custodianIncAddr {
-			if i == len(matchingCustodians)-1 {
-				matchingCustodians = matchingCustodians[:i]
-			} else {
-				matchingCustodians = append(matchingCustodians[:i], matchingCustodians[i+1:]...)
-			}
-			return true
-		}
-	}
-
-	return false
-}
-
 func removeCustodianFromMatchingRedeemCustodians(
 	matchingCustodians []*statedb.MatchingRedeemCustodianDetail,
-	custodianIncAddr string) ([]*statedb.MatchingRedeemCustodianDetail, bool) {
-	for i, cus := range matchingCustodians {
+	custodianIncAddr string) ([]*statedb.MatchingRedeemCustodianDetail, error) {
+	matchingCustodiansRes := make([]*statedb.MatchingRedeemCustodianDetail, len(matchingCustodians))
+	copy(matchingCustodiansRes, matchingCustodians)
+
+	for i, cus := range matchingCustodiansRes {
 		if cus.GetIncognitoAddress() == custodianIncAddr {
-			if i == len(matchingCustodians)-1 {
-				matchingCustodians = matchingCustodians[:i]
-			} else {
-				matchingCustodians = append(matchingCustodians[:i], matchingCustodians[i+1:]...)
-			}
-			return matchingCustodians, true
+			matchingCustodiansRes = append(matchingCustodiansRes[:i], matchingCustodiansRes[i+1:]...)
+			return matchingCustodiansRes, nil
 		}
 	}
-
-	return matchingCustodians, false
+	return matchingCustodiansRes, errors.New("Custodian not found in matching redeem custodians")
 }
 
 func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestKey string) {
@@ -927,12 +910,12 @@ func calAndCheckTPRatio(
 
 	lockedAmount := make(map[string]uint64)
 	for tokenID, amount := range custodianState.GetLockedAmountCollateral() {
-		lockedAmount[tokenID]= amount
+		lockedAmount[tokenID] = amount
 	}
 
 	holdingPubToken := make(map[string]uint64)
 	for tokenID, amount := range custodianState.GetHoldingPublicTokens() {
-		holdingPubToken[tokenID]= amount
+		holdingPubToken[tokenID] = amount
 	}
 
 	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
@@ -1044,4 +1027,3 @@ func UpdateCustodianRewards(currentPortalState *CurrentPortalState, rewardInfos 
 		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 	}
 }
-
