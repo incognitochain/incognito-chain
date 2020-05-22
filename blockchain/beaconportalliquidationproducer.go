@@ -165,7 +165,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 			// get tokenID from redeemTokenID
 			tokenID := redeemReq.GetTokenID()
 
-			updatedCustodians := make([]*statedb.MatchingRedeemCustodianDetail, 0)
+			liquidatedCustodians := make([]*statedb.MatchingRedeemCustodianDetail, 0)
 			for _, matchCusDetail := range redeemReq.GetCustodians() {
 				Logger.log.Errorf("matchCusDetail.GetIncognitoAddress(): %v\n", matchCusDetail.GetIncognitoAddress())
 				custodianStateKey := statedb.GenerateCustodianStateObjectKey(matchCusDetail.GetIncognitoAddress()).String()
@@ -220,26 +220,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// remove matching custodian from matching custodians list in waiting redeem request
-				updatedCustodians, err = removeCustodianFromMatchingRedeemCustodians(
-					currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians(), matchCusDetail.GetIncognitoAddress())
-				if err != nil {
-					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when removing custodian from matching custodians %v\n: ", err)
-					inst := buildCustodianRunAwayLiquidationInst(
-						redeemReq.GetUniqueRedeemID(),
-						redeemReq.GetTokenID(),
-						matchCusDetail.GetAmount(),
-						liquidatedAmount,
-						remainUnlockAmount,
-						redeemReq.GetRedeemerAddress(),
-						matchCusDetail.GetIncognitoAddress(),
-						liquidatedByExchangeRate,
-						metadata.PortalLiquidateCustodianMeta,
-						shardID,
-						common.PortalLiquidateCustodianFailedChainStatus,
-					)
-					insts = append(insts, inst)
-					continue
-				}
+				liquidatedCustodians = append(liquidatedCustodians, matchCusDetail)
 
 				// build instruction
 				inst := buildCustodianRunAwayLiquidationInst(
@@ -256,6 +237,12 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					common.PortalLiquidateCustodianSuccessChainStatus,
 				)
 				insts = append(insts, inst)
+			}
+
+			updatedCustodians := currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians()
+			for _, cus := range liquidatedCustodians {
+				updatedCustodians, _ = removeCustodianFromMatchingRedeemCustodians(
+					updatedCustodians, cus.GetIncognitoAddress())
 			}
 
 			// remove redeem request from waiting redeem requests list
