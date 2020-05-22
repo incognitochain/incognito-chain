@@ -472,6 +472,9 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReq(params inte
 
 func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
 	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
