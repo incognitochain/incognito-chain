@@ -4,9 +4,7 @@ package mlsag
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
@@ -177,7 +175,7 @@ func (this *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*o
 	return
 }
 
-func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*operation.Point) (*operation.Scalar, error) {
+func calculateFirstC(digest [common.HashSize]byte, alpha []*operation.Scalar, K []*operation.Point) (*operation.Scalar, error) {
 	if len(alpha) != len(K) {
 		Logger.log.Error("Calculating first C must have length of alpha be the same with length of ring R")
 		return nil, errors.New("Error in MLSAG: Calculating first C must have length of alpha be the same with length of ring R")
@@ -206,7 +204,7 @@ func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*o
 	return operation.HashToScalar(b), nil
 }
 
-func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operation.Scalar, K []*operation.Point, keyImages []*operation.Point) (*operation.Scalar, error) {
+func calculateNextC(digest [common.HashSize]byte, r []*operation.Scalar, c *operation.Scalar, K []*operation.Point, keyImages []*operation.Point) (*operation.Scalar, error) {
 	if len(r) != len(K) || len(r) != len(keyImages) {
 		Logger.log.Error("Calculating next C must have length of r be the same with length of ring R and same with length of keyImages")
 		return nil, errors.New("Error in MLSAG: Calculating next C must have length of r be the same with length of ring R and same with length of keyImages")
@@ -258,13 +256,13 @@ func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operatio
 	return operation.HashToScalar(b), nil
 }
 
-func (this *Mlsag) calculateC(digest [HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
+func (this *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
 	m := len(this.privateKeys)
 	n := len(this.R.keys)
 
 	c := make([]*operation.Scalar, n)
 	firstC, err := calculateFirstC(
-		digest,
+		message,
 		alpha,
 		this.R.keys[this.pi],
 	)
@@ -276,7 +274,7 @@ func (this *Mlsag) calculateC(digest [HashSize]byte, alpha []*operation.Scalar, 
 	c[i] = firstC
 	for next := (i + 1) % n; i != this.pi; {
 		nextC, err := calculateNextC(
-			digest,
+			message,
 			r[i], c[i],
 			(*this.R).keys[i],
 			this.keyImages,
@@ -307,14 +305,12 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 	return check
 }
 
-func verifyRing(sig *MlsagSig, R *Ring, message []byte) (bool, error) {
-	digest := common.Keccak256(message)
-
+func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
-			digest,
+			message,
 			sig.r[i], &c,
 			R.keys[i],
 			sig.keyImages,
@@ -328,15 +324,25 @@ func verifyRing(sig *MlsagSig, R *Ring, message []byte) (bool, error) {
 }
 
 func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
+	if len(message) != common.HashSize {
+		return false, errors.New("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")
+	}
+	message32byte := [32]byte{}
+	copy(message32byte[:], message)
 	b1 := verifyKeyImages(sig.keyImages)
-	b2, err := verifyRing(sig, K, message)
+	b2, err := verifyRing(sig, K, message32byte)
 	return (b1 && b2), err
 }
 
 func (this *Mlsag) Sign(message []byte) (*MlsagSig, error) {
-	digest := common.Keccak256(message)
-	alpha, r := this.createRandomChallenges()   // step 2 in paper
-	c, err := this.calculateC(digest, alpha, r) // step 3 and 4 in paper
+	if len(message) != common.HashSize {
+		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")
+	}
+	message32byte := [32]byte{}
+	copy(message32byte[:], message)
+
+	alpha, r := this.createRandomChallenges()          // step 2 in paper
+	c, err := this.calculateC(message32byte, alpha, r) // step 3 and 4 in paper
 
 	if err != nil {
 		return nil, err

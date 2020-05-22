@@ -431,7 +431,7 @@ func (txService TxService) BuildConvertV1ToV2Transaction(params *bean.CreateRawT
 
 	// init tx
 	tx := transaction.Tx{}
-	err := tx.Init(
+	err := tx.InitConversion(
 		transaction.NewTxConvertVer1ToVer2(
 			&params.SenderKeySet.PrivateKey,
 			paymentInfos,

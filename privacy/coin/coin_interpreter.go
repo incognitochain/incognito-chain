@@ -26,7 +26,7 @@ func CreatePaymentInfosFromPlainCoinsAndAddress(c []PlainCoin, paymentAddress ke
 		sumAmount += c[i].GetValue()
 	}
 	paymentInfos := make([]*key.PaymentInfo, 1)
-	paymentInfos[0] = key.InitPaymentInfo(paymentAddress, c[i].GetValue(), message)
+	paymentInfos[0] = key.InitPaymentInfo(paymentAddress, sumAmount, message)
 	return paymentInfos
 }
 

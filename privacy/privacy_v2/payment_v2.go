@@ -22,6 +22,7 @@ type PaymentProofV2 struct {
 	outputCoins          []*coin.CoinV2
 }
 
+func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
 func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
 
 func (proof PaymentProofV2) GetInputCoins() []coin.PlainCoin { return proof.inputCoins }
@@ -33,32 +34,46 @@ func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 	return res
 }
 
-func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
-func (proof *PaymentProofV2) SetInputCoins(v []coin.PlainCoin) {
+func (proof *PaymentProofV2) SetInputCoins(v []coin.PlainCoin) error {
+	var err error
 	proof.inputCoins = make([]coin.PlainCoin, len(v))
 	for i := 0; i < len(v); i += 1 {
 		b := v[i].Bytes()
-		proof.inputCoins[i], _ = coin.NewPlainCoinFromByte(b)
+		if proof.inputCoins[i], err = coin.NewPlainCoinFromByte(b); err != nil {
+			Logger.Log.Errorf("Proofv2 cannot create inputCoins from new plain coin from bytes: err %v", err)
+			return err
+		}
 	}
+	return nil
 }
 
-func (proof *PaymentProofV2) SetOutputCoinsV2(v []*coin.CoinV2) {
+func (proof *PaymentProofV2) SetOutputCoinsV2(v []*coin.CoinV2) error {
+	var err error
 	proof.outputCoins = make([]*coin.CoinV2, len(v))
 	for i := 0; i < len(v); i += 1 {
-		proof.outputCoins[i] = new(coin.CoinV2)
 		b := v[i].Bytes()
-		proof.outputCoins[i].SetBytes(b)
+		proof.outputCoins[i] = new(coin.CoinV2)
+		if err = proof.outputCoins[i].SetBytes(b); err != nil {
+			Logger.Log.Errorf("Proofv2 cannot set byte to outputCoins : err %v", err)
+			return err
+		}
 	}
+	return nil
 }
 
 // v should be all coinv2 or else it would crash
-func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) {
+func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) error {
+	var err error
 	proof.outputCoins = make([]*coin.CoinV2, len(v))
 	for i := 0; i < len(v); i += 1 {
 		proof.outputCoins[i] = new(coin.CoinV2)
 		b := v[i].Bytes()
-		proof.outputCoins[i].SetBytes(b)
+		if err = proof.outputCoins[i].SetBytes(b); err != nil {
+			Logger.Log.Errorf("Proofv2 cannot set byte to outputCoins : err %v", err)
+			return err
+		}
 	}
+	return nil
 }
 
 func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
@@ -277,8 +292,14 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 	aggregateproof := new(bulletproofs.AggregatedRangeProof)
 	aggregateproof.Init()
 	proof.aggregatedRangeProof = aggregateproof
-	proof.SetInputCoins(inputCoins)
-	proof.SetOutputCoinsV2(outputCoins)
+	if err = proof.SetInputCoins(inputCoins); err != nil {
+		Logger.Log.Errorf("Cannot set input coins in payment_v2 proof: err %v", err)
+		return nil, err
+	}
+	if err = proof.SetOutputCoinsV2(outputCoins); err != nil {
+		Logger.Log.Errorf("Cannot set output coins in payment_v2 proof: err %v", err)
+		return nil, err
+	}
 
 	// If not have privacy then don't need to prove range
 	if !hasPrivacy {
@@ -313,12 +334,19 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 	return proof, nil
 }
 
-func (proof PaymentProofV2) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash) (bool, error) {
-	return true, nil
-}
-
+// TODO PRIVACY (recheck before devnet)
 func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
 	// Verify the proof that output values and sum of them do not exceed v_max
+	for i := 0; i < len(proof.inputCoins); i += 1 {
+		if !proof.inputCoins[i].IsEncrypted() {
+			return false, errors.New("Verify has privacy should have every coin encrypted")
+		}
+	}
+	for i := 0; i < len(proof.outputCoins); i += 1 {
+		if !proof.outputCoins[i].IsEncrypted() {
+			return false, errors.New("Verify has privacy should have every coin encrypted")
+		}
+	}
 	if isBatch == false {
 		valid, err := proof.aggregatedRangeProof.Verify()
 		if !valid {
@@ -329,10 +357,30 @@ func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
 	return true, nil
 }
 
+func (proof PaymentProofV2) verifyHasNoPrivacy(fee uint64) (bool, error) {
+	sumInput, sumOutput := uint64(0), uint64(0)
+	for i := 0; i < len(proof.inputCoins); i += 1 {
+		if proof.inputCoins[i].IsEncrypted() {
+			return false, errors.New("Verify has no privacy should not have any coin encrypted")
+		}
+		sumInput += proof.inputCoins[i].GetValue()
+	}
+	for i := 0; i < len(proof.outputCoins); i += 1 {
+		if proof.outputCoins[i].IsEncrypted() {
+			return false, errors.New("Verify has no privacy should not have any coin encrypted")
+		}
+		sumOutput += proof.outputCoins[i].GetValue()
+	}
+	if sumInput != sumOutput + fee {
+		return false, errors.New("VerifyHasNo privacy has sum input different from sum output with fee")
+	}
+	return true, nil
+}
+
 func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
-		return true, nil
+		return proof.verifyHasNoPrivacy(fee)
 	}
 
 	return proof.verifyHasPrivacy(isBatch)

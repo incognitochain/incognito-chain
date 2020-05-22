@@ -45,13 +45,14 @@ func TestRing(t *testing.T) {
 
 func TestSignatureHexBytesConversion(t *testing.T) {
 	signer := InitializeSignatureForTest()
-
-	signature, err_sig := signer.Sign([]byte("Test"))
-	sig_hex, err_hex := signature.ToHex()
-	sig_byte, err_byte := signature.ToBytes()
-
+	s := common.HashH([]byte("Test"))
+	signature, err_sig := signer.Sign(s[:])
 	assert.Equal(t, err_sig, nil, "Signing signature should not have error")
+
+	sig_hex, err_hex := signature.ToHex()
 	assert.Equal(t, err_hex, nil, "Error of hex should be nil")
+
+	sig_byte, err_byte := signature.ToBytes()
 	assert.Equal(t, err_byte, nil, "Error of byte should be nil")
 	assert.Equal(t, hex.EncodeToString(sig_byte), sig_hex, "Hex encoding signature should be correct")
 
@@ -71,7 +72,8 @@ func removeLastElement(s []*operation.Point) []*operation.Point {
 func TestErrorBrokenRealSignature(t *testing.T) {
 	signer := InitializeSignatureForTest()
 
-	signature, err_sig := signer.Sign([]byte("Test"))
+	s := common.HashH([]byte("Test"))
+	signature, err_sig := signer.Sign(s[:])
 	assert.Equal(t, err_sig, nil, "Signing signature should not have error")
 
 	// Make the signature broken
@@ -97,7 +99,8 @@ func TestErrorBrokenRealSignature(t *testing.T) {
 func TestErrorBrokenHexByteSignature(t *testing.T) {
 	signer := InitializeSignatureForTest()
 
-	signature, err_sig := signer.Sign([]byte("Test"))
+	s := common.HashH([]byte("Test"))
+	signature, err_sig := signer.Sign(s[:])
 	assert.Equal(t, err_sig, nil, "Signing signature should not have error")
 
 	// Make signature hex broken

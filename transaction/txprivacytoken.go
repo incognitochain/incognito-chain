@@ -240,7 +240,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			tempOutputCoin[0] = c
 			proof := new(privacy.ProofV2)
 			proof.Init()
-			proof.SetOutputCoins(tempOutputCoin)
+			if err = proof.SetOutputCoins(tempOutputCoin); err != nil {
+				Logger.Log.Errorf("Init customPrivacyToken cannot set outputCoins")
+				return err
+			}
 
 			temp.Proof = proof
 			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
@@ -869,7 +872,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			}
 
 			tempOutputCoin[0] = c
-			temp.Proof.SetOutputCoins(tempOutputCoin)
+			if err = temp.Proof.SetOutputCoins(tempOutputCoin); err != nil {
+				Logger.Log.Errorf("TxPrivacyToken InitASM cannot set output coins: err %v", err)
+				return err
+			}
 
 			// get last byte
 			temp.PubKeyLastByteSender = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]

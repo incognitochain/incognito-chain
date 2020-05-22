@@ -303,11 +303,11 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 		Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
 		return err
 	}
-
-	keyImages := mlsag.ParseKeyImages(privKeysMlsag)
-	for i := 0; i < len(tx.Proof.GetInputCoins()); i += 1 {
-		tx.Proof.GetInputCoins()[i].SetKeyImage(keyImages[i])
-	}
+	//
+	//keyImages := mlsag.ParseKeyImages(privKeysMlsag)
+	//for i := 0; i < len(tx.Proof.GetInputCoins()); i += 1 {
+	//	tx.Proof.GetInputCoins()[i].SetKeyImage(keyImages[i])
+	//}
 
 	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
 
@@ -323,8 +323,8 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 		return err
 	}
 
-	message := tx.Proof.Bytes()
-	mlsagSignature, err := sag.Sign(message)
+	message := tx.Hash()
+	mlsagSignature, err := sag.Sign(message[:])
 	if err != nil {
 		Logger.Log.Errorf("Cannot sign mlsagSignature, error %v ", err)
 		return err
@@ -497,8 +497,8 @@ func verifySigTxVer2(tx *Tx, transactionStateDB *statedb.StateDB, shardID byte, 
 		return false, err
 	}
 
-	message := tx.Proof.Bytes()
-	return mlsag.Verify(txSig, ring, message)
+	message := tx.Hash()
+	return mlsag.Verify(txSig, ring, message[:])
 }
 
 func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {

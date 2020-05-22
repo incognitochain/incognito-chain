@@ -22,6 +22,8 @@ const (
 	InvalidDoubleSpendPrivacyTokenError
 	InputCoinIsVeryLargeError
 	PaymentInfoIsVeryLargeError
+	SumInputCoinsAndOutputCoinsError
+	InvalidInputCoinVersionErr
 	TokenIDInvalidError
 	TokenIDExistedError
 	TokenIDExistedByCrossShardError
@@ -139,6 +141,10 @@ var ErrCodeMessage = map[int]struct {
 	GetCommitmentsInDatabaseError: {-5000, "Get commitments from database got error"},
 	InvalidPaymentAddressError: {-5001, "Payment address is null"},
 	OnetimeAddressAlreadyExists: { -5002, "OnetimeAddress is already exists in database"},
+
+	// For tx conversion
+	SumInputCoinsAndOutputCoinsError:			   {-6000, "Sum input coins and output coins are not the same"},
+	InvalidInputCoinVersionErr:					   {-6001, "Input coins version is invalid"},
 }
 
 type TransactionError struct {

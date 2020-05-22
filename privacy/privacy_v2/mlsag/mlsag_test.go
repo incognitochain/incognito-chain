@@ -20,10 +20,12 @@ func TestWorkflowMlsag(t *testing.T) {
 	ring := NewRandomRing(keyInputs, numFake, pi)
 	signer := NewMlsag(keyInputs, ring, pi)
 
-	signature, err := signer.Sign([]byte("Hello"))
+	s := common.HashH([]byte("Test"))
+	signature, err := signer.Sign(s[:])
 	assert.Equal(t, nil, err, "There should not be any error when sign")
 
-	check, err := Verify(signature, ring, []byte("Hello"))
+	s2 := common.HashH([]byte("Test"))
+	check, err := Verify(signature, ring, s2[:])
 	assert.Equal(t, nil, err, "There should not be any error when verify")
 	assert.Equal(t, true, check, "It should verify correctly")
 

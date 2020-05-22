@@ -229,10 +229,39 @@ func parseSenderFullKey(senderSK *privacy.PrivateKey) (*incognitokey.KeySet, err
 	senderFullKey := incognitokey.KeySet{}
 	err := senderFullKey.InitFromPrivateKey(senderSK)
 	if err != nil {
-		Logger.Log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.senderSK)))
+		Logger.Log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", senderSK)))
 		return nil, NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
 	return &senderFullKey, nil
+}
+
+func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
+	// If this is nonPrivacyNonInputCoins (maybe)
+	if len(inputCoins) == 0 {
+		return currentTxVersion, nil
+	}
+	check := [3]bool{}
+	for i := 0; i < len(inputCoins); i += 1 {
+		check[inputCoins[i].GetVersion()] = true
+	}
+
+	// If inputCoins contain 2 versions
+	if check[1] && check[2] {
+		return 0, errors.New("Cannot get tx version because there are 2 versions of input coins")
+	}
+
+	// If somehow no version is checked???
+	if !check[1] && !check[2] {
+		return 0, errors.New("Cannot get tx version, something is wrong with coins.version, it should be 1 or 2 only")
+	}
+
+	var res int8
+	if check[1] {
+		res = 1
+	} else {
+		res = 2
+	}
+	return res, nil
 }
 
 // return bool indicates whether we should continue "Init" function or not
@@ -244,18 +273,18 @@ func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) (bool, error) {
 		tx.LockTime = time.Now().Unix()
 	}
 	tx.Fee = params.fee
-	tx.Version = currentTxVersion
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.metaData
-	tx.Info, err = getTxInfo(params.info)
-	if err != nil {
-		return false, err
-	}
-	tx.PubKeyLastByteSender, err = parseLastByteSender(params.senderSK)
-	if err != nil {
-		return false, err
-	}
 
+	if tx.Version, err = getTxVersionFromCoins(params.inputCoins); err != nil {
+		return false, err
+	}
+	if tx.Info, err = getTxInfo(params.info); err != nil {
+		return false, err
+	}
+	if tx.PubKeyLastByteSender, err = parseLastByteSender(params.senderSK); err != nil {
+		return false, err
+	}
 	// we should stop if it isNonPrivacyNonInput or have error
 	if isNonPrivacy, err := tx.isNonPrivacyNonInput(params); err != nil || isNonPrivacy {
 		return !isNonPrivacy, err
@@ -613,7 +642,7 @@ func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight u
 	}
 	Logger.Log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
 	//check version
-	if tx.Version > currentTxVersion {
+	if tx.Version > txVersion2 {
 		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, currentTxVersion))
 	}
 	// check LockTime before now

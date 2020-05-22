@@ -81,14 +81,13 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		}
 		lenInputs := len(wit.inputCoins)
 		if lenInputs > 0 {
-			publicKey := wit.inputCoins[0].GetPublicKey()
 			wit.serialNumberNoPrivacyWitness = make([]*serialnumbernoprivacy.SNNoPrivacyWitness, lenInputs)
 			for i := 0; i < len(wit.inputCoins); i++ {
 				/***** Build witness for proving that serial number is derived from the committed derivator *****/
 				if wit.serialNumberNoPrivacyWitness[i] == nil {
 					wit.serialNumberNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)
 				}
-				wit.serialNumberNoPrivacyWitness[i].Set(wit.inputCoins[i].GetKeyImage(), publicKey,
+				wit.serialNumberNoPrivacyWitness[i].Set(wit.inputCoins[i].GetKeyImage(), wit.inputCoins[i].GetPublicKey(),
 					wit.inputCoins[i].GetSNDerivator(), wit.privateKey)
 			}
 		}

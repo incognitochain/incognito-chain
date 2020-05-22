@@ -9,7 +9,7 @@ import (
 )
 
 type Coin interface {
-	MarshalJSON() ([]byte, errocr)
+	MarshalJSON() ([]byte, error)
 	UnmarshalJSON(data []byte) error
 
 	GetVersion() uint8

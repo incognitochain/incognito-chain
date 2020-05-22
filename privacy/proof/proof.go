@@ -16,8 +16,8 @@ type Proof interface {
 	GetOutputCoins() []coin.Coin
 	GetAggregatedRangeProof() agg_interface.AggregatedRangeProof
 
-	SetInputCoins([]coin.PlainCoin)
-	SetOutputCoins([]coin.Coin)
+	SetInputCoins([]coin.PlainCoin) error
+	SetOutputCoins([]coin.Coin) error
 
 	Bytes() []byte
 	MarshalJSON() ([]byte, error)
