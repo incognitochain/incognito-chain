@@ -495,6 +495,12 @@ func calHashOutCoinCrossShard(outCoins []coin.Coin) common.Hash {
 	var outputCoinHash common.Hash
 	if len(outCoins) != 0 {
 		for _, outCoin := range outCoins {
+			if outCoin == nil {
+				for i:= 0; i < len(outCoins); i++ {
+					fmt.Println("Outcoin ", i, outCoins[i])
+				}
+				fmt.Println("Number of outcoins: ", len(outCoins))
+			}
 			tmpByte = append(tmpByte, outCoin.Bytes()...)
 		}
 		outputCoinHash = common.HashH(tmpByte)

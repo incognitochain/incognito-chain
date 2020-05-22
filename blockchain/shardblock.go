@@ -72,6 +72,32 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
 
+func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
+	type Alias CrossShardBlock
+	temp := &struct {
+		CrossOutputCoin []string
+		*Alias
+	}{
+		Alias: (*Alias)(crossShardBlock),
+	}
+
+	if err := json.Unmarshal(data, temp); err != nil {
+		Logger.log.Error("UnmarshalJSON crossShardBlock", string(data))
+		return err
+	}
+
+	outputCoinList, err := coin.ParseCoinsStr(temp.CrossOutputCoin)
+	if err != nil {
+		Logger.log.Error("UnmarshalJSON Cannot parse crossOutputCoins", err)
+		return err
+	}
+	for i:=0; i < len(temp.CrossOutputCoin); i++ {
+		fmt.Println("Detail of CrossOutputCoins", outputCoinList[i])
+	}
+	crossShardBlock.CrossOutputCoin = outputCoinList
+	return nil
+}
+
 func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
 	return crossShardBlock.Header.Epoch
 }

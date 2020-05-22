@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
@@ -68,6 +69,27 @@ func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Bytes
 func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash() common.Hash {
 	return common.HashH(contentCrossShardTokenPrivacyData.Bytes())
 }
+func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) UnmarshalJSON(data []byte) error {
+	type Alias ContentCrossShardTokenPrivacyData
+	temp := &struct {
+		OutputCoin []string
+		*Alias
+	}{
+		Alias: (*Alias)(contentCrossShardTokenPrivacyData),
+	}
+	if err := json.Unmarshal(data, temp); err != nil {
+		Logger.log.Error("UnmarshalJSON ContentCrossShardTokenPrivacyData", err)
+		return err
+	}
+	outputCoinList, err := coin.ParseCoinsStr(temp.OutputCoin)
+	if err != nil {
+		Logger.log.Error("UnmarshalJSON Cannot parse crossOutputCoins", err)
+		return err
+	}
+	contentCrossShardTokenPrivacyData.OutputCoin = outputCoinList
+	return nil
+}
+
 func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
 	res := []byte{}
 	res = append(res, crossOutputCoin.BlockHash.GetBytes()...)
@@ -76,6 +98,27 @@ func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
 	}
 	return common.HashH(res)
 }
+func (crossOutputCoin *CrossOutputCoin) UnmarshalJSON(data []byte) error {
+	type Alias CrossOutputCoin
+	temp := &struct {
+		OutputCoin []string
+		*Alias
+	}{
+		Alias: (*Alias)(crossOutputCoin),
+	}
+	if err := json.Unmarshal(data, temp); err != nil {
+		Logger.log.Error("UnmarshalJSON CrossOutputCoin", err)
+		return err
+	}
+	outputCoinList, err := coin.ParseCoinsStr(temp.OutputCoin)
+	if err != nil {
+		Logger.log.Error("UnmarshalJSON Cannot parse CrossOutputCoin", err)
+		return err
+	}
+	crossOutputCoin.OutputCoin = outputCoinList
+	return nil
+}
+
 func (crossTransaction CrossTransaction) Bytes() []byte {
 	res := []byte{}
 	res = append(res, crossTransaction.BlockHash.GetBytes()...)
@@ -89,6 +132,26 @@ func (crossTransaction CrossTransaction) Bytes() []byte {
 }
 func (crossTransaction CrossTransaction) Hash() common.Hash {
 	return common.HashH(crossTransaction.Bytes())
+}
+func (crossTransaction *CrossTransaction) UnmarshalJSON(data []byte) error {
+	type Alias CrossTransaction
+	temp := &struct {
+		OutputCoin []string
+		*Alias
+	}{
+		Alias: (*Alias)(crossTransaction),
+	}
+	if err := json.Unmarshal(data, temp); err != nil {
+		Logger.log.Error("UnmarshalJSON CrossTransaction", string(data))
+		return err
+	}
+	outputCoinList, err := coin.ParseCoinsStr(temp.OutputCoin)
+	if err != nil {
+		Logger.log.Error("UnmarshalJSON Cannot parse CrossTransaction", err)
+		return err
+	}
+	crossTransaction.OutputCoin = outputCoinList
+	return nil
 }
 
 /*

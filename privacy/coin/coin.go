@@ -2,6 +2,7 @@ package coin
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -117,4 +118,20 @@ func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
 	} else {
 		return false
 	}
+}
+
+func ParseCoinsStr (coins []string) ([]Coin, error) {
+	coinList := make([]Coin, len(coins))
+	for i:=0; i<  len(coins); i++ {
+		coinBytes, _, err := base58.Base58Check{}.Decode(coins[i])
+		if err != nil {
+			return nil, err
+		}
+		if coin, err := NewCoinFromByte(coinBytes); err != nil {
+			return nil, err
+		} else {
+			coinList[i] = coin
+		}
+	}
+	return coinList, nil
 }
