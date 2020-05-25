@@ -49,6 +49,7 @@ var (
 	portalLiquidationTpExchangeRatesStatusPrefix  = []byte("portalliquidationtpexchangeratesstatus-")
 	portalLiquidationExchangeRatesPoolPrefix      = []byte("portalliquidationexchangeratespool-")
 	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
+	portalTopUpWaitingPortingStatusPrefix = []byte("portaltopupwaitingportingstatus-")
 	portalLiquidationRedeemRequestStatusPrefix    = []byte("portalliquidationredeemrequeststatus-")
 	portalWaitingPortingRequestPrefix             = []byte("portalwaitingportingrequest-")
 	portalCustodianStatePrefix        = []byte("portalcustodian-")
@@ -286,6 +287,10 @@ func PortalLiquidationTpExchangeRatesStatusPrefix() []byte {
 
 func PortalLiquidationCustodianDepositStatusPrefix() []byte {
 	return portalLiquidationCustodianDepositStatusPrefix
+}
+
+func PortalTopUpWaitingPortingStatusPrefix() []byte {
+	return portalTopUpWaitingPortingStatusPrefix
 }
 
 func PortalLiquidationRedeemRequestStatusPrefix() []byte {

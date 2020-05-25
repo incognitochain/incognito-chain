@@ -117,6 +117,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalFeeRefundResponse{}
 	case PortalReqMatchingRedeemMeta:
 		md = &PortalReqMatchingRedeem{}
+	case PortalTopUpWaitingPortingRequestMeta:
+		md = &PortalTopUpWaitingPortingRequest{}
+	case PortalTopUpWaitingPortingResponseMeta:
+		md = &PortalTopUpWaitingPortingResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

@@ -76,6 +76,9 @@ const (
 	RelayingBNBHeaderMeta = 200
 	RelayingBTCHeaderMeta = 201
 
+	PortalTopUpWaitingPortingRequestMeta  = 202
+	PortalTopUpWaitingPortingResponseMeta = 203
+
 	// incognito mode for smart contract
 	BurningForDepositToSCRequestMeta = 96
 	BurningConfirmForDepositToSCMeta = 97
@@ -100,6 +103,7 @@ var minerCreatedMetaTypes = []int{
 	PortalRedeemLiquidateExchangeRatesResponseMeta,
 	PortalLiquidationCustodianDepositResponseMeta,
 	PortalPortingResponseMeta,
+	PortalTopUpWaitingPortingResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

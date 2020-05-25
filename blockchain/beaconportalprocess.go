@@ -45,6 +45,9 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		//liquidation custodian deposit
 		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMeta):
 			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		//waiting porting top up
+		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta):
+			err = blockchain.processPortalTopUpWaitingPorting(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation user redeem
 		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
 			err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
