@@ -7,7 +7,7 @@ import (
 )
 
 //======================  Redeem  ======================
-func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*WaitingRedeemRequest, error) {
+func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*RedeemRequest, error) {
 	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
 	return waitingRedeemRequests, nil
 }
@@ -15,10 +15,10 @@ func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*WaitingRedeemReques
 // StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func StoreWaitingRedeemRequests(
 	stateDB *StateDB,
-	waitingRedeemReqs map[string]*WaitingRedeemRequest) error {
+	waitingRedeemReqs map[string]*RedeemRequest) error {
 	for _, waitingReq := range waitingRedeemReqs {
 		key := GenerateWaitingRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
-		value := NewWaitingRedeemRequestWithValue(
+		value := NewRedeemRequestWithValue(
 			waitingReq.uniqueRedeemID,
 			waitingReq.tokenID,
 			waitingReq.redeemerAddress,
@@ -107,6 +107,42 @@ func GetPortalReqMatchingRedeemByTxIDStatus(stateDB *StateDB, txID string) ([]by
 	}
 
 	return data, nil
+}
+
+func GetMatchedRedeemRequests(stateDB *StateDB) (map[string]*RedeemRequest, error) {
+	waitingRedeemRequests := stateDB.getAllMatchedRedeemRequest()
+	return waitingRedeemRequests, nil
+}
+
+// StoreMatchedRedeemRequests stores matched redeem requests at beaconHeight
+func StoreMatchedRedeemRequests(
+	stateDB *StateDB,
+	waitingRedeemReqs map[string]*RedeemRequest) error {
+	for _, waitingReq := range waitingRedeemReqs {
+		key := GenerateMatchedRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
+		value := NewRedeemRequestWithValue(
+			waitingReq.uniqueRedeemID,
+			waitingReq.tokenID,
+			waitingReq.redeemerAddress,
+			waitingReq.redeemerRemoteAddress,
+			waitingReq.redeemAmount,
+			waitingReq.custodians,
+			waitingReq.redeemFee,
+			waitingReq.beaconHeight,
+			waitingReq.txReqID,
+		)
+		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreWaitingRedeemRequestError, err)
+		}
+	}
+
+	return nil
+}
+
+func DeleteMatchedRedeemRequest(stateDB *StateDB, redeemID string) {
+	key := GenerateMatchedRedeemRequestObjectKey(redeemID)
+	stateDB.MarkDeleteStateObject(WaitingRedeemRequestObjectType, key)
 }
 
 //======================  Custodian pool  ======================

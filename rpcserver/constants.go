@@ -219,6 +219,7 @@ const (
 	getPortalReward                               = "getportalreward"
 	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
 	createAndSendTxWithReqMatchingRedeem          = "createandsendtxwithreqmatchingredeem"
+	getReqMatchingRedeemStatus                    = "getreqmatchingredeemstatus"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

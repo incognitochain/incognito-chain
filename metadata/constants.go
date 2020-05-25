@@ -70,6 +70,7 @@ const (
 	PortalTotalRewardCustodianMeta                 = 124
 	PortalPortingResponseMeta                      = 125
 	PortalReqMatchingRedeemMeta                    = 126
+	PortalPickMoreCustodianForRedeemMeta           = 128
 
 	// relaying
 	RelayingBNBHeaderMeta = 200

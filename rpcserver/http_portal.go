@@ -233,7 +233,8 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 
 	type CurrentPortalState struct {
 		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest `json:"WaitingPortingRequests"`
-		WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest  `json:"WaitingRedeemRequests"`
+		WaitingRedeemRequests      map[string]*statedb.RedeemRequest         `json:"WaitingRedeemRequests"`
+		MatchedRedeemRequests      map[string]*statedb.RedeemRequest         `json:"MatchedRedeemRequests"`
 		CustodianPool              map[string]*statedb.CustodianState        `json:"CustodianPool"`
 		FinalExchangeRatesState    *statedb.FinalExchangeRatesState          `json:"FinalExchangeRatesState"`
 		LiquidationPool            map[string]*statedb.LiquidationPool       `json:"LiquidationPool"`
@@ -245,6 +246,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		BeaconTimeStamp:            beaconBlock.Header.Timestamp,
 		WaitingPortingRequests:     portalState.WaitingPortingRequests,
 		WaitingRedeemRequests:      portalState.WaitingRedeemRequests,
+		MatchedRedeemRequests:      portalState.MatchedRedeemRequests,
 		CustodianPool:              portalState.CustodianPoolState,
 		FinalExchangeRatesState:    portalState.FinalExchangeRatesState,
 		LiquidationPool:            portalState.LiquidationPool,
@@ -855,4 +857,25 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithReqMatchingRedeem(params 
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetReqMatchingRedeemByTxIDStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+
+	status, err := httpServer.blockService.GetReqMatchingRedeemByTxIDStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqMatchingRedeemStatusError, err)
+	}
+	return status, nil
 }

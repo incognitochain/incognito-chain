@@ -51,8 +51,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestWithdrawRewardMeta,
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
 			metadata.PortalLiquidationCustodianDepositMeta,
-			metadata.PortalLiquidationCustodianDepositResponseMeta:
-				statefulInsts = append(statefulInsts, inst)
+			metadata.PortalLiquidationCustodianDepositResponseMeta,
+			metadata.PortalReqMatchingRedeemMeta:
+			statefulInsts = append(statefulInsts, inst)
 
 		default:
 			continue
@@ -264,21 +265,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, pdeInsts...)
 	}
 
-	// auto-liquidation portal instructions
-	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
-		beaconHeight-1,
-		currentPortalState,
-		portalParams,
-	)
-
-	if err != nil {
-		Logger.log.Error(err)
-		return instructions
-	}
-	if len(portalLiquidationInsts) > 0 {
-		instructions = append(instructions, portalLiquidationInsts...)
-	}
-
 	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
 		stateDB,
@@ -294,6 +280,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalRedeemLiquidateExchangeRatesActionByShardID,
 		portalLiquidationCustodianDepositActionByShardID,
 		portalReqMatchingRedeemActionsByShardID,
+		portalReqWithdrawRewardActionsByShardID,
+		rewardForCustodianByEpoch,
 		portalParams,
 	)
 
@@ -309,22 +297,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	relayingInsts := blockchain.handleRelayingInsts(relayingHeaderState, pm)
 	if len(relayingInsts) > 0 {
 		instructions = append(instructions, relayingInsts...)
-	}
-
-	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
-	portalRewardsInsts, err := blockchain.handlePortalRewardInsts(
-		beaconHeight-1,
-		currentPortalState,
-		portalReqWithdrawRewardActionsByShardID,
-		rewardForCustodianByEpoch,
-	)
-
-	if err != nil {
-		Logger.log.Error(err)
-		return instructions
-	}
-	if len(portalRewardsInsts) > 0 {
-		instructions = append(instructions, portalRewardsInsts...)
 	}
 
 	return instructions
@@ -510,9 +482,25 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
 	portalLiquidationCustodianDepositActionByShardID map[byte][][]string,
 	portalReqMatchingRedeemActionByShardID map[byte][][]string,
+	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
+	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
 ) ([][]string, error) {
 	instructions := [][]string{}
+	newMatchedRedeemReqIDs := []string{}
+
+	// auto-liquidation portal instructions
+	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
+		beaconHeight,
+		currentPortalState,
+		portalParams,
+	)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	if len(portalLiquidationInsts) > 0 {
+		instructions = append(instructions, portalLiquidationInsts...)
+	}
 
 	// handle portal custodian deposit inst
 	var custodianShardIDKeys []int
@@ -810,7 +798,8 @@ func (blockchain *BlockChain) handlePortalInsts(
 		actions := portalReqMatchingRedeemActionByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForReqMatchingRedeem(
+			var newInst [][]string
+			newInst, newMatchedRedeemReqIDs, err = blockchain.buildInstructionsForReqMatchingRedeem(
 				stateDB,
 				contentStr,
 				shardID,
@@ -818,6 +807,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				currentPortalState,
 				beaconHeight,
 				portalParams,
+				newMatchedRedeemReqIDs,
 			)
 
 			if err != nil {
@@ -828,6 +818,36 @@ func (blockchain *BlockChain) handlePortalInsts(
 				instructions = append(instructions, newInst...)
 			}
 		}
+	}
+
+	// check and create instruction for picking more custodians for timeout waiting redeem requests
+	var timeOutRedeemReqInsts [][]string
+	timeOutRedeemReqInsts, newMatchedRedeemReqIDs, err = blockchain.checkAndPickMoreCustodianForWaitingRedeemRequest(
+		beaconHeight,
+		currentPortalState,
+		newMatchedRedeemReqIDs,
+	)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	if len(timeOutRedeemReqInsts) > 0 {
+		instructions = append(instructions, timeOutRedeemReqInsts...)
+	}
+
+	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
+	portalRewardsInsts, err := blockchain.handlePortalRewardInsts(
+		beaconHeight,
+		currentPortalState,
+		portalReqWithdrawRewardActionsByShardID,
+		rewardForCustodianByEpoch,
+		newMatchedRedeemReqIDs,
+	)
+
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	if len(portalRewardsInsts) > 0 {
+		instructions = append(instructions, portalRewardsInsts...)
 	}
 
 	return instructions, nil
@@ -852,8 +872,6 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portalParams PortalParams) ([][]string, error) {
-	//Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
-
 	insts := [][]string{}
 
 	// check there is any waiting porting request timeout
@@ -900,11 +918,12 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 	currentPortalState *CurrentPortalState,
 	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
+	newMatchedRedeemReqIDs []string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
 	// Build instructions portal reward for each beacon block
-	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState, rewardForCustodianByEpoch)
+	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState, rewardForCustodianByEpoch, newMatchedRedeemReqIDs)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -944,3 +963,4 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 
 	return instructions, nil
 }
+

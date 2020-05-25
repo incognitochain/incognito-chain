@@ -145,14 +145,14 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 
 	liquidatedByExchangeRate := false
 
-	sortedWaitingRedeemReqKeys := make([]string, 0)
-	for key := range currentPortalState.WaitingRedeemRequests {
-		sortedWaitingRedeemReqKeys = append(sortedWaitingRedeemReqKeys, key)
+	sortedMatchedRedeemReqKeys := make([]string, 0)
+	for key := range currentPortalState.MatchedRedeemRequests {
+		sortedMatchedRedeemReqKeys = append(sortedMatchedRedeemReqKeys, key)
 	}
-	sort.Strings(sortedWaitingRedeemReqKeys)
-	for _, redeemReqKey := range sortedWaitingRedeemReqKeys {
-		redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
-		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(portalParams.TimeOutCustodianReturnPubToken) {
+	sort.Strings(sortedMatchedRedeemReqKeys)
+	for _, redeemReqKey := range sortedMatchedRedeemReqKeys {
+		redeemReq := currentPortalState.MatchedRedeemRequests[redeemReqKey]
+		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutCustodianReturnPubToken) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -239,16 +239,16 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				insts = append(insts, inst)
 			}
 
-			updatedCustodians := currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians()
+			updatedCustodians := currentPortalState.MatchedRedeemRequests[redeemReqKey].GetCustodians()
 			for _, cus := range liquidatedCustodians {
 				updatedCustodians, _ = removeCustodianFromMatchingRedeemCustodians(
 					updatedCustodians, cus.GetIncognitoAddress())
 			}
 
 			// remove redeem request from waiting redeem requests list
-			currentPortalState.WaitingRedeemRequests[redeemReqKey].SetCustodians(updatedCustodians)
-			if len(currentPortalState.WaitingRedeemRequests[redeemReqKey].GetCustodians()) == 0 {
-				deleteWaitingRedeemRequest(currentPortalState, redeemReqKey)
+			currentPortalState.MatchedRedeemRequests[redeemReqKey].SetCustodians(updatedCustodians)
+			if len(currentPortalState.MatchedRedeemRequests[redeemReqKey].GetCustodians()) == 0 {
+				deleteMatchedRedeemRequest(currentPortalState, redeemReqKey)
 			}
 		}
 	}
@@ -326,8 +326,8 @@ func buildInstForExpiredPortingReqByPortingID(
 	return insts, nil
 }
 
-// convertPortalTimeOutToBeaconBlocks returns number of beacon blocks corresponding to duration time
-func (blockchain *BlockChain) convertPortalTimeOutToBeaconBlocks(duration time.Duration) uint64 {
+// convertDurationTimeToBeaconBlocks returns number of beacon blocks corresponding to duration time
+func (blockchain *BlockChain) convertDurationTimeToBeaconBlocks(duration time.Duration) uint64 {
 	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds())
 }
 
@@ -344,7 +344,7 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	sort.Strings(sortedWaitingPortingReqKeys)
 	for _, portingReqKey := range sortedWaitingPortingReqKeys {
 		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
-		if (beaconHeight+1)-portingReq.BeaconHeight() >= blockchain.convertPortalTimeOutToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest) {
+		if (beaconHeight+1)-portingReq.BeaconHeight() >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {

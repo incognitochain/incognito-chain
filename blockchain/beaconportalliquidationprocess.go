@@ -41,22 +41,22 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 			return nil
 		}
 
-		// remove matching custodian from matching custodians list in waiting redeem request
-		waitingRedeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
-		waitingRedeemReqKeyStr := waitingRedeemReqKey.String()
+		// remove matching custodian from matching custodians list in matched redeem request
+		matchedRedeemReqKey := statedb.GenerateMatchedRedeemRequestObjectKey(actionData.UniqueRedeemID)
+		matchedRedeemReqKeyStr := matchedRedeemReqKey.String()
 
 		updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians(), actionData.CustodianIncAddressStr)
-		currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].SetCustodians(updatedCustodians)
+			currentPortalState.MatchedRedeemRequests[matchedRedeemReqKeyStr].GetCustodians(), actionData.CustodianIncAddressStr)
+		currentPortalState.MatchedRedeemRequests[matchedRedeemReqKeyStr].SetCustodians(updatedCustodians)
 		if err != nil {
 			Logger.log.Errorf("[processPortalLiquidateCustodian] Error when removing custodian from matching custodians %v", err)
 			return nil
 		}
 
-		// remove redeem request from waiting redeem requests list
-		if len(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians()) == 0 {
-			deleteWaitingRedeemRequest(currentPortalState, waitingRedeemReqKeyStr)
-			statedb.DeleteWaitingRedeemRequest(stateDB, actionData.UniqueRedeemID)
+		// remove redeem request from matched redeem requests list
+		if len(currentPortalState.MatchedRedeemRequests[matchedRedeemReqKeyStr].GetCustodians()) == 0 {
+			deleteMatchedRedeemRequest(currentPortalState, matchedRedeemReqKeyStr)
+			statedb.DeleteMatchedRedeemRequest(stateDB,  actionData.UniqueRedeemID)
 
 			// update status of redeem request with redeemID to liquidated status
 			err = updateRedeemRequestStatusByRedeemId(actionData.UniqueRedeemID, common.PortalRedeemReqLiquidatedStatus, stateDB)

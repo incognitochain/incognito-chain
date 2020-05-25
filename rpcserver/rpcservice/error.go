@@ -86,6 +86,7 @@ const (
 	GetReqRedeemStatusError
 	GetRequestWithdrawRewardStatusError
 	GetPortalRewardError
+	GetReqMatchingRedeemStatusError
 
 	GetCustodianLiquidationStatusError
 	GetTpExchangeRatesLiquidationError
@@ -203,6 +204,7 @@ var ErrCodeMessage = map[int]struct {
 	GetRequestWithdrawRewardStatusError:                {-9016, "Get request withdraw portal reward error"},
 	ConvertExchangeRatesError:                          {-9017, "Converting exchange rates error"},
 	GetPortingRequestFeesError:                         {-9018, "Get porting request fees error"},
+	GetReqMatchingRedeemStatusError:                    {-9019, "Get req matching redeem status error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

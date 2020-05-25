@@ -1074,6 +1074,23 @@ func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID st
 	return &status, nil
 }
 
+func (blockService BlockService) GetReqMatchingRedeemByTxIDStatus(reqTxID string) (*metadata.PortalReqMatchingRedeemStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalReqMatchingRedeemByTxIDStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalReqMatchingRedeemStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+
 
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {

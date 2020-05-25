@@ -231,6 +231,9 @@ const (
 
 	PortalReqMatchingRedeemAcceptedChainStatus = "accepted"
 	PortalReqMatchingRedeemRejectedChainStatus = "rejected"
+
+	PortalPickMoreCustodianRedeemSuccessChainStatus = "success"
+	PortalPickMoreCustodianRedeemFailedChainStatus  = "failed"
 )
 
 // Relaying header

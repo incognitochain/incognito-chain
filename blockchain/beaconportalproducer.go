@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"strconv"
 )
 
@@ -956,7 +957,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			for _, out := range outputs {
 				addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 				if addr != remoteAddressNeedToBeTransfer {
-					Logger.log.Warnf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
+					Logger.log.Warn("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 					continue
 				}
 
@@ -1129,278 +1130,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	return [][]string{inst}, nil
 }
 
-// beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildRedeemRequestInst(
-	uniqueRedeemID string,
-	tokenID string,
-	redeemAmount uint64,
-	incAddressStr string,
-	remoteAddress string,
-	redeemFee uint64,
-	matchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-	status string,
-) []string {
-	redeemRequestContent := metadata.PortalRedeemRequestContent{
-		UniqueRedeemID:          uniqueRedeemID,
-		TokenID:                 tokenID,
-		RedeemAmount:            redeemAmount,
-		RedeemerIncAddressStr:   incAddressStr,
-		RemoteAddress:           remoteAddress,
-		MatchingCustodianDetail: matchingCustodianDetail,
-		RedeemFee:               redeemFee,
-		TxReqID:                 txReqID,
-		ShardID:                 shardID,
-	}
-	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(redeemRequestContentBytes),
-	}
-}
 
-// buildInstructionsForRedeemRequest builds instruction for redeem request action
-func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
-	stateDB *statedb.StateDB,
-	contentStr string,
-	shardID byte,
-	metaType int,
-	currentPortalState *CurrentPortalState,
-	beaconHeight uint64,
-	portalParams PortalParams,
-) ([][]string, error) {
-	// parse instruction
-	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal redeem request action: %+v", err)
-		return [][]string{}, nil
-	}
-	var actionData metadata.PortalRedeemRequestAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshal portal redeem request action: %+v", err)
-		return [][]string{}, nil
-	}
-
-	meta := actionData.Meta
-	if currentPortalState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForRedeemRequest]: Current Portal state is null.")
-		// need to mint ptoken to user
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	redeemID := meta.UniqueRedeemID
-
-	// check uniqueRedeemID is existed waitingRedeem list or not
-	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(redeemID)
-	keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
-	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
-	if waitingRedeemRequest != nil {
-		Logger.log.Errorf("RedeemID is existed in waiting redeem requests list %v\n", redeemID)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	// check uniqueRedeemID is existed in db or not
-	redeemRequestBytes, err := statedb.GetPortalRedeemRequestStatus(stateDB, meta.UniqueRedeemID)
-	if err != nil {
-		Logger.log.Errorf("Can not get redeem req status for redeemID %v, %v\n", meta.UniqueRedeemID, err)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	} else if len(redeemRequestBytes) > 0 {
-		Logger.log.Errorf("RedeemID is existed in redeem requests list in db %v\n", redeemID)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	// get tokenID from redeemTokenID
-	tokenID := meta.TokenID
-
-	// check redeem fee
-	if currentPortalState.FinalExchangeRatesState == nil {
-		Logger.log.Errorf("Can not get exchange rate at beaconHeight %v\n", beaconHeight)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState, portalParams.MinPercentRedeemFee)
-	if err != nil {
-		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	if meta.RedeemFee < minRedeemFee {
-		Logger.log.Errorf("Redeem fee is invalid, minRedeemFee %v, but get %v\n", minRedeemFee, meta.RedeemFee)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	// pick custodian(s) who holding public token to return user
-	matchingCustodiansDetail, err := pickupCustodianForRedeem(meta.RedeemAmount, tokenID, currentPortalState)
-	if err != nil {
-		Logger.log.Errorf("Error when pick up custodian for redeem %v\n", err)
-		inst := buildRedeemRequestInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			meta.RemoteAddress,
-			meta.RedeemFee,
-			nil,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	// update custodian state (holding public tokens)
-	for _, cus := range matchingCustodiansDetail {
-		custodianStateKey := statedb.GenerateCustodianStateObjectKey(cus.GetIncognitoAddress())
-		custodianStateKeyStr := custodianStateKey.String()
-		if currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()[tokenID] < cus.GetAmount() {
-			Logger.log.Errorf("Amount holding public tokens is less than matching redeem amount")
-			inst := buildRedeemRequestInst(
-				meta.UniqueRedeemID,
-				meta.TokenID,
-				meta.RedeemAmount,
-				meta.RedeemerIncAddressStr,
-				meta.RemoteAddress,
-				meta.RedeemFee,
-				nil,
-				meta.Type,
-				actionData.ShardID,
-				actionData.TxReqID,
-				common.PortalRedeemRequestRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		holdingPubTokenTmp := currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()
-		holdingPubTokenTmp[tokenID] -= cus.GetAmount()
-		currentPortalState.CustodianPoolState[custodianStateKeyStr].SetHoldingPublicTokens(holdingPubTokenTmp)
-	}
-
-	// add to waiting Redeem list
-	redeemRequest := statedb.NewWaitingRedeemRequestWithValue(
-		meta.UniqueRedeemID,
-		meta.TokenID,
-		meta.RedeemerIncAddressStr,
-		meta.RemoteAddress,
-		meta.RedeemAmount,
-		matchingCustodiansDetail,
-		meta.RedeemFee,
-		beaconHeight+1,
-		actionData.TxReqID,
-	)
-	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
-
-	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
-	inst := buildRedeemRequestInst(
-		meta.UniqueRedeemID,
-		meta.TokenID,
-		meta.RedeemAmount,
-		meta.RedeemerIncAddressStr,
-		meta.RemoteAddress,
-		meta.RedeemFee,
-		matchingCustodiansDetail,
-		meta.Type,
-		actionData.ShardID,
-		actionData.TxReqID,
-		common.PortalRedeemRequestAcceptedChainStatus,
-	)
-	return [][]string{inst}, nil
-}
 
 /**
 Validation:
@@ -1577,12 +1307,11 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		return [][]string{inst}, nil
 	}
 
-	// check meta.UniqueRedeemID is in waiting RedeemRequests list in portal state or not
+	// check meta.UniqueRedeemID is in matched RedeemRequests list in portal state or not
 	redeemID := meta.UniqueRedeemID
-	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(redeemID)
-	keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
-	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
-	if waitingRedeemRequest == nil {
+	keyMatchedRedeemRequestStr := statedb.GenerateMatchedRedeemRequestObjectKey(redeemID).String()
+	matchedRedeemRequest := currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr]
+	if matchedRedeemRequest == nil {
 		Logger.log.Errorf("redeemID is not existed in waiting redeem requests list")
 		inst := buildReqUnlockCollateralInst(
 			meta.UniqueRedeemID,
@@ -1636,7 +1365,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		return [][]string{inst}, nil
 	}
 
-	if redeemRequest.Status != common.PortalRedeemReqWaitingStatus {
+	if redeemRequest.Status != common.PortalRedeemReqMatchedStatus {
 		Logger.log.Errorf("Redeem request %v has invalid status %v\n", redeemID, redeemRequest.Status)
 		inst := buildReqUnlockCollateralInst(
 			meta.UniqueRedeemID,
@@ -1654,7 +1383,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	}
 
 	// check tokenID
-	if meta.TokenID != waitingRedeemRequest.GetTokenID() {
+	if meta.TokenID != matchedRedeemRequest.GetTokenID() {
 		Logger.log.Errorf("TokenID is not correct in redeemID req")
 		inst := buildReqUnlockCollateralInst(
 			meta.UniqueRedeemID,
@@ -1674,7 +1403,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	// check redeem amount of matching custodian
 	amountMatchingCustodian := uint64(0)
 	isFoundCustodian := false
-	for _, cus := range waitingRedeemRequest.GetCustodians() {
+	for _, cus := range matchedRedeemRequest.GetCustodians() {
 		if cus.GetIncognitoAddress() == meta.CustodianAddressStr {
 			amountMatchingCustodian = cus.GetAmount()
 			isFoundCustodian = true
@@ -1814,10 +1543,10 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		// check whether amount transfer in txBNB is equal redeem amount or not
 		// check receiver and amount in tx
-		// get list matching custodians in waitingRedeemRequest
+		// get list matching custodians in matchedRedeemRequest
 
 		outputs := btcTxProof.BTCTx.TxOut
-		remoteAddressNeedToBeTransfer := waitingRedeemRequest.GetRedeemerRemoteAddress()
+		remoteAddressNeedToBeTransfer := matchedRedeemRequest.GetRedeemerRemoteAddress()
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
 
@@ -1913,7 +1642,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
 		updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+			currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while removing custodian %v from matching custodians", meta.CustodianAddressStr)
 			inst := buildReqUnlockCollateralInst(
@@ -1930,12 +1659,12 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			)
 			return [][]string{inst}, nil
 		}
-		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(updatedCustodians)
+		currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].SetCustodians(updatedCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians()) == 0 {
-			deleteWaitingRedeemRequest(currentPortalState, keyWaitingRedeemRequestStr)
+		if len(currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians()) == 0 {
+			deleteMatchedRedeemRequest(currentPortalState, keyMatchedRedeemRequestStr)
 		}
 
 		inst := buildReqUnlockCollateralInst(
@@ -2111,11 +1840,11 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		// check whether amount transfer in txBNB is equal redeem amount or not
 		// check receiver and amount in tx
-		// get list matching custodians in waitingRedeemRequest
+		// get list matching custodians in matchedRedeemRequest
 
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
 
-		remoteAddressNeedToBeTransfer := waitingRedeemRequest.GetRedeemerRemoteAddress()
+		remoteAddressNeedToBeTransfer := matchedRedeemRequest.GetRedeemerRemoteAddress()
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
@@ -2220,7 +1949,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
 		updatedCustodians, err2 := removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+			currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
 		if err2 != nil {
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
@@ -2236,12 +1965,12 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			)
 			return [][]string{inst}, nil
 		}
-		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(updatedCustodians)
+		currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].SetCustodians(updatedCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians()) == 0 {
-			deleteWaitingRedeemRequest(currentPortalState, keyWaitingRedeemRequestStr)
+		if len(currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians()) == 0 {
+			deleteMatchedRedeemRequest(currentPortalState, keyMatchedRedeemRequestStr)
 		}
 
 		inst := buildReqUnlockCollateralInst(
@@ -2275,118 +2004,4 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		)
 		return [][]string{inst}, nil
 	}
-}
-
-func buildReqMatchingRedeemInst(
-	redeemID string,
-	incAddressStr string,
-	matchingAmount uint64,
-	isFullCustodian bool,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-	status string,
-) []string {
-	reqMatchingRedeemContent := metadata.PortalReqMatchingRedeemContent{
-		CustodianAddressStr: incAddressStr,
-		RedeemID:            redeemID,
-		MatchingAmount:      matchingAmount,
-		IsFullCustodian:     isFullCustodian,
-		TxReqID:             txReqID,
-		ShardID:             shardID,
-	}
-	reqMatchingRedeemContentBytes, _ := json.Marshal(reqMatchingRedeemContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(reqMatchingRedeemContentBytes),
-	}
-}
-
-func (blockchain *BlockChain) buildInstructionsForReqMatchingRedeem(
-	stateDB *statedb.StateDB,
-	contentStr string,
-	shardID byte,
-	metaType int,
-	currentPortalState *CurrentPortalState,
-	beaconHeight uint64,
-	portalParams PortalParams,
-) ([][]string, error) {
-	// parse instruction
-	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal req matching redeem action: %+v", err)
-		return [][]string{}, nil
-	}
-	var actionData metadata.PortalReqMatchingRedeemAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshal portal req matching redeem action: %+v", err)
-		return [][]string{}, nil
-	}
-
-	meta := actionData.Meta
-	if currentPortalState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForRedeemRequest]: Current Portal state is null.")
-		inst := buildReqMatchingRedeemInst(
-			meta.RedeemID,
-			meta.CustodianAddressStr,
-			0,
-			false,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalReqMatchingRedeemRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	redeemID := meta.RedeemID
-
-	amountMatching, isEnoughCustodians, err := MatchCustodianToWaitingRedeemReq(meta.CustodianAddressStr, redeemID, currentPortalState)
-	if err != nil {
-		Logger.log.Errorf("Error when processing matching custodian and redeemID %v\n", err)
-		inst := buildReqMatchingRedeemInst(
-			meta.RedeemID,
-			meta.CustodianAddressStr,
-			0,
-			false,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalReqMatchingRedeemRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	// if custodian is valid to matching, append custodian in matchingCustodians of redeem request
-	// update custodian state
-	_, err = UpdatePortalStateAfterCustodianReqMatchingRedeem(meta.CustodianAddressStr, redeemID, amountMatching, isEnoughCustodians, currentPortalState)
-	if err != nil {
-		Logger.log.Errorf("Error when updating portal state %v\n", err)
-		inst := buildReqMatchingRedeemInst(
-			meta.RedeemID,
-			meta.CustodianAddressStr,
-			0,
-			false,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalReqMatchingRedeemRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	inst := buildReqMatchingRedeemInst(
-		meta.RedeemID,
-		meta.CustodianAddressStr,
-		amountMatching,
-		isEnoughCustodians,
-		meta.Type,
-		actionData.ShardID,
-		actionData.TxReqID,
-		common.PortalReqMatchingRedeemAcceptedChainStatus,
-	)
-	return [][]string{inst}, nil
 }
