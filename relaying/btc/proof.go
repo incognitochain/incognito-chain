@@ -10,7 +10,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
-const BTCBlockConfirmations = 2
+const BTCBlockConfirmations = 1
 
 type MerkleProof struct {
 	ProofHash *chainhash.Hash
