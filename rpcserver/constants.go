@@ -219,6 +219,8 @@ const (
 	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
 	createAndSendTxWithReqMatchingRedeem          = "createandsendtxwithreqmatchingredeem"
 	getReqMatchingRedeemStatus                    = "getreqmatchingredeemstatus"
+	getPortalCustodianTopupStatus                 = "getcustodiantopupstatus"
+	getPortalCustodianTopupWaitingPortingStatus   = "getcustodiantopupwaitingportingstatus"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

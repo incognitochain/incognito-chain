@@ -242,10 +242,11 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
-	freeCollateralSelected, ok := data["FreeCollateralSelected"].(bool)
+	freeCollateralAmountData, ok := data["FreeCollateralAmount"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralSelected is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralAmount is invalid"))
 	}
+	freeCollateralAmount := uint64(freeCollateralAmountData)
 
 	depositedAmountData, ok := data["DepositedAmount"].(float64)
 	if !ok {
@@ -258,7 +259,7 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 		incognitoAddress,
 		pTokenId,
 		depositedAmount,
-		freeCollateralSelected,
+		freeCollateralAmount,
 	)
 
 	// create new param to build raw tx from param interface
@@ -339,10 +340,11 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
-	freeCollateralSelected, ok := data["FreeCollateralSelected"].(bool)
+	freeCollateralAmountData, ok := data["FreeCollateralAmount"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralSelected is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralAmount is invalid"))
 	}
+	freeCollateralAmount := uint64(freeCollateralAmountData)
 
 	depositedAmountData, ok := data["DepositedAmount"].(float64)
 	if !ok {
@@ -356,7 +358,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		incognitoAddress,
 		pTokenId,
 		depositedAmount,
-		freeCollateralSelected,
+		freeCollateralAmount,
 	)
 
 	// create new param to build raw tx from param interface
@@ -401,4 +403,46 @@ func (httpServer *HttpServer) handleCreateAndSendTopUpWaitingPorting(params inte
 	}
 
 	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalCustodianTopupStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	txID, ok := data["TxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param TxID is invalid"))
+	}
+
+	status, err := httpServer.blockService.GetCustodianTopupStatus(txID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupStatusError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalCustodianTopupWaitingPortingStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	txID, ok := data["TxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param TxID is invalid"))
+	}
+
+	status, err := httpServer.blockService.GetCustodianTopupWaitingPortingStatus(txID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupWaitingPortingStatusError, err)
+	}
+	return status, nil
 }

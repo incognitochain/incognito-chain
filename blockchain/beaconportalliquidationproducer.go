@@ -105,19 +105,19 @@ func buildLiquidationCustodianDepositInst(
 	pTokenId string,
 	incogAddress string,
 	depositedAmount uint64,
-	freeCollateralSelected bool,
+	freeCollateralAmount uint64,
 	status string,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
 ) []string {
 	redeemRequestContent := metadata.PortalLiquidationCustodianDepositContent{
-		PTokenId:               pTokenId,
-		IncogAddressStr:        incogAddress,
-		DepositedAmount:        depositedAmount,
-		FreeCollateralSelected: freeCollateralSelected,
-		TxReqID:                txReqID,
-		ShardID:                shardID,
+		PTokenId:             pTokenId,
+		IncogAddressStr:      incogAddress,
+		DepositedAmount:      depositedAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+		TxReqID:              txReqID,
+		ShardID:              shardID,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
 	return []string{
@@ -133,20 +133,20 @@ func buildTopUpWaitingPortingInst(
 	pTokenID string,
 	incogAddress string,
 	depositedAmount uint64,
-	freeCollateralSelected bool,
+	freeCollateralAmount uint64,
 	status string,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
 ) []string {
 	topUpWaitingPortingReqContent := metadata.PortalTopUpWaitingPortingRequestContent{
-		PortingID:              portingID,
-		PTokenID:               pTokenID,
-		IncogAddressStr:        incogAddress,
-		DepositedAmount:        depositedAmount,
-		FreeCollateralSelected: freeCollateralSelected,
-		TxReqID:                txReqID,
-		ShardID:                shardID,
+		PortingID:            portingID,
+		PTokenID:             pTokenID,
+		IncogAddressStr:      incogAddress,
+		DepositedAmount:      depositedAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+		TxReqID:              txReqID,
+		ShardID:              shardID,
 	}
 	topUpWaitingPortingReqContentBytes, _ := json.Marshal(topUpWaitingPortingReqContent)
 	return []string{
@@ -700,7 +700,7 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 			meta.PTokenID,
 			meta.IncogAddressStr,
 			meta.DepositedAmount,
-			meta.FreeCollateralSelected,
+			meta.FreeCollateralAmount,
 			common.PortalTopUpWaitingPortingRejectedChainStatus,
 			meta.Type,
 			shardID,
@@ -718,7 +718,7 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 			meta.PTokenID,
 			meta.IncogAddressStr,
 			meta.DepositedAmount,
-			meta.FreeCollateralSelected,
+			meta.FreeCollateralAmount,
 			common.PortalTopUpWaitingPortingRejectedChainStatus,
 			meta.Type,
 			shardID,
@@ -736,7 +736,7 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 			meta.PTokenID,
 			meta.IncogAddressStr,
 			meta.DepositedAmount,
-			meta.FreeCollateralSelected,
+			meta.FreeCollateralAmount,
 			common.PortalTopUpWaitingPortingRejectedChainStatus,
 			meta.Type,
 			shardID,
@@ -745,11 +745,14 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 		return [][]string{inst}, nil
 	}
 
+	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
+		meta.FreeCollateralAmount = custodian.GetFreeCollateral()
+	}
 	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
 	topUpAmt := meta.DepositedAmount
-	if meta.FreeCollateralSelected {
-		topUpAmt += custodian.GetFreeCollateral()
-		custodian.SetFreeCollateral(0)
+	if meta.FreeCollateralAmount > 0 {
+		topUpAmt += meta.FreeCollateralAmount
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - meta.FreeCollateralAmount)
 	}
 	lockedAmountCollateral := custodian.GetLockedAmountCollateral()
 	lockedAmountCollateral[meta.PTokenID] += topUpAmt
@@ -768,7 +771,7 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 		meta.PTokenID,
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
-		meta.FreeCollateralSelected,
+		meta.FreeCollateralAmount,
 		common.PortalTopUpWaitingPortingSuccessChainStatus,
 		meta.Type,
 		shardID,
@@ -804,7 +807,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 			meta.PTokenId,
 			meta.IncogAddressStr,
 			meta.DepositedAmount,
-			meta.FreeCollateralSelected,
+			meta.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositRejectedChainStatus,
 			meta.Type,
 			shardID,
@@ -821,7 +824,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 			meta.PTokenId,
 			meta.IncogAddressStr,
 			meta.DepositedAmount,
-			meta.FreeCollateralSelected,
+			meta.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositRejectedChainStatus,
 			meta.Type,
 			shardID,
@@ -837,7 +840,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 			meta.PTokenId,
 			meta.IncogAddressStr,
 			meta.DepositedAmount,
-			meta.FreeCollateralSelected,
+			meta.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositRejectedChainStatus,
 			meta.Type,
 			shardID,
@@ -846,11 +849,30 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
+	totalHoldPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodian, meta.PTokenId)
+	if totalHoldPubTokenAmount <= 0 {
+		Logger.log.Errorf("Holding public token amount is zero, don't need to top up")
+		inst := buildLiquidationCustodianDepositInst(
+			meta.PTokenId,
+			meta.IncogAddressStr,
+			meta.DepositedAmount,
+			meta.FreeCollateralAmount,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+		return [][]string{inst}, nil
+	}
+
+	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
+		meta.FreeCollateralAmount = custodian.GetFreeCollateral()
+	}
 	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
 	topUpAmt := meta.DepositedAmount
-	if meta.FreeCollateralSelected {
-		topUpAmt += custodian.GetFreeCollateral()
-		custodian.SetFreeCollateral(0)
+	if meta.FreeCollateralAmount > 0 {
+		topUpAmt += meta.FreeCollateralAmount
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - meta.FreeCollateralAmount)
 	}
 	lockedAmountCollateral[meta.PTokenId] += topUpAmt
 	custodian.SetLockedAmountCollateral(lockedAmountCollateral)
@@ -859,7 +881,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		meta.PTokenId,
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
-		meta.FreeCollateralSelected,
+		meta.FreeCollateralAmount,
 		common.PortalLiquidationCustodianDepositSuccessChainStatus,
 		meta.Type,
 		shardID,

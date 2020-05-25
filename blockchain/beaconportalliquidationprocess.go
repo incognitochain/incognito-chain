@@ -386,10 +386,11 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.DepositedAmount)
 		
 		topUpAmt := actionData.DepositedAmount
-		if actionData.FreeCollateralSelected {
-			topUpAmt += custodian.GetFreeCollateral()
-			custodian.SetFreeCollateral(0)
+		if actionData.FreeCollateralAmount > 0 {
+			topUpAmt += actionData.FreeCollateralAmount
+			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - actionData.FreeCollateralAmount)
 		}
+
 		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
 		lockedAmountCollateral[actionData.PTokenID] += topUpAmt
 		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
@@ -411,6 +412,32 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
+			return nil
+		}
+
+		// update state of porting request by portingID
+		newPortingRequestState := metadata.NewPortingRequestStatus(
+			waitingPortingReq.UniquePortingID(),
+			waitingPortingReq.TxReqID(),
+			waitingPortingReq.TokenID(),
+			waitingPortingReq.PorterAddress(),
+			waitingPortingReq.Amount(),
+			waitingPortingReq.Custodians(),
+			waitingPortingReq.PortingFee(),
+			common.PortalPortingReqWaitingStatus,
+			beaconHeight+1,
+		)
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalPortingRequestStatusPrefix(),
+			[]byte(waitingPortingReq.UniquePortingID()),
+			newPortingRequestStatusBytes,
+			beaconHeight,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+			return nil
 		}
 	}
 	return nil
@@ -428,7 +455,7 @@ func trackPortalStateStatus(
 		actionData.IncogAddressStr,
 		actionData.PTokenID,
 		actionData.DepositedAmount,
-		actionData.FreeCollateralSelected,
+		actionData.FreeCollateralAmount,
 		status,
 	)
 	statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
@@ -478,9 +505,9 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 
 		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
 		topUpAmt := actionData.DepositedAmount
-		if actionData.FreeCollateralSelected {
-			topUpAmt += custodian.GetFreeCollateral()
-			custodian.SetFreeCollateral(0)
+		if actionData.FreeCollateralAmount > 0 {
+			topUpAmt += actionData.FreeCollateralAmount
+			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - actionData.FreeCollateralAmount)
 		}
 		lockedAmountCollateral[actionData.PTokenId] += topUpAmt
 		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
@@ -491,7 +518,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
 			actionData.DepositedAmount,
-			actionData.FreeCollateralSelected,
+			actionData.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositSuccessStatus,
 		)
 
@@ -514,7 +541,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
 			actionData.DepositedAmount,
-			actionData.FreeCollateralSelected,
+			actionData.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositRejectedStatus,
 		)
 

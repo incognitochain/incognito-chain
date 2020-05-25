@@ -1221,15 +1221,20 @@ func UpdatePortalStateAfterPickMoreCustodiansForWaitingRedeemReq(
 	return waitingRedeem, nil
 }
 
-func GetHoldPubTokenAmountInWaitingRedeemReqs(portalState *CurrentPortalState, custodianAddr string, tokenID string) uint64 {
+func GetTotalHoldPubTokenAmount(portalState *CurrentPortalState, custodianState *statedb.CustodianState, tokenID string) uint64 {
+	holdPubToken := custodianState.GetHoldingPublicTokens()
 	totalHoldingPubTokenAmount := uint64(0)
+	if holdPubToken != nil {
+		totalHoldingPubTokenAmount += holdPubToken[tokenID]
+	}
+
 	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
 		if waitingRedeemReq.GetTokenID() != tokenID {
 			continue
 		}
 
 		for _, cus := range waitingRedeemReq.GetCustodians() {
-			if cus.GetIncognitoAddress() != custodianAddr {
+			if cus.GetIncognitoAddress() != custodianState.GetIncognitoAddress() {
 				continue
 			}
 			totalHoldingPubTokenAmount += cus.GetAmount()
@@ -1243,7 +1248,7 @@ func GetHoldPubTokenAmountInWaitingRedeemReqs(portalState *CurrentPortalState, c
 		}
 
 		for _, cus := range matchedRedeemReq.GetCustodians() {
-			if cus.GetIncognitoAddress() != custodianAddr {
+			if cus.GetIncognitoAddress() != custodianState.GetIncognitoAddress() {
 				continue
 			}
 			totalHoldingPubTokenAmount += cus.GetAmount()
@@ -1254,6 +1259,26 @@ func GetHoldPubTokenAmountInWaitingRedeemReqs(portalState *CurrentPortalState, c
 	return totalHoldingPubTokenAmount
 }
 
+func GetTotalMatchingPubTokenInWaitingPortings(portalState *CurrentPortalState, custodianState *statedb.CustodianState, tokenID string) uint64 {
+	totalMatchingPubTokenAmount := uint64(0)
+
+	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range waitingPortingReq.Custodians() {
+			if cus.IncAddress != custodianState.GetIncognitoAddress() {
+				continue
+			}
+			totalMatchingPubTokenAmount += cus.Amount
+			break
+		}
+	}
+
+	return totalMatchingPubTokenAmount
+}
+
 func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
 	exchangeRate := NewConvertExchangeRatesObject(currentPortalState.FinalExchangeRatesState)
 
@@ -1261,16 +1286,24 @@ func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
 	lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
 
 	for _, custodianState := range currentPortalState.CustodianPoolState {
-		holdingPubToken  := custodianState.GetHoldingPublicTokens()
-		if holdingPubToken == nil || len(holdingPubToken) == 0 {
+		lockedCollaterals := custodianState.GetLockedAmountCollateral()
+		if lockedCollaterals == nil || len(lockedCollaterals) == 0 {
 			continue
 		}
-		for tokenID, pubTokenAmount := range custodianState.GetHoldingPublicTokens() {
-			pubTokenAmount += GetHoldPubTokenAmountInWaitingRedeemReqs(currentPortalState, custodianState.GetIncognitoAddress(), tokenID)
-			pubTokenAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, pubTokenAmount)
+
+		Logger.log.Errorf("====== custodianState : %v\n", custodianState.GetIncognitoAddress())
+
+		for tokenID := range lockedCollaterals {
+			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)
+			matchingPubTokenAmount := GetTotalMatchingPubTokenInWaitingPortings(currentPortalState, custodianState, tokenID)
+			totalPubToken := holdPubTokenAmount + matchingPubTokenAmount
+			Logger.log.Errorf("====== matchingPubTokenAmount : %v\n", matchingPubTokenAmount)
+			Logger.log.Errorf("====== holdPubTokenAmount : %v\n", holdPubTokenAmount)
+			pubTokenAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, totalPubToken)
 			if err != nil {
 				Logger.log.Errorf("Error when converting public token to prv: %v", err)
 			}
+			Logger.log.Errorf("====== pubTokenAmountInPRV : %v\n", pubTokenAmountInPRV)
 			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += pubTokenAmountInPRV
 			totalLockedCollateralAmount += pubTokenAmountInPRV
 		}

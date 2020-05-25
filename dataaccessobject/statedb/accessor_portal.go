@@ -372,8 +372,10 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 		errType = GetLiquidationTopPercentileExchangeRatesStatusError
 	case string(PortalCustodianWithdrawStatusPrefix()):
 		errType = GetPortalCustodianWithdrawStatusError
+	case string(PortalTopUpWaitingPortingStatusPrefix()):
+		errType = GetPortalTopupWaitingPortingStatusError
 	default:
-		errType = StorePortalStatusError
+		errType = GetPortalStatusError
 	}
 
 	if err != nil {

@@ -1090,6 +1090,44 @@ func (blockService BlockService) GetReqMatchingRedeemByTxIDStatus(reqTxID string
 	return &status, nil
 }
 
+func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata.LiquidationCustodianDepositStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalStateStatusMultiple(
+		stateDB,
+		statedb.PortalLiquidationCustodianDepositStatusPrefix(),
+		[]byte(txID))
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.LiquidationCustodianDepositStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetCustodianTopupWaitingPortingStatus(txID string) (*metadata.PortalTopUpWaitingPortingRequestStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalStateStatusMultiple(
+		stateDB,
+		statedb.PortalTopUpWaitingPortingStatusPrefix(),
+		[]byte(txID))
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalTopUpWaitingPortingRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
 
 
 //============================= Reward Feature ===============================

@@ -15,11 +15,11 @@ import (
 
 type PortalTopUpWaitingPortingRequest struct {
 	MetadataBase
-	IncogAddressStr        string
-	PortingID              string
-	PTokenID               string
-	DepositedAmount        uint64
-	FreeCollateralSelected bool
+	IncogAddressStr      string
+	PortingID            string
+	PTokenID             string
+	DepositedAmount      uint64
+	FreeCollateralAmount uint64
 }
 
 type PortalTopUpWaitingPortingRequestAction struct {
@@ -29,23 +29,23 @@ type PortalTopUpWaitingPortingRequestAction struct {
 }
 
 type PortalTopUpWaitingPortingRequestContent struct {
-	IncogAddressStr        string
-	PortingID              string
-	PTokenID               string
-	DepositedAmount        uint64
-	FreeCollateralSelected bool
-	TxReqID                common.Hash
-	ShardID                byte
+	IncogAddressStr      string
+	PortingID            string
+	PTokenID             string
+	DepositedAmount      uint64
+	FreeCollateralAmount uint64
+	TxReqID              common.Hash
+	ShardID              byte
 }
 
 type PortalTopUpWaitingPortingRequestStatus struct {
-	TxReqID                common.Hash
-	IncogAddressStr        string
-	PortingID              string
-	PTokenID               string
-	DepositAmount          uint64
-	FreeCollateralSelected bool
-	Status                 byte
+	TxReqID              common.Hash
+	IncogAddressStr      string
+	PortingID            string
+	PTokenID             string
+	DepositAmount        uint64
+	FreeCollateralAmount uint64
+	Status               byte
 }
 
 func NewPortalTopUpWaitingPortingRequestStatus(
@@ -54,17 +54,17 @@ func NewPortalTopUpWaitingPortingRequestStatus(
 	incogAddressStr string,
 	pTokenID string,
 	depositAmount uint64,
-	freeCollateralSelected bool,
+	freeCollateralAmount uint64,
 	status byte,
 ) *PortalTopUpWaitingPortingRequestStatus {
 	return &PortalTopUpWaitingPortingRequestStatus{
-		TxReqID:                txReqID,
-		PortingID:              portingID,
-		IncogAddressStr:        incogAddressStr,
-		PTokenID:               pTokenID,
-		DepositAmount:          depositAmount,
-		FreeCollateralSelected: freeCollateralSelected,
-		Status:                 status,
+		TxReqID:              txReqID,
+		PortingID:            portingID,
+		IncogAddressStr:      incogAddressStr,
+		PTokenID:             pTokenID,
+		DepositAmount:        depositAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+		Status:               status,
 	}
 }
 
@@ -74,17 +74,17 @@ func NewPortalTopUpWaitingPortingRequest(
 	incogAddressStr string,
 	pToken string,
 	amount uint64,
-	freeCollateralSelected bool,
+	freeCollateralAmount uint64,
 ) (*PortalTopUpWaitingPortingRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	portalTopUpWaitingPortingRequestMeta := &PortalTopUpWaitingPortingRequest{
-		PortingID:              portingID,
-		IncogAddressStr:        incogAddressStr,
-		PTokenID:               pToken,
-		DepositedAmount:        amount,
-		FreeCollateralSelected: freeCollateralSelected,
+		PortingID:            portingID,
+		IncogAddressStr:      incogAddressStr,
+		PTokenID:             pToken,
+		DepositedAmount:      amount,
+		FreeCollateralAmount: freeCollateralAmount,
 	}
 	portalTopUpWaitingPortingRequestMeta.MetadataBase = metadataBase
 	return portalTopUpWaitingPortingRequestMeta, nil
@@ -133,9 +133,6 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 	}
 
 	// validate amount deposit
-	if p.DepositedAmount == 0 {
-		return false, false, errors.New("deposit amount should be larger than 0")
-	}
 	if p.DepositedAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
@@ -161,7 +158,7 @@ func (p PortalTopUpWaitingPortingRequest) Hash() *common.Hash {
 	record += p.IncogAddressStr
 	record += p.PTokenID
 	record += strconv.FormatUint(p.DepositedAmount, 10)
-	record += strconv.FormatBool(p.FreeCollateralSelected)
+	record += strconv.FormatUint(p.FreeCollateralAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

@@ -94,6 +94,8 @@ const (
 	GetExchangeRatesLiquidationPoolError
 
 	GetAmountNeededForCustodianDepositLiquidationError
+	GetCustodianTopupStatusError
+	GetCustodianTopupWaitingPortingStatusError
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
@@ -205,6 +207,8 @@ var ErrCodeMessage = map[int]struct {
 	ConvertExchangeRatesError:                          {-9017, "Converting exchange rates error"},
 	GetPortingRequestFeesError:                         {-9018, "Get porting request fees error"},
 	GetReqMatchingRedeemStatusError:                    {-9019, "Get req matching redeem status error"},
+	GetCustodianTopupStatusError:                       {-9020, "Get custodian top up status error"},
+	GetCustodianTopupWaitingPortingStatusError :  {-9021, "Get custodian top up for waiting porting status error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},
