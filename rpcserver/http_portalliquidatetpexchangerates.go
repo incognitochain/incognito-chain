@@ -401,3 +401,100 @@ func (httpServer *HttpServer) handleCreateAndSendLiquidationCustodianDeposit(par
 	return sendResult, nil
 }
 
+func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+	portingID, ok := data["PortingID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingID is invalid"))
+	}
+
+	incognitoAddress, ok := data["IncognitoAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress is invalid"))
+	}
+
+	pTokenId, ok := data["PTokenId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
+	}
+
+	if !common.IsPortalToken(pTokenId) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
+	}
+
+	freeCollateralSelected, ok := data["FreeCollateralSelected"].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralSelected is invalid"))
+	}
+
+	depositedAmountData, ok := data["DepositedAmount"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata DepositedAmount is invalid"))
+	}
+	depositedAmount := uint64(depositedAmountData)
+
+	meta, _ := metadata.NewPortalTopUpWaitingPortingRequest(
+		metadata.PortalTopUpWaitingPortingRequestMeta,
+		portingID,
+		incognitoAddress,
+		pTokenId,
+		depositedAmount,
+		freeCollateralSelected,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTopUpWaitingPorting(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.createTopUpWaitingPorting(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}

@@ -212,6 +212,7 @@ const (
 	createAndSendTxWithReqWithdrawRewardPortal    = "createandsendtxwithreqwithdrawrewardportal"
 	createAndSendRedeemLiquidationExchangeRates   = "createandsendredeemliquidationexchangerates"
 	createAndSendLiquidationCustodianDeposit      = "createandsendliquidationcustodiandeposit"
+	createAndSendTopUpWaitingPorting              = "createandsendtopupwaitingporting"
 	getAmountNeededForCustodianDepositLiquidation = "getamountneededforcustodiandepositliquidation"
 	getLiquidationTpExchangeRates                 = "getliquidationtpexchangerates"
 	getLiquidationTpExchangeRatesByTokenId        = "getliquidationexchangeratesbytokenid"

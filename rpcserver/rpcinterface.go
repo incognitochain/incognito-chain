@@ -198,6 +198,7 @@ var HttpHandler = map[string]httpHandler{
 	getLiquidationExchangeRatesPool:               (*HttpServer).handleGetLiquidationExchangeRatesPool,
 	createAndSendRedeemLiquidationExchangeRates:   (*HttpServer).handleCreateAndSendRedeemLiquidationExchangeRates,
 	createAndSendLiquidationCustodianDeposit:      (*HttpServer).handleCreateAndSendLiquidationCustodianDeposit,
+	createAndSendTopUpWaitingPorting:              (*HttpServer).handleCreateAndSendTopUpWaitingPorting,
 	getAmountNeededForCustodianDepositLiquidation: (*HttpServer).handleGetAmountNeededForCustodianDepositLiquidation,
 	getLiquidationTpExchangeRates:                 (*HttpServer).handleGetLiquidationTpExchangeRates,
 	getPortalReward:                               (*HttpServer).handleGetPortalReward,

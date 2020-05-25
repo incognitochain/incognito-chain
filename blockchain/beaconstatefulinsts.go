@@ -51,7 +51,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestWithdrawRewardMeta,
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
 			metadata.PortalLiquidationCustodianDepositMeta,
-			metadata.PortalLiquidationCustodianDepositResponseMeta:
+			metadata.PortalLiquidationCustodianDepositResponseMeta,
+			metadata.PortalTopUpWaitingPortingRequestMeta:
 				statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -121,6 +122,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
 	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
 	portalReqMatchingRedeemActionsByShardID := map[byte][][]string{}
+	portalTopUpWaitingPortingActionsByShardID := map[byte][][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -232,6 +234,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalTopUpWaitingPortingRequestMeta:
+				portalTopUpWaitingPortingActionsByShardID = groupPortalActionsByShardID(
+					portalTopUpWaitingPortingActionsByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -293,6 +301,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalReqUnlockCollateralActionsByShardID,
 		portalRedeemLiquidateExchangeRatesActionByShardID,
 		portalLiquidationCustodianDepositActionByShardID,
+		portalTopUpWaitingPortingActionsByShardID,
 		portalReqMatchingRedeemActionsByShardID,
 		portalParams,
 	)
@@ -509,6 +518,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
 	portalLiquidationCustodianDepositActionByShardID map[byte][][]string,
+	portalTopUpWaitingPortingActionsByShardID map[byte][][]string,
 	portalReqMatchingRedeemActionByShardID map[byte][][]string,
 	portalParams PortalParams,
 ) ([][]string, error) {
@@ -788,6 +798,35 @@ func (blockchain *BlockChain) handlePortalInsts(
 				portalParams,
 			)
 
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// handle portal top up waiting porting inst
+	var portalTopUpWaitingPortingActionsByShardIDKeys []int
+	for k := range portalTopUpWaitingPortingActionsByShardID {
+		portalTopUpWaitingPortingActionsByShardIDKeys = append(portalTopUpWaitingPortingActionsByShardIDKeys, int(k))
+	}
+	sort.Ints(portalTopUpWaitingPortingActionsByShardIDKeys)
+	for _, value := range portalTopUpWaitingPortingActionsByShardIDKeys {
+		shardID := byte(value)
+		actions := portalTopUpWaitingPortingActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstsForTopUpWaitingPorting(
+				contentStr,
+				shardID,
+				metadata.PortalTopUpWaitingPortingRequestMeta,
+				currentPortalState,
+				beaconHeight,
+				portalParams,
+			)
 			if err != nil {
 				Logger.log.Error(err)
 				continue

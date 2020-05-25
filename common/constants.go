@@ -172,6 +172,9 @@ const (
 
 	PortalReqMatchingRedeemAcceptedStatus = 1
 	PortalReqMatchingRedeemRejectedStatus = 2
+
+	PortalTopUpWaitingPortingSuccessStatus  = 1
+	PortalTopUpWaitingPortingRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -202,8 +205,8 @@ const (
 	PortalExchangeRatesAcceptedChainStatus = "accepted"
 	PortalExchangeRatesRejectedChainStatus = "rejected"
 
-	PortalRedeemRequestAcceptedChainStatus              = "accepted"
-	PortalRedeemRequestRejectedChainStatus              = "rejected"
+	PortalRedeemRequestAcceptedChainStatus = "accepted"
+	PortalRedeemRequestRejectedChainStatus = "rejected"
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
@@ -231,6 +234,9 @@ const (
 
 	PortalReqMatchingRedeemAcceptedChainStatus = "accepted"
 	PortalReqMatchingRedeemRejectedChainStatus = "rejected"
+
+	PortalTopUpWaitingPortingSuccessChainStatus  = "success"
+	PortalTopUpWaitingPortingRejectedChainStatus = "rejected"
 )
 
 // Relaying header
