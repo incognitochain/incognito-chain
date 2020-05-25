@@ -1912,8 +1912,24 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+		updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
 			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while removing custodian %v from matching custodians", meta.CustodianAddressStr)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(updatedCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
@@ -2203,8 +2219,23 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+		updatedCustodians, err2 := removeCustodianFromMatchingRedeemCustodians(
 			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+		if err2 != nil {
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(updatedCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
