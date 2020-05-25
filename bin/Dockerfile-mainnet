@@ -19,4 +19,4 @@ RUN chmod +x /run_fullnode.sh
 COPY ./incognito /
 RUN chmod +x /incognito
 
-CMD ["/bin/sh","run_incognito.sh"]
+CMD ["/bin/bash","run_incognito.sh"]

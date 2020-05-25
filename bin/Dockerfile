@@ -50,7 +50,7 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.1.json /utility/
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
-CMD ["/bin/sh","run_incognito.sh"]
+CMD ["/bin/bash","run_incognito.sh"]
 
 ARG commit=commit
 ENV commit=$commit
