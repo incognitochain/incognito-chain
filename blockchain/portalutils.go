@@ -977,23 +977,6 @@ func calAndCheckTPRatio(
 		}
 	}
 
-	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
-		for _, matchingCus := range waitingRedeemReq.GetCustodians() {
-			if matchingCus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
-				holdingPubToken[waitingRedeemReq.GetTokenID()] += matchingCus.GetAmount()
-				break
-			}
-		}
-	}
-	for _, matchedRedeemReq := range portalState.MatchedRedeemRequests {
-		for _, matchingCus := range matchedRedeemReq.GetCustodians() {
-			if matchingCus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
-				holdingPubToken[matchedRedeemReq.GetTokenID()] += matchingCus.GetAmount()
-				break
-			}
-		}
-	}
-
 	tpListKeys := make([]string, 0)
 	for key := range holdingPubToken {
 		tpListKeys = append(tpListKeys, key)
