@@ -24,6 +24,9 @@ func processLog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	filename := vars["filename"]
 	filename = strings.Replace(filename, "file.data.", "", -1)
+	if strings.Index(filename, "beacon") == -1 && strings.Index(filename, "shard") == -1 {
+		return
+	}
 	//fmt.Println(filename)
 	bs, _ := ioutil.ReadAll(r.Body)
 	//fmt.Println(string(bs))
