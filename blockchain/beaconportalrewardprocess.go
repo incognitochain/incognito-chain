@@ -31,19 +31,8 @@ func (blockchain *BlockChain) processPortalReward(
 			currentPortalState.LockedCollateralForRewards.Reset()
 		}
 
-		totalLockedCollateralAmount := uint64(0)
-		lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
-		for _, custodianState := range currentPortalState.CustodianPoolState {
-			for _, lockedAmount := range custodianState.GetLockedAmountCollateral() {
-				totalLockedCollateralAmount += lockedAmount
-				lockedCollateralDetails[custodianState.GetIncognitoAddress()] += lockedAmount
-			}
-		}
-
-		currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(
-			currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards() + totalLockedCollateralAmount)
-		currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(
-			lockedCollateralDetails)
+		// update locked collateral for rewards base on holding public tokens
+		UpdateLockedCollateralForRewards(currentPortalState)
 
 		// store reward at beacon height into db
 		err = statedb.StorePortalRewards(

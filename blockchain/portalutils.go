@@ -1220,3 +1220,62 @@ func UpdatePortalStateAfterPickMoreCustodiansForWaitingRedeemReq(
 
 	return waitingRedeem, nil
 }
+
+func GetHoldPubTokenAmountInWaitingRedeemReqs(portalState *CurrentPortalState, custodianAddr string, tokenID string) uint64 {
+	totalHoldingPubTokenAmount := uint64(0)
+	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
+		if waitingRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range waitingRedeemReq.GetCustodians() {
+			if cus.GetIncognitoAddress() != custodianAddr {
+				continue
+			}
+			totalHoldingPubTokenAmount += cus.GetAmount()
+			break
+		}
+	}
+
+	for _, matchedRedeemReq := range portalState.MatchedRedeemRequests {
+		if matchedRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range matchedRedeemReq.GetCustodians() {
+			if cus.GetIncognitoAddress() != custodianAddr {
+				continue
+			}
+			totalHoldingPubTokenAmount += cus.GetAmount()
+			break
+		}
+	}
+
+	return totalHoldingPubTokenAmount
+}
+
+func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
+	exchangeRate := NewConvertExchangeRatesObject(currentPortalState.FinalExchangeRatesState)
+
+	totalLockedCollateralAmount := currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards()
+	lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
+
+	for _, custodianState := range currentPortalState.CustodianPoolState {
+		holdingPubToken  := custodianState.GetHoldingPublicTokens()
+		if holdingPubToken == nil || len(holdingPubToken) == 0 {
+			continue
+		}
+		for tokenID, pubTokenAmount := range custodianState.GetHoldingPublicTokens() {
+			pubTokenAmount += GetHoldPubTokenAmountInWaitingRedeemReqs(currentPortalState, custodianState.GetIncognitoAddress(), tokenID)
+			pubTokenAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, pubTokenAmount)
+			if err != nil {
+				Logger.log.Errorf("Error when converting public token to prv: %v", err)
+			}
+			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += pubTokenAmountInPRV
+			totalLockedCollateralAmount += pubTokenAmountInPRV
+		}
+	}
+
+	currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(totalLockedCollateralAmount)
+	currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(lockedCollateralDetails)
+}
