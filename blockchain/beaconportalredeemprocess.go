@@ -288,3 +288,107 @@ func (blockchain *BlockChain) processPortalPickMoreCustodiansForTimeOutWaitingRe
 	return nil
 }
 
+func (blockchain *BlockChain) processPortalUnlockCollateral(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+
+	// unmarshal instructions content
+	var actionData metadata.PortalRequestUnlockCollateralContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
+	}
+
+	// get tokenID from redeemTokenID
+	tokenID := actionData.TokenID
+	reqStatus := instructions[2]
+	if reqStatus == common.PortalReqUnlockCollateralAcceptedChainStatus {
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
+		custodianStateKeyStr := custodianStateKey.String()
+		err := updateCustodianStateAfterReqUnlockCollateral(
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
+			actionData.UnlockAmount, tokenID)
+		if err != nil {
+			Logger.log.Errorf("Error when update custodian state", err)
+			return nil
+		}
+
+		redeemID := actionData.UniqueRedeemID
+		keyMatchedRedeemRequest := statedb.GenerateMatchedRedeemRequestObjectKey(redeemID)
+		keyMatchedRedeemRequestStr := keyMatchedRedeemRequest.String()
+
+		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
+		newCustodians, err := removeCustodianFromMatchingRedeemCustodians(
+			currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians(), actionData.CustodianAddressStr)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while removing custodian %v from matching custodians", actionData.CustodianAddressStr)
+			return nil
+		}
+		currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].SetCustodians(newCustodians)
+
+		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
+		// when list matchingCustodianDetail is empty
+		if len(currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians()) == 0 {
+			deleteMatchedRedeemRequest(currentPortalState, keyMatchedRedeemRequestStr)
+			statedb.DeleteMatchedRedeemRequest(stateDB, actionData.UniqueRedeemID)
+
+			// update status of redeem request with redeemID
+			err = updateRedeemRequestStatusByRedeemId(redeemID, common.PortalRedeemReqSuccessStatus, stateDB)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occurred while updating redeem request status by redeemID: %+v", err)
+				return nil
+			}
+		}
+
+		// track reqUnlockCollateral status by txID into DB
+		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
+			Status:              common.PortalReqUnlockCollateralAcceptedStatus,
+			UniqueRedeemID:      actionData.UniqueRedeemID,
+			TokenID:             actionData.TokenID,
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			RedeemAmount:        actionData.RedeemAmount,
+			UnlockAmount:        actionData.UnlockAmount,
+			RedeemProof:         actionData.RedeemProof,
+			TxReqID:             actionData.TxReqID,
+		}
+		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
+		err = statedb.StorePortalRequestUnlockCollateralStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			reqUnlockCollateralTrackDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking request unlock collateral tx: %+v", err)
+			return nil
+		}
+
+	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
+		// track reqUnlockCollateral status by txID into DB
+		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
+			Status:              common.PortalReqUnlockCollateralRejectedStatus,
+			UniqueRedeemID:      actionData.UniqueRedeemID,
+			TokenID:             actionData.TokenID,
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			RedeemAmount:        actionData.RedeemAmount,
+			UnlockAmount:        actionData.UnlockAmount,
+			RedeemProof:         actionData.RedeemProof,
+			TxReqID:             actionData.TxReqID,
+		}
+		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
+		err = statedb.StorePortalRequestUnlockCollateralStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			reqUnlockCollateralTrackDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking request unlock collateral tx: %+v", err)
+			return nil
+		}
+	}
+
+	return nil
+}
