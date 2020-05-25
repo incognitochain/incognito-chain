@@ -2,12 +2,10 @@ package rpcservice
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"strconv"
 )
 
 type PortalService struct {
@@ -172,61 +170,61 @@ func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(
 	return result, nil
 }
 
-func (portal *PortalService) GetLiquidateTpExchangeRates(stateDB *statedb.StateDB, custodianAddress string, beaconHeight uint64) (interface{}, error) {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	newTPKey := beaconHeightBytes
-	newTPKey = append(newTPKey, []byte(custodianAddress)...)
-	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(
-		stateDB,
-		statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
-		newTPKey,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
-	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
-	if err != nil {
-		return nil, err
-	}
-
-	return liquidateTopPercentileExchangeRatesStatus, nil
-}
-
-func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(stateDB *statedb.StateDB, custodianAddress string, tokenSymbol string, beaconHeight uint64) (jsonresult.GetLiquidateTpExchangeRates, error) {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	newTPKey := beaconHeightBytes
-	newTPKey = append(newTPKey, []byte(custodianAddress)...)
-
-	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
-
-	if err != nil {
-		return jsonresult.GetLiquidateTpExchangeRates{}, err
-	}
-
-	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
-	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
-	if err != nil {
-		return jsonresult.GetLiquidateTpExchangeRates{}, err
-	}
-
-	topPercentile, ok := liquidateTopPercentileExchangeRatesStatus.Rates[tokenSymbol]
-
-	if !ok {
-		return jsonresult.GetLiquidateTpExchangeRates{}, nil
-	}
-
-	tp := "TP" + strconv.Itoa(topPercentile.TPKey)
-	result := jsonresult.GetLiquidateTpExchangeRates{
-		TokenId:       tokenSymbol,
-		TopPercentile: tp,
-		Data:          topPercentile,
-	}
-
-	return result, nil
-}
+//func (portal *PortalService) GetLiquidateTpExchangeRates(stateDB *statedb.StateDB, custodianAddress string, beaconHeight uint64) (interface{}, error) {
+//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+//	newTPKey := beaconHeightBytes
+//	newTPKey = append(newTPKey, []byte(custodianAddress)...)
+//	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(
+//		stateDB,
+//		statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
+//		newTPKey,
+//	)
+//
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
+//	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return liquidateTopPercentileExchangeRatesStatus, nil
+//}
+//
+//func (portal *PortalService) GetLiquidateTpExchangeRatesByToken(stateDB *statedb.StateDB, custodianAddress string, tokenSymbol string, beaconHeight uint64) (jsonresult.GetLiquidateTpExchangeRates, error) {
+//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+//	newTPKey := beaconHeightBytes
+//	newTPKey = append(newTPKey, []byte(custodianAddress)...)
+//
+//	liquidateTpExchangeRates, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalLiquidationTpExchangeRatesStatusPrefix(), newTPKey)
+//
+//	if err != nil {
+//		return jsonresult.GetLiquidateTpExchangeRates{}, err
+//	}
+//
+//	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
+//	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
+//	if err != nil {
+//		return jsonresult.GetLiquidateTpExchangeRates{}, err
+//	}
+//
+//	topPercentile, ok := liquidateTopPercentileExchangeRatesStatus.Rates[tokenSymbol]
+//
+//	if !ok {
+//		return jsonresult.GetLiquidateTpExchangeRates{}, nil
+//	}
+//
+//	tp := "TP" + strconv.Itoa(topPercentile.TPKey)
+//	result := jsonresult.GetLiquidateTpExchangeRates{
+//		TokenId:       tokenSymbol,
+//		TopPercentile: tp,
+//		Data:          topPercentile,
+//	}
+//
+//	return result, nil
+//}
 
 func (portal *PortalService) GetLiquidateExchangeRatesPool(
 	stateDB *statedb.StateDB,

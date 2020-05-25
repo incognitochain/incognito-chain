@@ -214,8 +214,6 @@ const (
 	createAndSendLiquidationCustodianDeposit      = "createandsendliquidationcustodiandeposit"
 	createAndSendTopUpWaitingPorting              = "createandsendtopupwaitingporting"
 	getAmountNeededForCustodianDepositLiquidation = "getamountneededforcustodiandepositliquidation"
-	getLiquidationTpExchangeRates                 = "getliquidationtpexchangerates"
-	getLiquidationTpExchangeRatesByTokenId        = "getliquidationexchangeratesbytokenid"
 	getLiquidationExchangeRatesPool               = "getliquidationtpexchangeratespool"
 	getPortalReward                               = "getportalreward"
 	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
