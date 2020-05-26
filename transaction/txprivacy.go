@@ -56,14 +56,16 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 	}
 
 	var res privacy.Proof
-	if ver == 1 {
+	if ver == txVersion1 {
 		res = &zkp.PaymentProof{}
-	} else if ver == 2 {
+	} else if ver == txVersion2 {
 		res = &privacy_v2.PaymentProofV2{}
+	} else if ver == txConversionVersion12 {
+		res = &privacy_v2.ConversionProofVer1ToVer2{}
 	} else {
 		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2")
 	}
-
+	res.Init()
 	err = json.Unmarshal(proofInBytes, res)
 	if err != nil {
 		return nil, err
@@ -342,6 +344,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 	}
 	if tx.GetType() == common.TxReturnStakingType {
 		return tx.ValidateTxReturnStaking(transactionStateDB), nil
+	}
+	if tx.Version == txConversionVersion12 {
+		return validateConversionVer1ToVer2(tx, transactionStateDB, shardID, tokenID)
 	}
 
 	// Verifier will verify based on tx.Version

@@ -297,6 +297,9 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo
 			}
 			proof.serialNumberNoPrivacyProof = append(proof.serialNumberNoPrivacyProof, snNoPrivacyProof)
 		}
+		for i := 0; i < len(proof.outputCoins); i++ {
+			proof.outputCoins[i].CoinDetails.SetKeyImage(nil)
+		}
 		return proof, nil
 	}
 

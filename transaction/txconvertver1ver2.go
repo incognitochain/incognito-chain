@@ -2,8 +2,10 @@ package transaction
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -95,7 +97,7 @@ func initializeTxConversion(tx *Tx, params *TxConvertVer1ToVer2Params) error {
 		tx.LockTime = time.Now().Unix()
 	}
 	tx.Fee = params.fee
-	tx.Version = txConversionVersion
+	tx.Version = txConversionVersion12
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.metaData
 	if tx.Info, err = getTxInfo(params.info); err != nil {
@@ -154,5 +156,43 @@ func proveConversion(tx * Tx, params *TxConvertVer1ToVer2Params) error {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
 	}
+	tx.sigPrivKey = []byte{}
+	randSK := big.NewInt(0)
+	tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
+
+	fmt.Println("Checking output coins of conversion proof")
+	fmt.Println("Checking output coins of conversion proof")
+	fmt.Println("Checking output coins of conversion proof")
+	for i := 0; i < len(tx.Proof.GetOutputCoins()); i += 1 {
+		fmt.Println(tx.Proof.GetOutputCoins()[i].GetKeyImage())
+	}
+
+	// sign tx
+	signErr := signTx(tx)
+	if signErr != nil {
+		Logger.Log.Error(err)
+		return NewTransactionErr(SignTxError, err)
+	}
 	return nil
+}
+
+func validateConversionVer1ToVer2(tx *Tx, statedb *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+	if valid, err := verifySigTx(tx); !valid {
+		if err != nil {
+			Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v \n", tx.Hash().String(), err)
+			return false, NewTransactionErr(VerifyTxSigFailError, err)
+		}
+		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
+		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
+	}
+	txConversion := tx.Proof.(*privacy_v2.ConversionProofVer1ToVer2)
+	valid, err := txConversion.Verify(false, tx.SigPubKey, tx.Fee, shardID, tokenID, false, nil)
+	if !valid {
+		if err != nil {
+			Logger.Log.Error(err)
+		}
+		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+	}
+	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+	return true, nil
 }

@@ -5,7 +5,7 @@ const (
 	currentTxVersion 				  = 2
 	txVersion1                        = 1
 	txVersion2                        = 2
-	txConversionVersion				  = -1
+	txConversionVersion12				  = -1
 	ValidateTimeForOneoutOfManyProof = 1574985600 // GMT: Friday, November 29, 2019 12:00:00 AM
 )
 

@@ -102,7 +102,6 @@ func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	if errJson != nil {
 		return errJson
 	}
-	//temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	temp, err := base64.StdEncoding.DecodeString(dataStr)
 	if err != nil {
 		return err
@@ -337,11 +336,6 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 // TODO PRIVACY (recheck before devnet)
 func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
 	// Verify the proof that output values and sum of them do not exceed v_max
-	for i := 0; i < len(proof.inputCoins); i += 1 {
-		if !proof.inputCoins[i].IsEncrypted() {
-			return false, errors.New("Verify has privacy should have every coin encrypted")
-		}
-	}
 	for i := 0; i < len(proof.outputCoins); i += 1 {
 		if !proof.outputCoins[i].IsEncrypted() {
 			return false, errors.New("Verify has privacy should have every coin encrypted")

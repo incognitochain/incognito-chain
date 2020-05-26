@@ -3,6 +3,7 @@ package proof
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
@@ -20,6 +21,8 @@ type Proof interface {
 	SetOutputCoins([]coin.Coin) error
 
 	Bytes() []byte
+	SetBytes(proofBytes []byte) *errhandler.PrivacyError
+
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON([]byte) error
 

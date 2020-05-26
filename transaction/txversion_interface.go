@@ -34,9 +34,9 @@ type TxVersionSwitcher interface {
 
 func newTxVersionSwitcher(ver int8) TxVersionSwitcher {
 	var versionSwitcher TxVersionSwitcher
-	if ver == 1 {
+	if ver == txVersion1 {
 		versionSwitcher = new(TxVersion1)
-	} else if ver == 2 {
+	} else if ver == txVersion2 {
 		versionSwitcher = new(TxVersion2)
 	}
 	return versionSwitcher

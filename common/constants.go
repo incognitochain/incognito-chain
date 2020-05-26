@@ -47,6 +47,7 @@ const (
 	TxNormalType        = "n"  // normal tx(send and receive coin)
 	TxRewardType        = "s"  // reward tx
 	TxReturnStakingType = "rs" //
+	//TxConversionType = "cv" // Convert 1 - 2
 	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
@@ -76,7 +77,7 @@ const (
 	ValidatorRole  = "validator"
 	PendingRole    = "pending"
 	WaitingRole    = "waiting"
-	MaxShardNumber = 2
+	MaxShardNumber = 1
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"

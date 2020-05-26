@@ -53,7 +53,7 @@ const (
 	createRawTransaction                       = "createtransaction"
 	sendRawTransaction                         = "sendtransaction"
 	createAndSendTransaction                   = "createandsendtransaction"
-	createConvertCoinVer1ToVer2Transaction	   = "createConvertCoinVer1ToVer2Transaction"
+	createConvertCoinVer1ToVer2Transaction	   = "createconvertcoinver1tover2transaction"
 	createAndSendCustomTokenTransaction        = "createandsendcustomtokentransaction"
 	sendRawCustomTokenTransaction              = "sendrawcustomtokentransaction"
 	createRawCustomTokenTransaction            = "createrawcustomtokentransaction"

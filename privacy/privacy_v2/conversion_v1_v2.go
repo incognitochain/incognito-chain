@@ -1,6 +1,7 @@
 package privacy_v2
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -36,7 +37,6 @@ func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	if errJson != nil {
 		return errJson
 	}
-	//temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	temp, err := base64.StdEncoding.DecodeString(dataStr)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (proof ConversionProofVer1ToVer2) Bytes() []byte {
 	return proofBytes
 }
 
-func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) error {
+func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.PrivacyError {
 	if len(proofBytes) == 0 {
 		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
 	}
@@ -202,7 +202,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) error {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		} else {
 			var ok bool
-			if proof.inputCoins[i], ok = pc.(*coin.PlainCoinV1); !ok {
+			if proof.outputCoins[i], ok = pc.(*coin.CoinV2); !ok {
 				err := errors.New("Cannot assert type of Coin to CoinV2")
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 			}
@@ -235,7 +235,6 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) error {
 		}
 		offset += lenSNNoPrivacyProof
 	}
-
 	return nil
 }
 
@@ -260,7 +259,6 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 		Logger.Log.Errorf("Cannot set output coins in payment_v2 proof: err %v", err)
 		return nil, err
 	}
-
 	// Proving that serial number is derived from the committed derivator
 	for i := 0; i < len(inputCoins); i++ {
 		snNoPrivacyProof, err := serialnumberWitness[i].Prove(nil)
@@ -269,12 +267,16 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 		}
 		proof.serialNumberNoPrivacyProof = append(proof.serialNumberNoPrivacyProof, snNoPrivacyProof)
 	}
+	// Hide the keyimage :D
+	for i := 0; i < len(proof.outputCoins); i++ {
+		proof.outputCoins[i].SetKeyImage(nil)
+	}
 	return proof, nil
 }
 
 func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
 	if proof.Version != ConversionProofVersion {
-		return false, errors.New("Proof version of ConversionProof is not 255")
+		return false, errors.New("Proof version of ConversionProof is not right")
 	}
 	if len(proof.outputCoins) != 1 {
 		return false, errors.New("ConversionProof len(outputCoins) should be 1, found len(outputCoins) != 1")
@@ -324,9 +326,6 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
 			return false, errors.New("validate sanity input coin isEncrypted failed")
 		}
 	}
-	if len(proof.outputCoins) != 1 {
-		return false, errors.New("validate sanity output coins length should be 1")
-	}
 	return true, nil
 }
 
@@ -338,6 +337,9 @@ func (proof ConversionProofVer1ToVer2) Verify(hasPrivacy bool, pubKey key.Public
 	for i := 0; i < len(proof.inputCoins); i += 1 {
 		if proof.inputCoins[i].IsEncrypted() {
 			return false, errors.New("ConversionProof input should not be encrypted")
+		}
+		if !bytes.Equal(pubKey, proof.inputCoins[i].GetPublicKey().ToBytesS()) {
+			return false, errors.New("ConversionProof inputCoins.publicKey should equal to pubkey")
 		}
 		sumInput += proof.inputCoins[i].GetValue()
 	}

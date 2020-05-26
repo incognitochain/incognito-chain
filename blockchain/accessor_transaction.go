@@ -34,10 +34,12 @@ func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin coin.Co
 	}
 	keyImage := result.GetKeyImage()
 	if keyImage != nil {
-		ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, keyImage.ToBytesS(), shardID)
-		if ok || err != nil {
+		ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, keyImage.ToBytesS(), shardID); if err != nil {
 			Logger.log.Errorf("There is something wrong when check key image %v", err)
 			return nil, err
+		} else if ok {
+			// The KeyImage is valid but already spent
+			return nil, nil
 		}
 	}
 	return result, nil
@@ -210,6 +212,8 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 
 func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([][]byte, error) {
 	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+
+	fmt.Println("Getting ver1 coins of", keyset.PaymentAddress.Pk)
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
 		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
@@ -630,6 +634,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 				return err
 			}
 
+			fmt.Println("Storing outputcoins with pubkey:", publicKeyBytes)
 			err = statedb.StoreOutputCoins(stateDB, *view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
 			if err != nil {
 				return err

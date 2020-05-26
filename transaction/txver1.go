@@ -407,6 +407,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, err
 	}
 
+	// TODO Privacy ask Hien why?
 	if isNewTransaction {
 		for i := 0; i < len(outputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
@@ -420,6 +421,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		}
 	}
 
+	// TODO Privacy: should be conceal commitment when prove hasPrivacy ver1???
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
@@ -433,7 +435,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		}
 	}
 	// Verify the payment proof
-	var txProofV1 *privacy.ProofV1 = tx.Proof.(*privacy.ProofV1)
+	txProofV1 := tx.Proof.(*privacy.ProofV1)
 	commitments, err := getCommitmentsInDatabase(txProofV1, hasPrivacy, tx.SigPubKey, transactionStateDB, shardID, tokenID, isBatch)
 	if err != nil {
 		return false, err

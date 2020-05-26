@@ -341,7 +341,6 @@ func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 			Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
 			return nil, err
 		}
-
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
 		found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes)
@@ -519,12 +518,24 @@ func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String()))
 	}
 
+	// Check input coins' commitment is exists in cm list (Database)
+	inputCoins := tx.Proof.GetInputCoins()
+	for i := 0; i < len(inputCoins); i++ {
+		ok, err := tx.CheckCMExistence(inputCoins[i].GetCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+		if !ok || err != nil {
+			if err != nil {
+				Logger.Log.Error(err)
+			}
+			return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
+		}
+	}
+
 	if tx.Proof == nil {
 		return true, nil
 	}
 
 	// Verify the payment proof
-	var txProofV2 *privacy.ProofV2 = tx.Proof.(*privacy.ProofV2)
+	txProofV2 := tx.Proof.(*privacy.ProofV2)
 	valid, err = txProofV2.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil)
 	if !valid {
 		if err != nil {

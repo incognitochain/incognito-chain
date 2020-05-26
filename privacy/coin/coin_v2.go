@@ -175,6 +175,7 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 	c.SetRandomness(mask)
 	c.SetAmount(amount)
 	c.SetSharedRandom(nil)
+	c.SetKeyImage(nil)
 }
 
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
