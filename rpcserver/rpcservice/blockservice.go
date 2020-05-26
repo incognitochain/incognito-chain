@@ -1128,6 +1128,28 @@ func (blockService BlockService) GetCustodianTopupWaitingPortingStatus(txID stri
 	return &status, nil
 }
 
+func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string) (map[string]uint64, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
+	if err != nil {
+		return nil, err
+	}
+
+	custodianKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianKey]
+	if !ok || custodianState == nil {
+		return nil, fmt.Errorf("Custodian address %v not found", custodianAddr)
+	}
+
+	portalParam := blockService.BlockChain.GetPortalParams(blockService.BlockChain.BestState.Beacon.BeaconHeight)
+	result, err := blockchain.CalAmountTopUpWaitingPortings(currentPortalState, custodianState, portalParam)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 
 
 //============================= Reward Feature ===============================

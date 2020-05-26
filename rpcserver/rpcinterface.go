@@ -205,6 +205,7 @@ var HttpHandler = map[string]httpHandler{
 	getReqMatchingRedeemStatus:                    (*HttpServer).handleGetReqMatchingRedeemByTxIDStatus,
 	getPortalCustodianTopupStatus:                 (*HttpServer).handleGetPortalCustodianTopupStatus,
 	getPortalCustodianTopupWaitingPortingStatus:   (*HttpServer).handleGetPortalCustodianTopupWaitingPortingStatus,
+	getAmountTopUpWaitingPorting:                  (*HttpServer).handleGetAmountTopUpWaitingPorting,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

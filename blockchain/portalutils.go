@@ -1295,3 +1295,35 @@ func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
 	currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(totalLockedCollateralAmount)
 	currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(lockedCollateralDetails)
 }
+
+func CalAmountTopUpWaitingPortings(
+	portalState *CurrentPortalState,
+	custodianState *statedb.CustodianState, portalParam PortalParams,) (map[string]uint64, error) {
+
+	result := make(map[string]uint64)
+	convertExchangeRatesObj := NewConvertExchangeRatesObject(portalState.FinalExchangeRatesState)
+
+	for _, waitingPorting := range portalState.WaitingPortingRequests {
+		for _, cus := range waitingPorting.Custodians() {
+			if cus.IncAddress != custodianState.GetIncognitoAddress() {
+				continue
+			}
+
+			minCollateralAmount, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(
+				waitingPorting.TokenID(),
+				up150Percent(cus.Amount, portalParam.MinPercentLockedCollateral))
+			if err != nil {
+				Logger.log.Errorf("[calAmountTopUpWaitingPortings] Error when converting ptoken to PRV %v", err)
+				return result, err
+			}
+
+			if minCollateralAmount <= cus.LockedAmountCollateral {
+				break
+			}
+
+			result[waitingPorting.UniquePortingID()] = minCollateralAmount - cus.LockedAmountCollateral
+		}
+	}
+
+	return result, nil
+}

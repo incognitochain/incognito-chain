@@ -446,3 +446,24 @@ func (httpServer *HttpServer) handleGetPortalCustodianTopupWaitingPortingStatus(
 	}
 	return status, nil
 }
+
+func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	custodianAddr, ok := data["CustodianAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param CustodianAddress is invalid"))
+	}
+
+	result, err := httpServer.blockService.GetAmountTopUpWaitingPorting(custodianAddr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupStatusError, err)
+	}
+	return result, nil
+}
