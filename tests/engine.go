@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"log"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
 func executeTest(filename string) (interface{}, error) {

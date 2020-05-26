@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/transaction"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -23,7 +22,6 @@ const (
 	CmdCrossShard         = "crossshard"
 	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
-	CmdCustomToken        = "txtoken"
 	CmdPrivacyCustomToken = "txprivacytok"
 	CmdVersion            = "version"
 	CmdVerack             = "verack"
@@ -134,7 +132,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPeerState:
 		msg = &MessagePeerState{
 			Timestamp:         time.Now().Unix(),
-			Shards:            make(map[byte]blockchain.ChainState),
+			Shards:            make(map[byte]ChainState),
 			ShardToBeaconPool: make(map[byte][]uint64),
 			CrossShardPool:    make(map[byte]map[byte][]uint64),
 		}

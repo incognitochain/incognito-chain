@@ -15,6 +15,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -37,11 +40,11 @@ type HttpServer struct {
 	blockService      *rpcservice.BlockService
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
-	databaseService   *rpcservice.DatabaseService
 	networkService    *rpcservice.NetworkService
-	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
+	portal            *rpcservice.PortalService
+	synkerService     *rpcservice.SynkerService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -70,14 +73,10 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{
 		TxMemPool: httpServer.config.TxMemPool,
 	}
-	httpServer.databaseService = &rpcservice.DatabaseService{
-		DB: httpServer.config.Database,
-	}
 	httpServer.networkService = &rpcservice.NetworkService{
 		ConnMgr: httpServer.config.ConnMgr,
 	}
 	httpServer.txService = &rpcservice.TxService{
-		DB:           httpServer.config.Database,
 		BlockChain:   httpServer.config.BlockChain,
 		Wallet:       httpServer.config.Wallet,
 		FeeEstimator: httpServer.config.FeeEstimator,
@@ -87,7 +86,13 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		Wallet:     httpServer.config.Wallet,
 		BlockChain: httpServer.config.BlockChain,
 	}
-	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.synkerService = &rpcservice.SynkerService{
+		Synker: config.Syncker,
+	}
+
+	httpServer.portal = &rpcservice.PortalService{
+		BlockChain: httpServer.config.BlockChain,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
@@ -610,4 +615,16 @@ func (httpServer *HttpServer) DecrementClients() {
 // This function is safe for concurrent access.
 func (httpServer *HttpServer) IncrementClients() {
 	atomic.AddInt32(&httpServer.numClients, 1)
+}
+
+func (httpServer *HttpServer) GetBeaconChainDatabase() incdb.Database {
+	return httpServer.config.Database[common.BeaconChainDataBaseID]
+}
+
+func (httpServer *HttpServer) GetShardChainDatabase(shardID byte) incdb.Database {
+	return httpServer.config.Database[int(shardID)]
+}
+
+func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
+	return httpServer.config.BlockChain
 }

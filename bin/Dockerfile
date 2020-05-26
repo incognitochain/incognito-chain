@@ -1,30 +1,27 @@
-FROM alpine:3.9
+FROM ubuntu:16.04
 
-RUN apk add bind-tools
-RUN  apk update && \
-     apk add libc6-compat && \
-     apk add ca-certificates && \
-     apk add logrotate
-     
+RUN apt-get update
+RUN apt-get install -y ca-certificates cronolog cron
+RUN apt-get install -y dnsutils
+
+
+COPY removeoldlog /etc/cron.d/removeoldlog
+RUN chmod 0644 /etc/cron.d/removeoldlog
+RUN crontab /etc/cron.d/removeoldlog
+
 ARG commit=commit
 ENV commit=$commit
 
 
-COPY ./bootnode /
 COPY ./keylist.json /
 COPY ./keylist_256.json /
 COPY ./sample-config.conf /
 
-
-RUN chmod +x /bootnode
-
-COPY ./run_bootnode.sh /
 COPY ./run_incognito.sh /
 COPY ./run_incognito_dev.sh /
 COPY ./run_fullnode.sh /
 
 
-RUN chmod +x /run_bootnode.sh
 RUN chmod +x /run_incognito_dev.sh
 RUN chmod +x /run_fullnode.sh
 
@@ -53,7 +50,7 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.1.json /utility/
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
-CMD ["/bin/sh","run_incognito.sh"]
+CMD ["/bin/bash","run_incognito.sh"]
 
 ARG commit=commit
 ENV commit=$commit

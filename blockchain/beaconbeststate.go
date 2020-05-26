@@ -4,15 +4,16 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // BestState houses information about the current best block and other info
@@ -46,7 +47,7 @@ type BeaconBestState struct {
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
-	Params                                 map[string]string                          `json:"Params,omitempty"` // TODO: review what does this field do
+	Params                                 map[string]string                          `json:"Params,omitempty"`
 	MaxBeaconCommitteeSize                 int                                        `json:"MaxBeaconCommitteeSize"`
 	MinBeaconCommitteeSize                 int                                        `json:"MinBeaconCommitteeSize"`
 	MaxShardCommitteeSize                  int                                        `json:"MaxShardCommitteeSize"`
@@ -61,24 +62,47 @@ type BeaconBestState struct {
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
-
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
-
-	lock               sync.RWMutex
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
+	BlockInterval          time.Duration
+	BlockMaxCreateTime     time.Duration
+	//================================ local state
+	currentPDEState *CurrentPDEState
+	//================================ StateDB Method
+	// block height => root hash
+	consensusStateDB         *statedb.StateDB
+	ConsensusStateDBRootHash common.Hash
+	rewardStateDB            *statedb.StateDB
+	RewardStateDBRootHash    common.Hash
+	featureStateDB           *statedb.StateDB
+	FeatureStateDBRootHash   common.Hash
+	slashStateDB             *statedb.StateDB
+	SlashStateDBRootHash     common.Hash
 }
 
-var beaconBestState *BeaconBestState
+func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
+	return beaconBestState.slashStateDB.Copy()
+}
+
+func (beaconBestState *BeaconBestState) GetBeaconFeatureStateDB() *statedb.StateDB {
+	return beaconBestState.featureStateDB.Copy()
+}
+
+func (beaconBestState *BeaconBestState) GetBeaconRewardStateDB() *statedb.StateDB {
+	return beaconBestState.rewardStateDB.Copy()
+}
+
+func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.StateDB {
+	return beaconBestState.consensusStateDB.Copy()
+}
+
+// var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
 	return &BeaconBestState{}
 }
 func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
-	if beaconBestState == nil {
-		beaconBestState = GetBeaconBestState()
-	}
+	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
@@ -104,24 +128,76 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
+	beaconBestState.currentPDEState = new(CurrentPDEState)
 	return beaconBestState
-}
-func SetBeaconBestState(beacon *BeaconBestState) {
-	beacon.lock = GetBeaconBestState().lock
-	*GetBeaconBestState() = *beacon
 }
 
-func GetBeaconBestState() *BeaconBestState {
-	if beaconBestState != nil {
-		return beaconBestState
+func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
+	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
+}
+
+func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockChain) error {
+	db := bc.GetBeaconChainDatabase()
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	if rootHash, err := bc.GetBeaconConsensusRootHash(db, beaconBestState.BeaconHeight); err == nil {
+		beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
 	}
-	beaconBestState = NewBeaconBestState()
-	return beaconBestState
+	if rootHash, err := bc.GetBeaconFeatureRootHash(db, beaconBestState.BeaconHeight); err == nil {
+		beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+	if rootHash, err := bc.GetBeaconRewardRootHash(db, beaconBestState.BeaconHeight); err == nil {
+		beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+	if rootHash, err := bc.GetBeaconSlashRootHash(db, beaconBestState.BeaconHeight); err == nil {
+		beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
+	db := bc.GetBeaconChainDatabase()
+	var err error
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.RewardStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.SlashStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
 	type Alias BeaconBestState
 	b, err := json.Marshal(&struct {
 		*Alias
@@ -135,14 +211,12 @@ func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 }
 
 func (beaconBestState *BeaconBestState) SetBestShardHeight(shardID byte, height uint64) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	beaconBestState.BestShardHeight[shardID] = height
 }
 
 func (beaconBestState *BeaconBestState) GetShardConsensusAlgorithm() map[byte]string {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	res := make(map[byte]string)
 	for index, element := range beaconBestState.ShardConsensusAlgorithm {
 		res[index] = element
@@ -151,8 +225,6 @@ func (beaconBestState *BeaconBestState) GetShardConsensusAlgorithm() map[byte]st
 }
 
 func (beaconBestState *BeaconBestState) GetBestShardHash() map[byte]common.Hash {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
 	res := make(map[byte]common.Hash)
 	for index, element := range beaconBestState.BestShardHash {
 		res[index] = element
@@ -161,8 +233,7 @@ func (beaconBestState *BeaconBestState) GetBestShardHash() map[byte]common.Hash 
 }
 
 func (beaconBestState *BeaconBestState) GetBestShardHeight() map[byte]uint64 {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	res := make(map[byte]uint64)
 	for index, element := range beaconBestState.BestShardHeight {
 		res[index] = element
@@ -171,22 +242,17 @@ func (beaconBestState *BeaconBestState) GetBestShardHeight() map[byte]uint64 {
 }
 
 func (beaconBestState *BeaconBestState) GetBestHeightOfShard(shardID byte) uint64 {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return beaconBestState.BestShardHeight[shardID]
 }
 
-// GetAShardCommittee TODO
 func (beaconBestState *BeaconBestState) GetAShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return beaconBestState.ShardCommittee[shardID]
 }
 
-// GetShardCommittee TODO
 func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]incognitokey.CommitteePublicKey) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	res = make(map[byte][]incognitokey.CommitteePublicKey)
 	for index, element := range beaconBestState.ShardCommittee {
 		res[index] = element
@@ -195,14 +261,12 @@ func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]inco
 }
 
 func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return beaconBestState.ShardPendingValidator[shardID]
 }
 
 func (beaconBestState *BeaconBestState) GetShardPendingValidator() (res map[byte][]incognitokey.CommitteePublicKey) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	res = make(map[byte][]incognitokey.CommitteePublicKey)
 	for index, element := range beaconBestState.ShardPendingValidator {
 		res[index] = element
@@ -211,8 +275,7 @@ func (beaconBestState *BeaconBestState) GetShardPendingValidator() (res map[byte
 }
 
 func (beaconBestState *BeaconBestState) GetCurrentShard() byte {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	for shardID, isCurrent := range beaconBestState.ShardHandle {
 		if isCurrent {
 			return shardID
@@ -222,8 +285,6 @@ func (beaconBestState *BeaconBestState) GetCurrentShard() byte {
 }
 
 func (beaconBestState *BeaconBestState) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
-	beaconBestState.lock.Lock()
-	defer beaconBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxShardCommitteeSize < MinCommitteeSize {
 		return false
@@ -237,8 +298,6 @@ func (beaconBestState *BeaconBestState) SetMaxShardCommitteeSize(maxShardCommitt
 }
 
 func (beaconBestState *BeaconBestState) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
-	beaconBestState.lock.Lock()
-	defer beaconBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minShardCommitteeSize < MinCommitteeSize {
 		return false
@@ -252,8 +311,6 @@ func (beaconBestState *BeaconBestState) SetMinShardCommitteeSize(minShardCommitt
 }
 
 func (beaconBestState *BeaconBestState) SetMaxBeaconCommitteeSize(maxBeaconCommitteeSize int) bool {
-	beaconBestState.lock.Lock()
-	defer beaconBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxBeaconCommitteeSize < MinCommitteeSize {
 		return false
@@ -267,8 +324,6 @@ func (beaconBestState *BeaconBestState) SetMaxBeaconCommitteeSize(maxBeaconCommi
 }
 
 func (beaconBestState *BeaconBestState) SetMinBeaconCommitteeSize(minBeaconCommitteeSize int) bool {
-	beaconBestState.lock.Lock()
-	defer beaconBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minBeaconCommitteeSize < MinCommitteeSize {
 		return false
@@ -303,8 +358,7 @@ func (beaconBestState *BeaconBestState) CheckCommitteeSize() error {
 }
 
 func (beaconBestState *BeaconBestState) GetBytes() []byte {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
@@ -483,68 +537,49 @@ func (beaconBestState *BeaconBestState) Hash() common.Hash {
 	return common.HashH(beaconBestState.GetBytes())
 }
 
-// Get role of a public key base on best state beacond
-// return node-role, <shardID>
-func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
-	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
-		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
-		found := common.IndexOfStr(pubkey, keyList)
-		if found > -1 {
-			return common.ShardRole, shardID
-		}
-	}
-
-	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
-		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
-		found := common.IndexOfStr(pubkey, keyList)
-		if found > -1 {
-			return common.ShardRole, shardID
-		}
-	}
-
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, beaconBestState.ConsensusAlgorithm)
-	// Logger.log.Infof("GetPubkeyRole BeaconCommittee && keylist && pubkey: %+v %+v %+v", beaconBestState.BeaconCommittee, keyList, pubkey)
-	found := common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		tmpID := (beaconBestState.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
-		if found == tmpID {
-			return common.ProposerRole, 0
-		}
-		return common.ValidatorRole, 0
-	}
-
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, beaconBestState.ConsensusAlgorithm)
-	found = common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		return common.PendingRole, 0
-	}
-
-	return common.EmptyString, 0
-}
-
 func (beaconBestState *BeaconBestState) GetShardCandidate() []incognitokey.CommitteePublicKey {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)
 }
 func (beaconBestState *BeaconBestState) GetBeaconCandidate() []incognitokey.CommitteePublicKey {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return append(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.CandidateBeaconWaitingForNextRandom...)
 }
 func (beaconBestState *BeaconBestState) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	result := []incognitokey.CommitteePublicKey{}
 	return append(result, beaconBestState.BeaconCommittee...)
 }
+
+func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteePublicKey {
+
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, beaconBestState.BeaconCommittee...)
+}
+
+func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey {
+	id := int(ts) % len(beaconBestState.BeaconCommittee)
+	//fmt.Println("debug GetProposerByTimeSlot", len(beaconBestState.BeaconCommittee), int(ts), id)
+	return beaconBestState.BeaconCommittee[id]
+}
+
+func (beaconBestState *BeaconBestState) GetBlock() common.BlockInterface {
+	return &beaconBestState.BestBlock
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return beaconBestState.BeaconPendingValidator
 }
+
+func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]string {
+	return beaconBestState.RewardReceiver
+}
+
+func (beaconBestState *BeaconBestState) GetAutoStaking() map[string]bool {
+	return beaconBestState.AutoStaking
+}
+
 func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
 	if err != nil {
@@ -558,12 +593,18 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	if reflect.DeepEqual(*beaconBestState, plainBeaconBestState) {
 		return NewBlockChainError(CloneBeaconBestStateError, fmt.Errorf("Shard Best State %+v clone failed", beaconBestState.BeaconHeight))
 	}
+	beaconBestState.consensusStateDB = target.consensusStateDB.Copy()
+	beaconBestState.featureStateDB = target.featureStateDB.Copy()
+	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
+	beaconBestState.slashStateDB = target.slashStateDB.Copy()
+	//beaconBestState.currentPDEState = target.currentPDEState.Copy()
 	return nil
 }
 
 func (beaconBestState *BeaconBestState) CloneBeaconBestStateFrom(target *BeaconBestState) error {
 	return beaconBestState.cloneBeaconBestStateFrom(target)
 }
+
 func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]ShardState) {
 	lastCrossShardState := beaconBestState.LastCrossShardState
 	for fromShard, shardBlocks := range shardStates {
@@ -582,25 +623,23 @@ func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates ma
 	}
 }
 func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates map[byte][]ShardState) {
-	beaconBestState.lock.Lock()
-	defer beaconBestState.lock.Unlock()
 	beaconBestState.updateLastCrossShardState(shardStates)
 }
 
 func (beaconBestState *BeaconBestState) GetAutoStakingList() map[string]bool {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	m := make(map[string]bool)
 	for k, v := range beaconBestState.AutoStaking {
 		m[k] = v
 	}
 	return m
 }
+
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenList() []string {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
+
 	return beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
 }
+
 func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
 	res := []string{}
 	for _, committee := range beaconBestState.ShardCommittee {
@@ -654,4 +693,126 @@ func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlatten
 	}
 	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res
+}
+
+func (beaconBestState *BeaconBestState) GetHash() *common.Hash {
+	return beaconBestState.BestBlock.Hash()
+}
+
+func (beaconBestState *BeaconBestState) GetPreviousHash() *common.Hash {
+	return &beaconBestState.BestBlock.Header.PreviousBlockHash
+}
+
+func (beaconBestState *BeaconBestState) GetHeight() uint64 {
+	return beaconBestState.BestBlock.GetHeight()
+}
+
+func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
+	return beaconBestState.BestBlock.Header.Timestamp
+}
+
+func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	SC := make(map[byte][]incognitokey.CommitteePublicKey)
+	SPV := make(map[byte][]incognitokey.CommitteePublicKey)
+	for shardID, committee := range beaconBestState.GetShardCommittee() {
+		SC[shardID] = append([]incognitokey.CommitteePublicKey{}, committee...)
+	}
+	for shardID, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+		SPV[shardID] = append([]incognitokey.CommitteePublicKey{}, pendingValidator...)
+	}
+	BC := beaconBestState.BeaconCommittee
+	BPV := beaconBestState.BeaconPendingValidator
+	CBWFCR := beaconBestState.CandidateBeaconWaitingForCurrentRandom
+	CBWFNR := beaconBestState.CandidateBeaconWaitingForNextRandom
+	CSWFCR := beaconBestState.CandidateShardWaitingForCurrentRandom
+	CSWFNR := beaconBestState.CandidateShardWaitingForNextRandom
+	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, nil
+}
+
+func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
+	res := []string{}
+	for _, committee := range beaconBestState.GetShardCommittee() {
+		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, committeeStr...)
+	}
+	for _, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+		pendingValidatorStr, err := incognitokey.CommitteeKeyListToString(pendingValidator)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, pendingValidatorStr...)
+	}
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, beaconCommitteeStr...)
+
+	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, beaconPendingValidatorStr...)
+
+	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateBeaconWaitingForCurrentRandomStr...)
+
+	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateBeaconWaitingForNextRandomStr...)
+
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateShardWaitingForCurrentRandomStr...)
+
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateShardWaitingForNextRandomStr...)
+	return res, nil
+}
+
+func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, error) {
+	bridgeTokenIDs := []common.Hash{}
+	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
+	bridgeStateDB := beaconBestState.GetBeaconFeatureStateDB()
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
+	if err != nil {
+		return bridgeTokenIDs, err
+	}
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return bridgeTokenIDs, err
+	}
+	for _, bridgeTokenInfo := range allBridgeTokens {
+		bridgeTokenIDs = append(bridgeTokenIDs, *bridgeTokenInfo.TokenID)
+	}
+	return bridgeTokenIDs, nil
+}
+
+func (blockchain *BlockChain) GetBeaconConsensusRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetBeaconConsensusStateRootHash(db, height)
+}
+
+func (blockchain *BlockChain) GetBeaconRewardRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetBeaconRewardStateRootHash(db, height)
+}
+
+func (blockchain *BlockChain) GetBeaconFeatureRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetBeaconFeatureStateRootHash(db, height)
+}
+
+func (blockchain *BlockChain) GetBeaconSlashRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetBeaconSlashStateRootHash(db, height)
 }

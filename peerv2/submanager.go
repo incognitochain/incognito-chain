@@ -13,6 +13,7 @@ import (
 
 type ConsensusData interface {
 	GetUserRole() (string, string, int)
+	GetCurrentMiningPublicKey() (publickey string, keyType string)
 }
 
 // SubManager manages pubsub subscription of highway's topics
@@ -74,10 +75,20 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	if newRole == sub.role && !forced { // Not forced => no need to subscribe when role stays the same
 		return nil
 	}
+	pubKey, _ := sub.consensusData.GetCurrentMiningPublicKey()
+	if (sub.role.role != "") && (sub.role.role != "dummyRole") {
+		if pubKey == "" {
+			return errors.Errorf("Can not load current mining key, pub key %v role %v", pubKey, sub.role.role)
+		} else {
+			sub.pubkey = pubKey
+		}
+	}
+
 	Logger.Infof("Role changed: %v -> %v", sub.role, newRole)
 
 	// Registering
 	shardIDs := getWantedShardIDs(newRole, sub.nodeMode, sub.relayShard)
+	// Logger.Infof("[bftmsg] Regist", params ...interface{})
 	newTopics, roleOfTopics, err := sub.registerToProxy(
 		sub.pubkey,
 		newRole.layer,
@@ -290,7 +301,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdBlkShardToBeacon,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		} else if layer == common.BeaconRole {
 			return []string{
@@ -305,7 +315,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		}
 	case common.NodeModeRelay:
@@ -321,7 +330,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
 			wire.CmdPrivacyCustomToken,
-			wire.CmdCustomToken,
 		}
 		if containShard {
 			msgs = append(msgs, wire.CmdBlockShard)

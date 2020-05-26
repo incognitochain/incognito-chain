@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
@@ -226,6 +227,15 @@ func GetShardIDFromLastByte(b byte) byte {
 func IndexOfStr(item string, list []string) int {
 	for k, v := range list {
 		if strings.Compare(item, v) == 0 {
+			return k
+		}
+	}
+	return -1
+}
+
+func IndexOfHash(item Hash, list []Hash) int {
+	for k, v := range list {
+		if item.IsEqual(&v) {
 			return k
 		}
 	}
@@ -458,3 +468,50 @@ func GetValidStaker(committees []string, stakers []string) []string {
 func GetShardChainKey(shardID byte) string {
 	return ShardChainKey + "-" + strconv.Itoa(int(shardID))
 }
+
+func IsPortalToken(tokenIDStr string) bool {
+	isExisted, _ := SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
+	return isExisted
+}
+
+func IsPortalExchangeRateToken (tokenIDStr string) bool {
+	return IsPortalToken(tokenIDStr) || tokenIDStr == PRVIDStr
+}
+
+// CopyBytes returns an exact copy of the provided bytes.
+func CopyBytes(b []byte) (copiedBytes []byte) {
+	if b == nil {
+		return nil
+	}
+	copiedBytes = make([]byte, len(b))
+	copy(copiedBytes, b)
+
+	return
+}
+
+// has0xPrefix validates str begins with '0x' or '0X'.
+func has0xPrefix(str string) bool {
+	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
+}
+
+// Hex2Bytes returns the bytes represented by the hexadecimal string str.
+func Hex2Bytes(str string) []byte {
+	h, _ := hex.DecodeString(str)
+	return h
+}
+
+// FromHex returns the bytes represented by the hexadecimal string s.
+// s may be prefixed with "0x".
+func FromHex(s string) []byte {
+	if has0xPrefix(s) {
+		s = s[2:]
+	}
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	return Hex2Bytes(s)
+}
+
+// HexToHash sets byte representation of s to hash.
+// If b is larger than len(h), b will be cropped from the left.
+func HexToHash(s string) Hash { return BytesToHash(FromHex(s)) }

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -32,17 +32,17 @@ func NewPDEWithdrawalResponse(
 	}
 }
 
-func (iRes PDEWithdrawalResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (iRes PDEWithdrawalResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PDEWithdrawalResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (iRes PDEWithdrawalResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PDEWithdrawalResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iRes PDEWithdrawalResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -65,16 +65,7 @@ func (iRes *PDEWithdrawalResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PDEWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-	tx Transaction,
-	bcr BlockchainRetriever,
-	ac *AccumulatedValues,
-) (bool, error) {
+func (iRes PDEWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PDEWithdrawalRequest instruction

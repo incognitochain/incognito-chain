@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -66,17 +66,17 @@ type BeaconBlockSalaryInfo struct {
 	InfoHash          *common.Hash
 }
 
-func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if len(sbsRes.ProducerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

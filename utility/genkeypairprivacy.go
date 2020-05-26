@@ -13,12 +13,12 @@ import (
 )
 
 type AccountPub struct {
-	PaymentAdd string
-	PubKey     string
+	PaymentAddress string
+	PublicKey      string
 }
 
-const MAX_SHARD = 256
-const MIN_MEMBER = 8
+const MAX_SHARD = 2
+const MIN_MEMBER = 4
 
 func main() {
 	mnemonicGen := wallet.MnemonicGenerator{}
@@ -26,7 +26,7 @@ func main() {
 	//Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
 	Mnemonic := ""
 	fmt.Printf("Mnemonic: %s\n", Mnemonic)
-	Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
+	Seed := mnemonicGen.NewSeed(Mnemonic, "4567891234")
 
 	key, _ := wallet.NewMasterKey(Seed)
 	var i = 0

@@ -3,9 +3,9 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -50,7 +50,8 @@ func buildTradeResTx(
 	requestedTxID common.Hash,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	db database.DatabaseInterface,
+	transactionStateDB *statedb.StateDB,
+	bridgeStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
@@ -75,17 +76,14 @@ func buildTradeResTx(
 			receiveAmt,
 			&receiverAddr,
 			producerPrivateKey,
-			db,
+			transactionStateDB,
 			meta,
 		)
 		if err != nil {
 			return nil, NewBlockChainError(InitPDETradeResponseTransactionError, err)
 		}
-		//modify the type of the salary transaction
-		// resTx.Type = common.TxBlockProducerCreatedType
 		return resTx, nil
 	}
-
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
 		Amount:         receiveAmt,
@@ -112,12 +110,13 @@ func buildTradeResTx(
 			nil,
 			0,
 			tokenParams,
-			db,
+			transactionStateDB,
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			bridgeStateDB,
 		),
 	)
 	if initErr != nil {
@@ -132,6 +131,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	pdeTradeRequestAction, err := parseTradeRefundContent(contentStr)
 	if err != nil {
@@ -148,7 +149,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.config.DataBase,
+		shardView.GetCopiedTransactionStateDB(),
+		beaconView.GetBeaconFeatureStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
@@ -163,6 +165,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	pdeTradeAcceptedContent, err := parseTradeAcceptedContent(contentStr)
 	if err != nil {
@@ -179,7 +183,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 		pdeTradeAcceptedContent.RequestedTxID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.config.DataBase,
+		shardView.GetCopiedTransactionStateDB(),
+		beaconView.GetBeaconFeatureStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
@@ -194,6 +199,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Trade] Starting...")
 	if instStatus == common.PDETradeRefundChainStatus {
@@ -202,6 +209,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 			contentStr,
 			producerPrivateKey,
 			shardID,
+			shardView,
+			beaconView,
 		)
 	}
 	return blockGenerator.buildPDETradeAcceptedTx(
@@ -209,6 +218,8 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 		contentStr,
 		producerPrivateKey,
 		shardID,
+		shardView,
+		beaconView,
 	)
 }
 
@@ -216,6 +227,8 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Withdrawal] Starting...")
 	contentBytes := []byte(contentStr)
@@ -253,7 +266,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			wdAcceptedContent.DeductingPoolValue,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.config.DataBase,
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -264,7 +277,6 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		// resTx.Type = common.TxBlockProducerCreatedType
 		return resTx, nil
 	}
-
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
 		Amount:         wdAcceptedContent.DeductingPoolValue,
@@ -291,12 +303,13 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.config.DataBase,
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			beaconView.GetBeaconFeatureStateDB(),
 		),
 	)
 	if initErr != nil {
@@ -310,6 +323,8 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Refund contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -348,7 +363,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			refundContribution.ContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.config.DataBase,
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -386,12 +401,13 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.config.DataBase,
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			beaconView.GetBeaconFeatureStateDB(),
 		),
 	)
 	if initErr != nil {
@@ -405,6 +421,8 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Matched and Returned contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -446,7 +464,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			matchedNReturnedContribution.ReturnedContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.config.DataBase,
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -482,12 +500,13 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.config.DataBase,
+			shardView.GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			beaconView.GetBeaconFeatureStateDB(),
 		),
 	)
 	if initErr != nil {

@@ -2,7 +2,8 @@ package metadata
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -106,32 +107,40 @@ func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	}
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
-	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	return true
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	if txr.IsPrivacy() {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	allTokenID, err := bcr.GetAllCoinID()
-	if err != nil {
-		return false, err
-	}
+
 	isValid := false
-	for _, availableCoinID := range allTokenID {
-		cmp, err := withDrawRewardRequest.TokenID.Cmp(&availableCoinID)
-		if (cmp == 0) && (err == nil) {
-			isValid = true
-			break
+	if withDrawRewardRequest.TokenID.IsEqual(&common.PRVCoinID) {
+		// this is withdraw request for PRV
+		isValid = true
+	} else {
+		// this is withdraw request for token
+		allTokenID, err := chainRetriever.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()))
+		if err != nil {
+			return false, err
+		}
+
+		for _, availableCoinID := range allTokenID {
+			cmp := withDrawRewardRequest.TokenID.IsEqual(&availableCoinID)
+			if cmp {
+				isValid = true
+				break
+			}
 		}
 	}
 	if !isValid {
 		return false, errors.New("Invalid TokenID, maybe this coin not available at current shard")
 	}
 	isPositive := false
-	value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk, withDrawRewardRequest.TokenID)
+	tempPublicKey := base58.Base58Check{}.Encode(withDrawRewardRequest.PaymentAddress.Pk, common.Base58Version)
+	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, withDrawRewardRequest.TokenID)
 	if err != nil {
 		return false, err
 	}
@@ -142,14 +151,14 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}
-	receivers, _ := txr.GetReceivers()
+	receivers, _ := tx.GetReceivers()
 	if len(receivers) > 0 {
 		return false, errors.New("This metadata just for request withdraw reward")
 	}
 	return true, nil
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -158,16 +167,16 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bo
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	if txr.IsPrivacy() {
+func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	unique, requesterRes, amountRes, coinID := txr.GetTransferData()
+	unique, requesterRes, amountRes, coinID := tx.GetTransferData()
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
@@ -175,7 +184,8 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if (cmp != 0) || (err != nil) {
 		return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
 	}
-	value, err := db.GetCommitteeReward(requesterRes, *coinID)
+	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
+	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
@@ -185,7 +195,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	return true, nil
 }
 
-func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 

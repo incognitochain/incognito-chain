@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -75,7 +74,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -164,7 +163,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -206,7 +205,7 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 	}
 	data := arrayParams[0].(map[string]interface{})
 
-	issued, err := httpServer.databaseService.CheckETHHashIssued(data)
+	issued, err := httpServer.blockService.CheckETHHashIssued(data)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -214,13 +213,7 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 }
 
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	var allBridgeTokens []*lvdb.BridgeTokenInfo
-	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -248,7 +241,7 @@ func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, c
 	}
 	data := arrayParams[0].(map[string]interface{})
 
-	status, err := httpServer.databaseService.GetBridgeReqWithStatus(data["TxReqID"].(string))
+	status, err := httpServer.blockService.GetBridgeReqWithStatus(data["TxReqID"].(string))
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -312,7 +305,7 @@ func processBurningReq(
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr

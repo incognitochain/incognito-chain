@@ -3,11 +3,11 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -298,103 +298,36 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 }
 
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
 	arrayParams := common.InterfaceSlice(params)
 	getCountTxs := false
 	if len(arrayParams) == 1 {
 		getCountTxs = true
 	}
-
+	listPrivacyToken := make(map[common.Hash]*statedb.TokenState)
+	var err error
+	if getCountTxs {
+		listPrivacyToken, err = httpServer.blockService.ListPrivacyCustomTokenWithTxs()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
+	} else {
+		listPrivacyToken, err = httpServer.blockService.ListPrivacyCustomToken()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
+	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	tokenIDs := make(map[common.Hash]interface{})
-	for tokenID, token := range listPrivacyToken {
-		item := jsonresult.NewPrivacyToken(token)
-		if item.Name == "" {
-			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(tokenID.String())
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				if len(txs) > 1 {
-					for _, initTx := range txs {
-						var err2 *rpcservice.RPCError
-						tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
-						if err2 != nil {
-							Logger.log.Error(err)
-						} else {
-							if tx.PrivacyCustomTokenName != "" {
-								item.Name = tx.PrivacyCustomTokenName
-								item.Symbol = tx.PrivacyCustomTokenSymbol
-								break
-							}
-						}
-					}
-				}
-			}
-		}
-		tokenIDs[tokenID] = 0
+	for _, tokenState := range listPrivacyToken {
+		item := jsonresult.NewPrivacyToken(tokenState)
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
-	for tokenID, token := range listPrivacyTokenCrossShard {
-		if _, ok := tokenIDs[tokenID]; ok {
-			continue
-		}
-		item := jsonresult.NewPrivacyForCrossShard(token)
-		if item.Name == "" {
-			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				if len(txs) > 1 {
-					initTx := txs[len(txs)-1]
-					var err2 *rpcservice.RPCError
-					tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
-					if err2 != nil {
-						Logger.log.Error(err)
-					} else {
-						metaData := make(map[string]interface{})
-						err1 := json.Unmarshal([]byte(tx.Metadata), &metaData)
-						if err1 != nil {
-							Logger.log.Error(err)
-						} else {
-							var ok bool
-							item.Name, ok = metaData["TokenName"].(string)
-							if !ok {
-								Logger.log.Error("Not found token name")
-							}
-							item.Symbol, ok = metaData["TokenSymbol"].(string)
-							if !ok {
-								Logger.log.Error("Not found token symbol")
-							} else {
-								item.Symbol = item.Name
-							}
-						}
-					}
-				}
-			}
-		}
-		tokenIDs[tokenID] = 0
-		result.ListCustomToken = append(result.ListCustomToken, *item)
-	}
-
-	// bridge tokens'
-	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
+	// overwrite amounts with bridge tokens
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	var allBridgeTokens []*lvdb.BridgeTokenInfo
-	if len(allBridgeTokensBytes) > 0 {
-		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-		if err != nil {
-			return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-	}
-
 	for _, bridgeToken := range allBridgeTokens {
-		if _, ok := tokenIDs[*bridgeToken.TokenID]; ok {
+		if _, ok := listPrivacyToken[*bridgeToken.TokenID]; ok {
 			continue
 		}
 		item := jsonresult.CustomToken{
@@ -408,7 +341,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 				Logger.log.Error(err)
 			} else {
 				if len(txs) > 1 {
-					initTx := txs[len(txs)-1]
+					initTx := txs[0]
 					var err2 *rpcservice.RPCError
 					tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
 					if err2 != nil {
@@ -437,19 +370,51 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		}
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
-
-	// overwrite amounts with
-	for idx, token := range result.ListCustomToken {
-		if getCountTxs {
-			txs, _, _ := httpServer.txService.PrivacyCustomTokenDetail(token.ID)
-			result.ListCustomToken[idx].CountTxs = len(txs)
+	for index, _ := range result.ListCustomToken {
+		if !getCountTxs {
+			result.ListCustomToken[index].ListTxs = []string{}
 		}
-		if len(allBridgeTokens) > 0 {
-			for _, bridgeToken := range allBridgeTokens {
-				if result.ListCustomToken[idx].ID == bridgeToken.TokenID.String() {
-					result.ListCustomToken[idx].Amount = bridgeToken.Amount
-					break
-				}
+		result.ListCustomToken[index].Image = common.Render([]byte(result.ListCustomToken[index].ID))
+		for _, bridgeToken := range allBridgeTokens {
+			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
+				result.ListCustomToken[index].Amount = bridgeToken.Amount
+				result.ListCustomToken[index].IsBridgeToken = true
+				break
+			}
+		}
+	}
+	return result, nil
+}
+func (httpServer *HttpServer) handleListPrivacyCustomTokenByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params is invalid"))
+	}
+	shardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params type is invalid"))
+	}
+	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomTokenWithPRVByShardID(byte(shardID))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+	}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
+	for _, tokenState := range listPrivacyToken {
+		item := jsonresult.NewPrivacyToken(tokenState)
+		result.ListCustomToken = append(result.ListCustomToken, *item)
+	}
+	// overwrite amounts with bridge tokens
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	for index, _ := range result.ListCustomToken {
+		result.ListCustomToken[index].Image = common.Render([]byte(result.ListCustomToken[index].ID))
+		for _, bridgeToken := range allBridgeTokens {
+			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
+				result.ListCustomToken[index].Amount = bridgeToken.Amount
+				result.ListCustomToken[index].IsBridgeToken = true
+				break
 			}
 		}
 	}
@@ -509,7 +474,7 @@ func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeC
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil, *httpServer.config.Database)
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)

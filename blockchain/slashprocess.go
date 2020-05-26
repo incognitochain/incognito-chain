@@ -2,7 +2,9 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"sort"
+	"strings"
 )
 
 func sortMapStringUint8Keys(m map[string]uint8) map[string]uint8 {
@@ -24,11 +26,24 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	committee []string,
 ) map[string]uint8 {
 	slashLevels := blockchain.config.ChainParams.SlashLevels
+	if len(slashLevels) == 0 {
+		return make(map[string]uint8)
+	}
 	numOfBlocksByProducers := map[string]uint64{}
 	if isBeacon {
-		numOfBlocksByProducers = blockchain.BestState.Beacon.NumOfBlocksByProducers
+		if blockchain.GetBeaconBestState() == nil {
+			numOfBlocksByProducers = make(map[string]uint64)
+		} else {
+			numOfBlocksByProducers = blockchain.GetBeaconBestState().NumOfBlocksByProducers
+		}
+
 	} else {
-		numOfBlocksByProducers = blockchain.BestState.Shard[byte(shardID)].NumOfBlocksByProducers
+		if blockchain.GetBestStateShard(byte(shardID)) == nil {
+			numOfBlocksByProducers = make(map[string]uint64)
+		} else {
+			numOfBlocksByProducers = blockchain.GetBestStateShard(byte(shardID)).NumOfBlocksByProducers
+		}
+
 	}
 	// numBlkPerEpoch := blockchain.config.ChainParams.Epoch
 	numBlkPerEpoch := uint64(0)
@@ -45,7 +60,6 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	if expectedNumBlkByEachProducer == 0 {
 		return badProducersWithPunishment
 	}
-	// for producer, numBlk := range numOfBlocksByProducers {
 	for _, producer := range committee {
 		numBlk, found := numOfBlocksByProducers[producer]
 		if !found {
@@ -68,17 +82,8 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	return sortMapStringUint8Keys(badProducersWithPunishment)
 }
 
-func (blockchain *BlockChain) getUpdatedProducersBlackList(
-	isBeacon bool,
-	shardID int,
-	committee []string,
-	beaconHeight uint64,
-) (map[string]uint8, error) {
-	db := blockchain.GetDatabase()
-	producersBlackList, err := db.GetProducersBlackList(beaconHeight)
-	if err != nil {
-		return nil, err
-	}
+func (blockchain *BlockChain) getUpdatedProducersBlackList(slashStateDB *statedb.StateDB, isBeacon bool, shardID int, committee []string, beaconHeight uint64) (map[string]uint8, error) {
+	producersBlackList := statedb.GetProducersBlackList(slashStateDB, beaconHeight)
 	if isBeacon {
 		punishedProducersFinished := []string{}
 		for producer, punishedEpoches := range producersBlackList {
@@ -90,7 +95,6 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 			delete(producersBlackList, producer)
 		}
 	}
-
 	badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(isBeacon, shardID, committee)
 	for producer, punishedEpoches := range badProducersWithPunishment {
 		epoches, found := producersBlackList[producer]
@@ -101,18 +105,15 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 	return sortMapStringUint8Keys(producersBlackList), nil
 }
 
-func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
+func (blockchain *BlockChain) processForSlashing(slashStateDB *statedb.StateDB, beaconBlock *BeaconBlock) error {
 	var err error
-	db := blockchain.GetDatabase()
-	beaconHeight := block.GetHeight()
-	producersBlackList, err := db.GetProducersBlackList(beaconHeight - 1)
-	if err != nil {
-		return err
-	}
+	punishedProducersFinished := []string{}
+	fliterPunishedProducersFinished := []string{}
+	beaconHeight := beaconBlock.GetHeight()
+	producersBlackList := statedb.GetProducersBlackList(slashStateDB, beaconHeight-1)
 	chainParamEpoch := blockchain.config.ChainParams.Epoch
-	newBeaconHeight := block.GetHeight()
+	newBeaconHeight := beaconBlock.GetHeight()
 	if newBeaconHeight%uint64(chainParamEpoch) == 0 { // end of epoch
-		punishedProducersFinished := []string{}
 		for producer := range producersBlackList {
 			producersBlackList[producer]--
 			if producersBlackList[producer] == 0 {
@@ -124,7 +125,7 @@ func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
 		}
 	}
 
-	for _, inst := range block.GetInstructions() {
+	for _, inst := range beaconBlock.GetInstructions() {
 		if len(inst) == 0 {
 			continue
 		}
@@ -154,6 +155,19 @@ func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
 			}
 		}
 	}
-	err = db.StoreProducersBlackList(beaconHeight, producersBlackList)
+	for _, punishedProducerFinished := range punishedProducersFinished {
+		flag := false
+		for producerBlaskList, _ := range producersBlackList {
+			if strings.Compare(producerBlaskList, punishedProducerFinished) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			fliterPunishedProducersFinished = append(fliterPunishedProducersFinished, punishedProducerFinished)
+		}
+	}
+	statedb.RemoveProducerBlackList(slashStateDB, fliterPunishedProducersFinished)
+	err = statedb.StoreProducersBlackList(slashStateDB, beaconHeight, producersBlackList)
 	return err
 }

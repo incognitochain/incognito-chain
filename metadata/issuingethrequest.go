@@ -1,12 +1,11 @@
 package metadata
 
 import (
-	"math/big"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -17,7 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
 
@@ -114,12 +114,7 @@ func NewIssuingETHRequestFromMap(
 	return req, nil
 }
 
-func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-	db database.DatabaseInterface,
-) (bool, error) {
+func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return false, NewMetadataTxError(IssuingEthRequestValidateTxWithBlockChainError, err)
@@ -129,8 +124,8 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	}
 
 	// check this is a normal pToken
-	if db.PrivacyTokenIDExisted(iReq.IncTokenID) || db.PrivacyTokenIDCrossShardExisted(iReq.IncTokenID) {
-		isBridgeToken, err := db.IsBridgeTokenExistedByType(iReq.IncTokenID, false)
+	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.IncTokenID) {
+		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
 		if !isBridgeToken {
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)
@@ -143,7 +138,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iReq IssuingETHRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(IssuingEthRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
@@ -172,7 +167,7 @@ func (iReq IssuingETHRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
@@ -193,10 +188,10 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus), nil)
-	if err != nil {
-		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
-	}
+	//err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
+	//if err != nil {
+	//	return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
+	//}
 	return [][]string{action}, nil
 }
 
@@ -297,7 +292,7 @@ func GetETHHeader(
 		return nil, err
 	}
 	if getBlockByNumberRes.RPCError != nil {
-		Logger.log.Debugf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
 		return nil, nil
 	}
 	return getBlockByNumberRes.Result, nil

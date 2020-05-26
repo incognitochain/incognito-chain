@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -32,19 +33,20 @@ func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 	return assignInstruction
 }
 
-func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to uint64) ([]*BeaconBlock, error) {
+func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		hash, err := db.GetBeaconBlockHashByIndex(i)
+		hashes, err := rawdbv2.GetBeaconBlockHashByIndex(db, i)
 		if err != nil {
 			return beaconBlocks, err
 		}
-		beaconBlockByte, err := db.FetchBeaconBlock(hash)
+		hash := hashes[0]
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, hash)
 		if err != nil {
 			return beaconBlocks, err
 		}
 		beaconBlock := BeaconBlock{}
-		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
+		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 		if err != nil {
 			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
@@ -147,9 +149,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, shardID)
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
+			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)
+			} else {
+				Logger.log.Errorf("Build Request Action Error %+v", err)
 			}
 		}
 		switch tx.GetMetadataType() {
@@ -227,7 +232,7 @@ func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardI
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
 		if meta != nil {
-			actionPairs, err := meta.BuildReqActions(tx, bc, shardID)
+			actionPairs, err := meta.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
 			if err != nil {
 				continue
 			}
@@ -295,7 +300,7 @@ func filterReqTxs(
 
 //=======================================END SHARD BLOCK UTIL
 //====================New Merkle Tree================
-func CreateShardTxRoot2(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
+func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
 	//calculate output coin hash for each shard
 	crossShardDataHash := getCrossShardDataHash(txList)
 	// calculate merkel path for a shardID
@@ -311,8 +316,8 @@ func CreateShardTxRoot2(txList []metadata.Transaction) ([]common.Hash, []common.
 	merkleData := merkleTree.BuildMerkleTreeOfHashes2(crossShardDataHash, common.MaxShardNumber)
 	return crossShardDataHash, merkleData
 }
-func GetMerklePathCrossShard2(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
-	_, merkleTree := CreateShardTxRoot2(txList)
+func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
+	_, merkleTree := CreateShardTxRoot(txList)
 	merklePathShard, merkleShardRoot = Merkle{}.GetMerklePathForCrossShard(common.MaxShardNumber, merkleTree, shardID)
 	return merklePathShard, merkleShardRoot
 }
@@ -378,7 +383,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 		//TxReturnStakingType cannot be crossshard tx
 		case common.TxNormalType, common.TxRewardType:
 			{
-				//==================Proof Process
+				// Proof Process
 				if tx.GetProof() != nil {
 					for _, outCoin := range tx.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
@@ -445,7 +450,6 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 			for _, outCoin := range tx.GetProof().GetOutputCoins() {
 				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 				if lastByte == shardID {
-					//fmt.Println("CS: outputcoin has output coin to shard", lastByte)
 					coinList = append(coinList, *outCoin)
 				}
 			}

@@ -1,6 +1,10 @@
 package main
 
 import (
+	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/trie"
 	"io"
 	"log"
 	"os"
@@ -11,15 +15,19 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
 func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, error) {
 	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
+	blockchain.BLogger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
-	db, err := database.Open("leveldb", filepath.Join(databaseDir))
+	dataaccessobject.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
+	trie.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
+	db, err := incdb.Open("leveldb", filepath.Join(databaseDir))
 	if err != nil {
 		return nil, err
 	}
@@ -31,13 +39,6 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 	} else {
 		bcParams = &blockchain.ChainMainParam
 	}
-	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
-	shardPoolMap := make(map[byte]blockchain.ShardPool)
-	for i := 0; i < 255; i++ {
-		shardID := byte(i)
-		crossShardPoolMap[shardID] = mempool.GetCrossShardPool(shardID)
-		shardPoolMap[shardID] = mempool.GetShardPool(shardID)
-	}
 	pb := pubsub.NewPubSubManager()
 	txPool := &mempool.TxPool{}
 	txPool.Init(&mempool.Config{
@@ -47,14 +48,12 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 		ChainParams:   bcParams,
 	})
 	err = bc.Init(&blockchain.Config{
-		ChainParams:       bcParams,
-		DataBase:          db,
-		BeaconPool:        mempool.GetBeaconPool(),
-		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
-		PubSubManager:     pb,
-		CrossShardPool:    crossShardPoolMap,
-		ShardPool:         shardPoolMap,
-		TxPool:            txPool,
+		ChainParams:     bcParams,
+		DataBase:        db,
+		PubSubManager:   pb,
+		TxPool:          txPool,
+		ConsensusEngine: &consensus.Engine{},
+		Highway:         &peerv2.ConnManager{},
 	})
 	if err != nil {
 		return nil, err
@@ -165,7 +164,7 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 		if err != nil {
 			return err
 		}
-		if bc.BestState.Shard[block.Header.ShardID].ShardHeight >= block.Header.Height {
+		if bc.GetBestStateShard(block.Header.ShardID).ShardHeight >= block.Header.Height {
 			continue
 		}
 		if block.Header.Height%100 == 0 {
@@ -247,7 +246,7 @@ func restoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		if err != nil {
 			return err
 		}
-		if bc.BestState.Beacon.BeaconHeight >= block.Header.Height {
+		if bc.GetBeaconBestState().BeaconHeight >= block.Header.Height {
 			continue
 		}
 		if block.Header.Height%100 == 0 {
