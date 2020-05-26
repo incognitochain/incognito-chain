@@ -16,7 +16,6 @@ func (httpServer *HttpServer) handleRevertBeacon(params interface{}, closeChan <
 }
 
 func (httpServer *HttpServer) handleRevertShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRevertShard: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))

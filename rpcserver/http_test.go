@@ -89,7 +89,6 @@ var _ = func() (_ struct{}) {
 	for _, addr := range netAddrs {
 		listener, err := listenFunc(addr.Network(), addr.String())
 		if err != nil {
-			log.Printf("Can't listen on %s: %v", addr, err)
 			continue
 		}
 		listeners = append(listeners, listener)
@@ -116,7 +115,6 @@ func SetNewListenerAddress() {
 	for _, addr := range netAddrs {
 		listener, err := listenFunc(addr.Network(), addr.String())
 		if err != nil {
-			log.Printf("Can't listen on %s: %v", addr, err)
 			continue
 		}
 		listeners = append(listeners, listener)
