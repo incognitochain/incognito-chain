@@ -15,7 +15,6 @@ import (
 //Parameter #3—the list priv-key which be used to view utxo
 //
 func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleListUnspentOutputCoins params: %+v", params)
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
@@ -53,7 +52,6 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		return nil, err
 	}
 
-	Logger.log.Debugf("handleListUnspentOutputCoins result: %+v", result)
 	return result, nil
 }
 
@@ -65,25 +63,21 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 //Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
 //Parameter #4 - optional - token id - default prv coin
 func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleListOutputCoins params: %+v", params)
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil || len(paramsArray) < 3 {
-		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
 
 	minTemp, ok := paramsArray[0].(float64)
 	if !ok {
-		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
 	}
 	min := int(minTemp)
 
 	maxTemp, ok := paramsArray[1].(float64)
 	if !ok {
-		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
 	}
 	max := int(maxTemp)
@@ -107,13 +101,11 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		var err1 error
 		tokenIdParam, ok := paramsArray[3].(string)
 		if !ok {
-			Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
 		}
 
 		tokenID, err1 = common.Hash{}.NewHashFromStr(tokenIdParam)
 		if err1 != nil {
-			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err1)
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
 		}
 	}
@@ -121,6 +113,5 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	if err1 != nil {
 		return nil, err1
 	}
-	Logger.log.Debugf("handleListOutputCoins result: %+v", result)
 	return result, nil
 }

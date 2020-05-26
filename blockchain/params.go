@@ -134,7 +134,7 @@ func init() {
 		BNBFullNodePort:                TestnetBNBFullNodePort,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       10 * time.Minute,
+				TimeOutCustodianReturnPubToken:       1 * time.Hour,
 				TimeOutWaitingPortingRequest:         1 * time.Hour,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying

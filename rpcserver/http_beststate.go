@@ -12,7 +12,6 @@ import (
 handleGetBeaconBestState - RPC get beacon best state
 */
 func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBeaconBestState params: %+v", params)
 
 	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
@@ -20,7 +19,6 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 	}
 
 	result := jsonresult.NewGetBeaconBestState(beaconBestState)
-	Logger.log.Debugf("Get Beacon BestState: %+v", beaconBestState)
 	return result, nil
 }
 
@@ -28,7 +26,6 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 handleGetShardBestState - RPC get shard best state
 */
 func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetShardBestState params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
@@ -45,13 +42,11 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	}
 
 	result := jsonresult.NewGetShardBestState(shardBestState)
-	Logger.log.Debugf("Get Shard BestState result: %+v", result)
 	return result, nil
 }
 
 // handleGetCandidateList - return list candidate of committee
 func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetCandidateList params: %+v", params)
 
 	beacon, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
@@ -70,13 +65,11 @@ func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeCh
 		CandidateShardWaitingForNextRandom:     CSWFNR,
 		CandidateBeaconWaitingForNextRandom:    CBWFNR,
 	}
-	Logger.log.Debugf("handleGetCandidateList result: %+v", result)
 	return result, nil
 }
 
 // handleGetCommitteeList - return current committee in network
 func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetCommitteeList params: %+v", params)
 	clonedBeaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
@@ -88,7 +81,6 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 	shardPendingValidator := clonedBeaconBestState.ShardPendingValidator
 	epoch := clonedBeaconBestState.Epoch
 	result := jsonresult.NewCommitteeListsResult(epoch, shardCommittee, shardPendingValidator, beaconCommittee, beaconPendingValidator)
-	Logger.log.Debugf("handleGetCommitteeList result: %+v", result)
 	return result, nil
 }
 
@@ -100,7 +92,6 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 	return #2: error
 */
 func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCanPubkeyStake params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
@@ -108,7 +99,6 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 
 	publicKey, ok := arrayParams[0].(string)
 	if !ok {
-		Logger.log.Debugf("handleCanPubkeyStake result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Pub key is invalid"))
 	}
 
@@ -118,21 +108,17 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 	}
 
 	result := jsonresult.NewStakeResult(publicKey, canStake)
-	Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetTotalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetTotalTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
-		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
 	}
 
 	shardIdParam, ok := arrayParams[0].(float64)
 	if !ok {
-		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID invalid"))
 	}
 	shardID := byte(shardIdParam)
@@ -143,12 +129,10 @@ func (httpServer *HttpServer) handleGetTotalTransaction(params interface{}, clos
 	}
 
 	result := jsonresult.NewTotalTransactionInShard(clonedShardBestState)
-	Logger.log.Debugf("handleGetTotalTransaction result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetBeaconBestStateDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBeaconBestState params: %+v", params)
 
 	clonedBeaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
@@ -156,7 +140,6 @@ func (httpServer *HttpServer) handleGetBeaconBestStateDetail(params interface{},
 	}
 
 	result := jsonresult.NewGetBeaconBestStateDetail(clonedBeaconBestState)
-	Logger.log.Debugf("Get Beacon BestState: %+v", clonedBeaconBestState)
 	return result, nil
 }
 
@@ -164,7 +147,6 @@ func (httpServer *HttpServer) handleGetBeaconBestStateDetail(params interface{},
 handleGetShardBestState - RPC get shard best state
 */
 func (httpServer *HttpServer) handleGetShardBestStateDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetShardBestStateDetail params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
@@ -181,6 +163,5 @@ func (httpServer *HttpServer) handleGetShardBestStateDetail(params interface{}, 
 	}
 
 	result := jsonresult.NewGetShardBestStateDetail(shardBestState)
-	Logger.log.Debugf("Get Shard BestState result: %+v", result)
 	return result, nil
 }

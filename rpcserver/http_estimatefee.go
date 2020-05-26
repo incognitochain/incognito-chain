@@ -13,7 +13,6 @@ import (
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleEstimateFee params: %+v", params)
 	/******* START Fetch all component to ******/
 	// all component
 	arrayParams := common.InterfaceSlice(params)
@@ -97,13 +96,11 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		}
 	}
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
-	Logger.log.Debugf("handleEstimateFee result: %+v", result)
 	return result, nil
 }
 
 // handleEstimateFeeWithEstimator -- get fee from estimator
 func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleEstimateFeeWithEstimator params: %+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
@@ -159,6 +156,5 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
-	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
