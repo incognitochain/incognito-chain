@@ -171,7 +171,7 @@ func (e *BLSBFT_V2) Start() error {
 				/*
 					Check for whether we should propose block
 				*/
-				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot)
+				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 
 				if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
