@@ -191,14 +191,21 @@ func (b *BlockChain) calcEasiestDifficulty(bits uint32, duration time.Duration) 
 // did not have the special testnet minimum difficulty rule applied.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) findPrevTestNetDifficulty(startNode *blockNode) uint32 {
+func (b *BlockChain) findPrevTestNetDifficulty(startNode *blockNode, header *wire.BlockHeader) uint32 {
 	// Search backwards through the chain for the last block without
 	// the special rule applied.
 	iterNode := startNode
+	var lastNotNilNodeBlkHeight int32
 	for iterNode != nil && iterNode.height%b.blocksPerRetarget != 0 &&
 		iterNode.bits == b.chainParams.PowLimitBits {
-
+		if iterNode.parent == nil {
+			lastNotNilNodeBlkHeight = iterNode.height
+		}
 		iterNode = iterNode.parent
+	}
+
+	if iterNode == nil && lastNotNilNodeBlkHeight == b.genesisBlkHeight {
+		return header.Bits
 	}
 
 	// Return the found difficulty or the minimum difficulty if no
@@ -237,11 +244,10 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, header *wir
 			if newBlockTime.Unix() > allowMinTime {
 				return b.chainParams.PowLimitBits, nil
 			}
-
 			// The block was mined within the desired timeframe, so
 			// return the difficulty for the last block which did
 			// not have the special minimum difficulty rule applied.
-			return b.findPrevTestNetDifficulty(lastNode), nil
+			return b.findPrevTestNetDifficulty(lastNode, header), nil
 		}
 
 		// For the main network (or any unrecognized networks), simply
