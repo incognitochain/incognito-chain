@@ -1,11 +1,12 @@
 package blsbftv2
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type NodeInterface interface {
@@ -14,6 +15,7 @@ type NodeInterface interface {
 	GetMiningKeys() string
 	GetPrivateKey() string
 	GetUserMiningState() (role string, chainID int)
+	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 }
 
 type ChainInterface interface {

@@ -252,16 +252,16 @@ func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, 
 	return beaconBlockHashes, nil
 }
 
-func StoreBeaconBestState(db incdb.KeyValueWriter, val []byte) error {
-	key := GetBeaconBestStateKey()
+func StoreBeaconViews(db incdb.KeyValueWriter, val []byte) error {
+	key := GetBeaconViewsKey()
 	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreBeaconBestStateError, err)
 	}
 	return nil
 }
 
-func GetBeaconBestState(db incdb.KeyValueReader) ([]byte, error) {
-	key := GetBeaconBestStateKey()
+func GetBeaconViews(db incdb.KeyValueReader) ([]byte, error) {
+	key := GetBeaconViewsKey()
 	block, err := db.Get(key)
 	if err != nil {
 		return nil, NewRawdbError(GetBeaconBestStateError, err)

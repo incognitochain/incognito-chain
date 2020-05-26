@@ -75,13 +75,13 @@ func (blockchain *BlockChain) GetShardBlockByHeightAndView(shardID byte, height 
 	return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
 }
 
-func (blockchain *BlockChain) StoreBeaconBestState() error {
-	beaconBestStateBytes, err := json.Marshal(blockchain.GetBeaconBestState())
-	if err != nil {
-		return err
-	}
-	return rawdbv2.StoreBeaconBestState(blockchain.GetBeaconChainDatabase(), beaconBestStateBytes)
-}
+//func (blockchain *BlockChain) StoreBeaconBestState() error {
+//	beaconBestStateBytes, err := json.Marshal(blockchain.GetBeaconBestState())
+//	if err != nil {
+//		return err
+//	}
+//	return rawdbv2.StoreBeaconBestState(blockchain.GetBeaconChainDatabase(), beaconBestStateBytes)
+//}
 
 func (blockchain *BlockChain) FinalizedBeaconBlock(beaconBlock *BeaconBlock) error {
 	return rawdbv2.FinalizedBeaconBlock(blockchain.GetBeaconChainDatabase(), beaconBlock.Header.Hash())

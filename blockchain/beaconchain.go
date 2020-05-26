@@ -82,7 +82,7 @@ func (s *BeaconChain) GetBestViewHeight() uint64 {
 }
 
 func (s *BeaconChain) GetFinalViewHeight() uint64 {
-	return s.GetBestView().(*BeaconBestState).BeaconHeight
+	return s.GetFinalView().(*BeaconBestState).BeaconHeight
 }
 
 func (s *BeaconChain) GetBestViewHash() string {
