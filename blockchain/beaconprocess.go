@@ -515,7 +515,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *BeaconBlock, isVerifySig bool, chainParamEpoch uint64) error {
 	//verify producer via index
 	startTimeVerifyWithBestState := time.Now()
-	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.BeaconCommittee); err != nil {
+	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.BeaconCommittee, beaconBestState.MinBeaconCommitteeSize); err != nil {
 		return err
 	}
 
@@ -1340,12 +1340,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	// execute, store Portal Instruction
-	if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
-		err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
-		if err != nil {
-			return NewBlockChainError(ProcessPortalInstructionError, err)
-		}
+	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
+	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
+	if err != nil {
+		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
+	//}
 
 	// execute, store Ralaying Instruction
 	err = blockchain.processRelayingInstructions(beaconBlock)

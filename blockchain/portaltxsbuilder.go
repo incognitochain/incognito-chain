@@ -398,6 +398,7 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 		return nil, nil
 	}
 	if liqCustodian.ShardID != shardID {
+		Logger.log.Errorf("ERROR: ShardID is invalid: liqCustodian.ShardID %v - shardID %v", liqCustodian.ShardID, shardID)
 		return nil, nil
 	}
 
@@ -429,6 +430,8 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
 		return nil, nil
 	}
+	Logger.log.Infof("[Portal liquidate custodian response] Success with txID %v\n", resTx.Hash().String())
+	Logger.log.Infof("[Portal liquidate custodian response] Success with tx %+v\n", resTx)
 	return resTx, nil
 }
 

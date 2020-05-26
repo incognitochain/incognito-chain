@@ -188,7 +188,6 @@ func splitAndDecodeInst(bridgeInst, beaconInst []string) (string, string, string
 
 // handleGetBurnProof returns a proof of a tx burning pETH
 func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurningAddress params: %+v", params)
 	listParams, ok := params.([]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array"))
