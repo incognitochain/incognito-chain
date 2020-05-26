@@ -587,6 +587,7 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txId, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	_ = txId
 	if err != nil {
 		Logger.log.Errorf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
@@ -725,6 +726,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	keyWallet := new(wallet.KeyWallet)
 	keyWallet.KeySet = *createRawTxParam.SenderKeySet
 	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	_ = funderPaymentAddress
 
 	//Get data to create meta data
 	data, ok := paramsArray[4].(map[string]interface{})
