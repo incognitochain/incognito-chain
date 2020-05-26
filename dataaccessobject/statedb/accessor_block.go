@@ -20,8 +20,7 @@ func GetBeaconBlockHashByIndex(stateDB *StateDB, height uint64) (common.Hash, er
 	if err != nil {
 		return common.Hash{}, NewStatedbError(GetBlockHashError, err)
 	}
-	if stateObj.GetValue() == nil {
-		panic(NewStatedbError(GetBlockHashError, err))
+	if stateObj == nil {
 		return common.Hash{}, NewStatedbError(GetBlockHashError, err)
 	}
 	return *stateObj.GetValue().(*common.Hash), nil
@@ -42,8 +41,7 @@ func GetShardBlockHashByIndex(stateDB *StateDB, shardID byte, height uint64) (co
 	if err != nil {
 		return common.Hash{}, NewStatedbError(GetBlockHashError, err)
 	}
-	if stateObj.GetValue() == nil {
-		panic(NewStatedbError(GetBlockHashError, err))
+	if stateObj == nil {
 		return common.Hash{}, NewStatedbError(GetBlockHashError, err)
 	}
 

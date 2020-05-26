@@ -430,12 +430,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err != nil {
 			panic(err)
 		}
-		currentPDEState, err := InitCurrentPDEStateFromDB(v.featureStateDB, v.BeaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil
-		}
-		v.currentPDEState = currentPDEState
 	}
 	return nil
 }
