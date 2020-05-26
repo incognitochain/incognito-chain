@@ -283,7 +283,6 @@ func (serverObj *Server) NewServer(
 	// Connect to highway
 	Logger.log.Debug("Listenner: ", cfg.Listener)
 	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
-	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
 
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
 	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
