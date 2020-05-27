@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
 	"strconv"
 )
 
@@ -18,8 +17,6 @@ type PortalRedeemLiquidateExchangeRates struct {
 	TokenID               string // pTokenID in incognito chain
 	RedeemAmount          uint64
 	RedeemerIncAddressStr string
-	RemoteAddress         string // btc/bnb/etc address
-	RedeemFee             uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 }
 
 type PortalRedeemLiquidateExchangeRatesAction struct {
@@ -32,8 +29,6 @@ type PortalRedeemLiquidateExchangeRatesContent struct {
 	TokenID                 string // pTokenID in incognito chain
 	RedeemAmount            uint64
 	RedeemerIncAddressStr   string
-	RemoteAddress           string // btc/bnb/etc address
-	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 	TxReqID                 common.Hash
 	ShardID                 byte
 	TotalPTokenReceived		uint64
@@ -43,15 +38,13 @@ type RedeemLiquidateExchangeRatesStatus struct {
 	TxReqID               common.Hash
 	TokenID               string
 	RedeemerAddress       string
-	RedeemerRemoteAddress string
 	RedeemAmount          uint64
-	RedeemFee             uint64
 	Status                byte
 	TotalPTokenReceived	  uint64
 }
 
-func NewRedeemLiquidateExchangeRatesStatus(txReqID common.Hash, tokenID string, redeemerAddress string, redeemerRemoteAddress string, redeemAmount uint64, redeemFee uint64, status byte, totalPTokenReceived uint64) *RedeemLiquidateExchangeRatesStatus {
-	return &RedeemLiquidateExchangeRatesStatus{TxReqID: txReqID, TokenID: tokenID, RedeemerAddress: redeemerAddress, RedeemerRemoteAddress: redeemerRemoteAddress, RedeemAmount: redeemAmount, RedeemFee: redeemFee, Status: status, TotalPTokenReceived: totalPTokenReceived}
+func NewRedeemLiquidateExchangeRatesStatus(txReqID common.Hash, tokenID string, redeemerAddress string, redeemAmount uint64, status byte, totalPTokenReceived uint64) *RedeemLiquidateExchangeRatesStatus {
+	return &RedeemLiquidateExchangeRatesStatus{TxReqID: txReqID, TokenID: tokenID, RedeemerAddress: redeemerAddress, RedeemAmount: redeemAmount, Status: status, TotalPTokenReceived: totalPTokenReceived}
 }
 
 func NewPortalRedeemLiquidateExchangeRates(
@@ -59,8 +52,6 @@ func NewPortalRedeemLiquidateExchangeRates(
 	tokenID string,
 	redeemAmount uint64,
 	incAddressStr string,
-	remoteAddr string,
-	redeemFee uint64,
 ) (*PortalRedeemLiquidateExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
@@ -68,8 +59,6 @@ func NewPortalRedeemLiquidateExchangeRates(
 		TokenID:               tokenID,
 		RedeemAmount:          redeemAmount,
 		RedeemerIncAddressStr: incAddressStr,
-		RemoteAddress:         remoteAddr,
-		RedeemFee:             redeemFee,
 	}
 
 	portalRedeemLiquidateExchangeRates.MetadataBase = metadataBase
@@ -87,24 +76,11 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		if !txr.IsCoinsBurning(bcr, beaconHeight) {
-			return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
-		}
-		// validate value transfer of tx for redeem fee in prv
-		if redeemReq.RedeemFee != txr.CalculateTxValue() {
-			return false, false, errors.New("redeem fee amount should be equal to the tx value")
-		}
-		return true, true, nil
-	}
-
 	// validate RedeemerIncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Address incognito redeem is invalid"))
 	}
-
 
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
@@ -129,11 +105,6 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr Block
 		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}
 
-	// validate redeem fee
-	if redeemReq.RedeemFee <= 0 {
-		return false, false, errors.New("redeem fee should be larger than 0")
-	}
-
 	// validate value transfer of tx for redeem amount in ptoken
 	if redeemReq.RedeemAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("redeem amount should be equal to the tx value")
@@ -147,13 +118,6 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr Block
 	if !common.IsPortalToken(redeemReq.TokenID) {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
 	}
-
-	//validate RemoteAddress
-	// todo:
-	if len(redeemReq.RemoteAddress) == 0 {
-		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Remote address is invalid"))
-	}
-
 	return true, true, nil
 }
 
@@ -165,9 +129,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
 	record := redeemReq.MetadataBase.Hash().String()
 	record += redeemReq.TokenID
 	record += strconv.FormatUint(redeemReq.RedeemAmount, 10)
-	record += strconv.FormatUint(redeemReq.RedeemFee, 10)
 	record += redeemReq.RedeemerIncAddressStr
-	record += redeemReq.RemoteAddress
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

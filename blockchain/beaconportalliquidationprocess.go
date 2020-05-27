@@ -266,9 +266,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 			actionData.TxReqID,
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
-			actionData.RemoteAddress,
 			actionData.RedeemAmount,
-			actionData.RedeemFee,
 			common.PortalRedeemLiquidateExchangeRatesSuccessStatus,
 			totalPrv,
 		)
@@ -311,9 +309,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 			actionData.TxReqID,
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
-			actionData.RemoteAddress,
 			actionData.RedeemAmount,
-			actionData.RedeemFee,
 			common.PortalRedeemLiquidateExchangeRatesRejectedStatus,
 			0,
 		)

@@ -142,7 +142,6 @@ func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
 	}
 
-
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
@@ -159,23 +158,12 @@ func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params int
 	}
 	redeemAmount := uint64(redeemAmountParam)
 
-	redeemFeeParam, ok := tokenParamsRaw["RedeemFee"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemFee is invalid"))
-	}
-	redeemFee := uint64(redeemFeeParam)
-
 	redeemerIncAddressStr, ok := tokenParamsRaw["RedeemerIncAddressStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemerIncAddressStr is invalid"))
 	}
 
-	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
-	}
-
-	meta, _ := metadata.NewPortalRedeemLiquidateExchangeRates(metadata.PortalRedeemLiquidateExchangeRatesMeta, redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee)
+	meta, _ := metadata.NewPortalRedeemLiquidateExchangeRates(metadata.PortalRedeemLiquidateExchangeRatesMeta, redeemTokenID, redeemAmount, redeemerIncAddressStr)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
