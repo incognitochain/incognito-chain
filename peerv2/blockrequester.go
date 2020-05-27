@@ -65,9 +65,7 @@ func (c *BlockRequester) keepConnection() {
 	for {
 		select {
 		case <-watchTimestep.C:
-			c.RLock()
-			ready := c.ready()
-			c.RUnlock()
+			ready := c.IsReady()
 			if ready {
 				continue
 			}
@@ -106,6 +104,13 @@ func (c *BlockRequester) keepConnection() {
 			return
 		}
 	}
+}
+
+func (c *BlockRequester) IsReady() bool {
+	c.RLock()
+	ready := c.ready()
+	c.RUnlock()
+	return ready
 }
 
 func (c *BlockRequester) ready() bool {

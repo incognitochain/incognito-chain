@@ -76,7 +76,8 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		return nil
 	}
 	pubKey, _ := sub.consensusData.GetCurrentMiningPublicKey()
-	if (sub.role.role != "") && (sub.role.role != "dummyRole") {
+	Logger.Infof("role %v %v %v, key %v", newRole.role, newRole.layer, newRole.shardID, pubKey)
+	if (newRole.role != "") && (newRole.role != "dummyRole") {
 		if pubKey == "" {
 			return errors.Errorf("Can not load current mining key, pub key %v role %v", pubKey, sub.role.role)
 		} else {
@@ -193,20 +194,20 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics, for
 
 	// Subscribe to new topics
 	for m, topicList := range newTopics {
-		Logger.Info("Process message %v and topic %v", m, topicList)
+		Logger.Infof("Process message %v and topic %v", m, topicList)
 		for _, t := range topicList {
 			if !forced && found(t.Name, subscribed) {
-				Logger.Infof("Continue 1 %v %v", t.Name, subscribed)
+				Logger.Infof("Skip subscribed topic: %v %v", t.Name, subscribed)
 				continue
 			}
 
 			if t.Act == proto.MessageTopicPair_PUB {
 				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				Logger.Infof("Continue 2 %v %v", t.Name, subscribed)
+				Logger.Infof("Skip subscribing to PUB topic: %v", t.Name)
 				continue
 			}
 
-			Logger.Infof("subscribing", m, t.Name)
+			Logger.Infof("subscribing message: %v, topic: %v", m, t.Name)
 
 			s, err := sub.subscriber.Subscribe(t.Name)
 			if err != nil {
@@ -225,7 +226,6 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
-		Logger.Debugf("Received msg: %s", msg)
 		if err != nil { // Subscription might have been cancelled
 			Logger.Warn(err)
 			return
