@@ -158,7 +158,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
 	}
 	chainID := GetChainIDByTokenID(redeemReq.TokenID, bcr)
-	if !IsValidRemoteAddress(redeemReq.RemoteAddress, redeemReq.TokenID, chainID) {
+	if !IsValidRemoteAddress(bcr, redeemReq.RemoteAddress, redeemReq.TokenID, chainID) {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", redeemReq.RemoteAddress, redeemReq.TokenID)
 	}
 
