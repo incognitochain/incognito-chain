@@ -51,7 +51,7 @@ func main() {
 	tool := new(debugtool.DebugTool).InitLocal()
 	testInitToken(tool, privateKeys)
 
-	sendTx(tool)
+	//sendTx(tool)
 
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
@@ -68,11 +68,11 @@ func main() {
 	//b, _ := tool.GetTransactionByHash("b970ed00359dff6dcb7f0510484836ee78383f6473e12f5dbe01f64cbd5ce61a")
 	//fmt.Println(string(b))
 
-	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
+	//b, _ := tool.SwitchCoinVersion(privateKeys[3])
 	//fmt.Println(string(b))
 
-	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
-	//fmt.Println(string(b))
+	b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
+	fmt.Println(string(b))
 }
 
 //&{[97 178 112 109 99 221 186 221 159 127 25 42 190 184 219 222 203 101 49 169 3 36 251 148 227 74 0 167 82 51 60 85]}

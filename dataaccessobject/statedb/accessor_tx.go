@@ -54,7 +54,8 @@ func StoreCommitments(stateDB *StateDB, tokenID common.Hash, commitments [][]byt
 	if !has {
 		commitmentLength.SetBytes([]byte{0})
 	} else {
-		commitmentLength = new(big.Int).SetUint64(commitmentLength.Uint64() + 1)
+		temp := commitmentLength.Uint64() + 1
+		commitmentLength = new(big.Int).SetUint64(temp)
 	}
 	for _, commitment := range commitments {
 		// store commitment
@@ -79,7 +80,8 @@ func StoreCommitments(stateDB *StateDB, tokenID common.Hash, commitments [][]byt
 		if err != nil {
 			return NewStatedbError(StoreCommitmentLengthError, err)
 		}
-		commitmentLength = commitmentLength.SetUint64(commitmentLength.Uint64() + 1)
+		temp2 := commitmentLength.Uint64() + 1
+		commitmentLength = new(big.Int).SetUint64(temp2)
 	}
 	return nil
 }
@@ -252,7 +254,8 @@ func StoreOTACoinsAndOnetimeAddresses(stateDB *StateDB, tokenID common.Hash, hei
 	if !has {
 		otaCoinLength.SetBytes([]byte{0})
 	} else {
-		otaCoinLength = new(big.Int).SetUint64(otaCoinLength.Uint64() + 1)
+		temp := otaCoinLength.Uint64() + 1
+		otaCoinLength = new(big.Int).SetUint64(temp)
 	}
 	heightBytes := common.Uint64ToBytes(height)
 	for index := 0; index < len(outputCoins); index += 1 {
@@ -288,9 +291,12 @@ func StoreOTACoinsAndOnetimeAddresses(stateDB *StateDB, tokenID common.Hash, hei
 		if err := stateDB.SetStateObject(OTACoinLengthObjectType, otaCoinLengthKey, otaCoinLength); err != nil {
 			return NewStatedbError(StoreOTACoinLengthError, err)
 		}
-		otaCoinLength = otaCoinLength.SetUint64(otaCoinLength.Uint64() + 1)
+
+		// Caution: ask Hieu before change these lines
+		temp2 := otaCoinLength.Uint64() + 1
+		otaCoinLength = new(big.Int).SetUint64(temp2)
 	}
-	fmt.Println("The database length currently is", otaCoinLength)
+	//fmt.Println("The database length currently is", otaCoinLength)
 	return nil
 }
 

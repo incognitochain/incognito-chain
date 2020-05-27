@@ -463,11 +463,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 			return err
 		}
 
-		fmt.Println("About to store privacy custom token sub view")
-		fmt.Println("About to store privacy custom token sub view")
-		fmt.Println("About to store privacy custom token sub view")
-		fmt.Println("About to store privacy custom token sub view")
-		fmt.Println("About to store privacy custom token sub view")
 		err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
 		if err != nil {
 			return err
@@ -584,10 +579,6 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 		if publicKeyShardID == shardID {
 			// outputs
 			outputCoinArray := view.mapOutputCoins[publicKey]
-			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
-			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
-			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
-			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
 			otaCoinArray := make([][]byte, 0)
 			onetimeAddressArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {

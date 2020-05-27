@@ -277,14 +277,7 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 		Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
 		return err
 	}
-	//
-	//keyImages := mlsag.ParseKeyImages(privKeysMlsag)
-	//for i := 0; i < len(tx.Proof.GetInputCoins()); i += 1 {
-	//	tx.Proof.GetInputCoins()[i].SetKeyImage(keyImages[i])
-	//}
-
 	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
-
 	tx.sigPrivKey, err = privacy.ArrayScalarToBytes(&privKeysMlsag)
 	if err != nil {
 		Logger.Log.Errorf("tx.SigPrivKey cannot parse arrayScalar to Bytes, error %v ", err)
