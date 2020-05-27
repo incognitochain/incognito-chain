@@ -18,7 +18,6 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProof params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMeta, httpServer)
 }
 
@@ -27,7 +26,6 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProofForDepositToSC params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMeta, httpServer)
 }
 

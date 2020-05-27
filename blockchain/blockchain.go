@@ -21,7 +21,6 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
 	"io"
-	"log"
 	"sort"
 	"sync"
 )
@@ -479,10 +478,10 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 			return err
 		}
 		if i%100 == 0 {
-			log.Printf("Backup Shard %+v Block %+v", shardBlock.Header.ShardID, i)
+			Logger.log.Infof("Backup Shard %+v Block %+v", shardBlock.Header.ShardID, i)
 		}
 		if i == bestShardHeight-1 {
-			log.Printf("Finish Backup Shard %+v with Block %+v", shardBlock.Header.ShardID, i)
+			Logger.log.Infof("Finish Backup Shard %+v with Block %+v", shardBlock.Header.ShardID, i)
 		}
 	}
 	return nil
@@ -517,10 +516,10 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 			return err
 		}
 		if i%100 == 0 {
-			log.Printf("Backup Beacon Block %+v", i)
+			Logger.log.Infof("Backup Beacon Block %+v", i)
 		}
 		if i == bestBeaconHeight-1 {
-			log.Printf("Finish Backup Beacon with Block %+v", i)
+			Logger.log.Infof("Finish Backup Beacon with Block %+v", i)
 		}
 	}
 	return nil
