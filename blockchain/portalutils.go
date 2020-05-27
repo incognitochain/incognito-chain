@@ -1274,19 +1274,14 @@ func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
 			continue
 		}
 
-		Logger.log.Errorf("====== custodianState : %v\n", custodianState.GetIncognitoAddress())
-
 		for tokenID := range lockedCollaterals {
 			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)
 			matchingPubTokenAmount := GetTotalMatchingPubTokenInWaitingPortings(currentPortalState, custodianState, tokenID)
 			totalPubToken := holdPubTokenAmount + matchingPubTokenAmount
-			Logger.log.Errorf("====== matchingPubTokenAmount : %v\n", matchingPubTokenAmount)
-			Logger.log.Errorf("====== holdPubTokenAmount : %v\n", holdPubTokenAmount)
 			pubTokenAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, totalPubToken)
 			if err != nil {
 				Logger.log.Errorf("Error when converting public token to prv: %v", err)
 			}
-			Logger.log.Errorf("====== pubTokenAmountInPRV : %v\n", pubTokenAmountInPRV)
 			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += pubTokenAmountInPRV
 			totalLockedCollateralAmount += pubTokenAmountInPRV
 		}
