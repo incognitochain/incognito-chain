@@ -242,6 +242,7 @@ func IsValidRemoteAddress(remoteAddress string, tokenID string, chainID string) 
 		return bnb.IsValidBNBAddress(remoteAddress, chainID)
 	} else if tokenID == common.PortalBTCIDStr {
 		//todo:
+		return true
 	}
 
 	return false
