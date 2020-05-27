@@ -187,7 +187,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing request ptoken response tx: %+v", initErr)
-		return nil, initErr
+		return nil, nil
 	}
 	return resTx, nil
 }
@@ -374,7 +374,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
-		return nil, initErr
+		return nil, nil
 	}
 
 	Logger.log.Info("[Shard buildPortalRejectedRedeemRequestTx] Finished...")
@@ -654,7 +654,7 @@ func (blockGenerator *BlockGenerator) buildPortalRefundRedeemLiquidateExchangeRa
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
-		return nil, initErr
+		return nil, nil
 	}
 
 	Logger.log.Info("[Shard buildPortalRefundRedeemFromLiquidationTx] Finished...")
