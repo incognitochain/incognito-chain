@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"reflect"
 	"strconv"
 )
 
@@ -76,6 +77,9 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+		return true, true, nil
+	}
 	// validate RedeemerIncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)
 	if err != nil {
