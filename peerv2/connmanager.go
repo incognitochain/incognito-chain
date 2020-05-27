@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"stathat.com/c/consistent"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -258,9 +256,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 				cm.keeper.IgnoreAddress(*currentHighway) // Not reconnect to this address for some time
 				currentHighway = nil                     // Failed retries, connect to new highway next iteration
 			}
-			if currentHighway != nil {
-				cm.disp.CurrentHWPeerID = currentHighway.ID
-			}
+
 		case <-refreshTimestep.C:
 			currentHighway, _ = refreshHighway()
 
