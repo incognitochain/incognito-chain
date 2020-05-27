@@ -12,6 +12,8 @@ import (
 
 // TestDialWithTimeout makes sure gRPC dialing is blocked and has appropriate timeout
 func TestDialWithTimeout(t *testing.T) {
+	defer configTime()()
+
 	dialer := &mocks.GRPCDialer{}
 	hasTimeout := false
 	var err error
@@ -23,7 +25,7 @@ func TestDialWithTimeout(t *testing.T) {
 	c := BlockRequester{prtc: dialer, stop: make(chan int, 2)}
 
 	go c.keepConnection()
-	time.Sleep(1*time.Second + RequesterDialTimestep)
+	time.Sleep(200 * time.Millisecond)
 	c.stop <- 1
 
 	assert.True(t, hasTimeout)
