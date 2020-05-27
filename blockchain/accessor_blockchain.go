@@ -168,3 +168,11 @@ func (blockchain *BlockChain) GetBeaconSlashStateDB() *statedb.StateDB {
 func (blockchain *BlockChain) GetBeaconRewardStateDB() *statedb.StateDB {
 	return blockchain.BestState.Beacon.rewardStateDB
 }
+
+func (blockchain *BlockChain) GetBNBChainID() string {
+	return blockchain.GetConfig().ChainParams.BNBRelayingHeaderChainID
+}
+
+func (blockchain *BlockChain) GetBTCChainID() string {
+	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
+}

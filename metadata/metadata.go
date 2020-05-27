@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -75,6 +76,8 @@ type BlockchainRetriever interface {
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
+	GetBNBChainID() string
+	GetBTCChainID() string
 }
 
 // Interface for all type of transaction
@@ -234,7 +237,22 @@ func ConvertPrivacyTokenToNativeToken(
 	)
 }
 
-func IsValidBNBAddress(bnbAddress string) bool {
+func IsValidRemoteAddress(remoteAddress string, tokenID string, chainID string) bool {
+	if tokenID == common.PortalBNBIDStr {
+		return bnb.IsValidBNBAddress(remoteAddress, chainID)
+	} else if tokenID == common.PortalBTCIDStr {
+		//todo:
+	}
 
-	return true
+	return false
+}
+
+func GetChainIDByTokenID(tokenID string, bcr BlockchainRetriever) string {
+	if tokenID == common.PortalBNBIDStr {
+		return bcr.GetBNBChainID()
+	} else if tokenID == common.PortalBTCIDStr {
+		return bcr.GetBTCChainID()
+	}
+	return ""
+
 }
