@@ -18,6 +18,9 @@ const (
 	CommitmentLengthObjectType
 	SNDerivatorObjectType
 	OutputCoinObjectType
+	OTACoinObjectType
+	OTACoinIndexObjectType
+	OTACoinLengthObjectType
 	OnetimeAddressObjectType
 	TokenObjectType
 	WaitingPDEContributionObjectType

@@ -356,22 +356,18 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 
 func (tx Tx) String() string {
 	record := strconv.Itoa(int(tx.Version))
-
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		tmp := base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
 		//tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes(), 0x00)
-		record += tmp
+		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
 		// fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
 	if tx.Metadata != nil {
 		metadataHash := tx.Metadata.Hash()
+		record += metadataHash.String()
 		//Logger.log.Debugf("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
-		metadataStr := metadataHash.String()
-		record += metadataStr
 	}
-
 	record += string(tx.Info)
 	return record
 }

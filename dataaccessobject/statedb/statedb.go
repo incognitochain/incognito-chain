@@ -933,23 +933,6 @@ func (stateDB *StateDB) getOutputCoinState(key common.Hash) (*OutputCoinState, b
 	return NewOutputCoinState(), false, nil
 }
 
-func (stateDB *StateDB) checkOnetimeAddressExistence(tokenID common.Hash, shardID byte, publicKey []byte) (bool, error) {
-	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
-	it := trie.NewIterator(temp)
-	if it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		newOutputCoin := NewOutputCoinState()
-		err := json.Unmarshal(newValue, newOutputCoin)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		return true, nil
-	}
-	return false, nil
-}
-
 func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte, publicKey []byte) []*OutputCoinState {
 	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
 	it := trie.NewIterator(temp)
@@ -970,16 +953,57 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 
 // ================================= OnetimeAddress OBJECT =======================================
 
-func (stateDB *StateDB) getAllOnetimeAddressByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OnetimeAddressState {
-	temp := stateDB.trie.NodeIterator(GetOnetimeAddressPrefix(tokenID, shardID, height))
+func (stateDB *StateDB) getOnetimeAddressState(key common.Hash) (*OnetimeAddressState, bool, error) {
+	onetimeAddressState, err := stateDB.getStateObject(OnetimeAddressObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if onetimeAddressState != nil {
+		return onetimeAddressState.GetValue().(*OnetimeAddressState), true, nil
+	}
+	return NewOnetimeAddressState(), false, nil
+}
+
+func (stateDB *StateDB) getOTACoinIndexState(key common.Hash) (*OTACoinState, bool, error) {
+	otaCoinIndexState, err := stateDB.getStateObject(OTACoinIndexObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if otaCoinIndexState != nil {
+		tempKey, ok := otaCoinIndexState.GetValue().(common.Hash)
+		if !ok {
+			panic("wrong expected type")
+		}
+		otaCoinState, err := stateDB.getDeletedStateObject(OTACoinObjectType, tempKey)
+		if err != nil || otaCoinState == nil {
+			return NewOTACoinState(), false, nil
+		}
+		return otaCoinState.GetValue().(*OTACoinState), true, nil
+	}
+	return NewOTACoinState(), false, nil
+}
+
+func (stateDB *StateDB) getOTACoinLengthState(key common.Hash) (*big.Int, bool, error) {
+	otaCoinLengthState, err := stateDB.getStateObject(OTACoinLengthObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if otaCoinLengthState != nil {
+		return otaCoinLengthState.GetValue().(*big.Int), true, nil
+	}
+	return new(big.Int), false, nil
+}
+
+func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OTACoinState {
+	temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
 	it := trie.NewIterator(temp)
-	onetimeAddresses := make([]*OnetimeAddressState, 0)
+	onetimeAddresses := make([]*OTACoinState, 0)
 
 	for it.Next() {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		newOnetimeAddress := NewOnetimeAddressState()
+		newOnetimeAddress := NewOTACoinState()
 		err := json.Unmarshal(newValue, newOnetimeAddress)
 		if err != nil {
 			panic("wrong expect type")

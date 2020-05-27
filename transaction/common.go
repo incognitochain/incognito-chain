@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"errors"
 	"math"
 	"math/big"
@@ -85,6 +86,11 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 			for {
 				lenCommitment, _ = statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
+				fmt.Println("Length of commitments", lenCommitment)
+				for i := uint64(0); i < lenCommitment.Uint64(); i += 1 {
+					temp, _ := statedb.GetCommitmentByIndex(param.stateDB, *param.tokenID, i, param.shardID)
+					fmt.Println(temp)
+				}
 				ok, err := statedb.HasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
 					temp, _ := statedb.GetCommitmentByIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)

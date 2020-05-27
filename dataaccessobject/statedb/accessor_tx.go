@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"fmt"
 	"bytes"
 	"errors"
 	"math/big"
@@ -44,13 +45,7 @@ func ListSerialNumber(stateDB *StateDB, tokenID common.Hash, shardID byte) (map[
 	return m, nil
 }
 
-func StoreCommitments(stateDB *StateDB,
-	tokenID common.Hash,
-	pubkey []byte,
-	comSnd map[string][]byte,
-	commitments [][]byte,
-	shardID byte) error {
-
+func StoreCommitments(stateDB *StateDB, tokenID common.Hash, commitments [][]byte, shardID byte) error {
 	commitmentLengthKey := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 	commitmentLength, has, err := stateDB.getCommitmentLengthState(commitmentLengthKey)
 	if err != nil {
@@ -59,20 +54,17 @@ func StoreCommitments(stateDB *StateDB,
 	if !has {
 		commitmentLength.SetBytes([]byte{0})
 	} else {
-		temp := commitmentLength.Uint64() + 1
-		commitmentLength = new(big.Int).SetUint64(temp)
+		commitmentLength = new(big.Int).SetUint64(commitmentLength.Uint64() + 1)
 	}
 	for _, commitment := range commitments {
 		// store commitment
 		keyCommitment := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-		additional := comSnd[string(commitment)]
-
-		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, pubkey, additional, commitmentLength)
-
+		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentLength)
 		err = stateDB.SetStateObject(CommitmentObjectType, keyCommitment, valueCommitment)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentError, err)
 		}
+
 		// store commitment index
 		keyCommitmentIndex := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentLength)
 		valueCommitmentIndex := keyCommitment
@@ -80,15 +72,14 @@ func StoreCommitments(stateDB *StateDB,
 		if err != nil {
 			return NewStatedbError(StoreCommitmentIndexError, err)
 		}
+
 		// store commitment length
-		keyCommitmentLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 		valueCommitmentLength := commitmentLength
-		err = stateDB.SetStateObject(CommitmentLengthObjectType, keyCommitmentLength, valueCommitmentLength)
+		err = stateDB.SetStateObject(CommitmentLengthObjectType, commitmentLengthKey, valueCommitmentLength)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentLengthError, err)
 		}
-		temp2 := commitmentLength.Uint64() + 1
-		commitmentLength = new(big.Int).SetUint64(temp2)
+		commitmentLength = commitmentLength.SetUint64(commitmentLength.Uint64() + 1)
 	}
 	return nil
 }
@@ -106,6 +97,20 @@ func HasCommitment(stateDB *StateDB, tokenID common.Hash, commitment []byte, sha
 	return has, nil
 }
 
+func HasOTACoinIndex(stateDB *StateDB, tokenID common.Hash, index uint64, shardID byte) (bool, error) {
+	otaCoinIndexTemp := new(big.Int).SetUint64(index)
+	key := GenerateOTACoinIndexObjectKey(tokenID, shardID, otaCoinIndexTemp)
+	c, has, err := stateDB.getOTACoinIndexState(key)
+	if err != nil {
+		return false, NewStatedbError(GetOTACoinIndexError, err)
+	}
+	if has && c.Index().Uint64() != index {
+		panic("same key wrong value")
+		return false, nil
+	}
+	return has, nil
+}
+
 func HasCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	commitmentIndexTemp := new(big.Int).SetUint64(commitmentIndex)
 	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
@@ -113,29 +118,36 @@ func HasCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex u
 	if err != nil {
 		return false, NewStatedbError(GetCommitmentIndexError, err)
 	}
+	//fmt.PRintln(c)
+	//fmt.Println("CIndex =", c.Index().Uint64())
+	//fmt.Println("commitmentIndex =", commitmentIndex)
+
 	if has && c.Index().Uint64() != commitmentIndex {
+		fmt.Println(has)
+		fmt.Println("CIndexByte =", c.Index())
+		fmt.Println("CIndex =", c.Index().Uint64())
+		fmt.Println("commitmentIndex =", commitmentIndex)
 		panic("same key wrong value")
 		return false, nil
 	}
 	return has, nil
 }
 
-func GetCommitmentPublicKeyAddditionalByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, []byte, []byte, error) {
-	commitmentIndexTemp := new(big.Int).SetUint64(commitmentIndex)
-	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
-	c, has, err := stateDB.getCommitmentIndexState(key)
+func GetOTACoinByIndex(stateDB *StateDB, tokenID common.Hash, index uint64, shardID byte) ([]byte, error) {
+	otaCoinIndexTemp := new(big.Int).SetUint64(index)
+	key := GenerateOTACoinIndexObjectKey(tokenID, shardID, otaCoinIndexTemp)
+	c, has, err := stateDB.getOTACoinIndexState(key)
 	if err != nil {
-		return []byte{}, []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, err)
+		return []byte{}, NewStatedbError(GetOTACoinIndexError, err)
 	}
 	if !has {
-		return []byte{}, []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
+		return []byte{}, NewStatedbError(GetOTACoinIndexError, errors.New("no value exist"))
 	}
-	if c.Index().Uint64() != commitmentIndex {
+	if c.Index().Uint64() != index {
 		panic("same key wrong value")
-		return []byte{}, []byte{}, []byte{}, nil
+		return []byte{}, nil
 	}
-
-	return c.Commitment(), c.PublicKey(), c.Additional(), nil
+	return c.outputCoin, nil
 }
 
 func GetCommitmentByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
@@ -148,11 +160,29 @@ func GetCommitmentByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex
 	if !has {
 		return []byte{}, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
 	}
-	if c.Index().Uint64() != commitmentIndex {
-		panic("same key wrong value")
-		return []byte{}, nil
-	}
+	//fmt.Println("CommitmentIndex =", commitmentIndex)
+	//fmt.Println("Cindex =", c.index)
+	//if c.Index().Uint64() != commitmentIndex {
+	//	panic("same key wrong value")
+	//	return []byte{}, nil
+	//}
 	return c.commitment, nil
+}
+
+func GetOTACoinIndex(stateDB *StateDB, tokenID common.Hash, ota []byte) (*big.Int, error) {
+	key := GenerateOnetimeAddressObjectKey(tokenID, ota)
+	c, has, err := stateDB.getOnetimeAddressState(key)
+	if err != nil {
+		return nil, NewStatedbError(GetOTACoinIndexError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetOTACoinIndexError, errors.New("no value exist"))
+	}
+	if bytes.Compare(c.publicKey, ota) != 0 {
+		panic("same key wrong value")
+		return nil, nil
+	}
+	return c.Index(), nil
 }
 
 // GetCommitmentIndex - return index of commitment in db list
@@ -172,6 +202,18 @@ func GetCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitment []byte
 	return c.Index(), nil
 }
 
+func GetOTACoinLength(stateDB *StateDB, tokenID common.Hash, shardID byte) (*big.Int, error) {
+	key := GenerateOTACoinLengthObjectKey(tokenID, shardID)
+	length, has, err := stateDB.getOTACoinLengthState(key)
+	if err != nil {
+		return nil, NewStatedbError(GetOTACoinLengthError, err)
+	}
+	if !has {
+		return new(big.Int).SetUint64(0), NewStatedbError(GetOTACoinLengthError, errors.New("no value exist"))
+	}
+	return new(big.Int).SetUint64(length.Uint64() + 1), nil
+}
+
 // GetCommitmentIndex - return index of commitment in db list
 func GetCommitmentLength(stateDB *StateDB, tokenID common.Hash, shardID byte) (*big.Int, error) {
 	key := GenerateCommitmentLengthObjectKey(tokenID, shardID)
@@ -184,6 +226,7 @@ func GetCommitmentLength(stateDB *StateDB, tokenID common.Hash, shardID byte) (*
 	}
 	return new(big.Int).SetUint64(length.Uint64() + 1), nil
 }
+
 func ListCommitment(stateDB *StateDB, tokenID common.Hash, shardID byte) (map[string]uint64, error) {
 	m := stateDB.getAllCommitmentStateByPrefix(tokenID, shardID)
 	return m, nil
@@ -199,34 +242,64 @@ func ListCommitmentIndices(stateDB *StateDB, tokenID common.Hash, shardID byte) 
 	return reverseM, nil
 }
 
-func StoreOnetimeAddress(stateDB *StateDB, tokenID common.Hash, height uint64, outputCoins [][]byte, shardID byte) error {
+// outputCoins and otas should have the same length
+func StoreOTACoinsAndOnetimeAddresses(stateDB *StateDB, tokenID common.Hash, height uint64, outputCoins [][]byte, otas [][]byte, shardID byte) error {
+	otaCoinLengthKey := GenerateOTACoinLengthObjectKey(tokenID, shardID)
+	otaCoinLength, has, err := stateDB.getOTACoinLengthState(otaCoinLengthKey)
+	if err != nil {
+		return NewStatedbError(GetOTACoinLengthError, err)
+	}
+	if !has {
+		otaCoinLength.SetBytes([]byte{0})
+	} else {
+		otaCoinLength = new(big.Int).SetUint64(otaCoinLength.Uint64() + 1)
+	}
 	heightBytes := common.Uint64ToBytes(height)
-	for _, outputCoin := range outputCoins {
-		//fmt.Println(outputCoin)
-		key := GenerateOnetimeAddressObjectKey(tokenID, shardID, heightBytes, outputCoin)
-		value := NewOnetimeAddressStateWithValue(tokenID, shardID, heightBytes, outputCoin)
+	for index := 0; index < len(outputCoins); index += 1 {
+		outputCoin, ota := outputCoins[index], otas[index]
 
+		// Store OnetimeAddress
+		key := GenerateOnetimeAddressObjectKey(tokenID, ota)
+		value := NewOnetimeAddressStateWithValue(tokenID, ota, otaCoinLength)
+		if err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value); err != nil {
+			return NewStatedbError(StoreOnetimeAddressError, err)
+		}
+
+		// Store OTACoin
+		keyOTACoin := GenerateOTACoinObjectKey(tokenID, shardID, heightBytes, outputCoin)
+		valueOTACoin := NewOTACoinStateWithValue(tokenID, shardID, heightBytes, outputCoin, otaCoinLength)
+		if err := stateDB.SetStateObject(OTACoinObjectType, keyOTACoin, valueOTACoin); err != nil {
+			return NewStatedbError(StoreOTACoinError, err)
+		}
 		//fmt.Println("Key = ", key[:])
 		//fmt.Println("Value = ", value)
-		//fmt.Println("KeyPrefix = ", GetOnetimeAddressPrefix(tokenID, shardID, heightBytes))
+		//fmt.Println("KeyPrefix = ", GetOTACoinPrefix(tokenID, shardID, heightBytes))
 		//keySuffix := common.HashH(outputCoin)
 		//fmt.Println("KeySuffix = ", keySuffix[:][:20])
 
-		err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
-		if err != nil {
-			return NewStatedbError(StoreOnetimeAddressError, err)
+		// store otacoin index
+		keyOTAIndex := GenerateOTACoinIndexObjectKey(tokenID, shardID, otaCoinLength)
+		valueOTACoinIndex := keyOTACoin
+		if err := stateDB.SetStateObject(OTACoinIndexObjectType, keyOTAIndex, valueOTACoinIndex); err != nil {
+			return NewStatedbError(StoreOTACoinIndexError, err)
 		}
+
+		// store otacoin length
+		if err := stateDB.SetStateObject(OTACoinLengthObjectType, otaCoinLengthKey, otaCoinLength); err != nil {
+			return NewStatedbError(StoreOTACoinLengthError, err)
+		}
+		otaCoinLength = otaCoinLength.SetUint64(otaCoinLength.Uint64() + 1)
 	}
-	//fmt.Println("===============")
+	fmt.Println("The database length currently is", otaCoinLength)
 	return nil
 }
 
-func GetOnetimeAddressesByHeight(stateDB *StateDB, tokenID common.Hash, shardID byte, height uint64) ([][]byte, error) {
+func GetOTACoinsByHeight(stateDB *StateDB, tokenID common.Hash, shardID byte, height uint64) ([][]byte, error) {
 	heightBytes := common.Uint64ToBytes(height)
-	onetimeAddressStates := stateDB.getAllOnetimeAddressByPrefix(tokenID, shardID, heightBytes)
+	otaCoinStates := stateDB.getAllOTACoinsByPrefix(tokenID, shardID, heightBytes)
 	onetimeAddressesBytes := [][]byte{}
-	for _, onetimeAddressState := range onetimeAddressStates {
-		onetimeAddressesBytes = append(onetimeAddressesBytes, onetimeAddressState.OutputCoin())
+	for _, otaCoinState := range otaCoinStates {
+		onetimeAddressesBytes = append(onetimeAddressesBytes, otaCoinState.OutputCoin())
 	}
 	return onetimeAddressesBytes, nil
 }
@@ -243,9 +316,16 @@ func StoreOutputCoins(stateDB *StateDB, tokenID common.Hash, publicKey []byte, o
 	return nil
 }
 
-func CheckPublicKeyExistence(stateDB *StateDB, tokenID common.Hash, publicKey []byte) (bool, error) {
-	shardID := common.GetShardIDFromLastByte(publicKey[len(publicKey) - 1])
-	return stateDB.checkOnetimeAddressExistence(tokenID, shardID, publicKey)
+func HasOnetimeAddress(stateDB *StateDB, tokenID common.Hash, ota []byte) (bool, error) {
+	key := GenerateOnetimeAddressObjectKey(tokenID, ota)
+	onetimeAddressState, has, err := stateDB.getOnetimeAddressState(key)
+	if err != nil {
+		return false, NewStatedbError(GetSNDerivatorError, err)
+	}
+	if has && bytes.Compare(onetimeAddressState.PublicKey(), ota) != 0 {
+		panic("same key wrong value")
+	}
+	return has, nil
 }
 
 func GetOutcoinsByPubkey(stateDB *StateDB, tokenID common.Hash, publicKey []byte, shardID byte) ([][]byte, error) {

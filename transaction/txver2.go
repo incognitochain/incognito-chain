@@ -84,27 +84,26 @@ func txSigPubKeyFromBytes(b []byte) ([][]*big.Int, error) {
 }
 
 func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
-	listUsableCommitments := make(map[common.Hash][]byte)
-	for _, in := range inputCoins {
-		usableCommitment := in.GetCommitment().ToBytesS()
-		commitmentInHash := common.HashH(usableCommitment)
-		listUsableCommitments[commitmentInHash] = usableCommitment
-	}
-	lenCommitment, err := statedb.GetCommitmentLength(params.stateDB, *params.tokenID, shardID)
+	//listUsableCommitments := make(map[common.Hash][]byte)
+	//for _, in := range inputCoins {
+	//	usableCommitment := in.GetCommitment().ToBytesS()
+	//	commitmentInHash := common.HashH(usableCommitment)
+	//	listUsableCommitments[commitmentInHash] = usableCommitment
+	//}
+	lenOTA, err := statedb.GetOTACoinLength(params.stateDB, *params.tokenID, shardID)
 	if err != nil {
 		Logger.Log.Errorf("Getting length of commitment error %v ", err)
 		return nil, nil, err
 	}
-	if lenCommitment == nil {
-		Logger.Log.Error(errors.New("Commitments is empty"))
-		return nil, nil, errors.New("Commitments is empty")
+	if lenOTA == nil {
+		Logger.Log.Error(errors.New("OnetimeAddress database is empty"))
+		return nil, nil, errors.New("OnetimeAddress database is empty")
 	}
 
 	outputCommitments := new(operation.Point).Identity()
 	for i := 0; i < len(outputCoins); i += 1 {
 		outputCommitments.Add(outputCommitments, outputCoins[i].GetCommitment())
 	}
-
 	feeCommitment := new(operation.Point).ScalarMult(
 		operation.PedCom.G[operation.PedersenValueIndex],
 		new(operation.Scalar).FromUint64(params.fee),
@@ -123,63 +122,38 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 		if i == pi {
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
-
-				// Store index for validator recheck
-				coinCommitmentDB := inputCoins[j].GetCommitment()
-				commitmentBytes := coinCommitmentDB.ToBytesS()
-				rowIndexes[j], err = statedb.GetCommitmentIndex(params.stateDB, *params.tokenID, commitmentBytes, shardID)
-				if err != nil {
+				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
+				if rowIndexes[j], err = statedb.GetOTACoinIndex(params.stateDB, *params.tokenID, publicKeyBytes); err != nil {
 					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, err
 				}
-
-				coinCommitmentV2 := coin.ParseCommitmentToV2WithCoin(inputCoins[j])
-				sumInputs.Add(sumInputs, coinCommitmentV2)
+				sumInputs.Add(sumInputs, inputCoins[j].GetCommitment())
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
-				for {
-					rowIndexes[j], _ = common.RandBigIntMaxRange(lenCommitment)
-					ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
-					if !ok || err != nil {
-						Logger.Log.Errorf("Has commitment index error %v ", err)
-						return nil, nil, err
-					}
-					commitment, publicKey, snd, err := statedb.GetCommitmentPublicKeyAddditionalByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
-					if err != nil {
-						Logger.Log.Errorf("Get Commitment PublicKey and Additional by index error %v ", err)
-						return nil, nil, err
-					}
-					_, found := listUsableCommitments[common.HashH(commitment)]
-					if found && (lenCommitment.Uint64() != 1 || len(inputCoins) != 1) {
-						continue
-					}
-					row[j], err = new(operation.Point).FromBytesS(publicKey)
-					if err != nil {
-						Logger.Log.Errorf("Parsing from byte to point error %v ", err)
-						return nil, nil, err
-					}
-
-					// Change commitment to v2
-					commitmentBytesV2, err := coin.ParseCommitmentToV2ByBytes(
-						commitment,
-						publicKey,
-						snd,
-						shardID,
-					)
-					if err != nil {
-						Logger.Log.Errorf("ParseCommitmentToV2ByBytes got error %v ", err)
-						return nil, nil, err
-					}
-
-					temp, err := new(operation.Point).FromBytesS(commitmentBytesV2)
-					if err != nil {
-						Logger.Log.Errorf("commitmentBytesV2 is not byte operation.point %v ", err)
-						return nil, nil, err
-					}
-					sumInputs.Add(sumInputs, temp)
-					break
+				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
+				fmt.Println("Length OTA is")
+				fmt.Println("Length OTA is")
+				fmt.Println(lenOTA)
+				fmt.Println(lenOTA)
+				fmt.Println(lenOTA)
+				fmt.Println(lenOTA)
+				if ok, err := statedb.HasOTACoinIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID); !ok || err != nil {
+					Logger.Log.Errorf("Has commitment index error %v ", err)
+					return nil, nil, err
 				}
+				coinBytes, err := statedb.GetOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
+				if err != nil {
+					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
+					return nil, nil, err
+				}
+				coinDB := new(coin.CoinV2)
+				if err := coinDB.SetBytes(coinBytes); err != nil {
+					Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
+					return nil, nil, err
+				}
+				row[j] = coinDB.GetPublicKey()
+				sumInputs.Add(sumInputs, coinDB.GetCommitment())
 			}
 		}
 		row = append(row, sumInputs)
@@ -343,7 +317,7 @@ func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 		}
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
-		found, err := statedb.CheckPublicKeyExistence(stateDB, *tokenID, publicKeyBytes)
+		found, err := statedb.HasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
 		if err != nil {
 			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 			return nil, err
@@ -419,38 +393,23 @@ func getRingFromIndexesWithDatabase(tx *Tx, indexes [][]*big.Int, transactionSta
 		row := make([]*operation.Point, m+1)
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
-			ok, err := statedb.HasCommitmentIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+			ok, err := statedb.HasOTACoinIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if !ok || err != nil {
 				Logger.Log.Errorf("HasCommitmentIndex error %v ", err)
 				return nil, err
 			}
-			commitmentByte, publicKeyByte, sndByte, err := statedb.GetCommitmentPublicKeyAddditionalByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if err != nil {
+				Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
+				return nil, err
+			}
+			randomCoin := new(coin.CoinV2)
+			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
 				Logger.Log.Errorf("Get Commitment, PublicKey, Additional by index error %v ", err)
 				return nil, err
 			}
-			row[j], err = new(operation.Point).FromBytesS(publicKeyByte)
-			if err != nil {
-				Logger.Log.Errorf("Parse bytes to mlsagRing error %v ", err)
-				return nil, err
-			}
-
-			commitmentV2Byte, err := coin.ParseCommitmentToV2ByBytes(
-				commitmentByte,
-				publicKeyByte,
-				sndByte,
-				shardID,
-			)
-			if err != nil {
-				Logger.Log.Errorf("Parsing to commitmentv2 by bytes error %v ", err)
-				return nil, err
-			}
-			commitmentV2, err := new(operation.Point).FromBytesS(commitmentV2Byte)
-			if err != nil {
-				Logger.Log.Errorf("CommitmentV2 from BytesS got error %v ", err)
-				return nil, err
-			}
-			sumCommitment.Add(sumCommitment, commitmentV2)
+			row[j] = randomCoin.GetPublicKey()
+			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
 		}
 		sumCommitment.Sub(sumCommitment, outputCommitments)
 		byteCommitment := sumCommitment.ToBytesS()

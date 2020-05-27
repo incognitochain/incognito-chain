@@ -15,27 +15,30 @@ var (
 	nextShardCandidatePrefix           = []byte("next-sha-cand-")
 	currentShardCandidatePrefix        = []byte("cur-sha-cand-")
 	nextBeaconCandidatePrefix          = []byte("next-bea-cand-")
-	currentBeaconCandidatePrefix       = []byte("cur-bea-cand-")
-	committeeRewardPrefix              = []byte("committee-reward-")
-	rewardRequestPrefix                = []byte("reward-request-")
-	blackListProducerPrefix            = []byte("black-list-")
-	serialNumberPrefix                 = []byte("serial-number-")
-	commitmentPrefix                   = []byte("com-value-")
-	commitmentIndexPrefix              = []byte("com-index-")
-	commitmentLengthPrefix             = []byte("com-length-")
-	snDerivatorPrefix                  = []byte("sn-derivator-")
-	outputCoinPrefix                   = []byte("output-coin-")
-	onetimeAddressPrefix			   = []byte("onetime-address-")
-	tokenPrefix                        = []byte("token-")
-	tokenTransactionPrefix             = []byte("token-transaction-")
-	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
-	pdePoolPrefix                      = []byte("pdepool-")
-	pdeSharePrefix                     = []byte("pdeshare-")
-	pdeTradeFeePrefix                  = []byte("pdetradefee-")
-	pdeContributionStatusPrefix        = []byte("pdecontributionstatus-")
-	pdeTradeStatusPrefix               = []byte("pdetradestatus-")
-	pdeWithdrawalStatusPrefix          = []byte("pdewithdrawalstatus-")
-	pdeStatusPrefix                    = []byte("pdestatus-")
+	currentBeaconCandidatePrefix = []byte("cur-bea-cand-")
+	committeeRewardPrefix        = []byte("committee-reward-")
+	rewardRequestPrefix          = []byte("reward-request-")
+	blackListProducerPrefix      = []byte("black-list-")
+	serialNumberPrefix           = []byte("serial-number-")
+	commitmentPrefix             = []byte("com-value-")
+	commitmentIndexPrefix        = []byte("com-index-")
+	commitmentLengthPrefix       = []byte("com-length-")
+	snDerivatorPrefix            = []byte("sn-derivator-")
+	outputCoinPrefix             = []byte("output-coin-")
+	otaCoinPrefix                = []byte("ota-coin-")
+	otaCoinIndexPrefix        	= []byte("ota-index-")
+	otaCoinLengthPrefix       	= []byte("ota-length-")
+	onetimeAddressPrefix			= []byte("onetime-address-")
+	tokenPrefix                  = []byte("token-")
+	tokenTransactionPrefix       = []byte("token-transaction-")
+	waitingPDEContributionPrefix = []byte("waitingpdecontribution-")
+	pdePoolPrefix                = []byte("pdepool-")
+	pdeSharePrefix               = []byte("pdeshare-")
+	pdeTradeFeePrefix            = []byte("pdetradefee-")
+	pdeContributionStatusPrefix  = []byte("pdecontributionstatus-")
+	pdeTradeStatusPrefix         = []byte("pdetradestatus-")
+	pdeWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
+	pdeStatusPrefix              = []byte("pdestatus-")
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
@@ -120,8 +123,23 @@ func GetOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetOnetimeAddressPrefix(tokenID common.Hash, shardID byte, height []byte) []byte {
-	h := common.HashH(append(onetimeAddressPrefix, append(tokenID[:], append(height, shardID)...)...))
+func GetOTACoinPrefix(tokenID common.Hash, shardID byte, height []byte) []byte {
+	h := common.HashH(append(otaCoinPrefix, append(tokenID[:], append(height, shardID)...)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOTACoinIndexPrefix(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(otaCoinIndexPrefix, append(tokenID[:], shardID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOTACoinLengthPrefix() []byte {
+	h := common.HashH(otaCoinLengthPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOnetimeAddressPrefix(tokenID common.Hash) []byte {
+	h := common.HashH(append(onetimeAddressPrefix, tokenID[:]...))
 	return h[:][:prefixHashKeyLength]
 }
 

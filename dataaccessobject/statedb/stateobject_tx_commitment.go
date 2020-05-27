@@ -9,15 +9,10 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-// additional []byte is when in special needs
-// For example, while changing privacy ver1 to ver2, needs additional to store SnD
-// But with commitments of only ver2, additional will be empty
 type CommitmentState struct {
 	tokenID    common.Hash
 	shardID    byte
 	commitment []byte
-	publicKey  []byte
-	additional []byte
 	index      *big.Int
 }
 
@@ -27,22 +22,6 @@ func (c CommitmentState) Index() *big.Int {
 
 func (c *CommitmentState) SetIndex(index *big.Int) {
 	c.index = index
-}
-
-func (c CommitmentState) Additional() []byte {
-	return c.additional
-}
-
-func (c *CommitmentState) SetAdditional(b []byte) {
-	c.additional = b
-}
-
-func (c CommitmentState) PublicKey() []byte {
-	return c.publicKey
-}
-
-func (c *CommitmentState) SetPublicKey(b []byte) {
-	c.publicKey = b
 }
 
 func (c CommitmentState) Commitment() []byte {
@@ -73,13 +52,11 @@ func NewCommitmentState() *CommitmentState {
 	return &CommitmentState{}
 }
 
-func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte, additional []byte, index *big.Int) *CommitmentState {
+func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, index *big.Int) *CommitmentState {
 	return &CommitmentState{
 		tokenID:    tokenID,
 		shardID:    shardID,
 		commitment: commitment,
-		publicKey:  publicKey,
-		additional: additional,
 		index:      index,
 	}
 }
@@ -96,8 +73,6 @@ func (c CommitmentState) MarshalJSON() ([]byte, error) {
 		TokenID:    c.tokenID,
 		ShardID:    c.shardID,
 		Commitment: c.commitment,
-		PublicKey:  c.publicKey,
-		Additional: c.additional,
 		Index:      c.index,
 	})
 	if err != nil {
@@ -122,8 +97,6 @@ func (c *CommitmentState) UnmarshalJSON(data []byte) error {
 	c.tokenID = temp.TokenID
 	c.shardID = temp.ShardID
 	c.commitment = temp.Commitment
-	c.publicKey = temp.PublicKey
-	c.additional = temp.Additional
 	c.index = temp.Index
 	return nil
 }

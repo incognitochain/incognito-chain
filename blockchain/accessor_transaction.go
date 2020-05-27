@@ -212,8 +212,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 
 func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([][]byte, error) {
 	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
-
-	fmt.Println("Getting ver1 coins of", keyset.PaymentAddress.Pk)
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
 		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
@@ -230,7 +228,7 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *inco
 	//fmt.Println("Current Blockchain height = ", currentHeight)
 	var outCoinsBytes [][]byte
 	for height := shardHeight; height <= currentHeight; height += 1 {
-		currentHeightCoins, err := statedb.GetOnetimeAddressesByHeight(transactionStateDB, *tokenID, shardID, height)
+		currentHeightCoins, err := statedb.GetOTACoinsByHeight(transactionStateDB, *tokenID, shardID, height)
 		if err != nil {
 			Logger.log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
 			return nil, err
@@ -309,26 +307,6 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *in
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
-	//if blockchain.config.MemCache != nil {
-	//	// get from cache
-	//	cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
-	//	cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
-	//	if cachedData != nil && len(cachedData) > 0 {
-	//		// try to parsing on outCointsInBytes
-	//		_ = json.Unmarshal(cachedData, &outCoinsInBytes)
-	//	}
-	//	if len(outCoinsInBytes) == 0 {
-	//		// cached data is nil or fail -> get from database
-	//		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
-	//		if len(outCoinsInBytes) > 0 {
-	//			// cache 1 day for result
-	//			cachedData, err = json.Marshal(outCoinsInBytes)
-	//			if err == nil {
-	//				blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
-	//			}
-	//		}
-	//	}
-	//}
 	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsVer1BytesByKeyset(keyset, shardID, tokenID)
 	if err != nil {
 		return nil, err
@@ -495,6 +473,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 			return err
 		}
 
+		err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		if err != nil {
+			return err
+		}
+
 		err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView)
 		if err != nil {
 			return err
@@ -510,6 +493,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 	}
 
 	err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
+	err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -578,7 +566,7 @@ func (blockchain *BlockChain) StoreTxByPublicKey(db incdb.Database, view *TxView
 	return nil
 }
 
-func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
+func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
 	// commitment and output are the same key in map
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
@@ -587,25 +575,25 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 	sort.Strings(keys)
 
 	// Start to store to db
-	for _, k := range keys {
-		publicKey := k
+	for _, publicKey := range keys {
 		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 		if err != nil {
 			return err
 		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
-			var mapComSnd map[string][]byte = make(map[string][]byte)
-
 			// outputs
-			outputCoinArray := view.mapOutputCoins[k]
+			outputCoinArray := view.mapOutputCoins[publicKey]
 			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
 			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
 			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
 			fmt.Println("About to store commitment from txviewpoint, found", len(outputCoinArray), "coins")
-			outputCoinBytesArray := make([][]byte, 0)
+			otaCoinArray := make([][]byte, 0)
 			onetimeAddressArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {
+				if outputCoin.GetVersion() != 2 {
+					continue
+				}
 				shardIDcoin, _ := outputCoin.GetShardID()
 				fmt.Println("Coin Version =", outputCoin.GetVersion())
 				fmt.Println("Coin ShardID =", shardIDcoin)
@@ -615,34 +603,49 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 				fmt.Println("Coin Info =", outputCoin.GetInfo())
 				fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
 				fmt.Println("TokenID of coin =", view.tokenID)
-				commitmentBytes := outputCoin.GetCommitment().ToBytesS()
-				snd := outputCoin.GetSNDerivator()
-				if snd != nil {
-					mapComSnd[string(commitmentBytes)] = snd.ToBytesS()
-				} else {
-					mapComSnd[string(commitmentBytes)] = []byte{}
-				}
-
-				if outputCoin.GetVersion() == 1 {
-					outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
-				} else if outputCoin.GetVersion() == 2 {
-					onetimeAddressArray = append(onetimeAddressArray, outputCoin.Bytes())
-				}
+				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
+				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
 			}
-			err = statedb.StoreOnetimeAddress(stateDB, *view.tokenID, view.height, onetimeAddressArray, publicKeyShardID)
-			if err != nil {
+			if err = statedb.StoreOTACoinsAndOnetimeAddresses(stateDB, *view.tokenID, view.height, otaCoinArray, onetimeAddressArray, publicKeyShardID); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
 
-			fmt.Println("Storing outputcoins with pubkey:", publicKeyBytes)
+func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
+	// commitment and output are the same key in map
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Start to store to db
+	for _, publicKey := range keys {
+		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
+		if err != nil {
+			return err
+		}
+		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
+		if publicKeyShardID == shardID {
+			// outputs
+			outputCoinArray := view.mapOutputCoins[publicKey]
+			outputCoinBytesArray := make([][]byte, 0)
+			for _, outputCoin := range outputCoinArray {
+				if outputCoin.GetVersion() == 1 {
+					outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+				}
+			}
 			err = statedb.StoreOutputCoins(stateDB, *view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
 			if err != nil {
 				return err
 			}
 
 			// commitment
-			commitmentsArray := view.mapCommitments[k]
-			err = statedb.StoreCommitments(stateDB, *view.tokenID, publicKeyBytes, mapComSnd, commitmentsArray, view.shardID)
+			commitmentsArray := view.mapCommitments[publicKey]
+			err = statedb.StoreCommitments(stateDB, *view.tokenID, commitmentsArray, view.shardID)
 			if err != nil {
 				return err
 			}
@@ -656,9 +659,6 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 						Logger.log.Error("can not delete memcache", "GetListOutputcoinCachedKey", base58.Base58Check{}.Encode(cachedKey, 0x0))
 					}
 				}
-			}
-			if err != nil {
-				return err
 			}
 		}
 	}
@@ -703,6 +703,12 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 		if err != nil {
 			return err
 		}
+
+		err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		if err != nil {
+			return err
+		}
+
 		// store snd
 		err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView)
 		if err != nil {
@@ -714,6 +720,13 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 	if err != nil {
 		return err
 	}
+
+	// store otas
+	err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
 	// store snd
 	err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {

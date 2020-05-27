@@ -4,59 +4,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"math/big"
 	"reflect"
 )
 
 type OnetimeAddressState struct {
-	tokenID     common.Hash
-	shardID     byte
-	height		[]byte
-	outputCoin	[]byte
+	tokenID 	  common.Hash
+	publicKey     []byte
+	index 		  *big.Int
 }
 
-func (ota OnetimeAddressState) OutputCoin() []byte {
-	return ota.outputCoin
+func (s OnetimeAddressState) Index() *big.Int {
+	return s.index
 }
 
-func (ota *OnetimeAddressState) SetOutputCoin(outputCoin []byte) {
-	ota.outputCoin = outputCoin
+func (s *OnetimeAddressState) SetIndex(index *big.Int) {
+	s.index = index
 }
 
-func (ota OnetimeAddressState) TokenID() common.Hash {
-	return ota.tokenID
+func (s OnetimeAddressState) PublicKey() []byte {
+	return s.publicKey
 }
 
-func (ota *OnetimeAddressState) SetTokenID(tokenID common.Hash) {
-	ota.tokenID = tokenID
+func (s *OnetimeAddressState) SetPublicKey(publicKey []byte) {
+	s.publicKey = publicKey
 }
 
-func (ota OnetimeAddressState) ShardID() byte {
-	return ota.shardID
+func (s OnetimeAddressState) TokenID() common.Hash {
+	return s.tokenID
 }
 
-func (ota *OnetimeAddressState) SetShardID(shardID byte) {
-	ota.shardID = shardID
+func (s *OnetimeAddressState) SetTokenID(tokenID common.Hash) {
+	s.tokenID = tokenID
 }
 
-func (ota OnetimeAddressState) Height() []byte {
-	return ota.height
-}
-
-func (ota *OnetimeAddressState) SetHeight(height []byte) {
-	ota.height = height
-}
-
-func (ota *OnetimeAddressState) MarshalJSON() ([]byte, error) {
+func (s OnetimeAddressState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID    common.Hash
-		ShardID    byte
-		Height     []byte
-		OutputCoin []byte
+		TokenID common.Hash
+		PublicKey     []byte
+		Index 		  *big.Int
 	}{
-		TokenID:    ota.tokenID,
-		ShardID:    ota.shardID,
-		Height:  ota.height,
-		OutputCoin: ota.outputCoin,
+		TokenID: 		s.tokenID,
+		PublicKey:      s.publicKey,
+		Index: 			s.index,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -64,30 +54,28 @@ func (ota *OnetimeAddressState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (ota *OnetimeAddressState) UnmarshalJSON(data []byte) error {
+func (s *OnetimeAddressState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID    common.Hash
-		ShardID    byte
-		Height     []byte
-		OutputCoin []byte
+		TokenID 	common.Hash
+		PublicKey   []byte
+		Index 		*big.Int
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	ota.tokenID = temp.TokenID
-	ota.shardID = temp.ShardID
-	ota.height = temp.Height
-	ota.outputCoin = temp.OutputCoin
+	s.tokenID = temp.TokenID
+	s.publicKey = temp.PublicKey
+	s.index = temp.Index
 	return nil
-}
-
-func NewOnetimeAddressStateWithValue(tokenID common.Hash, shardID byte, height []byte, outputCoin []byte) *OnetimeAddressState {
-	return &OnetimeAddressState{tokenID: tokenID, shardID: shardID, height: height, outputCoin: outputCoin}
 }
 
 func NewOnetimeAddressState() *OnetimeAddressState {
 	return &OnetimeAddressState{}
+}
+
+func NewOnetimeAddressStateWithValue(tokenID common.Hash, publicKey []byte, index *big.Int) *OnetimeAddressState {
+	return &OnetimeAddressState{tokenID: tokenID, publicKey: publicKey, index: index}
 }
 
 type OnetimeAddressObject struct {
@@ -111,12 +99,12 @@ type OnetimeAddressObject struct {
 
 func newOnetimeAddressObject(db *StateDB, hash common.Hash) *OnetimeAddressObject {
 	return &OnetimeAddressObject{
-		version:          defaultVersion,
-		db:               db,
+		version:          	 defaultVersion,
+		db:               	 db,
 		onetimeAddressHash:  hash,
 		onetimeAddressState: NewOnetimeAddressState(),
-		objectType:       OnetimeAddressObjectType,
-		deleted:          false,
+		objectType:       	 OnetimeAddressObjectType,
+		deleted:          	 false,
 	}
 }
 
@@ -145,9 +133,9 @@ func newOnetimeAddressObjectWithValue(db *StateDB, key common.Hash, data interfa
 	}, nil
 }
 
-func GenerateOnetimeAddressObjectKey(tokenID common.Hash, shardID byte, height []byte, outputCoin []byte) common.Hash {
-	prefixHash := GetOnetimeAddressPrefix(tokenID, shardID, height)
-	valueHash := common.HashH(outputCoin)
+func GenerateOnetimeAddressObjectKey(tokenID common.Hash, onetimeAddress []byte) common.Hash {
+	prefixHash := GetOnetimeAddressPrefix(tokenID)
+	valueHash := common.HashH(onetimeAddress)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
