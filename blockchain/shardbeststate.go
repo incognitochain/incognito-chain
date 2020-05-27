@@ -363,17 +363,18 @@ func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePub
 	return append(result, shardBestState.ShardCommittee...)
 }
 
-func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey {
-	return GetProposerByTimeSlot(ts, shardBestState.ShardCommittee)
+func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
+	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
+	return shardBestState.ShardCommittee[id]
 }
 
 func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
 	return shardBestState.BestBlock
 }
 
-func GetProposerByTimeSlot(ts int64, shardCommittee []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
-	id := int(ts) % len(shardCommittee)
-	return shardCommittee[id]
+func GetProposerByTimeSlot(ts int64, committeeLen int) int {
+	id := int(ts) % committeeLen
+	return id
 }
 
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
