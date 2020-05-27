@@ -399,8 +399,12 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				}
 				//liquidation: redeem ptoken
 			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
-				if len(l) >= 4 && l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
-					newTx, err = blockGenerator.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+				if len(l) >= 4 {
+					if l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+						newTx, err = blockGenerator.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+					} else if l[2] == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+						newTx, err = blockGenerator.buildPortalRefundRedeemLiquidateExchangeRatesTx(l[3], producerPrivateKey, shardID)
+					}
 				}
 			case metadata.PortalLiquidateCustodianMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {

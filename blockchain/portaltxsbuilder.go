@@ -187,7 +187,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing request ptoken response tx: %+v", initErr)
-		return nil, initErr
+		return nil, nil
 	}
 	return resTx, nil
 }
@@ -374,7 +374,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
-		return nil, initErr
+		return nil, nil
 	}
 
 	Logger.log.Info("[Shard buildPortalRejectedRedeemRequestTx] Finished...")
@@ -574,5 +574,89 @@ func (blockGenerator *BlockGenerator) buildPortalRefundPortingFeeTx(
 		return nil, nil
 	}
 	Logger.log.Info("[Portal refund porting fee] Finished...")
+	return resTx, nil
+}
+
+
+// buildPortalRefundRedeemFromLiquidationTx builds response tx for user request redeem from liquidation pool tx with status "rejected"
+// mints ptoken to return to user (ptoken that user burned)
+func (blockGenerator *BlockGenerator) buildPortalRefundRedeemLiquidateExchangeRatesTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Errorf("[Shard buildPortalRefundRedeemFromLiquidationTx] Starting...")
+	contentBytes := []byte(contentStr)
+	var redeemReqContent metadata.PortalRedeemLiquidateExchangeRatesContent
+	err := json.Unmarshal(contentBytes, &redeemReqContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal redeem request content: %+v", err)
+		return nil, nil
+	}
+	if redeemReqContent.ShardID != shardID {
+		Logger.log.Errorf("ERROR: unexpected ShardID, expect %v, but got %+v", shardID, redeemReqContent.ShardID)
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
+		common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		redeemReqContent.TxReqID,
+		redeemReqContent.RedeemerIncAddressStr,
+		redeemReqContent.RedeemAmount,
+		redeemReqContent.TotalPTokenReceived,
+		redeemReqContent.TokenID,
+		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing requester address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	receiveAmt := redeemReqContent.RedeemAmount
+	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
+
+	// in case the returned currency is privacy custom token
+	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
+		Amount:         receiveAmt,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID: propID.String(),
+		Amount:      receiveAmt,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
+		TokenInput:  []*privacy.InputCoin{},
+		Mintable:    true,
+	}
+	resTx := &transaction.TxCustomTokenPrivacy{}
+	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
+	initErr := resTx.Init(
+		transaction.NewTxPrivacyTokenInitParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			txStateDB,
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+			featureStateDB,
+		),
+	)
+	if initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
+		return nil, nil
+	}
+
+	Logger.log.Info("[Shard buildPortalRefundRedeemFromLiquidationTx] Finished...")
 	return resTx, nil
 }
