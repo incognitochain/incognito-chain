@@ -233,3 +233,8 @@ func ConvertPrivacyTokenToNativeToken(
 		stateDB,
 	)
 }
+
+func IsValidBNBAddress(bnbAddress string) bool {
+
+	return true
+}
