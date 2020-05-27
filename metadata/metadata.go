@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -58,6 +59,8 @@ type ChainRetriever interface {
 	GetBurningAddress(blockHeight uint64) string
 	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
+	GetBNBChainID() string
+	GetBTCChainID() string
 }
 
 type BeaconViewRetriever interface {
@@ -232,4 +235,25 @@ func ConvertPrivacyTokenToNativeToken(
 		beaconHeight,
 		stateDB,
 	)
+}
+
+func IsValidRemoteAddress(remoteAddress string, tokenID string, chainID string) bool {
+	if tokenID == common.PortalBNBIDStr {
+		return bnb.IsValidBNBAddress(remoteAddress, chainID)
+	} else if tokenID == common.PortalBTCIDStr {
+		//todo:
+		return true
+	}
+
+	return false
+}
+
+func GetChainIDByTokenID(tokenID string, chainRetriever ChainRetriever) string {
+	if tokenID == common.PortalBNBIDStr {
+		return chainRetriever.GetBNBChainID()
+	} else if tokenID == common.PortalBTCIDStr {
+		return chainRetriever.GetBTCChainID()
+	}
+	return ""
+
 }
