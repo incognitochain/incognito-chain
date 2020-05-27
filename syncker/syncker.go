@@ -406,7 +406,7 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 	for {
 		ch, err := synckerManager.config.Node.RequestBeaconBlocksByHashViaStream(ctx, peerID, [][]byte{requestHash.Bytes()})
 		if err != nil {
-			fmt.Println("Syncker: create channel fail")
+			fmt.Println("[Monitor] Syncker: create channel fail")
 			return
 		}
 		blk := <-ch

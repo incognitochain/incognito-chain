@@ -76,7 +76,8 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		return nil
 	}
 	pubKey, _ := sub.consensusData.GetCurrentMiningPublicKey()
-	if (sub.role.role != "") && (sub.role.role != "dummyRole") {
+	Logger.Infof("role %v %v %v, key %v", newRole.role, newRole.layer, newRole.shardID, pubKey)
+	if (newRole.role != "") && (newRole.role != "dummyRole") {
 		if pubKey == "" {
 			return errors.Errorf("Can not load current mining key, pub key %v role %v", pubKey, sub.role.role)
 		} else {
