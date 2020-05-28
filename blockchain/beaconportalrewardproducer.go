@@ -104,7 +104,14 @@ func splitRewardForCustodians(
 
 	totalLockCollateralSplited := uint64(0)
 	totalRewardSplited := map[common.Hash]uint64{}
-	for _, custodian := range custodianState {
+
+	sortedCustodianKeys := []string{}
+	for custodianKey := range custodianState {
+		sortedCustodianKeys = append(sortedCustodianKeys, custodianKey)
+	}
+	sort.Strings(sortedCustodianKeys)
+	for _, key := range sortedCustodianKeys {
+		custodian := custodianState[key]
 		lockedCollateralCustodian, ok := lockedCollateralState.GetLockedCollateralDetail()[custodian.GetIncognitoAddress()]
 		if !ok || lockedCollateralCustodian == 0 {
 			continue
