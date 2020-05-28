@@ -121,7 +121,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 			return false, false, errors.New("Remote address is invalid")
 		}
 		chainID := GetChainIDByTokenID(tokenID, bcr)
-		if !IsValidRemoteAddress(remoteAddr, tokenID, chainID) {
+		if !IsValidRemoteAddress(bcr, remoteAddr, tokenID, chainID) {
 			return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
 		}
 	}
