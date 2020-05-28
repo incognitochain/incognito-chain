@@ -145,10 +145,10 @@ func (b *BlockChain) ProcessBlockV2(block *btcutil.Block, flags BehaviorFlags) (
 	}
 
 	// The block must not already exist as an orphan.
-	if _, exists := b.orphans[*blockHash]; exists {
-		str := fmt.Sprintf("already have block (orphan) %v", blockHash)
-		return false, false, ruleError(ErrDuplicateBlock, str)
-	}
+	// if _, exists := b.orphans[*blockHash]; exists {
+	// 	str := fmt.Sprintf("already have block (orphan) %v", blockHash)
+	// 	return false, false, ruleError(ErrDuplicateBlock, str)
+	// }
 
 	// Perform preliminary sanity checks on the block and its transactions.
 	err = checkBlockSanityV2(block, b.chainParams.PowLimit, b.timeSource, flags)
@@ -197,17 +197,17 @@ func (b *BlockChain) ProcessBlockV2(block *btcutil.Block, flags BehaviorFlags) (
 	}
 
 	// Handle orphan blocks.
-	prevHash := &blockHeader.PrevBlock
-	prevHashExists, err := b.blockExists(prevHash)
-	if err != nil {
-		return false, false, err
-	}
-	if !prevHashExists {
-		log.Infof("Adding orphan block %v with parent %v", blockHash, prevHash)
-		b.addOrphanBlock(block)
+	// prevHash := &blockHeader.PrevBlock
+	// prevHashExists, err := b.blockExists(prevHash)
+	// if err != nil {
+	// 	return false, false, err
+	// }
+	// if !prevHashExists {
+	// 	log.Infof("Adding orphan block %v with parent %v", blockHash, prevHash)
+	// 	b.addOrphanBlock(block)
 
-		return false, true, nil
-	}
+	// 	return false, true, nil
+	// }
 
 	// The block has passed all context independent checks and appears sane
 	// enough to potentially accept it into the block chain.
@@ -219,10 +219,10 @@ func (b *BlockChain) ProcessBlockV2(block *btcutil.Block, flags BehaviorFlags) (
 	// Accept any orphan blocks that depend on this block (they are
 	// no longer orphans) and repeat for those accepted blocks until
 	// there are no more.
-	err = b.processOrphans(blockHash, flags)
-	if err != nil {
-		return false, false, err
-	}
+	// err = b.processOrphans(blockHash, flags)
+	// if err != nil {
+	// 	return false, false, err
+	// }
 
 	log.Debugf("Accepted block %v", blockHash)
 
