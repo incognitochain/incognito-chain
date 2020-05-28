@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 // Interface for all types of metadata in tx
@@ -61,6 +62,7 @@ type ChainRetriever interface {
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBNBChainID() string
 	GetBTCChainID() string
+	GetBTCHeaderChain() *btcrelaying.BlockChain
 }
 
 type BeaconViewRetriever interface {
@@ -237,14 +239,21 @@ func ConvertPrivacyTokenToNativeToken(
 	)
 }
 
-func IsValidRemoteAddress(remoteAddress string, tokenID string, chainID string) bool {
+func IsValidRemoteAddress(
+	bcr ChainRetriever,
+	remoteAddress string,
+	tokenID string,
+	chainID string,
+) bool {
 	if tokenID == common.PortalBNBIDStr {
 		return bnb.IsValidBNBAddress(remoteAddress, chainID)
 	} else if tokenID == common.PortalBTCIDStr {
-		//todo:
-		return true
+		btcHeaderChain := bcr.GetBTCHeaderChain()
+		if btcHeaderChain == nil {
+			return false
+		}
+		return btcHeaderChain.IsBTCAddressValid(remoteAddress)
 	}
-
 	return false
 }
 
@@ -255,5 +264,4 @@ func GetChainIDByTokenID(tokenID string, chainRetriever ChainRetriever) string {
 		return chainRetriever.GetBTCChainID()
 	}
 	return ""
-
 }

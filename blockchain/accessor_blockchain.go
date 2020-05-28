@@ -3,11 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 func (blockchain *BlockChain) StoreShardBestState(shardID byte) error {
@@ -297,4 +299,8 @@ func (blockchain *BlockChain) GetBNBChainID() string {
 
 func (blockchain *BlockChain) GetBTCChainID() string {
 	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
+}
+
+func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
+	return blockchain.GetConfig().BTCChain
 }
