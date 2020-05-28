@@ -223,6 +223,9 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			if nextCrossShardInfo == nil {
 				break
 			}
+			if requestHeight == nextCrossShardInfo.NextCrossShardHeight {
+				break
+			}
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
 			if err != nil {
