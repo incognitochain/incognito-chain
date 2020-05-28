@@ -123,7 +123,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 			return false, false, errors.New("Remote address is invalid")
 		}
 		chainID := GetChainIDByTokenID(tokenID, chainRetriever)
-		if !IsValidRemoteAddress(remoteAddr, tokenID, chainID) {
+		if !IsValidRemoteAddress(chainRetriever, remoteAddr, tokenID, chainID) {
 			return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
 		}
 	}
