@@ -63,7 +63,7 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 	} else if ver == txConversionVersion12 {
 		res = &privacy_v2.ConversionProofVer1ToVer2{}
 	} else {
-		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2")
+		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2 or -1")
 	}
 	res.Init()
 	err = json.Unmarshal(proofInBytes, res)
@@ -299,6 +299,14 @@ func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) (bool, error) {
 	return true, nil
 }
 
+func (tx *Tx) ShouldSignMetaData() bool {
+	if tx.GetMetadata() == nil {
+		return false
+	}
+	meta := tx.GetMetadata()
+	return meta.ShouldSignMetaData()
+}
+
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
 // if not want to create a privacy tx proof, set hashPrivacy = false
@@ -354,6 +362,26 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 	return verifier.Verify(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
+func (tx Tx) StringWithoutMetadataSig() string {
+	record := strconv.Itoa(int(tx.Version))
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
+	if tx.Proof != nil {
+		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
+	}
+	if tx.Metadata != nil {
+		var metadataHash *common.Hash
+		if meta, ok := tx.Metadata.(*metadata.StopAutoStakingMetadata); ok {
+			metadataHash = meta.HashWithoutSig()
+		} else {
+			metadataHash = tx.Metadata.Hash()
+		}
+		record += metadataHash.String()
+	}
+	record += string(tx.Info)
+	return record
+}
+
 func (tx Tx) String() string {
 	record := strconv.Itoa(int(tx.Version))
 	record += strconv.FormatInt(tx.LockTime, 10)
@@ -373,17 +401,22 @@ func (tx Tx) String() string {
 }
 
 func (tx *Tx) Hash() *common.Hash {
-	if tx.cachedHash != nil {
-		return tx.cachedHash
-	}
+	//if tx.cachedHash != nil {
+	//	return tx.cachedHash
+	//}
 	inBytes := []byte(tx.String())
 	hash := common.HashH(inBytes)
-	tx.cachedHash = &hash
+	//tx.cachedHash = &hash
 	return &hash
 }
 
 func (tx Tx) GetSenderAddrLastByte() byte {
 	return tx.PubKeyLastByteSender
+}
+
+func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
+	checker := newTxVersionSwitcher(tx.Version)
+	return checker.CheckAuthorizedSender(tx, publicKey)
 }
 
 func (tx Tx) GetTxFee() uint64 {
@@ -538,9 +571,30 @@ func (tx Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 }
 
+func (tx Tx) GetAndCheckBurningReceiver() (bool, []byte, uint64) {
+	pubkeys, amounts := tx.GetReceivers()
+	if len(pubkeys) > 2 {
+		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
+		return false, nil, 0
+	}
+	hasBurning, pubkey, amount := false, []byte{}, uint64(0)
+	for i, pk := range pubkeys {
+		if wallet.IsPublicKeyBurningAddress(pk) {
+			hasBurning = true
+			pubkey = pk
+			amount += amounts[i]
+		}
+	}
+	return hasBurning, pubkey, amount
+}
+
 func (tx Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
-	unique, pk, amount := tx.GetUniqueReceiver()
-	return unique, pk, amount, &common.PRVCoinID
+	pubkeys, amounts := tx.GetReceivers()
+	if len(pubkeys) > 1 {
+		Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
+		return false, nil, 0, &common.PRVCoinID
+	}
+	return true, pubkeys[0], amounts[0], &common.PRVCoinID
 }
 
 func (tx Tx) GetTokenReceivers() ([][]byte, []uint64) {
@@ -844,7 +898,7 @@ func (tx Tx) CalculateTxValue() uint64 {
 // #2 - receiverAddr:
 // #3 - privKey:
 // #4 - snDerivators:
-func (tx *Tx) InitTxSalary(salary uint64, txRandom *coin.TxRandom, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
+func (tx *Tx) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
 	tx.Version = txVersion2
 	tx.Type = common.TxRewardType
 
@@ -852,38 +906,21 @@ func (tx *Tx) InitTxSalary(salary uint64, txRandom *coin.TxRandom, receiverAddr 
 		tx.LockTime = time.Now().Unix()
 	}
 
-	// Create onetimeaddress coin
-	var err error
-	c := new(coin.CoinV2).Init()
-	c.SetVersion(2)
-	c.SetValue(salary)
-	c.SetTxRandom(txRandom)
-	c.SetSharedRandom(nil)
-	c.SetRandomness(operation.RandomScalar())
-	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
-	c.SetInfo([]byte{})
-	// The public key should be onetimeadddress already
-	publicKey, err := new(operation.Point).FromBytesS(receiverAddr.Pk)
-	if err != nil {
-		return err
-	}
-	c.SetPublicKey(publicKey)
-
 	tempOutputCoin := make([]coin.Coin, 1)
-	tempOutputCoin[0] = c
+	tempOutputCoin[0] = otaCoin
 
 	proof := new(privacy.ProofV2)
 	proof.Init()
 	proof.SetOutputCoins(tempOutputCoin)
 	tx.Proof = proof
-	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+
+	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
+	tx.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes) - 1]
 
 	// sign Tx using ver1 schnorr
-	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privateKey
 	tx.SetMetadata(metaData)
-	err = signTx(tx)
-	if err != nil {
+	if err := signTx(tx); err != nil {
 		return NewTransactionErr(SignTxError, err)
 	}
 	return nil
@@ -973,4 +1010,11 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		return ok, nil
 	}
 	return true, nil
+}
+
+func (tx *Tx) HashWithoutMetadataSig() *common.Hash {
+	inBytes := []byte(tx.StringWithoutMetadataSig())
+	hash := common.HashH(inBytes)
+	//tx.cachedHash = &hash
+	return &hash
 }

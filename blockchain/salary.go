@@ -56,10 +56,15 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(swapPublicKey s
 		metadata.ReturnStakingMeta,
 	)
 	returnStakingTx := new(transaction.Tx)
+
+	amount := txData.CalculateTxValue()
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(amount, keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	err = returnStakingTx.InitTxSalary(
-		txData.CalculateTxValue(),
-		coin.NewTxRandom(), // TODO Privacy
-		&keyWallet.KeySet.PaymentAddress,
+		otaCoin,
 		blkProducerPrivateKey,
 		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		returnStakingMeta,

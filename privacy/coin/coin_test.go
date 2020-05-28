@@ -20,13 +20,13 @@ func TestIsCoinBelong(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	paymentInfo0 := key.InitPaymentInfo(keyset0.PaymentAddress, 10, []byte{})
-	c0, err := NewCoinBasedOnPaymentInfo(paymentInfo0)
+	c0, err := NewCoinFromPaymentInfo(paymentInfo0)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, false, c0.IsEncrypted())
 	c0.ConcealData(keyset0.PaymentAddress.GetPublicView())
 
 	paymentInfo1 := key.InitPaymentInfo(keyset1.PaymentAddress, 10, []byte{})
-	c1, err := NewCoinBasedOnPaymentInfo(paymentInfo1)
+	c1, err := NewCoinFromPaymentInfo(paymentInfo1)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, false, c1.IsEncrypted())
 	c1.ConcealData(keyset1.PaymentAddress.GetPublicView())

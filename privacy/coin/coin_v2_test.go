@@ -56,7 +56,7 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 
 		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, val, []byte{})
 
-		c, err := NewCoinBasedOnPaymentInfo(paymentInfo)
+		c, err := NewCoinFromPaymentInfo(paymentInfo)
 		assert.Equal(t, val, c.GetValue())
 		assert.Equal(t, nil, err)
 		assert.Equal(t, false, c.IsEncrypted())

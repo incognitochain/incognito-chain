@@ -160,13 +160,6 @@ func proveConversion(tx * Tx, params *TxConvertVer1ToVer2Params) error {
 	randSK := big.NewInt(0)
 	tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
 
-	fmt.Println("Checking output coins of conversion proof")
-	fmt.Println("Checking output coins of conversion proof")
-	fmt.Println("Checking output coins of conversion proof")
-	for i := 0; i < len(tx.Proof.GetOutputCoins()); i += 1 {
-		fmt.Println(tx.Proof.GetOutputCoins()[i].GetKeyImage())
-	}
-
 	// sign tx
 	signErr := signTx(tx)
 	if signErr != nil {

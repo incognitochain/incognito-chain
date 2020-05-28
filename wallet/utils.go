@@ -1,7 +1,9 @@
 package wallet
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 )
 
@@ -63,4 +65,23 @@ func addChecksum(data []byte) []byte {
 	}
 
 	return dataBigInt.Bytes()
+}
+
+func IsPublicKeyBurningAddress(publicKey []byte) bool {
+	// get burning address
+	keyWalletBurningAdd1, err := Base58CheckDeserialize(common.BurningAddress)
+	if err != nil {
+		return false
+	}
+	if bytes.Equal(publicKey, keyWalletBurningAdd1.KeySet.PaymentAddress.Pk) {
+		return true
+	}
+	keyWalletBurningAdd2, err := Base58CheckDeserialize(common.BurningAddress2)
+	if err != nil {
+		return false
+	}
+	if bytes.Equal(publicKey, keyWalletBurningAdd2.KeySet.PaymentAddress.Pk) {
+		return true
+	}
+	return false
 }

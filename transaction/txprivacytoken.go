@@ -231,7 +231,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				message = params.tokenParams.Receiver[0].Message
 			}
 			tempPaymentInfo := key.InitPaymentInfo(params.tokenParams.Receiver[0].PaymentAddress, params.tokenParams.Amount, message)
-			c, errCoin := coin.NewCoinBasedOnPaymentInfo(tempPaymentInfo)
+			c, errCoin := coin.NewCoinFromPaymentInfo(tempPaymentInfo)
 			if errCoin != nil {
 				Logger.Log.Errorf("Cannot create new coin based on payment info err %v", errCoin)
 				return errCoin
@@ -609,8 +609,12 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool,
 
 // GetTransferData
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte, uint64, *common.Hash) {
-	unique, pk, amount := txCustomTokenPrivacy.GetTokenUniqueReceiver()
-	return unique, pk, amount, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
+	pubkeys, amounts := txCustomTokenPrivacy.GetReceivers()
+	if len(pubkeys) > 1 {
+		Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
+		return false, nil, 0, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
+	}
+	return true, pubkeys[0], amounts[0], &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 }
 
 // IsCoinsBurning - checking this is a burning pToken

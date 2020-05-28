@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,15 @@ import (
 )
 
 type TxVersion1 struct{}
+
+func (*TxVersion1) CheckAuthorizedSender(tx *Tx, publicKey []byte) (bool, error) {
+	sigPubKey := tx.GetSigPubKey()
+	if bytes.Equal(sigPubKey, publicKey) {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
 
 func parseCommitments(params *TxPrivacyInitParams, shardID byte) ([]uint64, []uint64, error) {
 	var commitmentIndexs []uint64   // array index random of commitments in db

@@ -74,10 +74,13 @@ func buildTradeResTx(
 	// the returned currency is PRV
 	if tokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.Tx)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and receiver")
+			return nil, err
+		}
 		err = resTx.InitTxSalary(
-			receiveAmt,
-			coin.NewTxRandom(), //TODO Privacy
-			&receiverAddr,
+			otaCoin,
 			producerPrivateKey,
 			transactionStateDB,
 			meta,
@@ -253,10 +256,13 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	// the returned currency is PRV
 	if withdrawalTokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.Tx)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(wdAcceptedContent.DeductingPoolValue, receiverAddr)
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and receiver")
+			return nil, err
+		}
 		err = resTx.InitTxSalary(
-			wdAcceptedContent.DeductingPoolValue,
-			coin.NewTxRandom(), //TODO PRIVACY
-			&receiverAddr,
+			otaCoin,
 			producerPrivateKey,
 			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
@@ -349,10 +355,13 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	// the returned currency is PRV
 	if refundTokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.Tx)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundContribution.ContributedAmount, receiverAddr)
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and receiver")
+			return nil, err
+		}
 		err = resTx.InitTxSalary(
-			refundContribution.ContributedAmount,
-			coin.NewTxRandom(), //TODO Privacy
-			&receiverAddr,
+			otaCoin,
 			producerPrivateKey,
 			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
@@ -449,10 +458,13 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	// the returned currency is PRV
 	if tokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.Tx)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(matchedNReturnedContribution.ReturnedContributedAmount, receiverAddr)
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and receiver")
+			return nil, err
+		}
 		err = resTx.InitTxSalary(
-			matchedNReturnedContribution.ReturnedContributedAmount,
-			coin.NewTxRandom(), //TODO Privacy
-			&receiverAddr,
+			otaCoin,
 			producerPrivateKey,
 			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,

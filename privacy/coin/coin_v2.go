@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -84,8 +85,14 @@ type CoinV2 struct {
 	amount *operation.Scalar
 }
 
+func NewCoinFromAmountAndReceiver(amount uint64, receiver key.PaymentAddress) (*CoinV2, error) {
+	fmt.Println("Creating coins where amount =", amount, "and publickey =", receiver.Pk)
+	paymentInfo := key.InitPaymentInfo(receiver, amount, []byte{})
+	return NewCoinFromPaymentInfo(paymentInfo)
+}
+
 // This function create new coinv2 that has same shardID with targetShardID and with info of paymentInfo
-func NewCoinBasedOnPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
+func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 	if err != nil {
 		errStr := fmt.Sprintf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
@@ -102,15 +109,24 @@ func NewCoinBasedOnPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	c.SetRandomness(operation.RandomScalar())
 	c.SetSharedRandom(operation.RandomScalar())                                  // r
 	c.SetTxRandomPoint(new(operation.Point).ScalarMultBase(c.GetSharedRandom())) // rG
-
 	c.SetInfo(info.Message)
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 
-	publicView := info.PaymentAddress.GetPublicView()
-	publicSpend := info.PaymentAddress.GetPublicSpend()
+	// If this is going to burning address then dont need to create ota
+	if wallet.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
+		c.SetIndex(0)
+		publicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
+		if err != nil {
+			panic("Something is wrong with info.paymentAddress.Pk, burning address should be a valid point")
+		}
+		c.SetPublicKey(publicKey)
+		return c, nil
+	}
 
 	// Increase index until have the right shardID
 	index := uint32(0)
+	publicView := info.PaymentAddress.GetPublicView()
+	publicSpend := info.PaymentAddress.GetPublicSpend()
 	rK := new(operation.Point).ScalarMult(publicView, c.GetSharedRandom())
 	for {
 		index += 1

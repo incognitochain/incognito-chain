@@ -13,6 +13,8 @@ type MetadataBase struct {
 	Type int
 }
 
+func (*MetadataBase) ShouldSignMetaData() bool { return false }
+
 func NewMetadataBase(thisType int) *MetadataBase {
 	return &MetadataBase{Type: thisType}
 }

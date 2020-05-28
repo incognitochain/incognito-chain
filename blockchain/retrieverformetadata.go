@@ -192,8 +192,8 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 		beaconHeight = blockchain.GetBeaconHeight()
 	}
 	if beaconHeight <= breakPoint {
-		return burningAddress
+		return common.BurningAddress
 	}
 
-	return burningAddress2
+	return common.BurningAddress2
 }

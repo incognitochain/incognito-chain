@@ -1,7 +1,7 @@
 package metadata
 
 import (
-	"bytes"
+	"fmt"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -70,6 +70,11 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 }
 
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, stateDB *statedb.StateDB) (bool, error) {
+	fmt.Println("It should into ValidateTxWithBlockChain")
+	fmt.Println("It should into ValidateTxWithBlockChain")
+	fmt.Println("It should into ValidateTxWithBlockChain")
+	fmt.Println("It should into ValidateTxWithBlockChain")
+	fmt.Println("It should into ValidateTxWithBlockChain")
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := bcr.GetAllCommitteeValidatorCandidate()
 	if err != nil {
 		return false, err
@@ -114,19 +119,9 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	if txr.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
-	onlyOne, pubkey, amount := txr.GetUniqueReceiver()
-	if !onlyOne {
+	check, _, amount := txr.GetAndCheckBurningReceiver()
+	if !check {
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
-	}
-
-	// get burning address
-	burningAddress := bcr.GetBurningAddress(beaconHeight)
-	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
-	if err != nil {
-		return false, false, errors.New("burning address is invalid")
-	}
-	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
-		return false, false, errors.New("receiver Should be Burning Address")
 	}
 
 	if stakingMetadata.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {

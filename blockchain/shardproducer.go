@@ -746,8 +746,10 @@ func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight ui
 	}
 }
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
-	rand.Seed(time.Now().UnixNano())
-	seed := make([]byte, 16)
-	rand.Read(seed)
-	return privacy.GeneratePrivateKey(seed)
+	b := make([]byte, common.HashSize)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic("Cannot create random keyset")
+	}
+	return privacy.GeneratePrivateKey(b)
 }

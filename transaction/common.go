@@ -263,8 +263,12 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 	switch params.txType {
 	case NormalCoinType:
 		tx := &Tx{}
-		// TODO Privacy
-		err := tx.InitTxSalary(params.amount, coin.NewTxRandom(), params.payToAddress, params.payByPrivateKey, params.transactionStateDB, params.meta)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
+		if err != nil {
+			Logger.Log.Errorf("Cannot get new coin from amount and receiver")
+			return nil, err
+		}
+		err = tx.InitTxSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB, params.meta)
 		return tx, err
 	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte

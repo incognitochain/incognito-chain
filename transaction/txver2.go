@@ -3,11 +3,13 @@ package transaction
 import (
 	"errors"
 	"fmt"
-	"math/big"
-
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -18,6 +20,38 @@ import (
 )
 
 type TxVersion2 struct{}
+
+func (*TxVersion2) CheckAuthorizedSender(tx *Tx, publicKey []byte) (bool, error) {
+	if !tx.Metadata.ShouldSignMetaData() {
+		Logger.Log.Error("Check authorized sender failed because tx.Metadata is not appropriate")
+		return false, errors.New("Check authorized sender failed because tx.Metadata is not appropriate")
+	}
+	meta, ok := tx.Metadata.(*metadata.StopAutoStakingMetadata)
+	if !ok {
+		Logger.Log.Error("Check authorized sender failed because tx.Metadata is not correct type")
+		return false, errors.New("Check authorized sender failed because tx.Metadata is not correct type")
+	}
+
+	if meta.Sig == nil {
+		Logger.Log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
+		return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
+	}
+	/****** verify Schnorr signature *****/
+	verifyKey := new(privacy.SchnorrPublicKey)
+	metaSigPublicKey, err := new(privacy.Point).FromBytesS(publicKey)
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(DecompressSigPubKeyError, err)
+	}
+	verifyKey.Set(metaSigPublicKey)
+
+	signature := new(privacy.SchnSignature)
+	if err := signature.SetBytes(meta.Sig); err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
+	}
+	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
+}
 
 func txSigPubKeyToBytes(indexes [][]*big.Int) ([]byte, error) {
 	n := len(indexes)
@@ -202,7 +236,7 @@ func txSignatureToBytes(mlsagSignature *mlsag.MlsagSig) ([]byte, error) {
 	if m > MaxSizeByte {
 		return nil, errors.New("Cannot parse byte of txSignature: length column of r is larger than 256")
 	}
-	for i := 1; i < m; i += 1 {
+	for i := 1; i < n; i += 1 {
 		if len(r[i]) != m {
 			return nil, errors.New("Cannot parse byte of txSignature: r is not a proper rectangle")
 		}
@@ -291,6 +325,11 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 	}
 
 	message := tx.Hash()
+	fmt.Println("Proving txHash =", tx.Hash())
+	fmt.Println("Proving txHash =", tx.Hash())
+	fmt.Println("Proving txHashWithoutSig =", tx.HashWithoutMetadataSig())
+	fmt.Println("Proving txHashWithoutSig =", tx.HashWithoutMetadataSig())
+
 	mlsagSignature, err := sag.Sign(message[:])
 	if err != nil {
 		Logger.Log.Errorf("Cannot sign mlsagSignature, error %v ", err)
@@ -303,10 +342,15 @@ func signTxVer2(inp []coin.PlainCoin, out []*coin.CoinV2, tx *Tx, params *TxPriv
 
 func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, error) {
 	for {
-		c, err := coin.NewCoinBasedOnPaymentInfo(paymentInfo)
+		fmt.Println("Generating new coin from payment info")
+		c, err := coin.NewCoinFromPaymentInfo(paymentInfo)
 		if err != nil {
 			Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
 			return nil, err
+		}
+		// If previously created coin is burning address
+		if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
+			return c, nil // No need to check db
 		}
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
@@ -324,6 +368,7 @@ func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 func newCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
 	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
 	for index, info := range paymentInfo {
+		fmt.Println("Checking index", index)
 		var err error
 		outputCoins[index], err = newCoinUniqueOTABasedOnPaymentInfo(info, tokenID, stateDB)
 		if err != nil {
@@ -334,7 +379,80 @@ func newCoinArrayBasedOnPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tok
 	return outputCoins, nil
 }
 
+func verifyTxMetadata(tx *Tx) (bool, error) {
+	// check input transaction
+	meta := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
+	if tx.Metadata == nil || meta.Sig == nil {
+		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
+	}
+
+	var err error
+	res := false
+
+	/****** verify Schnorr signature *****/
+	// prepare Public key for verification
+	verifyKey := new(privacy.SchnorrPublicKey)
+	sigPublicKey, err := new(privacy.Point).FromBytesS(tx.SigPubKey)
+
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(DecompressSigPubKeyError, err)
+	}
+	verifyKey.Set(sigPublicKey)
+
+	// convert signature from byte array to SchnorrSign
+	signature := new(privacy.SchnSignature)
+	err = signature.SetBytes(tx.Sig)
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
+	}
+
+	// verify signature
+	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	if tx.Proof != nil {
+		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	}
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
+	res = verifyKey.Verify(signature, tx.Hash()[:])
+
+	return res, nil
+}
+
+func signTxMetadata(tx *Tx, privateKey *privacy.PrivateKey) error {
+	// sign meta data
+	meta, okType := tx.Metadata.(*metadata.StopAutoStakingMetadata)
+	if !okType {
+		return NewTransactionErr(UnexpectedError, errors.New("meta is not StopAutoStakingMetadata although ShouldSignMetaData() = true"))
+	}
+	if meta.Sig != nil {
+		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty"))
+	}
+
+	/****** using Schnorr signature *******/
+	// sign with sigPrivKey
+	// prepare private key for Schnorr
+	sk := new(operation.Scalar).FromBytesS(*privateKey)
+	r := new(operation.Scalar).FromUint64(0)
+	sigKey := new(schnorr.SchnorrPrivateKey)
+	sigKey.Set(sk, r)
+
+	// signing
+	signature, err := sigKey.Sign(tx.Hash()[:])
+	if err != nil {
+		return err
+	}
+
+	// convert signature to byte array
+	meta.Sig = signature.Bytes()
+	tx.Metadata = meta
+	return nil
+}
+
 func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
+	fmt.Println("About to prove")
+	fmt.Println("About to prove")
+	fmt.Println("About to prove")
 	outputCoins, err := newCoinArrayBasedOnPaymentInfoArray(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
 		Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
@@ -343,12 +461,27 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 
 	// inputCoins is plainCoin because it may have coinV1 with coinV2
 	inputCoins := params.inputCoins
+
+	fmt.Println("About to prove proof")
+	fmt.Println("About to prove proof")
+	fmt.Println("About to prove proof")
 	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, params.paymentInfo)
 	if err != nil {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
 	}
 
+	if tx.ShouldSignMetaData() {
+		fmt.Println("It should sign meta data")
+		fmt.Println("It should sign meta data")
+		fmt.Println("It should sign meta data")
+		fmt.Println("It should sign meta data")
+
+		if err := signTxMetadata(tx, params.senderSK); err != nil {
+			Logger.Log.Error("Cannot sign txMetadata when shouldSignMetadata")
+			return err
+		}
+	}
 	err = signTxVer2(inputCoins, outputCoins, tx, params)
 	return err
 }
@@ -388,7 +521,7 @@ func getRingFromIndexesWithDatabase(tx *Tx, indexes [][]*big.Int, transactionSta
 			index := indexes[i][j]
 			ok, err := statedb.HasOTACoinIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if !ok || err != nil {
-				Logger.Log.Errorf("HasCommitmentIndex error %v ", err)
+				Logger.Log.Errorf("HasOTACoinIndex error %v ", err)
 				return nil, err
 			}
 			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
@@ -398,7 +531,7 @@ func getRingFromIndexesWithDatabase(tx *Tx, indexes [][]*big.Int, transactionSta
 			}
 			randomCoin := new(coin.CoinV2)
 			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
-				Logger.Log.Errorf("Get Commitment, PublicKey, Additional by index error %v ", err)
+				Logger.Log.Errorf("Set coin Byte error %v ", err)
 				return nil, err
 			}
 			row[j] = randomCoin.GetPublicKey()
@@ -419,6 +552,9 @@ func getRingFromIndexesWithDatabase(tx *Tx, indexes [][]*big.Int, transactionSta
 // verifySigTx - verify signature on tx
 func verifySigTxVer2(tx *Tx, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
 	// check input transaction
+	fmt.Println("About to verify")
+	fmt.Println("About to verify")
+	fmt.Println("About to verify")
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
 	}
@@ -449,6 +585,10 @@ func verifySigTxVer2(tx *Tx, transactionStateDB *statedb.StateDB, shardID byte, 
 	}
 
 	message := tx.Hash()
+	fmt.Println("Verifying txHash =", tx.Hash())
+	fmt.Println("Verifying txHash =", tx.Hash())
+	fmt.Println("Verifying txHashWithoutSig =", tx.HashWithoutMetadataSig())
+	fmt.Println("Verifying txHashWithoutSig =", tx.HashWithoutMetadataSig())
 	return mlsag.Verify(txSig, ring, message[:])
 }
 

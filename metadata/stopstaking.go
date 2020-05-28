@@ -1,22 +1,37 @@
 package metadata
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type StopAutoStakingMetadata struct {
 	MetadataBase
 	CommitteePublicKey string
+	Sig []byte
 }
+
+func (meta *StopAutoStakingMetadata) HashWithoutSig() *common.Hash {
+	return meta.MetadataBase.Hash()
+}
+
+func (meta *StopAutoStakingMetadata) Hash() *common.Hash {
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	data = append(data, meta.Sig...)
+	hash := common.HashH(data)
+	return &hash
+}
+
+func (*StopAutoStakingMetadata) ShouldSignMetaData() bool { return true }
 
 func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) (*StopAutoStakingMetadata, error) {
 	if stopStakingType != StopAutoStakingMeta {
@@ -73,9 +88,20 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 		if err != nil {
 			return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
 		}
-		if !bytes.Equal(stakingTx.GetSender(), txr.GetSender()) {
+
+		stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
+		funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+		funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+		if err != nil || funderWallet == nil {
+			return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+		}
+
+		if ok, err := txr.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
+			fmt.Println("Check authorized sender:", ok, err)
 			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), txr.GetSender()))
 		}
+		//if !bytes.Equal(stakingTx.GetSender(), txr.GetSender()) {
+		//}
 	}
 	autoStakingList := bcr.GetAutoStakingList()
 	if isAutoStaking, ok := autoStakingList[stopStakingMetadata.CommitteePublicKey]; !ok {
@@ -98,26 +124,16 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Bl
 	if txr.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
-	onlyOne, pubkey, amount := txr.GetUniqueReceiver()
-	if !onlyOne {
+	check, _, amount := txr.GetAndCheckBurningReceiver()
+	if !check {
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
 
-	// get burning address
-	burningAddress := bcr.GetBurningAddress(beaconHeight)
-	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
-	if err != nil {
-		return false, false, err
-	}
-	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
-		return false, false, errors.New("receiver Should be Burning Address")
-	}
 	if stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount {
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	err = CommitteePublicKey.FromString(stopAutoStakingMetadata.CommitteePublicKey)
-	if err != nil {
+	if err := CommitteePublicKey.FromString(stopAutoStakingMetadata.CommitteePublicKey); err != nil {
 		return false, false, err
 	}
 	if !CommitteePublicKey.CheckSanityData() {

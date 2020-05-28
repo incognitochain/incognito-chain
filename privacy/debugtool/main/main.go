@@ -12,7 +12,7 @@ func sendTx(tool *debugtool.DebugTool) {
 	fmt.Println(string(b))
 }
 
-func testInitToken(tool *debugtool.DebugTool, privateKeys []string) {
+func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds []string) {
 	//b, _ := tool.CreateAndSendTransaction()
 	//fmt.Println(string(b))
 
@@ -42,20 +42,32 @@ func privateKeyToPaymentAddress(privkey string) string {
 	return paymentAddStr
 }
 
+func privateKeyToPublicKey(privkey string) []byte {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privkey)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	return keyWallet.KeySet.PaymentAddress.Pk
+}
+
 func main() {
 	privateKeys := []string{"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", "112t8rnZDRztVgPjbYQiXS7mJgaTzn66NvHD7Vus2SrhSAY611AzADsPFzKjKQCKWTgbkgYrCPo9atvSMoCf9KT23Sc7Js9RKhzbNJkxpJU6", "112t8rne7fpTVvSgZcSgyFV23FYEv3sbRRJZzPscRcTo8DsdZwstgn6UyHbnKHmyLJrSkvF13fzkZ4e8YD5A2wg8jzUZx6Yscdr4NuUUQDAt", "112t8rnXoBXrThDTACHx2rbEq7nBgrzcZhVZV4fvNEcGJetQ13spZRMuW5ncvsKA1KvtkauZuK2jV8pxEZLpiuHtKX3FkKv2uC5ZeRC8L6we"}
+	privateSeeds := []string{"12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn", "158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs", "1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc", "1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88", "1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq"}
 	////paymentKeys := []string{"", "12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE", "12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9", "12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
 	//
 
 	//fmt.Println(privateKeyToPaymentAddress(privateKeys[2]))
 	tool := new(debugtool.DebugTool).InitLocal()
-	testInitToken(tool, privateKeys)
+	testInitToken(tool, privateKeys, privateSeeds)
 
 	//sendTx(tool)
-
+	//
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
-	//b, _ := tool.GetListOutputCoins(privateKeys[0])
+
+	//b, _ := tool.GetListOutputCoins(privateKeys[1])
+	//fmt.Println(string(b))
+	//b, _ = tool.GetListOutputCoins(privateKeys[2])
+	//fmt.Println(string(b))
+	//b, _ = tool.GetListOutputCoins(privateKeys[3])
 	//fmt.Println(string(b))
 
 	//b, _ := tool.CreateAndSendTransactionFromAToB(privateKeys[1], privateKeys[3], "10")
@@ -65,14 +77,35 @@ func main() {
 	//fmt.Println(string(b))
 
 	//tool := new(debugtool.DebugTool).InitLocal()
-	//b, _ := tool.GetTransactionByHash("b970ed00359dff6dcb7f0510484836ee78383f6473e12f5dbe01f64cbd5ce61a")
+	//b, _ := tool.GetTransactionByHash("390873dc533688011c01fc15b574add35b3be9d521d5174ba2921fe8e15eff62")
 	//fmt.Println(string(b))
 
-	//b, _ := tool.SwitchCoinVersion(privateKeys[3])
+	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
 	//fmt.Println(string(b))
 
-	b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
-	fmt.Println(string(b))
+	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[1]))
+	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[1])
+	//fmt.Println(string(b))
+	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[2]))
+	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
+	//fmt.Println(string(b))
+	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[3]))
+	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[3])
+	//fmt.Println(string(b))
+
+	//b, _ := tool.Stake(privateKeys[3], privateSeeds[3])
+	//fmt.Println(string(b))
+	//b, _ = tool.Stake(privateKeys[2], privateSeeds[2])
+	//fmt.Println(string(b))
+	//b, _ = tool.Stake(privateKeys[1], privateSeeds[1])
+	//fmt.Println(string(b))
+
+	//b, _ := tool.Unstake(privateKeys[3], privateSeeds[3])
+	//fmt.Println(string(b))
+	//b, _ = tool.Unstake(privateKeys[2], privateSeeds[2])
+	//fmt.Println(string(b))
+	//b, _ = tool.Unstake(privateKeys[1], privateSeeds[1])
+	//fmt.Println(string(b))
 }
 
 //&{[97 178 112 109 99 221 186 221 159 127 25 42 190 184 219 222 203 101 49 169 3 36 251 148 227 74 0 167 82 51 60 85]}

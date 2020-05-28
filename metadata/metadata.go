@@ -16,6 +16,7 @@ import (
 // Interface for all types of metadata in tx
 type Metadata interface {
 	GetType() int
+	ShouldSignMetaData() bool
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
 	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db *statedb.StateDB) (bool, error)
@@ -96,7 +97,7 @@ type Transaction interface {
 	GetProof() privacy.Proof
 	// Get receivers' data for tx
 	GetReceivers() ([][]byte, []uint64)
-	GetUniqueReceiver() (bool, []byte, uint64)
+	GetAndCheckBurningReceiver() (bool, []byte, uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
@@ -107,6 +108,7 @@ type Transaction interface {
 	Hash() *common.Hash
 	// VALIDATE FUNC
 	CheckTxVersion(int8) bool
+	CheckAuthorizedSender([]byte) (bool, error)
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)

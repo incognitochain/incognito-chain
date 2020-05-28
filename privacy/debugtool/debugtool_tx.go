@@ -99,15 +99,15 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 		"params": [
 			"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", 
 			{
-				"12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE":200000000000,
-				"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9":200000000000,
-				"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax":200000000000,
-				"12S42y9fq8xWXx1YpZ6KVDLGx6tLjeFWqbSBo6zGxwgVnPe1rMGxtLs87PyziCzYPEiRGdmwU1ewWFXwjLwog3X71K87ApNUrd3LQB3":200000000000,
-				"12S3yvTvWUJfubx3whjYLv23NtaNSwQMGWWScSaAkf3uQg8xdZjPFD4fG8vGvXjpRgrRioS5zuyzZbkac44rjBfs7mEdgoL4pwKu87u":200000000000,
-				"12S6mGbnS3Df5bGBaUfBTh56NRax4PvFPDhUnxvP9D6cZVjnTx9T4FsVdFT44pFE8KXTGYaHSAmb2MkpnUJzkrAe49EPHkBULM8N2ZJ":200000000000,
-				"12Rs5tQTYkWGzEdPNo2GRA1tjZ5aDCTYUyzXf6SJFq89QnY3US3ZzYSjWHVmmLUa6h8bdHHUuVYoR3iCVRoYDCNn1AfP6pxTz5YL8Aj":200000000000,
-				"12S33dTF3aVsuSxY7iniK3UULUYyLMZumExKm6DPfsqnNepGjgDZqkQCDp1Z7Te9dFKQp7G2WeeYqCr5vcDCfrA3id4x5UvL4yyLrrT":200000000000,
-				"12RysvT327ju2GTJ1RmquyRAQzPK1wezr7CCpraBLQ2VoHwz91n3rMeDFpcDiipBfmawrzTGrheEz4TrtZ5WFt8pYXkqiM5oXqucRRE":200000000000
+				"12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE":20000000000000,
+				"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9":20000000000000,
+				"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax":20000000000000,
+				"12S42y9fq8xWXx1YpZ6KVDLGx6tLjeFWqbSBo6zGxwgVnPe1rMGxtLs87PyziCzYPEiRGdmwU1ewWFXwjLwog3X71K87ApNUrd3LQB3":20000000000000,
+				"12S3yvTvWUJfubx3whjYLv23NtaNSwQMGWWScSaAkf3uQg8xdZjPFD4fG8vGvXjpRgrRioS5zuyzZbkac44rjBfs7mEdgoL4pwKu87u":20000000000000,
+				"12S6mGbnS3Df5bGBaUfBTh56NRax4PvFPDhUnxvP9D6cZVjnTx9T4FsVdFT44pFE8KXTGYaHSAmb2MkpnUJzkrAe49EPHkBULM8N2ZJ":20000000000000,
+				"12Rs5tQTYkWGzEdPNo2GRA1tjZ5aDCTYUyzXf6SJFq89QnY3US3ZzYSjWHVmmLUa6h8bdHHUuVYoR3iCVRoYDCNn1AfP6pxTz5YL8Aj":20000000000000,
+				"12S33dTF3aVsuSxY7iniK3UULUYyLMZumExKm6DPfsqnNepGjgDZqkQCDp1Z7Te9dFKQp7G2WeeYqCr5vcDCfrA3id4x5UvL4yyLrrT":20000000000000,
+				"12RysvT327ju2GTJ1RmquyRAQzPK1wezr7CCpraBLQ2VoHwz91n3rMeDFpcDiipBfmawrzTGrheEz4TrtZ5WFt8pYXkqiM5oXqucRRE":20000000000000
 			}, 
 			1,   
 			1
@@ -309,5 +309,57 @@ func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 		],
 		"id": 1
 	}`, privKey)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+	  "jsonrpc":"1.0",
+	  "method":"createandsendstakingtransaction",
+	  "params":[
+			"%s",
+			{
+				"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 1750000000000
+			},
+			5,
+			0,
+			{
+				"StakingType": 63,
+				"CandidatePaymentAddress": "%s",
+				"PrivateSeed": "%s",
+				"RewardReceiverPaymentAddress": "%s",
+				"AutoReStaking": true
+			}
+	  ],
+	  "id":1
+	}`, privKey, paymentAddStr, seed, paymentAddStr)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) Unstake(privKey string, seed string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+		"id":1,
+		"jsonrpc":"1.0",
+		"method":"createandsendstopautostakingtransaction",
+		"params": [
+			"%s",
+			{
+				"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 0
+			},
+			10,
+			0,
+			{
+				"StopAutoStakingType" : 127,
+				"CandidatePaymentAddress" : "%s",
+				"PrivateSeed":"%s"
+			}
+		]
+	}`, privKey, paymentAddStr, seed)
 	return this.SendPostRequestWithQuery(query)
 }

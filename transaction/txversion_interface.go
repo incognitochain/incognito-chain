@@ -28,6 +28,8 @@ type TxVersionSwitcher interface {
 	Prove(tx *Tx, params *TxPrivacyInitParams) error
 	ProveASM(tx *Tx, params *TxPrivacyInitParamsForASM) error
 
+	CheckAuthorizedSender(tx *Tx, publicKey []byte) (bool, error)
+
 	// It should verify based on
 	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
 }
