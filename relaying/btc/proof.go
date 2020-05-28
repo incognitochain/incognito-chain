@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 )
 
 const BTCBlockConfirmations = 1
@@ -208,4 +209,15 @@ func (b *BlockChain) ExtractPaymentAddrStrFromPkScript(pkScript []byte) (string,
 		return "", nil
 	}
 	return addrs[0].EncodeAddress(), nil
+}
+
+// IsBTCAddressValid checks whether the passed btc address string is valid or not
+func (btcChain *BlockChain) IsBTCAddressValid(addrStr string) bool {
+	params := btcChain.GetChainParams()
+	_, err := btcutil.DecodeAddress(addrStr, params)
+	if err != nil {
+		Logger.log.Warnf("IsBTCAddressValid - Failed to decode btc address with error: %v\n", err)
+		return false
+	}
+	return true
 }
