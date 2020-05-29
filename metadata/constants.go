@@ -71,6 +71,8 @@ const (
 	PortalPortingResponseMeta                      = 125
 	PortalReqMatchingRedeemMeta                    = 126
 	PortalPickMoreCustodianForRedeemMeta           = 128
+	PortalLiquidationCustodianDepositV2Meta          = 129
+	PortalLiquidationCustodianDepositV2ResponseMeta  = 130
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
@@ -102,6 +104,7 @@ var minerCreatedMetaTypes = []int{
 	PortalRequestWithdrawRewardResponseMeta,
 	PortalRedeemLiquidateExchangeRatesResponseMeta,
 	PortalLiquidationCustodianDepositResponseMeta,
+	PortalLiquidationCustodianDepositV2ResponseMeta,
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 }

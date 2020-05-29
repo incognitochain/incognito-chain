@@ -156,6 +156,56 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReje
 	return resTx, nil
 }
 
+func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositV2Reject(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[buildPortalLiquidationCustodianDepositV2Reject] Starting...")
+	contentBytes := []byte(contentStr)
+	var refundDeposit metadata.PortalLiquidationCustodianDepositContentV2
+	err := json.Unmarshal(contentBytes, &refundDeposit)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal liquidation custodian deposit content: %+v", err)
+		return nil, nil
+	}
+	if refundDeposit.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalLiquidationCustodianDepositV2Response(
+		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		refundDeposit.TxReqID,
+		refundDeposit.IncogAddressStr,
+		refundDeposit.DepositedAmount,
+		metadata.PortalLiquidationCustodianDepositV2ResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian liquidation address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		refundDeposit.DepositedAmount,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	//modify the type of the salary transaction
+	// resTx.Type = common.TxBlockProducerCreatedType
+	return resTx, nil
+}
+
 // buildPortalAcceptedRequestPTokensTx builds response tx for user request ptoken tx with status "accepted"
 // mints ptoken to return to user
 func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(

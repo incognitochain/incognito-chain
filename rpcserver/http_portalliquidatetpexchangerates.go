@@ -242,8 +242,8 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 	}
 	depositedAmount := uint64(depositedAmountData)
 
-	meta, _ := metadata.NewPortalLiquidationCustodianDeposit(
-		metadata.PortalLiquidationCustodianDepositMeta,
+	meta, _ := metadata.NewPortalLiquidationCustodianDepositV2(
+		metadata.PortalLiquidationCustodianDepositV2Meta,
 		incognitoAddress,
 		pTokenId,
 		depositedAmount,

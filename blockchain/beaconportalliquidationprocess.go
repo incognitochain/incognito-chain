@@ -479,7 +479,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 	}
 
 	// unmarshal instructions content
-	var actionData metadata.PortalLiquidationCustodianDepositContent
+	var actionData metadata.PortalLiquidationCustodianDepositContentV2
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Error when unmarshaling portal liquidation custodian deposit content %v - %v", instructions[3], err)
@@ -509,7 +509,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
 		currentPortalState.CustodianPoolState[custodianStateKeyStr] = custodian
 
-		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus(
+		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
@@ -532,7 +532,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			return nil
 		}
 	} else if depositStatus == common.PortalLiquidationCustodianDepositRejectedChainStatus {
-		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus(
+		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
 			actionData.IncogAddressStr,
 			actionData.PTokenId,

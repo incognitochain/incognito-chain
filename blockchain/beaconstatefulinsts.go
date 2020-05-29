@@ -50,7 +50,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalLiquidateCustodianMeta,
 			metadata.PortalRequestWithdrawRewardMeta,
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
-			metadata.PortalLiquidationCustodianDepositMeta,
+			metadata.PortalLiquidationCustodianDepositV2Meta,
 			metadata.PortalLiquidationCustodianDepositResponseMeta,
 			metadata.PortalReqMatchingRedeemMeta,
 			metadata.PortalTopUpWaitingPortingRequestMeta:
@@ -223,7 +223,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
-			case metadata.PortalLiquidationCustodianDepositMeta:
+			case metadata.PortalLiquidationCustodianDepositV2Meta:
 				portalLiquidationCustodianDepositActionByShardID = groupPortalActionsByShardID(
 					portalLiquidationCustodianDepositActionByShardID,
 					action,
@@ -780,7 +780,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 			newInst, err := blockchain.buildInstructionsForLiquidationCustodianDeposit(
 				contentStr,
 				shardID,
-				metadata.PortalLiquidationCustodianDepositMeta,
+				metadata.PortalLiquidationCustodianDepositV2Meta,
 				currentPortalState,
 				beaconHeight,
 				portalParams,
