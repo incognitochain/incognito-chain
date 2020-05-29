@@ -3,6 +3,8 @@ package transaction
 import (
 	"fmt"
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"math/big"
 	"math/rand"
@@ -156,12 +158,10 @@ func NewEstimateTxSizeParam(numInputCoins, numPayments int,
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
 func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
-
 	sizeVersion := uint64(1)  // int8
 	sizeType := uint64(5)     // string, max : 5
 	sizeLockTime := uint64(8) // int64
 	sizeFee := uint64(8)      // uint64
-
 	sizeInfo := uint64(512)
 
 	sizeSigPubKey := uint64(common.SigPubKeySize)
@@ -257,6 +257,56 @@ func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 		txType:             txType,
 	}
 	return params
+}
+
+func calculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
+	sumOutputsWithFee := new(operation.Point).Identity()
+	for i := 0; i < len(outputCoins); i += 1 {
+		sumOutputsWithFee.Add(sumOutputsWithFee, outputCoins[i].GetCommitment())
+	}
+	feeCommitment := new(operation.Point).ScalarMult(
+		operation.PedCom.G[operation.PedersenValueIndex],
+		new(operation.Scalar).FromUint64(fee),
+	)
+	sumOutputsWithFee.Add(sumOutputsWithFee, feeCommitment)
+	return sumOutputsWithFee
+}
+
+func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, error) {
+	for {
+		c, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+		if err != nil {
+			Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
+			return nil, err
+		}
+		// If previously created coin is burning address
+		if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
+			return c, nil // No need to check db
+		}
+		// Onetimeaddress should be unique
+		publicKeyBytes := c.GetPublicKey().ToBytesS()
+		found, err := statedb.HasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
+		if err != nil {
+			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
+			return nil, err
+		}
+		if !found {
+			return c, nil
+		}
+	}
+}
+
+func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
+	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
+	for index, info := range paymentInfo {
+		var err error
+		outputCoins[index], err = newCoinUniqueOTABasedOnPaymentInfo(info, tokenID, stateDB)
+		if err != nil {
+			Logger.Log.Errorf("Cannot create coin with unique OTA, error: %v", err)
+			return nil, err
+		}
+	}
+	return outputCoins, nil
 }
 
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {

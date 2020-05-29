@@ -99,6 +99,7 @@ func init() {
 	wrapper.Logger.Init(wrapperLogger)
 	dataaccessobject.Logger.Init(daov2Logger)
 
+
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

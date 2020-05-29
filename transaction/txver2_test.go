@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,9 +21,6 @@ func TestTxSignatureVer2(t *testing.T) {
 			privateKey := operation.RandomScalar()
 			keyInputs = append(keyInputs, privateKey)
 		}
-		pi := common.RandInt() % n
-		ring := mlsag.NewRandomRing(keyInputs, n, pi)
-
 		maxLen := new(big.Int)
 		maxLen.SetString("1000000000000000000", 10)
 		indexes := make([][]*big.Int, n)
@@ -37,26 +33,19 @@ func TestTxSignatureVer2(t *testing.T) {
 			indexes[i] = row
 		}
 
-		txSig := new(TxSignatureVer2)
-		txSig.SetRing(ring)
-		txSig.SetIndexes(indexes)
+		txSig := new(TxSigPubKeyVer2)
+		txSig.indexes = indexes
 
-		b, err := txSig.ToBytes()
+		b, err := txSig.Bytes()
 		assert.Equal(t, nil, err, "Should not have any bug when txSig.ToBytes")
 
-		txSig2 := new(TxSignatureVer2)
-		err = txSig2.FromBytes(b)
+		txSig2 := new(TxSigPubKeyVer2)
+		err = txSig2.SetBytes(b)
 		assert.Equal(t, nil, err, "Should not have any bug when txSig.FromBytes")
 
-		b2, err := txSig2.ToBytes()
+		b2, err := txSig2.Bytes()
 		assert.Equal(t, nil, err, "Should not have any bug when txSig2.ToBytes")
-
 		assert.Equal(t, true, bytes.Equal(b, b2))
-
-		b1, _ := txSig.GetRing().ToBytes()
-		b2, err = txSig2.GetRing().ToBytes()
-		assert.Equal(t, nil, err)
-		assert.Equal(t, true, bytes.Equal(b1, b2))
 
 		n1 := len(txSig.indexes)
 		m1 := len(txSig.indexes[0])

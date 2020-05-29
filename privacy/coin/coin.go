@@ -85,7 +85,6 @@ func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 // First byte should determine the version
 func NewCoinFromByte(b []byte) (Coin, error) {
 	version := b[0]
-
 	var c Coin
 	if version == CoinVersion2 {
 		c = new(CoinV2)

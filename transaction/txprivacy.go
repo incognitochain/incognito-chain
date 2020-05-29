@@ -590,6 +590,10 @@ func (tx Tx) GetAndCheckBurningReceiver() (bool, []byte, uint64) {
 
 func (tx Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	pubkeys, amounts := tx.GetReceivers()
+	if len(pubkeys) == 0 {
+		Logger.Log.Error("GetTransferData receiver 0 output, it should has exactly 1 output")
+		return false, nil, 0, &common.PRVCoinID
+	}
 	if len(pubkeys) > 1 {
 		Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
 		return false, nil, 0, &common.PRVCoinID

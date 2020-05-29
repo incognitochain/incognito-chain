@@ -10,7 +10,7 @@ import (
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
 
-var CurveOrder *operation.Scalar = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
+var CurveOrder = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
 
 type Ring struct {
 	keys [][]*operation.Point
@@ -177,7 +177,6 @@ func (this *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*o
 
 func calculateFirstC(digest [common.HashSize]byte, alpha []*operation.Scalar, K []*operation.Point) (*operation.Scalar, error) {
 	if len(alpha) != len(K) {
-		Logger.log.Error("Calculating first C must have length of alpha be the same with length of ring R")
 		return nil, errors.New("Error in MLSAG: Calculating first C must have length of alpha be the same with length of ring R")
 	}
 	var b []byte
@@ -206,7 +205,6 @@ func calculateFirstC(digest [common.HashSize]byte, alpha []*operation.Scalar, K 
 
 func calculateNextC(digest [common.HashSize]byte, r []*operation.Scalar, c *operation.Scalar, K []*operation.Point, keyImages []*operation.Point) (*operation.Scalar, error) {
 	if len(r) != len(K) || len(r) != len(keyImages) {
-		Logger.log.Error("Calculating next C must have length of r be the same with length of ring R and same with length of keyImages")
 		return nil, errors.New("Error in MLSAG: Calculating next C must have length of r be the same with length of ring R and same with length of keyImages")
 	}
 	var b []byte

@@ -610,6 +610,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool,
 // GetTransferData
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	pubkeys, amounts := txCustomTokenPrivacy.GetReceivers()
+	if len(pubkeys) == 0 {
+		Logger.Log.Error("GetTransferData receive 0 output, it should has exactly 1 output")
+		return false, nil, 0, &common.PRVCoinID
+	}
 	if len(pubkeys) > 1 {
 		Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
 		return false, nil, 0, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
@@ -649,7 +653,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.Blo
 	return true
 }
 
-// CalculateTxValue - get tx value for pToken
+// CalculateBurnAmount - get tx value for pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof == nil {
 		return 0

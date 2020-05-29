@@ -52,14 +52,16 @@ func main() {
 	privateKeys := []string{"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", "112t8rnZDRztVgPjbYQiXS7mJgaTzn66NvHD7Vus2SrhSAY611AzADsPFzKjKQCKWTgbkgYrCPo9atvSMoCf9KT23Sc7Js9RKhzbNJkxpJU6", "112t8rne7fpTVvSgZcSgyFV23FYEv3sbRRJZzPscRcTo8DsdZwstgn6UyHbnKHmyLJrSkvF13fzkZ4e8YD5A2wg8jzUZx6Yscdr4NuUUQDAt", "112t8rnXoBXrThDTACHx2rbEq7nBgrzcZhVZV4fvNEcGJetQ13spZRMuW5ncvsKA1KvtkauZuK2jV8pxEZLpiuHtKX3FkKv2uC5ZeRC8L6we"}
 	privateSeeds := []string{"12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn", "158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs", "1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc", "1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88", "1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq"}
 	////paymentKeys := []string{"", "12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE", "12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9", "12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
-	//
 
 	//fmt.Println(privateKeyToPaymentAddress(privateKeys[2]))
 	tool := new(debugtool.DebugTool).InitLocal()
 	testInitToken(tool, privateKeys, privateSeeds)
 
+	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
+	//fmt.Println(string(b))
+
 	//sendTx(tool)
-	//
+
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
 
@@ -77,10 +79,7 @@ func main() {
 	//fmt.Println(string(b))
 
 	//tool := new(debugtool.DebugTool).InitLocal()
-	//b, _ := tool.GetTransactionByHash("390873dc533688011c01fc15b574add35b3be9d521d5174ba2921fe8e15eff62")
-	//fmt.Println(string(b))
-
-	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
+	//b, _ := tool.GetTransactionByHash("08e0568c08e6a4580ddc63a6c1c9659a861f00d2ef7c69da72e36a05331cdec9")
 	//fmt.Println(string(b))
 
 	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[1]))
@@ -93,12 +92,12 @@ func main() {
 	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[3])
 	//fmt.Println(string(b))
 
-	//b, _ := tool.Stake(privateKeys[3], privateSeeds[3])
-	//fmt.Println(string(b))
-	//b, _ = tool.Stake(privateKeys[2], privateSeeds[2])
-	//fmt.Println(string(b))
-	//b, _ = tool.Stake(privateKeys[1], privateSeeds[1])
-	//fmt.Println(string(b))
+	b, _ := tool.Stake(privateKeys[3], privateSeeds[3])
+	fmt.Println(string(b))
+	b, _ = tool.Stake(privateKeys[2], privateSeeds[2])
+	fmt.Println(string(b))
+	b, _ = tool.Stake(privateKeys[1], privateSeeds[1])
+	fmt.Println(string(b))
 
 	//b, _ := tool.Unstake(privateKeys[3], privateSeeds[3])
 	//fmt.Println(string(b))

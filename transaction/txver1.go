@@ -390,9 +390,7 @@ func verifySigTx(tx *Tx) (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	var valid bool
 	var err error
-
 	if valid, err := verifySigTx(tx); !valid {
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature ver1 with tx hash %s: %+v \n", tx.Hash().String(), err)
@@ -417,7 +415,6 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, err
 	}
 
-	// TODO Privacy ask Hien why?
 	if isNewTransaction {
 		for i := 0; i < len(outputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
@@ -430,8 +427,6 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 			}
 		}
 	}
-
-	// TODO Privacy: should be conceal commitment when prove hasPrivacy ver1???
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
@@ -451,9 +446,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, err
 	}
 
-	valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments)
-
-	if !valid {
+	if valid, err := tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments); !valid {
 		if err != nil {
 			Logger.Log.Error(err)
 		}
