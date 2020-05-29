@@ -61,18 +61,18 @@ const (
 	PortalExpiredWaitingPortingReqMeta         = 116
 
 	PortalRewardMeta                               = 117
-	PortalRequestWithdrawRewardMeta                = 118
-	PortalRequestWithdrawRewardResponseMeta        = 119
-	PortalRedeemLiquidateExchangeRatesMeta         = 120
-	PortalRedeemLiquidateExchangeRatesResponseMeta = 121
-	PortalLiquidationCustodianDepositMeta          = 122
-	PortalLiquidationCustodianDepositResponseMeta  = 123
-	PortalTotalRewardCustodianMeta                 = 124
-	PortalPortingResponseMeta                      = 125
-	PortalReqMatchingRedeemMeta                    = 126
-	PortalPickMoreCustodianForRedeemMeta           = 128
-	PortalLiquidationCustodianDepositV2Meta          = 129
-	PortalLiquidationCustodianDepositV2ResponseMeta  = 130
+	PortalRequestWithdrawRewardMeta                 = 118
+	PortalRequestWithdrawRewardResponseMeta         = 119
+	PortalRedeemLiquidateExchangeRatesMeta          = 120
+	PortalRedeemLiquidateExchangeRatesResponseMeta  = 121
+	PortalLiquidationCustodianDepositMeta           = 122
+	PortalLiquidationCustodianDepositResponseMeta   = 123
+	PortalTotalRewardCustodianMeta                  = 124
+	PortalPortingResponseMeta                       = 125
+	PortalReqMatchingRedeemMeta                     = 126
+	PortalPickMoreCustodianForRedeemMeta            = 128
+	PortalLiquidationCustodianDepositMetaV2         = 129
+	PortalLiquidationCustodianDepositResponseMetaV2 = 130
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
@@ -104,7 +104,7 @@ var minerCreatedMetaTypes = []int{
 	PortalRequestWithdrawRewardResponseMeta,
 	PortalRedeemLiquidateExchangeRatesResponseMeta,
 	PortalLiquidationCustodianDepositResponseMeta,
-	PortalLiquidationCustodianDepositV2ResponseMeta,
+	PortalLiquidationCustodianDepositResponseMetaV2,
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 }

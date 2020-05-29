@@ -156,12 +156,12 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReje
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositV2Reject(
+func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositRejectV2(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	Logger.log.Info("[buildPortalLiquidationCustodianDepositV2Reject] Starting...")
+	Logger.log.Info("[buildPortalLiquidationCustodianDepositRejectV2] Starting...")
 	contentBytes := []byte(contentStr)
 	var refundDeposit metadata.PortalLiquidationCustodianDepositContentV2
 	err := json.Unmarshal(contentBytes, &refundDeposit)
@@ -173,12 +173,12 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositV2Re
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalLiquidationCustodianDepositV2Response(
+	meta := metadata.NewPortalLiquidationCustodianDepositResponseV2(
 		common.PortalLiquidationCustodianDepositRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalLiquidationCustodianDepositV2ResponseMeta,
+		metadata.PortalLiquidationCustodianDepositResponseMetaV2,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)

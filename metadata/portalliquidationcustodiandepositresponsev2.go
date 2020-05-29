@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-type PortalLiquidationCustodianDepositV2Response struct {
+type PortalLiquidationCustodianDepositResponseV2 struct {
 	MetadataBase
 	DepositStatus    string
 	ReqTxID          common.Hash
@@ -18,18 +18,18 @@ type PortalLiquidationCustodianDepositV2Response struct {
 	DepositedAmount  uint64
 }
 
-func NewPortalLiquidationCustodianDepositV2Response(
+func NewPortalLiquidationCustodianDepositResponseV2(
 	depositStatus string,
 	reqTxID common.Hash,
 	custodianAddressStr string,
 	depositedAmount uint64,
 	metaType int,
-) *PortalLiquidationCustodianDepositV2Response {
+) *PortalLiquidationCustodianDepositResponseV2 {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 
-	return &PortalLiquidationCustodianDepositV2Response{
+	return &PortalLiquidationCustodianDepositResponseV2{
 		DepositStatus:    depositStatus,
 		ReqTxID:          reqTxID,
 		MetadataBase:     metadataBase,
@@ -38,26 +38,26 @@ func NewPortalLiquidationCustodianDepositV2Response(
 	}
 }
 
-func (iRes PortalLiquidationCustodianDepositV2Response) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalLiquidationCustodianDepositResponseV2) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PortalLiquidationCustodianDepositV2Response) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalLiquidationCustodianDepositResponseV2) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalLiquidationCustodianDepositV2Response) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iRes PortalLiquidationCustodianDepositResponseV2) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes PortalLiquidationCustodianDepositV2Response) ValidateMetadataByItself() bool {
+func (iRes PortalLiquidationCustodianDepositResponseV2) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalLiquidationCustodianDepositV2ResponseMeta
+	return iRes.Type == PortalLiquidationCustodianDepositResponseMetaV2
 }
 
-func (iRes PortalLiquidationCustodianDepositV2Response) Hash() *common.Hash {
+func (iRes PortalLiquidationCustodianDepositResponseV2) Hash() *common.Hash {
 	record := iRes.DepositStatus
 	record += strconv.FormatUint(iRes.DepositedAmount, 10)
 	record += iRes.ReqTxID.String()
@@ -68,11 +68,11 @@ func (iRes PortalLiquidationCustodianDepositV2Response) Hash() *common.Hash {
 	return &hash
 }
 
-func (iRes *PortalLiquidationCustodianDepositV2Response) CalculateSize() uint64 {
+func (iRes *PortalLiquidationCustodianDepositResponseV2) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalLiquidationCustodianDepositV2Response) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -89,7 +89,7 @@ func (iRes PortalLiquidationCustodianDepositV2Response) VerifyMinerCreatedTxBefo
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalLiquidationCustodianDepositV2Meta) {
+			instMetaType != strconv.Itoa(PortalLiquidationCustodianDepositMetaV2) {
 			continue
 		}
 		instDepositStatus := inst[2]
@@ -138,7 +138,7 @@ func (iRes PortalLiquidationCustodianDepositV2Response) VerifyMinerCreatedTxBefo
 	}
 
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidationCustodianDepositV2 instruction found for PortalLiquidationCustodianDepositV2Response tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidationCustodianDepositV2 instruction found for PortalLiquidationCustodianDepositResponseV2 tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil

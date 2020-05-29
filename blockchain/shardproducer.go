@@ -419,9 +419,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
 					newTx, err = blockGenerator.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalLiquidationCustodianDepositV2Meta:
+			case metadata.PortalLiquidationCustodianDepositMetaV2:
 				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
-					newTx, err = blockGenerator.buildPortalLiquidationCustodianDepositV2Reject(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
 				}
 			//
 			case metadata.PortalTopUpWaitingPortingRequestMeta:
