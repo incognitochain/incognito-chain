@@ -64,6 +64,7 @@ type Params struct {
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
 	PortalParams                     map[uint64]PortalParams
+	PortalFeederAddress              string
 }
 
 type GenesisParams struct {
@@ -132,6 +133,7 @@ func init() {
 		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                TestnetBNBFullNodeHost,
 		BNBFullNodePort:                TestnetBNBFullNodePort,
+		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       1 * time.Hour,
@@ -197,6 +199,7 @@ func init() {
 		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                MainnetBNBFullNodeHost,
 		BNBFullNodePort:                MainnetBNBFullNodePort,
+		PortalFeederAddress:            MainnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       24 * time.Hour,
