@@ -541,8 +541,6 @@ func CalUnlockCollateralAmount(
 			}
 		}
 	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] redeemAmount %v\n", redeemAmount)
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] totalHoldingPubToken %v\n", totalHoldingPubToken)
 
 	for _, matchedRedeemReq := range portalState.MatchedRedeemRequests {
 		if matchedRedeemReq.GetTokenID() != tokenID {
@@ -568,8 +566,6 @@ func CalUnlockCollateralAmount(
 			}
 		}
 	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] totalLockedAmountInWaitingPortings %v\n", totalLockedAmountInWaitingPortings)
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
 
 	if custodianState.GetLockedAmountCollateral()[tokenID] < totalLockedAmountInWaitingPortings {
 		Logger.log.Errorf("custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
@@ -590,7 +586,6 @@ func CalUnlockCollateralAmount(
 		Logger.log.Errorf("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian %v\n", unlockAmount)
 		return 0, errors.New("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian")
 	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] unlockAmount %v\n", unlockAmount)
 	return unlockAmount, nil
 }
 
@@ -609,7 +604,6 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPubToken), new(big.Int).SetUint64(uint64(portalParams.MaxPercentLiquidatedCollateralAmount)))
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] liquidatedAmountInPToken %v\n", liquidatedAmountInPToken)
 	liquidatedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, liquidatedAmountInPToken)
 	if err != nil {
 		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error converting rate : %v\n", err)
@@ -619,11 +613,8 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	if liquidatedAmountInPRV > totalUnlockCollateralAmount {
 		liquidatedAmountInPRV = totalUnlockCollateralAmount
 	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] liquidatedAmountInPRV %v\n", liquidatedAmountInPRV)
 
 	remainUnlockAmountForCustodian := totalUnlockCollateralAmount - liquidatedAmountInPRV
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] remainUnlockAmountForCustodian %v\n", remainUnlockAmountForCustodian)
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] totalUnlockCollateralAmount %v\n", totalUnlockCollateralAmount)
 	return liquidatedAmountInPRV, remainUnlockAmountForCustodian, nil
 }
 
@@ -780,9 +771,6 @@ func (c *ConvertExchangeRatesObject) ExchangeBTC2PRV(value uint64) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-
-	Logger.log.Infof("================ Convert, BTC %d 2 PRV with BTCRates %d PRVRates %d , result %d", value, BTCRates, PRVRates, valueExchange)
-
 	//nano
 	return valueExchange, nil
 }
@@ -796,8 +784,6 @@ func (c *ConvertExchangeRatesObject) ExchangeBNB2PRV(value uint64) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-
-	Logger.log.Infof("================ Convert, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 
 	return valueExchange, nil
 }
@@ -813,8 +799,6 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BTC(value uint64) (uint64, erro
 		return 0, err
 	}
 
-	Logger.log.Infof("================ Convert, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates, valueExchange)
-
 	return valueExchange, nil
 }
 
@@ -826,7 +810,6 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BNB(value uint64) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-	Logger.log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 	return valueExchange, nil
 }
 
@@ -862,8 +845,6 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(
 	//update LiquidateExchangeRates
 	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
 	liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
-
-	Logger.log.Infof("update LiquidationPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, tpRatios)
 	if !ok {
 		item := make(map[string]statedb.LiquidationPoolDetail)
 
