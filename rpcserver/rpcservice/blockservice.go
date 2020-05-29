@@ -1074,6 +1074,83 @@ func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID st
 	return &status, nil
 }
 
+func (blockService BlockService) GetReqMatchingRedeemByTxIDStatus(reqTxID string) (*metadata.PortalReqMatchingRedeemStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalReqMatchingRedeemByTxIDStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalReqMatchingRedeemStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata.LiquidationCustodianDepositStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalStateStatusMultiple(
+		stateDB,
+		statedb.PortalLiquidationCustodianDepositStatusPrefix(),
+		[]byte(txID))
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.LiquidationCustodianDepositStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetCustodianTopupWaitingPortingStatus(txID string) (*metadata.PortalTopUpWaitingPortingRequestStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalStateStatusMultiple(
+		stateDB,
+		statedb.PortalTopUpWaitingPortingStatusPrefix(),
+		[]byte(txID))
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalTopUpWaitingPortingRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string) (map[string]uint64, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
+	if err != nil {
+		return nil, err
+	}
+
+	custodianKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianKey]
+	if !ok || custodianState == nil {
+		return nil, fmt.Errorf("Custodian address %v not found", custodianAddr)
+	}
+
+	portalParam := blockService.BlockChain.GetPortalParams(blockService.BlockChain.BestState.Beacon.BeaconHeight)
+	result, err := blockchain.CalAmountTopUpWaitingPortings(currentPortalState, custodianState, portalParam)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+
 
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {

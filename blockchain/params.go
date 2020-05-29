@@ -13,6 +13,7 @@ type SlashLevel struct {
 type PortalParams struct {
 	TimeOutCustodianReturnPubToken       time.Duration
 	TimeOutWaitingPortingRequest         time.Duration
+	TimeOutWaitingRedeemRequest          time.Duration
 	MaxPercentLiquidatedCollateralAmount uint64
 	MaxPercentCustodianRewards           uint64
 	MinPercentCustodianRewards           uint64
@@ -138,6 +139,7 @@ func init() {
 			0: {
 				TimeOutCustodianReturnPubToken:       1 * time.Hour,
 				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
@@ -204,6 +206,7 @@ func init() {
 			0: {
 				TimeOutCustodianReturnPubToken:       24 * time.Hour,
 				TimeOutWaitingPortingRequest:         24 * time.Hour,
+				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10,
 				MinPercentCustodianRewards:           1,

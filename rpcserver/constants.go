@@ -212,12 +212,16 @@ const (
 	createAndSendTxWithReqWithdrawRewardPortal    = "createandsendtxwithreqwithdrawrewardportal"
 	createAndSendRedeemLiquidationExchangeRates   = "createandsendredeemliquidationexchangerates"
 	createAndSendLiquidationCustodianDeposit      = "createandsendliquidationcustodiandeposit"
+	createAndSendTopUpWaitingPorting              = "createandsendtopupwaitingporting"
 	getAmountNeededForCustodianDepositLiquidation = "getamountneededforcustodiandepositliquidation"
-	getLiquidationTpExchangeRates                 = "getliquidationtpexchangerates"
-	getLiquidationTpExchangeRatesByTokenId        = "getliquidationexchangeratesbytokenid"
 	getLiquidationExchangeRatesPool               = "getliquidationtpexchangeratespool"
 	getPortalReward                               = "getportalreward"
 	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
+	createAndSendTxWithReqMatchingRedeem          = "createandsendtxwithreqmatchingredeem"
+	getReqMatchingRedeemStatus                    = "getreqmatchingredeemstatus"
+	getPortalCustodianTopupStatus                 = "getcustodiantopupstatus"
+	getPortalCustodianTopupWaitingPortingStatus   = "getcustodiantopupwaitingportingstatus"
+	getAmountTopUpWaitingPorting                  = "getamounttopupwaitingporting"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

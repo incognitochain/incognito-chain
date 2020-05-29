@@ -14,10 +14,10 @@ import (
 
 type PortalLiquidationCustodianDeposit struct {
 	MetadataBase
-	IncogAddressStr string
-	PTokenId string
-	DepositedAmount uint64
-	FreeCollateralSelected bool
+	IncogAddressStr      string
+	PTokenId             string
+	DepositedAmount      uint64
+	FreeCollateralAmount uint64
 }
 
 type PortalLiquidationCustodianDepositAction struct {
@@ -27,36 +27,36 @@ type PortalLiquidationCustodianDepositAction struct {
 }
 
 type PortalLiquidationCustodianDepositContent struct {
-	IncogAddressStr string
-	PTokenId string
-	DepositedAmount uint64
-	FreeCollateralSelected bool
-	TxReqID         common.Hash
-	ShardID         byte
+	IncogAddressStr      string
+	PTokenId             string
+	DepositedAmount      uint64
+	FreeCollateralAmount uint64
+	TxReqID              common.Hash
+	ShardID              byte
 }
 
 type LiquidationCustodianDepositStatus struct {
-	TxReqID common.Hash
-	IncogAddressStr string
-	PTokenId string
-	DepositAmount uint64
-	FreeCollateralSelected bool
-	Status byte
+	TxReqID              common.Hash
+	IncogAddressStr      string
+	PTokenId             string
+	DepositAmount        uint64
+	FreeCollateralAmount uint64
+	Status               byte
 }
 
-func NewLiquidationCustodianDepositStatus(txReqID common.Hash, incogAddressStr string, PTokenId string, depositAmount uint64, freeCollateralSelected bool, status byte) *LiquidationCustodianDepositStatus {
-	return &LiquidationCustodianDepositStatus{TxReqID: txReqID, IncogAddressStr: incogAddressStr, PTokenId: PTokenId, DepositAmount: depositAmount, FreeCollateralSelected: freeCollateralSelected, Status: status}
+func NewLiquidationCustodianDepositStatus(txReqID common.Hash, incogAddressStr string, PTokenId string, depositAmount uint64, freeCollateralAmount uint64, status byte) *LiquidationCustodianDepositStatus {
+	return &LiquidationCustodianDepositStatus{TxReqID: txReqID, IncogAddressStr: incogAddressStr, PTokenId: PTokenId, DepositAmount: depositAmount, FreeCollateralAmount: freeCollateralAmount, Status: status}
 }
 
-func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, amount uint64, freeCollateralSelected bool) (*PortalLiquidationCustodianDeposit , error) {
+func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, amount uint64, freeCollateralAmount uint64) (*PortalLiquidationCustodianDeposit , error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	custodianDepositMeta := &PortalLiquidationCustodianDeposit {
-		IncogAddressStr: incognitoAddrStr,
-		PTokenId: pToken,
-		DepositedAmount: amount,
-		FreeCollateralSelected: freeCollateralSelected,
+		IncogAddressStr:      incognitoAddrStr,
+		PTokenId:             pToken,
+		DepositedAmount:      amount,
+		FreeCollateralAmount: freeCollateralAmount,
 	}
 	custodianDepositMeta.MetadataBase = metadataBase
 	return custodianDepositMeta, nil
@@ -121,7 +121,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) Hash() *common.Hash {
 	record += custodianDeposit.IncogAddressStr
 	record += custodianDeposit.PTokenId
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
-	record += strconv.FormatBool(custodianDeposit.FreeCollateralSelected)
+	record += strconv.FormatUint(custodianDeposit.FreeCollateralAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

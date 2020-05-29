@@ -60,6 +60,52 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 	return resTx, nil
 }
 
+func (blockGenerator *BlockGenerator) buildPortalRejectedTopUpWaitingPortingTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[buildPortalRejectedTopUpWaitingPortingTx] Starting...")
+	contentBytes := []byte(contentStr)
+	var topUpInfo metadata.PortalTopUpWaitingPortingRequestContent
+	err := json.Unmarshal(contentBytes, &topUpInfo)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal top up waiting porting content: %+v", err)
+		return nil, nil
+	}
+	if topUpInfo.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalTopUpWaitingPortingResponse(
+		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		topUpInfo.TxReqID,
+		metadata.PortalTopUpWaitingPortingResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(topUpInfo.IncogAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		topUpInfo.DepositedAmount,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while initializing refund top up waiting porting (normal) tx: %+v", err)
+		return nil, nil
+	}
+	return resTx, nil
+}
+
 func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReject(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,

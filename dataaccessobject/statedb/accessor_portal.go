@@ -7,7 +7,7 @@ import (
 )
 
 //======================  Redeem  ======================
-func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*WaitingRedeemRequest, error) {
+func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*RedeemRequest, error) {
 	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
 	return waitingRedeemRequests, nil
 }
@@ -15,10 +15,10 @@ func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*WaitingRedeemReques
 // StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func StoreWaitingRedeemRequests(
 	stateDB *StateDB,
-	waitingRedeemReqs map[string]*WaitingRedeemRequest) error {
+	waitingRedeemReqs map[string]*RedeemRequest) error {
 	for _, waitingReq := range waitingRedeemReqs {
 		key := GenerateWaitingRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
-		value := NewWaitingRedeemRequestWithValue(
+		value := NewRedeemRequestWithValue(
 			waitingReq.uniqueRedeemID,
 			waitingReq.tokenID,
 			waitingReq.redeemerAddress,
@@ -85,6 +85,64 @@ func GetPortalRedeemRequestByTxIDStatus(stateDB *StateDB, txID string) ([]byte, 
 	}
 
 	return data, nil
+}
+
+func StorePortalReqMatchingRedeemByTxIDStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalReqMatchingRedeemStatusByTxReqIDPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalReqMatchingRedeemByTxIDStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalReqMatchingRedeemByTxIDStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalReqMatchingRedeemStatusByTxReqIDPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalReqMatchingRedeemByTxIDStatusError, err)
+	}
+
+	return data, nil
+}
+
+func GetMatchedRedeemRequests(stateDB *StateDB) (map[string]*RedeemRequest, error) {
+	waitingRedeemRequests := stateDB.getAllMatchedRedeemRequest()
+	return waitingRedeemRequests, nil
+}
+
+// StoreMatchedRedeemRequests stores matched redeem requests at beaconHeight
+func StoreMatchedRedeemRequests(
+	stateDB *StateDB,
+	waitingRedeemReqs map[string]*RedeemRequest) error {
+	for _, waitingReq := range waitingRedeemReqs {
+		key := GenerateMatchedRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
+		value := NewRedeemRequestWithValue(
+			waitingReq.uniqueRedeemID,
+			waitingReq.tokenID,
+			waitingReq.redeemerAddress,
+			waitingReq.redeemerRemoteAddress,
+			waitingReq.redeemAmount,
+			waitingReq.custodians,
+			waitingReq.redeemFee,
+			waitingReq.beaconHeight,
+			waitingReq.txReqID,
+		)
+		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreWaitingRedeemRequestError, err)
+		}
+	}
+
+	return nil
+}
+
+func DeleteMatchedRedeemRequest(stateDB *StateDB, redeemID string) {
+	key := GenerateMatchedRedeemRequestObjectKey(redeemID)
+	stateDB.MarkDeleteStateObject(WaitingRedeemRequestObjectType, key)
 }
 
 //======================  Custodian pool  ======================
@@ -314,8 +372,10 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 		errType = GetLiquidationTopPercentileExchangeRatesStatusError
 	case string(PortalCustodianWithdrawStatusPrefix()):
 		errType = GetPortalCustodianWithdrawStatusError
+	case string(PortalTopUpWaitingPortingStatusPrefix()):
+		errType = GetPortalTopupWaitingPortingStatusError
 	default:
-		errType = StorePortalStatusError
+		errType = GetPortalStatusError
 	}
 
 	if err != nil {

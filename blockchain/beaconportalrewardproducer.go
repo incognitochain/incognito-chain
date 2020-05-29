@@ -139,7 +139,10 @@ func splitRewardForCustodians(
 }
 
 func (blockchain *BlockChain) buildPortalRewardsInsts(
-	beaconHeight uint64, currentPortalState *CurrentPortalState, rewardForCustodianByEpoch map[common.Hash]uint64) ([][]string, error) {
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	rewardForCustodianByEpoch map[common.Hash]uint64,
+	newMatchedRedeemReqIDs []string) ([][]string, error) {
 
 	// rewardInfos are map custodians' addresses and reward amount
 	rewardInfos := make(map[string]*statedb.PortalRewardInfo, 0)
@@ -157,17 +160,20 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		}
 	}
 
-	// get redeem fee from waiting redeem request at beaconHeight + 1 (new waiting redeem requests)
+	// get new matched redeem requests at beaconHeight + 1
 	// and split fees for matching custodians
-	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
-		if waitingRedeemReq.GetBeaconHeight() == beaconHeight+1 {
-			rewardInfos = splitRedeemFeeForMatchingCustodians(
-				waitingRedeemReq.GetRedeemFee(),
-				waitingRedeemReq.GetRedeemAmount(),
-				waitingRedeemReq.GetCustodians(),
-				rewardInfos,
-			)
+	for _, newMatchedRedeemID := range newMatchedRedeemReqIDs {
+		matchedRedeemKey := statedb.GenerateMatchedRedeemRequestObjectKey(newMatchedRedeemID).String()
+		matchedRedeemReq, ok := currentPortalState.MatchedRedeemRequests[matchedRedeemKey]
+		if !ok || matchedRedeemReq == nil {
+			continue
 		}
+		rewardInfos = splitRedeemFeeForMatchingCustodians(
+			matchedRedeemReq.GetRedeemFee(),
+			matchedRedeemReq.GetRedeemAmount(),
+			matchedRedeemReq.GetCustodians(),
+			rewardInfos,
+		)
 	}
 
 	// if there are reward by epoch instructions (at the end of the epoch)
