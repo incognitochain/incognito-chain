@@ -512,8 +512,6 @@ func buildInstForLiquidationTopPercentileExchangeRates(
 						HoldAmountPubToken:       tpRatios[pTokenID].HoldAmountPubToken,
 					}
 				}
-				Logger.log.Infof("[buildInstForLiquidationTopPercentileExchangeRates] unlock amount : %v\n ", remainUnlockAmounts)
-				Logger.log.Infof("[buildInstForLiquidationTopPercentileExchangeRates] liquidated : %v\n ", liquidatedAmountInPRV)
 			}
 
 			//update current portal state
@@ -656,7 +654,6 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 		return [][]string{inst}, nil
 	}
 
-	Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", meta.RedeemAmount, totalPrv)
 	liquidateExchangeRates.Rates()[meta.TokenID] = statedb.LiquidationPoolDetail{
 		CollateralAmount: liquidateByTokenID.CollateralAmount - totalPrv,
 		PubTokenAmount:   liquidateByTokenID.PubTokenAmount - meta.RedeemAmount,
@@ -840,8 +837,6 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 
 		return [][]string{inst}, nil
 	}
-
-	Logger.log.Infof("Deposited amount: expect %v, data sent %v", amountNeeded, actionData.Meta.DepositedAmount)
 
 	remainDepositAmount := actionData.Meta.DepositedAmount - amountNeeded
 	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.Meta.DepositedAmount)
