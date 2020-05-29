@@ -1089,7 +1089,7 @@ func (blockService BlockService) GetReqMatchingRedeemByTxIDStatus(reqTxID string
 	return &status, nil
 }
 
-func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata.LiquidationCustodianDepositStatus, error) {
+func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata.LiquidationCustodianDepositStatusV2, error) {
 	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	data, err := statedb.GetPortalStateStatusMultiple(
 		stateDB,
@@ -1099,7 +1099,7 @@ func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata
 		return nil, err
 	}
 
-	var status metadata.LiquidationCustodianDepositStatus
+	var status metadata.LiquidationCustodianDepositStatusV2
 	err = json.Unmarshal(data, &status)
 	if err != nil {
 		return nil, err

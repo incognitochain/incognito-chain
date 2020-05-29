@@ -43,7 +43,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
 			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation custodian deposit
-		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMeta):
+		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositV2Meta):
 			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//waiting porting top up
 		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta):

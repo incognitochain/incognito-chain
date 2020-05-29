@@ -107,6 +107,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalRedeemLiquidateExchangeRates{}
 	case PortalRedeemLiquidateExchangeRatesResponseMeta:
 		md = &PortalRedeemLiquidateExchangeRatesResponse{}
+	case PortalLiquidationCustodianDepositV2Meta:
+		md = &PortalLiquidationCustodianDepositV2{}
+	case PortalLiquidationCustodianDepositV2ResponseMeta:
+		md = &PortalLiquidationCustodianDepositV2Response{}
 	case PortalLiquidationCustodianDepositMeta:
 		md = &PortalLiquidationCustodianDeposit{}
 	case PortalLiquidationCustodianDepositResponseMeta:

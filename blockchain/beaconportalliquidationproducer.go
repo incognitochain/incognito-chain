@@ -107,7 +107,7 @@ func buildLiquidationCustodianDepositInst(
 	shardID byte,
 	txReqID common.Hash,
 ) []string {
-	redeemRequestContent := metadata.PortalLiquidationCustodianDepositContent{
+	redeemRequestContent := metadata.PortalLiquidationCustodianDepositContentV2{
 		PTokenId:             pTokenId,
 		IncogAddressStr:      incogAddress,
 		DepositedAmount:      depositedAmount,
@@ -737,7 +737,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal liquidation custodian deposit action: %+v", err)
 		return [][]string{}, nil
 	}
-	var actionData metadata.PortalLiquidationCustodianDepositAction
+	var actionData metadata.PortalLiquidationCustodianDepositActionV2
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal liquidation custodian deposit action: %+v", err)
