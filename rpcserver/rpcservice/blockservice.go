@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -829,7 +828,7 @@ func (blockService BlockService) GetShardBlockHeader(getBy string, blockParam st
 	case "blockhash":
 		hash := common.Hash{}
 		err := hash.Decode(&hash, blockParam)
-		log.Printf("%+v", hash)
+		Logger.log.Infof("%+v", hash)
 		if err != nil {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 			return nil, 0, []string{}, NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
@@ -1150,8 +1149,6 @@ func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr stri
 	return result, nil
 }
 
-
-
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {
 	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
@@ -1162,4 +1159,3 @@ func (blockService BlockService) GetRewardFeatureByFeatureName(featureName strin
 
 	return data.GetTotalRewards(), nil
 }
-

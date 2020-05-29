@@ -18,7 +18,6 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProof params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMeta, httpServer)
 }
 
@@ -27,7 +26,6 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProofForDepositToSC params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMeta, httpServer)
 }
 
@@ -190,7 +188,6 @@ func splitAndDecodeInst(bridgeInst, beaconInst []string) (string, string, string
 
 // handleGetBurnProof returns a proof of a tx burning pETH
 func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurningAddress params: %+v", params)
 	listParams, ok := params.([]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array"))

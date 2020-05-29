@@ -43,7 +43,7 @@ type HttpServer struct {
 	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
-	portal     		  *rpcservice.PortalService
+	portal            *rpcservice.PortalService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -216,9 +216,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %+v", errCode, err), errCode)
 		return
 	}
-	// Logger.log.Info(string(body))
-	// log.Println(string(body))
-
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
 	// long polling.  However, not having a read deadline on the initial
