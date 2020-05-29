@@ -53,11 +53,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	for _, pTokenID := range tokenIDKeys {
 		remoteAddresses[pTokenID] = remoteAddressesMap[pTokenID].(string)
 	}
-	depositedAmountData, ok := data["DepositedAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+
+	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	depositedAmount := uint64(depositedAmountData)
 
 	meta, _ := metadata.NewPortalCustodianDeposit(
 		metadata.PortalCustodianDepositMeta,
@@ -136,11 +136,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))
 	}
-	portingAmountData, ok := data["PortingAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingAmount is invalid"))
+	portingAmount, err := common.AssertAndConvertStrToNumber(data["PortingAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	portingAmount := uint64(portingAmountData)
 
 	portingProof, ok := data["PortingProof"].(string)
 	if !ok {
@@ -208,9 +207,9 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	beaconHeight, ok := data["BeaconHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	//stateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
@@ -324,17 +323,15 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemTokenID is invalid"))
 	}
 
-	redeemAmountParam, ok := tokenParamsRaw["RedeemAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemAmount is invalid"))
+	redeemAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["RedeemAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemAmount := uint64(redeemAmountParam)
 
-	redeemFeeParam, ok := tokenParamsRaw["RedeemFee"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemFee is invalid"))
+	redeemFee, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["RedeemFee"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemFee := uint64(redeemFeeParam)
 
 	redeemerIncAddressStr, ok := tokenParamsRaw["RedeemerIncAddressStr"].(string)
 	if !ok {
@@ -399,15 +396,15 @@ func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PaymentAddress is invalid"))
 	}
 
-	amount, ok := data["Amount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Amount is invalid"))
+	amount, err := common.AssertAndConvertStrToNumber(data["Amount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	meta, _ := metadata.NewPortalCustodianWithdrawRequest(
 		metadata.PortalCustodianWithdrawRequestMeta,
 		paymentAddress,
-		uint64(amount),
+		amount,
 	)
 
 	// create new param to build raw tx from param interface
@@ -479,11 +476,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddressStr is invalid"))
 	}
-	redeemAmountData, ok := data["RedeemAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RedeemAmount is invalid"))
+	redeemAmount, err := common.AssertAndConvertStrToNumber(data["RedeemAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemAmount := uint64(redeemAmountData)
 
 	redeemProof, ok := data["RedeemProof"].(string)
 	if !ok {
@@ -775,9 +771,9 @@ func (httpServer *HttpServer) handleGetRewardFeature(params interface{}, closeCh
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param FeatureName is invalid"))
 	}
-	epoch, ok := data["Epoch"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param Epoch is invalid"))
+	epoch, err := common.AssertAndConvertStrToNumber(data["Epoch"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	if epoch < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param Epoch must be greater or than 1"))

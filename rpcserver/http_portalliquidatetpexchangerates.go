@@ -30,9 +30,9 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	beaconHeight, ok := data["BeaconHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	pTokenID, ok := data["TokenID"].(string)
@@ -77,9 +77,9 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	beaconHeight, ok := data["BeaconHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	custodianAddress, ok := data["CustodianAddress"].(string)
@@ -152,11 +152,10 @@ func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemTokenID is invalid"))
 	}
 
-	redeemAmountParam, ok := tokenParamsRaw["RedeemAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemAmount is invalid"))
+	redeemAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["RedeemAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemAmount := uint64(redeemAmountParam)
 
 	redeemerIncAddressStr, ok := tokenParamsRaw["RedeemerIncAddressStr"].(string)
 	if !ok {
@@ -230,17 +229,15 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
-	freeCollateralAmountData, ok := data["FreeCollateralAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralAmount is invalid"))
+	freeCollateralAmount, err := common.AssertAndConvertStrToNumber(data["FreeCollateralAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	freeCollateralAmount := uint64(freeCollateralAmountData)
 
-	depositedAmountData, ok := data["DepositedAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata DepositedAmount is invalid"))
+	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	depositedAmount := uint64(depositedAmountData)
 
 	meta, _ := metadata.NewPortalLiquidationCustodianDeposit(
 		metadata.PortalLiquidationCustodianDepositMeta,
@@ -328,17 +325,15 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
-	freeCollateralAmountData, ok := data["FreeCollateralAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata FreeCollateralAmount is invalid"))
+	freeCollateralAmount, err := common.AssertAndConvertStrToNumber(data["FreeCollateralAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	freeCollateralAmount := uint64(freeCollateralAmountData)
 
-	depositedAmountData, ok := data["DepositedAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata DepositedAmount is invalid"))
+	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	depositedAmount := uint64(depositedAmountData)
 
 	meta, _ := metadata.NewPortalTopUpWaitingPortingRequest(
 		metadata.PortalTopUpWaitingPortingRequestMeta,
