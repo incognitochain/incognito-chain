@@ -166,6 +166,7 @@ type ConnManager struct {
 	LocalHost    *Host
 	subscriber   ForcedSubscriber
 	disconnected int
+	registered   bool
 
 	DiscoverPeersAddress string
 	IsMasterNode         bool
@@ -272,6 +273,7 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 	// Reconnect if not connected
 	if net.Connectedness(addrInfo.ID) != network.Connected {
 		cm.disconnected++
+		cm.registered = false // Next time we connect to highway, we need to register again
 		Logger.Info("Not connected to highway, connecting")
 		ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
 		defer cancel()
@@ -280,16 +282,17 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 		}
 		if cm.disconnected > MaxConnectionRetry {
 			Logger.Error("Retry maxed out")
-			cm.disconnected = 0
+			cm.disconnected = 0 // Retry N times for next chosen highway
 			return true
 		}
 	}
 
-	if cm.disconnected > 0 && net.Connectedness(addrInfo.ID) == network.Connected {
+	if !cm.registered && net.Connectedness(addrInfo.ID) == network.Connected {
 		// Register again since this might be a new highway
 		Logger.Info("Connected to highway, sending register request")
 		cm.registerRequests <- addrInfo.ID
 		cm.disconnected = 0
+		cm.registered = true
 	}
 	return false
 }

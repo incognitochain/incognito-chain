@@ -104,6 +104,39 @@ func TestConnectWhenMaxedRetry(t *testing.T) {
 	assert.Equal(t, 1, len(cm.keeper.ignoreHWUntil))
 }
 
+// TestCheckConnectionAfterMaxedOut checks if we re-register when trying a new highway after maxing out a number of retries to the old one
+func TestCheckConnectionAfterMaxedOut(t *testing.T) {
+	h, net := setupHost()
+	// Not x 6 -> Con
+	setupConnectedness(
+		net,
+		[]network.Connectedness{
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected,
+			network.Connected, network.Connected,
+		},
+	)
+	var err error
+	h.On("Connect", mock.Anything, mock.Anything).Return(err)
+
+	cm := ConnManager{
+		DiscoverPeersAddress: testHighwayAddress,
+		LocalHost:            &Host{Host: h},
+		registerRequests:     make(chan peer.ID, 5),
+		keeper:               NewAddrKeeper(),
+	}
+	for i := 0; i < 8; i++ {
+		cm.checkConnection(&peer.AddrInfo{})
+	}
+
+	assert.Equal(t, 1, len(cm.registerRequests), "not reconnect")
+}
+
 // TestReconnect checks if connection is re-established after being disconnected
 func TestReconnect(t *testing.T) {
 	h, net := setupHost()
