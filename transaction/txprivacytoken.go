@@ -56,6 +56,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 		return NewTransactionErr(PrivacyTokenJsonError, err)
 	}
 	txCustomTokenPrivacy.Tx = tx
+
+	// TODO: hotfix, remove when fixed this issue
+	if tx.Metadata != nil && tx.Metadata.GetType() == 81 {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Amount == 37772966455153490 {
+			txCustomTokenPrivacy.TxPrivacyTokenData.Amount = 37772966455153487
+		}
+	}
+
 	return nil
 }
 
