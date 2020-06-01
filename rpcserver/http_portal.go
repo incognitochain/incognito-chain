@@ -67,7 +67,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -156,7 +156,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -408,7 +408,7 @@ func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{},
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -496,7 +496,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -659,7 +659,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqWithdrawRewardPortal(param
 		*tokenID)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -813,7 +813,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqMatchingRedeem(params inte
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}

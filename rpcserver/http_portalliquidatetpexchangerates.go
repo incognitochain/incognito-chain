@@ -248,7 +248,7 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -345,7 +345,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
