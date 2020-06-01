@@ -10,6 +10,9 @@ import (
 )
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
+	if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && block.Header.Height > 1550000) {
+		return nil
+	}
 	beaconHeight := block.Header.Height - 1
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
 	if err != nil {
@@ -28,7 +31,6 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		}
 
 		var err error
-
 		switch inst[0] {
 		//porting request
 		case strconv.Itoa(metadata.PortalUserRegisterMeta):
