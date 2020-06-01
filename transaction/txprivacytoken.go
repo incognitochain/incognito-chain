@@ -38,7 +38,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 		return NewTransactionErr(PrivacyTokenPRVJsonError, err)
 	}
 	temp := &struct {
-		TxTokenPrivacyData interface{}
+		TxTokenPrivacyData TxPrivacyTokenData
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
