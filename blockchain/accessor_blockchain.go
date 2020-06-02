@@ -20,7 +20,7 @@ func (blockchain *BlockChain) FinalizedShardBlock(shardBlock *ShardBlock) error 
 	return rawdbv2.FinalizedShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), shardBlock.Header.ShardID, shardBlock.Header.Hash())
 }
 
-func (blockchain *BlockChain) GetFinalizedShardBlock(shardID byte) (*ShardBlock, uint64, error) {
+func (blockchain *BlockChain) GetLatestFinalizedShardBlock(shardID byte) (*ShardBlock, uint64, error) {
 	hash, err := rawdbv2.GetFinalizedShardBlock(blockchain.GetShardChainDatabase(shardID), shardID)
 	if err != nil {
 		return nil, 0, err
@@ -37,7 +37,7 @@ func (blockchain *BlockChain) DeleteShardBlockByView(shardID byte, view common.H
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeightAndView(shardID byte, height uint64, view common.Hash) (*ShardBlock, error) {
-	finalShardBlock, finalHeight, err := blockchain.GetFinalizedShardBlock(shardID)
+	finalShardBlock, finalHeight, err := blockchain.GetLatestFinalizedShardBlock(shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (blockchain *BlockChain) FinalizedBeaconBlock(beaconBlock *BeaconBlock) err
 	return rawdbv2.FinalizedBeaconBlock(blockchain.GetBeaconChainDatabase(), beaconBlock.Header.Hash())
 }
 
-func (blockchain *BlockChain) GetFinalizedBeaconBlock() (*BeaconBlock, uint64, error) {
+func (blockchain *BlockChain) GetLatestFinalizedBeaconBlock() (*BeaconBlock, uint64, error) {
 	hash, err := rawdbv2.GetFinalizedBeaconBlock(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return nil, 0, err
@@ -162,7 +162,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBl
 	return beaconBlocks, nil
 }
 
-func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBlock, error) {
+func (blockchain *BlockChain) GetFinalizedBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(height)
 	if err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	return shardBlockMap, err
 }
 
-func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*ShardBlock, error) {
+func (blockchain *BlockChain) GetFinalizedShardBlockByHeight(height uint64, shardID byte) (*ShardBlock, error) {
 	res, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
 		return nil, err
@@ -259,6 +259,32 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 		}
 	}
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
+}
+
+func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*ShardBlock {
+	allShardBlocks := make(map[byte][]*ShardBlock)
+	for shardID, bestShardHeight := range bestShardHeights {
+		_, finalizedShardHeight, err := blockchain.GetLatestFinalizedShardBlock(shardID)
+		if err != nil {
+			Logger.log.Errorf("GetLatestFinalizedShardBlock shard %+v, error  %+v", shardID, err)
+			continue
+		}
+		shardBlocks := []*ShardBlock{}
+		// limit maximum number of shard blocks for beacon producer
+		if finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
+			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
+		}
+		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
+			tempShardBlock, err := blockchain.GetFinalizedShardBlockByHeight(shardHeight, shardID)
+			if err != nil {
+				Logger.log.Errorf("GetFinalizedShardBlockByHeight shard %+v, error  %+v", shardID, err)
+				break
+			}
+			shardBlocks = append(shardBlocks, tempShardBlock)
+		}
+		allShardBlocks[shardID] = shardBlocks
+	}
+	return allShardBlocks
 }
 
 func (blockchain *BlockChain) GetBestStateShardRewardStateDB(shardID byte) *statedb.StateDB {

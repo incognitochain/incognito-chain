@@ -23,17 +23,17 @@ func (netSync *NetSync) GetBlockByHeight(
 	bc := netSync.config.BlockChain
 	switch blkType {
 	case proto.BlkType_BlkBc:
-		return bc.GetBeaconBlockByHeightV1(height)
+		return bc.GetFinalizedBeaconBlockByHeight(height)
 	case proto.BlkType_BlkShard:
-		return bc.GetShardBlockByHeightV1(height, fromcID)
+		return bc.GetFinalizedShardBlockByHeight(height, fromcID)
 	case proto.BlkType_BlkXShard:
-		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
+		blk, err := bc.GetFinalizedShardBlockByHeight(height, fromcID)
 		if err != nil {
 			return nil, err
 		}
 		return blk.CreateCrossShardBlock(tocID)
 	case proto.BlkType_BlkS2B:
-		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
+		blk, err := bc.GetFinalizedShardBlockByHeight(height, fromcID)
 		if err != nil {
 			return nil, err
 		}

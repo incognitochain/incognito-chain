@@ -22,7 +22,7 @@ const (
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 	DefaultCacheCleanupTime       = 40 * time.Second // in second
 	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 30
+	MAX_S2B_BLOCK                 = 5
 	MAX_BEACON_BLOCK              = 5
 	LowerBoundPercentForIncDAO    = 3
 	UpperBoundPercentForIncDAO    = 10
