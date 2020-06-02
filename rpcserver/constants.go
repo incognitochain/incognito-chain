@@ -222,6 +222,7 @@ const (
 	getPortalCustodianTopupStatus                 = "getcustodiantopupstatus"
 	getPortalCustodianTopupWaitingPortingStatus   = "getcustodiantopupwaitingportingstatus"
 	getAmountTopUpWaitingPorting                  = "getamounttopupwaitingporting"
+	getPortalReqRedeemByTxIDStatus                = "getreqredeemstatusbytxid"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

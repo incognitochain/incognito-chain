@@ -141,7 +141,6 @@ func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(
 	stateDB *statedb.StateDB,
 	custodianAddress string,
 	pTokenId string,
-	isFreeCollateralSelected bool,
 	portalParam blockchain.PortalParams) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
 	custodian, err := statedb.GetOneCustodian(stateDB, custodianAddress)
 	if err != nil {
@@ -158,13 +157,11 @@ func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(
 		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
 	}
 
-	amountNeeded, _, _, err := blockchain.CalAmountNeededDepositLiquidate(currentPortalState, custodian, finalExchangeRates, pTokenId, isFreeCollateralSelected, portalParam)
+	amountNeeded, err := blockchain.CalAmountNeededDepositLiquidate(currentPortalState, custodian, finalExchangeRates, pTokenId, portalParam)
 
 	result := jsonresult.GetLiquidateAmountNeededCustodianDeposit{
-		IsFreeCollateralSelected: isFreeCollateralSelected,
 		Amount:                   amountNeeded,
 		TokenId:                  pTokenId,
-		FreeCollateral:           custodian.GetFreeCollateral(),
 	}
 
 	return result, nil
@@ -231,9 +228,9 @@ func (portal *PortalService) GetLiquidateExchangeRatesPool(
 	tokenID string,
 ) (jsonresult.GetLiquidateExchangeRates, error) {
 	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRatesPoolByKey(stateDB)
-
 	if err != nil {
-		return jsonresult.GetLiquidateExchangeRates{}, err
+		Logger.log.Errorf("Error when getting liquidation pool %v", err)
+		return jsonresult.GetLiquidateExchangeRates{}, nil
 	}
 
 	liquidateExchangeRatesDetail, ok := liquidateExchangeRates.Rates()[tokenID]
