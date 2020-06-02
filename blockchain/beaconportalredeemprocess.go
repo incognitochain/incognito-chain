@@ -72,9 +72,15 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemRequestTxAcceptedStatus,
-			UniqueRedeemID: actionData.UniqueRedeemID,
-			TxReqID:        actionData.TxReqID,
+			Status:                  common.PortalRedeemRequestTxAcceptedStatus,
+			UniqueRedeemID:          actionData.UniqueRedeemID,
+			TokenID:                 actionData.TokenID,
+			RedeemAmount:            actionData.RedeemAmount,
+			RedeemerIncAddressStr:   actionData.RedeemerIncAddressStr,
+			RemoteAddress:           actionData.RemoteAddress,
+			RedeemFee:               actionData.RedeemFee,
+			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
+			TxReqID:                 actionData.TxReqID,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -107,9 +113,15 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemRequestTxRejectedStatus,
-			UniqueRedeemID: actionData.UniqueRedeemID,
-			TxReqID:        actionData.TxReqID,
+			Status:                  common.PortalRedeemRequestTxRejectedStatus,
+			UniqueRedeemID:          actionData.UniqueRedeemID,
+			TokenID:                 actionData.TokenID,
+			RedeemAmount:            actionData.RedeemAmount,
+			RedeemerIncAddressStr:   actionData.RedeemerIncAddressStr,
+			RemoteAddress:           actionData.RemoteAddress,
+			RedeemFee:               actionData.RedeemFee,
+			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
+			TxReqID:                 actionData.TxReqID,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -118,6 +130,69 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when tracking status of redeem request by txReqID: %v\n", err)
 			return nil
 		}
+	} else if reqStatus == common.PortalRedeemReqCancelledByLiquidationChainStatus {
+		keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
+		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
+		redeemReq := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
+		if redeemReq == nil{
+			Logger.log.Errorf("[processPortalRedeemRequest] redeemReq with ID %v not found: %v\n", actionData.UniqueRedeemID)
+			return nil
+		}
+
+		// reject waiting redeem request, return ptoken and redeem fee for users
+		// update custodian state (return holding public token amount)
+		err := UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(currentPortalState, redeemReq, beaconHeight)
+		if err != nil {
+			Logger.log.Errorf("[processPortalRedeemRequest] Error when updating custodian state %v - RedeemID %v\n: ",
+				err, redeemReq.GetUniqueRedeemID())
+			return nil
+		}
+
+		// remove redeem request from waiting redeem requests list
+		deleteWaitingRedeemRequest(currentPortalState, keyWaitingRedeemRequestStr)
+		statedb.DeleteWaitingRedeemRequest(stateDB, redeemReq.GetUniqueRedeemID())
+
+		// update status of redeem request by redeemID to rejected by liquidation
+		redeemRequestStatus := metadata.PortalRedeemRequestStatus{
+			Status:                  common.PortalRedeemReqCancelledByLiquidationStatus,
+			UniqueRedeemID:          actionData.UniqueRedeemID,
+			TokenID:                 actionData.TokenID,
+			RedeemAmount:            actionData.RedeemAmount,
+			RedeemerIncAddressStr:   actionData.RedeemerIncAddressStr,
+			RemoteAddress:           actionData.RemoteAddress,
+			RedeemFee:               actionData.RedeemFee,
+			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
+			TxReqID:                 redeemReq.GetTxReqID(),
+		}
+		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
+		err = statedb.StorePortalRedeemRequestStatus(
+			stateDB,
+			actionData.UniqueRedeemID,
+			redeemRequestStatusBytes)
+		if err != nil {
+			Logger.log.Errorf("[processPortalRedeemRequest] Error when storing status of redeem request by redeemID: %v\n", err)
+			return nil
+		}
+
+		// update bridge/portal token info
+		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: Can not new hash from porting incTokenID: %+v", err)
+			return nil
+		}
+		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
+		if found {
+			updatingInfo.countUpAmt += actionData.RedeemAmount
+		} else {
+			updatingInfo = UpdatingInfo{
+				countUpAmt:      actionData.RedeemAmount,
+				deductAmt:       0,
+				tokenID:         *incTokenID,
+				externalTokenID: nil,
+				isCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[*incTokenID] = updatingInfo
 	}
 
 	return nil

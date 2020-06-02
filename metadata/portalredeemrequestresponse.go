@@ -98,7 +98,8 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		}
 		instReqStatus := inst[2]
 		if iRes.RequestStatus != "rejected" ||
-			instReqStatus != common.PortalRedeemRequestRejectedChainStatus {
+			(instReqStatus != common.PortalRedeemRequestRejectedChainStatus &&
+				instReqStatus != common.PortalRedeemReqCancelledByLiquidationChainStatus){
 			continue
 		}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 	"strconv"
 	"fmt"
@@ -406,6 +407,8 @@ func buildInstPickingCustodiansForTimeoutWaitingRedeem(
 	}
 }
 
+//func (blockchain * BlockChain) buildInstCancel
+
 // checkAndPickMoreCustodianForWaitingRedeemRequest check waiting redeem requests get timeout or not
 // if the waiting redeem request gets timeout, but not enough matching custodians, auto pick up more custodians
 func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
@@ -418,8 +421,8 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 		waitingRedeemKeys = append(waitingRedeemKeys, key)
 	}
 	sort.Strings(waitingRedeemKeys)
-	for _, key := range waitingRedeemKeys {
-		waitingRedeem := currentPortalState.WaitingRedeemRequests[key]
+	for _, waitingRedeemKey := range waitingRedeemKeys {
+		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
 		redeemID := waitingRedeem.GetUniqueRedeemID()
 		if (beaconHeight+1)-waitingRedeem.GetBeaconHeight() < blockchain.convertDurationTimeToBeaconBlocks(blockchain.GetPortalParams(beaconHeight).TimeOutWaitingRedeemRequest) {
 			continue
@@ -447,6 +450,42 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 				common.PortalPickMoreCustodianRedeemFailedChainStatus,
 			)
 			insts = append(insts, inst)
+
+			// build instruction reject redeem request
+			err := UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(currentPortalState, waitingRedeem, beaconHeight)
+			if err != nil {
+				Logger.log.Errorf("[checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate] Error when updating custodian state %v - RedeemID %v\n: ",
+					err, waitingRedeem.GetUniqueRedeemID())
+				break
+			}
+
+			// remove redeem request from waiting redeem requests list
+			deleteWaitingRedeemRequest(currentPortalState, waitingRedeemKey)
+
+			// get shardId of redeemer
+			redeemerKey, err := wallet.Base58CheckDeserialize(waitingRedeem.GetRedeemerAddress())
+			if err != nil {
+				Logger.log.Errorf("[checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
+					waitingRedeem.GetUniqueRedeemID(), err)
+				break
+			}
+			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
+
+			// build instruction
+			inst2 := buildRedeemRequestInst(
+				waitingRedeem.GetUniqueRedeemID(),
+				waitingRedeem.GetTokenID(),
+				waitingRedeem.GetRedeemAmount(),
+				waitingRedeem.GetRedeemerAddress(),
+				waitingRedeem.GetRedeemerRemoteAddress(),
+				waitingRedeem.GetRedeemFee(),
+				waitingRedeem.GetCustodians(),
+				metadata.PortalRedeemRequestMeta,
+				shardID,
+				common.Hash{},
+				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+			)
+			insts = append(insts, inst2)
 			continue
 		}
 

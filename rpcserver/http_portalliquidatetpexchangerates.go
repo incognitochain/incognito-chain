@@ -54,9 +54,8 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 	}
 
 	result, err := httpServer.portal.GetLiquidateExchangeRatesPool(stateDB, pTokenID)
-
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationPoolError, err)
+		return result, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationPoolError, err)
 	}
 
 	return result, nil
@@ -87,11 +86,6 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
 	}
 
-	isFreeCollateralSelected, ok := data["IsFreeCollateralSelected"].(bool)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IsFreeCollateralSelected is invalid"))
-	}
-
 	pTokenID, ok := data["TokenID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
@@ -112,7 +106,7 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 
 	portalParam := httpServer.config.BlockChain.GetPortalParams(uint64(beaconHeight))
 
-	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(stateDB, custodianAddress, pTokenID, isFreeCollateralSelected, portalParam)
+	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(stateDB, custodianAddress, pTokenID, portalParam)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
 	}
