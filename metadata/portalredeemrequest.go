@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 // PortalRedeemRequest - portal user redeem requests to get public token by burning ptoken
@@ -41,9 +42,9 @@ type PortalRedeemRequestContent struct {
 	TokenID                 string // pTokenID in incognito chain
 	RedeemAmount            uint64
 	RedeemerIncAddressStr   string
-	RemoteAddress           string // btc/bnb/etc address
-	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
+	RemoteAddress           string                                   // btc/bnb/etc address
+	RedeemFee               uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
+	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
 }
@@ -55,9 +56,9 @@ type PortalRedeemRequestStatus struct {
 	TokenID                 string // pTokenID in incognito chain
 	RedeemAmount            uint64
 	RedeemerIncAddressStr   string
-	RemoteAddress           string // btc/bnb/etc address
-	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
+	RemoteAddress           string                                   // btc/bnb/etc address
+	RedeemFee               uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
+	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
 	TxReqID                 common.Hash
 }
 
