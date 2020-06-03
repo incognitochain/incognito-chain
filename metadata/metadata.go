@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // Interface for all types of metadata in tx
@@ -81,47 +81,66 @@ type BlockchainRetriever interface {
 
 // Interface for all type of transaction
 type Transaction interface {
-	// GET/SET FUNC
+	// GET/SET FUNCTION
+	GetVersion() int8
+	SetVersion(int8)
 	GetMetadataType() int
 	GetType() string
+	SetType(string)
 	GetLockTime() int64
-	GetTxActualSize() uint64
+	SetLockTime(int64)
 	GetSenderAddrLastByte() byte
+	SetGetSenderAddrLastByte(byte)
 	GetTxFee() uint64
+	SetTxFee(uint64)
 	GetTxFeeToken() uint64
+	GetInfo() []byte
+	SetInfo([]byte)
+	GetSigPubKey() []byte
+	SetSigPubKey([]byte)
+	GetSig() []byte
+	SetSig([]byte)
+	GetProof() privacy.Proof
+	SetProof(privacy.Proof)
+	GetTokenID() *common.Hash
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
-	GetInfo() []byte
-	GetSender() []byte
-	GetSigPubKey() []byte
-	GetProof() privacy.Proof
-	// Get receivers' data for tx
+
+	// =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
+	GetTxActualSize() uint64
 	GetReceivers() ([][]byte, []uint64)
-	GetAndCheckBurningReceiver() (bool, []byte, uint64)
+	GetSender() []byte
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
-	// Get receivers' data for custom token tx (nil for normal tx)
-	GetTokenReceivers() ([][]byte, []uint64)
-	GetTokenUniqueReceiver() (bool, []byte, uint64)
+	GetAndCheckBurningReceiver() (bool, []byte, uint64)
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
-	GetTokenID() *common.Hash
 	ListSerialNumbersHashH() []common.Hash
+	String() string
 	Hash() *common.Hash
-	// VALIDATE FUNC
+	CalculateTxValue() uint64
+
+	// =================== FUNCTION THAT CHECK STUFFS  ===================
 	CheckTxVersion(int8) bool
 	CheckAuthorizedSender([]byte) (bool, error)
-	// CheckTransactionFee(minFeePerKbTx uint64) bool
-	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)
-	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
-	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
-	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
-	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
+	ShouldSignMetaData() bool
+	IsSalaryTx() bool
 	IsPrivacy() bool
 	IsCoinsBurning(BlockchainRetriever, uint64) bool
-	CalculateTxValue() uint64
-	IsSalaryTx() bool
+
+	// =================== FUNCTIONS THAT VALIDATE STUFFS ===================
+	ValidateTxSalary(*statedb.StateDB) (bool, error)
+	ValidateTxWithCurrentMempool(MempoolRetriever) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
+	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
+	ValidateType() bool
+	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)
+	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
+	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
+
+	// Init Transaction, the input should be params such as: TxPrivacyInitParams
+	Init(interface{}) error
+	// Verify the init function above, which verify zero knowledge proof and signatures
+	Verify(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
 }
 
 func getPDEPoolPair(

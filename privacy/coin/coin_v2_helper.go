@@ -15,6 +15,22 @@ func NewCoinFromAmountAndReceiver(amount uint64, receiver key.PaymentAddress) (*
 	return NewCoinFromPaymentInfo(paymentInfo)
 }
 
+func NewCoinFromAmountAndTxRandom(amount uint64, receiver key.PaymentAddress, txRandom *TxRandom, info []byte) (*CoinV2, error) {
+	publicKey, err := new(operation.Point).FromBytesS(receiver.Pk)
+	if err != nil {
+		return nil, err
+	}
+	c := new(CoinV2).Init()
+	c.SetPublicKey(publicKey)
+	c.SetAmount(new(operation.Scalar).FromUint64(amount))
+	c.SetRandomness(operation.RandomScalar())
+	c.SetTxRandom(txRandom)
+	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
+	c.SetSharedRandom(nil)
+	c.SetInfo(info)
+	return c, nil
+}
+
 // This function create new coinv2 that has same shardID with targetShardID and with info of paymentInfo
 func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)

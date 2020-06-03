@@ -15,7 +15,7 @@ import (
 )
 
 type TxPrivacyTokenData struct {
-	TxNormal       Tx          // used for privacy functionality
+	TxNormal       TxBase      // used for privacy functionality
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
 	PropertyName   string
 	PropertySymbol string

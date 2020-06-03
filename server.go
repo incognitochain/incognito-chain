@@ -774,7 +774,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 						if err != nil {
 							continue
 						}
-						normalTx := tx.(*transaction.Tx)
+						normalTx := tx.(*transaction.TxBase)
 						txMsg.(*wire.MessageTx).Transaction = normalTx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {

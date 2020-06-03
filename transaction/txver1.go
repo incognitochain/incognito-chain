@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"math/big"
+	"time"
 
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -19,9 +21,13 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 )
 
-type TxVersion1 struct{}
+type TxVersion1 struct {
+	TxBase
+}
 
-func (*TxVersion1) CheckAuthorizedSender(tx *Tx, publicKey []byte) (bool, error) {
+// ========== CHECK FUNCTION ===========
+
+func (tx *TxVersion1) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	sigPubKey := tx.GetSigPubKey()
 	if bytes.Equal(sigPubKey, publicKey) {
 		return true, nil
@@ -29,6 +35,8 @@ func (*TxVersion1) CheckAuthorizedSender(tx *Tx, publicKey []byte) (bool, error)
 		return false, nil
 	}
 }
+
+// ========== NORMAL INIT FUNCTIONS ==========
 
 func parseCommitments(params *TxPrivacyInitParams, shardID byte) ([]uint64, []uint64, error) {
 	var commitmentIndexs []uint64   // array index random of commitments in db
@@ -75,7 +83,7 @@ func generateSndOut(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, st
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut := operation.RandomScalar()
 			for {
-				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, stateDB)
+				ok1, err := checkSNDerivatorExistence(tokenID, sndOut, stateDB)
 				if err != nil {
 					Logger.Log.Error(err)
 				}
@@ -123,8 +131,36 @@ func parseOutputCoins(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, 
 	return outputCoins, nil
 }
 
-// This payment witness currently use one out of many
-func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.PaymentWitnessParam, error) {
+func (tx *TxVersion1) Init(paramsInterface interface{}) error {
+	params, ok := paramsInterface.(*TxPrivacyInitParams)
+	if !ok {
+		return errors.New("params of tx Init is not TxPrivacyInitParam")
+	}
+
+	Logger.Log.Debugf("CREATING TX........\n")
+	if err := validateTxParams(params); err != nil {
+		return err
+	}
+
+	// Init tx and params (tx and params will be changed)
+	if err := tx.initializeTxAndParams(params); err != nil {
+		return err
+	}
+
+	// Check if this tx is nonPrivacyNonInput
+	// Case 1: tx ptoken transfer with ptoken fee
+	// Case 2: tx Reward
+	if check, err := tx.isNonPrivacyNonInput(params); check {
+		return err
+	}
+
+	if err := tx.prove(params); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (tx *TxVersion1) initializePaymentWitnessParam(params *TxPrivacyInitParams) (*zkp.PaymentWitnessParam, error) {
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
 
 	// get list of commitments for proving one-out-of-many from commitmentIndexs
@@ -144,7 +180,7 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	// prepare witness for proving
 	paymentWitnessParam := zkp.PaymentWitnessParam{
 		HasPrivacy:              params.hasPrivacy,
-		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.senderSK),
+		PrivateKey:              new(operation.Scalar).FromBytesS(*params.senderSK),
 		InputCoins:              params.inputCoins,
 		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
@@ -156,7 +192,7 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	return &paymentWitnessParam, nil
 }
 
-func proveAndSignCore(tx *Tx, params *TxPrivacyInitParams, paymentWitnessParamPtr *zkp.PaymentWitnessParam) error {
+func (tx *TxVersion1) proveAndSignCore(params *TxPrivacyInitParams, paymentWitnessParamPtr *zkp.PaymentWitnessParam) error {
 	paymentWitnessParam := *paymentWitnessParamPtr
 	witness := new(zkp.PaymentWitness)
 	err := witness.Init(paymentWitnessParam)
@@ -185,7 +221,7 @@ func proveAndSignCore(tx *Tx, params *TxPrivacyInitParams, paymentWitnessParamPt
 	}
 
 	// sign tx
-	signErr := signTx(tx)
+	signErr := tx.sign()
 	if signErr != nil {
 		Logger.Log.Error(err)
 		return NewTransactionErr(SignTxError, err)
@@ -193,16 +229,16 @@ func proveAndSignCore(tx *Tx, params *TxPrivacyInitParams, paymentWitnessParamPt
 	return nil
 }
 
-func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
+func (tx *TxVersion1) prove(params *TxPrivacyInitParams) error {
 	// Prepare paymentWitness params
-	paymentWitnessParamPtr, err := initializePaymentWitnessParam(tx, params)
+	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParam(params)
 	if err != nil {
 		return err
 	}
-	return proveAndSignCore(tx, params, paymentWitnessParamPtr)
+	return tx.proveAndSignCore(params, paymentWitnessParamPtr)
 }
 
-func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM) (*zkp.PaymentWitnessParam, error) {
+func (tx *TxVersion1) initializePaymentWitnessParamASM(params *TxPrivacyInitParamsForASM) (*zkp.PaymentWitnessParam, error) {
 	// create SNDs for output coins
 	txParams := &params.txParam
 	outputCoins, err := parseOutputCoins(txParams.paymentInfo, txParams.tokenID, txParams.stateDB)
@@ -211,9 +247,9 @@ func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM)
 	}
 	// get list of commitments for proving one-out-of-many from commitmentIndexs
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
-	commitmentProving := make([]*privacy.Point, len(params.commitmentBytes))
+	commitmentProving := make([]*operation.Point, len(params.commitmentBytes))
 	for i, cmBytes := range params.commitmentBytes {
-		commitmentProving[i] = new(privacy.Point)
+		commitmentProving[i] = new(operation.Point)
 		commitmentProving[i], err = commitmentProving[i].FromBytesS(cmBytes)
 		if err != nil {
 			Logger.Log.Error(errors.New(fmt.Sprintf("ASM: Can not get commitment from index=%d shardID=%+v value=%+v", params.commitmentIndices[i], shardID, cmBytes)))
@@ -224,7 +260,7 @@ func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM)
 	// prepare witness for proving
 	paymentWitnessParam := zkp.PaymentWitnessParam{
 		HasPrivacy:              params.txParam.hasPrivacy,
-		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.txParam.senderSK),
+		PrivateKey:              new(operation.Scalar).FromBytesS(*params.txParam.senderSK),
 		InputCoins:              params.txParam.inputCoins,
 		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
@@ -236,16 +272,7 @@ func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM)
 	return &paymentWitnessParam, nil
 }
 
-func (*TxVersion1) ProveASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
-	paymentWitnessParamPtr, err := initializePaymentWitnessParamASM(tx, params)
-	if err != nil {
-		return err
-	}
-	return proveAndSignCore(tx, &params.txParam, paymentWitnessParamPtr)
-}
-
-// signTx - signs tx
-func signTx(tx *Tx) error {
+func (tx *TxVersion1) sign() error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
@@ -277,21 +304,18 @@ func signTx(tx *Tx) error {
 	return nil
 }
 
-func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
-	if tokenID == nil {
-		result := new(common.Hash)
-		err := result.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			Logger.Log.Error(err)
-			return nil, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
-		}
-		return result, nil
+func (tx *TxVersion1) proveASM(params *TxPrivacyInitParamsForASM) error {
+	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParamASM(params)
+	if err != nil {
+		return err
 	}
-	return tokenID, nil
+	return tx.proveAndSignCore(&params.txParam, paymentWitnessParamPtr)
 }
 
+// ========== NORMAL VERIFY FUNCTIONS ==========
+
 func validateSndFromOutputCoin(outputCoins []*coin.CoinV1) error {
-	sndOutputs := make([]*privacy.Scalar, len(outputCoins))
+	sndOutputs := make([]*operation.Scalar, len(outputCoins))
 	for i := 0; i < len(outputCoins); i++ {
 		sndOutputs[i] = outputCoins[i].GetSNDerivator()
 	}
@@ -346,21 +370,16 @@ func getCommitmentsInDatabase(
 	return &commitments, nil
 }
 
-// verifySigTx - verify signature on tx
-func verifySigTx(tx *Tx) (bool, error) {
+func (tx *TxVersion1) verifySig() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
 	}
 
-	var err error
-	res := false
-
 	/****** verify Schnorr signature *****/
 	// prepare Public key for verification
 	verifyKey := new(privacy.SchnorrPublicKey)
-	sigPublicKey, err := new(privacy.Point).FromBytesS(tx.SigPubKey)
-
+	sigPublicKey, err := new(operation.Point).FromBytesS(tx.SigPubKey)
 	if err != nil {
 		Logger.Log.Error(err)
 		return false, NewTransactionErr(DecompressSigPubKeyError, err)
@@ -369,29 +388,17 @@ func verifySigTx(tx *Tx) (bool, error) {
 
 	// convert signature from byte array to SchnorrSign
 	signature := new(privacy.SchnSignature)
-	err = signature.SetBytes(tx.Sig)
-	if err != nil {
+	if err = signature.SetBytes(tx.Sig); err != nil {
 		Logger.Log.Error(err)
 		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
-
-	// verify signature
-	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	if tx.Proof != nil {
-		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	}
-	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
-	res = verifyKey.Verify(signature, tx.Hash()[:])
-
+	res := verifyKey.Verify(signature, tx.Hash()[:])
 	return res, nil
 }
 
-// ValidateTransaction returns true if transaction is valid:
-// - Verify tx signature
-// - Verify the payment proof
-func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var err error
-	if valid, err := verifySigTx(tx); !valid {
+	if valid, err := tx.verifySig(); !valid {
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature ver1 with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
@@ -418,7 +425,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	if isNewTransaction {
 		for i := 0; i < len(outputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].GetSNDerivator(), transactionStateDB); ok || err != nil {
+			if ok, err := checkSNDerivatorExistence(tokenID, outputCoins[i].GetSNDerivator(), transactionStateDB); ok || err != nil {
 				if err != nil {
 					Logger.Log.Error(err)
 				}
@@ -430,7 +437,7 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
-			ok, err := tx.CheckCMExistence(inputCoins[i].GetCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+			ok, err := statedb.HasCommitment(transactionStateDB, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID)
 			if !ok || err != nil {
 				if err != nil {
 					Logger.Log.Error(err)
@@ -471,5 +478,123 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 	}
 	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+	return true, nil
+}
+
+// ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
+
+func (tx *TxVersion1) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata,
+) error {
+	tx.Version = txVersion1Number
+	tx.Type = common.TxRewardType
+	if tx.LockTime == 0 {
+		tx.LockTime = time.Now().Unix()
+	}
+
+	var err error
+	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
+	tx.Proof = new(zkp.PaymentProof)
+	tempOutputCoin := make([]*coin.CoinV1, 1)
+	tempOutputCoin[0] = new(coin.CoinV1).Init()
+	publicKey, err := new(operation.Point).FromBytesS(receiverAddr.Pk)
+	if err != nil {
+		return err
+	}
+	tempOutputCoin[0].CoinDetails.SetPublicKey(publicKey)
+	tempOutputCoin[0].CoinDetails.SetValue(salary)
+	tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
+
+	sndOut := privacy.RandomScalar()
+	for {
+		tokenID := &common.Hash{}
+		err := tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+		}
+		ok, err := checkSNDerivatorExistence(tokenID, sndOut, stateDB)
+		if err != nil {
+			return NewTransactionErr(SndExistedError, err)
+		}
+		if ok {
+			sndOut = privacy.RandomScalar()
+		} else {
+			break
+		}
+	}
+	tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+	if err = tempOutputCoin[0].CoinDetails.CommitAll(); err != nil {
+		return NewTransactionErr(CommitOutputCoinError, err)
+	}
+	tx.Proof.SetOutputCoins(coin.ArrayCoinV1ToCoin(tempOutputCoin))
+	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+
+	// sign Tx
+	tx.SigPubKey = receiverAddr.Pk
+	tx.sigPrivKey = *privKey
+	tx.SetMetadata(metaData)
+	err = tx.sign()
+	if err != nil {
+		return NewTransactionErr(SignTxError, err)
+	}
+	return nil
+}
+
+func (tx TxVersion1) ValidateTxSalary(
+	db *statedb.StateDB,
+) (bool, error) {
+	// verify signature
+	valid, err := tx.verifySig()
+	if !valid {
+		if err != nil {
+			Logger.Log.Debugf("Error verifying signature of tx: %+v", err)
+			return false, NewTransactionErr(VerifyTxSigFailError, err)
+		}
+		return false, nil
+	}
+
+	// check whether output coin's input exists in input list or not
+	tokenID := &common.Hash{}
+	err = tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+	}
+	if ok, err := checkSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].GetSNDerivator(), db); ok || err != nil {
+		return false, err
+	}
+
+	// check output coin's coin commitment is calculated correctly
+	coin := tx.Proof.GetOutputCoins()[0]
+	shardID, err := coin.GetShardID()
+	if err != nil {
+		Logger.Log.Errorf("Cannot get shardID from coin %v", err)
+		return false, err
+	}
+
+	cmTmp2 := new(privacy.Point)
+	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivator()))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID))))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
+
+	ok := operation.IsPointEqual(cmTmp2, tx.Proof.GetOutputCoins()[0].GetCommitment())
+	if !ok {
+		return ok, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
+	}
+	return ok, nil
+}
+
+func (tx TxVersion1) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
+	check, err := tx.TxBase.ValidateSanityData(bcr, beaconHeight)
+	if err != nil {
+		Logger.Log.Errorf("TxVersion1 error when ValidateSanityDataInterface")
+		return false, err
+	}
+	if !check {
+		Logger.Log.Errorf("TxVersion1 ValidateSanityData got fail check")
+		return false, errors.New("TxVersion1 ValidateSanityData got fail check")
+	}
+	if len(tx.SigPubKey) != common.SigPubKeySize {
+		return false, NewTransactionErr(RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
+	}
 	return true, nil
 }

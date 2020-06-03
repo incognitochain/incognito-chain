@@ -50,6 +50,7 @@ const (
 	NormalTokenPRVJsonError
 	NormalTokenJsonError
 
+	PrivacyTokenInitFeeParamsError
 	PrivacyTokenInitPRVError
 	PrivacyTokenInitTokenDataError
 	PrivacyTokenPRVJsonError
@@ -133,6 +134,7 @@ var ErrCodeMessage = map[int]struct {
 	PrivacyTokenInitPRVError:            {-3004, "Init tx for PRV error"},
 	PrivacyTokenTxTypeNotHandleError:    {-3005, "Can not handle this tx type for privacy token"},
 	PrivacyTokenInitTokenDataError:      {-3006, "Can not init data for privacy token tx"},
+	PrivacyTokenInitFeeParamsError: 		 {-3007, "Init tx token fee params error"},
 
 	// for normal token
 	NormalTokenPRVJsonError: {-4000, "Json data error"},

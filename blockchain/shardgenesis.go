@@ -32,7 +32,7 @@ func CreateShardGenesisBlock(
 	}
 
 	for _, tx := range icoParams.InitialIncognito {
-		testSalaryTX := transaction.Tx{}
+		testSalaryTX := transaction.TxBase{}
 		testSalaryTX.UnmarshalJSON([]byte(tx))
 		body.Transactions = append(body.Transactions, &testSalaryTX)
 	}

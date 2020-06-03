@@ -233,7 +233,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
-				transactions[t.(*transaction.Tx).Hash()] = true
+				transactions[t.(*transaction.TxBase).Hash()] = true
 			}
 		case common.TxCustomTokenPrivacyType:
 			{

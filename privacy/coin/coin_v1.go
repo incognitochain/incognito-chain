@@ -36,6 +36,14 @@ func ArrayPlainCoinToPlainCoinV1(inputCoins []PlainCoin) []*PlainCoinV1 {
 	return res
 }
 
+func ArrayCoinV1ToCoin(inputCoins []*CoinV1) []Coin {
+	res := make([]Coin, len(inputCoins))
+	for i := 0; i < len(inputCoins); i += 1 {
+		res[i] = inputCoins[i]
+	}
+	return res
+}
+
 func ArrayCoinToCoinV1(inputCoins []Coin) []*CoinV1 {
 	res := make([]*CoinV1, len(inputCoins))
 	for i := 0; i < len(inputCoins); i += 1 {

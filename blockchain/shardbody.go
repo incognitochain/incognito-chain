@@ -50,7 +50,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 		switch txTemp["Type"].(string) {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
-				tx = &transaction.Tx{}
+				tx = &transaction.TxBase{}
 				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
 		case common.TxCustomTokenPrivacyType:

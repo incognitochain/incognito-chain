@@ -59,7 +59,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 		{
-			tempTx := tx.(*transaction.Tx)
+			tempTx := tx.(*transaction.TxBase)
 			result = &TransactionDetail{
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,

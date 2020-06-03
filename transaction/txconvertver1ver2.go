@@ -17,7 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type TxConvertVer1ToVer2Params struct {
+type TxConvertVer1ToVer2InitParams struct {
 	senderSK    *privacy.PrivateKey
 	paymentInfo []*privacy.PaymentInfo
 	inputCoins  []coin.PlainCoin
@@ -28,15 +28,16 @@ type TxConvertVer1ToVer2Params struct {
 	info        []byte // 512 bytes
 }
 
-func NewTxConvertVer1ToVer2(senderSK *privacy.PrivateKey,
+func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []coin.PlainCoin,
 	fee uint64,
 	stateDB *statedb.StateDB,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
-	info []byte) *TxConvertVer1ToVer2Params {
-	params := &TxConvertVer1ToVer2Params{
+	info []byte) (*TxConvertVer1ToVer2InitParams, error) {
+
+	params := &TxConvertVer1ToVer2InitParams{
 		stateDB:     stateDB,
 		tokenID:     tokenID,
 		inputCoins:  inputCoins,
@@ -46,10 +47,14 @@ func NewTxConvertVer1ToVer2(senderSK *privacy.PrivateKey,
 		senderSK:    senderSK,
 		info:        info,
 	}
-	return params
+
+	if err := validateTxConvertVer1ToVer2Params(params); err != nil {
+		return nil, err
+	}
+	return params, nil
 }
 
-func validateTxConversion(params *TxConvertVer1ToVer2Params) error {
+func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) error {
 	if len(params.inputCoins) > 255 {
 		return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
 	}
@@ -90,14 +95,14 @@ func validateTxConversion(params *TxConvertVer1ToVer2Params) error {
 }
 
 // return bool indicates whether we should continue "Init" function or not
-func initializeTxConversion(tx *Tx, params *TxConvertVer1ToVer2Params) error {
+func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
 	var err error
 	// Tx: initialize some values
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
 	}
 	tx.Fee = params.fee
-	tx.Version = txConversionVersion12
+	tx.Version = txConversionVersion12Number
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.metaData
 	if tx.Info, err = getTxInfo(params.info); err != nil {
@@ -109,8 +114,9 @@ func initializeTxConversion(tx *Tx, params *TxConvertVer1ToVer2Params) error {
 	return nil
 }
 
-func (tx *Tx) InitConversion(params *TxConvertVer1ToVer2Params) error {
-	if err := validateTxConversion(params); err != nil {
+func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
+	// validate again
+	if err := validateTxConvertVer1ToVer2Params(params); err != nil {
 		return err
 	}
 	if err := initializeTxConversion(tx, params); err != nil {
@@ -136,7 +142,7 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 	return c, nil
 }
 
-func proveConversion(tx * Tx, params *TxConvertVer1ToVer2Params) error {
+func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
 	inputCoins := params.inputCoins
 	outputCoins, err := getOutputcoinsFromPaymentInfo(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
@@ -161,16 +167,15 @@ func proveConversion(tx * Tx, params *TxConvertVer1ToVer2Params) error {
 	tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
 
 	// sign tx
-	signErr := signTx(tx)
-	if signErr != nil {
+	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
 		Logger.Log.Error(err)
 		return NewTransactionErr(SignTxError, err)
 	}
 	return nil
 }
 
-func validateConversionVer1ToVer2(tx *Tx, statedb *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
-	if valid, err := verifySigTx(tx); !valid {
+func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+	if valid, err := verifySigNoPrivacy(tx.GetSig(), tx.GetSigPubKey(), tx.Hash()[:]); !valid {
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
@@ -178,8 +183,8 @@ func validateConversionVer1ToVer2(tx *Tx, statedb *statedb.StateDB, shardID byte
 		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
 	}
-	txConversion := tx.Proof.(*privacy_v2.ConversionProofVer1ToVer2)
-	valid, err := txConversion.Verify(false, tx.SigPubKey, tx.Fee, shardID, tokenID, false, nil)
+	txConversion := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
+	valid, err := txConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
 	if !valid {
 		if err != nil {
 			Logger.Log.Error(err)

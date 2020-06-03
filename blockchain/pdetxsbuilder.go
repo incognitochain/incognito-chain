@@ -73,7 +73,7 @@ func buildTradeResTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// the returned currency is PRV
 	if tokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
+		resTx := new(transaction.TxVersion2)
 		otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
 		if err != nil {
 			Logger.log.Errorf("Cannot get new coin from amount and receiver")
@@ -255,7 +255,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// the returned currency is PRV
 	if withdrawalTokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
+		resTx := new(transaction.TxVersion2)
 		otaCoin, err := coin.NewCoinFromAmountAndReceiver(wdAcceptedContent.DeductingPoolValue, receiverAddr)
 		if err != nil {
 			Logger.log.Errorf("Cannot get new coin from amount and receiver")
@@ -354,7 +354,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// the returned currency is PRV
 	if refundTokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
+		resTx := new(transaction.TxVersion2)
 		otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundContribution.ContributedAmount, receiverAddr)
 		if err != nil {
 			Logger.log.Errorf("Cannot get new coin from amount and receiver")
@@ -457,7 +457,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// the returned currency is PRV
 	if tokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
+		resTx := new(transaction.TxVersion2)
 		otaCoin, err := coin.NewCoinFromAmountAndReceiver(matchedNReturnedContribution.ReturnedContributedAmount, receiverAddr)
 		if err != nil {
 			Logger.log.Errorf("Cannot get new coin from amount and receiver")

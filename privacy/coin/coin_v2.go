@@ -76,7 +76,7 @@ type CoinV2 struct {
 	// sharedRandom and txRandom is shared secret between receiver and giver
 	// sharedRandom is only visible when creating coins, when it is broadcast to network, it will be set to null
 	sharedRandom *operation.Scalar // r
-	txRandom     *TxRandom         // rG
+	txRandom     *TxRandom         // rG + index
 
 	// mask = randomness
 	// amount = value

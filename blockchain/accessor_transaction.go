@@ -435,7 +435,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 					symbol := privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol
 					mintable := privacyCustomTokenTx.TxPrivacyTokenData.Mintable
 					amount := privacyCustomTokenTx.TxPrivacyTokenData.Amount
-					info := privacyCustomTokenTx.Tx.Info
+					info := privacyCustomTokenTx.TxBase.Info
 					txHash := *privacyCustomTokenTx.Hash()
 					tokenType := statedb.InitToken
 					if isBridgeToken {

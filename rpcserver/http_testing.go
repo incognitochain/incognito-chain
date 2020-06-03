@@ -160,7 +160,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 				}
 			}
 		default:
-			var tx transaction.Tx
+			var tx transaction.TxBase
 			err = json.Unmarshal(rawTxBytes, &tx)
 			if err != nil {
 				fail++
@@ -294,7 +294,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 				}
 			}
 		default:
-			var tx transaction.Tx
+			var tx transaction.TxBase
 			err = json.Unmarshal(rawTxBytes, &tx)
 			if err != nil {
 				fail++

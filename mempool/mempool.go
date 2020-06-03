@@ -842,7 +842,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 		switch tx.GetType() {
 		case common.TxNormalType:
 			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxBase).PubKeyLastByteSender)
 				flag = true
 			}
 		case common.TxCustomTokenPrivacyType:

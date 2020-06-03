@@ -55,8 +55,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(swapPublicKey s
 		keyWallet.KeySet.PaymentAddress,
 		metadata.ReturnStakingMeta,
 	)
-	returnStakingTx := new(transaction.Tx)
-
+	returnStakingTx := new(transaction.TxVersion2)
 	amount := txData.CalculateTxValue()
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(amount, keyWallet.KeySet.PaymentAddress)
 	if err != nil {

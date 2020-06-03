@@ -218,7 +218,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			transactionResult.Hash = tx.Hash().String()
 			switch tx.GetType() {
 			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-				txN := tx.(*transaction.Tx)
+				txN := tx.(*transaction.TxBase)
 				data, err := json.Marshal(txN)
 				if err != nil {
 					return nil, NewRPCError(JsonError, err)
@@ -339,7 +339,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				transactionT.Hash = tx.Hash().String()
 				switch tx.GetType() {
 				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-					txN := tx.(*transaction.Tx)
+					txN := tx.(*transaction.TxBase)
 					data, err := json.Marshal(txN)
 					if err != nil {
 						return nil, NewRPCError(JsonError, err)

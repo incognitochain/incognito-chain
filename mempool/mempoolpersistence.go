@@ -32,7 +32,7 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 	//==================For PRV Transfer Only
 	case common.TxNormalType:
 		{
-			normalTx := tx.(*transaction.Tx)
+			normalTx := tx.(*transaction.TxBase)
 			valueTx, err := json.Marshal(normalTx)
 			if err != nil {
 				return err
@@ -152,7 +152,7 @@ func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 	switch txType {
 	case common.TxNormalType:
 		{
-			tx := transaction.Tx{}
+			tx := transaction.TxBase{}
 			err := json.Unmarshal(valueTx, &tx)
 			if err != nil {
 				return nil, err

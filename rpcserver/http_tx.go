@@ -632,7 +632,7 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 	result := jsonresult.CreateTransactionTokenResult{
-		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		ShardID:         common.GetShardIDFromLastByte(tx.TxBase.PubKeyLastByteSender),
 		TxID:            tx.Hash().String(),
 		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
 		TokenName:       tx.TxPrivacyTokenData.PropertyName,
@@ -673,7 +673,7 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 		TokenID:     tx.TxPrivacyTokenData.PropertyID.String(),
 		TokenName:   tx.TxPrivacyTokenData.PropertyName,
 		TokenAmount: tx.TxPrivacyTokenData.Amount,
-		ShardID:     common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		ShardID:     common.GetShardIDFromLastByte(tx.TxBase.PubKeyLastByteSender),
 	}
 	Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", result)
 	return result, nil

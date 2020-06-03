@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"errors"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"math/big"
 	"math/rand"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -123,8 +124,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	return commitmentIndexs, myCommitmentIndexs, commitments
 }
 
-// CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, stateDB *statedb.StateDB) (bool, error) {
+// checkSNDerivatorExistence return true if snd exists in snDerivators list
+func checkSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, stateDB *statedb.StateDB) (bool, error) {
 	ok, err := statedb.HasSNDerivator(stateDB, *tokenID, snd.ToBytesS())
 	if err != nil {
 		return false, err
@@ -312,7 +313,7 @@ func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, toke
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
 	switch params.txType {
 	case NormalCoinType:
-		tx := &Tx{}
+		tx := &TxVersion2{}
 		otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
 		if err != nil {
 			Logger.Log.Errorf("Cannot get new coin from amount and receiver")
@@ -358,4 +359,96 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		return tx, nil
 	}
 	return nil, nil
+}
+
+func validateTxParams(params *TxPrivacyInitParams) error {
+	if len(params.inputCoins) > 255 {
+		return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
+	}
+	if len(params.paymentInfo) > 254 {
+		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
+	}
+	limitFee := uint64(0)
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
+		params.hasPrivacy, nil, nil, limitFee)
+	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
+
+	if params.tokenID == nil {
+		// using default PRV
+		params.tokenID = &common.Hash{}
+		err := params.tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.String())
+		}
+	}
+	return nil
+}
+
+func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
+	if tokenID == nil {
+		result := new(common.Hash)
+		err := result.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			Logger.Log.Error(err)
+			return nil, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+		}
+		return result, nil
+	}
+	return tokenID, nil
+}
+
+func verifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (bool, error) {
+	// check input transaction
+	if sig == nil || sigPubKey == nil {
+		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
+	}
+
+	var err error
+	/****** verify Schnorr signature *****/
+	// prepare Public key for verification
+	verifyKey := new(privacy.SchnorrPublicKey)
+	sigPublicKey, err := new(operation.Point).FromBytesS(sigPubKey)
+
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(DecompressSigPubKeyError, err)
+	}
+	verifyKey.Set(sigPublicKey)
+
+	// convert signature from byte array to SchnorrSign
+	signature := new(privacy.SchnSignature)
+	err = signature.SetBytes(sig)
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
+	}
+
+	// verify signature
+	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	if tx.Proof != nil {
+		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	}
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
+	res := verifyKey.Verify(signature, hashedMessage)
+	return res, nil
+}
+
+func signNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signatureBytes []byte, sigPubKey []byte, err error) {
+	/****** using Schnorr signature *******/
+	// sign with sigPrivKey
+	// prepare private key for Schnorr
+	sk := new(operation.Scalar).FromBytesS(*privKey)
+	r := new(operation.Scalar).FromUint64(0)
+	sigKey := new(schnorr.SchnorrPrivateKey)
+	sigKey.Set(sk, r)
+	signature, err := sigKey.Sign(hashedMessage)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	signatureBytes = signature.Bytes()
+	sigPubKey = sigKey.GetPublicKey().GetPublicKey().ToBytesS()
+	return signatureBytes, sigPubKey, nil
 }

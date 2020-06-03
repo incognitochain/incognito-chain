@@ -41,14 +41,13 @@ func NewTxPrivacyInitParamsForASM(
 		metaData:    metaData,
 		info:        info,
 	}
-	params := &TxPrivacyInitParamsForASM{
+	return &TxPrivacyInitParamsForASM{
 		txParam:             txParam,
 		commitmentIndices:   commitmentIndices,
 		commitmentBytes:     commitmentBytes,
 		myCommitmentIndices: myCommitmentIndices,
 		sndOutputs:          sndOutputs,
 	}
-	return params
 }
 
 func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
@@ -56,40 +55,44 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 }
 
 // return bool indicates that after initialization, should we continue the function "Init" or not
-func initializeTxAndParamsASM(tx *Tx, params *TxPrivacyInitParamsForASM) (bool, error) {
+func initializeTxAndParamsASM(tx *TxBase, params *TxPrivacyInitParamsForASM) error {
 	txParams := &params.txParam
-	toContinue, err := initializeTxAndParams(tx, txParams)
+	err := tx.initializeTxAndParams(txParams)
 	if txParams.hasPrivacy {
 		// Check number of list of random commitments, list of random commitment indices
 		if len(params.commitmentIndices) != len(params.txParam.inputCoins)*privacy.CommitmentRingSize {
-			return false, NewTransactionErr(RandomCommitmentError, nil)
+			return NewTransactionErr(RandomCommitmentError, nil)
 		}
 
 		if len(params.myCommitmentIndices) != len(params.txParam.inputCoins) {
-			return false, NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
+			return NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
 		}
 	}
-	return toContinue, err
+	return err
 }
 
-func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
+// TODO PRIVACY, WILL DO THIS LATER BECAUSE IT IS ASM
+func (tx *TxBase) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	Logger.Log.Debugf("CREATING TX........\n")
 	txParams := &params.txParam
-	if err := validateTxInit(txParams); err != nil {
+	if err := validateTxParams(txParams); err != nil {
+		return err
+	}
+	if err := initializeTxAndParamsASM(tx, params); err != nil {
 		return err
 	}
 
-	// Init tx and params (tx and params will be changed)
-	// If we should not continue, return
-	if toContinue, err := initializeTxAndParamsASM(tx, params); err != nil || !toContinue {
+	// Check if this tx is nonPrivacyNonInput
+	// Case 1: tx ptoken transfer with ptoken fee
+	// Case 2: tx Reward
+	if check, err := tx.isNonPrivacyNonInput(txParams); check {
 		return err
 	}
 
-	// Prove based on tx.Version
-	prover := newTxVersionSwitcher(tx.Version)
-	if err := prover.ProveASM(tx, params); err != nil {
-		return err
-	}
+	//metaTx, err := NewTransactionFromTxBase(*tx)
+	//if err := tx.ProveASM(tx, params); err != nil {
+	//	return err
+	//}
 
 	return nil
 }

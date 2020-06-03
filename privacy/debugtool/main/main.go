@@ -16,14 +16,14 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//b, _ := tool.CreateAndSendTransaction()
 	//fmt.Println(string(b))
 
-	//b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[1], privateKeys[2])
+	//b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[0], privateKeys[2])
 	//fmt.Println(string(b))
 
 	//b, _ := tool.ListPrivacyCustomToken()
-	//fmt.Println(string(b))
 	//res := new(debugtool.ListCustomToken)
 	//_ = json.Unmarshal(b, res)
 	//tokenID := res.Result.ListCustomToken[0].ID
+
 	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
 	//fmt.Println(string(b))
 
@@ -65,7 +65,7 @@ func main() {
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
 
-	//b, _ := tool.GetListOutputCoins(privateKeys[1])
+	//b, _ := tool.GetListOutputCoins(privateKeys[0])
 	//fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[2])
 	//fmt.Println(string(b))
@@ -79,11 +79,11 @@ func main() {
 	//fmt.Println(string(b))
 
 	//tool := new(debugtool.DebugTool).InitLocal()
-	//b, _ := tool.GetTransactionByHash("08e0568c08e6a4580ddc63a6c1c9659a861f00d2ef7c69da72e36a05331cdec9")
+	//b, _ := tool.GetTransactionByHash("0ea685820dd4d316bc850a8dcda6d2c6b74ecfa1190f13a9d428cb61e3ea5204")
 	//fmt.Println(string(b))
 
 	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[1]))
-	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[1])
+	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
 	//fmt.Println(string(b))
 	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[2]))
 	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
