@@ -257,44 +257,19 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	validStopAutoStakingInstructions := [][]string{}
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
-	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer(beaconBestState.BestShardHash) {
-		for _, b := range v {
-			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
+	var allShardBlocks = blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
+	for shardID, shardBlocks := range allShardBlocks {
+		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
+		for _, shardBlock := range shardBlocks {
+			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
 		}
+		Logger.log.Info(strs)
 	}
-
-	Logger.log.Infof("In GetShardState allShardBlocks: %+v", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
-
-	for chainID, shardBlocks := range allShardBlocks {
-		shardID := byte(chainID)
-		//// Only accept block in one epoch
-		//totalBlock := 0
-		//Logger.log.Infof("Beacon Producer Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
-		//for _, shardBlocks := range shardBlocks {
-		//	Logger.log.Infof(" %+v ", shardBlocks.Header.Height)
-		//}
-		////=======
-		//currentCommittee := beaconBestState.GetAShardCommittee(shardID)
-		//for index, shardBlock := range shardBlocks {
-		//	if index == MAX_S2B_BLOCK-1 {
-		//		break
-		//	}
-		//	err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
-		//	Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
-		//	if err != nil {
-		//		break
-		//	}
-		//	totalBlock = index
-		//	if totalBlock > MAX_S2B_BLOCK {
-		//		totalBlock = MAX_S2B_BLOCK
-		//		break
-		//	}
-		//}
+	for shardID, shardBlocks := range allShardBlocks {
 		//Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
 		for _, shardBlock := range shardBlocks {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
@@ -393,7 +368,7 @@ func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []stri
 //	4. Bridge Instruction
 //	5. Accepted BlockReward Instruction
 //	6. StopAutoStakingInstruction
-func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, newBeaconHeight uint64, shardBlock *ShardToBeaconBlock, shardID byte, isProducer bool, validStakePublicKeys []string) (map[byte]ShardState, [][]string, []string, map[byte][][]string, [][]string, []string, [][]string, [][]string) {
+func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, newBeaconHeight uint64, shardBlock *ShardBlock, shardID byte, isProducer bool, validStakePublicKeys []string) (map[byte]ShardState, [][]string, []string, map[byte][][]string, [][]string, []string, [][]string, [][]string) {
 	//Variable Declaration
 	shardStates := make(map[byte]ShardState)
 	stakeInstructions := [][]string{}
@@ -426,7 +401,8 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	shardState.Hash = shardBlock.Header.Hash()
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState
-	instructions := shardBlock.Instructions
+	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID)
+	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	// extract instructions
 	for _, instruction := range instructions {
@@ -537,20 +513,20 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 		stopAutoStakingInstructions = append(stopAutoStakingInstructions, []string{StopAutoStake, strings.Join(stopAutoStakingPublicKeys, ",")})
 	}
 	// Create bridge instruction
-	if len(shardBlock.Instructions) > 0 || shardBlock.Header.Height%10 == 0 {
-		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, shardBlock.Instructions)
+	if len(instructions) > 0 || shardBlock.Header.Height%10 == 0 {
+		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, instructions)
 	}
 	bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
 		curView.GetBeaconFeatureStateDB(),
 		shardID,
-		shardBlock.Instructions,
+		instructions,
 		newBeaconHeight,
 	)
 	if err != nil {
 		BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())
 	}
 	// Pick instruction with shard committee's pubkeys to save to beacon block
-	confirmInsts := pickBridgeSwapConfirmInst(shardBlock)
+	confirmInsts := pickBridgeSwapConfirmInst(instructions)
 	if len(confirmInsts) > 0 {
 		bridgeInstructionForBlock = append(bridgeInstructionForBlock, confirmInsts...)
 		BLogger.log.Infof("Beacon block %d found bridge swap confirm inst in shard block %d: %s", newBeaconHeight, shardBlock.Header.Height, confirmInsts)
@@ -558,7 +534,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
 
 	// Collect stateful actions
-	statefulActions := blockchain.collectStatefulActions(shardBlock.Instructions)
+	statefulActions := blockchain.collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 	return shardStates, stakeInstructions, tempValidStakePublicKeys, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions, statefulActions
 }

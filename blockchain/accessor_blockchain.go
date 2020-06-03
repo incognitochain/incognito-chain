@@ -287,6 +287,22 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 	return allShardBlocks
 }
 
+func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*ShardBlock, error) {
+	allRequireShardBlocks := make(map[byte][]*ShardBlock)
+	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
+		shardBlocks := []*ShardBlock{}
+		for _, height := range requiredShardBlockHeight {
+			shardBlock, err := blockchain.GetFinalizedShardBlockByHeight(height, shardID)
+			if err != nil {
+				return allRequireShardBlocks, err
+			}
+			shardBlocks = append(shardBlocks, shardBlock)
+		}
+		allRequireShardBlocks[shardID] = shardBlocks
+	}
+	return allRequireShardBlocks, nil
+}
+
 func (blockchain *BlockChain) GetBestStateShardRewardStateDB(shardID byte) *statedb.StateDB {
 	return blockchain.GetBestStateShard(shardID).GetShardRewardStateDB()
 }

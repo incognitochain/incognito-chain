@@ -421,34 +421,26 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		}
 	}
 	// get shard to beacon blocks from pool
-	s2bRequired := make(map[byte][]common.Hash)
-	var keys []int
-	for k, shardstates := range beaconBlock.Body.ShardState {
-		keys = append(keys, int(k))
+	allRequiredShardBlockHeight := make(map[byte][]uint64)
+	for shardID, shardstates := range beaconBlock.Body.ShardState {
+		heights := []uint64{}
 		for _, state := range shardstates {
-			s2bRequired[k] = append(s2bRequired[k], state.Hash)
+			heights = append(heights, state.Height)
 		}
+		sort.Slice(heights, func(i, j int) bool {
+			return heights[i] < heights[j]
+		})
+		allRequiredShardBlockHeight[shardID] = heights
 	}
-	sort.Ints(keys)
-
-	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
-	s2bBlocksFromPool, err := blockchain.config.Syncker.GetS2BBlocksForBeaconValidator(curView.BestShardHash, s2bRequired)
+	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
 	if err != nil {
-		return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Unable to get required s2bBlocks from pool in time"))
+		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process"))
 	}
-	for sid, v := range s2bBlocksFromPool {
-		for _, b := range v {
-			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
-		}
-	}
-
-	for chainID, shardBlocks := range allShardBlocks {
-		shardID := byte(chainID)
+	for shardID, shardBlocks := range allShardBlocks {
 		shardStates := beaconBlock.Body.ShardState[shardID]
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-
 			for _, shardBlock := range shardBlocks {
 				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
@@ -467,7 +459,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 				}
 			}
 		} else {
-			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
+			return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
 		}
 	}
 	// build stateful instructions
