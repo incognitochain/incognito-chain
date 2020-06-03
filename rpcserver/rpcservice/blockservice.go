@@ -1168,6 +1168,25 @@ func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr stri
 	return result, nil
 }
 
+func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatus(txID string) (*metadata.RedeemLiquidateExchangeRatesStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.RedeemLiquidateExchangeRatesStatus
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &status)
+		if err != nil {
+			return nil, err
+		}
+		return &status, nil
+	}
+
+	return nil, nil
+}
+
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {
 	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()

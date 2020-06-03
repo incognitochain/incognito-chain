@@ -389,6 +389,17 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 	return s.statusContent, nil
 }
 
+func GetRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalLiquidationRedeemRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalRedeemRequestFromLiquidationByTxIDStatusError, err)
+	}
+
+	return data, nil
+}
+
 func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error) {
 	key := GeneratePortalStatusObjectKey(PortalPortingRequestStatusPrefix(), statusSuffix)
 	_, has, err := stateDB.getPortalStatusByKey(key)

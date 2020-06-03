@@ -87,6 +87,7 @@ const (
 	GetRequestWithdrawRewardStatusError
 	GetPortalRewardError
 	GetReqMatchingRedeemStatusError
+	GetReqRedeemFromLiquidationPoolStatusError
 
 	GetCustodianLiquidationStatusError
 	GetTpExchangeRatesLiquidationError
@@ -211,6 +212,7 @@ var ErrCodeMessage = map[int]struct {
 	GetCustodianTopupStatusError:                       {-9020, "Get custodian top up status error"},
 	GetCustodianTopupWaitingPortingStatusError:         {-9021, "Get custodian top up for waiting porting status error"},
 	GetAmountTopUpWaitingPortingError:                  {-9022, "Get amount top up for waiting porting error"},
+	GetReqRedeemFromLiquidationPoolStatusError:         {-9023, "Get redeem request form liquidation pool status error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

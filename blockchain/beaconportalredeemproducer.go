@@ -596,7 +596,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	keyMatchedRedeemRequestStr := statedb.GenerateMatchedRedeemRequestObjectKey(redeemID).String()
 	matchedRedeemRequest := currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr]
 	if matchedRedeemRequest == nil {
-		Logger.log.Errorf("redeemID is not existed in waiting redeem requests list")
+		Logger.log.Errorf("redeemID is not existed in matched redeem requests list")
 		inst := buildReqUnlockCollateralInst(
 			meta.UniqueRedeemID,
 			meta.TokenID,
