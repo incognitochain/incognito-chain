@@ -959,7 +959,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			for _, out := range outputs {
 				addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 				if addr != remoteAddressNeedToBeTransfer {
-					Logger.log.Warn("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
+					Logger.log.Warnf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 					continue
 				}
 
