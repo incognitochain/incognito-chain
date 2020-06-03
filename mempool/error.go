@@ -14,7 +14,6 @@ const (
 	RejectSalaryTx
 	RejectDuplicateStakePubkey
 	RejectDuplicateRequestStopAutoStaking
-	RejectDuplicateInitTokenTx
 	RejectVersion
 	RejectInvalidTxType
 	RejectDoubleSpendWithMempoolTx
@@ -26,7 +25,6 @@ const (
 	DatabaseError
 	MarshalError
 	UnmarshalShardCommitteeError
-	ShardToBeaconBoolError
 	DuplicateBlockError
 	OldBlockError
 	MaxPoolSizeError
@@ -59,7 +57,6 @@ var ErrCodeMessage = map[int]struct {
 	RejectVersion:                               {-1005, "Reject invalid version"},
 	CanNotCheckDoubleSpend:                      {-1006, "Can not check double spend"},
 	DatabaseError:                               {-1007, "Database Error"},
-	ShardToBeaconBoolError:                      {-1007, "ShardToBeaconBool Error"},
 	RejectDuplicateStakePubkey:                  {-1008, "Reject Duplicate Stake Error"},
 	DuplicateBlockError:                         {-1009, "Duplicate Block Error"},
 	OldBlockError:                               {-1010, "Old Block Error"},

@@ -121,11 +121,6 @@ const (
 	ShuffleBeaconCandidateError
 	CleanBackUpError
 	BackUpBestStateError
-	StoreAcceptedShardToBeaconError
-	StoreCrossShardNextHeightError
-	StoreShardCommitteeByHeightError
-	StoreBeaconCommitteeByHeightError
-	StoreBeaconBestStateError
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
 	GetStakingTransactionError

@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-// beacon build new instruction from instruction received from ShardToBeaconBlock
+// beacon build new instruction from instruction received from Shard Block
 func buildCustodianDepositInst(
 	custodianAddressStr string,
 	depositedAmount uint64,

@@ -298,7 +298,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdBFT,
 				wire.CmdPeerState,
 				wire.CmdCrossShard,
-				wire.CmdBlkShardToBeacon,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
 			}
@@ -307,7 +306,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdBlockBeacon,
 				wire.CmdBFT,
 				wire.CmdPeerState,
-				wire.CmdBlkShardToBeacon,
 			}
 		} else {
 			return []string{

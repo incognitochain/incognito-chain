@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -34,20 +32,6 @@ func (shardBlock *ShardBlock) GetShardID() int {
 }
 func (shardBlock *ShardBlock) GetPrevHash() common.Hash {
 	return shardBlock.Header.PreviousBlockHash
-}
-
-type ShardToBeaconBlock struct {
-	ValidationData string `json:"ValidationData"`
-	Instructions   [][]string
-	Header         ShardHeader
-}
-
-func (shardToBeaconBlock *ShardToBeaconBlock) GetPrevHash() common.Hash {
-	return shardToBeaconBlock.Header.PreviousBlockHash
-}
-
-func (shardToBeaconBlock *ShardToBeaconBlock) GetShardID() int {
-	return int(shardToBeaconBlock.Header.ShardID)
 }
 
 type CrossShardBlock struct {
@@ -126,15 +110,6 @@ func (crossShardBlock CrossShardBlock) GetPrevHash() common.Hash {
 
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	hash := crossShardBlock.Header.Hash()
-	return &hash
-}
-
-func (shardToBeaconBlock ShardToBeaconBlock) GetCurrentEpoch() uint64 {
-	return shardToBeaconBlock.Header.Epoch
-}
-
-func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
-	hash := shardToBeaconBlock.Header.Hash()
 	return &hash
 }
 
@@ -295,35 +270,6 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
-func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
-	if bc.IsTest {
-		return &ShardToBeaconBlock{}
-	}
-	block := ShardToBeaconBlock{}
-	block.ValidationData = shardBlock.ValidationData
-	block.Header = shardBlock.Header
-	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := rawdbv2.GetShardBlockByHash(bc.GetShardChainDatabase(shardBlock.Header.ShardID), shardBlock.Header.PreviousBlockHash)
-	if err != nil {
-		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
-		return nil
-	}
-	previousShardBlock := ShardBlock{}
-	err = json.Unmarshal(previousShardBlockByte, &previousShardBlock)
-	if err != nil {
-		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
-		return nil
-	}
-	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID)
-	if err != nil {
-		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
-		return nil
-	}
-
-	block.Instructions = append(instructions, blockInstructions...)
-	return &block
-}
-
 func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*CrossShardBlock {
 	allCrossShard := make(map[byte]*CrossShardBlock)
 	if activeShards == 1 {
@@ -437,52 +383,10 @@ func (block CrossShardBlock) GetInstructions() [][]string {
 	return [][]string{}
 }
 
-func (block ShardToBeaconBlock) GetValidationField() string {
-	return block.ValidationData
-}
-
-func (block ShardToBeaconBlock) GetVersion() int {
-	return block.Header.Version
-}
-
-func (block ShardToBeaconBlock) GetHeight() uint64 {
-	return block.Header.Height
-}
-
-func (block ShardToBeaconBlock) GetRound() int {
-	return block.Header.Round
-}
-
-func (block ShardToBeaconBlock) GetRoundKey() string {
-	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
-}
-func (block ShardToBeaconBlock) GetInstructions() [][]string {
-	return block.Instructions
-}
-
-func (block ShardToBeaconBlock) GetProposer() string {
-	return block.Header.Proposer
-}
-
-func (block ShardToBeaconBlock) GetProposeTime() int64 {
-	return block.Header.ProposeTime
-}
-
-func (block ShardToBeaconBlock) GetProduceTime() int64 {
-	return block.Header.Timestamp
-}
-func (block ShardToBeaconBlock) GetProducer() string {
-	return block.Header.Producer
-}
-
 func (block ShardBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
 }
 
 func (block CrossShardBlock) GetConsensusType() string {
-	return block.Header.ConsensusType
-}
-
-func (block ShardToBeaconBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
 }

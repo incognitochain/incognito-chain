@@ -23,7 +23,6 @@ type PortalCustodianDeposit struct {
 }
 
 // PortalCustodianDepositAction - shard validator creates instruction that contain this action content
-// it will be append to ShardToBeaconBlock
 type PortalCustodianDepositAction struct {
 	Meta    PortalCustodianDeposit
 	TxReqID common.Hash
