@@ -271,7 +271,7 @@ func StorePortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID s
 	statusSuffix := []byte(waitingPortingID)
 	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
-		return NewStatedbError(StorePortalLiquidationCustodianRunAwayStatusError, err)
+		return NewStatedbError(StorePortalExpiredPortingReqStatusError, err)
 	}
 
 	return nil
@@ -282,7 +282,7 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID str
 	statusSuffix := []byte(waitingPortingID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
 	if err != nil {
-		return []byte{}, NewStatedbError(GetPortalLiquidationCustodianRunAwayStatusError, err)
+		return []byte{}, NewStatedbError(GetPortalExpiredPortingReqStatusError, err)
 	}
 
 	return data, nil
@@ -481,7 +481,7 @@ func StoreRequestPTokenStatus(stateDB *StateDB, txID string, statusContent []byt
 	statusSuffix := []byte(txID)
 	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
-		return NewStatedbError(StorePortalCustodianDepositStatusError, err)
+		return NewStatedbError(StorePortalRequestPTokenStatusError, err)
 	}
 
 	return nil
@@ -492,7 +492,7 @@ func GetRequestPTokenStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	statusSuffix := []byte(txID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
 	if err != nil {
-		return []byte{}, NewStatedbError(GetPortalCustodianDepositStatusError, err)
+		return []byte{}, NewStatedbError(GetPortalRequestPTokenStatusError, err)
 	}
 
 	return data, nil
@@ -585,7 +585,7 @@ func StoreLockedCollateralState(
 	key := GenerateLockedCollateralStateObjectKey()
 	err := stateDB.SetStateObject(LockedCollateralStateObjectType, key, lockedCollateralState)
 	if err != nil {
-		return NewStatedbError(StorePortalRewardError, err)
+		return NewStatedbError(StoreLockedCollateralStateError, err)
 	}
 
 	return nil

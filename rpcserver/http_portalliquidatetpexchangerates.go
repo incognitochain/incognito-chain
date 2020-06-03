@@ -440,7 +440,7 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 
 	result, err := httpServer.blockService.GetAmountTopUpWaitingPorting(custodianAddr)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountTopUpWaitingPortingError, err)
 	}
 	return result, nil
 }

@@ -249,7 +249,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 
 	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
 	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
 	if err != nil {

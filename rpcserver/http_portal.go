@@ -616,7 +616,7 @@ func (httpServer *HttpServer) handleGetPortalReqRedeemByTxIDStatus(params interf
 	}
 	status, err := httpServer.blockService.GetPortalRedeemReqByTxIDStatus(reqTxID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetReqUnlockCollateralStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
 	}
 	return status, nil
 }
@@ -801,7 +801,7 @@ func (httpServer *HttpServer) handleGetRewardFeature(params interface{}, closeCh
 
 	result, err := httpServer.blockService.GetRewardFeatureByFeatureName(featureName, uint64(epoch))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetRequestWithdrawRewardStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetRewardFeatureByFeatureNameError, err)
 	}
 	return result, nil
 }
