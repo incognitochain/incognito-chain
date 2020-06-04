@@ -438,7 +438,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 		v.BestBlock = *block
 
-		err = v.restoreCommittee()
+		err = v.restoreBeaconCommittee()
 		if err != nil {
 			panic(err)
 		}
@@ -493,10 +493,10 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		err = v.restoreCommittee(shardID)
-		if err != nil {
-			panic(err)
-		}
+		// err = v.restoreCommittee(shardID)
+		// if err != nil {
+		// 	panic(err)
+		// }
 	}
 
 	return nil

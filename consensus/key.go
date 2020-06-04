@@ -142,8 +142,6 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == 1 {
-		fmt.Println("[optimize-beststate] Engine.ValidateProducerPosition() producerPosition:", producerPosition)
-		fmt.Println("[optimize-beststate] Engine.ValidateProducerPosition() len(committee):", len(committee))
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
 			return fmt.Errorf("Cannot base58 a committee")

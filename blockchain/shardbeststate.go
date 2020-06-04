@@ -349,16 +349,13 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
 
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee) 0:", len(shardBestState.ShardCommittee))
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee) 0:", len(target.ShardCommittee))
+	// shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
+	// for i, v := range target.ShardCommittee {
+	// 	shardBestState.ShardCommittee[i] = v
+	// }
 
-	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
-	for i, v := range target.ShardCommittee {
-		shardBestState.ShardCommittee[i] = v
-	}
-
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee) 1:", len(shardBestState.ShardCommittee))
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee) 1:", len(target.ShardCommittee))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee):", len(target.ShardCommittee))
 
 	return nil
 }
