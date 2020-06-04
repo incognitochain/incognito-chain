@@ -7,12 +7,10 @@ import (
 
 //restoreBeaconCommittee ...
 func (beaconBestState *BeaconBestState) restoreBeaconCommittee() error {
-
-	beaconBestState.BeaconCommittee = []incognitokey.CommitteePublicKey{}
-
 	committeePublicKey := statedb.GetBeaconCommittee(beaconBestState.consensusStateDB)
-	for _, v := range committeePublicKey {
-		beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, v)
+	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+	for i, v := range committeePublicKey {
+		beaconBestState.BeaconCommittee[i] = v
 	}
 
 	return nil
@@ -21,11 +19,14 @@ func (beaconBestState *BeaconBestState) restoreBeaconCommittee() error {
 //restoreShardCommittee ...
 func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
 
-	beaconBestState.BeaconCommittee = []incognitokey.CommitteePublicKey{}
+	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 
-	committeePublicKey := statedb.GetBeaconCommittee(beaconBestState.consensusStateDB)
-	for _, v := range committeePublicKey {
-		beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, v)
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
+		committeePublicKey := statedb.GetOneShardCommittee(beaconBestState.consensusStateDB, byte(i))
+		beaconBestState.ShardCommittee[byte(i)] = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+		for index, value := range committeePublicKey {
+			beaconBestState.ShardCommittee[byte(i)][index] = value
+		}
 	}
 
 	return nil
@@ -41,9 +42,6 @@ func (shardBestState *ShardBestState) restoreCommittee(shardID byte) error {
 	for _, v := range committeePublicKey {
 		shardBestState.ShardCommittee = append(shardBestState.ShardCommittee, v)
 	}
-
-	// fmt.Println("[optimize-bestsate] {ShardBestState.restoreCommittee()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))
-	// fmt.Println("[optimize-bestsate] {ShardBestState.restoreCommittee()} len(committeePublicKey):", len(committeePublicKey))
 
 	return nil
 }

@@ -42,7 +42,7 @@ type BeaconBestState struct {
 	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForCurrentRandom"`
 	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
 	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForNextRandom"`
-	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"ShardCommittee"`        // current committee and validator of all shard
+	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"-"`                     // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
 	AutoStaking                            map[string]bool                            `json:"AutoStaking"`
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
@@ -599,13 +599,27 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 
 	beaconBestState.BestBlock = target.BestBlock
+
+	// Clone beacon comittee
 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(target.BeaconCommittee))
 	for i, v := range target.BeaconCommittee {
 		beaconBestState.BeaconCommittee[i] = v
 	}
 
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} beaconBestState.BeaconCommittee:", beaconBestState.BeaconCommittee)
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} target.BeaconCommittee:", target.BeaconCommittee)
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconCommittee):", len(beaconBestState.BeaconCommittee))
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.BeaconCommittee):", len(target.BeaconCommittee))
+
+	// Clone shard committee
+	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
+	for i, v := range target.ShardCommittee {
+		beaconBestState.ShardCommittee[i] = make([]incognitokey.CommitteePublicKey, len(v))
+		for index, value := range v {
+			beaconBestState.ShardCommittee[i][index] = value
+		}
+	}
+
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.ShardCommittee):", len(beaconBestState.ShardCommittee))
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee):", len(target.ShardCommittee))
 
 	//beaconBestState.currentPDEState = target.currentPDEState.Copy()
 	return nil

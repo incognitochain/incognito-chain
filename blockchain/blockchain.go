@@ -443,8 +443,10 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic(err)
 		}
 
-		// @tin shard committee
-		// all shard
+		err = v.restoreShardCommittee()
+		if err != nil {
+			panic(err)
+		}
 
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
@@ -493,10 +495,10 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		// err = v.restoreCommittee(shardID)
-		// if err != nil {
-		// 	panic(err)
-		// }
+		err = v.restoreCommittee(shardID)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return nil
