@@ -18,30 +18,30 @@ type PortalExpiredWaitingPortingReq struct {
 // It will be appended to beaconBlock
 type PortalExpiredWaitingPortingReqContent struct {
 	MetadataBase
-	UniquePortingID string
+	UniquePortingID      string
 	ExpiredByLiquidation bool
-	ShardID                byte
+	ShardID              byte
 }
 
 // PortalExpiredWaitingPortingReqStatus - Beacon tracks status of custodian liquidation into db
 type PortalExpiredWaitingPortingReqStatus struct {
-	Status                byte
-	UniquePortingID       string
-	ShardID               byte
+	Status               byte
+	UniquePortingID      string
+	ShardID              byte
 	ExpiredByLiquidation bool
-	ExpiredBeaconHeight   uint64
+	ExpiredBeaconHeight  uint64
 }
 
 func NewPortalExpiredWaitingPortingReq(
 	metaType int,
 	uniquePortingID string,
 	expiredByLiquidation bool,
-	) (*PortalExpiredWaitingPortingReq, error) {
+) (*PortalExpiredWaitingPortingReq, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	liquidCustodianMeta := &PortalExpiredWaitingPortingReq{
-		UniquePortingID:        uniquePortingID,
+		UniquePortingID:      uniquePortingID,
 		ExpiredByLiquidation: expiredByLiquidation,
 	}
 	liquidCustodianMeta.MetadataBase = metadataBase

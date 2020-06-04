@@ -18,7 +18,5 @@ type GetLiquidateExchangeRates struct {
 
 type GetLiquidateAmountNeededCustodianDeposit struct {
 	TokenId string `json:"TokenId"`
-	IsFreeCollateralSelected bool `json:"IsFreeCollateralSelected"`
 	Amount uint64 `json:"Amount"`
-    FreeCollateral uint64 `json:"FreeCollateral"`
 }

@@ -8,10 +8,10 @@ import (
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 // Interface for all types of metadata in tx
@@ -80,6 +80,7 @@ type BlockchainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetPortalFeederAddress() string
 }
 
 // Interface for all type of transaction

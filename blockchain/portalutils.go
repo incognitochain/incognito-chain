@@ -18,7 +18,8 @@ import (
 type CurrentPortalState struct {
 	CustodianPoolState      map[string]*statedb.CustodianState        // key : hash(custodian_address)
 	WaitingPortingRequests  map[string]*statedb.WaitingPortingRequest // key : hash(UniquePortingID)
-	WaitingRedeemRequests   map[string]*statedb.WaitingRedeemRequest  // key : hash(UniqueRedeemID)
+	WaitingRedeemRequests   map[string]*statedb.RedeemRequest         // key : hash(UniqueRedeemID)
+	MatchedRedeemRequests   map[string]*statedb.RedeemRequest         // key : hash(UniquePortingID)
 	FinalExchangeRatesState *statedb.FinalExchangeRatesState
 	LiquidationPool         map[string]*statedb.LiquidationPool // key : hash(beaconHeight || TxID)
 	// it used for calculate reward for custodian at the end epoch
@@ -56,6 +57,10 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
+	matchedRedeemReqs, err := statedb.GetMatchedRedeemRequests(stateDB)
+	if err != nil {
+		return nil, err
+	}
 	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB)
 	if err != nil {
 		return nil, err
@@ -73,6 +78,7 @@ func InitCurrentPortalStateFromDB(
 		CustodianPoolState:         custodianPoolState,
 		WaitingPortingRequests:     waitingPortingReqs,
 		WaitingRedeemRequests:      waitingRedeemReqs,
+		MatchedRedeemRequests:      matchedRedeemReqs,
 		FinalExchangeRatesState:    finalExchangeRates,
 		ExchangeRatesRequests:      make(map[string]*metadata.ExchangeRatesRequestStatus),
 		LiquidationPool:            liquidateExchangeRatesPool,
@@ -93,6 +99,10 @@ func storePortalStateToDB(
 		return err
 	}
 	err = statedb.StoreWaitingRedeemRequests(stateDB, currentPortalState.WaitingRedeemRequests)
+	if err != nil {
+		return err
+	}
+	err = statedb.StoreMatchedRedeemRequests(stateDB, currentPortalState.MatchedRedeemRequests)
 	if err != nil {
 		return err
 	}
@@ -337,73 +347,32 @@ func checkTPRatio(tpValue uint64, portalParams PortalParams) (bool, bool) {
 	return false, false
 }
 
-func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, custodian *statedb.CustodianState, exchangeRates *statedb.FinalExchangeRatesState, pTokenId string, isFreeCollateralSelected bool, portalParams PortalParams) (uint64, uint64, uint64, error) {
+func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, custodian *statedb.CustodianState, exchangeRates *statedb.FinalExchangeRatesState, pTokenId string, portalParams PortalParams) (uint64, error) {
 	if custodian.GetHoldingPublicTokens() == nil {
-		return 0, 0, 0, nil
+		return 0, nil
 	}
-	totalHoldingPublicToken := custodian.GetHoldingPublicTokens()[pTokenId]
-	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
-		if waitingRedeemReq.GetTokenID() != pTokenId {
-			continue
-		}
-		for _, matchingCustodian := range waitingRedeemReq.GetCustodians() {
-			if matchingCustodian.GetIncognitoAddress() != custodian.GetIncognitoAddress() {
-				continue
-			}
-			totalHoldingPublicToken += waitingRedeemReq.GetRedeemAmount()
-			break
-		}
-	}
-
+	totalHoldingPublicToken := GetTotalHoldPubTokenAmount(currentPortalState, custodian, pTokenId)
 	totalPToken := up150Percent(totalHoldingPublicToken, portalParams.MinPercentLockedCollateral)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRates)
 	totalPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(pTokenId, totalPToken)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, err
 	}
 
-	totalLockedAmountInWaitingPorting := uint64(0)
-	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
-		if waitingPortingReq.TokenID() != pTokenId {
-			continue
-		}
-		for _, matchingCustodian := range waitingPortingReq.Custodians() {
-			if matchingCustodian.IncAddress != custodian.GetIncognitoAddress() {
-				continue
-			}
-			totalLockedAmountInWaitingPorting += matchingCustodian.LockedAmountCollateral
-			break
-		}
-	}
+	totalLockedAmountInWaitingPorting := GetTotalLockedCollateralAmountInWaitingPortings(currentPortalState, custodian, pTokenId)
 
 	lockedAmountMap := custodian.GetLockedAmountCollateral()
 	if lockedAmountMap == nil {
-		return 0, 0, 0, errors.New("Locked amount is nil")
+		return 0, errors.New("Locked amount is nil")
 	}
 	lockedAmount := lockedAmountMap[pTokenId] - totalLockedAmountInWaitingPorting
 	if lockedAmount >= totalPRV {
-		return 0, 0, 0, nil
+		return 0, nil
 	}
 
 	totalAmountNeeded := totalPRV - lockedAmount
-	var remainAmountFreeCollateral uint64
-	var totalFreeCollateralNeeded uint64
 
-	if isFreeCollateralSelected {
-		if custodian.GetFreeCollateral() >= totalAmountNeeded {
-			remainAmountFreeCollateral = custodian.GetFreeCollateral() - totalAmountNeeded
-			totalFreeCollateralNeeded = totalAmountNeeded
-			totalAmountNeeded = 0
-		} else {
-			remainAmountFreeCollateral = 0
-			totalFreeCollateralNeeded = custodian.GetFreeCollateral()
-			totalAmountNeeded = totalAmountNeeded - custodian.GetFreeCollateral()
-		}
-
-		return totalAmountNeeded, totalFreeCollateralNeeded, remainAmountFreeCollateral, nil
-	}
-
-	return totalAmountNeeded, 0, 0, nil
+	return totalAmountNeeded, nil
 }
 
 func sortCustodiansByAmountHoldingPubTokenAscent(tokenID string, custodians map[string]*statedb.CustodianState) []*CustodianStateSlice {
@@ -507,35 +476,9 @@ func CalUnlockCollateralAmount(
 		return 0, fmt.Errorf("Custodian not found %v\n", custodianStateKey)
 	}
 
-	totalHoldingPubToken := custodianState.GetHoldingPublicTokens()[tokenID]
-	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
-		if waitingRedeemReq.GetTokenID() != tokenID {
-			continue
-		}
-		for _, cus := range waitingRedeemReq.GetCustodians() {
-			if cus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
-				totalHoldingPubToken += cus.GetAmount()
-				break
-			}
-		}
-	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] redeemAmount %v\n", redeemAmount)
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] totalHoldingPubToken %v\n", totalHoldingPubToken)
+	totalHoldingPubToken := GetTotalHoldPubTokenAmount(portalState, custodianState, tokenID)
 
-	totalLockedAmountInWaitingPortings := uint64(0)
-	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
-		if waitingPortingReq.TokenID() != tokenID {
-			continue
-		}
-		for _, cus := range waitingPortingReq.Custodians() {
-			if cus.IncAddress == custodianState.GetIncognitoAddress() {
-				totalLockedAmountInWaitingPortings += cus.LockedAmountCollateral
-				break
-			}
-		}
-	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] totalLockedAmountInWaitingPortings %v\n", totalLockedAmountInWaitingPortings)
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
+	totalLockedAmountInWaitingPortings := GetTotalLockedCollateralAmountInWaitingPortings(portalState, custodianState, tokenID)
 
 	if custodianState.GetLockedAmountCollateral()[tokenID] < totalLockedAmountInWaitingPortings {
 		Logger.log.Errorf("custodianState.GetLockedAmountCollateral()[tokenID] %v\n", custodianState.GetLockedAmountCollateral()[tokenID])
@@ -556,7 +499,6 @@ func CalUnlockCollateralAmount(
 		Logger.log.Errorf("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian %v\n", unlockAmount)
 		return 0, errors.New("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian")
 	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmount] unlockAmount %v\n", unlockAmount)
 	return unlockAmount, nil
 }
 
@@ -575,7 +517,6 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPubToken), new(big.Int).SetUint64(uint64(portalParams.MaxPercentLiquidatedCollateralAmount)))
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] liquidatedAmountInPToken %v\n", liquidatedAmountInPToken)
 	liquidatedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, liquidatedAmountInPToken)
 	if err != nil {
 		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error converting rate : %v\n", err)
@@ -585,11 +526,8 @@ func CalUnlockCollateralAmountAfterLiquidation(
 	if liquidatedAmountInPRV > totalUnlockCollateralAmount {
 		liquidatedAmountInPRV = totalUnlockCollateralAmount
 	}
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] liquidatedAmountInPRV %v\n", liquidatedAmountInPRV)
 
 	remainUnlockAmountForCustodian := totalUnlockCollateralAmount - liquidatedAmountInPRV
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] remainUnlockAmountForCustodian %v\n", remainUnlockAmountForCustodian)
-	Logger.log.Infof("[test][CalUnlockCollateralAmountAfterLiquidation] totalUnlockCollateralAmount %v\n", totalUnlockCollateralAmount)
 	return liquidatedAmountInPRV, remainUnlockAmountForCustodian, nil
 }
 
@@ -674,6 +612,10 @@ func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestK
 	delete(state.WaitingRedeemRequests, waitingRedeemRequestKey)
 }
 
+func deleteMatchedRedeemRequest(state *CurrentPortalState, matchedRedeemRequestKey string) {
+	delete(state.MatchedRedeemRequests, matchedRedeemRequestKey)
+}
+
 func deleteWaitingPortingRequest(state *CurrentPortalState, waitingPortingRequestKey string) {
 	delete(state.WaitingPortingRequests, waitingPortingRequestKey)
 }
@@ -742,9 +684,6 @@ func (c *ConvertExchangeRatesObject) ExchangeBTC2PRV(value uint64) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-
-	Logger.log.Infof("================ Convert, BTC %d 2 PRV with BTCRates %d PRVRates %d , result %d", value, BTCRates, PRVRates, valueExchange)
-
 	//nano
 	return valueExchange, nil
 }
@@ -758,8 +697,6 @@ func (c *ConvertExchangeRatesObject) ExchangeBNB2PRV(value uint64) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-
-	Logger.log.Infof("================ Convert, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 
 	return valueExchange, nil
 }
@@ -775,8 +712,6 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BTC(value uint64) (uint64, erro
 		return 0, err
 	}
 
-	Logger.log.Infof("================ Convert, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates, valueExchange)
-
 	return valueExchange, nil
 }
 
@@ -788,7 +723,6 @@ func (c *ConvertExchangeRatesObject) ExchangePRV2BNB(value uint64) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-	Logger.log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 	return valueExchange, nil
 }
 
@@ -824,8 +758,6 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(
 	//update LiquidateExchangeRates
 	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
 	liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
-
-	Logger.log.Infof("update LiquidationPool with liquidateExchangeRatesKey %v value %#v", liquidateExchangeRatesKey, tpRatios)
 	if !ok {
 		item := make(map[string]statedb.LiquidationPoolDetail)
 
@@ -926,23 +858,14 @@ func calAndCheckTPRatio(
 	}
 
 	holdingPubToken := make(map[string]uint64)
-	for tokenID, amount := range custodianState.GetHoldingPublicTokens() {
-		holdingPubToken[tokenID] = amount
+	for tokenID := range custodianState.GetHoldingPublicTokens() {
+		holdingPubToken[tokenID] = GetTotalHoldPubTokenAmount(portalState, custodianState, tokenID)
 	}
 
 	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
 		for _, matchingCus := range waitingPortingReq.Custodians() {
 			if matchingCus.IncAddress == custodianState.GetIncognitoAddress() {
 				lockedAmount[waitingPortingReq.TokenID()] -= matchingCus.LockedAmountCollateral
-				break
-			}
-		}
-	}
-
-	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
-		for _, matchingCus := range waitingRedeemReq.GetCustodians() {
-			if matchingCus.GetIncognitoAddress() == custodianState.GetIncognitoAddress() {
-				holdingPubToken[waitingRedeemReq.GetTokenID()] += matchingCus.GetAmount()
 				break
 			}
 		}
@@ -997,7 +920,7 @@ func calAndCheckTPRatio(
 	return result, nil
 }
 
-func UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(portalState *CurrentPortalState, rejectedRedeemReq *statedb.WaitingRedeemRequest, beaconHeight uint64) error {
+func UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(portalState *CurrentPortalState, rejectedRedeemReq *statedb.RedeemRequest, beaconHeight uint64) error {
 	tokenID := rejectedRedeemReq.GetTokenID()
 	for _, matchingCus := range rejectedRedeemReq.GetCustodians() {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(matchingCus.GetIncognitoAddress())
@@ -1038,4 +961,300 @@ func UpdateCustodianRewards(currentPortalState *CurrentPortalState, rewardInfos 
 		}
 		currentPortalState.CustodianPoolState[custodianKey].SetRewardAmount(custodianReward)
 	}
+}
+
+// MatchCustodianToWaitingRedeemReq returns amount matching of custodian in redeem request if valid
+func MatchCustodianToWaitingRedeemReq(
+	custodianAddr string,
+	redeemID string,
+	portalState *CurrentPortalState) (uint64, bool, error) {
+	// check redeemID is in waiting redeem requests or not
+	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(redeemID).String()
+	waitingRedeemRequest := portalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	if waitingRedeemRequest == nil {
+		return 0, false, fmt.Errorf("RedeemID is not existed in waiting matching redeem requests list %v\n", redeemID)
+	}
+
+	// check Incognito Address is an custodian or not
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState := portalState.CustodianPoolState[custodianStateKey]
+	if custodianState == nil {
+		return 0, false, fmt.Errorf("custodianState not found %v\n", custodianAddr)
+	}
+
+	// calculate amount need to be matched
+	totalMatchedAmount := uint64(0)
+	for _, cus := range waitingRedeemRequest.GetCustodians() {
+		totalMatchedAmount += cus.GetAmount()
+	}
+	neededMatchingAmountInPToken := waitingRedeemRequest.GetRedeemAmount() - totalMatchedAmount
+	if neededMatchingAmountInPToken <= 0 {
+		return 0, false, errors.New("Amount need to be matched is not greater than zero")
+	}
+
+	holdPubTokenMap := custodianState.GetHoldingPublicTokens()
+	if holdPubTokenMap == nil || len(holdPubTokenMap) == 0 {
+		return 0, false, errors.New("Holding public token amount of custodian is not valid")
+	}
+	holdPubTokenAmount := holdPubTokenMap[waitingRedeemRequest.GetTokenID()]
+	if holdPubTokenAmount == 0 {
+		return 0, false, errors.New("Holding public token amount of custodian is not available")
+	}
+
+	if holdPubTokenAmount >= neededMatchingAmountInPToken {
+		return neededMatchingAmountInPToken, true, nil
+	} else {
+		return holdPubTokenAmount, false, nil
+	}
+}
+
+func UpdatePortalStateAfterCustodianReqMatchingRedeem(
+	custodianAddr string,
+	redeemID string,
+	matchedAmount uint64,
+	isEnoughCustodians bool,
+	portalState *CurrentPortalState) (*statedb.RedeemRequest, error) {
+	// check redeemID is in waiting redeem requests or not
+	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(redeemID).String()
+	waitingRedeemRequest := portalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	if waitingRedeemRequest == nil {
+		return nil, fmt.Errorf("RedeemID is not existed in waiting matching redeem requests list %v\n", redeemID)
+	}
+
+	// update custodian state
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState := portalState.CustodianPoolState[custodianStateKey]
+	err := UpdateCustodianStateAfterMatchingRedeemReq(custodianState, matchedAmount, waitingRedeemRequest.GetTokenID())
+	if err != nil {
+		return nil, fmt.Errorf("Error wahne updating custodian state %v\n", err)
+	}
+
+	// update matching custodians in waiting redeem request
+	matchingCus := waitingRedeemRequest.GetCustodians()
+	if matchingCus == nil {
+		matchingCus = make([]*statedb.MatchingRedeemCustodianDetail, 0)
+	}
+	matchingCus = append(matchingCus,
+		statedb.NewMatchingRedeemCustodianDetailWithValue(custodianAddr, custodianState.GetRemoteAddresses()[waitingRedeemRequest.GetTokenID()], matchedAmount))
+	waitingRedeemRequest.SetCustodians(matchingCus)
+
+	if isEnoughCustodians {
+		deleteWaitingRedeemRequest(portalState, keyWaitingRedeemRequest)
+		keyMatchedRedeemRequest := statedb.GenerateMatchedRedeemRequestObjectKey(redeemID).String()
+		portalState.MatchedRedeemRequests[keyMatchedRedeemRequest] = waitingRedeemRequest
+	}
+
+	return waitingRedeemRequest, nil
+}
+
+func UpdateCustodianStateAfterMatchingRedeemReq(custodianState *statedb.CustodianState, matchingAmount uint64, tokenID string) error {
+	// check Incognito Address is an custodian or not
+	if custodianState == nil {
+		return fmt.Errorf("custodianState not found %v\n", custodianState)
+	}
+
+	// update custodian state
+	holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
+	if holdingPubTokenTmp == nil {
+		return errors.New("Holding public token of custodian is null")
+	}
+	if holdingPubTokenTmp[tokenID] < matchingAmount {
+		return fmt.Errorf("Holding public token %v is less than matching amount %v : ", holdingPubTokenTmp[tokenID], matchingAmount)
+	}
+	holdingPubTokenTmp[tokenID] -= matchingAmount
+	custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
+
+	return nil
+}
+
+func UpdatePortalStateAfterPickMoreCustodiansForWaitingRedeemReq(
+	moreCustodians []*statedb.MatchingRedeemCustodianDetail,
+	waitingRedeem *statedb.RedeemRequest,
+	portalState *CurrentPortalState) (*statedb.RedeemRequest, error) {
+	// update custodian state
+	for _, cus := range moreCustodians {
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(cus.GetIncognitoAddress()).String()
+		err := UpdateCustodianStateAfterMatchingRedeemReq(portalState.CustodianPoolState[custodianStateKey], cus.GetAmount(), waitingRedeem.GetTokenID())
+		if err != nil {
+			Logger.log.Errorf("Error when update custodian state for timeout redeem request %v\n", err)
+			return nil, err
+		}
+	}
+
+	// move waiting redeem request from waiting list to matched list
+	waitingRedeemKey := statedb.GenerateWaitingRedeemRequestObjectKey(waitingRedeem.GetUniqueRedeemID()).String()
+	deleteWaitingRedeemRequest(portalState, waitingRedeemKey)
+
+	matchedCustodians := waitingRedeem.GetCustodians()
+	if matchedCustodians == nil {
+		matchedCustodians = make([]*statedb.MatchingRedeemCustodianDetail, 0)
+	}
+	matchedCustodians = append(matchedCustodians, moreCustodians...)
+	waitingRedeem.SetCustodians(matchedCustodians)
+
+	matchedRedeemKey := statedb.GenerateMatchedRedeemRequestObjectKey(waitingRedeem.GetUniqueRedeemID()).String()
+	portalState.MatchedRedeemRequests[matchedRedeemKey] = waitingRedeem
+
+	return waitingRedeem, nil
+}
+
+func GetTotalLockedCollateralAmountInWaitingPortings(portalState *CurrentPortalState, custodianState *statedb.CustodianState, tokenID string) uint64 {
+	totalLockedAmountInWaitingPortings := uint64(0)
+	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != tokenID {
+			continue
+		}
+		for _, cus := range waitingPortingReq.Custodians() {
+			if cus.IncAddress == custodianState.GetIncognitoAddress() {
+				totalLockedAmountInWaitingPortings += cus.LockedAmountCollateral
+				break
+			}
+		}
+	}
+
+	return totalLockedAmountInWaitingPortings
+}
+
+func GetTotalHoldPubTokenAmount(portalState *CurrentPortalState, custodianState *statedb.CustodianState, tokenID string) uint64 {
+	holdPubToken := custodianState.GetHoldingPublicTokens()
+	totalHoldingPubTokenAmount := uint64(0)
+	if holdPubToken != nil {
+		totalHoldingPubTokenAmount += holdPubToken[tokenID]
+	}
+
+	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
+		if waitingRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range waitingRedeemReq.GetCustodians() {
+			if cus.GetIncognitoAddress() != custodianState.GetIncognitoAddress() {
+				continue
+			}
+			totalHoldingPubTokenAmount += cus.GetAmount()
+			break
+		}
+	}
+
+	for _, matchedRedeemReq := range portalState.MatchedRedeemRequests {
+		if matchedRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range matchedRedeemReq.GetCustodians() {
+			if cus.GetIncognitoAddress() != custodianState.GetIncognitoAddress() {
+				continue
+			}
+			totalHoldingPubTokenAmount += cus.GetAmount()
+			break
+		}
+	}
+
+	return totalHoldingPubTokenAmount
+}
+
+func GetTotalHoldPubTokenAmountExcludeMatchedRedeemReqs(portalState *CurrentPortalState, custodianState *statedb.CustodianState, tokenID string) uint64 {
+	//todo: check
+	holdPubToken := custodianState.GetHoldingPublicTokens()
+	totalHoldingPubTokenAmount := uint64(0)
+	if holdPubToken != nil {
+		totalHoldingPubTokenAmount += holdPubToken[tokenID]
+	}
+
+	for _, waitingRedeemReq := range portalState.WaitingRedeemRequests {
+		if waitingRedeemReq.GetTokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range waitingRedeemReq.GetCustodians() {
+			if cus.GetIncognitoAddress() != custodianState.GetIncognitoAddress() {
+				continue
+			}
+			totalHoldingPubTokenAmount += cus.GetAmount()
+			break
+		}
+	}
+
+	return totalHoldingPubTokenAmount
+}
+
+func GetTotalMatchingPubTokenInWaitingPortings(portalState *CurrentPortalState, custodianState *statedb.CustodianState, tokenID string) uint64 {
+	totalMatchingPubTokenAmount := uint64(0)
+
+	for _, waitingPortingReq := range portalState.WaitingPortingRequests {
+		if waitingPortingReq.TokenID() != tokenID {
+			continue
+		}
+
+		for _, cus := range waitingPortingReq.Custodians() {
+			if cus.IncAddress != custodianState.GetIncognitoAddress() {
+				continue
+			}
+			totalMatchingPubTokenAmount += cus.Amount
+			break
+		}
+	}
+
+	return totalMatchingPubTokenAmount
+}
+
+func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
+	exchangeRate := NewConvertExchangeRatesObject(currentPortalState.FinalExchangeRatesState)
+
+	totalLockedCollateralAmount := currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards()
+	lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
+
+	for _, custodianState := range currentPortalState.CustodianPoolState {
+		lockedCollaterals := custodianState.GetLockedAmountCollateral()
+		if lockedCollaterals == nil || len(lockedCollaterals) == 0 {
+			continue
+		}
+
+		for tokenID := range lockedCollaterals {
+			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)
+			matchingPubTokenAmount := GetTotalMatchingPubTokenInWaitingPortings(currentPortalState, custodianState, tokenID)
+			totalPubToken := holdPubTokenAmount + matchingPubTokenAmount
+			pubTokenAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, totalPubToken)
+			if err != nil {
+				Logger.log.Errorf("Error when converting public token to prv: %v", err)
+			}
+			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += pubTokenAmountInPRV
+			totalLockedCollateralAmount += pubTokenAmountInPRV
+		}
+	}
+
+	currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(totalLockedCollateralAmount)
+	currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(lockedCollateralDetails)
+}
+
+func CalAmountTopUpWaitingPortings(
+	portalState *CurrentPortalState,
+	custodianState *statedb.CustodianState, portalParam PortalParams,) (map[string]uint64, error) {
+
+	result := make(map[string]uint64)
+	convertExchangeRatesObj := NewConvertExchangeRatesObject(portalState.FinalExchangeRatesState)
+
+	for _, waitingPorting := range portalState.WaitingPortingRequests {
+		for _, cus := range waitingPorting.Custodians() {
+			if cus.IncAddress != custodianState.GetIncognitoAddress() {
+				continue
+			}
+
+			minCollateralAmount, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(
+				waitingPorting.TokenID(),
+				up150Percent(cus.Amount, portalParam.MinPercentLockedCollateral))
+			if err != nil {
+				Logger.log.Errorf("[calAmountTopUpWaitingPortings] Error when converting ptoken to PRV %v", err)
+				return result, err
+			}
+
+			if minCollateralAmount <= cus.LockedAmountCollateral {
+				break
+			}
+
+			result[waitingPorting.UniquePortingID()] = minCollateralAmount - cus.LockedAmountCollateral
+		}
+	}
+
+	return result, nil
 }

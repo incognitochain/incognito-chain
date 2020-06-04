@@ -47,14 +47,14 @@ func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
-	registerAmount, ok := data["RegisterAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RegisterAmount is invalid"))
+	registerAmount, err := common.AssertAndConvertStrToNumber(data["RegisterAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	portingFee, ok := data["PortingFee"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingFee is invalid"))
+	portingFee, err := common.AssertAndConvertStrToNumber(data["PortingFee"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	//check exchange rates
@@ -62,13 +62,13 @@ func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface
 		uniqueRegisterId,
 		incogAddressStr,
 		pTokenId,
-		uint64(registerAmount),
-		uint64(portingFee),
+		registerAmount,
+		portingFee,
 		metadata.PortalUserRegisterMeta,
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}

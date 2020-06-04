@@ -53,11 +53,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	for _, pTokenID := range tokenIDKeys {
 		remoteAddresses[pTokenID] = remoteAddressesMap[pTokenID].(string)
 	}
-	depositedAmountData, ok := data["DepositedAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+
+	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	depositedAmount := uint64(depositedAmountData)
 
 	meta, _ := metadata.NewPortalCustodianDeposit(
 		metadata.PortalCustodianDepositMeta,
@@ -67,7 +67,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -136,11 +136,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))
 	}
-	portingAmountData, ok := data["PortingAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingAmount is invalid"))
+	portingAmount, err := common.AssertAndConvertStrToNumber(data["PortingAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	portingAmount := uint64(portingAmountData)
 
 	portingProof, ok := data["PortingProof"].(string)
 	if !ok {
@@ -157,7 +156,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -208,9 +207,9 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	beaconHeight, ok := data["BeaconHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	//stateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
@@ -233,7 +232,8 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 
 	type CurrentPortalState struct {
 		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest `json:"WaitingPortingRequests"`
-		WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest  `json:"WaitingRedeemRequests"`
+		WaitingRedeemRequests      map[string]*statedb.RedeemRequest         `json:"WaitingRedeemRequests"`
+		MatchedRedeemRequests      map[string]*statedb.RedeemRequest         `json:"MatchedRedeemRequests"`
 		CustodianPool              map[string]*statedb.CustodianState        `json:"CustodianPool"`
 		FinalExchangeRatesState    *statedb.FinalExchangeRatesState          `json:"FinalExchangeRatesState"`
 		LiquidationPool            map[string]*statedb.LiquidationPool       `json:"LiquidationPool"`
@@ -245,6 +245,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		BeaconTimeStamp:            beaconBlock.Header.Timestamp,
 		WaitingPortingRequests:     portalState.WaitingPortingRequests,
 		WaitingRedeemRequests:      portalState.WaitingRedeemRequests,
+		MatchedRedeemRequests:      portalState.MatchedRedeemRequests,
 		CustodianPool:              portalState.CustodianPoolState,
 		FinalExchangeRatesState:    portalState.FinalExchangeRatesState,
 		LiquidationPool:            portalState.LiquidationPool,
@@ -322,17 +323,15 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemTokenID is invalid"))
 	}
 
-	redeemAmountParam, ok := tokenParamsRaw["RedeemAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemAmount is invalid"))
+	redeemAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["RedeemAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemAmount := uint64(redeemAmountParam)
 
-	redeemFeeParam, ok := tokenParamsRaw["RedeemFee"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemFee is invalid"))
+	redeemFee, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["RedeemFee"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemFee := uint64(redeemFeeParam)
 
 	redeemerIncAddressStr, ok := tokenParamsRaw["RedeemerIncAddressStr"].(string)
 	if !ok {
@@ -347,7 +346,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -397,19 +396,19 @@ func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PaymentAddress is invalid"))
 	}
 
-	amount, ok := data["Amount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Amount is invalid"))
+	amount, err := common.AssertAndConvertStrToNumber(data["Amount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	meta, _ := metadata.NewPortalCustodianWithdrawRequest(
 		metadata.PortalCustodianWithdrawRequestMeta,
 		paymentAddress,
-		uint64(amount),
+		amount,
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -477,11 +476,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddressStr is invalid"))
 	}
-	redeemAmountData, ok := data["RedeemAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RedeemAmount is invalid"))
+	redeemAmount, err := common.AssertAndConvertStrToNumber(data["RedeemAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	redeemAmount := uint64(redeemAmountData)
 
 	redeemProof, ok := data["RedeemProof"].(string)
 	if !ok {
@@ -498,7 +496,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -603,6 +601,26 @@ func (httpServer *HttpServer) handleGetPortalReqRedeemStatus(params interface{},
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetPortalReqRedeemByTxIDStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalRedeemReqByTxIDStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
+	}
+	return status, nil
+}
+
 func (httpServer *HttpServer) handleGetCustodianLiquidationStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
@@ -661,7 +679,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqWithdrawRewardPortal(param
 		*tokenID)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -773,9 +791,9 @@ func (httpServer *HttpServer) handleGetRewardFeature(params interface{}, closeCh
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param FeatureName is invalid"))
 	}
-	epoch, ok := data["Epoch"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param Epoch is invalid"))
+	epoch, err := common.AssertAndConvertStrToNumber(data["Epoch"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	if epoch < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param Epoch must be greater or than 1"))
@@ -783,7 +801,97 @@ func (httpServer *HttpServer) handleGetRewardFeature(params interface{}, closeCh
 
 	result, err := httpServer.blockService.GetRewardFeatureByFeatureName(featureName, uint64(epoch))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetRequestWithdrawRewardStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetRewardFeatureByFeatureNameError, err)
 	}
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithReqMatchingRedeem(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+	incognitoAddress, ok := data["CustodianAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress is invalid"))
+	}
+	redeemID, ok := data["RedeemID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses param is invalid"))
+	}
+
+	meta, _ := metadata.NewPortalReqMatchingRedeem(
+		metadata.PortalReqMatchingRedeemMeta,
+		incognitoAddress,
+		redeemID,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithReqMatchingRedeem(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithReqMatchingRedeem(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetReqMatchingRedeemByTxIDStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+
+	status, err := httpServer.blockService.GetReqMatchingRedeemByTxIDStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqMatchingRedeemStatusError, err)
+	}
+	return status, nil
 }

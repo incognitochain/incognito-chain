@@ -55,16 +55,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingHeader(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Header param is invalid"))
 	}
 
-	blockHeight, ok := data["BlockHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Header param is invalid"))
+	blockHeight, err := common.AssertAndConvertStrToNumber(data["BlockHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	meta, _ := metadata.NewRelayingHeader(
 		metaType,
 		senderAddress,
 		header,
-		uint64(blockHeight),
+		blockHeight,
 	)
 
 	// create new param to build raw tx from param interface
@@ -157,9 +157,9 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	blockHeight, ok := data["BlockHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	blockHeight, err := common.AssertAndConvertStrToNumber(data["BlockHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	block, err := httpServer.config.BlockChain.GetBNBBlockByHeight(int64(blockHeight))

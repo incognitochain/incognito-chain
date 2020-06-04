@@ -1041,6 +1041,25 @@ func (blockService BlockService) GetPortalRedeemReqStatus(redeemID string) (*met
 	return nil, nil
 }
 
+func (blockService BlockService) GetPortalRedeemReqByTxIDStatus(txID string) (*metadata.PortalRedeemRequestStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalRedeemRequestByTxIDStatus(stateDB, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalRedeemRequestStatus
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &status)
+		if err != nil {
+			return nil, err
+		}
+		return &status, nil
+	}
+
+	return nil, nil
+}
+
 func (blockService BlockService) GetPortalLiquidationCustodianStatus(redeemID string, custodianIncAddress string) (*metadata.PortalLiquidateCustodianStatus, error) {
 	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	data, err := statedb.GetPortalLiquidationCustodianRunAwayStatus(stateDB, redeemID, custodianIncAddress)
@@ -1071,6 +1090,101 @@ func (blockService BlockService) GetPortalRequestWithdrawRewardStatus(reqTxID st
 	}
 
 	return &status, nil
+}
+
+func (blockService BlockService) GetReqMatchingRedeemByTxIDStatus(reqTxID string) (*metadata.PortalReqMatchingRedeemStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalReqMatchingRedeemByTxIDStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalReqMatchingRedeemStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata.LiquidationCustodianDepositStatusV2, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalStateStatusMultiple(
+		stateDB,
+		statedb.PortalLiquidationCustodianDepositStatusPrefix(),
+		[]byte(txID))
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.LiquidationCustodianDepositStatusV2
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetCustodianTopupWaitingPortingStatus(txID string) (*metadata.PortalTopUpWaitingPortingRequestStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetPortalStateStatusMultiple(
+		stateDB,
+		statedb.PortalTopUpWaitingPortingStatusPrefix(),
+		[]byte(txID))
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalTopUpWaitingPortingRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string) (map[string]uint64, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
+	if err != nil {
+		return nil, err
+	}
+
+	custodianKey := statedb.GenerateCustodianStateObjectKey(custodianAddr).String()
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianKey]
+	if !ok || custodianState == nil {
+		return nil, fmt.Errorf("Custodian address %v not found", custodianAddr)
+	}
+
+	portalParam := blockService.BlockChain.GetPortalParams(blockService.BlockChain.BestState.Beacon.BeaconHeight)
+	result, err := blockchain.CalAmountTopUpWaitingPortings(currentPortalState, custodianState, portalParam)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatus(txID string) (*metadata.RedeemLiquidateExchangeRatesStatus, error) {
+	stateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	data, err := statedb.GetRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.RedeemLiquidateExchangeRatesStatus
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &status)
+		if err != nil {
+			return nil, err
+		}
+		return &status, nil
+	}
+
+	return nil, nil
 }
 
 //============================= Reward Feature ===============================
