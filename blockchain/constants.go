@@ -81,6 +81,8 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
+
+	MainnetPortalFeeder = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -134,6 +136,7 @@ const (
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s1.binance.org"
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
+	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 )
 
 // VARIABLE for testnet

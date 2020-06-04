@@ -515,3 +515,12 @@ func FromHex(s string) []byte {
 // HexToHash sets byte representation of s to hash.
 // If b is larger than len(h), b will be cropped from the left.
 func HexToHash(s string) Hash { return BytesToHash(FromHex(s)) }
+
+// AssertAndConvertStrToNumber asserts and convert a passed input to uint64 number
+func AssertAndConvertStrToNumber(numStr interface{}) (uint64, error) {
+	assertedNumStr, ok := numStr.(string)
+	if !ok {
+		return 0, errors.New("Could not assert the passed input to string")
+	}
+	return strconv.ParseUint(assertedNumStr, 10, 64)
+}

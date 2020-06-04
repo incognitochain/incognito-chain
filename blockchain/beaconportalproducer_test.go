@@ -28,7 +28,7 @@ func (suite *PortalProducerSuite) SetupTest() {
 		ExchangeRatesRequests:   map[string]*metadata.ExchangeRatesRequestStatus{},
 		FinalExchangeRatesState: map[string]*statedb.FinalExchangeRatesState{},
 		WaitingPortingRequests:  map[string]*statedb.WaitingPortingRequest{},
-		WaitingRedeemRequests:   map[string]*statedb.WaitingRedeemRequest{},
+		WaitingRedeemRequests:   map[string]*statedb.RedeemRequest{},
 		LiquidationPool:         map[string]*statedb.LiquidationPool{},
 	}
 }
@@ -957,7 +957,7 @@ type RedeemRequestOutput struct {
 	ChainStatus          string
 	RedeemRequestContent string
 	CustodianPool        map[string]*statedb.CustodianState
-	WaitingRedeemRequest map[string]*statedb.WaitingRedeemRequest
+	WaitingRedeemRequest map[string]*statedb.RedeemRequest
 }
 
 type RedeemRequestInput struct {

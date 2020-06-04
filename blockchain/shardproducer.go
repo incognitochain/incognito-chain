@@ -397,7 +397,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:
-				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemRequestRejectedByLiquidationChainStatus) {
+				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
@@ -421,6 +421,15 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			case metadata.PortalLiquidationCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalLiquidationCustodianDepositMetaV2:
+				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
+				}
+			//
+			case metadata.PortalTopUpWaitingPortingRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
+					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(l[3], producerPrivateKey, shardID)
 				}
 			default:
 				continue
