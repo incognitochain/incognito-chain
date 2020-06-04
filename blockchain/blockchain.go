@@ -437,14 +437,19 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic(err)
 		}
 		v.BestBlock = *block
-		//@tin beacon committee
-		//@tin shard committee
+
+		err = v.restoreCommittee()
+		if err != nil {
+			panic(err)
+		}
+
+		// @tin shard committee
+		// all shard
 
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
 		}
-
 	}
 	return nil
 }
@@ -478,14 +483,22 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	}
 	fmt.Println("debug RestoreShardViews", len(allViews))
 	for _, v := range allViews {
+
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")
 		}
+
 		err := v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
 			panic(err)
 		}
+
+		err = v.restoreCommittee(shardID)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	return nil
 }
 

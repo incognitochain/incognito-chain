@@ -4,12 +4,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -35,7 +36,7 @@ type BeaconBestState struct {
 	Epoch                                  uint64                                     `json:"Epoch"`
 	BeaconHeight                           uint64                                     `json:"BeaconHeight"`
 	BeaconProposerIndex                    int                                        `json:"BeaconProposerIndex"`
-	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"BeaconCommittee"`
+	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"-"`
 	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"BeaconPendingValidator"`
 	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
 	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForCurrentRandom"`
@@ -579,14 +580,17 @@ func (beaconBestState *BeaconBestState) GetAutoStaking() map[string]bool {
 func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
 	if err != nil {
+		// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} err marshal json:", err)
 		return NewBlockChainError(MashallJsonBeaconBestStateError, fmt.Errorf("Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
 	}
 	err = json.Unmarshal(tempMarshal, beaconBestState)
 	if err != nil {
+		// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} err unmarshal json:", err)
 		return NewBlockChainError(UnmashallJsonBeaconBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
 	}
 	plainBeaconBestState := NewBeaconBestState()
 	if reflect.DeepEqual(*beaconBestState, plainBeaconBestState) {
+		// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} err:", "error in deep equal")
 		return NewBlockChainError(CloneBeaconBestStateError, fmt.Errorf("Shard Best State %+v clone failed", beaconBestState.BeaconHeight))
 	}
 	beaconBestState.consensusStateDB = target.consensusStateDB.Copy()
@@ -594,9 +598,16 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 
-	// TODO: @tin: re-produce field that not marshal
 	beaconBestState.BestBlock = target.BestBlock
+	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(target.BeaconCommittee))
+	for i, v := range target.BeaconCommittee {
+		beaconBestState.BeaconCommittee[i] = v
+	}
 
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} beaconBestState.BeaconCommittee:", beaconBestState.BeaconCommittee)
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} target.BeaconCommittee:", target.BeaconCommittee)
+
+	//beaconBestState.currentPDEState = target.currentPDEState.Copy()
 	return nil
 }
 
