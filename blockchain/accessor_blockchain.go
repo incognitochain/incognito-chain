@@ -304,3 +304,7 @@ func (blockchain *BlockChain) GetBTCChainID() string {
 func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
 	return blockchain.GetConfig().BTCChain
 }
+
+func (blockchain *BlockChain) GetPortalFeederAddress() string {
+	return blockchain.GetConfig().ChainParams.PortalFeederAddress
+}

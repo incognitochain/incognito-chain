@@ -141,10 +141,11 @@ const (
 	PortalPortingReqExpiredStatus    = 3
 	PortalPortingReqLiquidatedStatus = 4
 
-	PortalRedeemReqSuccessStatus               = 1
-	PortalRedeemReqWaitingStatus               = 2
-	PortalRedeemReqLiquidatedStatus            = 3
-	PortalRedeemReqRejectedByLiquidationStatus = 4
+	PortalRedeemReqSuccessStatus                = 1
+	PortalRedeemReqWaitingStatus                = 2
+	PortalRedeemReqMatchedStatus                = 3
+	PortalRedeemReqLiquidatedStatus             = 4
+	PortalRedeemReqCancelledByLiquidationStatus = 5
 
 	PortalRedeemRequestTxAcceptedStatus = 1
 	PortalRedeemRequestTxRejectedStatus = 2
@@ -175,6 +176,12 @@ const (
 
 	PortalExchangeRatesAcceptedStatus = 1
 	PortalExchangeRatesRejectedStatus = 2
+
+	PortalReqMatchingRedeemAcceptedStatus = 1
+	PortalReqMatchingRedeemRejectedStatus = 2
+
+	PortalTopUpWaitingPortingSuccessStatus  = 1
+	PortalTopUpWaitingPortingRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -205,9 +212,9 @@ const (
 	PortalExchangeRatesAcceptedChainStatus = "accepted"
 	PortalExchangeRatesRejectedChainStatus = "rejected"
 
-	PortalRedeemRequestAcceptedChainStatus              = "accepted"
-	PortalRedeemRequestRejectedChainStatus              = "rejected"
-	PortalRedeemRequestRejectedByLiquidationChainStatus = "rejectedByLiquidation"
+	PortalRedeemRequestAcceptedChainStatus           = "accepted"
+	PortalRedeemRequestRejectedChainStatus           = "rejected"
+	PortalRedeemReqCancelledByLiquidationChainStatus = "cancelled"
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
@@ -232,6 +239,15 @@ const (
 
 	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
 	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
+
+	PortalReqMatchingRedeemAcceptedChainStatus = "accepted"
+	PortalReqMatchingRedeemRejectedChainStatus = "rejected"
+
+	PortalPickMoreCustodianRedeemSuccessChainStatus = "success"
+	PortalPickMoreCustodianRedeemFailedChainStatus  = "failed"
+
+	PortalTopUpWaitingPortingSuccessChainStatus  = "success"
+	PortalTopUpWaitingPortingRejectedChainStatus = "rejected"
 )
 
 // Relaying header
