@@ -177,7 +177,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, senderState map[byte]S2BP
 		}
 		//start request
 		requestCnt++
-		ch, err := s.Server.RequestShardToBeaconBlocksViaStream(ctx, peerID, int(sID), reqFromHeight, toHeight)
+		ch, err := s.Server.RequestShardBlocksViaStream(ctx, peerID, int(sID), reqFromHeight, toHeight)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")
 			return
