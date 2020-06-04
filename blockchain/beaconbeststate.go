@@ -580,17 +580,14 @@ func (beaconBestState *BeaconBestState) GetAutoStaking() map[string]bool {
 func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
 	if err != nil {
-		// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} err marshal json:", err)
 		return NewBlockChainError(MashallJsonBeaconBestStateError, fmt.Errorf("Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
 	}
 	err = json.Unmarshal(tempMarshal, beaconBestState)
 	if err != nil {
-		// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} err unmarshal json:", err)
 		return NewBlockChainError(UnmashallJsonBeaconBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
 	}
 	plainBeaconBestState := NewBeaconBestState()
 	if reflect.DeepEqual(*beaconBestState, plainBeaconBestState) {
-		// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} err:", "error in deep equal")
 		return NewBlockChainError(CloneBeaconBestStateError, fmt.Errorf("Shard Best State %+v clone failed", beaconBestState.BeaconHeight))
 	}
 	beaconBestState.consensusStateDB = target.consensusStateDB.Copy()
@@ -607,7 +604,6 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	}
 
 	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconCommittee):", len(beaconBestState.BeaconCommittee))
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.BeaconCommittee):", len(target.BeaconCommittee))
 
 	// Clone shard committee
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
@@ -619,7 +615,52 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	}
 
 	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.ShardCommittee):", len(beaconBestState.ShardCommittee))
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee):", len(target.ShardCommittee))
+
+	// beaconBestState.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.BeaconPendingValidator))
+	// for i, v := range target.BeaconPendingValidator {
+	// 	beaconBestState.BeaconPendingValidator[i] = v
+	// }
+
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconPendingValidator):", len(beaconBestState.BeaconPendingValidator))
+
+	// beaconBestState.CandidateShardWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForCurrentRandom))
+	// for i, v := range target.CandidateShardWaitingForCurrentRandom {
+	// 	beaconBestState.CandidateShardWaitingForCurrentRandom[i] = v
+	// }
+
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateShardWaitingForCurrentRandom):", len(beaconBestState.CandidateShardWaitingForCurrentRandom))
+
+	// beaconBestState.CandidateBeaconWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateBeaconWaitingForCurrentRandom))
+	// for i, v := range target.CandidateBeaconWaitingForCurrentRandom {
+	// 	beaconBestState.CandidateBeaconWaitingForCurrentRandom[i] = v
+	// }
+
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForCurrentRandom):", len(beaconBestState.CandidateBeaconWaitingForCurrentRandom))
+
+	// beaconBestState.CandidateShardWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForNextRandom))
+	// for i, v := range target.CandidateShardWaitingForNextRandom {
+	// 	beaconBestState.CandidateShardWaitingForNextRandom[i] = v
+	// }
+
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateShardWaitingForNextRandom):", len(beaconBestState.CandidateShardWaitingForNextRandom))
+
+	// beaconBestState.CandidateBeaconWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateBeaconWaitingForNextRandom))
+	// for i, v := range target.CandidateBeaconWaitingForNextRandom {
+	// 	beaconBestState.CandidateBeaconWaitingForNextRandom[i] = v
+	// }
+
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForNextRandom):", len(beaconBestState.CandidateBeaconWaitingForNextRandom))
+
+	// // Clone shard committee
+	// beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
+	// for i, v := range target.ShardPendingValidator {
+	// 	beaconBestState.ShardPendingValidator[i] = make([]incognitokey.CommitteePublicKey, len(v))
+	// 	for index, value := range v {
+	// 		beaconBestState.ShardPendingValidator[i][index] = value
+	// 	}
+	// }
+
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.ShardPendingValidator):", len(beaconBestState.ShardPendingValidator))
 
 	//beaconBestState.currentPDEState = target.currentPDEState.Copy()
 	return nil

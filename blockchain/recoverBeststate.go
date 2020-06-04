@@ -44,6 +44,58 @@ func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
 	return nil
 }
 
+// func (beaconBestState *BeaconBestState) restoreBeaconPendingValidator() error {
+// 	committeePublicKey := statedb.GetBeaconCommittee(beaconBestState.consensusStateDB)
+// 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+// 	for i, v := range committeePublicKey {
+// 		beaconBestState.BeaconCommittee[i] = v
+// 	}
+
+// 	fmt.Println("[optimize-beststate] {BeaconBestState.restoreBeaconCommittee()} len(beaconBestState.BeaconCommittee):", len(beaconBestState.BeaconCommittee))
+
+// 	return nil
+// }
+
+// func (beaconBestState *BeaconBestState) restoreCandidateShardWaitingForCurrentRandom() error {
+// 	committeePublicKey := statedb.(beaconBestState.consensusStateDB)
+// 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+// 	for i, v := range committeePublicKey {
+// 		beaconBestState.BeaconCommittee[i] = v
+// 	}
+
+// 	fmt.Println("[optimize-beststate] {BeaconBestState.restoreBeaconCommittee()} len(beaconBestState.BeaconCommittee):", len(beaconBestState.BeaconCommittee))
+// 	return nil
+// }
+
+// func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForCurrentRandom() error {
+// 	committeePublicKey := statedb.GetCandidate(beaconBestState.consensusStateDB)
+// 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+// 	for i, v := range committeePublicKey {
+// 		beaconBestState.BeaconCommittee[i] = v
+// 	}
+
+// 	fmt.Println("[optimize-beststate] {BeaconBestState.restoreBeaconCommittee()} len(beaconBestState.BeaconCommittee):", len(beaconBestState.BeaconCommittee))
+// 	return nil
+// 	return nil
+// }
+
+// func (beaconBestState *BeaconBestState) restoreCandidateShardWaitingForNextRandom() error {
+// 	return nil
+// }
+
+// func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForNextRandom() error {
+// 	return nil
+// }
+
+// func (beaconBestState *BeaconBestState) restoreShardPendingValidator() error {
+// 	committeePublicKey := statedb.ShardPe(beaconBestState.consensusStateDB)
+// 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+// 	for i, v := range committeePublicKey {
+// 	beaconBestState.BeaconCommittee[i] = v
+
+// 	return nil
+// }
+
 //RecoverCommittee ...
 func (shardBestState *ShardBestState) restoreCommittee(shardID byte) error {
 
