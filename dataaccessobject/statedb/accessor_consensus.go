@@ -2,9 +2,10 @@ package statedb
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
@@ -60,6 +61,7 @@ func StoreOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittees []in
 	if err != nil {
 		return NewStatedbError(StoreShardCommitteeError, err)
 	}
+	fmt.Println("[optimize-beststate] {StoreOneShardCommittee()} shardID:", shardID, ":len(shardCommittees):", len(shardCommittees))
 	return nil
 }
 func StoreAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][]incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
@@ -165,6 +167,7 @@ func GetOneShardCommittee(stateDB *StateDB, shardID byte) []incognitokey.Committ
 	for _, tempShardCommitteeState := range tempShardCommitteeStates {
 		list = append(list, tempShardCommitteeState.CommitteePublicKey())
 	}
+	fmt.Println("[optimize-beststate] {GetOneShardCommittee()} shardID:", shardID, "len(list):", len(list))
 	return list
 }
 
