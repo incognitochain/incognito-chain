@@ -354,8 +354,8 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 		shardBestState.ShardCommittee[i] = v
 	}
 
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee):", len(target.ShardCommittee))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee):", len(target.ShardCommittee))
 
 	return nil
 }

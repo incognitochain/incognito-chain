@@ -61,9 +61,10 @@ func StoreOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittees []in
 	if err != nil {
 		return NewStatedbError(StoreShardCommitteeError, err)
 	}
-	fmt.Println("[optimize-beststate] {StoreOneShardCommittee()} shardID:", shardID, ":len(shardCommittees):", len(shardCommittees))
+	// fmt.Println("[optimize-beststate] {StoreOneShardCommittee()} shardID:", shardID, ":len(shardCommittees):", len(shardCommittees))
 	return nil
 }
+
 func StoreAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][]incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
 	for shardID, committee := range allShardCommittees {
 		err := storeCommittee(stateDB, int(shardID), CurrentValidator, committee, rewardReceiver, autoStaking)
@@ -167,7 +168,7 @@ func GetOneShardCommittee(stateDB *StateDB, shardID byte) []incognitokey.Committ
 	for _, tempShardCommitteeState := range tempShardCommitteeStates {
 		list = append(list, tempShardCommitteeState.CommitteePublicKey())
 	}
-	fmt.Println("[optimize-beststate] {GetOneShardCommittee()} shardID:", shardID, "len(list):", len(list))
+	// fmt.Println("[optimize-beststate] {GetOneShardCommittee()} shardID:", shardID, "len(list):", len(list))
 	return list
 }
 

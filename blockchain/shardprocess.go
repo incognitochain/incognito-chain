@@ -129,7 +129,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	}
 	curView := preView.(*ShardBestState)
 
-	fmt.Println("[optimize-beststate] len(curcurView.ShardCommittee):", len(curView.ShardCommittee))
+	// fmt.Println("[optimize-beststate] len(curcurView.ShardCommittee):", len(curView.ShardCommittee))
 
 	if blockHeight != curView.ShardHeight+1 {
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomming block height %+v", curView.ShardHeight, blockHeight))
@@ -910,7 +910,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
 func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *ShardBlock, committeeChange *committeeChange, beaconBlock *BeaconBlock) error {
-	fmt.Println("[optimize-beststate] Blockchain.processStoreShardBlock()")
+	// fmt.Println("[optimize-beststate] Blockchain.processStoreShardBlock()")
 	startTimeProcessStoreShardBlock := time.Now()
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
