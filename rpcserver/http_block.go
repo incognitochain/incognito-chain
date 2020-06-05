@@ -6,12 +6,10 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"log"
 )
 
 // handleGetBestBlock implements the getbestblock command.
 func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBestBlock params: %+v", params)
 	result := jsonresult.GetBestBlockResult{
 		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
@@ -28,7 +26,6 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 
 	// for beacon
 	if httpServer.blockService.IsBeaconBestStateNil() {
-		Logger.log.Debugf("handleGetBestBlock result: %+v", result)
 		return result, nil
 	}
 
@@ -40,7 +37,6 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 		Height: beaconBestState.BestBlock.Header.Height,
 		Hash:   beaconBestState.BestBlockHash.String(),
 	}
-	Logger.log.Debugf("handleGetBestBlock result: %+v", result)
 	return result, nil
 }
 
@@ -70,17 +66,14 @@ func (httpServer *HttpServer) handleGetBestBlockHash(params interface{}, closeCh
 handleRetrieveBlock RPC return information for block
 */
 func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRetrieveBlock params: %+v", params)
 	paramArray, ok := params.([]interface{})
 	if ok && len(paramArray) >= 2 {
 		hashString, ok := paramArray[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
 		verbosity, ok := paramArray[1].(string)
 		if !ok {
-			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("verbosity is invalid"))
 		}
 
@@ -88,30 +81,24 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 		if err != nil {
 			return nil, err
 		}
-		Logger.log.Debugf("handleRetrieveBlock result: %+v", result)
 		return result, nil
 	}
-	Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 }
 
 func (httpServer *HttpServer) handleRetrieveBlockByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRetrieveBlock params: %+v", params)
 	paramArray, ok := params.([]interface{})
 	if ok && len(paramArray) >= 3 {
 		blockHeight, ok := paramArray[0].(float64)
 		if !ok {
-			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
 		shardID, ok := paramArray[1].(float64)
 		if !ok {
-			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
 		}
 		verbosity, ok := paramArray[2].(string)
 		if !ok {
-			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("verbosity is invalid"))
 		}
 
@@ -119,10 +106,8 @@ func (httpServer *HttpServer) handleRetrieveBlockByHeight(params interface{}, cl
 		if err != nil {
 			return nil, err
 		}
-		Logger.log.Debugf("handleRetrieveBlock result: %+v", result)
 		return result, nil
 	}
-	Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 }
 
@@ -130,7 +115,6 @@ func (httpServer *HttpServer) handleRetrieveBlockByHeight(params interface{}, cl
 handleRetrieveBlock RPC return information for block
 */
 func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRetrieveBeaconBlock params: %+v", params)
 	paramArray, ok := params.([]interface{})
 	if ok && len(paramArray) >= 1 {
 		hashString, ok := paramArray[0].(string)
@@ -138,13 +122,11 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
 		result, err := httpServer.blockService.RetrieveBeaconBlock(hashString)
-		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
 		if err != nil {
 			return result, err
 		}
 		return result, nil
 	}
-	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 }
 
@@ -152,7 +134,6 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 handleRetrieveBlock RPC return information for block
 */
 func (httpServer *HttpServer) handleRetrieveBeaconBlockByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRetrieveBeaconBlock params: %+v", params)
 	paramArray, ok := params.([]interface{})
 	if ok && len(paramArray) >= 1 {
 		beaconHeight, ok := paramArray[0].(float64)
@@ -160,19 +141,16 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlockByHeight(params interface
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
 		result, err := httpServer.blockService.RetrieveBeaconBlockByHeight(uint64(beaconHeight))
-		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
 		if err != nil {
 			return result, err
 		}
 		return result, nil
 	}
-	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 }
 
 // handleGetBlocks - get n top blocks from chain ID
 func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBlocks params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 2 {
 		arrayParams = []interface{}{
@@ -203,7 +181,6 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 getblockchaininfo RPC return information for blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBlockChainInfo params: %+v", params)
 	result := jsonresult.GetBlockChainInfoResult{
 		ChainName:    httpServer.config.ChainParams.Name,
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
@@ -222,7 +199,6 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 	bestBlockBeaconItem.EpochBlock = httpServer.config.ChainParams.Epoch
 	result.BestBlocks[-1] = *bestBlockBeaconItem
 
-	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
 }
 
@@ -230,15 +206,12 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 getblockcount RPC return information fo blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBlockCount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
-		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("component empty"))
 	}
 	paramNumberFloat, ok := arrayParams[0].(float64)
 	if !ok {
-		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected get float number component"))
 	}
 	shardID := byte(int(paramNumberFloat))
@@ -250,7 +223,6 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 		}
 
 		result := beacon.BestBlock.Header.Height
-		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 		return result, nil
 	}
 	shardById, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
@@ -258,7 +230,6 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
 	}
 	result := shardById.BestBlock.Header.Height + 1
-	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
 }
 
@@ -266,7 +237,6 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 getblockhash RPC return information fo blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBlockHash params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 2 {
 		arrayParams = []interface{}{
@@ -276,14 +246,12 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	}
 	shardIDParam, ok := arrayParams[0].(float64)
 	if !ok {
-		Logger.log.Debugf("handleGetBlockHash result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
 	}
 	shardID := int(shardIDParam)
 
 	heightParam, ok := arrayParams[1].(float64)
 	if !ok {
-		Logger.log.Debugf("handleGetBlockHash result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height is invalid"))
 	}
 	height := uint64(heightParam)
@@ -292,16 +260,13 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)
 	}
-	Logger.log.Debugf("handleGetBlockHash result: %+v", result)
 	return result, nil
 }
 
 // handleGetBlockHeader - return block header data
 func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBlockHeader params: %+v", params)
 
 	arrayParams := common.InterfaceSlice(params)
-	log.Printf("arrayParams: %+v", arrayParams)
 	if arrayParams == nil || len(arrayParams) < 3 {
 		arrayParams = []interface{}{"", "", 0.0}
 	}
@@ -327,37 +292,30 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 		res := jsonresult.NewHeaderResult(*blockHeader, blockNumber, blockHashes[i], byte(shardID))
 		result = append(result, res)
 	}
-	Logger.log.Debugf("handleGetBlockHeader result: %+v", result)
 	return result, nil
 }
 
 //This function return the result of cross shard block of a specific block in shard
 func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetCrossShardBlock params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	// Logger.log.Info(arrayParams)
-	log.Printf("arrayParams: %+v", arrayParams)
 	if arrayParams == nil || len(arrayParams) != 2 {
-		Logger.log.Debugf("handleGetCrossShardBlock result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("wrong request format"))
 	}
 	// #param1: shardID
 	shardIDParam, ok := arrayParams[0].(float64)
 	if !ok {
-		Logger.log.Debugf("handleGetCrossShardBlock result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
 	}
 	shardID := int(shardIDParam)
 	// #param2: shard block height
 	blockHeightParam, ok := arrayParams[1].(float64)
 	if !ok {
-		Logger.log.Debugf("handleGetCrossShardBlock result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("blockHeight is invalid"))
 	}
 	blockHeight := uint64(blockHeightParam)
 	shardBlocks, err := httpServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
 	if err != nil {
-		Logger.log.Debugf("handleGetCrossShardBlock result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)
 	}
 	result := make(map[common.Hash]jsonresult.CrossShardDataResult)
@@ -411,6 +369,5 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 		}
 		result[shardBlock.Header.Hash()] = res
 	}
-	Logger.log.Debugf("handleGetCrossShardBlock result: %+v", result)
 	return result, nil
 }

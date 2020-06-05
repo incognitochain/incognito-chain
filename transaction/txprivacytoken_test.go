@@ -104,14 +104,14 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		//err = tx.ValidateTxWithCurrentMempool(nil)
 		//assert.Equal(t, nil, err)
 
-		err = tx.ValidateTxWithBlockChain(nil, shardID, db)
+		err = tx.ValidateTxWithBlockChain(nil, shardID, nil, nil, db)
 		assert.Equal(t, nil, err)
 
-		isValidSanity, err := tx.ValidateSanityData(nil)
+		isValidSanity, err := tx.ValidateSanityData(nil, nil, nil)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 
-		isValidTxItself, err := tx.ValidateTxByItself(hasPrivacyForPRV, db, nil, shardID)
+		isValidTxItself, err := tx.ValidateTxByItself(hasPrivacyForPRV, db, nil, shardID, nil, nil)
 		assert.Equal(t, true, isValidTxItself)
 		assert.Equal(t, nil, err)
 
@@ -195,14 +195,14 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		assert.Equal(t, len(msgCipherText.Bytes()), len(tx2.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
 
-		err = tx2.ValidateTxWithBlockChain(nil, shardID, db)
+		err = tx2.ValidateTxWithBlockChain(nil, shardID, nil, nil, db)
 		assert.Equal(t, nil, err)
 
-		isValidSanity, err = tx2.ValidateSanityData(nil)
+		isValidSanity, err = tx2.ValidateSanityData(nil, nil, nil)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 
-		isValidTxItself, err = tx2.ValidateTxByItself(hasPrivacyForPRV, db, nil, shardID)
+		isValidTxItself, err = tx2.ValidateTxByItself(hasPrivacyForPRV, db, nil, shardID, nil, nil)
 		assert.Equal(t, true, isValidTxItself)
 		assert.Equal(t, nil, err)
 

@@ -32,6 +32,22 @@ const (
 	BridgeStatusObjectType
 	BurningConfirmObjectType
 	TokenTransactionObjectType
+
+	// portal
+	//final exchange rates
+	PortalFinalExchangeRatesStateObjectType
+	//waiting porting request
+	PortalWaitingPortingRequestObjectType
+	//liquidation
+	PortalLiquidationPoolObjectType
+
+	//B
+	PortalStatusObjectType
+	CustodianStateObjectType
+	WaitingRedeemRequestObjectType
+	PortalRewardInfoObjectType
+	LockedCollateralStateObjectType
+	RewardFeatureStateObjectType
 )
 
 // Prefix length

@@ -103,9 +103,11 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 			Amount:                waitingContribution.ContributedAmount,
 			TxReqID:               waitingContribution.TxReqID,
 		}
+
 		contribStatus := metadata.PDEContributionStatus{
 			Status: byte(common.PDEContributionWaitingStatus),
 		}
+
 		contribStatusBytes, _ := json.Marshal(contribStatus)
 		err = statedb.TrackPDEContributionStatus(
 			pdexStateDB,

@@ -13,6 +13,7 @@ var HttpHandler = map[string]httpHandler{
 	//profiling
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
+	exportMetrics:  (*HttpServer).handleExportMetrics,
 
 	// node
 	getNodeRole:              (*HttpServer).handleGetNodeRole,
@@ -36,14 +37,14 @@ var HttpHandler = map[string]httpHandler{
 	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
-	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
-	getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
-	getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
-	getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
-	// ver.1
-	//getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
-	//getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
-	getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
+	// getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
+	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
+	// getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
+	// getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
+	// // ver.1
+	// //getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
+	// //getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
+	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
 	// block
 	getBestBlock:                (*HttpServer).handleGetBestBlock,
@@ -88,17 +89,17 @@ var HttpHandler = map[string]httpHandler{
 	//=================================
 
 	// Beststate
-	getCandidateList:              (*HttpServer).handleGetCandidateList,
-	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
-	getShardBestState:             (*HttpServer).handleGetShardBestState,
-	getShardBestStateDetail:       (*HttpServer).handleGetShardBestStateDetail,
-	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
-	getBeaconBestStateDetail:      (*HttpServer).handleGetBeaconBestStateDetail,
-	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
-	getShardPoolState:             (*HttpServer).handleGetShardPoolState,
-	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
-	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
-	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
+	getCandidateList:         (*HttpServer).handleGetCandidateList,
+	getCommitteeList:         (*HttpServer).handleGetCommitteeList,
+	getShardBestState:        (*HttpServer).handleGetShardBestState,
+	getShardBestStateDetail:  (*HttpServer).handleGetShardBestStateDetail,
+	getBeaconBestState:       (*HttpServer).handleGetBeaconBestState,
+	getBeaconBestStateDetail: (*HttpServer).handleGetBeaconBestStateDetail,
+	// getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
+	// getShardPoolState:             (*HttpServer).handleGetShardPoolState,
+	// getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
+	canPubkeyStake:      (*HttpServer).handleCanPubkeyStake,
+	getTotalTransaction: (*HttpServer).handleGetTotalTransaction,
 
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
@@ -142,10 +143,6 @@ var HttpHandler = map[string]httpHandler{
 	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 
-	// revert
-	revertbeaconchain: (*HttpServer).handleRevertBeacon,
-	revertshardchain:  (*HttpServer).handleRevertShard,
-
 	// mining info
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
 	enableMining:                (*HttpServer).handleEnableMining,
@@ -174,9 +171,65 @@ var HttpHandler = map[string]httpHandler{
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
+	// portal
+	createAndSendTxWithCustodianDeposit:           (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
+	createAndSendTxWithReqPToken:                  (*HttpServer).handleCreateAndSendTxWithReqPToken,
+	getPortalState:                                (*HttpServer).handleGetPortalState,
+	getPortalCustodianDepositStatus:               (*HttpServer).handleGetPortalCustodianDepositStatus,
+	createAndSendRegisterPortingPublicTokens:      (*HttpServer).handleCreateAndSendRegisterPortingPublicTokens,
+	createAndSendPortalExchangeRates:              (*HttpServer).handleCreateAndSendPortalExchangeRates,
+	getPortalFinalExchangeRates:                   (*HttpServer).handleGetPortalFinalExchangeRates,
+	getPortalPortingRequestByKey:                  (*HttpServer).handleGetPortingRequestByKey,
+	getPortalPortingRequestByPortingId:            (*HttpServer).handleGetPortingRequestByPortingId,
+	convertExchangeRates:                          (*HttpServer).handleConvertExchangeRates,
+	getPortalReqPTokenStatus:                      (*HttpServer).handleGetPortalReqPTokenStatus,
+	getPortingRequestFees:                         (*HttpServer).handleGetPortingRequestFees,
+	createAndSendTxWithRedeemReq:                  (*HttpServer).handleCreateAndSendTxWithRedeemReq,
+	createAndSendTxWithReqUnlockCollateral:        (*HttpServer).handleCreateAndSendTxWithReqUnlockCollateral,
+	getPortalReqUnlockCollateralStatus:            (*HttpServer).handleGetPortalReqUnlockCollateralStatus,
+	getPortalReqRedeemStatus:                      (*HttpServer).handleGetPortalReqRedeemStatus,
+	createAndSendCustodianWithdrawRequest:         (*HttpServer).handleCreateAndSendCustodianWithdrawRequest,
+	getCustodianWithdrawByTxId:                    (*HttpServer).handleGetCustodianWithdrawByTxId,
+	getCustodianLiquidationStatus:                 (*HttpServer).handleGetCustodianLiquidationStatus,
+	createAndSendTxWithReqWithdrawRewardPortal:    (*HttpServer).handleCreateAndSendTxWithReqWithdrawRewardPortal,
+	getLiquidationExchangeRatesPool:               (*HttpServer).handleGetLiquidationExchangeRatesPool,
+	createAndSendRedeemLiquidationExchangeRates:   (*HttpServer).handleCreateAndSendRedeemLiquidationExchangeRates,
+	createAndSendLiquidationCustodianDeposit:      (*HttpServer).handleCreateAndSendLiquidationCustodianDeposit,
+	createAndSendTopUpWaitingPorting:              (*HttpServer).handleCreateAndSendTopUpWaitingPorting,
+	getAmountNeededForCustodianDepositLiquidation: (*HttpServer).handleGetAmountNeededForCustodianDepositLiquidation,
+	getPortalReward:                               (*HttpServer).handleGetPortalReward,
+	getRequestWithdrawPortalRewardStatus:          (*HttpServer).handleGetRequestWithdrawPortalRewardStatus,
+	createAndSendTxWithReqMatchingRedeem:          (*HttpServer).handleCreateAndSendTxWithReqMatchingRedeem,
+	getReqMatchingRedeemStatus:                    (*HttpServer).handleGetReqMatchingRedeemByTxIDStatus,
+	getPortalCustodianTopupStatus:                 (*HttpServer).handleGetPortalCustodianTopupStatus,
+	getPortalCustodianTopupWaitingPortingStatus:   (*HttpServer).handleGetPortalCustodianTopupWaitingPortingStatus,
+	getAmountTopUpWaitingPorting:                  (*HttpServer).handleGetAmountTopUpWaitingPorting,
+	getPortalReqRedeemByTxIDStatus:                (*HttpServer).handleGetPortalReqRedeemByTxIDStatus,
+	getReqRedeemFromLiquidationPoolByTxIDStatus:   (*HttpServer).handleGetReqRedeemFromLiquidationPoolByTxIDStatus,
+
+	// relaying
+	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
+	createAndSendTxWithRelayingBTCHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBTCHeader,
+	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
+	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
+	getBTCRelayingBestState:              (*HttpServer).handleGetBTCRelayingBestState,
+	getBTCBlockByHash:                    (*HttpServer).handleGetBTCBlockByHash,
+	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
+
 	// incognnito mode for sc
 	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,
 	createAndSendBurningForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+
+	//new pool info
+	getBeaconPoolInfo:        (*HttpServer).hanldeGetBeaconPoolInfo,
+	getShardToBeaconPoolInfo: (*HttpServer).handleGetShardToBeaconPoolInfo,
+	getShardPoolInfo:         (*HttpServer).hanldeGetShardPoolInfo,
+	getCrossShardPoolInfo:    (*HttpServer).hanldeGetCrossShardPoolInfo,
+	getAllView:               (*HttpServer).hanldeGetAllView,
+	getAllViewDetail:         (*HttpServer).hanldeGetAllViewDetail,
+
+	// feature reward
+	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 }
 
 // Commands that are available to a limited user

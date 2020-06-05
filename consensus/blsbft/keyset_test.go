@@ -8,7 +8,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -73,7 +72,7 @@ func newMiningKey(privateSeed string) (*MiningKey, error) {
 	var miningKey MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
-		return nil, consensus.NewConsensusError(consensus.LoadKeyError, err)
+		return nil, NewConsensusError(LoadKeyError, err)
 	}
 
 	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)

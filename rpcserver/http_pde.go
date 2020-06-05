@@ -472,6 +472,9 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReq(params inte
 
 func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
 	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
@@ -480,15 +483,15 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
-	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.GetBeaconChainDatabase(), uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
-	featureStateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(featureStateDB, uint64(beaconHeight))
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -531,7 +534,7 @@ func (httpServer *HttpServer) handleConvertNativeTokenToPrivacyToken(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.config.BlockChain.GetDatabase())
+	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.GetBeaconChainDatabase())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -566,7 +569,7 @@ func (httpServer *HttpServer) handleConvertPrivacyTokenToNativeToken(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.config.BlockChain.GetDatabase())
+	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.GetBeaconChainDatabase())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -612,7 +615,10 @@ func (httpServer *HttpServer) handleGetPDEContributionStatusV2(params interface{
 
 func (httpServer *HttpServer) handleGetPDETradeStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	data := arrayParams[0].(map[string]interface{})
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
 	txRequestIDStr, ok := data["TxRequestIDStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
@@ -797,7 +803,7 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 
 	bcHeight := uint64(beaconHeight)
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
-		httpServer.config.BlockChain.GetDatabase(),
+		httpServer.GetBeaconChainDatabase(),
 		bcHeight,
 		bcHeight,
 	)
@@ -892,7 +898,7 @@ func convertPrice(
 }
 
 func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 
 	arrayParams := common.InterfaceSlice(params)
 	data, ok := arrayParams[0].(map[string]interface{})
@@ -915,15 +921,15 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if convertingAmt == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Amount is invalid"))
 	}
-	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(latestBeaconHeight))
+	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.GetBeaconChainDatabase(), uint64(latestBeaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", latestBeaconHeight, err))
 	}
-	featureStateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(featureStateDB, latestBeaconHeight)
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, latestBeaconHeight)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}

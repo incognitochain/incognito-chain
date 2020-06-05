@@ -20,7 +20,7 @@ func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 		CBridgeTokens:    []*common.Hash{},
 	}
 	for _, tx := range txs {
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, blockchain, accumulatedValues)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, blockchain, accumulatedValues, nil, nil)
 		if err != nil {
 			return nil, err
 		}

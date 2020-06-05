@@ -44,13 +44,8 @@ func NewContractingRequest(
 	return contractingReq, nil
 }
 
-func (cReq ContractingRequest) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-	db *statedb.StateDB,
-) (bool, error) {
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), cReq.TokenID, true)
+func (cReq ContractingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), cReq.TokenID, true)
 	if err != nil {
 		return false, err
 	}
@@ -60,10 +55,10 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	if reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
 
@@ -76,13 +71,13 @@ func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if cReq.BurnedAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if !txr.IsCoinsBurning(bcr, beaconHeight) {
+	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
-	if cReq.BurnedAmount != txr.CalculateTxValue() {
+	if cReq.BurnedAmount != tx.CalculateTxValue() {
 		return false, false, errors.New("BurnedAmount incorrect")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
+	if !bytes.Equal(tx.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
 	}
 	return true, true, nil
@@ -103,7 +98,7 @@ func (cReq ContractingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (cReq *ContractingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"meta":          *cReq,
 		"RequestedTxID": tx.Hash(),

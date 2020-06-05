@@ -2,13 +2,14 @@ package rpcserver
 
 import (
 	"errors"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
 )
 
 var (
@@ -16,7 +17,6 @@ var (
 )
 
 func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
@@ -60,9 +60,9 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							processedOutputCoin, err := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+							processedOutputCoin, err := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedTransactionStateDB(), crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
 							if err != nil {
-								Logger.log.Errorf("Decrypt output coin by key got error %v", err)
+								Logger.log.Errorf("Err %v", err)
 								continue
 							}
 							if processedOutputCoin == nil {
@@ -101,7 +101,6 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 }
 
 func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
@@ -151,9 +150,9 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 					for _, crossTransaction := range crossTransactions {
 						for _, crossTokenPrivacyData := range crossTransaction.TokenPrivacyData {
 							for _, crossOutputCoin := range crossTokenPrivacyData.OutputCoin {
-								processedOutputCoin, err := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+								processedOutputCoin, err := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedTransactionStateDB(), crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
 								if err != nil {
-									Logger.log.Errorf("Decrypt output coin by key got error %v", err)
+									Logger.log.Errorf("Err %v", err)
 									continue
 								}
 								if processedOutputCoin != nil {

@@ -409,7 +409,7 @@ func snapshotRewardReceiver(rewardReceiver map[string]string) (map[string]string
 		snapshotRewardReceiver[k] = v
 	}
 	if !reflect.DeepEqual(snapshotRewardReceiver, rewardReceiver) {
-		return snapshotRewardReceiver, fmt.Errorf("Failed to Clone Reward Receivers, expect %+v but get %+v", rewardReceiver, snapshotRewardReceiver)
+		return snapshotRewardReceiver, fmt.Errorf("Failed to Clone Reward Rewards, expect %+v but get %+v", rewardReceiver, snapshotRewardReceiver)
 	}
 	return snapshotRewardReceiver, nil
 }

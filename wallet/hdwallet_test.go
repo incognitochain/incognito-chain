@@ -2,11 +2,13 @@ package wallet
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 /*
@@ -109,7 +111,7 @@ func TestHDWalletNewChildKeyWithSameChildIdx(t *testing.T) {
 */
 
 func TestHDWalletSerialize(t *testing.T) {
-	for i:= 0; i <20; i++ {
+	for i := 0; i < 20; i++ {
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := NewMasterKey(seed)
 
@@ -306,7 +308,7 @@ func TestHDWalletBase58CheckDeserializeWithInvalidData(t *testing.T) {
 	assert.NotEqual(t, nil, err)
 }
 
-func TestPrivateKeyToPaymentAddress(t *testing.T){
+func TestPrivateKeyToPaymentAddress(t *testing.T) {
 	//Todo: need to fill private key
 	privateKeyStr := ""
 
@@ -314,6 +316,26 @@ func TestPrivateKeyToPaymentAddress(t *testing.T){
 	KeyWallet.KeySet.InitFromPrivateKey(&KeyWallet.KeySet.PrivateKey)
 	paymentAddStr := KeyWallet.Base58CheckSerialize(PaymentAddressType)
 	fmt.Printf("paymentAddStr: %v\n", paymentAddStr)
-	viewingKeyStr := KeyWallet.Base58CheckSerialize(ReadonlyKeyType)
-	fmt.Printf("viewingKeyStr: %v\n", viewingKeyStr)
+
+}
+
+func TestNewCommitteeKeyFromIncognitoPrivateKey(t *testing.T) {
+	tests := []string{
+		"112t8rnX3Cz3ud5HG7EnM8U3apQqbtpmbAjbe5Uox3Lj7aJg85AAko91JVwXjC7wNHENWtMmFqPvQEJrYS8WhYYekDJmH1c5GBkL4YCHKV8o",
+	}
+	for _, tt := range tests {
+		key, _ := Base58CheckDeserialize(tt)
+		key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
+		pubKey := key.KeySet.PaymentAddress.Pk
+		// pkStr := base58.Base58Check{}.Encode(pubKey, common.Base58Version)
+		fmt.Println(pubKey)
+		seed := common.HashB(common.HashB(key.KeySet.PrivateKey))
+		incKey, _ := incognitokey.NewCommitteeKeyFromSeed(seed, pubKey)
+		fmt.Println(incKey.ToBase58())
+		fmt.Println(incKey.GetMiningKeyBase58(common.BlsConsensus))
+	}
+
+	x := incognitokey.NewCommitteePublicKey()
+	x.FromString("121VhftSAygpEJZ6i9jGkEKLMQTKTiiHzeUfeuhpQCcLZtys8FazpWwytpHebkAwgCxvqgUUF13fcSMtp5dgV1YkbRMj3z42TW2EebzAaiGg2DkGPodckN2UsbqhVDibpMgJUHVkLXardemfLdgUqWGtymdxaaRyPM38BAZcLpo2pAjxKv5vG5Uh9zHMkn7ZHtdNHmBmhG8B46UeiGBXYTwhyMe9KGS83jCMPAoUwHhTEXj5qQh6586dHjVxwEkRzp7SKn9iG1FFWdJ97xEkP2ezAapNQ46quVrMggcHFvoZofs1xdd4o5vAmPKnPTZtGTKunFiTWGnpSG9L6r5QpcmapqvRrK5SiuFhNM5DqgzUeHBb7fTfoiWd2N29jkbTGSq8CPUSjx3zdLR9sZguvPdnAA8g25cFPGSZt8aEnFJoPRzM")
+	fmt.Println(x.GetMiningKeyBase58(common.BlsConsensus))
 }

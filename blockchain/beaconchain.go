@@ -2,54 +2,136 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/multiview"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/pkg/errors"
 )
 
 type BeaconChain struct {
-	BestState  *BeaconBestState
+	multiView *multiview.MultiView
+
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
-	lock       sync.RWMutex
+	Ready      bool //when has peerstate
+
+	insertLock sync.Mutex
+}
+
+func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
+	return &BeaconChain{multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
+}
+
+func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
+	for _, v := range chain.multiView.GetAllViewsWithBFS() {
+		res = append(res, *v.GetHash())
+	}
+	return
+}
+
+func (chain *BeaconChain) GetBestView() multiview.View {
+	return chain.multiView.GetBestView()
+}
+
+func (chain *BeaconChain) GetFinalView() multiview.View {
+	return chain.multiView.GetFinalView()
+}
+
+func (chain *BeaconChain) GetFinalViewState() *BeaconBestState {
+	return chain.multiView.GetFinalView().(*BeaconBestState)
+}
+
+func (chain *BeaconChain) GetViewByHash(hash common.Hash) multiview.View {
+	if chain.multiView.GetViewByHash(hash) == nil {
+		return nil
+	}
+	return chain.multiView.GetViewByHash(hash)
+}
+
+func (s *BeaconChain) GetShardBestViewHash() map[byte]common.Hash {
+	return s.GetBestView().(*BeaconBestState).GetBestShardHash()
+}
+
+func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
+	return s.GetBestView().(*BeaconBestState).GetBestShardHeight()
+}
+
+func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint64 {
+
+	res := make(map[byte]uint64)
+	for fromShard, toShardStatus := range s.GetBestView().(*BeaconBestState).LastCrossShardState {
+		for toShard, currentHeight := range toShardStatus {
+			if toShard == sid {
+				res[fromShard] = currentHeight
+			}
+		}
+	}
+	return res
+}
+
+func (s *BeaconChain) GetEpoch() uint64 {
+	return s.GetBestView().(*BeaconBestState).Epoch
+}
+
+func (s *BeaconChain) GetBestViewHeight() uint64 {
+	return s.GetBestView().(*BeaconBestState).BeaconHeight
+}
+
+func (s *BeaconChain) GetFinalViewHeight() uint64 {
+	return s.GetFinalView().(*BeaconBestState).BeaconHeight
+}
+
+func (s *BeaconChain) GetBestViewHash() string {
+	return s.GetBestView().(*BeaconBestState).BestBlockHash.String()
+}
+
+func (s *BeaconChain) GetFinalViewHash() string {
+	return s.GetBestView().(*BeaconBestState).BestBlockHash.String()
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
-	return chain.BestState.BestBlock.Header.Timestamp
+	return chain.multiView.GetBestView().(*BeaconBestState).BestBlock.Header.Timestamp
 }
 
 func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	return chain.multiView.GetBestView().(*BeaconBestState).BlockInterval
 }
 
 func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
-	return chain.BestState.BlockMaxCreateTime
+	return chain.multiView.GetBestView().(*BeaconBestState).BlockMaxCreateTime
 }
 
 func (chain *BeaconChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(false, 0)
+	return chain.Ready
+}
+
+func (chain *BeaconChain) SetReady(ready bool) {
+	chain.Ready = ready
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
-	return chain.BestState.BestBlock.Header.Height
+	return chain.multiView.GetBestView().(*BeaconBestState).BestBlock.Header.Height
 }
 
 func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
-	return chain.BestState.GetBeaconCommittee()
+	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
+}
+
+func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
+	return chain.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
-	return len(chain.BestState.BeaconCommittee)
+	return len(chain.multiView.GetBestView().(*BeaconBestState).BeaconCommittee)
 }
 
 func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.BestState.GetBeaconCommittee() {
-		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
+	for index, key := range chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee() {
+		if key.GetMiningKeyBase58(chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm) == pubkey {
 			return index
 		}
 	}
@@ -57,45 +139,56 @@ func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
-	return chain.BestState.BeaconProposerIndex
+	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	// chain.lock.Lock()
-	// defer chain.lock.Unlock()
-	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
+	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
 	}
+	if version == 2 {
+		newBlock.Header.Proposer = proposer
+		newBlock.Header.ProposeTime = startTime
+	}
+
 	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
-		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
-	}
-	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+//this function for version 2
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
+	b, _ := json.Marshal(oldBlock)
+	newBlock := new(BeaconBlock)
+	json.Unmarshal(b, &newBlock)
+	newBlock.Header.Proposer = proposer
+	newBlock.Header.ProposeTime = startTime
+	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
-	if err != nil {
+func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), shouldValidate); err != nil {
+		Logger.log.Info(err)
 		return err
 	}
 	return nil
 }
 
+func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
+		Logger.log.Info(err)
+		return err
+	}
+	return nil
+
+}
+
 func (chain *BeaconChain) GetActiveShardNumber() int {
-	return chain.BestState.ActiveShards
+	return chain.multiView.GetBestView().(*BeaconBestState).ActiveShards
 }
 
 func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
-}
-
-func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.BestState.GetPubkeyRole(pubkey, round)
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
@@ -105,7 +198,7 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
 // 	var beaconBestState BeaconBestState
 // 	beaconBlock := block.(*BeaconBlock)
-// 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
+// 	beaconBestState.cloneBeaconBestStateFrom(chain.multiView.GetBestView().(*BeaconBestState))
 // 	producerPublicKey := beaconBlock.Header.Producer
 // 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
 // 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
@@ -119,17 +212,19 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 // }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
+
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
 		return nil
 	}
 	return nil
 }
 
 func (chain *BeaconChain) GetConsensusType() string {
-	return chain.BestState.ConsensusAlgorithm
+	return chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm
 }
 
 func (chain *BeaconChain) GetShardID() int {
@@ -139,46 +234,46 @@ func (chain *BeaconChain) GetShardID() int {
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
-	result[chain.BestState.ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
-	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
+	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
+	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).BeaconCommittee...)
+	for shardID, consensusType := range chain.multiView.GetBestView().(*BeaconBestState).GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardCommittee[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).ShardCommittee[shardID]...)
 	}
 	return result
 }
 
 func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.BestState.BeaconPendingValidator...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).BeaconPendingValidator...)
 	return result
 }
 
 func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
+	for shardID, consensusType := range chain.multiView.GetBestView().(*BeaconBestState).GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardPendingValidator[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).ShardPendingValidator[shardID]...)
 	}
 	return result
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.BestState.CandidateShardWaitingForNextRandom...)
-	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateShardWaitingForNextRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateShardWaitingForCurrentRandom...)
 	return result
 }
 
 func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.BestState.CandidateBeaconWaitingForNextRandom...)
-	result = append(result, chain.BestState.CandidateBeaconWaitingForCurrentRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateBeaconWaitingForNextRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateBeaconWaitingForCurrentRandom...)
 	return result
 }
 
@@ -189,4 +284,8 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 		return nil, err
 	}
 	return &beaconBlk, nil
+}
+
+func (chain *BeaconChain) GetAllView() []multiview.View {
+	return chain.multiView.GetAllViewsWithBFS()
 }

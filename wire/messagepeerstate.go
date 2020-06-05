@@ -3,7 +3,6 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	peer "github.com/libp2p/go-libp2p-peer"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,9 +13,16 @@ const (
 	MaxPeerStatePayload = 4000000 // 4 Mb
 )
 
+type ChainState struct {
+	Timestamp     int64
+	Height        uint64
+	BlockHash     common.Hash
+	BestStateHash common.Hash
+}
+
 type MessagePeerState struct {
-	Beacon                blockchain.ChainState
-	Shards                map[byte]blockchain.ChainState
+	Beacon                ChainState
+	Shards                map[byte]ChainState
 	ShardToBeaconPool     map[byte][]uint64
 	CrossShardPool        map[byte]map[byte][]uint64
 	Timestamp             int64

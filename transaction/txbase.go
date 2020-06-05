@@ -480,7 +480,10 @@ func (tx TxBase) GetAndCheckBurningReceiver() (bool, []byte, uint64) {
 }
 
 // implement this func if needed
-func (tx TxBase) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) { return nil, nil }
+func (tx TxBase) GetMetadataFromVinsTx(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (metadata.Metadata, error) {
+	// implement this func if needed
+	return nil, nil
+}
 
 func (tx TxBase) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
@@ -599,7 +602,7 @@ func (tx TxBase) IsPrivacy() bool {
 	return tx.Proof.IsPrivacy()
 }
 
-func (tx TxBase) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
+func (tx TxBase) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -685,7 +688,7 @@ func (tx TxBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) erro
 	return nil
 }
 
-func (tx TxBase) ValidateDoubleSpendWithBlockchain(bcr metadata.BlockchainRetriever, shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
+func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -717,15 +720,7 @@ func (tx TxBase) ValidateType() bool {
 
 func (tx TxBase) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
 
-func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []metadata.Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instsUsed []int,
-	shardID byte,
-	bcr metadata.BlockchainRetriever,
-	accumulatedValues *metadata.AccumulatedValues,
-) (bool, error) {
+func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
 	}
@@ -747,12 +742,7 @@ func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 	}
 	if meta != nil {
-		txMeta, err := NewTransactionFromTxBase(tx)
-		if err != nil {
-			Logger.Log.Error(err)
-			return false, err
-		}
-		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txMeta, bcr, accumulatedValues)
+		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues, nil, nil)
 		if err != nil {
 			Logger.Log.Error(err)
 			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
@@ -762,14 +752,8 @@ func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 	return true, nil
 }
 
-func (tx TxBase) ValidateTxByItself(
-	hasPrivacy bool,
-	transactionStateDB *statedb.StateDB,
-	bridgeStateDB *statedb.StateDB,
-	bcr metadata.BlockchainRetriever,
-	shardID byte,
-	isNewTransaction bool,
-) (bool, error) {
+
+func (tx TxBase) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -794,7 +778,7 @@ func (tx TxBase) ValidateTxByItself(
 	return true, nil
 }
 
-func (tx TxBase) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, shardID byte, stateDB *statedb.StateDB) error {
+func (tx TxBase) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
@@ -804,7 +788,7 @@ func (tx TxBase) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, shar
 		if err != nil {
 			return err
 		}
-		isContinued, err := meta.ValidateTxWithBlockChain(metaTx, bcr, shardID, stateDB)
+		isContinued, err := meta.ValidateTxWithBlockChain(metaTx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
@@ -814,10 +798,10 @@ func (tx TxBase) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, shar
 			return nil
 		}
 	}
-	return tx.ValidateDoubleSpendWithBlockchain(bcr, shardID, stateDB, nil)
+	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func (tx TxBase) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
+func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	meta := tx.GetMetadata()
 	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", meta)
 	if meta != nil {
@@ -826,7 +810,7 @@ func (tx TxBase) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeig
 		if err != nil {
 			return false, err
 		}
-		isContinued, ok, err := meta.ValidateSanityData(bcr, txMeta, beaconHeight)
+		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, txMeta)
 		Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
@@ -891,3 +875,5 @@ func (tx *TxBase) Init(paramsInterface interface{}) error {
 	}
 	return transaction.Init(paramsInterface)
 }
+
+func (tx *TxBase) InitTxSalary()

@@ -583,8 +583,8 @@ func (tx TxVersion1) ValidateTxSalary(
 	return ok, nil
 }
 
-func (tx TxVersion1) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
-	check, err := tx.TxBase.ValidateSanityData(bcr, beaconHeight)
+func (tx TxVersion1) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	check, err := tx.TxBase.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if err != nil {
 		Logger.Log.Errorf("TxVersion1 error when ValidateSanityDataInterface")
 		return false, err

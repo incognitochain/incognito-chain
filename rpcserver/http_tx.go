@@ -17,7 +17,6 @@ import (
 
 // handleCreateTransaction handles createtransaction commands.
 func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCreateRawTransaction params: %+v", params)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -25,14 +24,13 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, nil, httpServer.GetDatabase())
+	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, nil)
 	if err != nil {
 		// return hex for a new tx
 		return nil, err
 	}
 
 	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
-	Logger.log.Debugf("handleCreateRawTransaction result: %+v", result)
 	return result, nil
 }
 
@@ -61,7 +59,6 @@ func (httpServer *HttpServer) handleCreateRawConvertVer1ToVer2Transaction(params
 // Parameter #2–whether to allow high fees
 // Result—a TXID or error Message
 func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleSendRawTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
@@ -86,7 +83,6 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	}
 
 	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
-	Logger.log.Debugf("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
 	return result, nil
 }
 
@@ -114,11 +110,9 @@ func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2Transaction(param
 
 // handleCreateAndSendTx - RPC creates transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCreateAndSendTx params: %+v", params)
 	var err error
 	data, err := httpServer.handleCreateRawTransaction(params, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Debugf("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
@@ -127,11 +121,9 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Debugf("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
-	Logger.log.Debugf("handleCreateAndSendTx result: %+v", result)
 	return result, nil
 }
 
@@ -169,7 +161,6 @@ func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{},
 	if ok {
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
-			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 		keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
@@ -180,7 +171,6 @@ func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{},
 	if ok {
 		paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 		keySet.PaymentAddress = paymentAddress.KeySet.PaymentAddress
@@ -193,7 +183,6 @@ func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{},
 
 // Get transaction by Hash
 func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetTransactionByHash params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
@@ -204,13 +193,11 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx hash is invalid"))
 	}
-	Logger.log.Debugf("Get TransactionByHash input Param %+v", txHashStr)
 	return httpServer.txService.GetTransactionByHash(txHashStr)
 }
 
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance params: %+v", params)
 
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
@@ -219,7 +206,6 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 
 	privateKey, ok := arrayParams[0].(string)
 	if len(privateKey) == 0 || !ok {
-		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
@@ -227,7 +213,6 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	if err != nil {
 		return nil, err
 	}
-	Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v", result)
 	return result, nil
 }
 
@@ -235,22 +220,18 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 // #2 param: tokenID
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetBalancePrivacyCustomToken params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
-		Logger.log.Debugf("handleGetBalancePrivacyCustomToken error: Need 2 params but get %+v", len(arrayParams))
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 	}
 
 	privateKey, ok := arrayParams[0].(string)
 	if len(privateKey) == 0 || !ok {
-		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
 	}
 
 	tokenID, ok := arrayParams[1].(string)
 	if len(tokenID) == 0 || !ok {
-		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tokenID is invalid"))
 	}
 
@@ -259,22 +240,18 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 		return nil, err2
 	}
 
-	Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", totalValue)
 	return totalValue, nil
 }
 
 // handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
 func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handlePrivacyCustomTokenDetail params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
-		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("param must be an array at least 1 element"))
 	}
 
 	tokenIDTemp, ok := arrayParams[0].(string)
 	if !ok {
-		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("tokenID is invalid"))
 	}
 
@@ -307,13 +284,11 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 		}
 	}
 
-	Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", result)
 	return result, nil
 }
 
 // handleRandomCommitments - from input of outputcoin, random to create data for create new tx
 func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRandomCommitments params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
@@ -322,18 +297,15 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	// #1: payment address
 	paymentAddressStr, ok := arrayParams[0].(string)
 	if !ok {
-		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
 	}
 
 	// #2: available inputCoin from old outputcoin
 	outputs, ok := arrayParams[1].([]interface{})
 	if !ok {
-		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("outputs is invalid"))
 	}
 	if len(outputs) == 0 {
-		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("len of outputs must be greater than zero"))
 	}
 
@@ -346,12 +318,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
-			Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tokenID is invalid"))
 		}
 		tokenID, err = common.Hash{}.NewHashFromStr(tokenIDTemp)
 		if err != nil {
-			Logger.log.Debugf("handleRandomCommitments result: %+v, err: %+v", nil, err)
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 		}
 	}
@@ -362,7 +332,6 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 
 	result := jsonresult.NewRandomCommitmentResult(commitmentIndexs, myCommitmentIndexs, commitments)
-	Logger.log.Debugf("handleRandomCommitments result: %+v", result)
 	return result, nil
 }
 
@@ -378,13 +347,11 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
-				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
 				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
@@ -415,13 +382,11 @@ func (httpServer *HttpServer) handleListSNDerivator(params interface{}, closeCha
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleListSNDerivator result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
-				Logger.log.Debugf("handleListSNDerivator result: %+v, err: %+v", err)
 				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
@@ -452,13 +417,11 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleListCommitments result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
-				Logger.log.Debugf("handleListCommitments result: %+v, err: %+v", err)
 				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
@@ -489,13 +452,11 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleListCommitmentIndices result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
-				Logger.log.Debugf("handleListCommitmentIndices result: %+v, err: %+v", err)
 				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
@@ -517,7 +478,6 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
 func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleHasSerialNumbers params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
@@ -526,14 +486,12 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	// #1: payment address
 	paymentAddressStr, ok := arrayParams[0].(string)
 	if !ok {
-		Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
 	}
 
 	//#2: list serialnumbers in base58check encode string
 	serialNumbersStr, ok := arrayParams[1].([]interface{})
 	if !ok {
-		Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 	}
 
@@ -546,29 +504,24 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
-			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 		if err != nil {
-			Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 		}
 	}
 
 	result, err := httpServer.txService.HasSerialNumbers(paymentAddressStr, serialNumbersStr, *tokenID)
 	if err != nil {
-		Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
 
-	Logger.log.Debugf("handleHasSerialNumbers result: %+v", result)
 	return result, nil
 }
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
 func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleHasSnDerivators params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
@@ -577,14 +530,12 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	// #1: payment address
 	paymentAddressStr, ok := arrayParams[0].(string)
 	if !ok {
-		Logger.log.Debugf("handleHasSnDerivators result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("paymentAddress is invalid"))
 	}
 
 	//#2: list serialnumbers in base58check encode string
 	snDerivatorStr, ok := arrayParams[1].([]interface{})
 	if !ok {
-		Logger.log.Debugf("handleHasSnDerivators result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("snDerivatorStr is invalid"))
 	}
 
@@ -597,28 +548,23 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[1].(string)
 		if !ok {
-			Logger.log.Debugf("handleHasSnDerivators result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("tokenID is invalid"))
 		}
 		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 		if err != nil {
-			Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 	}
 	result, err := httpServer.txService.HasSnDerivators(paymentAddressStr, snDerivatorStr, *tokenID)
 	if err != nil {
-		Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	Logger.log.Debugf("handleHasSnDerivators result: %+v", result)
 	return result, nil
 }
 
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
 func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
 	tx, err := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
@@ -639,22 +585,18 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 		TokenAmount:     tx.TxPrivacyTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
-	Logger.log.Debugf("handleCreateRawPrivacyCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
 
 // handleSendRawTransaction...
 func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
-		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
-		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
@@ -675,13 +617,11 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 		TokenAmount: tx.TxPrivacyTokenData.Amount,
 		ShardID:     common.GetShardIDFromLastByte(tx.TxBase.PubKeyLastByteSender),
 	}
-	Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
 
 // handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
 func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction params: %+v", params)
 	data, err := httpServer.handleCreateRawPrivacyCustomTokenTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -691,22 +631,20 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txId, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	_ = txId
 	if err != nil {
 		Logger.log.Errorf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
 	}
-	Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v", txId)
 	return tx, nil
 }
 
 // handleCreateRawStakingTransaction handles create staking
 func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
-	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil || len(paramsArray) < 5 {
-		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
 	}
 
@@ -718,7 +656,6 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	keyWallet := new(wallet.KeyWallet)
 	keyWallet.KeySet = *createRawTxParam.SenderKeySet
 	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	Logger.log.Info("Staking Public Key: %v\n", funderPaymentAddress)
 
 	// prepare meta data
 	data, ok := paramsArray[4].(map[string]interface{})
@@ -768,7 +705,6 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
 	if err != nil {
 		Logger.log.Critical(err)
-		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Cannot get payment address"))
 	}
 
@@ -785,7 +721,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata, httpServer.GetDatabase())
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
@@ -795,13 +731,11 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
 		ShardID:         txShardID,
 	}
-	Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v", result)
 	return result, nil
 }
 
 // handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleCreateAndSendStakingTx params: %+v", params)
 
 	var err error
 	data, err := httpServer.handleCreateRawStakingTransaction(params, closeChan)
@@ -810,26 +744,21 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
-	Logger.log.Infof("handleCreateAndSendStakingTx create success tx=%+v", tx.TxID)
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
-	Logger.log.Infof("handleCreateAndSendStakingTx result: %+v", result)
 	return result, nil
 }
 
 // handleCreateRawStopAutoStakingTransaction - RPC create stop auto stake tx
 func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
-	Logger.log.Debugf("handleCreateRawStopAutoStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil || len(paramsArray) < 5 {
-		Logger.log.Debugf("handleCreateRawStopAutoStakingTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
 	}
 
@@ -841,7 +770,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	keyWallet := new(wallet.KeyWallet)
 	keyWallet.KeySet = *createRawTxParam.SenderKeySet
 	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	Logger.log.Info("Staking Public Key: %v\n", funderPaymentAddress)
+	_ = funderPaymentAddress
 
 	//Get data to create meta data
 	data, ok := paramsArray[4].(map[string]interface{})
@@ -891,7 +820,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata, httpServer.GetDatabase())
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
@@ -901,13 +830,11 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
 		ShardID:         txShardID,
 	}
-	Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v", result)
 	return result, nil
 }
 
 // handleCreateRawStopAutoStakingTransaction - RPC create and send stop auto stake tx to network
 func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCreateAndSendStopAutoStakingTransaction params: %+v", params)
 	var err error
 	data, err := httpServer.handleCreateRawStopAutoStakingTransaction(params, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
@@ -920,11 +847,9 @@ func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(para
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
-	Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v", result)
 	return result, nil
 }
 
@@ -933,12 +858,10 @@ func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params i
 
 	txIdParam, ok := paramsArray[0].(string)
 	if !ok {
-		Logger.log.Debugf("handleDecryptOutputCoinByKeyOfTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tx id param is invalid"))
 	}
 	txId, err1 := common.Hash{}.NewHashFromStr(txIdParam)
 	if err1 != nil {
-		Logger.log.Debugf("handleDecryptOutputCoinByKeyOfTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tx id param is invalid"))
 	}
 
@@ -956,7 +879,6 @@ func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params i
 	} else {
 		readonlyKey, err = wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
-			Logger.log.Debugf("readonlyKey is invalid: err: %+v", err)
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 	}
@@ -968,7 +890,6 @@ func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params i
 	}
 	paymentAddressKey, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 	if err != nil {
-		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 

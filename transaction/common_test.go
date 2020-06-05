@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
@@ -98,10 +97,7 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	//assert.Equal(t, 0, len(cmm1))
 }
 
-// Maybe this is right
-var db *statedb.StateDB = new(statedb.StateDB)
-
-var bc *metadata.BlockchainRetriever
+var db incdb.Database
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {

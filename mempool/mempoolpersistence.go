@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"strings"
 	"time"
 
@@ -118,7 +119,10 @@ func (tp *TxPool) loadDatabaseMP() ([]TxDesc, error) {
 			}
 		}
 		//if not validated by current blockchain db then remove
-		err = tp.validateTransaction(txDesc.Desc.Tx, -1, false, false)
+		senderShardID := common.GetShardIDFromLastByte(txDesc.Desc.Tx.GetSenderAddrLastByte())
+		beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+		shardView := tp.config.BlockChain.ShardChain[senderShardID].GetBestView().(*blockchain.ShardBestState)
+		err = tp.validateTransaction(shardView, beaconView, txDesc.Desc.Tx, -1, false, false)
 		if err != nil {
 			Logger.log.Error(err)
 			err1 := tp.removeTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())

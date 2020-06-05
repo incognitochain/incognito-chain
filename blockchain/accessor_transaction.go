@@ -3,10 +3,11 @@ package blockchain
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -34,7 +35,8 @@ func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin coin.Co
 	}
 	keyImage := result.GetKeyImage()
 	if keyImage != nil {
-		ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, keyImage.ToBytesS(), shardID); if err != nil {
+		ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, keyImage.ToBytesS(), shardID)
+		if err != nil {
 			Logger.log.Errorf("There is something wrong when check key image %v", err)
 			return nil, err
 		} else if ok {
@@ -62,25 +64,49 @@ func storePRV(transactionStateRoot *statedb.StateDB) error {
 }
 
 func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
-	blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.config.DataBase, txHash)
-	if err != nil {
-		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
+		if err != nil {
+			continue
+		}
+		// error is nil
+		shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
+		if err != nil {
+			continue
+		}
+		return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
 	}
-	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
+	return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
+}
+
+func (blockchain *BlockChain) GetTransactionByHashWithShardID(txHash common.Hash, shardID byte) (common.Hash, int, metadata.Transaction, error) {
+	blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 	if err != nil {
-		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+		return common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
 	}
-	return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
+	// error is nil
+	shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
+	if err != nil {
+		return common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
+	}
+	return blockHash, index, shardBlock.Body.Transactions[index], nil
 }
 
 // GetTransactionHashByReceiver - return list tx id which receiver get from any sender
 // this feature only apply on full node, because full node get all data from all shard
 func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
 	result := make(map[byte][]common.Hash)
-	var err error
-	result, err = rawdbv2.GetTxByPublicKey(blockchain.config.DataBase, keySet.PaymentAddress.Pk)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		var err error
+		result, err = rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk)
+		if err == nil {
+			if result == nil || len(result) == 0 {
+				continue
+			}
+			return result, nil
+		}
 	}
 	return result, nil
 }
@@ -116,7 +142,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			Logger.log.Infof("Coin ID %+v", *coinID)
 			Logger.log.Infof("Amount Request %+v", amountRes)
 			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
-			amount, err := statedb.GetCommitteeReward(blockchain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedRewardStateDB(), tempPublicKey, requestMeta.TokenID)
+			amount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(), tempPublicKey, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
 				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
@@ -127,8 +153,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			continue
 		case metadata.ReturnStakingMeta:
 			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
-			if _, ok := txReturnTable[returnMeta.StakerAddress.String()]; !ok {
-				txReturnTable[returnMeta.StakerAddress.String()] = true
+			if _, ok := txReturnTable[returnMeta.TxID]; !ok {
+				txReturnTable[returnMeta.TxID] = true
 			} else {
 				return errors.New("Double spent transaction return staking for a candidate.")
 			}
@@ -186,11 +212,11 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 }
 
 // @Notice: change from body.Transaction -> transactions
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	txRequestTable := reqTableFromReqTxs(transactions)
 	txsResponse := []metadata.Transaction{}
 	for key, value := range txRequestTable {
-		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey, shardID)
+		txRes, err := blockchain.buildWithDrawTransactionResponse(view, &value, blkProducerPrivateKey, shardID)
 		if err != nil {
 			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
 			delete(txRequestTable, key)
@@ -211,7 +237,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 }
 
 func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([][]byte, error) {
-	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
 		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
@@ -221,8 +247,8 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *inco
 }
 
 func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
-	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
-	currentHeight := blockchain.BestState.Shard[shardID].ShardHeight
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
+	currentHeight := blockchain.GetBestStateShard(shardID).ShardHeight
 
 	//fmt.Println("StartHeight = ", shardHeight)
 	//fmt.Println("Current Blockchain height = ", currentHeight)
@@ -271,11 +297,9 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsV1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
-	blockchain.BestState.Shard[shardID].lock.Lock()
-	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCoinsInBytes [][]byte
 	var err error
-	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListDecryptedOutputCoinsV1ByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
@@ -300,8 +324,6 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsV1ByKeyset(keyset *inco
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {
-	blockchain.BestState.Shard[shardID].lock.Lock()
-	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCoinsInBytes [][]byte
 	var err error
 	if keyset == nil {
@@ -312,7 +334,7 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *in
 		return nil, err
 	}
 	// loop on all outputcoin to decrypt data
-	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
 	results := make([]coin.PlainCoin, 0)
 	for _, item := range outCoinsInBytes {
 		outCoin, err := coin.NewCoinFromByte(item)
@@ -336,11 +358,9 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *in
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
-	blockchain.BestState.Shard[shardID].lock.Lock()
-	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCoinsInBytes [][]byte
 	var err error
-	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
@@ -389,7 +409,7 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // still storage full data of commitments, serial number, snderivator to check double spend
 // this function only work for transaction transfer token/prv within shard
-func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB, beaconFeatureStateRoot *statedb.StateDB) error {
+func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	// Fetch data from shardBlock into tx View point
 	if shardBlock.Header.Height == 1 {
 		err := storePRV(transactionStateRoot)
@@ -502,7 +522,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 		return err
 	}
 
-	err = blockchain.StoreTxByPublicKey(blockchain.GetDatabase(), view)
+	err = blockchain.StoreTxByPublicKey(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), view)
 	if err != nil {
 		return err
 	}

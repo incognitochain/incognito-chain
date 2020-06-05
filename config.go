@@ -34,7 +34,7 @@ const (
 	DefaultMaxPeersOther               = 300
 	DefaultMaxPeersNoShard             = 200
 	DefaultMaxPeersBeacon              = 500
-	DefaultMaxRPCClients               = 200
+	DefaultMaxRPCClients               = 500
 	DefaultRPCLimitRequestPerDay       = 0 // 0: unlimited
 	DefaultRPCLimitErrorRequestPerHour = 0 // 0: unlimited
 	DefaultMaxRPCWsClients             = 200
@@ -47,6 +47,7 @@ const (
 	DefaultTxPoolTTL                   = uint(15 * 60) // 15 minutes
 	DefaultTxPoolMaxTx                 = uint64(100000)
 	DefaultLimitFee                    = uint64(1) // 1 nano PRV = 10^-9 PRV
+	//DefaultLimitFee = uint64(100000) // 100000 nano PRV = 100000 * 10^-9 PRV
 	// For wallet
 	DefaultWalletName     = "wallet"
 	DefaultPersistMempool = false

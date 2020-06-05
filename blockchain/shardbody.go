@@ -29,7 +29,7 @@ because we have many types of block, so we can need to customize data from marsh
 func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	type Alias ShardBody
 	temp := &struct {
-		Transactions []map[string]interface{}
+		Transactions []map[string]*json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(shardBody),
@@ -47,7 +47,12 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 		var tx metadata.Transaction
 		var parseErr error
-		switch txTemp["Type"].(string) {
+		txType := ""
+		err = json.Unmarshal(*txTemp["Type"], &txType)
+		if err != nil {
+			return NewBlockChainError(UnmashallJsonShardBlockError, err)
+		}
+		switch txType {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				tx = &transaction.TxBase{}
@@ -70,6 +75,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
 func (shardBody ShardBody) Hash() common.Hash {
 	res := []byte{}
 

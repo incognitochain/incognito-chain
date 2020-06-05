@@ -31,11 +31,11 @@ type GetAllConnectedPeersResult struct {
 	Peers []map[string]string `json:"Peers"`
 }
 
-func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConnectedPeersResult {
+func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager, bc *blockchain.BlockChain) *GetAllConnectedPeersResult {
 	result := &GetAllConnectedPeersResult{}
 	peersMap := []map[string]string{}
 	listeningPeer := connMgr.GetListeningPeer()
-	bestState := blockchain.GetBeaconBestState()
+	bestState := bc.GetBeaconBestState()
 	beaconCommitteeList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(bestState.BeaconCommittee, bestState.ConsensusAlgorithm)
 	shardCommitteeList := make(map[byte][]string)
 	for shardID, committee := range bestState.GetShardCommittee() {

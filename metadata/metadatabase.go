@@ -84,19 +84,10 @@ func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64,
 	return !(txFee < fullFee)
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
 }
 
-func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instsUsed []int,
-	shardID byte,
-	txr Transaction,
-	bcr BlockchainRetriever,
-	accumulatedValues *AccumulatedValues,
-) (bool, error) {
+func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
 }

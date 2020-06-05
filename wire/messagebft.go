@@ -13,10 +13,12 @@ const (
 )
 
 type MessageBFT struct {
+	PeerID    string
 	Type      string
 	Content   []byte
 	ChainKey  string
 	Timestamp int64
+	TimeSlot  int64
 }
 
 func (msg *MessageBFT) Hash() string {

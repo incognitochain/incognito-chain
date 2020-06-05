@@ -233,6 +233,15 @@ func IndexOfStr(item string, list []string) int {
 	return -1
 }
 
+func IndexOfHash(item Hash, list []Hash) int {
+	for k, v := range list {
+		if item.IsEqual(&v) {
+			return k
+		}
+	}
+	return -1
+}
+
 // IndexOfByte receives a array of bytes and a item byte
 // It checks whether a item is contained in array or not
 // and returns the first index of the item in the array
@@ -487,6 +496,15 @@ func BytesSToUint16(b []byte) (uint16, error) {
 	return BytesToUint16(bytes), nil
 }
 
+func IsPortalToken(tokenIDStr string) bool {
+	isExisted, _ := SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
+	return isExisted
+}
+
+func IsPortalExchangeRateToken(tokenIDStr string) bool {
+	return IsPortalToken(tokenIDStr) || tokenIDStr == PRVIDStr
+}
+
 // CopyBytes returns an exact copy of the provided bytes.
 func CopyBytes(b []byte) (copiedBytes []byte) {
 	if b == nil {
@@ -524,3 +542,12 @@ func FromHex(s string) []byte {
 // HexToHash sets byte representation of s to hash.
 // If b is larger than len(h), b will be cropped from the left.
 func HexToHash(s string) Hash { return BytesToHash(FromHex(s)) }
+
+// AssertAndConvertStrToNumber asserts and convert a passed input to uint64 number
+func AssertAndConvertStrToNumber(numStr interface{}) (uint64, error) {
+	assertedNumStr, ok := numStr.(string)
+	if !ok {
+		return 0, errors.New("Could not assert the passed input to string")
+	}
+	return strconv.ParseUint(assertedNumStr, 10, 64)
+}

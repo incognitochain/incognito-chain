@@ -69,8 +69,62 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PDEWithdrawalResponse{}
 	case PDEContributionResponseMeta:
 		md = &PDEContributionResponse{}
+	case PortalCustodianDepositMeta:
+		md = &PortalCustodianDeposit{}
+	case PortalUserRegisterMeta:
+		md = &PortalUserRegister{}
+	case PortalUserRequestPTokenMeta:
+		md = &PortalRequestPTokens{}
+	case PortalCustodianDepositResponseMeta:
+		md = &PortalCustodianDepositResponse{}
+	case PortalUserRequestPTokenResponseMeta:
+		md = &PortalRequestPTokensResponse{}
+	case PortalRedeemRequestMeta:
+		md = &PortalRedeemRequest{}
+	case PortalRedeemRequestResponseMeta:
+		md = &PortalRedeemRequestResponse{}
+	case PortalRequestUnlockCollateralMeta:
+		md = &PortalRequestUnlockCollateral{}
+	case PortalExchangeRatesMeta:
+		md = &PortalExchangeRates{}
+	case RelayingBNBHeaderMeta:
+		md = &RelayingHeader{}
+	case RelayingBTCHeaderMeta:
+		md = &RelayingHeader{}
+	case PortalCustodianWithdrawRequestMeta:
+		md = &PortalCustodianWithdrawRequest{}
+	case PortalCustodianWithdrawResponseMeta:
+		md = &PortalCustodianWithdrawResponse{}
+	case PortalLiquidateCustodianMeta:
+		md = &PortalLiquidateCustodian{}
+	case PortalLiquidateCustodianResponseMeta:
+		md = &PortalLiquidateCustodianResponse{}
+	case PortalRequestWithdrawRewardMeta:
+		md = &PortalRequestWithdrawReward{}
+	case PortalRequestWithdrawRewardResponseMeta:
+		md = &PortalWithdrawRewardResponse{}
+	case PortalRedeemLiquidateExchangeRatesMeta:
+		md = &PortalRedeemLiquidateExchangeRates{}
+	case PortalRedeemLiquidateExchangeRatesResponseMeta:
+		md = &PortalRedeemLiquidateExchangeRatesResponse{}
+	case PortalLiquidationCustodianDepositMetaV2:
+		md = &PortalLiquidationCustodianDepositV2{}
+	case PortalLiquidationCustodianDepositResponseMetaV2:
+		md = &PortalLiquidationCustodianDepositResponseV2{}
+	case PortalLiquidationCustodianDepositMeta:
+		md = &PortalLiquidationCustodianDeposit{}
+	case PortalLiquidationCustodianDepositResponseMeta:
+		md = &PortalLiquidationCustodianDepositResponse{}
 	case BurningForDepositToSCRequestMeta:
 		md = &BurningRequest{}
+	case PortalPortingResponseMeta:
+		md = &PortalFeeRefundResponse{}
+	case PortalReqMatchingRedeemMeta:
+		md = &PortalReqMatchingRedeem{}
+	case PortalTopUpWaitingPortingRequestMeta:
+		md = &PortalTopUpWaitingPortingRequest{}
+	case PortalTopUpWaitingPortingResponseMeta:
+		md = &PortalTopUpWaitingPortingResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

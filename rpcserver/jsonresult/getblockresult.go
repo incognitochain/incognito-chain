@@ -116,3 +116,10 @@ func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash 
 	getBlockResult.NextBlockHash = nextBlockHash
 	return getBlockResult
 }
+
+type GetViewResult struct {
+	Hash              string `json:"Hash"`
+	Height            uint64 `json:"Height"`
+	PreviousBlockHash string `json:"PreviousBlockHash"`
+	Round             uint64 `json:"Round"`
+}

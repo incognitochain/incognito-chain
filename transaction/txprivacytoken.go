@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"math"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type TxPrivacyTokenInitParams struct {
@@ -63,9 +63,8 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	return params
 }
 
-
 type TxCustomTokenPrivacy struct {
-	TxBase                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
+	TxBase                                // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxPrivacyTokenData TxPrivacyTokenData `json:"TxTokenPrivacyData"` // supporting privacy format
 	// private field, not use for json parser, only use as temp variable
 	cachedHash *common.Hash // cached hash data of tx
@@ -87,7 +86,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 		return NewTransactionErr(PrivacyTokenPRVJsonError, err)
 	}
 	temp := &struct {
-		TxTokenPrivacyData interface{}
+		TxTokenPrivacyData TxPrivacyTokenData
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
@@ -105,6 +104,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 		return NewTransactionErr(PrivacyTokenJsonError, err)
 	}
 	txCustomTokenPrivacy.TxBase = tx
+
+	// TODO: hotfix, remove when fixed this issue
+	if tx.Metadata != nil && tx.Metadata.GetType() == 81 {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Amount == 37772966455153490 {
+			txCustomTokenPrivacy.TxPrivacyTokenData.Amount = 37772966455153487
+		}
+	}
+
 	return nil
 }
 
@@ -356,13 +363,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 				Logger.Log.Error(errors.New("can't sign this tx"))
 				return NewTransactionErr(SignTxError, err)
 			}
-			fmt.Println("Is it the same")
-			fmt.Println("Is it the same")
-			fmt.Println("Is it the same")
-			fmt.Println("Is it the same")
-			fmt.Println(temp.SigPubKey)
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
-			fmt.Println(temp.SigPubKey)
 
 			txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
 			hashInitToken, err := txCustomTokenPrivacy.TxPrivacyTokenData.Hash()
@@ -459,35 +460,37 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 
 // =================== FUNCTION THAT CHECK STUFFS  ===================
 
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
+// IsCoinsBurning - checking this is a burning pToken
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
 	// get proof of pToken
 	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	if proof == nil || len(proof.GetOutputCoins()) == 0 {
 		return false
 	}
-	//  validate receiver with burning address
-	senderPKBytes := []byte{}
-	if len(proof.GetInputCoins()) > 0 {
-		senderPKBytes = proof.GetInputCoins()[0].GetPublicKey().ToBytesS()
-	}
-
-	//get burning address
-	burningAddress := bcr.GetBurningAddress(beaconHeight)
-	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
-	if err != nil {
-		Logger.Log.Errorf("Can not deserialize burn address: %v\n", burningAddress)
-		return false
-	}
-
-	keysetBurningAccount := keyWalletBurningAccount.KeySet
-	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
-	for _, outCoin := range proof.GetOutputCoins() {
-		outPKBytes := outCoin.GetPublicKey().ToBytesS()
-		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
-			return false
-		}
-	}
-	return true
+	return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
+	////  validate receiver with burning address
+	//senderPKBytes := []byte{}
+	//if len(proof.GetInputCoins()) > 0 {
+	//	senderPKBytes = proof.GetInputCoins()[0].GetPublicKey().ToBytesS()
+	//}
+	//
+	////get burning address
+	//burningAddress := bcr.GetBurningAddress(beaconHeight)
+	//keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	//if err != nil {
+	//	Logger.Log.Errorf("Can not deserialize burn address: %v\n", burningAddress)
+	//	return false
+	//}
+	//
+	//keysetBurningAccount := keyWalletBurningAccount.KeySet
+	//paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+	//for _, outCoin := range proof.GetOutputCoins() {
+	//	outPKBytes := outCoin.GetPublicKey().ToBytesS()
+	//	if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
+	//		return false
+	//	}
+	//}
+	//return true
 }
 
 // ========== VALIDATE FUNCTIONS ===========
@@ -555,16 +558,12 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurren
 	return nil
 }
 
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
-	bcr metadata.BlockchainRetriever,
-	shardID byte,
-	stateDB *statedb.StateDB,
-) error {
-	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(bcr, shardID, stateDB, nil)
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err != nil {
 		return NewTransactionErr(InvalidDoubleSpendPRVError, err)
 	}
-	err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateDoubleSpendWithBlockchain(bcr, shardID, stateDB, txCustomTokenPrivacy.GetTokenID())
+	err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateDoubleSpendWithBlockchain(shardID, stateDB, txCustomTokenPrivacy.GetTokenID())
 	if err != nil {
 		return NewTransactionErr(InvalidDoubleSpendPrivacyTokenError, err)
 	}
@@ -572,10 +571,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 }
 
 // ValidateSanityData - validate sanity data of PRV and pToken
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	meta := txCustomTokenPrivacy.TxBase.Metadata
 	if meta != nil {
-		isContinued, ok, err := meta.ValidateSanityData(bcr, &txCustomTokenPrivacy, beaconHeight)
+		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, &txCustomTokenPrivacy)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
@@ -583,14 +582,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata
 
 	// validate sanity data for PRV
 	//result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
-	result, err := txCustomTokenPrivacy.TxBase.ValidateSanityData(bcr, beaconHeight)
+	result, err := txCustomTokenPrivacy.TxBase.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPRVError, err)
 	}
 	// validate sanity for pToken
 
 	//result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.validateNormalTxSanityData()
-	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateSanityData(bcr, beaconHeight)
+	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
 	}
@@ -598,14 +597,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata
 }
 
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
-	hasPrivacyCoin bool,
-	transactionStateDB *statedb.StateDB,
-	bridgeStateDB *statedb.StateDB,
-	bcr metadata.BlockchainRetriever,
-	shardID byte,
-	isNewTransaction bool,
-) (bool, error) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// no need to check for tx init token
 	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 		return txCustomTokenPrivacy.TxBase.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
@@ -659,15 +651,13 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 	return false, err
 }
 
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []metadata.Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instsUsed []int,
-	shardID byte,
-	bcr metadata.BlockchainRetriever,
-	accumulatedValues *metadata.AccumulatedValues,
-) (bool, error) {
+// GetProof - return proof PRV of tx
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetProof() privacy.Proof {
+	return txCustomTokenPrivacy.Proof
+}
+
+// VerifyMinerCreatedTxBeforeGettingInBlock
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	if !txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
 		return true, nil
 	}
@@ -679,7 +669,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGetti
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &txCustomTokenPrivacy, bcr, accumulatedValues)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &txCustomTokenPrivacy, bcr, accumulatedValues, nil, nil)
 }
 
 type TxPrivacyTokenInitParamsForASM struct {

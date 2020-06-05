@@ -74,7 +74,7 @@ func TestInitTx(t *testing.T) {
 		mintedAmount := 1000
 		coinBaseTx, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&senderPaymentAddress, uint64(mintedAmount), &senderKey.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0))
 
-		isValidSanity, err := coinBaseTx.ValidateSanityData(nil)
+		isValidSanity, err := coinBaseTx.ValidateSanityData(nil, nil, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, isValidSanity)
 
@@ -158,7 +158,7 @@ func TestInitTx(t *testing.T) {
 		assert.Equal(t, 1, len(listInputSerialNumber))
 		assert.Equal(t, common.HashH(coinBaseOutput[0].CoinDetails.GetSerialNumber().ToBytesS()), listInputSerialNumber[0])
 
-		isValidSanity, err = tx1.ValidateSanityData(nil)
+		isValidSanity, err = tx1.ValidateSanityData(nil, nil, nil)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 
@@ -188,10 +188,10 @@ func TestInitTx(t *testing.T) {
 		err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
 		assert.Equal(t, nil, err)
 
-		err = tx1.ValidateTxWithBlockChain(nil, shardID, db)
+		err = tx1.ValidateTxWithBlockChain(nil, shardID, nil, nil, db)
 		assert.Equal(t, nil, err)
 
-		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
+		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID, nil, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, isValid)
 
@@ -285,7 +285,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		mintedAmount := 1000
 		coinBaseTx, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&senderPaymentAddress, uint64(mintedAmount), &senderKey.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0))
 
-		isValidSanity, err := coinBaseTx.ValidateSanityData(nil)
+		isValidSanity, err := coinBaseTx.ValidateSanityData(nil, nil, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, isValidSanity)
 
@@ -321,7 +321,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		)
 		assert.Equal(t, nil, err)
 
-		isValidSanity, err = tx1.ValidateSanityData(nil)
+		isValidSanity, err = tx1.ValidateSanityData(nil, nil, nil)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 		fmt.Println("Hello")
@@ -332,10 +332,10 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
 		assert.Equal(t, nil, err)
 
-		err = tx1.ValidateTxWithBlockChain(nil, shardID, db)
+		err = tx1.ValidateTxWithBlockChain(nil, shardID, nil, nil, db)
 		assert.Equal(t, nil, err)
 
-		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
+		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID, nil, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, isValid)
 
@@ -377,7 +377,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		tx1.Proof.SetBytes(originProof)
 
 		// back to correct case
-		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
+		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID, nil, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, isValid)
 	}

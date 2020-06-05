@@ -71,6 +71,24 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBurningConfirmObjectWithValue(db, hash, value)
 	case TokenTransactionObjectType:
 		return newTokenTransactionObjectWithValue(db, hash, value)
+	case PortalFinalExchangeRatesStateObjectType:
+		return newFinalExchangeRatesStateObjectWithValue(db, hash, value)
+	case PortalLiquidationPoolObjectType:
+		return newLiquidationPoolObjectWithValue(db, hash, value)
+	case PortalWaitingPortingRequestObjectType:
+		return newWaitingPortingRequestObjectWithValue(db, hash, value)
+	case PortalStatusObjectType:
+		return newPortalStatusObjectWithValue(db, hash, value)
+	case PortalRewardInfoObjectType:
+		return newPortalRewardInfoObjectWithValue(db, hash, value)
+	case WaitingRedeemRequestObjectType:
+		return newRedeemRequestObjectWithValue(db, hash, value)
+	case CustodianStateObjectType:
+		return newCustodianStateObjectWithValue(db, hash, value)
+	case LockedCollateralStateObjectType:
+		return newLockedCollateralStateObjectWithValue(db, hash, value)
+	case RewardFeatureStateObjectType:
+		return newRewardFeatureStateObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -122,6 +140,24 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeStatusObject(db, hash)
 	case BurningConfirmObjectType:
 		return newBurningConfirmObject(db, hash)
+	case PortalFinalExchangeRatesStateObjectType:
+		return newFinalExchangeRatesStateObject(db, hash)
+	case PortalLiquidationPoolObjectType:
+		return newLiquidationPoolObject(db, hash)
+	case PortalWaitingPortingRequestObjectType:
+		return newWaitingPortingRequestObject(db, hash)
+	case PortalStatusObjectType:
+		return newPortalStatusObject(db, hash)
+	case PortalRewardInfoObjectType:
+		return newPortalRewardInfoObject(db, hash)
+	case WaitingRedeemRequestObjectType:
+		return newRedeemRequestObject(db, hash)
+	case CustodianStateObjectType:
+		return newCustodianStateObject(db, hash)
+	case LockedCollateralStateObjectType:
+		return newLockedCollateralStateObject(db, hash)
+	case RewardFeatureStateObjectType:
+		return newRewardFeatureStateObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

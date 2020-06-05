@@ -164,6 +164,7 @@ const (
 	NotEnoughRewardError
 	InitPDETradeResponseTransactionError
 	ProcessPDEInstructionError
+	ProcessPortalInstructionError
 	InitBeaconStateError
 	GetListDecryptedOutputCoinsByKeysetError
 	GetListDecryptedOutputCoinsV1ByKeysetError
@@ -175,6 +176,11 @@ const (
 	BackUpShardStateError
 	BackupCurrentBeaconStateError
 	ProcessAutoStakingError
+	ProcessPortalRelayingError
+	GetTotalLockedCollateralError
+	InsertShardBlockError
+	GetShardBlockHeightByHashError
+	GetShardBlockByHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -324,17 +330,24 @@ var ErrCodeMessage = map[int]struct {
 	NotEnoughRewardError:                              {-1140, "Not enough reward Error"},
 	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
-	InitBeaconStateError:                              {-1143, "Init Beacon State Error"},
-	ProcessSalaryInstructionsError:                    {-1144, "Proccess Salary Instruction Error"},
-	GetShardIDFromTxError:                             {-1145, "Get ShardID From Tx Error"},
-	GetValueFromTxError:                               {-1146, "Get Value From Tx Error"},
-	ValidateBlockWithPreviousShardBestStateError:      {-1147, "Validate Block With Previous Shard Best State Error"},
-	BackUpShardStateError:                             {-1148, "Back Up Shard State Error"},
-	ValidateBlockWithPreviousBeaconBestStateError:     {-1149, "Validate Block With Previous Beacon Best State Error"},
-	BackupCurrentBeaconStateError:                     {-1150, "Backup Current Beacon State Error"},
-	ProcessAutoStakingError:                           {-1151, "Process Auto Staking Error"},
-	GetListDecryptedOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
-	GetListDecryptedOutputCoinsV1ByKeysetError: 	   {-2001, "Get List Output Coins Ver 1 By Ketset Error"},
+	ProcessPortalInstructionError:                     {-1143, "Process Portal instruction Error"},
+	InitBeaconStateError:                              {-1144, "Init Beacon State Error"},
+	ProcessSalaryInstructionsError:                    {-1145, "Proccess Salary Instruction Error"},
+	GetShardIDFromTxError:                             {-1146, "Get ShardID From Tx Error"},
+	GetValueFromTxError:                               {-1147, "Get Value From Tx Error"},
+	ValidateBlockWithPreviousShardBestStateError:      {-1148, "Validate Block With Previous Shard Best State Error"},
+	BackUpShardStateError:                             {-1149, "Back Up Shard State Error"},
+	ValidateBlockWithPreviousBeaconBestStateError:     {-1150, "Validate Block With Previous Beacon Best State Error"},
+	BackupCurrentBeaconStateError:                     {-1151, "Backup Current Beacon State Error"},
+	ProcessAutoStakingError:                           {-1152, "Process Auto Staking Error"},
+	ProcessPortalRelayingError:                        {-1153, "Process Portal Relaying Error"},
+	InsertShardBlockError:                             {-1154, "Insert Shard Block Error"},
+	GetShardBlockHeightByHashError:                    {-1155, "Get Shard Block Height By Hash Error"},
+	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
+	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
+	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
+	GetListDecryptedOutputCoinsByKeysetError:          {-2100, "Get List Output Coins By Keyset Error"},
+	GetListDecryptedOutputCoinsV1ByKeysetError:        {-2101, "Get List Output Coins Ver 1 By Ketset Error"},
 }
 
 type BlockChainError struct {

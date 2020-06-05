@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -50,7 +49,7 @@ func (miningKey *MiningKey) BLSSignData(
 ) {
 	sigBytes, err := blsmultisig.Sign(data, miningKey.PriKey[common.BlsConsensus], selfIdx, committee)
 	if err != nil {
-		return nil, consensus.NewConsensusError(consensus.SignDataError, err)
+		return nil, NewConsensusError(SignDataError, err)
 	}
 	return sigBytes, nil
 }
@@ -63,7 +62,7 @@ func (miningKey *MiningKey) BriSignData(
 ) {
 	sig, err := bridgesig.Sign(miningKey.PriKey[common.BridgeConsensus], data)
 	if err != nil {
-		return nil, consensus.NewConsensusError(consensus.SignDataError, err)
+		return nil, NewConsensusError(SignDataError, err)
 	}
 	return sig, nil
 }
@@ -72,7 +71,7 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	var miningKey MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
-		return consensus.NewConsensusError(consensus.LoadKeyError, err)
+		return NewConsensusError(LoadKeyError, err)
 	}
 
 	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
@@ -90,20 +89,20 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	return nil
 }
 
-func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
+func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
 	wl, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		return "", consensus.NewConsensusError(consensus.LoadKeyError, err)
+		return "", NewConsensusError(LoadKeyError, err)
 	}
 	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	if err != nil {
-		return "", consensus.NewConsensusError(consensus.LoadKeyError, err)
+		return "", NewConsensusError(LoadKeyError, err)
 	}
 	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
 	return privateSeed, nil
 }
 
-func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
+func (e *BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
 		key := e.UserKeySet.GetPublicKey()
 		return &key
@@ -111,10 +110,10 @@ func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	return nil
 }
 
-func (e BLSBFT) SignData(data []byte) (string, error) {
+func (e *BLSBFT) SignData(data []byte) (string, error) {
 	result, err := e.UserKeySet.BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
 	if err != nil {
-		return "", consensus.NewConsensusError(consensus.SignDataError, err)
+		return "", NewConsensusError(SignDataError, err)
 	}
 
 	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
@@ -133,7 +132,7 @@ func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, bri
 
 	aggSig, err = blsmultisig.Combine(blsSigList)
 	if err != nil {
-		return nil, nil, nil, consensus.NewConsensusError(consensus.CombineSignatureError, err)
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
 	}
 	return
 }

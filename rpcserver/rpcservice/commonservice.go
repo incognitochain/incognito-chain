@@ -2,8 +2,6 @@ package rpcservice
 
 import (
 	"errors"
-	"log"
-
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -187,7 +185,7 @@ func GenerateTokenID(network string, name string) (common.Hash, error) {
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
 	if err != nil {
-		log.Println("Wrong param")
+		Logger.log.Error("Wrong param %+v", err)
 		return common.Hash{}, err
 	}
 	return *hash, nil

@@ -1,8 +1,8 @@
 package metadata
 
 import (
-	"fmt"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -69,13 +69,8 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	return sm.Type == ShardStakingMeta
 }
 
-func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, stateDB *statedb.StateDB) (bool, error) {
-	fmt.Println("It should into ValidateTxWithBlockChain")
-	fmt.Println("It should into ValidateTxWithBlockChain")
-	fmt.Println("It should into ValidateTxWithBlockChain")
-	fmt.Println("It should into ValidateTxWithBlockChain")
-	fmt.Println("It should into ValidateTxWithBlockChain")
-	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := bcr.GetAllCommitteeValidatorCandidate()
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
 	if err != nil {
 		return false, err
 	}
@@ -107,27 +102,19 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction,
 	// Receiver Is Burning Address
 	//
 */
-func (stakingMetadata StakingMetadata) ValidateSanityData(
-	bcr BlockchainRetriever,
-	txr Transaction,
-	beaconHeight uint64,
-) (
-	bool,
-	bool,
-	error,
-) {
-	if txr.IsPrivacy() {
+func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
-	check, _, amount := txr.GetAndCheckBurningReceiver()
+	check, _, amount := tx.GetAndCheckBurningReceiver()
 	if !check {
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
 
-	if stakingMetadata.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
+	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
+	if stakingMetadata.Type == BeaconStakingMeta && amount != chainRetriever.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 

@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"os"
 	"path/filepath"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+
+	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -20,6 +25,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+
 	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -56,8 +62,11 @@ var (
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	trieLogger             = backendLog.Logger("Trie log", false)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	relayingLogger         = backendLog.Logger("Relaying log", false)
 	wrapperLogger          = backendLog.Logger("Wrapper log", false)
 	daov2Logger            = backendLog.Logger("DAO log", false)
+	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
+	synckerLogger          = backendLog.Logger("Syncker log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -96,10 +105,11 @@ func init() {
 	metadata.Logger.Init(metadataLogger)
 	trie.Logger.Init(trieLogger)
 	peerv2.Logger.Init(peerv2Logger)
+	relaying.Logger.Init(relayingLogger)
 	wrapper.Logger.Init(wrapperLogger)
 	dataaccessobject.Logger.Init(daov2Logger)
-
-
+	btcRelaying.Logger.Init(btcRelayingLogger)
+	syncker.Logger.Init(synckerLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -127,6 +137,8 @@ var subsystemLoggers = map[string]common.Logger{
 	"TRIE":              trieLogger,
 	"PEERV2":            peerv2Logger,
 	"DAO":               daov2Logger,
+	"BTCRELAYING":       btcRelayingLogger,
+	"SYNCKER":           synckerLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

@@ -14,7 +14,6 @@ const (
 	VERSION                       = 1
 	RANDOM_NUMBER                 = 3
 	SHARD_BLOCK_VERSION           = 1
-	BEACON_BLOCK_VERSION          = 1
 	DefaultMaxBlkReqPerPeer       = 900
 	DefaultMaxBlkReqPerTime       = 900
 	MinCommitteeSize              = 3                // min size to run bft
@@ -61,10 +60,22 @@ const (
 	MainnetMaxShardBlkCreation  = 10 * time.Second //second
 
 	//board and proposal parameters
-	MainnetBasicReward                      = 1386666000                                                                                                //1.386666 PRV
-	MainETHContractAddressStr               = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7"                                                              // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
+	MainnetBasicReward        = 1386666000                                   //1.386666 PRV
+	MainETHContractAddressStr = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7" // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
+	//MainETHContractAddressStr               = "0x3c8ec94213f09A1575f773470830124dfb40042e"                                                              // v3-main - mainnet
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
+
+	// relaying header chain
+	MainnetBNBChainID = "Binance-Chain-Tigris"
+	MainnetBTCChainID = "Bitcoin-Mainnet"
+
+	// BNB fullnode
+	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
+	MainnetBNBFullNodeProtocol = "https"
+	MainnetBNBFullNodePort     = "443"
+
+	MainnetPortalFeeder = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -104,9 +115,21 @@ const (
 	TestnetBasicReward = 400000000 //40 mili PRV
 	//TestnetETHContractAddressStr            = "0x6e8CDB333ba1573Fffe195A545F3031Cff9Da008"
 	//TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
-	TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
+	//TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
+	//TestnetETHContractAddressStr            = "0x79382223241799fc1706a85adf9df4231715A731"
+	TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
+	// relaying header chain
+	TestnetBNBChainID = "Binance-Chain-Nile"
+	TestnetBTCChainID = "Bitcoin-Testnet"
+
+	// BNB fullnode
+	TestnetBNBFullNodeHost     = "data-seed-pre-0-s1.binance.org"
+	TestnetBNBFullNodeProtocol = "https"
+	TestnetBNBFullNodePort     = "443"
+	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 )
 
 // VARIABLE for testnet

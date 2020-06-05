@@ -108,7 +108,6 @@ handleImportAccount - import a new account by private-key
 - Param #3: passPhrase of wallet
 */
 func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleImportAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 3 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
@@ -134,12 +133,10 @@ func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan 
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	Logger.log.Debugf("handleImportAccount result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleRemoveAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
@@ -471,7 +468,7 @@ func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeC
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil, httpServer.GetDatabase())
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)

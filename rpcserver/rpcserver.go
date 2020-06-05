@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer2 "github.com/libp2p/go-libp2p-peer"
@@ -64,12 +65,13 @@ type RpcServerConfig struct {
 	BlockChain      *blockchain.BlockChain
 	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache
-	Database        incdb.Database
+	Database        map[int]incdb.Database
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
 	NodeMode        string
 	NetSync         *netsync.NetSync
+	Syncker         *syncker.SynckerManager
 	Server          interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
@@ -91,8 +93,6 @@ type RpcServerConfig struct {
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 	}
 	TxMemPool                   *mempool.TxPool
-	ShardToBeaconPool           *mempool.ShardToBeaconPool
-	CrossShardPool              *mempool.CrossShardPool
 	RPCMaxClients               int
 	RPCMaxWSClients             int
 	RPCLimitRequestPerDay       int

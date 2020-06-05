@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
@@ -18,7 +17,6 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProof params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMeta, httpServer)
 }
 
@@ -27,7 +25,6 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProofForDepositToSC params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMeta, httpServer)
 }
 
@@ -67,7 +64,7 @@ func getBurnProofByHeight(
 ) (interface{}, *rpcservice.RPCError) {
 
 	// Get bridge block and corresponding beacon blocks
-	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, httpServer.GetBlockchain(), httpServer.GetDatabase())
+	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, httpServer.GetBlockchain())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -79,7 +76,7 @@ func getBurnProofByHeight(
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.GetDatabase(), httpServer.config.ConsensusEngine)
+	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -116,7 +113,6 @@ func getBurnProofOnBridge(
 func getBurnProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
@@ -190,7 +186,6 @@ func splitAndDecodeInst(bridgeInst, beaconInst []string) (string, string, string
 
 // handleGetBurnProof returns a proof of a tx burning pETH
 func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurningAddress params: %+v", params)
 	listParams, ok := params.([]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array"))

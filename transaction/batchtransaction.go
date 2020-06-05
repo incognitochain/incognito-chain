@@ -25,11 +25,11 @@ func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
 	b.txs = append(b.txs, txs...)
 }
 
-func (b *batchTransaction) Validate(transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, bcr metadata.BlockchainRetriever) (bool, error, int) {
-	return b.validateBatchTxsByItself(b.txs, transactionStateDB, bridgeStateDB, bcr)
+func (b *batchTransaction) Validate(transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB) (bool, error, int) {
+	return b.validateBatchTxsByItself(b.txs, transactionStateDB, bridgeStateDB)
 }
 
-func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, bcr metadata.BlockchainRetriever) (bool, error, int) {
+func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB) (bool, error, int) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {

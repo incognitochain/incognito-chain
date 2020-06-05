@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -11,6 +13,8 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/databasemp"
@@ -18,7 +22,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
-	"github.com/incognitochain/incognito-chain/metrics"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -30,6 +34,35 @@ var (
 // winServiceMain is only invoked on Windows.  It detects when incognito network is running
 // as a service and reacts accordingly.
 var winServiceMain func() (bool, error)
+
+func getBTCRelayingChain(btcRelayingChainID string) (*btcrelaying.BlockChain, error) {
+	relayingChainParams := map[string]*chaincfg.Params{
+		blockchain.TestnetBTCChainID: btcrelaying.GetTestNet3Params(),
+		blockchain.MainnetBTCChainID: btcrelaying.GetMainNetParams(),
+	}
+	relayingChainGenesisBlkHeight := map[string]int32{
+		blockchain.TestnetBTCChainID: int32(1746476),
+		blockchain.MainnetBTCChainID: int32(623600),
+	}
+	return btcrelaying.GetChainV2(
+		filepath.Join(cfg.DataDir, "btcrelayingv6"),
+		relayingChainParams[btcRelayingChainID],
+		relayingChainGenesisBlkHeight[btcRelayingChainID],
+	)
+}
+
+func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainState, error) {
+	bnbChainState := new(bnbrelaying.BNBChainState)
+	err := bnbChainState.LoadBNBChainState(
+		filepath.Join(cfg.DataDir, "bnbrelayingv3"),
+		bnbRelayingChainID,
+	)
+	if err != nil {
+		log.Printf("Error getBNBRelayingChainState: %v\n", err)
+		return nil, err
+	}
+	return bnbChainState, nil
+}
 
 // mainMaster is the real main function for Incognito network.  It is necessary to work around
 // the fact that deferred functions do not run when os.Exit() is called.  The
@@ -56,7 +89,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if interruptRequested(interrupt) {
 		return nil
 	}
-	db, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
+	db, err := incdb.OpenMultipleDB("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")
@@ -99,10 +132,32 @@ func mainMaster(serverChan chan<- *Server) error {
 			}
 		}
 	}
+
+	// Create btcrelaying chain
+	btcChain, err := getBTCRelayingChain(activeNetParams.Params.BTCRelayingHeaderChainID)
+	if err != nil {
+		Logger.log.Error("could not get or create btc relaying chain")
+		Logger.log.Error(err)
+		panic(err)
+	}
+	defer func() {
+		Logger.log.Warn("Gracefully shutting down the btc database...")
+		db := btcChain.GetDB()
+		db.Close()
+	}()
+
+	// Create bnbrelaying chain state
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)
+	if err != nil {
+		Logger.log.Error("could not get or create bnb relaying chain state")
+		Logger.log.Error(err)
+		panic(err)
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)
@@ -134,14 +189,14 @@ func main() {
 	limitThreads := os.Getenv("CPU")
 	if limitThreads == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-		metrics.SetGlobalParam("CPU", runtime.NumCPU())
+		monitor.SetGlobalParam("CPU", runtime.NumCPU())
 	} else {
 		numThreads, err := strconv.Atoi(limitThreads)
 		if err != nil {
 			panic(err)
 		}
 		runtime.GOMAXPROCS(numThreads)
-		metrics.SetGlobalParam("CPU", numThreads)
+		monitor.SetGlobalParam("CPU", numThreads)
 	}
 	fmt.Println("NumCPU", runtime.NumCPU())
 	// Block and transaction processing can cause bursty allocations.  This

@@ -111,20 +111,28 @@ func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transa
 	return true
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, stateDB *statedb.StateDB) (bool, error) {
-	if txr.IsPrivacy() {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	allTokenID, err := bcr.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(txr.GetSenderAddrLastByte()))
-	if err != nil {
-		return false, err
-	}
+
 	isValid := false
-	for _, availableCoinID := range allTokenID {
-		cmp, err := withDrawRewardRequest.TokenID.Cmp(&availableCoinID)
-		if (cmp == 0) && (err == nil) {
-			isValid = true
-			break
+	if withDrawRewardRequest.TokenID.IsEqual(&common.PRVCoinID) {
+		// this is withdraw request for PRV
+		isValid = true
+	} else {
+		// this is withdraw request for token
+		allTokenID, err := chainRetriever.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()))
+		if err != nil {
+			return false, err
+		}
+
+		for _, availableCoinID := range allTokenID {
+			cmp := withDrawRewardRequest.TokenID.IsEqual(&availableCoinID)
+			if cmp {
+				isValid = true
+				break
+			}
 		}
 	}
 	if !isValid {
@@ -132,7 +140,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 	}
 	isPositive := false
 	tempPublicKey := base58.Base58Check{}.Encode(withDrawRewardRequest.PaymentAddress.Pk, common.Base58Version)
-	value, err := statedb.GetCommitteeReward(bcr.GetShardRewardStateDB(shardID), tempPublicKey, withDrawRewardRequest.TokenID)
+	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, withDrawRewardRequest.TokenID)
 	if err != nil {
 		return false, err
 	}
@@ -143,14 +151,14 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}
-	receivers, _ := txr.GetReceivers()
+	receivers, _ := tx.GetReceivers()
 	if len(receivers) > 0 {
 		return false, errors.New("This metadata just for request withdraw reward")
 	}
 	return true, nil
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -164,11 +172,11 @@ func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Tra
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
-	if txr.IsPrivacy() {
+func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	unique, requesterRes, amountRes, coinID := txr.GetTransferData()
+	unique, requesterRes, amountRes, coinID := tx.GetTransferData()
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
@@ -177,7 +185,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 		return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
 	}
 	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-	value, err := statedb.GetCommitteeReward(bcr.GetShardRewardStateDB(shardID), tempPublicKey, *coinID)
+	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
@@ -187,7 +195,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	return true, nil
 }
 
-func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 

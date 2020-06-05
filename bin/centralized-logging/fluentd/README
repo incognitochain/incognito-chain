@@ -1,0 +1,5 @@
+FOR SERVER: docker run -p 8080:9000 -v /data:/data incognitochain/incognito-logger server
+            chmod 777 -R /data
+
+FOR CLIENT: docker run -e server=<ip>:8080 -v /data/tailpos:/tailpos  -v /data:/data incognitochain/incognito-logger
+            chmod 777 -R /data/tailpos

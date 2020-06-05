@@ -38,23 +38,23 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := int(arrayParams[0].(float64))
-	consensusStateRootHash, err := httpServer.blockService.BlockChain.GetBeaconConsensusRootHash(httpServer.blockService.BlockChain.GetDatabase(), uint64(height))
+	beaconConsensusStateRootHash, err := httpServer.blockService.BlockChain.GetBeaconConsensusRootHash(httpServer.blockService.BlockChain.GetBeaconChainDatabase(), uint64(height))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.blockService.BlockChain.GetDatabase()))
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.blockService.BlockChain.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
-	return []interface{}{consensusStateRootHash, newAutoStaking}, nil
+	_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
+	return []interface{}{beaconConsensusStateRootHash, newAutoStaking}, nil
 }
 
 func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardID := byte(arrayParams[0].(float64))
 	epoch := uint64(arrayParams[1].(float64))
-	rewardStateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedRewardStateDB()
+	rewardStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconRewardStateDB()
 	amount, err := statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, shardID, common.PRVCoinID)
 	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }

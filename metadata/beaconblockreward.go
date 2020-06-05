@@ -71,12 +71,12 @@ func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee ui
 	return true
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if len(sbsRes.ProducerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

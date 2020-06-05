@@ -330,6 +330,7 @@ func (b *Backend) print(lvl, tag string, args ...interface{}) {
 			HandleCaptureMessage(string(mes[1]), lvl)
 		}
 	}
+
 	recycleBuffer(bytebuf)
 }
 
@@ -361,6 +362,7 @@ func (b *Backend) printf(lvl, tag string, format string, args ...interface{}) {
 			HandleCaptureMessage(string(mes[1]), lvl)
 		}
 	}
+
 	recycleBuffer(bytebuf)
 }
 

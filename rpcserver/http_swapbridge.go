@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
@@ -14,7 +13,7 @@ import (
 
 // handleGetLatestBridgeSwapProof returns the latest proof of a change in bridge's committee
 func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBlock := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBlock := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for i := latestBlock; i >= 1; i-- {
 		params := []interface{}{float64(i)}
 		proof, err := httpServer.handleGetBridgeSwapProof(params, closeChan)
@@ -40,13 +39,13 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	}
 	height := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
+	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.GetBeaconChainDatabase(), httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, httpServer.GetBlockchain(), httpServer.GetDatabase(), httpServer.config.ConsensusEngine)
+	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, httpServer.GetBlockchain(), httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -65,11 +64,10 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 func getBridgeSwapProofOnBridge(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get bridge block and check if it contains bridge swap instruction
-	b, instID, err := findBridgeBlockWithInst(beaconBlock, bc, db)
+	b, instID, err := findBridgeBlockWithInst(beaconBlock, bc)
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +80,10 @@ func getBridgeSwapProofOnBridge(
 func findBridgeBlockWithInst(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-	db incdb.Database,
 ) (*blockchain.ShardBlock, int, error) {
 	bridgeID := byte(common.BridgeShardID)
 	for _, state := range beaconBlock.Body.ShardState[bridgeID] {
-		bridgeBlock, _, err := getShardAndBeaconBlocks(state.Height, bc, db)
+		bridgeBlock, _, err := getShardAndBeaconBlocks(state.Height, bc)
 		if err != nil {
 			return nil, 0, err
 		}

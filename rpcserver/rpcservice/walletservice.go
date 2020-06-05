@@ -66,7 +66,7 @@ func (walletService WalletService) GetAddressesByAccount(accountName string) ([]
 }
 
 func (walletService *WalletService) GetAccountAddress(accountName string) (wallet.KeySerializedData, error) {
-	activeShards := walletService.BlockChain.BestState.Beacon.ActiveShards
+	activeShards := walletService.BlockChain.GetBeaconBestState().ActiveShards
 	shardID := walletService.Wallet.GetConfig().ShardID
 	// if shardID is nil -> create with any shard
 	if shardID != nil {

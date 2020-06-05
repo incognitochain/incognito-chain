@@ -6,6 +6,7 @@ const (
 	testHttpServer = "testrpcserver"
 	startProfiling = "startprofiling"
 	stopProfiling  = "stopprofiling"
+	exportMetrics  = "exportmetrics"
 
 	getNetworkInfo       = "getnetworkinfo"
 	getConnectionCount   = "getconnectioncount"
@@ -190,9 +191,64 @@ const (
 	// get burning address
 	getBurningAddress = "getburningaddress"
 
+	// portal
+	createAndSendTxWithCustodianDeposit           = "createandsendtxwithcustodiandeposit"
+	createAndSendTxWithReqPToken                  = "createandsendtxwithreqptoken"
+	getPortalState                                = "getportalstate"
+	getPortalCustodianDepositStatus               = "getportalcustodiandepositstatus"
+	createAndSendRegisterPortingPublicTokens      = "createandsendregisterportingpublictokens"
+	createAndSendPortalExchangeRates              = "createandsendportalexchangerates"
+	getPortalFinalExchangeRates                   = "getportalfinalexchangerates"
+	getPortalPortingRequestByKey                  = "getportalportingrequestbykey"
+	getPortalPortingRequestByPortingId            = "getportalportingrequestbyportingid"
+	convertExchangeRates                          = "convertexchangerates"
+	getPortalReqPTokenStatus                      = "getportalreqptokenstatus"
+	getPortingRequestFees                         = "getportingrequestfees"
+	createAndSendTxWithRedeemReq                  = "createandsendtxwithredeemreq"
+	createAndSendTxWithReqUnlockCollateral        = "createandsendtxwithrequnlockcollateral"
+	getPortalReqUnlockCollateralStatus            = "getportalrequnlockcollateralstatus"
+	getPortalReqRedeemStatus                      = "getportalreqredeemstatus"
+	createAndSendCustodianWithdrawRequest         = "createandsendcustodianwithdrawrequest"
+	getCustodianWithdrawByTxId                    = "getcustodianwithdrawbytxid"
+	getCustodianLiquidationStatus                 = "getcustodianliquidationstatus"
+	createAndSendTxWithReqWithdrawRewardPortal    = "createandsendtxwithreqwithdrawrewardportal"
+	createAndSendRedeemLiquidationExchangeRates   = "createandsendredeemliquidationexchangerates"
+	createAndSendLiquidationCustodianDeposit      = "createandsendliquidationcustodiandeposit"
+	createAndSendTopUpWaitingPorting              = "createandsendtopupwaitingporting"
+	getAmountNeededForCustodianDepositLiquidation = "getamountneededforcustodiandepositliquidation"
+	getLiquidationExchangeRatesPool               = "getliquidationtpexchangeratespool"
+	getPortalReward                               = "getportalreward"
+	getRequestWithdrawPortalRewardStatus          = "getrequestwithdrawportalrewardstatus"
+	createAndSendTxWithReqMatchingRedeem          = "createandsendtxwithreqmatchingredeem"
+	getReqMatchingRedeemStatus                    = "getreqmatchingredeemstatus"
+	getPortalCustodianTopupStatus                 = "getcustodiantopupstatus"
+	getPortalCustodianTopupWaitingPortingStatus   = "getcustodiantopupwaitingportingstatus"
+	getAmountTopUpWaitingPorting                  = "getamounttopupwaitingporting"
+	getPortalReqRedeemByTxIDStatus                = "getreqredeemstatusbytxid"
+	getReqRedeemFromLiquidationPoolByTxIDStatus   = "getreqredeemfromliquidationpoolbytxidstatus"
+
+	// relaying
+	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
+	createAndSendTxWithRelayingBTCHeader = "createandsendtxwithrelayingbtcheader"
+	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
+	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
+	getBTCRelayingBestState              = "getbtcrelayingbeststate"
+	getBTCBlockByHash                    = "getbtcblockbyhash"
+	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
+
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
 	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
+
+	getBeaconPoolInfo        = "getbeaconpoolinfo"
+	getShardToBeaconPoolInfo = "getshardtobeaconpoolinfo"
+	getShardPoolInfo         = "getshardpoolinfo"
+	getCrossShardPoolInfo    = "getcrossshardpoolinfo"
+	getAllView               = "getallview"
+	getAllViewDetail         = "getallviewdetail"
+
+	// feature rewards
+	getRewardFeature = "getrewardfeature"
 )
 
 const (

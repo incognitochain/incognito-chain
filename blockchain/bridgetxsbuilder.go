@@ -207,7 +207,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb
 	return append(instructions, acceptedInst), nil
 }
 
-func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -252,13 +252,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			issuingRes,
 			false,
 			false,
 			shardID,
 			nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()))
+			beaconView.GetBeaconFeatureStateDB()))
 
 	if initErr != nil {
 		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
@@ -268,7 +268,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -321,12 +321,12 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			shardView.GetCopiedTransactionStateDB(),
 			issuingETHRes,
 			false,
 			false,
 			shardID, nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()))
+			beaconView.GetBeaconFeatureStateDB()))
 
 	if initErr != nil {
 		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)

@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"io"
 	"io/ioutil"
 	"net"
@@ -16,6 +14,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -40,9 +41,10 @@ type HttpServer struct {
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
 	networkService    *rpcservice.NetworkService
-	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
 	walletService     *rpcservice.WalletService
+	portal            *rpcservice.PortalService
+	synkerService     *rpcservice.SynkerService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -75,7 +77,6 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		ConnMgr: httpServer.config.ConnMgr,
 	}
 	httpServer.txService = &rpcservice.TxService{
-		DB:           httpServer.config.Database,
 		BlockChain:   httpServer.config.BlockChain,
 		Wallet:       httpServer.config.Wallet,
 		FeeEstimator: httpServer.config.FeeEstimator,
@@ -85,7 +86,13 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		Wallet:     httpServer.config.Wallet,
 		BlockChain: httpServer.config.BlockChain,
 	}
-	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.synkerService = &rpcservice.SynkerService{
+		Synker: config.Syncker,
+	}
+
+	httpServer.portal = &rpcservice.PortalService{
+		BlockChain: httpServer.config.BlockChain,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
@@ -211,9 +218,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %+v", errCode, err), errCode)
 		return
 	}
-	// Logger.log.Info(string(body))
-	// log.Println(string(body))
-
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
 	// long polling.  However, not having a read deadline on the initial
@@ -609,9 +613,15 @@ func (httpServer *HttpServer) DecrementClients() {
 func (httpServer *HttpServer) IncrementClients() {
 	atomic.AddInt32(&httpServer.numClients, 1)
 }
-func (httpServer *HttpServer) GetDatabase() incdb.Database {
-	return httpServer.config.Database
+
+func (httpServer *HttpServer) GetBeaconChainDatabase() incdb.Database {
+	return httpServer.config.Database[common.BeaconChainDataBaseID]
 }
+
+func (httpServer *HttpServer) GetShardChainDatabase(shardID byte) incdb.Database {
+	return httpServer.config.Database[int(shardID)]
+}
+
 func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
 	return httpServer.config.BlockChain
 }

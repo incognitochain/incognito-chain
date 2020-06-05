@@ -53,12 +53,17 @@ type ShardBestState struct {
 	MetricBlockHeight      uint64
 	//================================ StateDB Method
 	// block height => root hash
-	consensusStateDB   *statedb.StateDB
-	transactionStateDB *statedb.StateDB
-	featureStateDB     *statedb.StateDB
-	rewardStateDB      *statedb.StateDB
-	slashStateDB       *statedb.StateDB
-	lock               sync.RWMutex
+	consensusStateDB           *statedb.StateDB
+	ConsensusStateDBRootHash   common.Hash
+	transactionStateDB         *statedb.StateDB
+	TransactionStateDBRootHash common.Hash
+	featureStateDB             *statedb.StateDB
+	FeatureStateDBRootHash     common.Hash
+	rewardStateDB              *statedb.StateDB
+	RewardStateDBRootHash      common.Hash
+	slashStateDB               *statedb.StateDB
+	SlashStateDBRootHash       common.Hash
+	lock                       sync.RWMutex
 }
 
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
@@ -69,11 +74,27 @@ func (shardBestState *ShardBestState) GetCopiedFeatureStateDB() *statedb.StateDB
 	return shardBestState.featureStateDB.Copy()
 }
 
-func (shardBestState *ShardBestState) GetCopiedRewardStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetShardRewardStateDB() *statedb.StateDB {
 	return shardBestState.rewardStateDB.Copy()
 }
 
-var bestStateShardMap = make(map[byte]*ShardBestState)
+func (shardBestState *ShardBestState) GetHash() *common.Hash {
+	return shardBestState.BestBlock.Hash()
+}
+
+func (shardBestState *ShardBestState) GetPreviousHash() *common.Hash {
+	return &shardBestState.BestBlock.Header.PreviousBlockHash
+}
+
+func (shardBestState *ShardBestState) GetHeight() uint64 {
+	return shardBestState.BestBlock.GetHeight()
+}
+
+func (shardBestState *ShardBestState) GetBlockTime() int64 {
+	return shardBestState.BestBlock.Header.Timestamp
+}
+
+// var bestStateShardMap = make(map[byte]*ShardBestState)
 
 func NewShardBestState() *ShardBestState {
 	return &ShardBestState{}
@@ -82,7 +103,7 @@ func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
 func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState {
-	bestStateShard := GetBestStateShard(shardID)
+	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
 		panic(err)
@@ -106,21 +127,40 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	return bestStateShard
 }
 
-func GetBestStateShard(shardID byte) *ShardBestState {
-	if bestStateShard, ok := bestStateShardMap[shardID]; !ok {
-		bestStateShardMap[shardID] = &ShardBestState{}
-		bestStateShardMap[shardID].ShardID = shardID
-		return bestStateShardMap[shardID]
-	} else {
-		return bestStateShard
+func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
+	if blockchain.ShardChain[int(shardID)].multiView.GetBestView() == nil {
+		return nil
 	}
+	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
-	beststateShard.lock = GetBestStateShard(shardID).lock
-	*GetBestStateShard(shardID) = *beststateShard
-}
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+	var err error
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(shardBestState.RewardStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Database, bc *BlockChain) error {
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	if rootHash, err := bc.GetShardConsensusRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
@@ -238,14 +278,10 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 }
 
 func (shardBestState *ShardBestState) Hash() common.Hash {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
 	return common.HashH(shardBestState.GetBytes())
 }
 
 func (shardBestState *ShardBestState) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxShardCommitteeSize < MinCommitteeSize {
 		return false
@@ -259,8 +295,6 @@ func (shardBestState *ShardBestState) SetMaxShardCommitteeSize(maxShardCommittee
 }
 
 func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minShardCommitteeSize < MinCommitteeSize {
 		return false
@@ -271,26 +305,6 @@ func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommittee
 		return true
 	}
 	return false
-}
-
-func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
-	found := common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
-		if found == tmpID {
-			return common.ProposerRole
-		} else {
-			return common.ValidatorRole
-		}
-	}
-
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
-	found = common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		return common.PendingRole
-	}
-	return common.EmptyString
 }
 
 //MarshalJSON - remember to use lock
@@ -337,13 +351,30 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 }
 
 func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
 	m := make(map[string]string)
 	for k, v := range shardBestState.StakingTx {
 		m[k] = v
 	}
 	return m
+}
+
+func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePublicKey {
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, shardBestState.ShardCommittee...)
+}
+
+func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
+	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
+	return shardBestState.ShardCommittee[id]
+}
+
+func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
+	return shardBestState.BestBlock
+}
+
+func GetProposerByTimeSlot(ts int64, committeeLen int) int {
+	id := int(ts) % committeeLen
+	return id
 }
 
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
@@ -356,6 +387,15 @@ func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.
 	shardBestState.lock.RLock()
 	defer shardBestState.lock.RUnlock()
 	return shardBestState.ShardPendingValidator
+}
+
+func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
+	tokenIDs := []common.Hash{}
+	tokenStates := statedb.ListPrivacyToken(shardBestState.GetCopiedTransactionStateDB())
+	for k, _ := range tokenStates {
+		tokenIDs = append(tokenIDs, k)
+	}
+	return tokenIDs
 }
 
 func (blockchain *BlockChain) GetShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
