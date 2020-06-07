@@ -41,22 +41,22 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 			return nil
 		}
 
-		// remove matching custodian from matching custodians list in waiting redeem request
-		waitingRedeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
-		waitingRedeemReqKeyStr := waitingRedeemReqKey.String()
+		// remove matching custodian from matching custodians list in matched redeem request
+		matchedRedeemReqKey := statedb.GenerateMatchedRedeemRequestObjectKey(actionData.UniqueRedeemID)
+		matchedRedeemReqKeyStr := matchedRedeemReqKey.String()
 
 		updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians(), actionData.CustodianIncAddressStr)
-		currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].SetCustodians(updatedCustodians)
+			currentPortalState.MatchedRedeemRequests[matchedRedeemReqKeyStr].GetCustodians(), actionData.CustodianIncAddressStr)
+		currentPortalState.MatchedRedeemRequests[matchedRedeemReqKeyStr].SetCustodians(updatedCustodians)
 		if err != nil {
 			Logger.log.Errorf("[processPortalLiquidateCustodian] Error when removing custodian from matching custodians %v", err)
 			return nil
 		}
 
-		// remove redeem request from waiting redeem requests list
-		if len(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians()) == 0 {
-			deleteWaitingRedeemRequest(currentPortalState, waitingRedeemReqKeyStr)
-			statedb.DeleteWaitingRedeemRequest(stateDB, actionData.UniqueRedeemID)
+		// remove redeem request from matched redeem requests list
+		if len(currentPortalState.MatchedRedeemRequests[matchedRedeemReqKeyStr].GetCustodians()) == 0 {
+			deleteMatchedRedeemRequest(currentPortalState, matchedRedeemReqKeyStr)
+			statedb.DeleteMatchedRedeemRequest(stateDB, actionData.UniqueRedeemID)
 
 			// update status of redeem request with redeemID to liquidated status
 			err = updateRedeemRequestStatusByRedeemId(actionData.UniqueRedeemID, common.PortalRedeemReqLiquidatedStatus, stateDB)
@@ -331,6 +331,139 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 	return nil
 }
 
+func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
+) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	var actionData metadata.PortalTopUpWaitingPortingRequestContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Error when unmarshaling portal top up waiting porting action %v - %v", instructions[3], err)
+		return nil
+	}
+
+	depositStatus := instructions[2]
+	if depositStatus == common.PortalTopUpWaitingPortingRejectedChainStatus {
+		err = trackPortalStateStatus(
+			beaconHeight,
+			portalStateDB,
+			actionData,
+			common.PortalTopUpWaitingPortingRejectedStatus,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
+		}
+	} else if depositStatus == common.PortalTopUpWaitingPortingSuccessChainStatus {
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
+		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
+		if !ok {
+			Logger.log.Errorf("Custodian not found")
+			return nil
+		}
+
+		waitingPortingRequestKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.PortingID)
+		waitingPortingReq, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()]
+		if !ok || waitingPortingReq == nil || waitingPortingReq.TokenID() != actionData.PTokenID {
+			Logger.log.Errorf("Waiting porting request with portingID (%s) not found", actionData.PortingID)
+			return nil
+		}
+
+		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.DepositedAmount)
+
+		topUpAmt := actionData.DepositedAmount
+		if actionData.FreeCollateralAmount > 0 {
+			topUpAmt += actionData.FreeCollateralAmount
+			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - actionData.FreeCollateralAmount)
+		}
+
+		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+		lockedAmountCollateral[actionData.PTokenID] += topUpAmt
+		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
+		custodiansByPortingID := waitingPortingReq.Custodians()
+		for _, cus := range custodiansByPortingID {
+			if cus.IncAddress == actionData.IncogAddressStr {
+				cus.LockedAmountCollateral += topUpAmt
+			}
+		}
+		waitingPortingReq.SetCustodians(custodiansByPortingID)
+		currentPortalState.CustodianPoolState[custodianStateKey.String()] = custodian
+		currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()] = waitingPortingReq
+
+		err = trackPortalStateStatus(
+			beaconHeight,
+			portalStateDB,
+			actionData,
+			common.PortalTopUpWaitingPortingSuccessStatus,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
+			return nil
+		}
+
+		// update state of porting request by portingID
+		newPortingRequestState := metadata.NewPortingRequestStatus(
+			waitingPortingReq.UniquePortingID(),
+			waitingPortingReq.TxReqID(),
+			waitingPortingReq.TokenID(),
+			waitingPortingReq.PorterAddress(),
+			waitingPortingReq.Amount(),
+			waitingPortingReq.Custodians(),
+			waitingPortingReq.PortingFee(),
+			common.PortalPortingReqWaitingStatus,
+			beaconHeight+1,
+		)
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalPortingRequestStatusPrefix(),
+			[]byte(waitingPortingReq.UniquePortingID()),
+			newPortingRequestStatusBytes,
+			beaconHeight,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+			return nil
+		}
+	}
+	return nil
+}
+
+func trackPortalStateStatus(
+	beaconHeight uint64,
+	portalStateDB *statedb.StateDB,
+	actionData metadata.PortalTopUpWaitingPortingRequestContent,
+	status byte,
+) error {
+	topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatus(
+		actionData.TxReqID,
+		actionData.PortingID,
+		actionData.IncogAddressStr,
+		actionData.PTokenID,
+		actionData.DepositedAmount,
+		actionData.FreeCollateralAmount,
+		status,
+	)
+	statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
+	return statedb.TrackPortalStateStatusMultiple(
+		portalStateDB,
+		statedb.PortalTopUpWaitingPortingStatusPrefix(),
+		[]byte(actionData.TxReqID.String()),
+		statusContentBytes,
+		beaconHeight,
+	)
+}
+
 func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64,
@@ -346,7 +479,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 	}
 
 	// unmarshal instructions content
-	var actionData metadata.PortalLiquidationCustodianDepositContent
+	var actionData metadata.PortalLiquidationCustodianDepositContentV2
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Error when unmarshaling portal liquidation custodian deposit content %v - %v", instructions[3], err)
@@ -356,55 +489,32 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 	depositStatus := instructions[2]
 
 	if depositStatus == common.PortalLiquidationCustodianDepositSuccessChainStatus {
-		keyCustodianState := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
-		keyCustodianStateStr := keyCustodianState.String()
-		custodian, ok := currentPortalState.CustodianPoolState[keyCustodianStateStr]
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
+		custodianStateKeyStr := custodianStateKey.String()
+		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
 		if !ok {
 			Logger.log.Errorf("Custodian not found")
 			return nil
 		}
 
-		amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(currentPortalState, custodian, currentPortalState.FinalExchangeRatesState, actionData.PTokenId, actionData.FreeCollateralSelected, portalParams)
-
-		if err != nil {
-			Logger.log.Errorf("Calculate amount needed deposit err %v", err)
-			return nil
-		}
-
-		if actionData.DepositedAmount < amountNeeded {
-			Logger.log.Errorf("Deposited amount is not enough, expect %v, data sent %v", amountNeeded, actionData.DepositedAmount)
-			return nil
-		}
-
-		Logger.log.Infof("Deposited amount: expect %v, data sent %v", amountNeeded, actionData.DepositedAmount)
-
-		remainDepositAmount := actionData.DepositedAmount - amountNeeded
 		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.DepositedAmount)
 
-		if actionData.FreeCollateralSelected == false {
-			lockedAmountTmp := custodian.GetLockedAmountCollateral()
-			lockedAmountTmp[actionData.PTokenId] += amountNeeded
-			custodian.SetLockedAmountCollateral(lockedAmountTmp)
-
-			//update remain
-			custodian.SetFreeCollateral(custodian.GetFreeCollateral() + remainDepositAmount)
-		} else {
-			//deposit from free collateral DepositedAmount
-			lockedAmountTmp := custodian.GetLockedAmountCollateral()
-			lockedAmountTmp[actionData.PTokenId] = lockedAmountTmp[actionData.PTokenId] + amountNeeded + totalFreeCollateralNeeded
-			custodian.SetLockedAmountCollateral(lockedAmountTmp)
-
-			custodian.SetFreeCollateral(remainFreeCollateral + remainDepositAmount)
+		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+		topUpAmt := actionData.DepositedAmount
+		if actionData.FreeCollateralAmount > 0 {
+			topUpAmt += actionData.FreeCollateralAmount
+			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - actionData.FreeCollateralAmount)
 		}
+		lockedAmountCollateral[actionData.PTokenId] += topUpAmt
+		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
+		currentPortalState.CustodianPoolState[custodianStateKeyStr] = custodian
 
-		currentPortalState.CustodianPoolState[keyCustodianStateStr] = custodian
-
-		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus(
+		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
 			actionData.DepositedAmount,
-			actionData.FreeCollateralSelected,
+			actionData.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositSuccessStatus,
 		)
 
@@ -422,12 +532,12 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			return nil
 		}
 	} else if depositStatus == common.PortalLiquidationCustodianDepositRejectedChainStatus {
-		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus(
+		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
 			actionData.DepositedAmount,
-			actionData.FreeCollateralSelected,
+			actionData.FreeCollateralAmount,
 			common.PortalLiquidationCustodianDepositRejectedStatus,
 		)
 

@@ -63,6 +63,7 @@ type ChainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetPortalFeederAddress() string
 }
 
 type BeaconViewRetriever interface {
