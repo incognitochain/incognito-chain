@@ -264,11 +264,12 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*ShardBlock {
 	allShardBlocks := make(map[byte][]*ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
-		_, finalizedShardHeight, err := blockchain.GetLatestFinalizedShardBlock(shardID)
-		if err != nil {
-			Logger.log.Errorf("GetLatestFinalizedShardBlock shard %+v, error  %+v", shardID, err)
-			continue
-		}
+		finalizedShardHeight := blockchain.GetBestStateShard(shardID).ShardHeight
+		//_, finalizedShardHeight, err := blockchain.GetLatestFinalizedShardBlock(shardID)
+		//if err != nil {
+		//	Logger.log.Errorf("GetLatestFinalizedShardBlock shard %+v, error  %+v", shardID, err)
+		//	continue
+		//}
 		shardBlocks := []*ShardBlock{}
 		// limit maximum number of shard blocks for beacon producer
 		if finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
