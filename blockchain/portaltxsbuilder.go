@@ -42,12 +42,16 @@ func (curView *ShardBestState) buildPortalRefundCustodianDepositTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundDeposit.DepositedAmount, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV VER 2
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		refundDeposit.DepositedAmount,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -90,12 +94,16 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(topUpInfo.DepositedAmount, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		topUpInfo.DepositedAmount,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -138,12 +146,16 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundDeposit.DepositedAmount, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		refundDeposit.DepositedAmount,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -188,12 +200,16 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundDeposit.DepositedAmount, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		refundDeposit.DepositedAmount,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -256,12 +272,12 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 	propID := common.Hash(propertyID)
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
 		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
+		PropertyName:   "",
+		PropertySymbol: "",
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []coin.PlainCoin,
+		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -324,12 +340,16 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := custodianWithdrawRequest.Amount
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		receiveAmt,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -378,12 +398,17 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.TotalPTokenReceived
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		receiveAmt,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -513,12 +538,16 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(liqCustodian.LiquidatedCollateralAmount, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		liqCustodian.LiquidatedCollateralAmount,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,
@@ -566,13 +595,17 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(withdrawRewardContent.RewardAmount, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	if withdrawRewardContent.TokenID.String() == common.PRVIDStr {
 		resTx := new(transaction.TxVersion2)
 		err = resTx.InitTxSalary(
-			withdrawRewardContent.RewardAmount,
-			&receiverAddr,
+			otaCoin,
 			producerPrivateKey,
 			curView.GetCopiedTransactionStateDB(),
 			meta,
@@ -658,12 +691,16 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(portalPortingRequest.PortingFee, receiverAddr)
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		return nil, err
+	}
 	// the returned currency is PRV
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
-		portalPortingRequest.PortingFee,
-		&receiverAddr,
+		otaCoin,
 		producerPrivateKey,
 		curView.GetCopiedTransactionStateDB(),
 		meta,

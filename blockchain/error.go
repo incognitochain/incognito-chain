@@ -181,6 +181,7 @@ const (
 	InsertShardBlockError
 	GetShardBlockHeightByHashError
 	GetShardBlockByHashError
+	GetListOutputCoinsByKeysetError
 )
 
 var ErrCodeMessage = map[int]struct {
