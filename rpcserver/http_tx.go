@@ -43,7 +43,7 @@ func (httpServer *HttpServer) handleCreateRawConvertVer1ToVer2Transaction(params
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawConvertVer1ToVer2Transaction(createRawTxParam, nil, httpServer.GetDatabase())
+	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawConvertVer1ToVer2Transaction(createRawTxParam, nil)
 	if err != nil {
 		// return hex for a new tx
 		return nil, err

@@ -9,7 +9,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -495,7 +494,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 	return tx, nil
 }
 
-func (txService TxService) CreateRawConvertVer1ToVer2Transaction(params *bean.CreateRawTxSwitchVer1ToVer2Param, meta metadata.Metadata, db incdb.Database) (*common.Hash, []byte, byte, *RPCError) {
+func (txService TxService) CreateRawConvertVer1ToVer2Transaction(params *bean.CreateRawTxSwitchVer1ToVer2Param, meta metadata.Metadata) (*common.Hash, []byte, byte, *RPCError) {
 	var err error
 	tx, err := txService.BuildConvertV1ToV2Transaction(params, meta)
 	if err.(*RPCError) != nil {
