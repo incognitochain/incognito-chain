@@ -788,7 +788,19 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 	}
 
 	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
-		meta.FreeCollateralAmount = custodian.GetFreeCollateral()
+		Logger.log.Errorf("Free collateral topup amount is greater than free collateral of custodian's state")
+		inst := buildTopUpWaitingPortingInst(
+			meta.PortingID,
+			meta.PTokenID,
+			meta.IncogAddressStr,
+			meta.DepositedAmount,
+			meta.FreeCollateralAmount,
+			common.PortalTopUpWaitingPortingRejectedChainStatus,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+		return [][]string{inst}, nil
 	}
 	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
 	topUpAmt := meta.DepositedAmount
@@ -908,7 +920,18 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
-		meta.FreeCollateralAmount = custodian.GetFreeCollateral()
+		Logger.log.Errorf("Free collateral topup amount is greater than free collateral of custodian's state")
+		inst := buildLiquidationCustodianDepositInst(
+			meta.PTokenId,
+			meta.IncogAddressStr,
+			meta.DepositedAmount,
+			meta.FreeCollateralAmount,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+		return [][]string{inst}, nil
 	}
 	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
 	topUpAmt := meta.DepositedAmount
