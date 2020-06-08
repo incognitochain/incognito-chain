@@ -118,7 +118,7 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	GetSender() []byte
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
-	GetAndCheckBurningReceiver() (bool, []byte, uint64)
+	GetAndCheckBurningReceiver(ChainRetriever, uint64) (bool, []byte, uint64)
 	GetMetadataFromVinsTx(ChainRetriever, ShardViewRetriever, BeaconViewRetriever) (Metadata, error)
 	ListSerialNumbersHashH() []common.Hash
 	String() string

@@ -462,15 +462,22 @@ func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	return true, pubkeys[0], amounts[0], &common.PRVCoinID
 }
 
-func (tx TxBase) GetAndCheckBurningReceiver() (bool, []byte, uint64) {
+func (tx TxBase) GetAndCheckBurningReceiver(retriever metadata.ChainRetriever, blockHeight uint64) (bool, []byte, uint64) {
 	pubkeys, amounts := tx.GetReceivers()
 	if len(pubkeys) > 2 {
 		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
 		return false, nil, 0
 	}
+
+	burnAccount, err := wallet.Base58CheckDeserialize(retriever.GetBurningAddress(blockHeight))
+	if err != nil {
+		return false, nil, 0
+	}
+	burnPaymentAddress := burnAccount.KeySet.PaymentAddress
+
 	hasBurning, pubkey, amount := false, []byte{}, uint64(0)
 	for i, pk := range pubkeys {
-		if wallet.IsPublicKeyBurningAddress(pk) {
+		if bytes.Equal(burnPaymentAddress.Pk, pk) {
 			hasBurning = true
 			pubkey = pk
 			amount += amounts[i]

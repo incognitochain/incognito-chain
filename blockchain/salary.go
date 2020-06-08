@@ -57,7 +57,10 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		metadata.ReturnStakingMeta,
 	)
 	returnStakingTx := new(transaction.TxVersion2)
-	amount := txData.CalculateTxValue()
+	check, _, amount := txData.GetAndCheckBurningReceiver(blockGenerator.chain, view.GetBeaconHeight())
+	if !check {
+		return nil, NewBlockChainError(GetAndCheckBurnError, err)
+	}
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(amount, keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")

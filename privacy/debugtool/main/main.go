@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
-
 	"github.com/incognitochain/incognito-chain/privacy/debugtool"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func sendTx(tool *debugtool.DebugTool) {
@@ -57,18 +56,19 @@ func main() {
 	tool := new(debugtool.DebugTool).InitLocal()
 	testInitToken(tool, privateKeys, privateSeeds)
 
-	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
+	//b, _ := tool.SwitchCoinVersion(privateKeys[1])
 	//fmt.Println(string(b))
+
 
 	//sendTx(tool)
 
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
 
-	b, _ := tool.GetListOutputCoins(privateKeys[0])
-	fmt.Println(string(b))
-	//b, _ = tool.GetListOutputCoins(privateKeys[2])
+	//b, _ := tool.GetListOutputCoins(privateKeys[0])
 	//fmt.Println(string(b))
+	b, _ := tool.GetListOutputCoins(privateKeys[1])
+	fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[3])
 	//fmt.Println(string(b))
 

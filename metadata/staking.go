@@ -106,9 +106,9 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
-	check, _, amount := tx.GetAndCheckBurningReceiver()
+	check, _, amount := tx.GetAndCheckBurningReceiver(chainRetriever, beaconHeight)
 	if !check {
-		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
+		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver (Burn Address)")
 	}
 
 	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {

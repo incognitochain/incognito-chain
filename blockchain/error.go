@@ -137,6 +137,7 @@ const (
 	VerifyCrossShardBlockShardTxRootError
 	WalletKeySerializedError
 	InitSalaryTransactionError
+	GetAndCheckBurnError
 	RemoveOldDataAfterProcessingError
 	WrongMetadataTypeError
 	StakeInstructionError
@@ -349,6 +350,7 @@ var ErrCodeMessage = map[int]struct {
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	GetListDecryptedOutputCoinsByKeysetError:          {-2100, "Get List Output Coins By Keyset Error"},
 	GetListDecryptedOutputCoinsV1ByKeysetError:        {-2101, "Get List Output Coins Ver 1 By Ketset Error"},
+	GetAndCheckBurnError:								{-2102, "Get and Check Burn Receiver Error"},
 }
 
 type BlockChainError struct {
