@@ -43,7 +43,7 @@ func (curView *ShardBestState) buildPortalRefundCustodianDepositTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 
-	// the returned currency is PRV
+	// the returned currency is PRV VER 2
 	resTx := new(transaction.TxVersion2)
 	err = resTx.InitTxSalary(
 		refundDeposit.DepositedAmount,

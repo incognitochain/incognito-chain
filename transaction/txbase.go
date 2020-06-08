@@ -875,5 +875,3 @@ func (tx *TxBase) Init(paramsInterface interface{}) error {
 	}
 	return transaction.Init(paramsInterface)
 }
-
-func (tx *TxBase) InitTxSalary()
