@@ -44,7 +44,7 @@ type Tx struct {
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
-		Metadata interface{}
+		Metadata *json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(tx),
@@ -54,6 +54,11 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
+	if temp.Metadata == nil {
+		tx.SetMetadata(nil)
+		return nil
+	}
+
 	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
 	if parseErr != nil {
 		Logger.log.Error(parseErr)
