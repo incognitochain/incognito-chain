@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -78,10 +77,6 @@ func (headerRelaying RelayingHeader) ValidateTxWithBlockChain(
 
 func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// validate IncogAddressStr
-	feederAddress := chainRetriever.GetPortalFeederAddress()
-	if rh.IncogAddressStr != feederAddress {
-		return false, false, fmt.Errorf("Sender must be feeder's address %v\n", feederAddress)
-	}
 	keyWallet, err := wallet.Base58CheckDeserialize(rh.IncogAddressStr)
 	if err != nil {
 		return false, false, errors.New("sender address is incorrect")
