@@ -35,6 +35,13 @@ func (this *DebugTool) InitLocal() *DebugTool {
 	return this
 }
 
+func (this *DebugTool) InitDevNet() *DebugTool {
+	if this == nil {
+		this = new(DebugTool)
+	}
+	this.url = "http://54.39.158.106:9334"
+	return this
+}
 
 func (this *DebugTool) SendPostRequestWithQuery(query string) ([]byte, error) {
 	if len(this.url) == 0 {

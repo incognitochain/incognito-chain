@@ -85,6 +85,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
 		var receiverAddrStrFromInst string
+		var receiverTxRandomFromInst []byte
 		var receivingAmtFromInst uint64
 		var receivingTokenIDStr string
 		if instTradeStatus == common.PDETradeRefundChainStatus {
@@ -102,6 +103,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			shardIDFromInst = pdeTradeRequestAction.ShardID
 			txReqIDFromInst = pdeTradeRequestAction.TxReqID
 			receiverAddrStrFromInst = pdeTradeRequestAction.Meta.TraderAddressStr
+			receiverTxRandomFromInst = pdeTradeRequestAction.Meta.TxRandom
 			receivingTokenIDStr = pdeTradeRequestAction.Meta.TokenIDToSellStr
 			receivingAmtFromInst = pdeTradeRequestAction.Meta.SellAmount + pdeTradeRequestAction.Meta.TradingFee
 		} else { // trade accepted
@@ -115,6 +117,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			shardIDFromInst = pdeTradeAcceptedContent.ShardID
 			txReqIDFromInst = pdeTradeAcceptedContent.RequestedTxID
 			receiverAddrStrFromInst = pdeTradeAcceptedContent.TraderAddressStr
+			receiverTxRandomFromInst = pdeTradeAcceptedContent.TxRandom
 			receivingTokenIDStr = pdeTradeAcceptedContent.TokenIDToBuyStr
 			receivingAmtFromInst = pdeTradeAcceptedContent.ReceiveAmount
 		}
@@ -128,6 +131,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
+
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
 			receivingAmtFromInst != paidAmount ||
