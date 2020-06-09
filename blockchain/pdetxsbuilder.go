@@ -111,43 +111,12 @@ func buildTradeResTx(
 		return resTx, nil
 	}
 	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
-		Amount:         receiveAmt,
-		PaymentAddress: receiverAddr,
-	}
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      receiveAmt,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []coin.PlainCoin{},
-		Mintable:    true,
-	}
+
 	resTx := &transaction.TxCustomTokenPrivacy{}
-
-	resTx.InitTxTokenSalary()
-
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			transactionStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			bridgeStateDB,
-		),
-	)
+	initErr := resTx.InitTxTokenSalary(otaCoin, producerPrivateKey, transactionStateDB, meta, &propID, "")
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", initErr)
 		return nil, initErr
