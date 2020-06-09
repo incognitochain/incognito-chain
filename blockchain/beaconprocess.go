@@ -1452,5 +1452,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
+
+	//backup
+	//if (newBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 0 {
+	//	blockchain.GetBeaconChainDatabase().Close()
+	//	blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../../backup/beacon/%d", newBestState.Epoch))
+	//	blockchain.GetBeaconChainDatabase().ReOpen()
+	//}
+
 	return nil
 }
