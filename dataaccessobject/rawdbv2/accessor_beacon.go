@@ -3,6 +3,7 @@ package rawdbv2
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 )
@@ -336,4 +337,22 @@ func GetBeaconSlashStateRootHash(db incdb.KeyValueReader, height uint64) (common
 		return common.Hash{}, NewRawdbError(GetBeaconSlashRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
+}
+
+//StoreBeaconPreCommitteeInfo ...
+func StoreBeaconPreCommitteeInfo(db incdb.KeyValueWriter, hash common.Hash, value []byte) error {
+	err := db.Put(hash.Bytes(), value)
+	if err != nil {
+		return NewRawdbError(StoreBeaconPreCommitteeInfoError, err)
+	}
+	return nil
+}
+
+//GetBeaconPreCommitteeInfo ...
+func GetBeaconPreCommitteeInfo(db incdb.KeyValueReader, hash common.Hash) ([]byte, error) {
+	res, err := db.Get(hash.Bytes())
+	if err != nil {
+		return nil, NewRawdbError(GetBeaconPreCommitteeInfoError, err)
+	}
+	return res, nil
 }

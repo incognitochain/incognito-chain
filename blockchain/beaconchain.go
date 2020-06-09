@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,10 +15,11 @@ import (
 type BeaconChain struct {
 	multiView *multiview.MultiView
 
-	BlockGen   *BlockGenerator
-	Blockchain *BlockChain
-	ChainName  string
-	Ready      bool //when has peerstate
+	BlockGen    *BlockGenerator
+	Blockchain  *BlockChain
+	hashHistory *lru.Cache
+	ChainName   string
+	Ready       bool //when has peerstate
 
 	insertLock sync.Mutex
 }

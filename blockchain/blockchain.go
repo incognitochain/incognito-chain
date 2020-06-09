@@ -9,6 +9,7 @@ import (
 	"log"
 	"sort"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
@@ -171,6 +172,9 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return err
 	}
+
+	blockchain.ShardChain[shardID].hashHistory, err = lru.New(100)
+
 	return nil
 }
 
@@ -194,6 +198,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
+	blockchain.BeaconChain.hashHistory, err = lru.New(100)
+	if err != nil {
+		return err
+	}
+
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -207,6 +216,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
 	}
+
 	// State Root Hash
 	if err := rawdbv2.StoreBeaconConsensusStateRootHash(blockchain.GetBeaconChainDatabase(), initBlockHeight, consensusRootHash); err != nil {
 		return err
@@ -439,12 +449,27 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 		v.BestBlock = *block
 
+		// err = v.initRawDBHash(blockchain)
+		// if err != nil {
+		// 	panic(err)
+		// }
+
 		err = v.restoreBeaconCommittee()
 		if err != nil {
 			panic(err)
 		}
 
 		err = v.restoreShardCommittee()
+		if err != nil {
+			panic(err)
+		}
+
+		err = v.restoreBeaconPreCommitteeInfo(blockchain)
+		if err != nil {
+			panic(err)
+		}
+
+		err = v.restoreShardPreCommitteeInfo(blockchain)
 		if err != nil {
 			panic(err)
 		}

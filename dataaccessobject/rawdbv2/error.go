@@ -49,6 +49,9 @@ const (
 	StorePreviousBeaconBestStateError
 	GetPreviousBeaconBestStateError
 	CleanUpPreviousBeaconBestStateError
+	StoreBeaconPreCommitteeError
+	StoreBeaconPreCommitteeInfoError
+	GetBeaconPreCommitteeInfoError
 	// Shard
 	StoreShardBlockError
 	StoreShardBlockWithViewError
@@ -72,6 +75,7 @@ const (
 	GetPreviousShardBestStateError
 	CleanUpPreviousShardBestStateError
 	RestoreCrossShardNextHeightsError
+	StoreShardPreCommitteeError
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
@@ -159,11 +163,14 @@ var ErrCodeMessage = map[int]struct {
 	DeleteShardFeatureRootHashError:         {-4027, "Delete Shard Feature Root Hash Error"},
 	DeleteShardSlashRootHashError:           {-4028, "Delete Shard Slash Root Hash Error"},
 	RestoreCrossShardNextHeightsError:       {-4029, "Restore Cross Shard Next Heights Error"},
+	StoreBeaconPreCommitteeError:            {-4030, "Store Beacon Pre Committee Error"},
+	StoreBeaconPreCommitteeInfoError:        {-4031, "Store Beacon Pre Committee Info Error"},
+	GetBeaconPreCommitteeInfoError:          {-4032, "Get Beacon Pre Committee Info Error"},
 
 	// relaying
-	StoreRelayingBNBHeaderError:     {-5001, "Store relaying header bnb error"},
-	GetRelayingBNBHeaderError:       {-5002, "Get relaying header bnb error"},
-	GetBNBDataHashError:             {-5003, "Get bnb data hash by block height error"},
+	StoreRelayingBNBHeaderError: {-5001, "Store relaying header bnb error"},
+	GetRelayingBNBHeaderError:   {-5002, "Get relaying header bnb error"},
+	GetBNBDataHashError:         {-5003, "Get bnb data hash by block height error"},
 }
 
 type RawdbError struct {

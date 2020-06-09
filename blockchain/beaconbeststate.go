@@ -37,14 +37,14 @@ type BeaconBestState struct {
 	BeaconHeight                           uint64                                     `json:"BeaconHeight"`        // [remove]
 	BeaconProposerIndex                    int                                        `json:"BeaconProposerIndex"` // [remove]
 	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"-"`
-	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"BeaconPendingValidator"`
-	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
-	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForCurrentRandom"`
-	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
-	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForNextRandom"`
-	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"-"`                     // current committee and validator of all shard
-	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
-	AutoStaking                            map[string]bool                            `json:"AutoStaking"`           // [remove]
+	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"-"`                                     // [1] [remove] [Testing]
+	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch [2] [remove]
+	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"-"`                                     // [1] [remove] [Testing]
+	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"`    // shard candidate list, waiting to be shuffled in next epoch [2] [remove]
+	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"-"`                                     // [1] [remove] [Testing]
+	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"-"`                                     // current committee and validator of all shard
+	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`                 // pending candidate waiting for swap to get in committee of all shard [2] [remove]
+	AutoStaking                            map[string]bool                            `json:"AutoStaking"`                           // [remove]
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
@@ -77,6 +77,8 @@ type BeaconBestState struct {
 	FeatureStateDBRootHash   common.Hash
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
+	BeaconPreCommitteeHash   common.Hash `json:"BeaconPreCommitteeHash"` // key for pending and waiting beacon committee (current random, next random candidates, pending validators)
+	ShardPreCommitteeHash    common.Hash `json:"ShardPreCommitteeHash"`  // key for pending and waiting shard committee (current random, next random candidates, pending validators)
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -616,49 +618,49 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 
 	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.ShardCommittee):", len(beaconBestState.ShardCommittee))
 
-	// beaconBestState.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.BeaconPendingValidator))
-	// for i, v := range target.BeaconPendingValidator {
-	// 	beaconBestState.BeaconPendingValidator[i] = v
-	// }
+	beaconBestState.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.BeaconPendingValidator))
+	for i, v := range target.BeaconPendingValidator {
+		beaconBestState.BeaconPendingValidator[i] = v
+	}
 
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconPendingValidator):", len(beaconBestState.BeaconPendingValidator))
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconPendingValidator):", len(beaconBestState.BeaconPendingValidator))
 
-	// beaconBestState.CandidateShardWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForCurrentRandom))
-	// for i, v := range target.CandidateShardWaitingForCurrentRandom {
-	// 	beaconBestState.CandidateShardWaitingForCurrentRandom[i] = v
-	// }
+	beaconBestState.CandidateShardWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForCurrentRandom))
+	for i, v := range target.CandidateShardWaitingForCurrentRandom {
+		beaconBestState.CandidateShardWaitingForCurrentRandom[i] = v
+	}
 
 	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateShardWaitingForCurrentRandom):", len(beaconBestState.CandidateShardWaitingForCurrentRandom))
 
-	// beaconBestState.CandidateBeaconWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateBeaconWaitingForCurrentRandom))
-	// for i, v := range target.CandidateBeaconWaitingForCurrentRandom {
-	// 	beaconBestState.CandidateBeaconWaitingForCurrentRandom[i] = v
-	// }
+	beaconBestState.CandidateBeaconWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateBeaconWaitingForCurrentRandom))
+	for i, v := range target.CandidateBeaconWaitingForCurrentRandom {
+		beaconBestState.CandidateBeaconWaitingForCurrentRandom[i] = v
+	}
 
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForCurrentRandom):", len(beaconBestState.CandidateBeaconWaitingForCurrentRandom))
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForCurrentRandom):", len(beaconBestState.CandidateBeaconWaitingForCurrentRandom))
 
-	// beaconBestState.CandidateShardWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForNextRandom))
-	// for i, v := range target.CandidateShardWaitingForNextRandom {
-	// 	beaconBestState.CandidateShardWaitingForNextRandom[i] = v
-	// }
+	beaconBestState.CandidateShardWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForNextRandom))
+	for i, v := range target.CandidateShardWaitingForNextRandom {
+		beaconBestState.CandidateShardWaitingForNextRandom[i] = v
+	}
 
 	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateShardWaitingForNextRandom):", len(beaconBestState.CandidateShardWaitingForNextRandom))
 
-	// beaconBestState.CandidateBeaconWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateBeaconWaitingForNextRandom))
-	// for i, v := range target.CandidateBeaconWaitingForNextRandom {
-	// 	beaconBestState.CandidateBeaconWaitingForNextRandom[i] = v
-	// }
+	beaconBestState.CandidateBeaconWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateBeaconWaitingForNextRandom))
+	for i, v := range target.CandidateBeaconWaitingForNextRandom {
+		beaconBestState.CandidateBeaconWaitingForNextRandom[i] = v
+	}
 
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForNextRandom):", len(beaconBestState.CandidateBeaconWaitingForNextRandom))
+	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForNextRandom):", len(beaconBestState.CandidateBeaconWaitingForNextRandom))
 
-	// // Clone shard committee
-	// beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
-	// for i, v := range target.ShardPendingValidator {
-	// 	beaconBestState.ShardPendingValidator[i] = make([]incognitokey.CommitteePublicKey, len(v))
-	// 	for index, value := range v {
-	// 		beaconBestState.ShardPendingValidator[i][index] = value
-	// 	}
-	// }
+	// Clone shard committee
+	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
+	for i, v := range target.ShardPendingValidator {
+		beaconBestState.ShardPendingValidator[i] = make([]incognitokey.CommitteePublicKey, len(v))
+		for index, value := range v {
+			beaconBestState.ShardPendingValidator[i][index] = value
+		}
+	}
 
 	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.ShardPendingValidator):", len(beaconBestState.ShardPendingValidator))
 
