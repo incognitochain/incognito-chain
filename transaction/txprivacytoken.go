@@ -458,6 +458,85 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 	return nil
 }
 
+func estimateTxSizeOfInitTokenSalary(publicKey []byte, amount uint64, coinName string, coinID *common.Hash) uint64 {
+	receiver := &privacy.PaymentInfo{
+		Amount:         amount,
+		PaymentAddress: privacy.PaymentAddress{
+			Pk: publicKey,
+			Tk: []byte{},
+		},
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], coinID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &CustomTokenPrivacyParamTx{
+		PropertyID:     propID.String(),
+		PropertyName:   coinName,
+		PropertySymbol: coinName,
+		Amount:         amount,
+		TokenTxType:    CustomTokenInit,
+		Receiver:       []*privacy.PaymentInfo{receiver},
+		TokenInput:     []coin.PlainCoin{},
+		Mintable:       true,
+	}
+	estimateTxSizeParam := NewEstimateTxSizeParam(0,0,false, nil, tokenParams, uint64(0))
+	return EstimateTxSize(estimateTxSizeParam)
+}
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata, coinID *common.Hash, coinName string) error {
+	// init data for tx PRV for fee
+	txPrivacyParams := NewTxPrivacyInitParams(
+		privKey, []*privacy.PaymentInfo{}, nil, 0, false, stateDB, nil, metaData, nil,
+	)
+	normalTx, err := NewTxPrivacyFromParams(txPrivacyParams)
+	if err != nil {
+		Logger.Log.Errorf("Cannot create tx from params, error %v", err)
+		return NewTransactionErr(PrivacyTokenInitFeeParamsError, err)
+	}
+	if err = normalTx.Init(txPrivacyParams); err != nil {
+		return NewTransactionErr(PrivacyTokenInitPRVError, err)
+	}
+	// override TxCustomTokenPrivacyType type
+	normalTx.SetType(common.TxCustomTokenPrivacyType)
+	txCustomTokenPrivacy.TxBase = NewTxBaseFromMetadataTx(normalTx)
+	// check tx size
+	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
+	if txSize := estimateTxSizeOfInitTokenSalary(publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
+		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
+	// check action type and create privacy custom toke data
+	txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
+		Type:           CustomTokenInit,
+		PropertyName:   coinName,
+		PropertySymbol: coinName,
+		Amount:         otaCoin.GetValue(),
+	}
+	tempOutputCoin := []coin.Coin{otaCoin}
+	proof := new(privacy.ProofV2)
+	proof.Init()
+	if err = proof.SetOutputCoins(tempOutputCoin); err != nil {
+		Logger.Log.Errorf("Init customPrivacyToken cannot set outputCoins")
+		return err
+	}
+	temp := TxVersion2{}
+	temp.Version = txVersion2Number
+	temp.Type = common.TxNormalType
+	temp.Proof = proof
+	temp.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes)-1]
+	// sign Tx
+	temp.sigPrivKey = *privKey
+	if temp.Sig, _, err = signNoPrivacy(privKey, temp.Hash()[:]); err != nil {
+		Logger.Log.Error(errors.New("can't sign this tx"))
+		return NewTransactionErr(SignTxError, err)
+	}
+	temp.SigPubKey = otaCoin.GetPublicKey().ToBytesS()
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], coinID[:])
+	txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = propertyID
+	txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
+	txCustomTokenPrivacy.TxPrivacyTokenData.Mintable = true
+	return nil
+}
+
 // =================== FUNCTION THAT CHECK STUFFS  ===================
 
 // IsCoinsBurning - checking this is a burning pToken
