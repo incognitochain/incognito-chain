@@ -10,7 +10,7 @@ import (
 )
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
-	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height > 1550000 {
+	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1550000 {
 		return nil
 	}
 	beaconHeight := block.Header.Height - 1
