@@ -53,7 +53,8 @@ func main() {
 	////paymentKeys := []string{"", "12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE", "12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9", "12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
 
 	//fmt.Println(privateKeyToPaymentAddress(privateKeys[2]))
-	tool := new(debugtool.DebugTool).InitLocal()
+	//tool := new(debugtool.DebugTool).InitLocal()
+	tool := new(debugtool.DebugTool).InitDevNet()
 	testInitToken(tool, privateKeys, privateSeeds)
 
 	//b, _ := tool.SwitchCoinVersion(privateKeys[1])
@@ -65,11 +66,13 @@ func main() {
 	//fmt.Println("===========================")
 	//fmt.Println("Printing output coins after create tx")
 
+
 	//b, _ := tool.GetListOutputCoins(privateKeys[0])
 	//fmt.Println(string(b))
-	b, _ := tool.GetListOutputCoins(privateKeys[1])
-	fmt.Println(string(b))
-	//b, _ = tool.GetListOutputCoins(privateKeys[3])
+	//b, _ = tool.GetListOutputCoins(privateKeys[1])
+	//fmt.Println(string(b))
+	//b, _ = tool.GetListOutputCoins(privateKeys[2])
+
 	//fmt.Println(string(b))
 
 	//b, _ := tool.CreateAndSendTransactionFromAToB(privateKeys[1], privateKeys[3], "10")
@@ -82,16 +85,15 @@ func main() {
 	//b, _ := tool.GetTransactionByHash("0ea685820dd4d316bc850a8dcda6d2c6b74ecfa1190f13a9d428cb61e3ea5204")
 	//fmt.Println(string(b))
 
-	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[1]))
-	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
-	//fmt.Println(string(b))
-	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[2]))
-	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[1])
-	//fmt.Println(string(b))
-	//fmt.Println("Printing balance of:", privateKeyToPublicKey(privateKeys[3]))
-	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
-	//fmt.Println(string(b))
-	//
+	b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
+	fmt.Println(string(b))
+	b, _ = tool.GetBalanceByPrivatekey(privateKeys[1])
+	fmt.Println(string(b))
+	b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
+	fmt.Println(string(b))
+	b, _ = tool.GetBalanceByPrivatekey(privateKeys[3])
+	fmt.Println(string(b))
+
 	//b, _ := tool.Stake(privateKeys[3], privateSeeds[3])
 	//fmt.Println(string(b))
 	//b, _ = tool.Stake(privateKeys[2], privateSeeds[2])

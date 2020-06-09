@@ -49,16 +49,16 @@ func (t TxRandom) Bytes() []byte {
 	return t[:]
 }
 
-func (t *TxRandom) SetBytes(coinBytes []byte) error {
-	if len(coinBytes) != TxRandomGroupSize {
-		return errors.New("Cannot TxRandomGroupSize.SetBytes because coinBytes is too short < TxRandomGroupSize")
+func (t *TxRandom) SetBytes(b []byte) error {
+	if len(b) != TxRandomGroupSize {
+		return errors.New("Cannot TxRandomGroupSize.SetBytes because b is too short < TxRandomGroupSize")
 	}
-	_, err := new(operation.Point).FromBytesS(coinBytes[:operation.Ed25519KeySize])
+	_, err := new(operation.Point).FromBytesS(b[:operation.Ed25519KeySize])
 	if err != nil {
 		errStr := fmt.Sprintf("Cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
 		return errors.New(errStr)
 	}
-	copy(t[:], coinBytes)
+	copy(t[:], b)
 	return nil
 }
 

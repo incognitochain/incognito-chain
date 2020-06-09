@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -28,6 +29,11 @@ func parseTradeRefundContent(
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade refund content: %+v", err)
 		return nil, err
 	}
+	fmt.Println("Trade Request TxRandom ", pdeTradeRequestAction.Meta.TxRandom)
+	fmt.Println("Trade Request TradeAddress ", pdeTradeRequestAction.Meta.TraderAddressStr)
+	fmt.Println("Trade Request TradeAmount ", pdeTradeRequestAction.Meta.MinAcceptableAmount)
+	fmt.Println("Trade Request Request Tx ", pdeTradeRequestAction.TxReqID)
+
 	return &pdeTradeRequestAction, nil
 }
 
@@ -41,12 +47,17 @@ func parseTradeAcceptedContent(
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade accepted content: %+v", err)
 		return nil, err
 	}
+	fmt.Println("Trade Request TxRandom ", pdeTradeAcceptedContent.TxRandom)
+	fmt.Println("Trade Request TradeAddress ", pdeTradeAcceptedContent.TraderAddressStr)
+	fmt.Println("Trade Request TradeAmount ", pdeTradeAcceptedContent.ReceiveAmount)
+	fmt.Println("Trade Request RequestID ", pdeTradeAcceptedContent.ReceiveAmount)
 	return &pdeTradeAcceptedContent, nil
 }
 
 func buildTradeResTx(
 	instStatus string,
 	receiverAddressStr string,
+	txRandom []byte,
 	receiveAmt uint64,
 	tokenIDStr string,
 	requestedTxID common.Hash,
@@ -71,14 +82,23 @@ func buildTradeResTx(
 		return nil, err
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
+	var otaCoin *privacy.CoinV2
+	if txRandom == nil || len(txRandom) == 0 {
+		otaCoin, err = coin.NewCoinFromAmountAndTxRandomBytes(receiveAmt,receiverAddr, txRandom, []byte{})
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and ota address")
+			return nil, err
+		}
+	} else {
+		otaCoin, err = coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and payment address")
+			return nil, err
+		}
+	}
 	// the returned currency is PRV
 	if tokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.TxVersion2)
-		otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
-		if err != nil {
-			Logger.log.Errorf("Cannot get new coin from amount and receiver")
-			return nil, err
-		}
 		err = resTx.InitTxSalary(
 			otaCoin,
 			producerPrivateKey,
@@ -109,6 +129,9 @@ func buildTradeResTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
+
+	resTx.InitTxTokenSalary()
+
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -147,9 +170,11 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	if shardID != pdeTradeRequestAction.ShardID {
 		return nil, nil
 	}
+
 	resTx, err := buildTradeResTx(
 		instStatus,
 		pdeTradeRequestAction.Meta.TraderAddressStr,
+		pdeTradeRequestAction.Meta.TxRandom,
 		pdeTradeRequestAction.Meta.SellAmount+pdeTradeRequestAction.Meta.TradingFee,
 		pdeTradeRequestAction.Meta.TokenIDToSellStr,
 		pdeTradeRequestAction.TxReqID,
@@ -184,6 +209,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	resTx, err := buildTradeResTx(
 		instStatus,
 		pdeTradeAcceptedContent.TraderAddressStr,
+		pdeTradeAcceptedContent.TxRandom,
 		pdeTradeAcceptedContent.ReceiveAmount,
 		pdeTradeAcceptedContent.TokenIDToBuyStr,
 		pdeTradeAcceptedContent.RequestedTxID,

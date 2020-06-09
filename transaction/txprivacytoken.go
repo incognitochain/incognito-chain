@@ -331,6 +331,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 
 			// Amount, Randomness, SharedRandom is transparency until we call concealData
 			message := []byte{}
+
 			// Set Info
 			if len(params.tokenParams.Receiver[0].Message) > 0 {
 				if len(params.tokenParams.Receiver[0].Message) > coin.MaxSizeInfoCoin {
@@ -354,7 +355,9 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 			}
 
 			temp.Proof = proof
-			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			if temp.PubKeyLastByteSender, err = params.inputCoin[0].GetShardID(); err != nil {
+				return NewTransactionErr(GetShardIDByPublicKeyError, err)
+			}
 
 			// sign Tx
 			temp.sigPrivKey = *params.senderKey

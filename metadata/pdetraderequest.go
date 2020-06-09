@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"strconv"
@@ -21,6 +22,7 @@ type PDETradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
+	TxRandom 			[]byte
 	MetadataBase
 }
 
@@ -37,6 +39,7 @@ type TokenPoolValueOperation struct {
 
 type PDETradeAcceptedContent struct {
 	TraderAddressStr         string
+	TxRandom				 []byte
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -54,6 +57,7 @@ func NewPDETradeRequest(
 	minAcceptableAmount uint64,
 	tradingFee uint64,
 	traderAddressStr string,
+	txRandom []byte,
 	metaType int,
 ) (*PDETradeRequest, error) {
 	metadataBase := MetadataBase{
@@ -66,6 +70,7 @@ func NewPDETradeRequest(
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
 		TraderAddressStr:    traderAddressStr,
+		TxRandom:			 txRandom,
 	}
 	pdeTradeRequest.MetadataBase = metadataBase
 	return pdeTradeRequest, nil
@@ -97,9 +102,10 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 	if (pc.SellAmount + pc.TradingFee) != tx.CalculateTxValue() {
 		return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
 	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], traderAddr.Pk[:]) {
-		return false, false, errors.New("TraderAddress incorrect")
-	}
+	// removed by ota feature
+	//if !bytes.Equal(tx.GetSigPubKey()[:], traderAddr.Pk[:]) {
+	//	return false, false, errors.New("TraderAddress incorrect")
+	//}
 
 	_, err = common.Hash{}.NewHashFromStr(pc.TokenIDToBuyStr)
 	if err != nil {
@@ -135,6 +141,9 @@ func (pc PDETradeRequest) Hash() *common.Hash {
 	record += pc.TokenIDToBuyStr
 	record += pc.TokenIDToSellStr
 	record += pc.TraderAddressStr
+	if pc.TxRandom == nil || len(pc.TxRandom) == 0 {
+		record += string(pc.TxRandom)
+	}
 	record += strconv.FormatUint(pc.SellAmount, 10)
 	record += strconv.FormatUint(pc.MinAcceptableAmount, 10)
 	record += strconv.FormatUint(pc.TradingFee, 10)
@@ -155,6 +164,9 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(PDETradeRequestMeta), actionContentBase64Str}
+	fmt.Println("Request Action: ", actionContentBase64Str )
+	fmt.Println("Request Action: ", actionContentBase64Str )
+	fmt.Println("Request Action: ", actionContentBase64Str )
 	return [][]string{action}, nil
 }
 
