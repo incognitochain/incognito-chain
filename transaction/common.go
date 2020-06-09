@@ -60,7 +60,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		commitmentInHash := common.HashH(usableCommitment)
 		listUsableCommitments[commitmentInHash] = usableCommitment
 		listUsableCommitmentsIndices[i] = commitmentInHash
-		index, err := statedb.GetCommitmentIndex(param.stateDB, *param.tokenID, usableCommitment, param.shardID)
+		index, err := txDatabaseWrapper.getCommitmentIndex(param.stateDB, *param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
 			Logger.Log.Error(err)
 			return
@@ -71,7 +71,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
+	lenCommitment, err1 := txDatabaseWrapper.getCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 	if err1 != nil {
 		Logger.Log.Error(err1)
 		return
@@ -87,16 +87,16 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
-				lenCommitment, _ = statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
+				lenCommitment, _ = txDatabaseWrapper.getCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
 				fmt.Println("Length of commitments", lenCommitment)
 				for i := uint64(0); i < lenCommitment.Uint64(); i += 1 {
-					temp, _ := statedb.GetCommitmentByIndex(param.stateDB, *param.tokenID, i, param.shardID)
+					temp, _ := txDatabaseWrapper.getCommitmentByIndex(param.stateDB, *param.tokenID, i, param.shardID)
 					fmt.Println(temp)
 				}
-				ok, err := statedb.HasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
+				ok, err := txDatabaseWrapper.hasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
-					temp, _ := statedb.GetCommitmentByIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
+					temp, _ := txDatabaseWrapper.getCommitmentByIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
 					if _, found := listUsableCommitments[common.HashH(temp)]; !found {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -122,15 +122,6 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		j++
 	}
 	return commitmentIndexs, myCommitmentIndexs, commitments
-}
-
-// checkSNDerivatorExistence return true if snd exists in snDerivators list
-func checkSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, stateDB *statedb.StateDB) (bool, error) {
-	ok, err := statedb.HasSNDerivator(stateDB, *tokenID, snd.ToBytesS())
-	if err != nil {
-		return false, err
-	}
-	return ok, nil
 }
 
 type EstimateTxSizeParam struct {
@@ -286,7 +277,7 @@ func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 		}
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
-		found, err := statedb.HasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
+		found, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
 		if err != nil {
 			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 			return nil, err
