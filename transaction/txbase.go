@@ -713,7 +713,7 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 	inputCoins := tx.Proof.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
 		serialNumber := inputCoins[i].GetKeyImage().ToBytesS()
-		ok, err := statedb.HasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
+		ok, err := txDatabaseWrapper.hasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}

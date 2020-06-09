@@ -383,7 +383,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				Logger.Log.Debug("New Privacy Token %+v ", newHashInitToken)
-				existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, newHashInitToken)
+				existed := txDatabaseWrapper.privacyTokenIDExisted(params.transactionStateDB, newHashInitToken)
 				if existed {
 					Logger.Log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
@@ -398,10 +398,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(paramsInterface interface
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
-			existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, *propertyID)
+			existed := txDatabaseWrapper.privacyTokenIDExisted(params.transactionStateDB, *propertyID)
 			if !existed {
 				isBridgeToken := false
-				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(params.bridgeStateDB)
+				allBridgeTokensBytes, err := txDatabaseWrapper.getAllBridgeTokens(params.bridgeStateDB)
 				if err != nil {
 					return NewTransactionErr(TokenIDExistedError, err)
 				}
@@ -704,15 +704,15 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 			if txCustomTokenPrivacy.Type == common.TxRewardType && txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
-				isBridgeCentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
-				isBridgeDecentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
+				isBridgeCentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
+				isBridgeDecentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
 				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
 					return true, nil
 				}
 				return false, nil
 			} else {
 				// check exist token
-				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
+				if txDatabaseWrapper.privacyTokenIDExisted(transactionStateDB, tokenID) {
 					return false, nil
 				}
 				return true, nil

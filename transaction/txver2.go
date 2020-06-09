@@ -317,11 +317,11 @@ func (tx *TxVersion2) getRingFromTxWithDatabase(transactionStateDB *statedb.Stat
 		row := make([]*operation.Point, m+1)
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
-			if ok, err := statedb.HasOTACoinIndex(transactionStateDB, *tokenID, index.Uint64(), shardID); !ok || err != nil {
+			if ok, err := txDatabaseWrapper.hasOTACoinIndex(transactionStateDB, *tokenID, index.Uint64(), shardID); !ok || err != nil {
 				Logger.Log.Errorf("HasOTACoinIndex error %v ", err)
 				return nil, err
 			}
-			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+			randomCoinBytes, err := txDatabaseWrapper.getOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if err != nil {
 				Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
 				return nil, err
@@ -349,7 +349,7 @@ func (tx *TxVersion2) getRingFromTxWithDatabase(transactionStateDB *statedb.Stat
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
 func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
-	lenOTA, err := statedb.GetOTACoinLength(params.stateDB, *params.tokenID, shardID)
+	lenOTA, err := txDatabaseWrapper.getOTACoinLength(params.stateDB, *params.tokenID, shardID)
 	if err != nil || lenOTA == nil {
 		Logger.Log.Errorf("Getting length of commitment error, either database length ota is empty or has error, error = %v", err)
 		return nil, nil, err
@@ -367,7 +367,7 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
-				if rowIndexes[j], err = statedb.GetOTACoinIndex(params.stateDB, *params.tokenID, publicKeyBytes); err != nil {
+				if rowIndexes[j], err = txDatabaseWrapper.getOTACoinIndex(params.stateDB, *params.tokenID, publicKeyBytes); err != nil {
 					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, err
 				}
@@ -376,11 +376,11 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				if ok, err := statedb.HasOTACoinIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID); !ok || err != nil {
+				if ok, err := txDatabaseWrapper.hasOTACoinIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID); !ok || err != nil {
 					Logger.Log.Errorf("Has commitment index error %v ", err)
 					return nil, nil, err
 				}
-				coinBytes, err := statedb.GetOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
+				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
 					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
 					return nil, nil, err
@@ -551,7 +551,7 @@ func (tx *TxVersion2) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 
 	// Check database for ota
-	found, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
+	found, err := txDatabaseWrapper.hasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 		return false, err

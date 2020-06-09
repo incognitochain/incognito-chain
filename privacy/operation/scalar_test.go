@@ -56,17 +56,17 @@ func TestScalar_Mul(t *testing.T) {
 		c := RandomScalar()
 		res := new(Scalar).Mul(a, b)
 		res = res.Mul(res, c)
-
-		curveOrder := C25519.CurveOrder()
-
+		res.key = Reverse(res.key)
 		resBN := new(big.Int).SetBytes(res.ToBytesS())
+
+		curveOrder := Reverse(C25519.CurveOrder())
 		curveOrderBN := new(big.Int).SetBytes(ArrayToSlice(curveOrder.ToBytes()))
 
 		if resBN.Cmp(curveOrderBN) == 1 {
-			count++
-			fmt.Printf("Wrong!!!!!\n")
+			t.Fatalf("expected mul correct !")
 		}
 
+		res.key = Reverse(res.key)
 		var resPrime C25519.Key
 		C25519.ScMul(&resPrime, &a.key, &b.key)
 		C25519.ScMul(&resPrime, &resPrime, &c.key)

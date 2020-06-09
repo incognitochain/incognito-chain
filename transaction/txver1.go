@@ -36,6 +36,15 @@ func (tx *TxVersion1) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	}
 }
 
+// checkSNDerivatorExistence return true if snd exists in snDerivators list
+func checkSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, stateDB *statedb.StateDB) (bool, error) {
+	ok, err := txDatabaseWrapper.hasSNDerivator(stateDB, *tokenID, snd.ToBytesS())
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
 // ========== NORMAL INIT FUNCTIONS ==========
 
 func parseCommitments(params *TxPrivacyInitParams, shardID byte) ([]uint64, []uint64, error) {
@@ -61,7 +70,7 @@ func parseCommitments(params *TxPrivacyInitParams, shardID byte) ([]uint64, []ui
 func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmentIndexs []uint64) ([]*operation.Point, error) {
 	commitmentProving := make([]*privacy.Point, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
-		temp, err := statedb.GetCommitmentByIndex(params.stateDB, *params.tokenID, cmIndex, shardID)
+		temp, err := txDatabaseWrapper.getCommitmentByIndex(params.stateDB, *params.tokenID, cmIndex, shardID)
 		if err != nil {
 			Logger.Log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
 			return nil, NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
@@ -348,12 +357,12 @@ func getCommitmentsInDatabase(
 
 		for j := 0; j < sz; j++ {
 			index := commitmentIndices[i*privacy_util.CommitmentRingSize+j]
-			commitmentBytes, err := statedb.GetCommitmentByIndex(transactionStateDB, *tokenID, index, shardID)
+			commitmentBytes, err := txDatabaseWrapper.getCommitmentByIndex(transactionStateDB, *tokenID, index, shardID)
 			if err != nil {
 				Logger.Log.Errorf("GetCommitmentInDatabase: Error when getCommitmentByIndex from database", index, err)
 				return nil, NewTransactionErr(GetCommitmentsInDatabaseError, err)
 			}
-			recheckIndex, err := statedb.GetCommitmentIndex(transactionStateDB, *tokenID, commitmentBytes, shardID)
+			recheckIndex, err := txDatabaseWrapper.getCommitmentIndex(transactionStateDB, *tokenID, commitmentBytes, shardID)
 			if err != nil || recheckIndex.Uint64() != index {
 				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Error when getCommitmentIndex from database", index, err)
 				return nil, NewTransactionErr(GetCommitmentsInDatabaseError, err)
@@ -437,7 +446,7 @@ func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
-			ok, err := statedb.HasCommitment(transactionStateDB, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID)
+			ok, err := txDatabaseWrapper.hasCommitment(transactionStateDB, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID)
 			if !ok || err != nil {
 				if err != nil {
 					Logger.Log.Error(err)
