@@ -37,14 +37,14 @@ type BeaconBestState struct {
 	BeaconHeight                           uint64                                     `json:"BeaconHeight"`        // [remove]
 	BeaconProposerIndex                    int                                        `json:"BeaconProposerIndex"` // [remove]
 	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"-"`
-	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"-"`                                     // [1] [remove] [Testing]
-	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch [2] [remove]
-	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"-"`                                     // [1] [remove] [Testing]
-	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"`    // shard candidate list, waiting to be shuffled in next epoch [2] [remove]
-	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"-"`                                     // [1] [remove] [Testing]
-	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"-"`                                     // current committee and validator of all shard
-	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`                 // pending candidate waiting for swap to get in committee of all shard [2] [remove]
-	AutoStaking                            map[string]bool                            `json:"AutoStaking"`                           // [remove]
+	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"-"`
+	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"-"` // snapshot shard candidate list, waiting to be shuffled in this current epoch [2] [remove] [Testing]
+	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"-"`
+	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey          `json:"-"` // shard candidate list, waiting to be shuffled in next epoch [2] [remove] [Testing]
+	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"-"`
+	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"-"`           // current committee and validator of all shard
+	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"-"`           // pending candidate waiting for swap to get in committee of all shard [2] [remove] [Testing]
+	AutoStaking                            map[string]bool                            `json:"AutoStaking"` // [remove]
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
@@ -78,7 +78,7 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 	BeaconPreCommitteeHash   common.Hash `json:"BeaconPreCommitteeHash"` // key for pending and waiting beacon committee (current random, next random candidates, pending validators)
-	ShardPreCommitteeHash    common.Hash `json:"ShardPreCommitteeHash"`  // key for pending and waiting shard committee (current random, next random candidates, pending validators)
+	ShardPreCommitteeHash    common.Hash `json:"ShardPreCommitteeHash"`  // key for pending and waiting shards committee (current random, next random candidates and pending validators)
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {

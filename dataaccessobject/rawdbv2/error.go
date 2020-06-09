@@ -52,6 +52,7 @@ const (
 	StoreBeaconPreCommitteeError
 	StoreBeaconPreCommitteeInfoError
 	GetBeaconPreCommitteeInfoError
+	GetShardPendingValidatorsError
 	// Shard
 	StoreShardBlockError
 	StoreShardBlockWithViewError
@@ -166,6 +167,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreBeaconPreCommitteeError:            {-4030, "Store Beacon Pre Committee Error"},
 	StoreBeaconPreCommitteeInfoError:        {-4031, "Store Beacon Pre Committee Info Error"},
 	GetBeaconPreCommitteeInfoError:          {-4032, "Get Beacon Pre Committee Info Error"},
+	GetShardPendingValidatorsError:          {-4033, "Get Shard Pending Validators Error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-5001, "Store relaying header bnb error"},

@@ -303,3 +303,18 @@ func GetLastBeaconHeightConfirmCrossShardKey() []byte {
 	temp = append(temp, lastBeaconHeightConfirmCrossShard...)
 	return temp
 }
+
+//getBeaconPreCommitteeInfoKey ...
+func getBeaconPreCommitteeInfoKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}
+
+//getShardPreCommitteeInfoKey ...
+func getShardPreCommitteeInfoKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}
+
+//getShardPendingValidatorsKey ...
+func getShardPendingValidatorsKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}

@@ -341,7 +341,16 @@ func GetBeaconSlashStateRootHash(db incdb.KeyValueReader, height uint64) (common
 
 //StoreBeaconPreCommitteeInfo ...
 func StoreBeaconPreCommitteeInfo(db incdb.KeyValueWriter, hash common.Hash, value []byte) error {
-	err := db.Put(hash.Bytes(), value)
+	err := db.Put(getBeaconPreCommitteeInfoKey(hash), value)
+	if err != nil {
+		return NewRawdbError(StoreBeaconPreCommitteeInfoError, err)
+	}
+	return nil
+}
+
+//StoreShardPreCommitteeInfo ...
+func StoreShardPreCommitteeInfo(db incdb.KeyValueWriter, hash common.Hash, value []byte) error {
+	err := db.Put(getShardPreCommitteeInfoKey(hash), value)
 	if err != nil {
 		return NewRawdbError(StoreBeaconPreCommitteeInfoError, err)
 	}
@@ -350,9 +359,36 @@ func StoreBeaconPreCommitteeInfo(db incdb.KeyValueWriter, hash common.Hash, valu
 
 //GetBeaconPreCommitteeInfo ...
 func GetBeaconPreCommitteeInfo(db incdb.KeyValueReader, hash common.Hash) ([]byte, error) {
-	res, err := db.Get(hash.Bytes())
+	res, err := db.Get(getBeaconPreCommitteeInfoKey(hash))
 	if err != nil {
 		return nil, NewRawdbError(GetBeaconPreCommitteeInfoError, err)
 	}
 	return res, nil
+}
+
+//GetShardPreCommitteeInfo ...
+func GetShardPreCommitteeInfo(db incdb.KeyValueReader, hash common.Hash) ([]byte, error) {
+	res, err := db.Get(getShardPreCommitteeInfoKey(hash))
+	if err != nil {
+		return nil, NewRawdbError(GetBeaconPreCommitteeInfoError, err)
+	}
+	return res, nil
+}
+
+//GetShardPendingValidators ...
+func GetShardPendingValidators(db incdb.KeyValueReader, hash common.Hash) ([]byte, error) {
+	res, err := db.Get(getShardPendingValidatorsKey(hash))
+	if err != nil {
+		return nil, NewRawdbError(GetShardPendingValidatorsError, err)
+	}
+	return res, nil
+}
+
+//StoreShardPendingValidators ...
+func StoreShardPendingValidators(db incdb.KeyValueWriter, hash common.Hash, value []byte) error {
+	err := db.Put(getShardPendingValidatorsKey(hash), value)
+	if err != nil {
+		return NewRawdbError(StoreBeaconPreCommitteeInfoError, err)
+	}
+	return nil
 }

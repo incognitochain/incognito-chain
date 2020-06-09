@@ -3,6 +3,7 @@ package beststate
 import (
 	"encoding/json"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -15,9 +16,9 @@ type BeaconPreCommitteeInfo struct {
 
 //ShardPreCommitteeInfo ...
 type ShardPreCommitteeInfo struct {
-	CandidateShardWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"`
-	CandidateShardWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"`
-	ShardPendingValidator                 map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+	CandidateShardWaitingForCurrentRandom []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForCurrentRandom"`
+	CandidateShardWaitingForNextRandom    []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForNextRandom"`
+	ShardPendingValidatorHashs            map[byte]common.Hash              `json:"ShardPendingValidatorHashs"`
 }
 
 func (beaconPreCommitteeInfo *BeaconPreCommitteeInfo) MarshalJSON() ([]byte, error) {

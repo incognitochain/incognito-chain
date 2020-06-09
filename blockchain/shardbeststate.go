@@ -39,7 +39,7 @@ type ShardBestState struct {
 	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
 	ShardCommittee         []incognitokey.CommitteePublicKey `json:"-"`
-	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"-"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string                 `json:"StakingTx"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
@@ -54,6 +54,7 @@ type ShardBestState struct {
 	MetricBlockHeight      uint64
 	//================================ StateDB Method
 	// block height => root hash
+	ShardPendingValidatorHash  common.Hash `json:"ShardPendingValidatorHash"` // Shard pending validator for every block
 	consensusStateDB           *statedb.StateDB
 	ConsensusStateDBRootHash   common.Hash
 	transactionStateDB         *statedb.StateDB
@@ -352,6 +353,11 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
 	for i, v := range target.ShardCommittee {
 		shardBestState.ShardCommittee[i] = v
+	}
+
+	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
+	for i, v := range target.ShardPendingValidator {
+		shardBestState.ShardPendingValidator[i] = v
 	}
 
 	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))

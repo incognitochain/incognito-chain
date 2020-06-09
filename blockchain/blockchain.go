@@ -525,6 +525,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
+
+		err = v.restorePendingValidators(shardID, blockchain)
+		if err != nil {
+			panic(err)
+		}
+
 	}
 
 	return nil
