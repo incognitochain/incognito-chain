@@ -890,7 +890,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	}
 
 	//@Note: instruction for resetting portal db
-	if blockchain.config.ChainParams.Net == Testnet && beaconHeight == 1580400 {
+	if blockchain.config.ChainParams.Net == Testnet && beaconHeight + 1 == 1580600 {
 		resetInst := blockchain.buildResetPortalDBInst()
 		instructions = append(instructions, resetInst)
 	}
