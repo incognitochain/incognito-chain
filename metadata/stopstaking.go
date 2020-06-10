@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -20,16 +21,16 @@ type StopAutoStakingMetadata struct {
 	Sig                []byte
 }
 
-func (meta *StopAutoStakingMetadata) HashWithoutSig() *common.Hash {
-	return meta.MetadataBase.Hash()
-}
-
 func (meta *StopAutoStakingMetadata) Hash() *common.Hash {
 	record := strconv.Itoa(meta.Type)
 	data := []byte(record)
 	data = append(data, meta.Sig...)
 	hash := common.HashH(data)
 	return &hash
+}
+
+func (meta *StopAutoStakingMetadata) HashWithoutSig() *common.Hash {
+	return meta.MetadataBase.Hash()
 }
 
 func (*StopAutoStakingMetadata) ShouldSignMetaData() bool { return true }
@@ -99,7 +100,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 
 		if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
 			fmt.Println("Check authorized sender:", ok, err)
-			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), tx.GetSender()))
+			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSigPubKey(), tx.GetSigPubKey()))
 		}
 		//if !bytes.Equal(stakingTx.GetSender(), txr.GetSender()) {
 		//}
@@ -125,11 +126,16 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 	if tx.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
-	check, _, amount := tx.GetAndCheckBurningReceiver(chainRetriever, beaconHeight)
-	if !check {
-		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver (Burn Address)")
+	isBurned, _, amount, tokenID, err := tx.GetTxBurnData(chainRetriever, beaconHeight)
+	if err != nil {
+		return false, false, errors.New("Error Cannot get burn data from tx")
 	}
-
+	if !isBurned {
+		return false, false, errors.New("Error StopAutoStaking tx should be a burn tx")
+	}
+	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
+		return false, false, errors.New("Error StopAutoStaking tx should transfer PRV only")
+	}
 	if stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount {
 		return false, false, errors.New("receiver amount should be zero")
 	}

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
@@ -57,10 +58,17 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		metadata.ReturnStakingMeta,
 	)
 	returnStakingTx := new(transaction.TxVersion2)
-	check, _, amount := txData.GetAndCheckBurningReceiver(blockGenerator.chain, view.GetBeaconHeight())
-	if !check {
-		return nil, NewBlockChainError(GetAndCheckBurnError, err)
+	isBurned, _, amount, tokenID, err := txData.GetTxBurnData(blockGenerator.chain, view.GetBeaconHeight())
+	if err != nil {
+		return nil, errors.New("Error Cannot get burn data from tx")
 	}
+	if !isBurned {
+		return nil, errors.New("Error Staking tx should be a burn tx")
+	}
+	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
+		return nil, errors.New("Error Staking tx should transfer PRV only")
+	}
+
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(amount, keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")

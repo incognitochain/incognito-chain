@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/privacy"
 
@@ -19,8 +20,11 @@ import (
 // Interface for all types of metadata in tx
 type Metadata interface {
 	GetType() int
+	GetSig() []byte
+	SetSig([]byte)
 	ShouldSignMetaData() bool
 	Hash() *common.Hash
+	HashWithoutSig() *common.Hash
 	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
 	ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error)
 	ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error)
@@ -116,9 +120,12 @@ type Transaction interface {
 	// =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 	GetTxActualSize() uint64
 	GetReceivers() ([][]byte, []uint64)
-	GetSender() []byte
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
-	GetAndCheckBurningReceiver(ChainRetriever, uint64) (bool, []byte, uint64)
+
+	GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error)
+	GetTxMintData() (bool, []byte, []byte,  uint64, *common.Hash, error)
+	GetTxBurnData(ChainRetriever, uint64) (bool, []byte, uint64, *common.Hash, error)
+
 	GetMetadataFromVinsTx(ChainRetriever, ShardViewRetriever, BeaconViewRetriever) (Metadata, error)
 	ListSerialNumbersHashH() []common.Hash
 	String() string

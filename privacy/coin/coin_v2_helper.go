@@ -15,20 +15,16 @@ func NewCoinFromAmountAndReceiver(amount uint64, receiver key.PaymentAddress) (*
 	return NewCoinFromPaymentInfo(paymentInfo)
 }
 
-func NewCoinFromAmountAndTxRandomBytes(amount uint64, receiver key.PaymentAddress, txRandomBytes []byte, info []byte) (*CoinV2, error) {
+func NewCoinFromAmountAndTxRandomBytes(amount uint64, receiver key.PaymentAddress, txRandom *TxRandom, info []byte) (*CoinV2, error) {
 	publicKey, err := new(operation.Point).FromBytesS(receiver.Pk)
 	if err != nil {
-		return nil, err
-	}
-	txr := new(TxRandom)
-	if err := txr.SetBytes(txRandomBytes); err != nil {
 		return nil, err
 	}
 	c := new(CoinV2).Init()
 	c.SetPublicKey(publicKey)
 	c.SetAmount(new(operation.Scalar).FromUint64(amount))
 	c.SetRandomness(operation.RandomScalar())
-	c.SetTxRandom(txr)
+	c.SetTxRandom(txRandom)
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 	c.SetSharedRandom(nil)
 	c.SetInfo(info)

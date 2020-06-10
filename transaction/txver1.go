@@ -36,6 +36,30 @@ func (tx *TxVersion1) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	}
 }
 
+func (tx *TxVersion1) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+	pubkeys := make([]*privacy.Point, 0)
+	amounts := []uint64{}
+
+	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
+		for _, coin := range tx.Proof.GetOutputCoins() {
+			coinPubKey := coin.GetPublicKey()
+			added := false
+			for i, key := range pubkeys {
+				if bytes.Equal(coinPubKey.ToBytesS(), key.ToBytesS()) {
+					added = true
+					amounts[i] += coin.GetValue()
+					break
+				}
+			}
+			if !added {
+				pubkeys = append(pubkeys, coinPubKey)
+				amounts = append(amounts, coin.GetValue())
+			}
+		}
+	}
+	return pubkeys, nil, amounts, nil
+}
+
 // checkSNDerivatorExistence return true if snd exists in snDerivators list
 func checkSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, stateDB *statedb.StateDB) (bool, error) {
 	ok, err := txDatabaseWrapper.hasSNDerivator(stateDB, *tokenID, snd.ToBytesS())

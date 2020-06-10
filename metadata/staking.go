@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -106,9 +107,15 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
-	check, _, amount := tx.GetAndCheckBurningReceiver(chainRetriever, beaconHeight)
-	if !check {
-		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver (Burn Address)")
+	isBurned, _, amount, tokenID, err := tx.GetTxBurnData(chainRetriever, beaconHeight)
+	if err != nil {
+		return false, false, errors.New("Error Cannot get burn data from tx")
+	}
+	if !isBurned {
+		return false, false, errors.New("Error Staking tx should be a burn tx")
+	}
+	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
+		return false, false, errors.New("Error Staking tx should transfer PRV only")
 	}
 
 	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {

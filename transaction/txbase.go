@@ -436,17 +436,33 @@ func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx TxBase) GetSender() []byte {
-	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
-		return nil
+func (tx  TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+	transaction, err := NewTransactionFromTxBase(tx)
+	if err != nil {
+		Logger.Log.Errorf("Cannot create new transaction from txBase")
+		return nil, nil, nil , err
 	}
-	if tx.IsPrivacy() {
-		return nil
+	return transaction.GetReceiverData()
+}
+
+func (tx TxBase) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, error) {
+	publicKeys, txRandoms, amounts, err := tx.GetReceiverData()
+	if err != nil {
+		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
+		return false, nil, nil, 0, nil, err
 	}
-	if len(tx.Proof.GetInputCoins()) == 0 || tx.Proof.GetInputCoins()[0] == nil {
-		return nil
+	if len(publicKeys) != 1 {
+		Logger.Log.Error("GetTxMintData : Should only have one receiver")
+		return false, nil, nil, 0, nil, errors.New("Error Tx mint has more than one receiver")
 	}
-	return tx.Proof.GetInputCoins()[0].GetPublicKey().ToBytesS()
+	if inputCoins := tx.Proof.GetInputCoins(); len(inputCoins) > 0 {
+		return false, nil, nil, 0, nil, errors.New("Error this is not Tx mint")
+	}
+	if txRandoms == nil {
+		return  true, publicKeys[0].ToBytesS(), nil, amounts[0], &common.PRVCoinID, nil
+	} else {
+		return true, publicKeys[0].ToBytesS(), txRandoms[0].Bytes(), amounts[0], &common.PRVCoinID, nil
+	}
 }
 
 func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
@@ -462,28 +478,48 @@ func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	return true, pubkeys[0], amounts[0], &common.PRVCoinID
 }
 
-func (tx TxBase) GetAndCheckBurningReceiver(retriever metadata.ChainRetriever, blockHeight uint64) (bool, []byte, uint64) {
-	pubkeys, amounts := tx.GetReceivers()
+//func (tx TxBase) GetTxMintData() (bool, *privacy.Point, *coin.TxRandom, uint64, *common.Hash) {
+//	publicKeys, txRandoms, amounts, err := tx.GetReceiverData()
+//	if err != nil {
+//		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
+//		return false, nil, nil, 0, &common.PRVCoinID
+//	}
+//	if len(publicKeys) != 1 {
+//		Logger.Log.Error("GetTxMintData receiver: one only")
+//		return false, nil, nil, 0, &common.PRVCoinID
+//	}
+//	if txRandoms != nil {
+//		return true, publicKeys[0] , txRandoms[0], amounts[0], &common.PRVCoinID
+//	}
+//	return true, publicKeys[0], nil, amounts[0], &common.PRVCoinID
+//}
+
+func (tx TxBase) GetTxBurnData(retriever metadata.ChainRetriever, blockHeight uint64) (bool, []byte, uint64, *common.Hash, error) {
+	pubkeys, _, amounts, err := tx.GetReceiverData()
+	if err != nil {
+		Logger.Log.Errorf("Cannot get receiver data, error %v", err)
+		return false, nil, 0, nil, err
+	}
 	if len(pubkeys) > 2 {
 		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
-		return false, nil, 0
+		return false, nil, 0, nil, err
 	}
 
 	burnAccount, err := wallet.Base58CheckDeserialize(retriever.GetBurningAddress(blockHeight))
 	if err != nil {
-		return false, nil, 0
+		return false, nil, 0, nil, err
 	}
 	burnPaymentAddress := burnAccount.KeySet.PaymentAddress
 
-	hasBurning, pubkey, amount := false, []byte{}, uint64(0)
+	isBurned, pubkey, amount := false, []byte{}, uint64(0)
 	for i, pk := range pubkeys {
-		if bytes.Equal(burnPaymentAddress.Pk, pk) {
-			hasBurning = true
-			pubkey = pk
+		if bytes.Equal(burnPaymentAddress.Pk, pk.ToBytesS()) {
+			isBurned = true
+			pubkey = pk.ToBytesS()
 			amount += amounts[i]
 		}
 	}
-	return hasBurning, pubkey, amount
+	return isBurned, pubkey, amount, &common.PRVCoinID, nil
 }
 
 // implement this func if needed
@@ -585,8 +621,7 @@ func (tx *TxBase) ShouldSignMetaData() bool {
 	if tx.GetMetadata() == nil {
 		return false
 	}
-	meta := tx.GetMetadata()
-	return meta.ShouldSignMetaData()
+	return tx.GetMetadata().ShouldSignMetaData()
 }
 
 func (tx TxBase) IsSalaryTx() bool {

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -104,13 +105,13 @@ func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 		Logger.Log.Error("Check authorized sender failed because tx.Metadata is not appropriate")
 		return false, errors.New("Check authorized sender failed because tx.Metadata is not appropriate")
 	}
-	meta, ok := tx.Metadata.(*metadata.StopAutoStakingMetadata)
-	if !ok {
-		Logger.Log.Error("Check authorized sender failed because tx.Metadata is not correct type")
-		return false, errors.New("Check authorized sender failed because tx.Metadata is not correct type")
-	}
-
-	if meta.Sig == nil {
+	//meta, ok := tx.Metadata.(*metadata.StopAutoStakingMetadata)
+	//if !ok {
+	//	Logger.Log.Error("Check authorized sender failed because tx.Metadata is not correct type")
+	//	return false, errors.New("Check authorized sender failed because tx.Metadata is not correct type")
+	//}
+	metaSig := tx.Metadata.GetSig()
+	if metaSig == nil || len(metaSig) == 0 {
 		Logger.Log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
 		return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
 	}
@@ -124,11 +125,39 @@ func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	verifyKey.Set(metaSigPublicKey)
 
 	signature := new(privacy.SchnSignature)
-	if err := signature.SetBytes(meta.Sig); err != nil {
+	if err := signature.SetBytes(metaSig); err != nil {
 		Logger.Log.Error(err)
 		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
 	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
+}
+
+func (tx *TxVersion2) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+	publicKeys := make([]*privacy.Point, 0)
+	txRandoms := make([]*coin.TxRandom, 0)
+	amounts := []uint64{}
+
+	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
+		outputCoins := tx.Proof.GetOutputCoins()
+		for i:= 0; i < len(outputCoins); i++ {
+			coin := outputCoins[i].(*coin.CoinV2)
+			publicKey := coin.GetPublicKey()
+			txRandom := coin.GetTxRandom()
+			added := false
+			for j :=0; j < len(publicKeys); j ++ {
+				if bytes.Equal(publicKey.ToBytesS(), publicKeys[j].ToBytesS()) {
+					amounts[j] += coin.GetValue()
+					added = true
+					break
+				}
+			}
+			if !added {
+				publicKeys = append(publicKeys, publicKey)
+				txRandoms = append(txRandoms, txRandom)
+			}
+		}
+	}
+	return publicKeys, txRandoms, amounts, nil
 }
 
 // ========== NORMAL INIT FUNCTIONS ==========
@@ -244,8 +273,8 @@ func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	if !okType {
 		return NewTransactionErr(UnexpectedError, errors.New("meta is not StopAutoStakingMetadata although ShouldSignMetaData() = true"))
 	}
-	if meta.Sig != nil {
-		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty"))
+	if meta.Sig != nil || len(meta.Sig) > 0 {
+		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty or nil"))
 	}
 
 	/****** using Schnorr signature *******/
@@ -261,6 +290,7 @@ func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	}
 
 	// convert signature to byte array
+
 	meta.Sig = signature.Bytes()
 	tx.Metadata = meta
 	return nil
@@ -284,7 +314,7 @@ func (tx *TxVersion2) prove(params *TxPrivacyInitParams) error {
 
 	if tx.ShouldSignMetaData() {
 		if err := tx.signMetadata(params.senderSK); err != nil {
-			Logger.Log.Error("Cannot sign txMetadata when shouldSignMetadata")
+			Logger.Log.Error("Cannot sign txMetadata in shouldSignMetadata")
 			return err
 		}
 	}
@@ -571,12 +601,7 @@ func (tx TxVersion2) StringWithoutMetadataSig() string {
 		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
 	}
 	if tx.Metadata != nil {
-		var metadataHash *common.Hash
-		if meta, ok := tx.Metadata.(*metadata.StopAutoStakingMetadata); ok {
-			metadataHash = meta.HashWithoutSig()
-		} else {
-			metadataHash = tx.Metadata.Hash()
-		}
+		metadataHash := tx.Metadata.HashWithoutSig()
 		record += metadataHash.String()
 	}
 	record += string(tx.Info)

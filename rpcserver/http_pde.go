@@ -239,6 +239,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
+	traderTxRandomStr, ok := data["TxRandomStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
 	minAcceptableAmountData, ok := data["MinAcceptableAmount"].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
@@ -256,6 +260,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		minAcceptableAmount,
 		tradingFee,
 		traderAddressStr,
+		traderTxRandomStr,
+		
 		metadata.PDETradeRequestMeta,
 	)
 
@@ -332,6 +338,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
+	traderTxRandomStr, ok := tokenParamsRaw["TraderAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+
 	minAcceptableAmountData, ok := tokenParamsRaw["MinAcceptableAmount"].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
@@ -351,6 +362,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		minAcceptableAmount,
 		tradingFee,
 		traderAddressStr,
+		traderTxRandomStr,
 		metadata.PDETradeRequestMeta,
 	)
 

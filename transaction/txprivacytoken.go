@@ -199,16 +199,28 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 }
 
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte, uint64, *common.Hash) {
-	pubkeys, amounts := txCustomTokenPrivacy.GetReceivers()
+	pubkeys, amounts := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.GetReceivers()
 	if len(pubkeys) == 0 {
 		Logger.Log.Error("GetTransferData receive 0 output, it should has exactly 1 output")
-		return false, nil, 0, &common.PRVCoinID
+		return false, nil, 0, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 	}
 	if len(pubkeys) > 1 {
 		Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
 		return false, nil, 0, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 	}
 	return true, pubkeys[0], amounts[0], &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
+}
+
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, error) {
+	tx := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal
+	isMinted, publicKey, txRandom, amount, _, err := tx.GetTxMintData()
+	return isMinted, publicKey, txRandom, amount, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID, err
+}
+
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTxBurnData(retriever metadata.ChainRetriever, blockHeight uint64) (bool, []byte, uint64, *common.Hash, error) {
+	tx := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal
+	isBurned, pubkey, amount, _, err := tx.GetTxBurnData(retriever, blockHeight)
+	return isBurned, pubkey, amount, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID, err
 }
 
 // CalculateBurnAmount - get tx value for pToken

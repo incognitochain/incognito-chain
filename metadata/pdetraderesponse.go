@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -85,7 +87,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
 		var receiverAddrStrFromInst string
-		var receiverTxRandomFromInst []byte
+		var receiverTxRandomFromInst string
 		var receivingAmtFromInst uint64
 		var receivingTokenIDStr string
 		if instTradeStatus == common.PDETradeRefundChainStatus {
@@ -103,7 +105,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			shardIDFromInst = pdeTradeRequestAction.ShardID
 			txReqIDFromInst = pdeTradeRequestAction.TxReqID
 			receiverAddrStrFromInst = pdeTradeRequestAction.Meta.TraderAddressStr
-			receiverTxRandomFromInst = pdeTradeRequestAction.Meta.TxRandom
+			receiverTxRandomFromInst = pdeTradeRequestAction.Meta.TxRandomStr
 			receivingTokenIDStr = pdeTradeRequestAction.Meta.TokenIDToSellStr
 			receivingAmtFromInst = pdeTradeRequestAction.Meta.SellAmount + pdeTradeRequestAction.Meta.TradingFee
 		} else { // trade accepted
@@ -117,7 +119,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			shardIDFromInst = pdeTradeAcceptedContent.ShardID
 			txReqIDFromInst = pdeTradeAcceptedContent.RequestedTxID
 			receiverAddrStrFromInst = pdeTradeAcceptedContent.TraderAddressStr
-			receiverTxRandomFromInst = pdeTradeAcceptedContent.TxRandom
+			receiverTxRandomFromInst = pdeTradeAcceptedContent.TxRandomStr
 			receivingTokenIDStr = pdeTradeAcceptedContent.TokenIDToBuyStr
 			receivingAmtFromInst = pdeTradeAcceptedContent.ReceiveAmount
 		}
@@ -131,12 +133,38 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			receivingAmtFromInst != paidAmount ||
-			receivingTokenIDStr != assetID.String() {
+		isMinted, pk, txRandom, paidAmount, assetID, err := tx.GetTxMintData()
+		if err != nil {
+			Logger.log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
 			continue
+		}
+		if !isMinted {
+			Logger.log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
+			continue
+		}
+		if len(receiverTxRandomFromInst) > 0 {
+			txRandomBFromInst, err := base58.Decode(receiverTxRandomFromInst)
+			if err != nil {
+				Logger.log.Errorf("Wrong request info's txRandom - Cannot decode base58 string: %+v", err)
+				continue
+			}
+			txRandomFromInst := new(coin.TxRandom)
+			if err := txRandomFromInst.SetBytes(txRandomBFromInst); err != nil {
+				Logger.log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
+				continue
+			}
+			if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+				receivingAmtFromInst != paidAmount ||
+				!bytes.Equal(txRandom[:],txRandomFromInst[:]) ||
+				receivingTokenIDStr != assetID.String() {
+				continue
+			}
+		} else {
+			if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+				receivingAmtFromInst != paidAmount ||
+				receivingTokenIDStr != assetID.String() {
+				continue
+			}
 		}
 		idx = i
 		break
