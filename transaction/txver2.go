@@ -269,11 +269,8 @@ func (tx *TxVersion2) sign(inp []coin.PlainCoin, out []*coin.CoinV2, params *TxP
 
 func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	// sign meta data
-	meta, okType := tx.Metadata.(*metadata.StopAutoStakingMetadata)
-	if !okType {
-		return NewTransactionErr(UnexpectedError, errors.New("meta is not StopAutoStakingMetadata although ShouldSignMetaData() = true"))
-	}
-	if meta.Sig != nil || len(meta.Sig) > 0 {
+	metaSig := tx.Metadata.GetSig()
+	if metaSig != nil || len(metaSig) > 0 {
 		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty or nil"))
 	}
 
@@ -290,9 +287,7 @@ func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	}
 
 	// convert signature to byte array
-
-	meta.Sig = signature.Bytes()
-	tx.Metadata = meta
+	tx.Metadata.SetSig(signature.Bytes())
 	return nil
 }
 
