@@ -3,22 +3,21 @@ package beststate
 import (
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 //BeaconPreCommitteeInfo ...
 type BeaconPreCommitteeInfo struct {
-	BeaconPendingValidator                 []incognitokey.CommitteePublicKey `json:"-"`
+	BeaconPendingValidator                 []incognitokey.CommitteePublicKey `json:"BeaconPendingValidator"`
 	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey `json:"CandidateBeaconWaitingForCurrentRandom"`
 	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey `json:"CandidateBeaconWaitingForNextRandom"`
 }
 
 //ShardPreCommitteeInfo ...
 type ShardPreCommitteeInfo struct {
-	CandidateShardWaitingForCurrentRandom []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForCurrentRandom"`
-	CandidateShardWaitingForNextRandom    []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForNextRandom"`
-	ShardPendingValidatorHashs            map[byte]common.Hash              `json:"ShardPendingValidatorHashs"`
+	CandidateShardWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"`
+	CandidateShardWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"`
+	ShardPendingValidator                 map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 }
 
 func (beaconPreCommitteeInfo *BeaconPreCommitteeInfo) MarshalJSON() ([]byte, error) {

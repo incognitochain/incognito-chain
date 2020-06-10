@@ -168,12 +168,13 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	}
 	committeeChange := newCommitteeChange()
 	committeeChange.shardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
+
+	blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
+
 	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
-
-	blockchain.ShardChain[shardID].hashHistory, err = lru.New(100)
 
 	return nil
 }
@@ -198,7 +199,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
-	blockchain.BeaconChain.hashHistory, err = lru.New(100)
+	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
 	if err != nil {
 		return err
 	}
@@ -433,6 +434,13 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	if err != nil {
 		return err
 	}
+
+	//Restore lru cache for hash history in beacon chain
+	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
+	if err != nil {
+		panic(err)
+	}
+
 	for _, v := range allViews {
 
 		err := v.InitStateRootHash(blockchain)
@@ -521,15 +529,15 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		err = v.restoreCommittee(shardID)
-		if err != nil {
-			panic(err)
-		}
+		// err = v.restoreCommittee(shardID)
+		// if err != nil {
+		// 	panic(err)
+		// }
 
-		err = v.restorePendingValidators(shardID, blockchain)
-		if err != nil {
-			panic(err)
-		}
+		// err = v.restorePendingValidators(shardID, blockchain)
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 	}
 

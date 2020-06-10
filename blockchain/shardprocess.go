@@ -1064,9 +1064,9 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := newShardState.storePendingValidators(batchData, blockchain); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
+	// if err := newShardState.storePendingValidators(batchData, blockchain); err != nil {
+	// 	return NewBlockChainError(StoreBeaconBlockError, err)
+	// }
 
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {

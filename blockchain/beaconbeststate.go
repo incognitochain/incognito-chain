@@ -618,12 +618,14 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 
 	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.ShardCommittee):", len(beaconBestState.ShardCommittee))
 
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.BeaconPendingValidator):", len(target.BeaconPendingValidator))
+
 	beaconBestState.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.BeaconPendingValidator))
 	for i, v := range target.BeaconPendingValidator {
 		beaconBestState.BeaconPendingValidator[i] = v
 	}
 
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconPendingValidator):", len(beaconBestState.BeaconPendingValidator))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.BeaconPendingValidator):", len(beaconBestState.BeaconPendingValidator))
 
 	beaconBestState.CandidateShardWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForCurrentRandom))
 	for i, v := range target.CandidateShardWaitingForCurrentRandom {
@@ -637,7 +639,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 		beaconBestState.CandidateBeaconWaitingForCurrentRandom[i] = v
 	}
 
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForCurrentRandom):", len(beaconBestState.CandidateBeaconWaitingForCurrentRandom))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForCurrentRandom):", len(beaconBestState.CandidateBeaconWaitingForCurrentRandom))
 
 	beaconBestState.CandidateShardWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(target.CandidateShardWaitingForNextRandom))
 	for i, v := range target.CandidateShardWaitingForNextRandom {
@@ -651,7 +653,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 		beaconBestState.CandidateBeaconWaitingForNextRandom[i] = v
 	}
 
-	fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForNextRandom):", len(beaconBestState.CandidateBeaconWaitingForNextRandom))
+	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(beaconBestState.CandidateBeaconWaitingForNextRandom):", len(beaconBestState.CandidateBeaconWaitingForNextRandom))
 
 	// Clone shard committee
 	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
