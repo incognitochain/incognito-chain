@@ -259,7 +259,6 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 }
 
 // Portal
-//A
 func GetFinalExchangeRatesStatePrefix() []byte {
 	h := common.HashH(portalFinaExchangeRatesStatePrefix)
 	return h[:][:prefixHashKeyLength]
@@ -307,7 +306,6 @@ func GetPortalLiquidationPoolPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-//B
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)
 	return h[:][:prefixHashKeyLength]
@@ -338,8 +336,8 @@ func GetLockedCollateralStatePrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetRewardFeatureStatePrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...))
+func GetRewardFeatureStatePrefix(epoch uint64) []byte {
+	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", epoch))...))
 	return h[:][:prefixHashKeyLength]
 }
 

@@ -299,7 +299,7 @@ func newRedeemRequestObjectWithValue(db *StateDB, key common.Hash, data interfac
 		waitingRedeemRequestHash: key,
 		waitingRedeemRequest:     redeemRequest,
 		db:                       db,
-		objectType:               CustodianStateObjectType,
+		objectType:               WaitingRedeemRequestObjectType,
 		deleted:                  false,
 	}, nil
 }
