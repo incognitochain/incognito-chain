@@ -1232,3 +1232,13 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
 	return [][]string{inst}, nil
 }
+
+// buildResetPortalDBInst returns instruction for resetting portal db
+func (blockchain *BlockChain) buildResetPortalDBInst() []string {
+	return []string{
+		strconv.Itoa(metadata.PortalResetPortalDBMeta),
+		strconv.Itoa(-1),
+		"reset",
+		"",
+	}
+}
