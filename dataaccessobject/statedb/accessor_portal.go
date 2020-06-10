@@ -647,3 +647,17 @@ func GetAllRewardFeatureState(
 
 	return result, nil
 }
+//======================  Reset Portal DB  ======================
+func DeletePortalData(stateDB *StateDB, beaconHeight uint64) {
+	stateDB.deleteDataByPrefix(GetFinalExchangeRatesStatePrefix(), PortalFinalExchangeRatesStateObjectType)
+	stateDB.deleteDataByPrefix(GetPortalWaitingPortingRequestPrefix(), PortalWaitingPortingRequestObjectType)
+	stateDB.deleteDataByPrefix(GetPortalLiquidationPoolPrefix(), PortalLiquidationPoolObjectType)
+	stateDB.deleteDataByPrefix(GetPortalCustodianStatePrefix(), CustodianStateObjectType)
+	stateDB.deleteDataByPrefix(GetWaitingRedeemRequestPrefix(), WaitingRedeemRequestObjectType)
+	stateDB.deleteDataByPrefix(GetMatchedRedeemRequestPrefix(), WaitingRedeemRequestObjectType)
+
+	stateDB.deleteDataByPrefix(GetPortalStatusPrefix(), PortalStatusObjectType)
+	stateDB.deleteDataByPrefix(GetLockedCollateralStatePrefix(), LockedCollateralStateObjectType)
+	//stateDB.deleteDataByPrefix(GetPortalRewardInfoStatePrefix(beaconHeight), PortalRewardInfoObjectType)
+	//stateDB.deleteDataByPrefix(GetRewardFeatureStatePrefix(beaconHeight), RewardFeatureStateObjectType)
+}
