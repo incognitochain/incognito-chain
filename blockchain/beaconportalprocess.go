@@ -85,8 +85,6 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			err = blockchain.processPortalReqMatchingRedeem(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		case strconv.Itoa(metadata.PortalPickMoreCustodianForRedeemMeta):
 			err = blockchain.processPortalPickMoreCustodiansForTimeOutWaitingRedeemReq(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		case strconv.Itoa(metadata.PortalResetPortalDBMeta):
-			err = blockchain.processPortalResetDB(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
@@ -827,27 +825,6 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(
 			return nil
 		}
 	}
-
-	return nil
-}
-
-func (blockchain *BlockChain) processPortalResetDB(
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
-	instructions []string,
-	currentPortalState *CurrentPortalState,
-	portalParams PortalParams) error {
-	currentPortalState.WaitingPortingRequests = make(map[string]*statedb.WaitingPortingRequest)
-	currentPortalState.WaitingRedeemRequests = make(map[string]*statedb.RedeemRequest)
-	currentPortalState.MatchedRedeemRequests = make(map[string]*statedb.RedeemRequest)
-	currentPortalState.CustodianPoolState = make(map[string]*statedb.CustodianState)
-	currentPortalState.LiquidationPool = make(map[string]*statedb.LiquidationPool)
-	currentPortalState.LockedCollateralForRewards = new(statedb.LockedCollateralState)
-	currentPortalState.FinalExchangeRatesState = new(statedb.FinalExchangeRatesState)
-	currentPortalState.ExchangeRatesRequests = make(map[string]*metadata.ExchangeRatesRequestStatus)
-
-	// delete portal status
-	statedb.DeletePortalData(stateDB, beaconHeight)
 
 	return nil
 }
