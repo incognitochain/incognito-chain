@@ -1008,11 +1008,11 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 	}
-	err = statedb.DeleteOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
+	err = statedb.DeleteOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeRemoved[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	err = statedb.DeleteOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID])
+	err = statedb.DeleteOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteRemoved[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
