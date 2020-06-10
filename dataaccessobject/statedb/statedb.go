@@ -1435,3 +1435,28 @@ func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState,
 	}
 	return result, true, nil
 }
+
+func (stateDB *StateDB) getDataByPrefix(prefix []byte) ([]common.Hash, [][]byte) {
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	keys := []common.Hash{}
+	values := [][]byte{}
+	for it.Next() {
+		key := stateDB.trie.GetKey(it.Key)
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		keys = append(keys, common.BytesToHash(key))
+		values = append(values, value)
+	}
+	return keys, values
+}
+
+func (stateDB *StateDB) deleteDataByPrefix(prefix []byte, stateObjectType int) {
+	keys, _ := stateDB.getDataByPrefix(prefix)
+	for _, key := range keys {
+		stateDB.MarkDeleteStateObject(stateObjectType, key)
+	}
+}
