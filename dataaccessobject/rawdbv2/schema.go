@@ -314,6 +314,11 @@ func getShardPreCommitteeInfoKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
+//getShardPreCommitteeInfoForShardKey...
+func getShardPreCommitteeInfoForShardKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}
+
 //getShardPendingValidatorsKey ...
 func getShardPendingValidatorsKey(hash common.Hash) []byte {
 	return hash.Bytes()

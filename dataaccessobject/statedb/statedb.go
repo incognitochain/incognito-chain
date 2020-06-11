@@ -341,7 +341,6 @@ func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common
 func (stateDB *StateDB) setStateObject(object StateObject) {
 	key := object.GetHash()
 	stateDB.stateObjects[key] = object
-	fmt.Println("DEBUG setstate", key.String(), object)
 }
 
 // getStateObject retrieves a state object given by the address, returning nil if

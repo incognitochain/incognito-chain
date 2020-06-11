@@ -397,11 +397,9 @@ func snapshotCommittee(beaconCommittee []incognitokey.CommitteePublicKey, allSha
 	}
 
 	if !reflect.DeepEqual(beaconCommittee, snapshotBeaconCommittee) {
-		// fmt.Println("[optimize-beststate] {snapshotCommittee()} err deep equal beacon:")
 		return []incognitokey.CommitteePublicKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", beaconCommittee, snapshotBeaconCommittee)
 	}
 	if !reflect.DeepEqual(allShardCommittee, snapshotAllShardCommittee) {
-		// fmt.Println("[optimize-beststate] {snapshotCommittee()} err deep equal shard:")
 		return []incognitokey.CommitteePublicKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", allShardCommittee, snapshotAllShardCommittee)
 	}
 

@@ -61,7 +61,6 @@ func StoreOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittees []in
 	if err != nil {
 		return NewStatedbError(StoreShardCommitteeError, err)
 	}
-	// fmt.Println("[optimize-beststate] {StoreOneShardCommittee()} shardID:", shardID, ":len(shardCommittees):", len(shardCommittees))
 	return nil
 }
 
@@ -168,7 +167,6 @@ func GetOneShardCommittee(stateDB *StateDB, shardID byte) []incognitokey.Committ
 	for _, tempShardCommitteeState := range tempShardCommitteeStates {
 		list = append(list, tempShardCommitteeState.CommitteePublicKey())
 	}
-	// fmt.Println("[optimize-beststate] {GetOneShardCommittee()} shardID:", shardID, "len(list):", len(list))
 	return list
 }
 

@@ -45,3 +45,20 @@ func (shardPreCommitteeInfo *ShardPreCommitteeInfo) MarshalJSON() ([]byte, error
 	}
 	return b, err
 }
+
+type PreCommitteeInfoForShard struct {
+	ShardPendingValidator []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+}
+
+func (preCommitteeInfoForShard *PreCommitteeInfoForShard) MarshalJSON() ([]byte, error) {
+	type Alias PreCommitteeInfoForShard
+	b, err := json.Marshal(&struct {
+		*Alias
+	}{
+		(*Alias)(preCommitteeInfoForShard),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return b, err
+}

@@ -105,6 +105,11 @@ func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
+	var err error
+	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
+	if err != nil {
+		return err
+	}
 	if err := blockchain.RestoreBeaconViews(); err != nil {
 		Logger.log.Error("debug restore beacon fail, init", err)
 		err := blockchain.initBeaconState()
@@ -119,6 +124,10 @@ func (blockchain *BlockChain) initChainState() error {
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
 		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID))
+		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
+		if err != nil {
+			return err
+		}
 		if err := blockchain.RestoreShardViews(shardID); err != nil {
 			Logger.log.Error("debug restore shard fail, init")
 			err := blockchain.initShardState(shardID)
@@ -139,7 +148,6 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
-	// fmt.Println("[optimize-beststate] Blockchain.initShardState()")
 	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := ShardBlock{}
@@ -169,8 +177,6 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	committeeChange := newCommitteeChange()
 	committeeChange.shardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
 
-	blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
-
 	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
 	if err != nil {
 		return err
@@ -196,11 +202,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	if err := statedb.StoreBeaconBlockHashByIndex(initBeaconBestState.consensusStateDB, initBlockHeight, initBlockHash); err != nil {
-		return err
-	}
-
-	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
-	if err != nil {
 		return err
 	}
 
@@ -435,12 +436,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		return err
 	}
 
-	//Restore lru cache for hash history in beacon chain
-	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
-	if err != nil {
-		panic(err)
-	}
-
 	for _, v := range allViews {
 
 		err := v.InitStateRootHash(blockchain)
@@ -456,11 +451,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic(err)
 		}
 		v.BestBlock = *block
-
-		// err = v.initRawDBHash(blockchain)
-		// if err != nil {
-		// 	panic(err)
-		// }
 
 		err = v.restoreBeaconCommittee()
 		if err != nil {
@@ -520,25 +510,31 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	fmt.Println("debug RestoreShardViews", len(allViews))
 	for _, v := range allViews {
 
-		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
-			panic("Restart shard views fail")
+		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
+		if err != nil || block == nil {
+			fmt.Println("block ", block)
+			panic(err)
 		}
+		v.BestBlock = block
 
-		err := v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
+		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
 			panic(err)
 		}
 
-		// err = v.restoreCommittee(shardID)
-		// if err != nil {
-		// 	panic(err)
-		// }
+		err = v.restoreCommittee(shardID)
+		if err != nil {
+			panic(err)
+		}
 
-		// err = v.restorePendingValidators(shardID, blockchain)
-		// if err != nil {
-		// 	panic(err)
-		// }
+		err = v.restorePendingValidators(shardID, blockchain)
+		if err != nil {
+			panic(err)
+		}
 
+		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
+			panic("Restart shard views fail")
+		}
 	}
 
 	return nil

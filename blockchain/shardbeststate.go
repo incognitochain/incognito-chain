@@ -29,7 +29,7 @@ import (
 
 type ShardBestState struct {
 	BestBlockHash          common.Hash                       `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock                       `json:"BestBlock"`     // block data
+	BestBlock              *ShardBlock                       `json:"-"`             // block data
 	BestBeaconHash         common.Hash                       `json:"BestBeaconHash"`
 	BeaconHeight           uint64                            `json:"BeaconHeight"`
 	ShardID                byte                              `json:"ShardID"`
@@ -38,8 +38,8 @@ type ShardBestState struct {
 	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
 	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
-	ShardCommittee         []incognitokey.CommitteePublicKey `json:"ShardCommittee"`
-	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+	ShardCommittee         []incognitokey.CommitteePublicKey `json:"-"`
+	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"-"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string                 `json:"StakingTx"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
@@ -54,6 +54,7 @@ type ShardBestState struct {
 	MetricBlockHeight      uint64
 	//================================ StateDB Method
 	// block height => root hash
+	PreCommitteeHash           common.Hash `json:"PreCommitteeHash"` // Save hash of pending validators
 	consensusStateDB           *statedb.StateDB
 	ConsensusStateDBRootHash   common.Hash
 	transactionStateDB         *statedb.StateDB
@@ -349,13 +350,17 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
 
+	shardBestState.BestBlock = target.BestBlock
+
 	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
 	for i, v := range target.ShardCommittee {
 		shardBestState.ShardCommittee[i] = v
 	}
 
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))
-	// fmt.Println("[optimize-beststate] {BeaconBestState.cloneBeaconBestStateFrom()} len(target.ShardCommittee):", len(target.ShardCommittee))
+	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
+	for i, v := range target.ShardPendingValidator {
+		shardBestState.ShardPendingValidator[i] = v
+	}
 
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 )
@@ -412,6 +413,24 @@ func DeleteShardSlashRootHash(db incdb.KeyValueWriter, shardID byte, height uint
 	err := db.Delete(key)
 	if err != nil {
 		return NewRawdbError(StoreShardSlashRootHashError, err)
+	}
+	return nil
+}
+
+//GetPreCommitteeInfoForShard
+func GetPreCommitteeInfoForShard(db incdb.KeyValueReader, hash common.Hash) ([]byte, error) {
+	res, err := db.Get(getShardPreCommitteeInfoForShardKey(hash))
+	if err != nil {
+		return nil, NewRawdbError(GetBeaconPreCommitteeInfoError, err)
+	}
+	return res, nil
+}
+
+//StorePreCommitteeInfoForShard ...
+func StorePreCommitteeInfoForShard(db incdb.KeyValueWriter, hash common.Hash, value []byte) error {
+	err := db.Put(getShardPreCommitteeInfoForShardKey(hash), value)
+	if err != nil {
+		return NewRawdbError(StoreBeaconPreCommitteeInfoError, err)
 	}
 	return nil
 }

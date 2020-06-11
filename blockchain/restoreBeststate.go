@@ -13,13 +13,12 @@ import (
 
 //restoreBeaconCommittee ...
 func (beaconBestState *BeaconBestState) restoreBeaconCommittee() error {
+
 	committeePublicKey := statedb.GetBeaconCommittee(beaconBestState.consensusStateDB)
 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 	for i, v := range committeePublicKey {
 		beaconBestState.BeaconCommittee[i] = v
 	}
-
-	// fmt.Println("[optimize-beststate] {BeaconBestState.restoreBeaconCommittee()} len(beaconBestState.BeaconCommittee):", len(beaconBestState.BeaconCommittee))
 
 	return nil
 }
@@ -28,7 +27,6 @@ func (beaconBestState *BeaconBestState) restoreBeaconCommittee() error {
 func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
 
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
-
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		committeePublicKey := statedb.GetOneShardCommittee(beaconBestState.consensusStateDB, byte(i))
 		beaconBestState.ShardCommittee[byte(i)] = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
@@ -37,23 +35,21 @@ func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
 		}
 	}
 
-	// fmt.Println("[optimize-beststate] {BeaconBestState.restoreShardCommittee()} len(beaconBestState.ShardCommittee):", len(beaconBestState.ShardCommittee))
-
 	return nil
 }
 
 //restoreBeaconPreCommitteeInfo ...
 func (beaconBestState *BeaconBestState) restoreBeaconPreCommitteeInfo(bc *BlockChain) error {
 
-	// if beaconBestState.BeaconHeight <= 2 {
-	// 	return nil
-	// }
-
 	beaconPreCommitteeInfo := beststate.BeaconPreCommitteeInfo{
 		BeaconPendingValidator:                 []incognitokey.CommitteePublicKey{},
 		CandidateBeaconWaitingForCurrentRandom: []incognitokey.CommitteePublicKey{},
 		CandidateBeaconWaitingForNextRandom:    []incognitokey.CommitteePublicKey{},
 	}
+
+	beaconBestState.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, 0)
+	beaconBestState.CandidateBeaconWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, 0)
+	beaconBestState.CandidateBeaconWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, 0)
 
 	//Restore beacon pending validators
 	beaconPreCommitteeInfoData, err := rawdbv2.GetBeaconPreCommitteeInfo(bc.GetBeaconChainDatabase(), beaconBestState.BeaconPreCommitteeHash)
@@ -88,15 +84,15 @@ func (beaconBestState *BeaconBestState) restoreBeaconPreCommitteeInfo(bc *BlockC
 //restoreShardPreCommitteeInfo ...
 func (beaconBestState *BeaconBestState) restoreShardPreCommitteeInfo(bc *BlockChain) error {
 
-	// if beaconBestState.BeaconHeight <= 2 {
-	// 	return nil
-	// }
-
 	shardPreCommitteeInfo := beststate.ShardPreCommitteeInfo{
 		ShardPendingValidator:                 make(map[byte][]incognitokey.CommitteePublicKey),
 		CandidateShardWaitingForCurrentRandom: []incognitokey.CommitteePublicKey{},
 		CandidateShardWaitingForNextRandom:    []incognitokey.CommitteePublicKey{},
 	}
+
+	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
+	beaconBestState.CandidateShardWaitingForCurrentRandom = make([]incognitokey.CommitteePublicKey, 0)
+	beaconBestState.CandidateShardWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, 0)
 
 	//Restore beacon pending validators
 	shardPreCommitteeInfoData, err := rawdbv2.GetShardPreCommitteeInfo(bc.GetBeaconChainDatabase(), beaconBestState.ShardPreCommitteeHash)
@@ -136,15 +132,11 @@ func (beaconBestState *BeaconBestState) restoreShardPreCommitteeInfo(bc *BlockCh
 //RecoverCommittee ...
 func (shardBestState *ShardBestState) restoreCommittee(shardID byte) error {
 
-	shardBestState.ShardCommittee = []incognitokey.CommitteePublicKey{}
-
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
-
-	for _, v := range committeePublicKey {
-		shardBestState.ShardCommittee = append(shardBestState.ShardCommittee, v)
+	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
+	for i, v := range committeePublicKey {
+		shardBestState.ShardCommittee[i] = v
 	}
-
-	// fmt.Println("[optimize-beststate] {ShardBestState.restoreCommittee()} len(shardBestState.ShardCommittee):", len(shardBestState.ShardCommittee))
 
 	return nil
 }
@@ -244,25 +236,59 @@ func (beaconBestState *BeaconBestState) storeShardPreCommitteeHash(db incdb.KeyV
 	return nil
 }
 
-// //storePendingValidators ...
-// func (shardBestState *ShardBestState) storePendingValidators(db incdb.KeyValueWriter, bc *BlockChain) error {
+//restorePendingValidators ...
+func (shardBestState *ShardBestState) restorePendingValidators(shardID byte, bc *BlockChain) error {
 
-// 	bytes, err := json.Marshal(shardBestState.ShardPendingValidator)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	hash := common.BytesToHash(bytes)
-// 	shardBestState.ShardPendingValidatorHash = hash
+	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, 0)
 
-// 	// Save and check cache value here
-// 	if _, ok := bc.ShardChain[shardBestState.ShardID].hashHistory.Get(hash.String()); !ok {
-// 		bc.BeaconChain.hashHistory.Add(hash.String(), true)
-// 		err := rawdbv2.StoreShardPendingValidators(db, hash, bytes)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	/// End of save and check cache value
+	preCommitteeInfoForShardData, err := rawdbv2.GetPreCommitteeInfoForShard(bc.GetBeaconChainDatabase(), shardBestState.PreCommitteeHash)
+	if err != nil {
+		return nil
+	}
 
-// 	return nil
-// }
+	preCommitteeInfoForShard := beststate.PreCommitteeInfoForShard{}
+
+	err = json.Unmarshal(preCommitteeInfoForShardData, &preCommitteeInfoForShard)
+	if err != nil {
+		return err
+	}
+
+	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(preCommitteeInfoForShard.ShardPendingValidator))
+	for i, v := range preCommitteeInfoForShard.ShardPendingValidator {
+		shardBestState.ShardPendingValidator[i] = v
+	}
+
+	return nil
+}
+
+//storePendingValidators ...
+func (shardBestState *ShardBestState) storePendingValidators(db incdb.KeyValueWriter, bc *BlockChain) error {
+
+	preCommitteeInfoForShard := beststate.PreCommitteeInfoForShard{}
+
+	preCommitteeInfoForShard.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(shardBestState.ShardPendingValidator))
+
+	// Get BeaconPreCommitteeInfo Bytes
+	bytes, err := json.Marshal(preCommitteeInfoForShard.ShardPendingValidator)
+	if err != nil {
+		return err
+	}
+
+	// Hash PreCommitteeInfo
+	hash := common.BytesToHash(bytes)
+	// Add to PreCommitteeHash to ShardBestState
+	shardBestState.PreCommitteeHash = hash
+
+	// Save and check cache value here
+
+	if _, ok := bc.ShardChain[shardBestState.ShardID].hashHistory.Get(hash.String()); !ok {
+		bc.ShardChain[shardBestState.ShardID].hashHistory.Add(hash.String(), true)
+
+		err := rawdbv2.StorePreCommitteeInfoForShard(db, hash, bytes)
+		if err != nil {
+			return err
+		}
+	}
+	/// End of save and check cache value
+	return nil
+}
