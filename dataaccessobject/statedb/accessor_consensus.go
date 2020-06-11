@@ -2,26 +2,23 @@ package statedb
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	enterTime := time.Now().UnixNano()
 	for _, committee := range committees {
 		key, err := GenerateCommitteeObjectKeyWithRole(role, shardID, committee)
 		if err != nil {
 			return err
 		}
-		incPublicKey := incognitokey.CommitteeKeyListToMapString([]incognitokey.CommitteePublicKey{committee})
 		committeeString, err := committee.ToBase58()
 		if err != nil {
 			return err
-		}
-		rewardReceiverPaymentAddress, ok := rewardReceiver[incPublicKey[0].IncPubKey]
-		if !ok {
-			return fmt.Errorf("reward receiver of %+v not found", committeeString)
 		}
 		autoStakingValue, ok := autoStaking[committeeString]
 		if !ok {
@@ -36,6 +33,10 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 		if has {
 			value.SetAutoStaking(autoStakingValue)
 		} else {
+			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
+			if !ok {
+				return fmt.Errorf("reward receiver of %+v not found", committeeString)
+			}
 			value = NewCommitteeStateWithValueAndTime(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue, enterTime)
 		}
 		err = stateDB.SetStateObject(CommitteeObjectType, key, value)
@@ -47,7 +48,7 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 	return nil
 }
 
-func StoreBeaconCommittee(stateDB *StateDB, beaconCommittees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreBeaconCommittee(stateDB *StateDB, beaconCommittees []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, BeaconShardID, CurrentValidator, beaconCommittees, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreBeaconCommitteeError, err)
@@ -55,14 +56,14 @@ func StoreBeaconCommittee(stateDB *StateDB, beaconCommittees []incognitokey.Comm
 	return nil
 }
 
-func StoreOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittees []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, int(shardID), CurrentValidator, shardCommittees, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreShardCommitteeError, err)
 	}
 	return nil
 }
-func StoreAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][]incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][]incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	for shardID, committee := range allShardCommittees {
 		err := storeCommittee(stateDB, int(shardID), CurrentValidator, committee, rewardReceiver, autoStaking)
 		if err != nil {
@@ -72,7 +73,7 @@ func StoreAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][]inco
 	return nil
 }
 
-func StoreNextEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreNextEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, CandidateShardID, NextEpochShardCandidate, candidate, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
@@ -80,7 +81,7 @@ func StoreNextEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.Com
 	return nil
 }
 
-func StoreCurrentEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreCurrentEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, CandidateShardID, CurrentEpochShardCandidate, candidate, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreCurrentEpochCandidateError, err)
@@ -88,7 +89,7 @@ func StoreCurrentEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.
 	return nil
 }
 
-func StoreNextEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreNextEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, BeaconShardID, NextEpochBeaconCandidate, candidate, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
@@ -96,7 +97,7 @@ func StoreNextEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey.Co
 	return nil
 }
 
-func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, BeaconShardID, CurrentEpochBeaconCandidate, candidate, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreCurrentEpochCandidateError, err)
@@ -104,7 +105,7 @@ func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey
 	return nil
 }
 
-func StoreAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map[byte][]incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map[byte][]incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	for shardID, committee := range allShardSubstitutes {
 		err := storeCommittee(stateDB, int(shardID), SubstituteValidator, committee, rewardReceiver, autoStaking)
 		if err != nil {
@@ -114,7 +115,7 @@ func StoreAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map
 	return nil
 }
 
-func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, int(shardID), SubstituteValidator, shardSubstitutes, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreOneShardSubstitutesValidatorError, err)
@@ -122,7 +123,7 @@ func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubs
 	return nil
 }
 
-func StoreBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func StoreBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incognitokey.CommitteePublicKey, rewardReceiver map[string]privacy.PaymentAddress, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, BeaconShardID, SubstituteValidator, beaconSubstitute, rewardReceiver, autoStaking)
 	if err != nil {
 		return NewStatedbError(StoreBeaconSubstitutesValidatorError, err)
@@ -236,7 +237,7 @@ func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKe
 	return list
 }
 
-func GetAllCommitteeStateWithRewardReceiver(stateDB *StateDB, shardIDs []int) (map[int][]incognitokey.CommitteePublicKey, map[string]string) {
+func GetAllCommitteeStateWithRewardReceiver(stateDB *StateDB, shardIDs []int) (map[int][]incognitokey.CommitteePublicKey, map[string]privacy.PaymentAddress) {
 	allShardCommitteeState, _, _, _, _, _, rewardReceivers, _ := stateDB.getAllCommitteeState(shardIDs)
 	m := make(map[int][]incognitokey.CommitteePublicKey)
 	for shardID, tempShardCommitteeStates := range allShardCommitteeState {
@@ -251,8 +252,11 @@ func GetAllCommitteeStateWithRewardReceiver(stateDB *StateDB, shardIDs []int) (m
 	}
 	return m, rewardReceivers
 }
+func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*CommitteeState {
+	return stateDB.getShardsCommitteeState(shardIDs)
+}
 
-func GetRewardReceiverAndAutoStaking(stateDB *StateDB, shardIDs []int) (map[string]string, map[string]bool) {
+func GetRewardReceiverAndAutoStaking(stateDB *StateDB, shardIDs []int) (map[string]privacy.PaymentAddress, map[string]bool) {
 	_, _, _, _, _, _, rewardReceivers, autoStakings := stateDB.getAllCommitteeState(shardIDs)
 	return rewardReceivers, autoStakings
 }

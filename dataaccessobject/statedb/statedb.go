@@ -3,10 +3,12 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
@@ -538,14 +540,14 @@ func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*Com
 // return params #4: current epoch candidate
 // return params #5: reward receiver map
 // return params #6: auto staking map
-func (stateDB *StateDB) getAllCommitteeState(ids []int) (map[int][]*CommitteeState, map[int][]*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, map[string]string, map[string]bool) {
+func (stateDB *StateDB) getAllCommitteeState(ids []int) (map[int][]*CommitteeState, map[int][]*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, map[string]privacy.PaymentAddress, map[string]bool) {
 	currentValidator := make(map[int][]*CommitteeState)
 	substituteValidator := make(map[int][]*CommitteeState)
 	nextEpochShardCandidate := []*CommitteeState{}
 	currentEpochShardCandidate := []*CommitteeState{}
 	nextEpochBeaconCandidate := []*CommitteeState{}
 	currentEpochBeaconCandidate := []*CommitteeState{}
-	rewardReceivers := make(map[string]string)
+	rewardReceivers := make(map[string]privacy.PaymentAddress)
 	autoStaking := make(map[string]bool)
 	for _, shardID := range ids {
 		// Current Validator
@@ -696,6 +698,21 @@ func (stateDB *StateDB) getAllCommitteeReward() map[string]map[common.Hash]uint6
 		m[committeeRewardState.incognitoPublicKey] = committeeRewardState.reward
 	}
 	return m
+}
+
+func (stateDB *StateDB) getShardsCommitteeState(sIDs []int) (currentValidator map[int][]*CommitteeState) {
+	currentValidator = make(map[int][]*CommitteeState)
+	for _, shardID := range sIDs {
+		// Current Validator
+		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
+		resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
+		tempCurrentValidator := []*CommitteeState{}
+		for _, v := range resCurrentValidator {
+			tempCurrentValidator = append(tempCurrentValidator, v)
+		}
+		currentValidator[shardID] = tempCurrentValidator
+	}
+	return currentValidator
 }
 
 // ================================= Reward Request OBJECT =======================================

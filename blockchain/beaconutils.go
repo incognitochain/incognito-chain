@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 //===================================Util for Beacon=============================
@@ -403,8 +404,8 @@ func snapshotCommittee(beaconCommittee []incognitokey.CommitteePublicKey, allSha
 	}
 	return snapshotBeaconCommittee, snapshotAllShardCommittee, nil
 }
-func snapshotRewardReceiver(rewardReceiver map[string]string) (map[string]string, error) {
-	snapshotRewardReceiver := make(map[string]string)
+func snapshotRewardReceiver(rewardReceiver map[string]privacy.PaymentAddress) (map[string]privacy.PaymentAddress, error) {
+	snapshotRewardReceiver := make(map[string]privacy.PaymentAddress)
 	for k, v := range rewardReceiver {
 		snapshotRewardReceiver[k] = v
 	}

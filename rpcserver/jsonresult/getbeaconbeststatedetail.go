@@ -101,7 +101,7 @@ func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBes
 
 	result.RewardReceiver = make(map[string]string)
 	for k, v := range data.RewardReceiver {
-		result.RewardReceiver[k] = v
+		result.RewardReceiver[k] = v.String()
 	}
 
 	result.ShardCommittee = make(map[byte][]incognitokey.CommitteeKeyString)

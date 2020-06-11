@@ -124,8 +124,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *BeaconB
 }
 
 func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*BeaconBlock, shardID byte) error {
-	rewardReceivers := make(map[string]string)
-	committees := make(map[int][]incognitokey.CommitteePublicKey)
+	cStates := make(map[int][]*statedb.CommitteeState)
 	isInit := false
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
@@ -197,15 +196,32 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					committees, rewardReceivers = statedb.GetAllCommitteeStateWithRewardReceiver(beaconConsensusStateDB, blockchain.GetShardIDs())
+					cStates = statedb.GetAllCommitteeState(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo, committees[int(shardToProcess)], rewardReceivers)
+				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, cStates[int(shardToProcess)])
 				if err != nil {
 					return err
 				}
 				continue
 			}
 
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeStates []*statedb.CommitteeState) (err error) {
+	committeeSize := len(committeeStates)
+	for _, candidate := range committeeStates {
+		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
+			for key, value := range rewardInfoShardToProcess.ShardReward {
+				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)
+				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
+				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
+				if err != nil {
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
+				}
+			}
 		}
 	}
 	return nil

@@ -4,12 +4,14 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -56,7 +58,7 @@ type BeaconBestState struct {
 	ConsensusAlgorithm                     string                                     `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm                map[byte]string                            `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
-	RewardReceiver map[string]string `json:"RewardReceiver"` // map incognito public key -> reward receiver (payment address)
+	RewardReceiver map[string]privacy.PaymentAddress `json:"-"` // map incognito public key -> reward receiver (payment address)
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -112,7 +114,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []incognitokey.CommitteePublicKey{}
 	beaconBestState.CandidateShardWaitingForNextRandom = []incognitokey.CommitteePublicKey{}
 	beaconBestState.CandidateBeaconWaitingForNextRandom = []incognitokey.CommitteePublicKey{}
-	beaconBestState.RewardReceiver = make(map[string]string)
+	beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	beaconBestState.AutoStaking = make(map[string]bool)
@@ -568,7 +570,7 @@ func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitok
 	return beaconBestState.BeaconPendingValidator
 }
 
-func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]string {
+func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]privacy.PaymentAddress {
 	return beaconBestState.RewardReceiver
 }
 
@@ -596,6 +598,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 
 	// TODO: @tin: re-produce field that not marshal
 	beaconBestState.BestBlock = target.BestBlock
+	if beaconBestState.RewardReceiver == nil {
+		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
+	}
 
 	return nil
 }

@@ -8,13 +8,14 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type CommitteeState struct {
 	shardID            int
 	role               int
 	committeePublicKey incognitokey.CommitteePublicKey
-	rewardReceiver     string
+	rewardReceiver     privacy.PaymentAddress
 	autoStaking        bool
 	enterTime          int64 // unix time
 }
@@ -23,11 +24,11 @@ func NewCommitteeState() *CommitteeState {
 	return &CommitteeState{}
 }
 
-func NewCommitteeStateWithValue(shardID int, role int, committeePublicKey incognitokey.CommitteePublicKey, rewardReceiver string, autoStaking bool) *CommitteeState {
+func NewCommitteeStateWithValue(shardID int, role int, committeePublicKey incognitokey.CommitteePublicKey, rewardReceiver privacy.PaymentAddress, autoStaking bool) *CommitteeState {
 	return &CommitteeState{shardID: shardID, role: role, committeePublicKey: committeePublicKey, rewardReceiver: rewardReceiver, autoStaking: autoStaking, enterTime: time.Now().UnixNano()}
 }
 
-func NewCommitteeStateWithValueAndTime(shardID int, role int, committeePublicKey incognitokey.CommitteePublicKey, rewardReceiver string, autoStaking bool, enterTime int64) *CommitteeState {
+func NewCommitteeStateWithValueAndTime(shardID int, role int, committeePublicKey incognitokey.CommitteePublicKey, rewardReceiver privacy.PaymentAddress, autoStaking bool, enterTime int64) *CommitteeState {
 	return &CommitteeState{shardID: shardID, role: role, committeePublicKey: committeePublicKey, rewardReceiver: rewardReceiver, autoStaking: autoStaking, enterTime: enterTime}
 }
 
@@ -47,11 +48,11 @@ func (c *CommitteeState) SetAutoStaking(autoStaking bool) {
 	c.autoStaking = autoStaking
 }
 
-func (c CommitteeState) RewardReceiver() string {
+func (c CommitteeState) RewardReceiver() privacy.PaymentAddress {
 	return c.rewardReceiver
 }
 
-func (c *CommitteeState) SetRewardReceiver(rewardReceiver string) {
+func (c *CommitteeState) SetRewardReceiver(rewardReceiver privacy.PaymentAddress) {
 	c.rewardReceiver = rewardReceiver
 }
 
@@ -84,7 +85,7 @@ func (c CommitteeState) MarshalJSON() ([]byte, error) {
 		ShardID            int
 		Role               int
 		CommitteePublicKey incognitokey.CommitteePublicKey
-		RewardReceiver     string
+		RewardReceiver     privacy.PaymentAddress
 		AutoStaking        bool
 		EnterTime          int64
 	}{
@@ -106,7 +107,7 @@ func (c *CommitteeState) UnmarshalJSON(data []byte) error {
 		ShardID            int
 		Role               int
 		CommitteePublicKey incognitokey.CommitteePublicKey
-		RewardReceiver     string
+		RewardReceiver     privacy.PaymentAddress
 		AutoStaking        bool
 		EnterTime          int64
 	}{}

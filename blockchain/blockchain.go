@@ -423,7 +423,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		return err
 	}
 	for _, v := range allViews {
-
 		err := v.InitStateRootHash(blockchain)
 		if err != nil {
 			panic(err)
@@ -439,6 +438,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		v.BestBlock = *block
 		//@tin beacon committee
 		//@tin shard committee
+		if v.RewardReceiver == nil {
+			v.RewardReceiver = make(map[string]privacy.PaymentAddress)
+		}
 
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
