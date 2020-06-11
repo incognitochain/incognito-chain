@@ -28,6 +28,9 @@ type BlockService struct {
 	MemCache   *memcache.MemoryCache
 }
 
+func (blockService BlockService) GetLatestFinalizedShardBlock(shardID byte) (*blockchain.ShardBlock, uint64, error) {
+	return blockService.BlockChain.GetLatestFinalizedShardBlock(shardID)
+}
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
 	shards := make(map[byte]*blockchain.ShardBestState)
 	cacheKey := memcache.GetShardBestStateCachedKey()

@@ -99,14 +99,14 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 // var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
-	return &BeaconBestState{}
+	beaconBestState := new(BeaconBestState)
+	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
-	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
-	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
 	beaconBestState.BeaconCommittee = []incognitokey.CommitteePublicKey{}
 	beaconBestState.BeaconPendingValidator = []incognitokey.CommitteePublicKey{}
@@ -596,7 +596,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
-	//beaconBestState.currentPDEState = target.currentPDEState.Copy()
+
 	return nil
 }
 
