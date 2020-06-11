@@ -181,6 +181,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	rewardInsts := [][]string{}
 	if rewardForCustodianByEpoch != nil && len(rewardForCustodianByEpoch) > 0 {
 		if currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards() > 0 {
+			Logger.log.Infof("buildPortalRewardsInsts rewardForCustodianByEpoch %v", rewardForCustodianByEpoch)
 			// split reward for custodians
 			rewardInfos = splitRewardForCustodians(
 				rewardForCustodianByEpoch,
