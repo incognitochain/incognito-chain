@@ -206,11 +206,11 @@ func init() {
 			0: {
 				TimeOutCustodianReturnPubToken:       24 * time.Hour,
 				TimeOutWaitingPortingRequest:         24 * time.Hour,
-				TimeOutWaitingRedeemRequest:          10 * time.Minute,
-				MaxPercentLiquidatedCollateralAmount: 105,
-				MaxPercentCustodianRewards:           10,
+				TimeOutWaitingRedeemRequest:          15 * time.Minute,
+				MaxPercentLiquidatedCollateralAmount: 120,
+				MaxPercentCustodianRewards:           20,
 				MinPercentCustodianRewards:           1,
-				MinPercentLockedCollateral:           150,
+				MinPercentLockedCollateral:           200,
 				MinLockCollateralAmountInEpoch:       17500 * 1e9, // 17500 prv
 				TP120:                                120,
 				TP130:                                130,

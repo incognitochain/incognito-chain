@@ -71,6 +71,9 @@ const (
 	PortalLiquidationCustodianDepositMetaV2         = 129
 	PortalLiquidationCustodianDepositResponseMetaV2 = 130
 
+	//Note: don't use this metadata type for others
+	PortalResetPortalDBMeta = 199
+
 	// relaying
 	RelayingBNBHeaderMeta = 200
 	RelayingBTCHeaderMeta = 201

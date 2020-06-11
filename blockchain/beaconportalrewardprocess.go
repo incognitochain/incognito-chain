@@ -140,23 +140,11 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 	reqStatus := instructions[2]
 	if reqStatus == "portalTotalRewardInst" {
 		epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-		// get old total custodian reward
-		oldCustodianRewards, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, statedb.PortalRewardName, epoch-1)
-		if err != nil {
-			Logger.log.Errorf("ERROR: Can not get reward for custodian: %+v", err)
-			return nil
-		}
-
-		// update total custodian reward
-		for tokenID, amount := range actionData.Rewards {
-			oldCustodianRewards.AddTotalRewards(tokenID, amount)
-		}
-
 		// store total custodian reward into db
 		err = statedb.StoreRewardFeatureState(
 			stateDB,
 			statedb.PortalRewardName,
-			oldCustodianRewards.GetTotalRewards(),
+			actionData.Rewards,
 			epoch,
 		)
 		if err != nil {
