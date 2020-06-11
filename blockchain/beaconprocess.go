@@ -436,7 +436,19 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	if err != nil {
 		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process"))
 	}
+	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
+		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
+		for _, shardBlock := range shardBlocks {
+			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
+		}
+		Logger.log.Info(strs)
+		keys = append(keys, int(shardID))
+	}
+	sort.Ints(keys)
+	for _, v := range keys {
+		shardID := byte(v)
+		shardBlocks := allShardBlocks[shardID]
 		shardStates := beaconBlock.Body.ShardState[shardID]
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(shardStates) {

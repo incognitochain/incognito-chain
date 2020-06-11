@@ -106,17 +106,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		}
 		syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
 	}
-	//if synckerManager.BeaconSyncProcess.isCommittee {
-	//	synckerManager.startSyncAllShard(synckerManager.config.Blockchain.GetShardIDs())
-	//}
 }
-
-//func (synckerManager *SynckerManager) startSyncAllShard(activeShards []int) {
-//	for _, shardID := range activeShards {
-//		synckerManager.ShardSyncProcess[shardID].start()
-//		synckerManager.ShardSyncProcess[shardID].isCommittee = false
-//	}
-//}
 
 //Process incomming broadcast block
 func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
