@@ -280,7 +280,7 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	txStateDB := curView.GetCopiedTransactionStateDB()
 	featureStateDB := beaconState.GetBeaconFeatureStateDB()
 	initErr := resTx.Init(
@@ -476,7 +476,7 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	txStateDB := curView.GetCopiedTransactionStateDB()
 	featureStateDB := beaconState.GetBeaconFeatureStateDB()
 	initErr := resTx.Init(
@@ -634,7 +634,7 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 			TokenInput:  []coin.PlainCoin{},
 			Mintable:    true,
 		}
-		resTx := &transaction.TxCustomTokenPrivacy{}
+		resTx := &transaction.TxTokenBase{}
 		txStateDB := curView.GetCopiedTransactionStateDB()
 		featureStateDB := baeconState.GetBeaconFeatureStateDB()
 		err = resTx.Init(
@@ -769,7 +769,7 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	txStateDB := curView.GetCopiedTransactionStateDB()
 	featureStateDB := baeconState.GetBeaconFeatureStateDB()
 	initErr := resTx.Init(

@@ -128,7 +128,7 @@ func buildTradeResTx(
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
 
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	err = resTx.InitTxTokenSalary(otaCoin, producerPrivateKey, transactionStateDB, meta, &propID, "")
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", err)
@@ -300,7 +300,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	err = resTx.InitTxTokenSalary(otaCoin, producerPrivateKey, shardView.GetCopiedFeatureStateDB(), meta, &propID, "")
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing withdrawal response (privacy custom token) tx: %+v", err)
@@ -387,7 +387,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -490,7 +490,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,

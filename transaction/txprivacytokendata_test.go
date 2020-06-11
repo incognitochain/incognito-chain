@@ -21,7 +21,7 @@ import (
 //		CoinDetails: coin2,
 //	}})
 //	txNormal := Tx{Proof: &proof}
-//	data := TxPrivacyTokenData{
+//	data := TxPrivacyTokenDataVersion1{
 //		TxNormal: txNormal,
 //	}
 //	hash, _ := data.Hash()

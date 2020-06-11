@@ -191,7 +191,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 
 		feeRateForToken := make(map[common.Hash]CoinPerKilobyte)
 		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
-			tokenID := t.Desc.Tx.(*transaction.TxCustomTokenPrivacy).GetTokenID()
+			tokenID := t.Desc.Tx.(*transaction.TxTokenBase).GetTokenID()
 			tokenFee := t.Desc.FeeToken
 			feeRateForToken[*tokenID] = NewCoinPerKilobyte(tokenFee, size)
 		}
@@ -237,7 +237,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 			}
 		case common.TxCustomTokenPrivacyType:
 			{
-				transactions[t.(*transaction.TxCustomTokenPrivacy).Hash()] = true
+				transactions[t.(*transaction.TxTokenBase).Hash()] = true
 			}
 		}
 	}

@@ -796,7 +796,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 						if err != nil {
 							continue
 						}
-						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+						customPrivacyTokenTx := tx.(*transaction.TxTokenBase)
 						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {

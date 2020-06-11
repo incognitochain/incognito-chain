@@ -15,8 +15,8 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//b, _ := tool.CreateAndSendTransaction()
 	//fmt.Println(string(b))
 
-	//b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[0], privateKeys[2])
-	//fmt.Println(string(b))
+	b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[0], privateKeys[2])
+	fmt.Println(string(b))
 
 	//b, _ := tool.ListPrivacyCustomToken()
 	//res := new(debugtool.ListCustomToken)
@@ -54,10 +54,10 @@ func main() {
 
 	//fmt.Println(privateKeyToPaymentAddress(privateKeys[2]))
 	//tool := new(debugtool.DebugTool).InitLocal()
-	tool := new(debugtool.DebugTool).InitDevNet()
+	tool := new(debugtool.DebugTool).InitLocal()
 	testInitToken(tool, privateKeys, privateSeeds)
 
-	//b, _ := tool.SwitchCoinVersion(privateKeys[1])
+	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
 	//fmt.Println(string(b))
 
 
@@ -72,7 +72,8 @@ func main() {
 	//b, _ = tool.GetListOutputCoins(privateKeys[1])
 	//fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[2])
-
+	//fmt.Println(string(b))
+	//b, _ = tool.GetListOutputCoins(privateKeys[3])
 	//fmt.Println(string(b))
 
 	//b, _ := tool.CreateAndSendTransactionFromAToB(privateKeys[1], privateKeys[3], "10")
@@ -85,14 +86,14 @@ func main() {
 	//b, _ := tool.GetTransactionByHash("0ea685820dd4d316bc850a8dcda6d2c6b74ecfa1190f13a9d428cb61e3ea5204")
 	//fmt.Println(string(b))
 
-	b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
-	fmt.Println(string(b))
-	b, _ = tool.GetBalanceByPrivatekey(privateKeys[1])
-	fmt.Println(string(b))
-	b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
-	fmt.Println(string(b))
-	b, _ = tool.GetBalanceByPrivatekey(privateKeys[3])
-	fmt.Println(string(b))
+	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
+	//fmt.Println(string(b))
+	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[1])
+	//fmt.Println(string(b))
+	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
+	//fmt.Println(string(b))
+	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[3])
+	//fmt.Println(string(b))
 
 	//b, _ := tool.Stake(privateKeys[3], privateSeeds[3])
 	//fmt.Println(string(b))

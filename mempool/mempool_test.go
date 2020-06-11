@@ -529,7 +529,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 			candidatePlainCoins = append(candidatePlainCoins, candidateOutputCoinsForFee...)
 		}
 	}
-	tx := &transaction.TxCustomTokenPrivacy{}
+	tx := &transaction.TxTokenBase{}
 	err1 := tx.Init(
 		transaction.NewTxPrivacyTokenInitParams(&senderKeySet.KeySet.PrivateKey,
 			nil,

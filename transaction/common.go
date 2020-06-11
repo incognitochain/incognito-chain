@@ -304,7 +304,7 @@ func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, toke
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
 	switch params.txType {
 	case NormalCoinType:
-		tx := &TxVersion2{}
+		tx := new(TxVersion2)
 		otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
 		if err != nil {
 			Logger.Log.Errorf("Cannot get new coin from amount and receiver")
@@ -313,41 +313,18 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		err = tx.InitTxSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB, params.meta)
 		return tx, err
 	case CustomTokenPrivacyType:
-		var propertyID [common.HashSize]byte
-		copy(propertyID[:], params.coinID[:])
-		receiver := &privacy.PaymentInfo{
-			Amount:         params.amount,
-			PaymentAddress: *params.payToAddress,
-		}
-		propID := common.Hash(propertyID)
-		tokenParams := &CustomTokenPrivacyParamTx{
-			PropertyID:     propID.String(),
-			PropertyName:   params.coinName,
-			PropertySymbol: params.coinName,
-			Amount:         params.amount,
-			TokenTxType:    CustomTokenInit,
-			Receiver:       []*privacy.PaymentInfo{receiver},
-			TokenInput:     []coin.PlainCoin{},
-			Mintable:       true,
-		}
-		tx := &TxCustomTokenPrivacy{}
-		err := tx.Init(
-			NewTxPrivacyTokenInitParams(params.payByPrivateKey,
-				[]*privacy.PaymentInfo{},
-				nil,
-				0,
-				tokenParams,
-				params.transactionStateDB,
-				params.meta,
-				false,
-				false,
-				params.shardID,
-				nil,
-				params.bridgeStateDB))
+		tx := new(TxTokenVersion2)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
 		if err != nil {
-			return nil, errors.New(err.Error())
+			Logger.Log.Errorf("Cannot get new coin from amount and receiver")
+			return nil, err
 		}
-		return tx, nil
+		err = tx.InitTxTokenSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB, params.meta, &params.coinID, params.coinName)
+		if err != nil {
+			Logger.Log.Errorf("Cannot InitTxTokenSalary %v", err)
+			return nil, err
+		}
+		return tx, err
 	}
 	return nil, nil
 }

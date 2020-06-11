@@ -48,25 +48,25 @@ func NewTxPrivacyFromParams(params *TxPrivacyInitParams) (metadata.Transaction, 
 		return nil, err
 	}
 	if version == txVersion1Number {
-		return &TxVersion1{}, nil
+		return new(TxVersion1), nil
 	} else if version == txVersion2Number {
-		return &TxVersion2{}, nil
+		return new(TxVersion2), nil
 	}
 	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
 }
 
 func NewTxPrivacyFromVersionNumber(version int8) (metadata.Transaction, error) {
 	if version == txVersion1Number {
-		return &TxVersion1{}, nil
+		return new(TxVersion1), nil
 	} else if version == txVersion2Number {
-		return &TxVersion2{}, nil
+		return new(TxVersion2), nil
 	}
 	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
 }
 
 // This function copies values from TxBase to metadata.Transaction
 // It does not copy sigPrivKey because it is private field
-func NewTransactionFromTxBase(tx TxBase) (metadata.Transaction, error) {
+func NewTransactionFromTxBase(tx *TxBase) (metadata.Transaction, error) {
 	metaTx, err := NewTxPrivacyFromVersionNumber(tx.GetVersion())
 	if err != nil {
 		return nil, err
@@ -369,7 +369,7 @@ func (tx *TxBase) SetMetadata(meta metadata.Metadata) { tx.Metadata = meta }
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 
 func (tx TxBase) CheckAuthorizedSender(publicKey []byte) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -436,8 +436,8 @@ func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx  TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+func (tx TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return nil, nil, nil , err
@@ -617,7 +617,7 @@ func (tx *TxBase) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 	return false, nil
 }
 
-func (tx *TxBase) ShouldSignMetaData() bool {
+func (tx TxBase) ShouldSignMetaData() bool {
 	if tx.GetMetadata() == nil {
 		return false
 	}
@@ -675,7 +675,7 @@ func (tx TxBase) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.
 // =================== FUNCTIONS THAT VALIDATE STUFFS ===================
 
 func (tx TxBase) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -684,7 +684,7 @@ func (tx TxBase) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 }
 
 func (tx TxBase) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -702,7 +702,7 @@ func (tx TxBase) ValidateTransaction(hasPrivacy bool, transactionStateDB *stated
 	if tx.Version == txConversionVersion12Number {
 		return validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
 	}
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -826,7 +826,7 @@ func (tx TxBase) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever
 	}
 	meta := tx.GetMetadata()
 	if meta != nil {
-		metaTx, err := NewTransactionFromTxBase(tx)
+		metaTx, err := NewTransactionFromTxBase(&tx)
 		if err != nil {
 			return err
 		}
@@ -848,7 +848,7 @@ func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shar
 	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", meta)
 	if meta != nil {
 		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
-		txMeta, err := NewTransactionFromTxBase(tx)
+		txMeta, err := NewTransactionFromTxBase(&tx)
 		if err != nil {
 			return false, err
 		}
@@ -889,6 +889,11 @@ func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shar
 	}
 
 	// check Type is normal or salary tx
+	fmt.Println("Validating sanity")
+	fmt.Println("Validating sanity")
+	fmt.Println("Validating sanity")
+	fmt.Println(tx.GetType())
+
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
@@ -910,10 +915,16 @@ func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shar
 
 // ============= Init Transaction, the input should be params such as: TxPrivacyInitParams ============
 func (tx *TxBase) Init(paramsInterface interface{}) error {
-	transaction, err := NewTransactionFromTxBase(*tx)
+	txPrivacyParams, ok := paramsInterface.(*TxPrivacyInitParams)
+	if !ok {
+		return errors.New("params of tx Init is not TxPrivacyInitParam")
+	}
+	transaction, err := NewTxPrivacyFromParams(txPrivacyParams)
 	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return err
 	}
-	return transaction.Init(paramsInterface)
+	err = transaction.Init(paramsInterface)
+	// Copy value from transaction to txBase
+	*tx = NewTxBaseFromMetadataTx(transaction)
+	return err
 }

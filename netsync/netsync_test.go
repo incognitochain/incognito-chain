@@ -455,7 +455,7 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error parse tx", err)
 	}
-	tx := transaction.TxCustomTokenPrivacy{}
+	tx := transaction.TxTokenBase{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTxPrivacyToken{Transaction: &tx}
 	netSync.Start()
@@ -688,7 +688,7 @@ func TestNetSyncQueueTxPrivacyToken(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error parse tx", err)
 	}
-	var tx transaction.TxCustomTokenPrivacy
+	var tx transaction.TxTokenBase
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTxPrivacyToken{Transaction: &tx}
 	// no start net sync
