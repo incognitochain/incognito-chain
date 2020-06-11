@@ -133,7 +133,7 @@ func TestGetMessage(t *testing.T) {
 			desc:  "Nodemode auto, shard role",
 			mode:  common.NodeModeAuto,
 			layer: common.ShardRole,
-			out:   []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdBlkShardToBeacon, wire.CmdCrossShard, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdBFT, wire.CmdPeerState},
+			out:   []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdBlkShardToBeacon, wire.CmdCrossShard, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdBFT, wire.CmdPeerState},
 		},
 		{
 			desc:  "Nodemode auto, beacon role",
@@ -145,21 +145,21 @@ func TestGetMessage(t *testing.T) {
 			desc:  "Nodemode auto, normal role",
 			mode:  common.NodeModeAuto,
 			layer: "",
-			out:   []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
+			out:   []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
 		},
 		{
 			desc:    "Nodemode relay beacon",
 			mode:    common.NodeModeRelay,
 			layer:   "",
 			shardID: []byte{255},
-			out:     []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
+			out:     []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
 		},
 		{
 			desc:    "Nodemode relay shards",
 			mode:    common.NodeModeRelay,
 			layer:   "",
 			shardID: []byte{1, 2, 3},
-			out:     []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
+			out:     []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
 		},
 	}
 

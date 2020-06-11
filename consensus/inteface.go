@@ -20,6 +20,7 @@ type NodeInterface interface {
 	GetMiningKeys() string
 	GetPrivateKey() string
 	GetUserMiningState() (role string, chainID int)
+	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 }
 
 type ConsensusInterface interface {

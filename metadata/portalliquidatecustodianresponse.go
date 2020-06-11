@@ -95,6 +95,8 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 			continue
 		}
 
+		Logger.log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verifying tx response for custodian liquidation instructions")
+
 		status := inst[2]
 		if status != common.PortalLiquidateCustodianSuccessChainStatus {
 			continue
@@ -150,5 +152,6 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidateCustodian instruction found for PortalLiquidateCustodianResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
+	Logger.log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verify tx response for custodian liquidation instructions successfully")
 	return true, nil
 }

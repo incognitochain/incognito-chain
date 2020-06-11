@@ -223,6 +223,9 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			if nextCrossShardInfo == nil {
 				break
 			}
+			if requestHeight == nextCrossShardInfo.NextCrossShardHeight {
+				break
+			}
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
 			if err != nil {
@@ -406,7 +409,7 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 	for {
 		ch, err := synckerManager.config.Node.RequestBeaconBlocksByHashViaStream(ctx, peerID, [][]byte{requestHash.Bytes()})
 		if err != nil {
-			fmt.Println("Syncker: create channel fail")
+			fmt.Println("[Monitor] Syncker: create channel fail")
 			return
 		}
 		blk := <-ch

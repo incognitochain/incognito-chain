@@ -263,7 +263,6 @@ func (serverObj *Server) NewServer(
 			os.Exit(2)
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
-		Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.BtcClientIP, cfg.BtcClientPort, cfg.BtcClientUsername, cfg.BtcClientPassword)
 	}
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.syncker, cPendingTxs, cRemovedTxs)
@@ -275,7 +274,6 @@ func (serverObj *Server) NewServer(
 	// Connect to highway
 	Logger.log.Debug("Listenner: ", cfg.Listener)
 	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
-	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
 
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
 	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
@@ -2391,4 +2389,18 @@ func (s *Server) GetBeaconChainDatabase() incdb.Database {
 
 func (s *Server) GetShardChainDatabase(shardID byte) incdb.Database {
 	return s.dataBase[int(shardID)]
+}
+
+func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	for _, hashBytes := range hashes {
+		if chainName == common.BeaconChainKey {
+			serverObj.syncker.SyncMissingBeaconBlock(ctx, peerID, common.BytesToHash(hashBytes))
+		} else {
+			serverObj.syncker.SyncMissingShardBlock(ctx, peerID, byte(fromCID), common.BytesToHash(hashBytes))
+		}
+	}
+	return nil
 }

@@ -14,7 +14,6 @@ import (
 )
 
 func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Shard Candidate By Pubkey", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
@@ -77,7 +76,6 @@ func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interfa
 }
 
 func (wsServer *WsServer) handleSubcribeShardPendingValidatorByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Shard Validator By Pubkey", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
@@ -150,7 +148,6 @@ func (wsServer *WsServer) handleSubcribeShardPendingValidatorByPublickey(params 
 }
 
 func (wsServer *WsServer) handleSubcribeShardCommitteeByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Shard Committee By Pubkey", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
@@ -223,7 +220,6 @@ func (wsServer *WsServer) handleSubcribeShardCommitteeByPublickey(params interfa
 }
 
 func (wsServer *WsServer) handleSubcribeBeaconCandidateByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
@@ -284,7 +280,6 @@ func (wsServer *WsServer) handleSubcribeBeaconCandidateByPublickey(params interf
 }
 
 func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
@@ -345,7 +340,6 @@ func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params
 }
 
 func (wsServer *WsServer) handleSubcribeBeaconCommitteeByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))

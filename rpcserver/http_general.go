@@ -2,8 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-	"log"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -13,7 +11,6 @@ import (
 handleGetInOutPeerMessageCount - return all inbound/outbound message count by peer which this node connected
 */
 func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetInOutMessageCount by Peer params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
@@ -30,7 +27,6 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 handleGetInOutPeerMessages - return all inbound/outbound messages peer which this node connected
 */
 func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetInOutPeerMessagess params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
@@ -47,9 +43,7 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 handleGetAllConnectedPeers - return all connnected peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetAllConnectedPeers params: %+v", params)
 	result := jsonresult.NewGetAllConnectedPeersResult(*httpServer.config.ConnMgr, httpServer.config.BlockChain)
-	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
 
@@ -57,9 +51,7 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 handleGetAllPeers - return all peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetAllPeers params: %+v", params)
 	result := jsonresult.NewGetAllPeersResult(*httpServer.config.AddrMgr)
-	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
 
@@ -76,7 +68,6 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 }
 
 func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCheckHashValue params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected array component"))
@@ -86,8 +77,6 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected hash string value"))
 	}
 	// param #1: transaction Hash
-	Logger.log.Debugf("Check hash value  input Param %+v", arrayParams[0].(string))
-	log.Printf("Check hash value  input Param %+v", hashParams)
 
 	isTransaction, isShardBlock, isBeaconBlock, err := httpServer.blockService.CheckHashValue(hashParams)
 	if err != nil {
@@ -107,29 +96,22 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
 	result := httpServer.networkService.GetConnectionCount()
-	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }
 
 // handleGetActiveShards - return active shard num
 func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetActiveShards params: %+v", params)
 	activeShards := httpServer.blockService.GetActiveShards()
-	Logger.log.Debugf("handleGetActiveShards result: %+v", activeShards)
 	return activeShards, nil
 }
 
 func (httpServer *HttpServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetMaxShardsNumber params: %+v", params)
 	result := common.MaxShardNumber
-	Logger.log.Debugf("handleGetMaxShardsNumber result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ErrRPCInvalidParams"))
@@ -142,7 +124,6 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	stakingType := int(stakingTypeParam)
 
 	amount := rpcservice.GetStakingAmount(stakingType, httpServer.config.ChainParams.StakingAmountShard)
-	Logger.log.Debugf("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
 }
 

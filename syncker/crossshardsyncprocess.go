@@ -3,8 +3,9 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -126,15 +127,12 @@ func (s *CrossShardSyncProcess) streamMissingCrossShardBlock(fromSID int, hashes
 	}
 
 	//receive
-	for {
-		select {
-		case blk := <-ch:
-			if !isNil(blk) {
-				fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
-				s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
-			} else {
-				break
-			}
+	for blk := range ch {
+		if !isNil(blk) {
+			fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
+			s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
+		} else {
+			return
 		}
 	}
 }

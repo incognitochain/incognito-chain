@@ -79,7 +79,7 @@ func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shard
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(rh.IncogAddressStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("sender address is incorrect"))
+		return false, false, errors.New("sender address is incorrect")
 	}
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if len(incogAddr.Pk) == 0 {
