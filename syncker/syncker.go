@@ -99,14 +99,13 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	synckerManager.BeaconSyncProcess.start()
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
-		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) || synckerManager.BeaconSyncProcess.isCommittee {
 			syncProc.start()
 		} else {
 			syncProc.stop()
 		}
 		syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
 	}
-
 }
 
 //Process incomming broadcast block

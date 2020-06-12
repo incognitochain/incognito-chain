@@ -257,19 +257,24 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	validStopAutoStakingInstructions := [][]string{}
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	var allShardBlocks = blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
+	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
+	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
 		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
 		for _, shardBlock := range shardBlocks {
 			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
 		}
 		Logger.log.Info(strs)
+		keys = append(keys, int(shardID))
 	}
+	sort.Ints(keys)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
-	for shardID, shardBlocks := range allShardBlocks {
+	for _, v := range keys {
+		shardID := byte(v)
+		shardBlocks := allShardBlocks[shardID]
 		//Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
 		for _, shardBlock := range shardBlocks {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
