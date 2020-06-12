@@ -20,7 +20,8 @@ import (
 	"strconv"
 )
 
-type TxPrivacyTokenDataAttributes struct {
+type TxPrivacyTokenData struct {
+	TxNormal TxBase
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
 	PropertyName   string
 	PropertySymbol string
@@ -30,42 +31,37 @@ type TxPrivacyTokenDataAttributes struct {
 	Amount   uint64 // init amount
 }
 
-func (attr TxPrivacyTokenDataAttributes) GetPropertyID() common.Hash { return attr.PropertyID }
+func (TxPrivacyTokenData TxPrivacyTokenData) GetPropertyID() common.Hash { return TxPrivacyTokenData.PropertyID }
 
-func (attr *TxPrivacyTokenDataAttributes) SetPropertyID(propID common.Hash)  { attr.PropertyID = propID }
+func (TxPrivacyTokenData *TxPrivacyTokenData) SetPropertyID(propID common.Hash)  { TxPrivacyTokenData.PropertyID = propID }
 
-func (attr TxPrivacyTokenDataAttributes) GetPropertyName() string { return attr.PropertyName }
+func (TxPrivacyTokenData TxPrivacyTokenData) GetPropertyName() string { return TxPrivacyTokenData.PropertyName }
 
-func (attr *TxPrivacyTokenDataAttributes) SetPropertyName(propertyName string) { attr.PropertyName = propertyName }
+func (TxPrivacyTokenData *TxPrivacyTokenData) SetPropertyName(propertyName string) { TxPrivacyTokenData.PropertyName = propertyName }
 
-func (attr TxPrivacyTokenDataAttributes) GetPropertySymbol() string { return attr.PropertySymbol }
+func (TxPrivacyTokenData TxPrivacyTokenData) GetPropertySymbol() string { return TxPrivacyTokenData.PropertySymbol }
 
-func (attr *TxPrivacyTokenDataAttributes) SetPropertySymbol(propertySymbol string)  { attr.PropertySymbol = propertySymbol }
+func (TxPrivacyTokenData *TxPrivacyTokenData) SetPropertySymbol(propertySymbol string)  { TxPrivacyTokenData.PropertySymbol = propertySymbol }
 
-func (attr TxPrivacyTokenDataAttributes) GetType() int { return attr.Type }
+func (TxPrivacyTokenData TxPrivacyTokenData) GetType() int { return TxPrivacyTokenData.Type }
 
-func (attr *TxPrivacyTokenDataAttributes) SetType(t int) { attr.Type = t }
+func (TxPrivacyTokenData *TxPrivacyTokenData) SetType(t int) { TxPrivacyTokenData.Type = t }
 
-func (attr TxPrivacyTokenDataAttributes) IsMintable() bool { return attr.Mintable }
+func (TxPrivacyTokenData TxPrivacyTokenData) IsMintable() bool { return TxPrivacyTokenData.Mintable }
 
-func (attr *TxPrivacyTokenDataAttributes) SetMintable(mintable bool) { attr.Mintable = mintable }
+func (TxPrivacyTokenData *TxPrivacyTokenData) SetMintable(mintable bool) { TxPrivacyTokenData.Mintable = mintable }
 
-func (attr TxPrivacyTokenDataAttributes) GetAmount() uint64 { return attr.Amount }
+func (TxPrivacyTokenData TxPrivacyTokenData) GetAmount() uint64 { return TxPrivacyTokenData.Amount }
 
-func (attr *TxPrivacyTokenDataAttributes) SetAmount(amount uint64) { attr.Amount = amount }
+func (TxPrivacyTokenData *TxPrivacyTokenData) SetAmount(amount uint64) { TxPrivacyTokenData.Amount = amount }
 
-type TxPrivacyTokenData struct {
-	TxNormal TxBase
-	TxPrivacyTokenDataAttributes
-}
-
-func (txTokenPrivacyData TxPrivacyTokenData) String() string {
-	record := txTokenPrivacyData.PropertyName
-	record += txTokenPrivacyData.PropertySymbol
-	record += fmt.Sprintf("%d", txTokenPrivacyData.Amount)
-	if txTokenPrivacyData.TxNormal.Proof != nil {
-		inputCoins := txTokenPrivacyData.TxNormal.GetProof().GetInputCoins()
-		outputCoins := txTokenPrivacyData.TxNormal.GetProof().GetOutputCoins()
+func (TxPrivacyTokenData TxPrivacyTokenData) String() string {
+	record := TxPrivacyTokenData.PropertyName
+	record += TxPrivacyTokenData.PropertySymbol
+	record += fmt.Sprintf("%d", TxPrivacyTokenData.Amount)
+	if TxPrivacyTokenData.TxNormal.Proof != nil {
+		inputCoins := TxPrivacyTokenData.TxNormal.GetProof().GetInputCoins()
+		outputCoins := TxPrivacyTokenData.TxNormal.GetProof().GetOutputCoins()
 		for _, out := range outputCoins {
 			publicKeyBytes := []byte{}
 			if out.GetPublicKey() != nil {
@@ -87,8 +83,8 @@ func (txTokenPrivacyData TxPrivacyTokenData) String() string {
 }
 
 // Hash - return hash of custom token data, be used as Token ID
-func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
-	point := operation.HashToPoint([]byte(txTokenPrivacyData.String()))
+func (TxPrivacyTokenData TxPrivacyTokenData) Hash() (*common.Hash, error) {
+	point := operation.HashToPoint([]byte(TxPrivacyTokenData.String()))
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
 	if err != nil {
@@ -100,29 +96,8 @@ func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
 // Interface for all type of transaction
 type txTokenInterface interface {
 	// GET/SET FUNCTION
-	GetVersion() int8
-	SetVersion(int8)
-	GetMetadataType() int
-	GetType() string
-	SetType(string)
-	GetLockTime() int64
-	SetLockTime(int64)
-	GetSenderAddrLastByte() byte
-	SetGetSenderAddrLastByte(byte)
-	GetTxFee() uint64
-	SetTxFee(uint64)
-	GetTxFeeToken() uint64
-	GetInfo() []byte
-	SetInfo([]byte)
-	GetSigPubKey() []byte
-	SetSigPubKey([]byte)
-	GetSig() []byte
-	SetSig([]byte)
-	GetProof() privacy.Proof
-	SetProof(privacy.Proof)
-	GetTokenID() *common.Hash
-	GetMetadata() metadata.Metadata
-	SetMetadata(metadata.Metadata)
+	GetTxBase() TxBase
+	SetTxBase(TxBase)
 	GetTxPrivacyTokenData() TxPrivacyTokenData
 	SetTxPrivacyTokenData(TxPrivacyTokenData)
 
@@ -188,39 +163,10 @@ func newTxTokenFromVersionNumber(version int8) (txTokenInterface, error) {
 	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
 }
 
-// This function copies values from TxTokenBase to the interface
-func newTxTokenInterfaceFromTxTokenBase(tx TxTokenBase) (txTokenInterface, error) {
-	txTokenInterface, err := newTxTokenFromVersionNumber(tx.GetVersion())
-	if err != nil {
-		return nil, err
-	}
-	txTokenInterface.SetVersion(tx.GetVersion())
-	txTokenInterface.SetType(tx.GetType())
-	txTokenInterface.SetLockTime(tx.GetLockTime())
-	txTokenInterface.SetTxFee(tx.GetTxFee())
-	txTokenInterface.SetInfo(tx.GetInfo())
-	txTokenInterface.SetSigPubKey(tx.GetSigPubKey())
-	txTokenInterface.SetSig(tx.GetSig())
-	txTokenInterface.SetProof(tx.GetProof())
-	txTokenInterface.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-	txTokenInterface.SetMetadata(tx.GetMetadata())
-	txTokenInterface.SetTxPrivacyTokenData(tx.GetTxPrivacyTokenData())
-	return txTokenInterface, nil
-}
-
 // This function copies values from txTokenInterface to TxTokenBase
 func newTxTokenBaseFromTxTokenInterface(tx txTokenInterface) *TxTokenBase {
 	txTokenBase := new(TxTokenBase)
-	txTokenBase.SetVersion(tx.GetVersion())
-	txTokenBase.SetType(tx.GetType())
-	txTokenBase.SetLockTime(tx.GetLockTime())
-	txTokenBase.SetTxFee(tx.GetTxFee())
-	txTokenBase.SetInfo(tx.GetInfo())
-	txTokenBase.SetSigPubKey(tx.GetSigPubKey())
-	txTokenBase.SetSig(tx.GetSig())
-	txTokenBase.SetProof(tx.GetProof())
-	txTokenBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-	txTokenBase.SetMetadata(tx.GetMetadata())
+	txTokenBase.SetTxBase(tx.GetTxBase())
 	txTokenBase.SetTxPrivacyTokenData(tx.GetTxPrivacyTokenData())
 	return txTokenBase
 }
@@ -271,6 +217,8 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 
 // ========== Get/Set FUNCTION ============
 
+func (txToken TxTokenBase) GetTxBase() TxBase { return txToken.TxBase }
+func (txToken *TxTokenBase) SetTxBase(tx TxBase) { txToken.TxBase = tx }
 func (txToken TxTokenBase) GetTxPrivacyTokenData() TxPrivacyTokenData { return txToken.TxPrivacyTokenData }
 func (txToken *TxTokenBase) SetTxPrivacyTokenData(data TxPrivacyTokenData)  { txToken.TxPrivacyTokenData = data }
 
@@ -290,14 +238,14 @@ func (txToken *TxTokenBase) UnmarshalJSON(data []byte) error {
 		return NewTransactionErr(PrivacyTokenPRVJsonError, err)
 	}
 	temp := &struct {
-		TxTokenPrivacyData TxPrivacyTokenData
+		TxPrivacyTokenData TxPrivacyTokenData
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		Logger.Log.Error(err)
 		return NewTransactionErr(PrivacyTokenJsonError, err)
 	}
-	TxTokenPrivacyDataJson, err := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
+	TxTokenPrivacyDataJson, err := json.MarshalIndent(temp.TxPrivacyTokenData, "", "\t")
 	if err != nil {
 		Logger.Log.Error(err)
 		return NewTransactionErr(UnexpectedError, err)
@@ -482,7 +430,7 @@ func (txToken TxTokenBase) GetTxFee() uint64 {
 	return txToken.TxBase.GetTxFee()
 }
 
-// ========== NORMAL INIT FUNCTIONS ==========
+// ================== NORMAL INIT FUNCTIONS ===================
 
 func (txToken *TxTokenBase) Init(paramsInterface interface{}) error {
 	txPrivacyParams, ok := paramsInterface.(*TxPrivacyTokenInitParams)
@@ -494,30 +442,9 @@ func (txToken *TxTokenBase) Init(paramsInterface interface{}) error {
 		return err
 	}
 	err = transactionToken.Init(paramsInterface)
-	// Copy value from transaction to txBase
-	txToken = newTxTokenBaseFromTxTokenInterface(transactionToken)
-	fmt.Println("After init")
-	fmt.Println("After init")
-	fmt.Println("After init")
-	fmt.Println("After init")
-	fmt.Println("Outside")
-	fmt.Println(txToken.GetType())
-	fmt.Println(txToken.GetType())
-	fmt.Println("Inside")
-	fmt.Println(txToken.TxPrivacyTokenData.TxNormal.GetType())
-	fmt.Println(txToken.TxPrivacyTokenData.TxNormal.GetType())
 
-	fmt.Println("Done init, hash all =")
-	fmt.Println(txToken.Hash())
-	fmt.Println("Hash fee =")
-	fmt.Println(txToken.TxBase.Hash())
-	fmt.Println("Hash TxNormal =")
-	fmt.Println(txToken.TxPrivacyTokenData.TxNormal.Hash())
-	fmt.Println("Hash TokenData =")
-	fmt.Println(txToken.TxPrivacyTokenData.Hash())
-
-	fmt.Println("token data =")
-	fmt.Println(txToken.TxPrivacyTokenData)
+	// Copy value of transactionToken to txToken
+	*txToken = *newTxTokenBaseFromTxTokenInterface(transactionToken)
 	return err
 }
 
@@ -561,7 +488,7 @@ func (txToken *TxTokenBase) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey *pri
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.TxBase = NewTxBaseFromMetadataTx(normalTx)
+	txToken.TxBase = *NewTxBaseFromMetadataTx(normalTx)
 	// check tx size
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
 	if txSize := estimateTxSizeOfInitTokenSalary(publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
@@ -595,7 +522,7 @@ func (txToken *TxTokenBase) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey *pri
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], coinID[:])
 	txToken.TxPrivacyTokenData.PropertyID = propertyID
-	txToken.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
+	txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(&temp)
 	txToken.TxPrivacyTokenData.Mintable = true
 	return nil
 }
@@ -714,21 +641,6 @@ func (txToken TxTokenBase) ValidateTxWithBlockChain(chainRetriever metadata.Chai
 
 // ValidateSanityData - validate sanity data of PRV and pToken
 func (txToken TxTokenBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	fmt.Println("Validating sanity data")
-	fmt.Println("Validating sanity data")
-	fmt.Println("Validating sanity data")
-	fmt.Println("hash all =")
-	fmt.Println(txToken.Hash())
-	fmt.Println("Hash fee =")
-	fmt.Println(txToken.TxBase.Hash())
-	fmt.Println("Hash TxNormal =")
-	fmt.Println(txToken.TxPrivacyTokenData.TxNormal.Hash())
-	fmt.Println("Hash TokenData =")
-	fmt.Println(txToken.TxPrivacyTokenData.Hash())
-
-	fmt.Println("token data =")
-	fmt.Println(txToken.TxPrivacyTokenData)
-
 	meta := txToken.TxBase.Metadata
 	if meta != nil {
 		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, &txToken)

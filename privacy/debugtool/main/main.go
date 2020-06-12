@@ -22,7 +22,6 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//res := new(debugtool.ListCustomToken)
 	//_ = json.Unmarshal(b, res)
 	//tokenID := res.Result.ListCustomToken[0].ID
-
 	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
 	//fmt.Println(string(b))
 
@@ -59,7 +58,6 @@ func main() {
 
 	//b, _ := tool.SwitchCoinVersion(privateKeys[0])
 	//fmt.Println(string(b))
-
 
 	//sendTx(tool)
 

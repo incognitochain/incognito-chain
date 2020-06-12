@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"fmt"
 	"errors"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -19,6 +18,8 @@ type TxTokenVersion2 struct {
 }
 
 func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
+	var err error
+
 	params, ok := paramsInterface.(*TxPrivacyTokenInitParams)
 	if !ok {
 		return errors.New("Cannot init TxCustomTokenPrivacy because params is not correct")
@@ -35,17 +36,13 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 		params.metaData,
 		params.info,
 	)
-	normalTx, err := NewTxPrivacyFromParams(txPrivacyParams)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create tx from params, error %v", err)
-		return NewTransactionErr(PrivacyTokenInitFeeParamsError, err)
-	}
-	if err = normalTx.Init(txPrivacyParams); err != nil {
+	feeTx := new(TxVersion2)
+	if err := feeTx.Init(txPrivacyParams); err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	normalTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.TxBase = NewTxBaseFromMetadataTx(normalTx)
+	feeTx.SetType(common.TxCustomTokenPrivacyType)
+	txToken.TxBase = *NewTxBaseFromMetadataTx(feeTx)
 
 	// check tx size
 	limitFee := uint64(0)
@@ -85,12 +82,12 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 			tempOutputCoin := make([]coin.Coin, 1)
 			tempOutputCoin[0] = c
 
-			temp := TxVersion2{}
+			temp := new(TxVersion2)
 			temp.SetVersion(txVersion2Number)
 			temp.SetType(common.TxNormalType)
 			temp.Proof = new(privacy.ProofV2)
 			temp.Proof.Init()
-			if err = temp.Proof.SetOutputCoins(tempOutputCoin); err != nil {
+			if err := temp.Proof.SetOutputCoins(tempOutputCoin); err != nil {
 				Logger.Log.Errorf("Init customPrivacyToken cannot set outputCoins")
 				return err
 			}
@@ -98,20 +95,14 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 				return NewTransactionErr(GetShardIDByPublicKeyError, err)
 			}
 			temp.sigPrivKey = *params.senderKey
+
 			temp.Sig, temp.SigPubKey, err = signNoPrivacy(params.senderKey, temp.Hash()[:])
 			if err != nil {
 				Logger.Log.Error(errors.New("can't sign this tx"))
 				return NewTransactionErr(SignTxError, err)
 			}
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
-
-			fmt.Println("Checking TxNormal Type")
-			fmt.Println("Checking TxNormal Type")
-			fmt.Println("Checking TxNormal Type")
-			fmt.Println("Checking TxNormal Type")
-			fmt.Println("Temp Type =", temp.GetType())
-			txToken.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
-			fmt.Println("TxNormal Type =", txToken.TxPrivacyTokenData.TxNormal.GetType())
+			txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(temp)
 
 			hashInitToken, err := txToken.TxPrivacyTokenData.Hash()
 			if err != nil {
@@ -170,7 +161,6 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 			Logger.Log.Debugf("Token %+v wil be transfered with", propertyID)
 
 			txToken.TxPrivacyTokenData.SetPropertyID(*propertyID)
-
 			params := NewTxPrivacyInitParams(
 				params.senderKey,
 				params.tokenParams.Receiver,
@@ -190,7 +180,7 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 			if err = tx.Init(params); err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
-			txToken.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(tx)
+			txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(tx)
 		}
 	}
 	if !handled {
@@ -214,7 +204,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.TxBase = NewTxBaseFromMetadataTx(normalTx)
+	txToken.TxBase = *NewTxBaseFromMetadataTx(normalTx)
 	// check tx size
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
 	if txSize := estimateTxSizeOfInitTokenSalary(publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
@@ -250,6 +240,6 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	}
 	temp.SigPubKey = otaCoin.GetPublicKey().ToBytesS()
 
-	txToken.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
+	txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(&temp)
 	return nil
 }

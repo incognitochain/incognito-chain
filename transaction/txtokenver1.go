@@ -34,17 +34,13 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 		params.metaData,
 		params.info,
 	)
-	normalTx, err := NewTxPrivacyFromParams(txPrivacyParams)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create tx from params, error %v", err)
-		return NewTransactionErr(PrivacyTokenInitFeeParamsError, err)
-	}
-	if err = normalTx.Init(txPrivacyParams); err != nil {
+	normalTx := new(TxVersion1)
+	if err := normalTx.Init(txPrivacyParams); err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.TxBase = NewTxBaseFromMetadataTx(normalTx)
+	txToken.TxBase = *NewTxBaseFromMetadataTx(normalTx)
 
 	// check tx size
 	limitFee := uint64(0)
@@ -66,7 +62,8 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			// case init a new privacy custom token
 			handled = true
 			txToken.TxPrivacyTokenData.SetAmount(params.tokenParams.Amount)
-			temp := TxVersion1{}
+			temp := new(TxVersion1)
+			temp.SetVersion(txVersion1Number)
 			temp.Type = common.TxNormalType
 			temp.Proof = new(zkp.PaymentProof)
 			tempOutputCoin := make([]*coin.CoinV1, 1)
@@ -87,10 +84,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 				}
 				tempOutputCoin[0].CoinDetails.SetInfo(params.tokenParams.Receiver[0].Message)
 			}
-
-			sndOut := privacy.RandomScalar()
-			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
-			// create coin commitment
+			tempOutputCoin[0].CoinDetails.SetSNDerivator(privacy.RandomScalar())
 			err = tempOutputCoin[0].CoinDetails.CommitAll()
 			if err != nil {
 				return NewTransactionErr(CommitOutputCoinError, err)
@@ -109,7 +103,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 				return NewTransactionErr(SignTxError, err)
 			}
 
-			txToken.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
+			txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(temp)
 			hashInitToken, err := txToken.TxPrivacyTokenData.Hash()
 			if err != nil {
 				Logger.Log.Error(errors.New("can't hash this token data"))
@@ -140,7 +134,6 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			handled = true
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
-			temp := TxVersion1{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 			existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, *propertyID)
 			if !existed {
@@ -171,6 +164,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			txToken.TxPrivacyTokenData.SetPropertyID(*propertyID)
 			txToken.TxPrivacyTokenData.SetMintable(params.tokenParams.Mintable)
 
+			temp := new(TxVersion1)
 			err := temp.Init(NewTxPrivacyInitParams(params.senderKey,
 				params.tokenParams.Receiver,
 				params.tokenParams.TokenInput,
@@ -183,7 +177,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
-			txToken.TxPrivacyTokenData.TxNormal = NewTxBaseFromMetadataTx(&temp)
+			txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(temp)
 		}
 	}
 	if !handled {

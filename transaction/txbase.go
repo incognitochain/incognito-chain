@@ -86,18 +86,18 @@ func NewTransactionFromTxBase(tx *TxBase) (metadata.Transaction, error) {
 
 // This function copies values from metadata.Transaction to TxBase
 // It does not copy sigPrivKey because it is private field
-func NewTxBaseFromMetadataTx(tx metadata.Transaction) TxBase {
-	var txBase TxBase
-	txBase.SetVersion(tx.GetVersion())
-	txBase.SetType(tx.GetType())
-	txBase.SetLockTime(tx.GetLockTime())
-	txBase.SetTxFee(tx.GetTxFee())
-	txBase.SetInfo(tx.GetInfo())
-	txBase.SetSigPubKey(tx.GetSigPubKey())
-	txBase.SetSig(tx.GetSig())
-	txBase.SetProof(tx.GetProof())
-	txBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-	txBase.SetMetadata(tx.GetMetadata())
+func NewTxBaseFromMetadataTx(txMetadata metadata.Transaction) *TxBase {
+	txBase := new(TxBase)
+	txBase.SetVersion(txMetadata.GetVersion())
+	txBase.SetType(txMetadata.GetType())
+	txBase.SetLockTime(txMetadata.GetLockTime())
+	txBase.SetTxFee(txMetadata.GetTxFee())
+	txBase.SetInfo(txMetadata.GetInfo())
+	txBase.SetSigPubKey(txMetadata.GetSigPubKey())
+	txBase.SetSig(txMetadata.GetSig())
+	txBase.SetProof(txMetadata.GetProof())
+	txBase.SetGetSenderAddrLastByte(txMetadata.GetSenderAddrLastByte())
+	txBase.SetMetadata(txMetadata.GetMetadata())
 	return txBase
 }
 
@@ -889,11 +889,6 @@ func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shar
 	}
 
 	// check Type is normal or salary tx
-	fmt.Println("Validating sanity")
-	fmt.Println("Validating sanity")
-	fmt.Println("Validating sanity")
-	fmt.Println(tx.GetType())
-
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
@@ -925,6 +920,6 @@ func (tx *TxBase) Init(paramsInterface interface{}) error {
 	}
 	err = transaction.Init(paramsInterface)
 	// Copy value from transaction to txBase
-	*tx = NewTxBaseFromMetadataTx(transaction)
+	*tx = *NewTxBaseFromMetadataTx(transaction)
 	return err
 }
