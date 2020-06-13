@@ -447,6 +447,11 @@ func (tx  TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint6
 
 func (tx TxBase) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, error) {
 	publicKeys, txRandoms, amounts, err := tx.GetReceiverData()
+	for i:= 0; i < len(publicKeys); i ++ {
+		fmt.Println("Public key", publicKeys[i].ToBytesS())
+		fmt.Println("Tx Ramdon", txRandoms[i].Bytes())
+		fmt.Println("Amount", amounts[i])
+	}
 	if err != nil {
 		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
 		return false, nil, nil, 0, nil, err
@@ -915,5 +920,11 @@ func (tx *TxBase) Init(paramsInterface interface{}) error {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return err
 	}
-	return transaction.Init(paramsInterface)
+	err = transaction.Init(paramsInterface)
+	if err != nil {
+		Logger.Log.Errorf("Cannot create param for tx")
+		return err
+	}
+	*tx = NewTxBaseFromMetadataTx(transaction)
+	return  nil
 }

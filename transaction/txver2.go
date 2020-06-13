@@ -153,6 +153,7 @@ func (tx *TxVersion2) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []u
 			}
 			if !added {
 				publicKeys = append(publicKeys, publicKey)
+				amounts = append(amounts, coin.GetValue())
 				txRandoms = append(txRandoms, txRandom)
 			}
 		}

@@ -214,8 +214,8 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string, privKeyStrB string) ([]byte, error) {
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrA)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
@@ -331,7 +331,7 @@ func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 				"CandidatePaymentAddress": "%s",
 				"PrivateSeed": "%s",
 				"RewardReceiverPaymentAddress": "%s",
-				"AutoReStaking": true
+				"AutoReStaking": false
 			}
 	  ],
 	  "id":1
@@ -361,5 +361,27 @@ func (this *DebugTool) Unstake(privKey string, seed string) ([]byte, error) {
 			}
 		]
 	}`, privKey, paymentAddStr, seed)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+    "jsonrpc": "1.0",
+    "method": "withdrawreward",
+    "params": [
+        "%s",
+        0,
+        0,
+        0,
+        {
+            "PaymentAddress": "%s",
+            "TokenID": "%s"
+        }
+    ],
+    "id": 1
+	}`, privKey, paymentAddStr, tokenID)
 	return this.SendPostRequestWithQuery(query)
 }
