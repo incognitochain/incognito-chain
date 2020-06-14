@@ -86,7 +86,7 @@ func NewTransactionFromTxBase(tx *TxBase) (metadata.Transaction, error) {
 
 // This function copies values from metadata.Transaction to TxBase
 // It does not copy sigPrivKey because it is private field
-func NewTxBaseFromMetadataTx(txMetadata metadata.Transaction) *TxBase {
+func NewTxBaseFromTransaction(txMetadata metadata.Transaction) *TxBase {
 	txBase := new(TxBase)
 	txBase.SetVersion(txMetadata.GetVersion())
 	txBase.SetType(txMetadata.GetType())
@@ -609,7 +609,7 @@ func (tx *TxBase) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 		Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.senderSK
 		if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
-			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
+			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
 			return true, NewTransactionErr(SignTxError, err)
 		}
 		return true, nil
@@ -794,7 +794,6 @@ func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.
 	return true, nil
 }
 
-
 func (tx TxBase) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
@@ -920,6 +919,6 @@ func (tx *TxBase) Init(paramsInterface interface{}) error {
 	}
 	err = transaction.Init(paramsInterface)
 	// Copy value from transaction to txBase
-	*tx = *NewTxBaseFromMetadataTx(transaction)
+	*tx = *NewTxBaseFromTransaction(transaction)
 	return err
 }

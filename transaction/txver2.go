@@ -214,7 +214,7 @@ func (tx *TxVersion2) Init(paramsInterface interface{}) error {
 	return nil
 }
 
-func (tx *TxVersion2) sign(inp []coin.PlainCoin, out []*coin.CoinV2, params *TxPrivacyInitParams) error {
+func (tx *TxVersion2) signOnMessage(inp []coin.PlainCoin, out []*coin.CoinV2, params *TxPrivacyInitParams, hashedMessage []byte) error {
 	if tx.Sig != nil {
 		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
@@ -255,9 +255,9 @@ func (tx *TxVersion2) sign(inp []coin.PlainCoin, out []*coin.CoinV2, params *TxP
 	}
 
 	// Set Signature
-	mlsagSignature, err := sag.Sign(tx.Hash()[:])
+	mlsagSignature, err := sag.Sign(hashedMessage)
 	if err != nil {
-		Logger.Log.Errorf("Cannot sign mlsagSignature, error %v ", err)
+		Logger.Log.Errorf("Cannot signOnMessage mlsagSignature, error %v ", err)
 		return err
 	}
 	// inputCoins already hold keyImage so set to nil to reduce size
@@ -268,7 +268,7 @@ func (tx *TxVersion2) sign(inp []coin.PlainCoin, out []*coin.CoinV2, params *TxP
 }
 
 func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
-	// sign meta data
+	// signOnMessage meta data
 	metaSig := tx.Metadata.GetSig()
 	if metaSig != nil || len(metaSig) > 0 {
 		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty or nil"))
@@ -309,11 +309,11 @@ func (tx *TxVersion2) prove(params *TxPrivacyInitParams) error {
 
 	if tx.ShouldSignMetaData() {
 		if err := tx.signMetadata(params.senderSK); err != nil {
-			Logger.Log.Error("Cannot sign txMetadata in shouldSignMetadata")
+			Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
 			return err
 		}
 	}
-	err = tx.sign(inputCoins, outputCoins, params)
+	err = tx.signOnMessage(inputCoins, outputCoins, params, tx.Hash()[:])
 	return err
 }
 
@@ -321,9 +321,10 @@ func (tx *TxVersion2) proveASM(params *TxPrivacyInitParamsForASM) error {
 	return tx.prove(&params.txParam)
 }
 
-func (tx *TxVersion2) getRingFromTxWithDatabase(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
+// Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
+func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWithFee *operation.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
 	txSigPubKey := new(TxSigPubKeyVer2)
-	if err := txSigPubKey.SetBytes(tx.SigPubKey); err != nil {
+	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
 		return nil, NewTransactionErr(UnexpectedError, errors.New(errStr))
 	}
@@ -335,10 +336,10 @@ func (tx *TxVersion2) getRingFromTxWithDatabase(transactionStateDB *statedb.Stat
 		return nil, errors.New("Cannot get ring from indexes: Indexes is empty")
 	}
 
-	sumOutputsWithFee := calculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
 	ring := make([][]*operation.Point, n)
 	for i := 0; i < n; i += 1 {
 		sumCommitment := new(operation.Point).Identity()
+		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
 		row := make([]*operation.Point, m+1)
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
@@ -359,7 +360,6 @@ func (tx *TxVersion2) getRingFromTxWithDatabase(transactionStateDB *statedb.Stat
 			row[j] = randomCoin.GetPublicKey()
 			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
 		}
-		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
 		byteCommitment := sumCommitment.ToBytesS()
 		var err error
 		if row[m], err = new(operation.Point).FromBytesS(byteCommitment); err != nil {
@@ -426,16 +426,8 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 	return mlsag.NewRing(ring), indexes, nil
 }
 
-func (tx *TxVersion2) getMLSAGSignatureFromTx() (*mlsag.MlsagSig, error) {
-	inputCoins := tx.Proof.GetInputCoins()
-	keyImages := make([]*operation.Point, len(inputCoins)+1)
-	for i := 0; i < len(inputCoins); i += 1 {
-		keyImages[i] = inputCoins[i].GetKeyImage()
-	}
-	// The last column is gone, so just fill in any value
-	keyImages[len(inputCoins)] = operation.RandomPoint()
-
-	mlsagSig, err := new(mlsag.MlsagSig).FromBytes(tx.Sig)
+func getMLSAGSigFromTxSigAndKeyImages(txSig []byte, keyImages []*operation.Point) (*mlsag.MlsagSig, error) {
+	mlsagSig, err := new(mlsag.MlsagSig).FromBytes(txSig)
 	if err != nil {
 		Logger.Log.Errorf("Has error when converting byte to mlsag signature, err: %v", err)
 		return nil, err
@@ -451,12 +443,23 @@ func (tx *TxVersion2) verifySig(transactionStateDB *statedb.StateDB, shardID byt
 	}
 	var err error
 
-	ring, err := tx.getRingFromTxWithDatabase(transactionStateDB, shardID, tokenID)
+	// Reform Ring
+	sumOutputsWithFee := calculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
+	ring, err := getRingFromSigPubKeyAndLastColumnCommitment(tx.SigPubKey, sumOutputsWithFee, transactionStateDB, shardID, tokenID)
 	if err != nil {
 		Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
 	}
-	mlsagSignature, err := tx.getMLSAGSignatureFromTx()
+
+	// Reform MLSAG Signature
+	inputCoins := tx.Proof.GetInputCoins()
+	keyImages := make([]*operation.Point, len(inputCoins)+1)
+	for i := 0; i < len(inputCoins); i += 1 {
+		keyImages[i] = inputCoins[i].GetKeyImage()
+	}
+	// The last column is gone, so just fill in any value
+	keyImages[len(inputCoins)] = operation.RandomPoint()
+	mlsagSignature, err := getMLSAGSigFromTxSigAndKeyImages(tx.Sig, keyImages)
 	if err != nil {
 		return false, err
 	}
@@ -494,7 +497,7 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 				} else {
 					// for old txs which be get from sync block or validate new block
 					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+						// only verify by signOnMessage on block because of issue #504(that mean we should pass old tx, which happen before this issue)
 						return true, nil
 					} else {
 						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
@@ -528,7 +531,7 @@ func (tx *TxVersion2) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.Pri
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
 	tx.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes) - 1]
 
-	// sign Tx using ver1 schnorr
+	// signOnMessage Tx using ver1 schnorr
 	tx.sigPrivKey = *privateKey
 	tx.SetMetadata(metaData)
 

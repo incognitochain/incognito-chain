@@ -163,6 +163,18 @@ func newTxTokenFromVersionNumber(version int8) (txTokenInterface, error) {
 	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
 }
 
+// This function copies values from TxTokenBase to txTokenInterface
+// It does not copy sigPrivKey because it is private field
+func newTxTokenInterfaceFromTxTokenBase(tx *TxTokenBase) (txTokenInterface, error) {
+	txInterface, err := newTxTokenFromVersionNumber(tx.GetVersion())
+	if err != nil {
+		return nil, err
+	}
+	txInterface.SetTxBase(tx.GetTxBase())
+	txInterface.SetTxPrivacyTokenData(tx.GetTxPrivacyTokenData())
+	return txInterface, nil
+}
+
 // This function copies values from txTokenInterface to TxTokenBase
 func newTxTokenBaseFromTxTokenInterface(tx txTokenInterface) *TxTokenBase {
 	txTokenBase := new(TxTokenBase)
@@ -433,11 +445,11 @@ func (txToken TxTokenBase) GetTxFee() uint64 {
 // ================== NORMAL INIT FUNCTIONS ===================
 
 func (txToken *TxTokenBase) Init(paramsInterface interface{}) error {
-	txPrivacyParams, ok := paramsInterface.(*TxPrivacyTokenInitParams)
+	txTokenParams, ok := paramsInterface.(*TxPrivacyTokenInitParams)
 	if !ok {
 		return errors.New("params of tx Init is not TxPrivacyInitParam")
 	}
-	transactionToken, err := newTxTokenFromParams(txPrivacyParams)
+	transactionToken, err := newTxTokenFromParams(txTokenParams)
 	if err != nil {
 		return err
 	}
@@ -488,7 +500,7 @@ func (txToken *TxTokenBase) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey *pri
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.TxBase = *NewTxBaseFromMetadataTx(normalTx)
+	txToken.TxBase = *NewTxBaseFromTransaction(normalTx)
 	// check tx size
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
 	if txSize := estimateTxSizeOfInitTokenSalary(publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
@@ -512,17 +524,17 @@ func (txToken *TxTokenBase) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey *pri
 	temp.Type = common.TxNormalType
 	temp.Proof = proof
 	temp.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes)-1]
-	// sign Tx
+	// signOnMessage Tx
 	temp.sigPrivKey = *privKey
 	if temp.Sig, _, err = signNoPrivacy(privKey, temp.Hash()[:]); err != nil {
-		Logger.Log.Error(errors.New("can't sign this tx"))
+		Logger.Log.Error(errors.New("can't signOnMessage this tx"))
 		return NewTransactionErr(SignTxError, err)
 	}
 	temp.SigPubKey = otaCoin.GetPublicKey().ToBytesS()
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], coinID[:])
 	txToken.TxPrivacyTokenData.PropertyID = propertyID
-	txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromMetadataTx(&temp)
+	txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromTransaction(&temp)
 	txToken.TxPrivacyTokenData.Mintable = true
 	return nil
 }
@@ -667,15 +679,6 @@ func (txToken TxTokenBase) ValidateSanityData(chainRetriever metadata.ChainRetri
 
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
 func (txToken TxTokenBase) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	// no need to check for tx init token
-	if txToken.TxPrivacyTokenData.Type == CustomTokenInit {
-		return txToken.TxBase.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
-	}
-	// check for proof, signature ...
-	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
-		return false, err
-	}
-	// check for metadata
 	if txToken.Metadata != nil {
 		validateMetadata := txToken.Metadata.ValidateMetadataByItself()
 		if !validateMetadata {
@@ -683,10 +686,15 @@ func (txToken TxTokenBase) ValidateTxByItself(hasPrivacyCoin bool, transactionSt
 		}
 		return validateMetadata, nil
 	}
-	return true, nil
+
+	txInterface, err := newTxTokenInterfaceFromTxTokenBase(&txToken)
+	if err != nil {
+		return false, errors.New("Cannot create txTokenInterface from txTokenBase")
+	}
+	return txInterface.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
 }
 
-func (txToken *TxTokenBase) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (txToken TxTokenBase) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	// validate for PRV
 	ok, err := txToken.TxBase.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
 	if ok {
