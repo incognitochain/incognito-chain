@@ -600,8 +600,8 @@ func (blockService BlockService) ListPrivacyCustomTokenWithPRVByShardID(shardID 
 }
 
 // TODO: 0xmerman update to DBV2 later
-//func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
-//	listTxInitPrivacyToken := make(map[common.Hash]transaction.TxCustomTokenPrivacy)
+//func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash]transaction.TxTokenBase, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
+//	listTxInitPrivacyToken := make(map[common.Hash]transaction.TxTokenBase)
 //	listTxInitPrivacyTokenCrossShard := make(map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData)
 //
 //	cachedKeyPrivacyToken := memcache.GetListPrivacyTokenCachedKey()
@@ -628,7 +628,7 @@ func (blockService BlockService) ListPrivacyCustomTokenWithPRVByShardID(shardID 
 //		for k, v := range listTxInitPrivacyToken {
 //			temp := v
 //			temp.Tx = transaction.Tx{Info: v.Info}
-//			temp.TxPrivacyTokenData.TxNormal = transaction.Tx{Info: v.TxPrivacyTokenData.TxNormal.Info}
+//			temp.TxPrivacyTokenDataVersion1.TxNormal = transaction.Tx{Info: v.TxPrivacyTokenDataVersion1.TxNormal.Info}
 //			listTxInitPrivacyToken[k] = temp
 //		}
 //		cachedValuePrivacyToken, err = json.Marshal(listTxInitPrivacyToken)

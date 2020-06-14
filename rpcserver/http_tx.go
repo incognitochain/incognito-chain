@@ -571,7 +571,6 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
-
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		Logger.log.Error(err)

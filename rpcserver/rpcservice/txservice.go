@@ -484,11 +484,8 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 		meta,
 		params.Info,
 	)
-	tx, err := transaction.NewTxPrivacyFromParams(txPrivacyParams)
-	if err != nil {
-		return nil, NewRPCError(CreateTxDataError, err)
-	}
-	if err = tx.Init(txPrivacyParams); err != nil {
+	tx := new(transaction.TxBase)
+	if err := tx.Init(txPrivacyParams); err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	return tx, nil
@@ -625,7 +622,7 @@ func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}
 	return privacyTokenParam, nil
 }
 
-func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxTokenBase, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
@@ -753,7 +750,7 @@ func (txService TxService) BuildTokenParamV2(tokenParamsRaw map[string]interface
 	return privacyTokenParam, nil
 }
 
-func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxTokenBase, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
@@ -868,7 +865,7 @@ func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[str
 }
 
 // BuildRawCustomTokenTransaction ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (*transaction.TxCustomTokenPrivacy, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (*transaction.TxTokenBase, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -891,12 +888,6 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
 		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee)
 
-	fmt.Println("BuildRawPrivacyCustomTokenTransaction")
-	fmt.Println("BuildRawPrivacyCustomTokenTransaction")
-	fmt.Println("BuildRawPrivacyCustomTokenTransaction")
-	fmt.Println(len(inputCoins))
-	fmt.Println(len(inputCoins))
-	fmt.Println(len(inputCoins))
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -906,7 +897,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 	beaconView := txService.BlockChain.BeaconChain.GetFinalViewState()
-	tx := &transaction.TxCustomTokenPrivacy{}
+	tx := new(transaction.TxTokenBase)
 	err = tx.Init(
 		transaction.NewTxPrivacyTokenInitParams(&txParam.SenderKeySet.PrivateKey,
 			txParam.PaymentInfos,
@@ -922,12 +913,11 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
-
 	return tx, nil
 }
 
 // BuildRawCustomTokenTransactionV2 ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interface{}, metaData metadata.Metadata) (*transaction.TxCustomTokenPrivacy, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interface{}, metaData metadata.Metadata) (*transaction.TxTokenBase, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParamV2(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -958,7 +948,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interf
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
-	tx := &transaction.TxCustomTokenPrivacy{}
+	tx := &transaction.TxTokenBase{}
 	err = tx.Init(
 		transaction.NewTxPrivacyTokenInitParams(&txParam.SenderKeySet.PrivateKey,
 			txParam.PaymentInfos,
@@ -1315,20 +1305,19 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 	return commitmentIndexs, myCommitmentIndexs, commitments, nil
 }
 
-func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxCustomTokenPrivacy, *RPCError) {
+func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxTokenBase, *RPCError) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
-	tx := transaction.TxCustomTokenPrivacy{}
+	tx := transaction.TxTokenBase{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
 	}
-
 	beaconHeigh := int64(-1)
 	beaconBestState, err := txService.BlockChain.GetClonedBeaconBestState()
 	if err == nil {
@@ -1493,10 +1482,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 		nil, // use for prv coin -> nil is valid
 		meta, nil,
 	)
-	tx, err := transaction.NewTxPrivacyFromParams(txPrivacyParams)
-	if err != nil {
-		return nil, NewRPCError(CreateTxDataError, err)
-	}
+	tx := new(transaction.TxBase)
 	if err = tx.Init(txPrivacyParams); err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
@@ -1667,7 +1653,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 					}
 				case common.TxCustomTokenPrivacyType:
 					{
-						privacyTokenTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+						privacyTokenTx := txDetail.(*transaction.TxTokenBase)
 						item.Version = privacyTokenTx.Version
 						item.IsPrivacy = privacyTokenTx.IsPrivacy()
 						item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
@@ -1792,7 +1778,7 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			tempTx := tx.(*transaction.TxTokenBase)
 			outputOfPrv := tempTx.GetProof().GetOutputCoins()
 			if len(outputOfPrv) > 0 {
 				prvOutputs, _ := txService.DecryptOutputCoinByKey(outputOfPrv, keyParam)

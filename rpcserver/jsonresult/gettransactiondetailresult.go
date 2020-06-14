@@ -91,7 +91,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			tempTx := tx.(*transaction.TxTokenBase)
 			result = &TransactionDetail{
 				BlockHash:                blockHashStr,
 				BlockHeight:              blockHeight,

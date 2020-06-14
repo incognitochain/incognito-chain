@@ -157,7 +157,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
 		if txType == common.TxCustomTokenPrivacyType {
-			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			txCustomPrivacy := tx.(*transaction.TxTokenBase)
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
 		}
 	}

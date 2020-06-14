@@ -135,7 +135,7 @@ func InitPTokenContributionTx(args string, serverTime int64) (string, error) {
 
 	paramCreateTx.SetMetaData(metaData)
 
-	tx := new(transaction.TxCustomTokenPrivacy)
+	tx := new(transaction.TxTokenBase)
 	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
@@ -293,7 +293,7 @@ func InitPTokenTradeTx(args string, serverTime int64) (string, error) {
 
 	paramCreateTx.SetMetaData(metaData)
 
-	tx := new(transaction.TxCustomTokenPrivacy)
+	tx := new(transaction.TxTokenBase)
 	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
