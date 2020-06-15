@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func BuildProof(txIndex int, blockHeight int64, url string) (string, error){
+func BuildProof(txIndex int, blockHeight int64, url string) (string, error) {
 	bnbProof := new(relaying.BNBProof)
 	err := bnbProof.Build(txIndex, blockHeight, url)
 	if err != nil {
@@ -54,7 +54,7 @@ func PushBNBProofIntoIncognito(
 func BuildAndPushBNBProof(
 	txIndex int, blockHeight int64,
 	url string, uniqueID string, tokenID string,
-	portingAmount uint64, urlIncognitoNode string){
+	portingAmount uint64, urlIncognitoNode string) {
 	bnbProofStr, err := BuildProof(txIndex, blockHeight, url)
 	if err != nil {
 		fmt.Printf("err BuildProof: %v\n", err)

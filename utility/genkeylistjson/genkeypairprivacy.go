@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io/ioutil"
 	"os"
@@ -14,11 +15,13 @@ import (
 
 type AccountPub struct {
 	PaymentAddress string
-	PublicKey      string
+
+	CommitteePublicKey string
+	ValidatorKey       string
 }
 
-const MAX_SHARD = 2
-const MIN_MEMBER = 4
+const MAX_SHARD = 8
+const MIN_MEMBER = 22
 
 func main() {
 	mnemonicGen := wallet.MnemonicGenerator{}
@@ -26,7 +29,8 @@ func main() {
 	//Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
 	Mnemonic := ""
 	fmt.Printf("Mnemonic: %s\n", Mnemonic)
-	Seed := mnemonicGen.NewSeed(Mnemonic, "4567891234")
+	Seed := mnemonicGen.NewSeed(Mnemonic, "dmnkajdklawjdkjawk")
+	saltForvalidatorKey := []byte{} // default is empty for original generate
 
 	key, _ := wallet.NewMasterKey(Seed)
 	var i = 0
@@ -46,14 +50,23 @@ func main() {
 		i++
 		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
 		paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
-		pubKey := base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, common.ZeroByte)
+
+		committeeValidatorKeyByte := common.HashB(common.HashB(child.KeySet.PrivateKey)) // old validator key
+		if len(saltForvalidatorKey) > 0 {
+			committeeValidatorKeyByte = append(committeeValidatorKeyByte, saltForvalidatorKey...)
+			committeeValidatorKeyByte = common.HashB(common.HashB(committeeValidatorKeyByte))
+		}
+
+		committeeValidatorKeyBase58 := base58.Base58Check{}.Encode(committeeValidatorKeyByte, 0x0)
+		committeeKeyStr, _ := incognitokey.NewCommitteeKeyFromSeed(committeeValidatorKeyByte, child.KeySet.PaymentAddress.Pk)
+		committeeKey, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKeyStr})
 		shardID := int(child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1])
 		if shardID >= MAX_SHARD {
 			continue
 		}
 
 		if len(listAcc[shardID]) < MIN_MEMBER {
-			listAcc[shardID] = append(listAcc[shardID], AccountPub{paymentAddress, pubKey})
+			listAcc[shardID] = append(listAcc[shardID], AccountPub{paymentAddress, committeeKey[0], committeeValidatorKeyBase58})
 			listPrivAcc[shardID] = append(listPrivAcc[shardID], privAddr)
 		}
 
@@ -74,14 +87,17 @@ func main() {
 		i++
 		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
 		paymentAddress := child.Base58CheckSerialize(wallet.PaymentAddressType)
-		pubKey := base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, common.ZeroByte)
-		shardID := int(child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1])
-		if shardID != 0 {
-			continue
-		}
 
+		validatorKeyBytes := common.HashB(common.HashB(child.KeySet.PrivateKey)) // old validator key
+		if len(saltForvalidatorKey) > 0 {
+			validatorKeyBytes = append(validatorKeyBytes, saltForvalidatorKey...)
+			validatorKeyBytes = common.HashB(common.HashB(validatorKeyBytes))
+		}
+		validatorKeyBase58 := base58.Base58Check{}.Encode(validatorKeyBytes, 0x0)
+		committeeKeyStr, _ := incognitokey.NewCommitteeKeyFromSeed(validatorKeyBytes, child.KeySet.PaymentAddress.Pk)
+		committeeKey, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKeyStr})
 		if len(beaconAcc) < MIN_MEMBER {
-			beaconAcc = append(beaconAcc, AccountPub{paymentAddress, pubKey})
+			beaconAcc = append(beaconAcc, AccountPub{paymentAddress, committeeKey[0], validatorKeyBase58})
 			beaconPriv = append(beaconPriv, privAddr)
 		} else {
 			break

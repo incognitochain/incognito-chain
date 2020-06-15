@@ -264,7 +264,6 @@ var Block100000 = wire.MsgBlock{
 	},
 }
 
-
 func TestReorganizeChainV2(t *testing.T) {
 	// Load up blocks such that there is a side chain.
 	// (genesis block) -> 1 -> 2 -> 3
