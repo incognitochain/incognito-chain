@@ -245,7 +245,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		TokenInput:     []coin.PlainCoin{},
 		Mintable:       true,
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
 			[]*privacy.PaymentInfo{},
@@ -314,7 +314,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		issuingETHAcceptedInst.ExternalTokenID,
 		metadata.IssuingETHResponseMeta,
 	)
-	resTx := &transaction.TxCustomTokenPrivacy{}
+	resTx := &transaction.TxTokenBase{}
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
 			[]*privacy.PaymentInfo{},

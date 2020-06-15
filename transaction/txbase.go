@@ -6,6 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"sort"
+	"strconv"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -15,10 +20,6 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math"
-	"sort"
-	"strconv"
-	"time"
 )
 
 type TxBase struct {
@@ -36,37 +37,37 @@ type TxBase struct {
 	// Metadata, optional
 	Metadata metadata.Metadata
 	// private field, not use for json parser, only use as temp variable
-	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
-	cachedActualSize *uint64      // cached actualsize data for tx
+	sigPrivKey       []byte  // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	cachedActualSize *uint64 // cached actualsize data for tx
 }
 
 // Function that choose which version to create metadata Transaction
 func NewTxPrivacyFromParams(params *TxPrivacyInitParams) (metadata.Transaction, error) {
-	version, err := getTxVersionFromCoins(params.inputCoins);
+	version, err := getTxVersionFromCoins(params.inputCoins)
 	if err != nil {
 		Logger.Log.Errorf("Cannot get version from params")
 		return nil, err
 	}
 	if version == txVersion1Number {
-		return &TxVersion1{}, nil
+		return new(TxVersion1), nil
 	} else if version == txVersion2Number {
-		return &TxVersion2{}, nil
+		return new(TxVersion2), nil
 	}
 	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
 }
 
 func NewTxPrivacyFromVersionNumber(version int8) (metadata.Transaction, error) {
 	if version == txVersion1Number {
-		return &TxVersion1{}, nil
+		return new(TxVersion1), nil
 	} else if version == txVersion2Number {
-		return &TxVersion2{}, nil
+		return new(TxVersion2), nil
 	}
 	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
 }
 
 // This function copies values from TxBase to metadata.Transaction
 // It does not copy sigPrivKey because it is private field
-func NewTransactionFromTxBase(tx TxBase) (metadata.Transaction, error) {
+func NewTransactionFromTxBase(tx *TxBase) (metadata.Transaction, error) {
 	metaTx, err := NewTxPrivacyFromVersionNumber(tx.GetVersion())
 	if err != nil {
 		return nil, err
@@ -86,18 +87,18 @@ func NewTransactionFromTxBase(tx TxBase) (metadata.Transaction, error) {
 
 // This function copies values from metadata.Transaction to TxBase
 // It does not copy sigPrivKey because it is private field
-func NewTxBaseFromMetadataTx(tx metadata.Transaction) TxBase {
-	var txBase TxBase
-	txBase.SetVersion(tx.GetVersion())
-	txBase.SetType(tx.GetType())
-	txBase.SetLockTime(tx.GetLockTime())
-	txBase.SetTxFee(tx.GetTxFee())
-	txBase.SetInfo(tx.GetInfo())
-	txBase.SetSigPubKey(tx.GetSigPubKey())
-	txBase.SetSig(tx.GetSig())
-	txBase.SetProof(tx.GetProof())
-	txBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-	txBase.SetMetadata(tx.GetMetadata())
+func NewTxBaseFromTransaction(txMetadata metadata.Transaction) *TxBase {
+	txBase := new(TxBase)
+	txBase.SetVersion(txMetadata.GetVersion())
+	txBase.SetType(txMetadata.GetType())
+	txBase.SetLockTime(txMetadata.GetLockTime())
+	txBase.SetTxFee(txMetadata.GetTxFee())
+	txBase.SetInfo(txMetadata.GetInfo())
+	txBase.SetSigPubKey(txMetadata.GetSigPubKey())
+	txBase.SetSig(txMetadata.GetSig())
+	txBase.SetProof(txMetadata.GetProof())
+	txBase.SetGetSenderAddrLastByte(txMetadata.GetSenderAddrLastByte())
+	txBase.SetMetadata(txMetadata.GetMetadata())
 	return txBase
 }
 
@@ -369,7 +370,7 @@ func (tx *TxBase) SetMetadata(meta metadata.Metadata) { tx.Metadata = meta }
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 
 func (tx TxBase) CheckAuthorizedSender(publicKey []byte) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -436,18 +437,18 @@ func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx  TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+func (tx TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return nil, nil, nil , err
+		return nil, nil, nil, err
 	}
 	return transaction.GetReceiverData()
 }
 
 func (tx TxBase) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, error) {
 	publicKeys, txRandoms, amounts, err := tx.GetReceiverData()
-	for i:= 0; i < len(publicKeys); i ++ {
+	for i := 0; i < len(publicKeys); i++ {
 		fmt.Println("Public key", publicKeys[i].ToBytesS())
 		fmt.Println("Tx Ramdon", txRandoms[i].Bytes())
 		fmt.Println("Amount", amounts[i])
@@ -464,7 +465,7 @@ func (tx TxBase) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, er
 		return false, nil, nil, 0, nil, errors.New("Error this is not Tx mint")
 	}
 	if txRandoms == nil {
-		return  true, publicKeys[0].ToBytesS(), nil, amounts[0], &common.PRVCoinID, nil
+		return true, publicKeys[0].ToBytesS(), nil, amounts[0], &common.PRVCoinID, nil
 	} else {
 		return true, publicKeys[0].ToBytesS(), txRandoms[0].Bytes(), amounts[0], &common.PRVCoinID, nil
 	}
@@ -614,7 +615,7 @@ func (tx *TxBase) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 		Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.senderSK
 		if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
-			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
+			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
 			return true, NewTransactionErr(SignTxError, err)
 		}
 		return true, nil
@@ -622,7 +623,7 @@ func (tx *TxBase) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 	return false, nil
 }
 
-func (tx *TxBase) ShouldSignMetaData() bool {
+func (tx TxBase) ShouldSignMetaData() bool {
 	if tx.GetMetadata() == nil {
 		return false
 	}
@@ -680,7 +681,7 @@ func (tx TxBase) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.
 // =================== FUNCTIONS THAT VALIDATE STUFFS ===================
 
 func (tx TxBase) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -689,7 +690,7 @@ func (tx TxBase) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 }
 
 func (tx TxBase) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -707,7 +708,7 @@ func (tx TxBase) ValidateTransaction(hasPrivacy bool, transactionStateDB *stated
 	if tx.Version == txConversionVersion12Number {
 		return validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
 	}
-	transaction, err := NewTransactionFromTxBase(tx)
+	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return false, err
@@ -799,7 +800,6 @@ func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.
 	return true, nil
 }
 
-
 func (tx TxBase) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
@@ -831,7 +831,7 @@ func (tx TxBase) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever
 	}
 	meta := tx.GetMetadata()
 	if meta != nil {
-		metaTx, err := NewTransactionFromTxBase(tx)
+		metaTx, err := NewTransactionFromTxBase(&tx)
 		if err != nil {
 			return err
 		}
@@ -853,7 +853,7 @@ func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shar
 	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", meta)
 	if meta != nil {
 		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
-		txMeta, err := NewTransactionFromTxBase(tx)
+		txMeta, err := NewTransactionFromTxBase(&tx)
 		if err != nil {
 			return false, err
 		}
@@ -914,17 +914,23 @@ func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shar
 }
 
 // ============= Init Transaction, the input should be params such as: TxPrivacyInitParams ============
+// Please dont use other init function of TxVer1 and TxVer2
+// Because in other package cannot type assert the right type TxBase, or TxVer1, or TxVer2
 func (tx *TxBase) Init(paramsInterface interface{}) error {
-	transaction, err := NewTransactionFromTxBase(*tx)
+	txPrivacyParams, ok := paramsInterface.(*TxPrivacyInitParams)
+	if !ok {
+		return errors.New("params of tx Init is not TxPrivacyInitParam")
+	}
+	transaction, err := NewTxPrivacyFromParams(txPrivacyParams)
 	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
 		return err
 	}
 	err = transaction.Init(paramsInterface)
 	if err != nil {
-		Logger.Log.Errorf("Cannot create param for tx")
+		Logger.Log.Errorf("Cannot init transaction, err %v", err)
 		return err
 	}
-	*tx = NewTxBaseFromMetadataTx(transaction)
-	return  nil
+	// Copy value from transaction to txBase
+	*tx = *NewTxBaseFromTransaction(transaction)
+	return nil
 }

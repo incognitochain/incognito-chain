@@ -120,7 +120,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 		switch txType {
 		case "cstokenprivacy":
 			{
-				var tx transaction.TxCustomTokenPrivacy
+				var tx transaction.TxTokenBase
 				err = json.Unmarshal(rawTxBytes, &tx)
 				if err != nil {
 					fail++
@@ -254,7 +254,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 		switch txType {
 		case "cstokenprivacy":
 			{
-				var tx transaction.TxCustomTokenPrivacy
+				var tx transaction.TxTokenBase
 				err = json.Unmarshal(rawTxBytes, &tx)
 				if err != nil {
 					fail++

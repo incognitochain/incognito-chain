@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"fmt"
 	"errors"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
@@ -11,12 +10,12 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 )
 
@@ -89,11 +88,6 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 			for {
 				lenCommitment, _ = txDatabaseWrapper.getCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
-				fmt.Println("Length of commitments", lenCommitment)
-				for i := uint64(0); i < lenCommitment.Uint64(); i += 1 {
-					temp, _ := txDatabaseWrapper.getCommitmentByIndex(param.stateDB, *param.tokenID, i, param.shardID)
-					fmt.Println(temp)
-				}
 				ok, err := txDatabaseWrapper.hasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
 					temp, _ := txDatabaseWrapper.getCommitmentByIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
@@ -302,9 +296,6 @@ func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, toke
 }
 
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
-	fmt.Println("Build reward transaction")
-	fmt.Println("Build reward transaction")
-	fmt.Println("Build reward transaction")
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
 	if err != nil {
 		Logger.Log.Errorf("Cannot get new coin from amount and receiver")
@@ -320,7 +311,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 			var propertyID [common.HashSize]byte
 			copy(propertyID[:], params.coinID[:])
 			propID := common.Hash(propertyID)
-			tx := &TxCustomTokenPrivacy{}
+			tx := new(TxTokenVersion2)
 			err = tx.InitTxTokenSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB,
 				params.meta, &propID, params.coinName)
 			return tx, err

@@ -55,19 +55,19 @@ package transaction
 //			hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{})
 //
 //		// init tx
-//		tx := new(TxCustomTokenPrivacy)
+//		tx := new(TxTokenBase)
 //		err = tx.Init(paramToCreateTx)
 //		assert.Equal(t, nil, err)
 //
-//		assert.Equal(t, len(msgCipherText.Bytes()), len(tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+//		assert.Equal(t, len(msgCipherText.Bytes()), len(tx.TxPrivacyTokenDataVersion1.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
 //
-//		//fmt.Printf("Tx: %v\n", tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo())
+//		//fmt.Printf("Tx: %v\n", tx.TxPrivacyTokenDataVersion1.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo())
 //
 //		// convert to JSON string and revert
 //		txJsonString := tx.JSONString()
 //		txHash := tx.Hash()
 //
-//		tx1 := new(TxCustomTokenPrivacy)
+//		tx1 := new(TxTokenBase)
 //		tx1.UnmarshalJSON([]byte(txJsonString))
 //		txHash1 := tx1.Hash()
 //		assert.Equal(t, txHash, txHash1)
@@ -142,7 +142,7 @@ package transaction
 //		// store init tx
 //
 //		// get output coin token from tx
-//		//outputCoins := ConvertOutputCoinToInputCoin(tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins())
+//		//outputCoins := ConvertOutputCoinToInputCoin(tx.TxPrivacyTokenDataVersion1.TxNormal.Proof.GetOutputCoins())
 //
 //		// calculate serial number for input coins
 //		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
@@ -179,11 +179,11 @@ package transaction
 //			hasPrivacyForPRV, true, shardID, []byte{})
 //
 //		// init tx
-//		tx2 := new(TxCustomTokenPrivacy)
+//		tx2 := new(TxTokenBase)
 //		err = tx2.Init(paramToCreateTx2)
 //		assert.Equal(t, nil, err)
 //
-//		assert.Equal(t, len(msgCipherText.Bytes()), len(tx2.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+//		assert.Equal(t, len(msgCipherText.Bytes()), len(tx2.TxPrivacyTokenDataVersion1.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
 //
 //		err = tx2.ValidateTxWithBlockChain(nil, shardID, nil, nil, db)
 //		assert.Equal(t, nil, err)
