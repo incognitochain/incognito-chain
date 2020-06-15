@@ -71,8 +71,8 @@ func main() {
 	//
 	//b, _ := tool.GetListOutputCoins(privateKeys[0])
 	//fmt.Println(string(b))
-	//b, _ := tool.GetListOutputCoins(privateKeys[1])
-	//fmt.Println(string(b))
+	b, _ := tool.GetListOutputCoins(privateKeys[1])
+	fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[2])
 	//fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[3])
@@ -85,34 +85,34 @@ func main() {
 	//fmt.Println(string(b))
 
 	//tool := new(debugtool.DebugTool).InitLocal()
-	//b, _ := tool.GetTransactionByHash("84a958bedab870c9354aab7f60a9463ecbf7f40ff9eb03a8e0fb3022662f9620")
+	//b, _ := tool.GetTransactionByHash("43f825c4d6b93e5824614292a4e38a552de7aaa13a3e7fc7899689ac3e83b53f")
 	//fmt.Println(string(b))
 
 	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[0])
 	//fmt.Println(string(b))
-	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[1])
+	//b, _ := tool.GetBalanceByPrivatekey(privateKeys[1])
 	//fmt.Println(string(b))
 	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[2])
 	//fmt.Println(string(b))
 	//b, _ = tool.GetBalanceByPrivatekey(privateKeys[3])
 	//fmt.Println(string(b))
 	//
-	//b, _ := tool.Stake(privateKeys[3], privateSeeds[3])
+	//b, _ := tool.Stake(privateKeys[1], privateSeeds[1])
 	//fmt.Println(string(b))
 	//b, _ = tool.Stake(privateKeys[2], privateSeeds[2])
 	//fmt.Println(string(b))
 	//b, _ = tool.Stake(privateKeys[1], privateSeeds[1])
 	//fmt.Println(string(b))
 
-	//b, _ := tool.Unstake(privateKeys[3], privateSeeds[3])
+	//b, _ := tool.Unstake(privateKeys[1], privateSeeds[1])
 	//fmt.Println(string(b))
 	//b, _ = tool.Unstake(privateKeys[2], privateSeeds[2])
 	//fmt.Println(string(b))
 	//b, _ = tool.Unstake(privateKeys[1], privateSeeds[1])
 	//fmt.Println(string(b))
 
-	b, _ := tool.WithdrawReward(privateKeys[1], "0000000000000000000000000000000000000000000000000000000000000040")
-	fmt.Println(string(b))
+	//b, _ := tool.WithdrawReward(privateKeys[1], "0000000000000000000000000000000000000000000000000000000000000004")
+	//fmt.Println(string(b))
 
 }
 

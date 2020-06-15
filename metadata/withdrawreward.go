@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -151,10 +152,11 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}
-	receivers, _ := tx.GetReceivers()
-	if len(receivers) > 0 {
-		return false, errors.New("This metadata just for request withdraw reward")
-	}
+	//need input coin to pay the transaction fee -> has output
+	//receivers, _ := tx.GetReceivers()
+	//if len(receivers) > 0 {
+	//	return false, errors.New("This metadata just for request withdraw reward")
+	//}
 	return true, nil
 }
 
@@ -173,25 +175,36 @@ func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Tra
 }
 
 func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	fmt.Println("Response for withdraw reward")
+	fmt.Println("Response for withdraw reward")
+	fmt.Println("Response for withdraw reward")
+	fmt.Println(tx.IsPrivacy())
 	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
 	unique, requesterRes, amountRes, coinID := tx.GetTransferData()
+	fmt.Println(unique)
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
+	fmt.Println(coinID)
 	cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
 	if (cmp != 0) || (err != nil) {
 		return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
 	}
+	fmt.Println(requesterRes)
 	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
+	fmt.Println(value, amountRes)
 	if value != amountRes {
 		return false, errors.New("Wrong amounts")
 	}
+	fmt.Println("Response for withdraw reward")
+	fmt.Println("Response for withdraw reward")
+	fmt.Println("Response for withdraw reward")
 	return true, nil
 }
 

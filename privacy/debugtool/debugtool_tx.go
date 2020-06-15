@@ -331,7 +331,7 @@ func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 				"CandidatePaymentAddress": "%s",
 				"PrivateSeed": "%s",
 				"RewardReceiverPaymentAddress": "%s",
-				"AutoReStaking": false
+				"AutoReStaking": true
 			}
 	  ],
 	  "id":1
@@ -374,8 +374,8 @@ func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, e
     "params": [
         "%s",
         0,
-        0,
-        0,
+			10,
+			0,
         {
             "PaymentAddress": "%s",
             "TokenID": "%s"
