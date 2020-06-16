@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/debugtool"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -16,8 +15,8 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//b, _ := tool.CreateAndSendTransaction()
 	//fmt.Println(string(b))
 
-	//b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[0] )
-	//fmt.Println(string(b))
+	b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[1] )
+	fmt.Println(string(b))
 	//
 	//b, _ := tool.ListPrivacyCustomToken()
 	//res := new(debugtool.ListCustomToken)
@@ -28,15 +27,15 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[0], privateKeys[1], tokenID, "4000")
 	//fmt.Println(string(b))
 
-	b, _ := tool.ListPrivacyCustomToken()
-	res := new(debugtool.ListCustomToken)
-	_ = json.Unmarshal(b, res)
-	tokenID := res.Result.ListCustomToken[0].ID
-	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
+	//b, _ := tool.ListPrivacyCustomToken()
+	//res := new(debugtool.ListCustomToken)
+	//_ = json.Unmarshal(b, res)
+	//tokenID := res.Result.ListCustomToken[0].ID
+	////b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
+	////fmt.Println(string(b))
+	//
+	//b, _ = tool.GetBalancePrivacyCustomToken(privateKeys[0], tokenID)
 	//fmt.Println(string(b))
-
-	b, _ = tool.GetBalancePrivacyCustomToken(privateKeys[0], tokenID)
-	fmt.Println(string(b))
 }
 
 //TokenID of coin = [191 233 71 70 219 216 161 134 234 186 130 184 9 0 113 206 223 234 207 61 3 200 250 114 247 71 54 72 233 45 223 116]
@@ -77,8 +76,8 @@ func main() {
 	//
 	//b, _ := tool.GetListOutputCoins(privateKeys[0])
 	//fmt.Println(string(b))
-	b, _ := tool.GetListOutputCoins(privateKeys[1])
-	fmt.Println(string(b))
+	//b, _ = tool.GetListOutputCoins(privateKeys[1])
+	//fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[2])
 	//fmt.Println(string(b))
 	//b, _ = tool.GetListOutputCoins(privateKeys[3])

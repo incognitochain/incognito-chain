@@ -34,13 +34,12 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 		params.metaData,
 		params.info,
 	)
-	normalTx := new(TxVersion1)
-	if err := normalTx.Init(txPrivacyParams); err != nil {
+	txToken.Transaction = new(TxVersion1)
+	if err := txToken.Transaction.Init(txPrivacyParams); err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	normalTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.TxBase = *NewTxBaseFromTransaction(normalTx)
+	txToken.Transaction.SetType(common.TxCustomTokenPrivacyType)
 
 	// check tx size
 	limitFee := uint64(0)
@@ -62,8 +61,9 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			// case init a new privacy custom token
 			handled = true
 			txToken.TxPrivacyTokenData.SetAmount(params.tokenParams.Amount)
+
 			temp := new(TxVersion1)
-			temp.SetVersion(txVersion1Number)
+			temp.SetVersion(TxVersion1Number)
 			temp.Type = common.TxNormalType
 			temp.Proof = new(zkp.PaymentProof)
 			tempOutputCoin := make([]*coin.CoinV1, 1)
@@ -102,8 +102,8 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 				Logger.Log.Error(errors.New("can't signOnMessage this tx"))
 				return NewTransactionErr(SignTxError, err)
 			}
+			txToken.TxPrivacyTokenData.TxNormal = temp
 
-			txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromTransaction(temp)
 			hashInitToken, err := txToken.TxPrivacyTokenData.Hash()
 			if err != nil {
 				Logger.Log.Error(errors.New("can't hash this token data"))
@@ -164,8 +164,8 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			txToken.TxPrivacyTokenData.SetPropertyID(*propertyID)
 			txToken.TxPrivacyTokenData.SetMintable(params.tokenParams.Mintable)
 
-			temp := new(TxVersion1)
-			err := temp.Init(NewTxPrivacyInitParams(params.senderKey,
+			txToken.TxPrivacyTokenData.TxNormal = new(TxVersion1)
+			err := txToken.TxPrivacyTokenData.TxNormal.Init(NewTxPrivacyInitParams(params.senderKey,
 				params.tokenParams.Receiver,
 				params.tokenParams.TokenInput,
 				params.tokenParams.Fee,
@@ -177,7 +177,6 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
-			txToken.TxPrivacyTokenData.TxNormal = *NewTxBaseFromTransaction(temp)
 		}
 	}
 	if !handled {
@@ -188,12 +187,12 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 
 func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	// validate for PRV
-	ok, err := txToken.TxBase.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
+	ok, err := txToken.Transaction.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
 	if ok {
 		// validate for pToken
 		tokenID := txToken.TxPrivacyTokenData.PropertyID
 		if txToken.TxPrivacyTokenData.Type == CustomTokenInit {
-			if txToken.Type == common.TxRewardType && txToken.TxPrivacyTokenData.Mintable {
+			if txToken.Transaction.GetType() == common.TxRewardType && txToken.TxPrivacyTokenData.Mintable {
 				isBridgeCentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
 				isBridgeDecentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
 				if isBridgeCentralizedToken || isBridgeDecentralizedToken {

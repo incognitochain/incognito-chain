@@ -160,14 +160,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 				}
 			}
 		default:
-			var tx transaction.TxBase
-			err = json.Unmarshal(rawTxBytes, &tx)
+			tx, err := transaction.NewTransactionFromJsonBytes(rawTxBytes)
 			if err != nil {
 				fail++
 				continue
 			}
 			if !isSent {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				if err != nil {
 					fail++
 					continue
@@ -176,7 +175,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					continue
 				}
 			} else {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
@@ -187,7 +186,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					fail++
 					continue
 				}
-				txMsg.(*wire.MessageTx).Transaction = &tx
+				txMsg.(*wire.MessageTx).Transaction = tx
 				err = httpServer.config.Server.PushMessageToAll(txMsg)
 				if err != nil {
 					fail++
@@ -294,14 +293,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 				}
 			}
 		default:
-			var tx transaction.TxBase
-			err = json.Unmarshal(rawTxBytes, &tx)
+			tx, err := transaction.NewTransactionFromJsonBytes(rawTxBytes)
 			if err != nil {
 				fail++
 				continue
 			}
 			if !isSent {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				if err != nil {
 					fail++
 					continue
@@ -310,7 +308,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					continue
 				}
 			} else {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
@@ -321,7 +319,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					fail++
 					continue
 				}
-				txMsg.(*wire.MessageTx).Transaction = &tx
+				txMsg.(*wire.MessageTx).Transaction = tx
 				err = httpServer.config.Server.PushMessageToAll(txMsg)
 				if err != nil {
 					fail++

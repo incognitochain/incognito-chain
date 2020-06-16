@@ -47,7 +47,6 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -783,8 +782,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 						if err != nil {
 							continue
 						}
-						normalTx := tx.(*transaction.TxBase)
-						txMsg.(*wire.MessageTx).Transaction = normalTx
+						txMsg.(*wire.MessageTx).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
@@ -796,8 +794,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 						if err != nil {
 							continue
 						}
-						customPrivacyTokenTx := tx.(*transaction.TxTokenBase)
-						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())

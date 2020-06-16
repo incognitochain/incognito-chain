@@ -670,21 +670,8 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
-		var shardID byte
-		flag := false
-		switch tx.GetType() {
-		case common.TxNormalType:
-			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxBase).PubKeyLastByteSender)
-				flag = true
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxTokenBase).PubKeyLastByteSender)
-				flag = true
-			}
-		}
-		if flag {
+		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxCustomTokenPrivacyType {
+			shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
 				temp.ObserveTransaction(txD)
 			}

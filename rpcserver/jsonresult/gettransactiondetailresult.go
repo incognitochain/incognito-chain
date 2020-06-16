@@ -59,7 +59,6 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 		{
-			tempTx := tx.(*transaction.TxBase)
 			result = &TransactionDetail{
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
@@ -67,22 +66,23 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				TxSize:      tx.GetTxActualSize(),
 				ShardID:     shardID,
 				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				IsPrivacy:   tempTx.IsPrivacy(),
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
+				Version:     tx.GetVersion(),
+				Type:        tx.GetType(),
+				LockTime:    time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				Fee:         tx.GetTxFee(),
+				IsPrivacy:   tx.IsPrivacy(),
+				Proof:       tx.GetProof(),
+				SigPubKey:   base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0),
+				Sig:         base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
+				Info:        string(tx.GetInfo()),
 			}
 			inputCoins := result.Proof.GetInputCoins()
 			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+			meta := tx.GetMetadata()
+			if meta != nil {
+				metaData, _ := json.MarshalIndent(meta, "", "\t")
 				result.Metadata = string(metaData)
 			}
 			if result.Proof != nil {
@@ -91,44 +91,44 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			tempTx := tx.(*transaction.TxTokenBase)
+			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
 			result = &TransactionDetail{
 				BlockHash:                blockHashStr,
 				BlockHeight:              blockHeight,
 				Index:                    uint64(index),
-				TxSize:                   tempTx.GetTxActualSize(),
+				TxSize:                   tx.GetTxActualSize(),
 				ShardID:                  shardID,
 				Hash:                     tx.Hash().String(),
-				Version:                  tempTx.Version,
-				Type:                     tempTx.Type,
-				LockTime:                 time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:                      tempTx.Fee,
-				Proof:                    tempTx.Proof,
-				SigPubKey:                base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:                      base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:                     string(tempTx.Info),
-				IsPrivacy:                tempTx.IsPrivacy(),
-				PrivacyCustomTokenSymbol: tempTx.TxPrivacyTokenData.PropertySymbol,
-				PrivacyCustomTokenName:   tempTx.TxPrivacyTokenData.PropertyName,
-				PrivacyCustomTokenID:     tempTx.TxPrivacyTokenData.PropertyID.String(),
-				PrivacyCustomTokenFee:    tempTx.TxPrivacyTokenData.TxNormal.Fee,
+				Version:                  tx.GetVersion(),
+				Type:                     tx.GetType(),
+				LockTime:                 time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				Fee:                      tx.GetTxFee(),
+				Proof:                    tx.GetProof(),
+				SigPubKey:                base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0),
+				Sig:                      base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
+				Info:                     string(tx.GetInfo()),
+				IsPrivacy:                tx.IsPrivacy(),
+				PrivacyCustomTokenSymbol: txTokenData.PropertySymbol,
+				PrivacyCustomTokenName:   txTokenData.PropertyName,
+				PrivacyCustomTokenID:     txTokenData.PropertyID.String(),
+				PrivacyCustomTokenFee:    txTokenData.TxNormal.GetTxFee(),
 			}
 			inputCoins := result.Proof.GetInputCoins()
 			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
-			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
+			tokenData, _ := json.MarshalIndent(txTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+			if tx.GetMetadata() != nil {
+				metaData, _ := json.MarshalIndent(tx.GetMetadata(), "", "\t")
 				result.Metadata = string(metaData)
 			}
 			if result.Proof != nil {
 				result.ProofDetail.ConvertFromProof(result.Proof)
 			}
-			result.PrivacyCustomTokenIsPrivacy = tempTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
-			if tempTx.TxPrivacyTokenData.TxNormal.Proof != nil {
-				result.PrivacyCustomTokenProofDetail.ConvertFromProof(tempTx.TxPrivacyTokenData.TxNormal.Proof)
+			result.PrivacyCustomTokenIsPrivacy = txTokenData.TxNormal.IsPrivacy()
+			if txTokenData.TxNormal.GetProof() != nil {
+				result.PrivacyCustomTokenProofDetail.ConvertFromProof(txTokenData.TxNormal.GetProof())
 			}
 		}
 	default:

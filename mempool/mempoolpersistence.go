@@ -33,8 +33,7 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 	//==================For PRV Transfer Only
 	case common.TxNormalType:
 		{
-			normalTx := tx.(*transaction.TxBase)
-			valueTx, err := json.Marshal(normalTx)
+			valueTx, err := json.Marshal(tx)
 			if err != nil {
 				return err
 			}
@@ -152,30 +151,27 @@ func (tp *TxPool) removeTransactionFromDatabaseMP(txHash *common.Hash) error {
 
 // unMarshallTxDescFromDatabase - convert tx data in mempool database persistence into TxDesc
 func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (*TxDesc, error) {
+	var err error
 	txDesc := TxDesc{}
+
 	switch txType {
 	case common.TxNormalType:
 		{
-			tx := transaction.TxBase{}
-			err := json.Unmarshal(valueTx, &tx)
+			txDesc.Desc.Tx, err = transaction.NewTransactionFromJsonBytes(valueTx)
 			if err != nil {
 				return nil, err
 			}
-
-			txDesc.Desc.Tx = &tx
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			customTokenPrivacyTx := transaction.TxTokenBase{}
-			err := json.Unmarshal(valueTx, &customTokenPrivacyTx)
+			txDesc.Desc.Tx, err = transaction.NewTransactionTokenFromJson(valueTx)
 			if err != nil {
 				return nil, err
 			}
-			txDesc.Desc.Tx = &customTokenPrivacyTx
 		}
 	}
 	tempDesc := TempDesc{}
-	err := json.Unmarshal(valueDesc, &tempDesc)
+	err = json.Unmarshal(valueDesc, &tempDesc)
 	if err != nil {
 		return nil, err
 	}
