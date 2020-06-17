@@ -48,8 +48,7 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			customTokenPrivacyTx := tx.(*transaction.TxTokenBase)
-			valueTx, err := json.Marshal(customTokenPrivacyTx)
+			valueTx, err := json.Marshal(tx)
 			if err != nil {
 				return err
 			}
@@ -164,7 +163,7 @@ func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			txDesc.Desc.Tx, err = transaction.NewTransactionTokenFromJson(valueTx)
+			txDesc.Desc.Tx, err = transaction.NewTransactionTokenFromJsonBytes(valueTx)
 			if err != nil {
 				return nil, err
 			}

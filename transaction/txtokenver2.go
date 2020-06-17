@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"errors"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -238,7 +239,7 @@ func (txToken *TxTokenVersion2) initPRVFee(params *TxPrivacyTokenInitParams) err
 	}
 	// override TxCustomTokenPrivacyType type
 	feeTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.Transaction = feeTx
+	txToken.Tx = feeTx
 
 	return nil
 }
@@ -248,6 +249,9 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 	if !ok {
 		return errors.New("Cannot init TxCustomTokenPrivacy because params is not correct")
 	}
+
+	fmt.Println("Get coin length in TxTokenVersion2 init")
+	fmt.Println(len(params.inputCoin))
 
 	// check tx size
 	limitFee := uint64(0)
@@ -284,7 +288,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	}
 	// override TxCustomTokenPrivacyType type
 	tx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.Transaction = tx
+	txToken.Tx = tx
 
 	// check tx size
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
@@ -327,7 +331,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 
 func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	// check input transaction
-	txFee := txToken.Transaction
+	txFee := txToken.Tx
 	if txFee.GetSig() == nil || txFee.GetSigPubKey() == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be a signed one"))
 	}

@@ -611,12 +611,13 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
+	tokenData := tx.GetTxPrivacyTokenData()
 	result := jsonresult.CreateTransactionTokenResult{
 		TxID:        tx.Hash().String(),
-		TokenID:     tx.TxPrivacyTokenData.PropertyID.String(),
-		TokenName:   tx.TxPrivacyTokenData.PropertyName,
-		TokenAmount: tx.TxPrivacyTokenData.Amount,
-		ShardID:     common.GetShardIDFromLastByte(tx.Transaction.GetSenderAddrLastByte()),
+		TokenID:     tokenData.PropertyID.String(),
+		TokenName:   tokenData.PropertyName,
+		TokenAmount: tokenData.Amount,
+		ShardID:     common.GetShardIDFromLastByte(tx.GetTxBase().GetSenderAddrLastByte()),
 	}
 	return result, nil
 }

@@ -202,10 +202,11 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 			}
 		case common.TxCustomTokenPrivacyType:
 			{
-				tx := tx.(*transaction.TxTokenBase)
+				tx := tx.(transaction.TxTokenInterface)
+				tokenData := tx.GetTxPrivacyTokenData()
 				subView := NewTxViewPoint(block.Header.ShardID, block.Header.Height)
-				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPointFromProof(stateDB, subView.shardID, tx.TxPrivacyTokenData.TxNormal.GetProof(), subView.tokenID)
+				subView.tokenID = &tokenData.PropertyID
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPointFromProof(stateDB, subView.shardID, tokenData.TxNormal.GetProof(), subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}

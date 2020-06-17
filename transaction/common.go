@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -437,23 +438,35 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 	return nil, errors.New("Cannot new transaction from json, version is not 1 or 2 or -1")
 }
 
-func NewTransactionTokenFromJson(data []byte) (metadata.Transaction, error) {
-	txJsonVersion := new(txJsonDataVersion)
-	if err := json.Unmarshal(data, txJsonVersion); err != nil {
+type txTokenJsonDataVersion struct {
+	Tx struct {
+		Version  int8   `json:"Version"`
+	}
+}
+
+func NewTransactionTokenFromJsonBytes(data []byte) (TxTokenInterface, error) {
+	txTokenJsonVersion := new(txTokenJsonDataVersion)
+	if err := json.Unmarshal(data, txTokenJsonVersion); err != nil {
 		return nil, err
 	}
-	if txJsonVersion.Version == TxVersion1Number {
+	fmt.Println(string(data))
+	fmt.Println(txTokenJsonVersion)
+	fmt.Println(txTokenJsonVersion.Tx.Version)
+	fmt.Println(txTokenJsonVersion.Tx.Version == TxVersion2Number)
+	if txTokenJsonVersion.Tx.Version == TxVersion1Number {
 		tx := new(TxTokenVersion1)
 		if err := json.Unmarshal(data, tx); err != nil {
 			return nil, err
 		}
 		return tx, nil
-	} else if txJsonVersion.Version == TxVersion2Number || txJsonVersion.Version == TxConversionVersion12Number {
+	} else if txTokenJsonVersion.Tx.Version == TxVersion2Number || txTokenJsonVersion.Tx.Version == TxConversionVersion12Number {
 		tx := new(TxTokenVersion2)
 		if err := json.Unmarshal(data, tx); err != nil {
+			fmt.Println("????????????? what")
 			return nil, err
 		}
 		return tx, nil
 	}
+	fmt.Println("??????????????????")
 	return nil, errors.New("Cannot new transaction token from json, version is not 1 or 2 or -1")
 }

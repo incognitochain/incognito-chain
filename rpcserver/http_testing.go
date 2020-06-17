@@ -120,14 +120,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 		switch txType {
 		case "cstokenprivacy":
 			{
-				var tx transaction.TxTokenBase
-				err = json.Unmarshal(rawTxBytes, &tx)
+				tx, err := transaction.NewTransactionTokenFromJsonBytes(rawTxBytes)
 				if err != nil {
 					fail++
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -136,7 +135,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -147,7 +146,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						fail++
 						continue
 					}
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
+					txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
@@ -253,14 +252,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 		switch txType {
 		case "cstokenprivacy":
 			{
-				var tx transaction.TxTokenBase
-				err = json.Unmarshal(rawTxBytes, &tx)
+				tx, err := transaction.NewTransactionTokenFromJsonBytes(rawTxBytes)
 				if err != nil {
 					fail++
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -269,7 +267,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -280,7 +278,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 						fail++
 						continue
 					}
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
+					txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++

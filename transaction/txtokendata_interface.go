@@ -36,7 +36,7 @@ func (txData *TxPrivacyTokenData) UnmarshalJSON(data []byte) error {
 
 type TxPrivacyTokenData struct {
 	// TxNormal is the normal transaction, it will never be token transaction
-	TxNormal metadata.Transaction
+	TxNormal 	   metadata.Transaction
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
 	PropertyName   string
 	PropertySymbol string
@@ -112,10 +112,16 @@ type TxTokenInterface interface {
 	// GET/SET FUNCTION
 	GetVersion() int8
 	SetVersion(int8)
-	GetTxFee() uint64
-	SetTxFee(uint64)
+	GetMetadataType() int
 	GetType() string
 	SetType(string)
+	GetLockTime() int64
+	SetLockTime(int64)
+	GetSenderAddrLastByte() byte
+	SetGetSenderAddrLastByte(byte)
+	GetTxFee() uint64
+	SetTxFee(uint64)
+	GetTxFeeToken() uint64
 	GetInfo() []byte
 	SetInfo([]byte)
 	GetSigPubKey() []byte
@@ -124,6 +130,9 @@ type TxTokenInterface interface {
 	SetSig([]byte)
 	GetProof() privacy.Proof
 	SetProof(privacy.Proof)
+	GetTokenID() *common.Hash
+	GetMetadata() metadata.Metadata
+	SetMetadata(metadata.Metadata)
 
 	GetTxPrivacyTokenData() TxPrivacyTokenData
 	SetTxPrivacyTokenData(TxPrivacyTokenData)

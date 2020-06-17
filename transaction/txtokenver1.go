@@ -34,12 +34,12 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 		params.metaData,
 		params.info,
 	)
-	txToken.Transaction = new(TxVersion1)
-	if err := txToken.Transaction.Init(txPrivacyParams); err != nil {
+	txToken.Tx = new(TxVersion1)
+	if err := txToken.Tx.Init(txPrivacyParams); err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	txToken.Transaction.SetType(common.TxCustomTokenPrivacyType)
+	txToken.Tx.SetType(common.TxCustomTokenPrivacyType)
 
 	// check tx size
 	limitFee := uint64(0)
@@ -187,12 +187,12 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 
 func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	// validate for PRV
-	ok, err := txToken.Transaction.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
+	ok, err := txToken.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
 	if ok {
 		// validate for pToken
 		tokenID := txToken.TxPrivacyTokenData.PropertyID
 		if txToken.TxPrivacyTokenData.Type == CustomTokenInit {
-			if txToken.Transaction.GetType() == common.TxRewardType && txToken.TxPrivacyTokenData.Mintable {
+			if txToken.Tx.GetType() == common.TxRewardType && txToken.TxPrivacyTokenData.Mintable {
 				isBridgeCentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
 				isBridgeDecentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
 				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
