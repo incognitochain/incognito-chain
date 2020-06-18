@@ -546,7 +546,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
 		// TODO: 0xmerman
 		backupShardCommittee := shardCommittee
-		//fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
+		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
 		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
 
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
@@ -579,7 +579,10 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 				Logger.log.Error(err)
 				return instructions, shardPendingValidator, shardCommittee, err
 			}
+			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
+		// NOTE: shardCommittee must be finalized before building Bridge instruction here
+		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
 		if shardID == bridgeID {
