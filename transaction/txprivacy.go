@@ -470,9 +470,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 	if tx.GetType() == common.TxRewardType {
 		return tx.ValidateTxSalary(transactionStateDB)
 	}
-	if tx.GetType() == common.TxReturnStakingType {
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil
-	}
+
 	var valid bool
 	var err error
 
@@ -484,6 +482,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 		}
 		Logger.log.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
+	}
+
+	if tx.GetType() == common.TxReturnStakingType {
+		return true, nil //
 	}
 
 	if tx.Proof != nil {
@@ -823,7 +825,7 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 }
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
+	if tx.GetType() == common.TxRewardType {
 		return nil
 	}
 	if tx.Metadata != nil {
@@ -836,6 +838,10 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 		if !isContinued {
 			return nil
 		}
+	}
+	//no need to check double spend
+	if tx.GetType() == common.TxReturnStakingType {
+		return nil
 	}
 	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
