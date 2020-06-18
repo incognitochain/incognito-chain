@@ -180,9 +180,6 @@ func (tx *TxVersion2) proveWithMessage(params *TxPrivacyInitParams, hashedTokenM
 
 	// Get Hash of the whole txToken then sign on it
 	message := common.HashH(append(tx.Hash()[:], hashedTokenMessage...))
-	fmt.Println("Message hash", message)
-	fmt.Println("Message hash", message)
-	fmt.Println("Message hash", message)
 	err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
 	return err
 }
@@ -272,24 +269,20 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 
 func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata, coinID *common.Hash, coinName string) error {
 	var err error
-	// init data for tx PRV for fee
+	// Check validate params
 	txPrivacyParams := NewTxPrivacyInitParams(
 		privKey, []*privacy.PaymentInfo{}, nil, 0, false, stateDB, nil, metaData, nil,
 	)
-	tx := new(TxVersion2)
-	if err := tx.Init(txPrivacyParams); err != nil {
-		return NewTransactionErr(PrivacyTokenInitPRVError, err)
+	if err := validateTxParams(txPrivacyParams); err != nil {
+		return err
 	}
-	// override TxCustomTokenPrivacyType type
-	tx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.Tx = tx
-
 	// check tx size
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
 	if txSize := estimateTxSizeOfInitTokenSalary(publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
 		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
-	// check action type and create privacy custom toke data
+
+	// Create TxToken
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], coinID[:])
 	txToken.TxPrivacyTokenData.PropertyID = propertyID
@@ -318,8 +311,23 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 		return NewTransactionErr(SignTxError, err)
 	}
 	temp.SigPubKey = otaCoin.GetPublicKey().ToBytesS()
-
 	txToken.TxPrivacyTokenData.TxNormal = temp
+
+	// Init tx fee params
+	tx := new(TxVersion2)
+	if err := tx.initializeTxAndParams(txPrivacyParams); err != nil {
+		return err
+	}
+	tx.sigPrivKey = *txPrivacyParams.senderSK
+
+	hashedTokenMessage := txToken.TxPrivacyTokenData.TxNormal.Hash()
+	message := common.HashH(append(txToken.GetTxBase().Hash()[:], hashedTokenMessage[:]...))
+	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(txPrivacyParams.senderSK, message[:]); err != nil {
+		Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
+		return NewTransactionErr(SignTxError, err)
+	}
+	txToken.SetTxBase(tx)
+
 	return nil
 }
 
@@ -330,6 +338,20 @@ func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, s
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be a signed one"))
 	}
 	var err error
+
+	// Verify TxToken Salary: NonPrivacyNonInput
+	if txFee.GetProof() == nil {
+		hashedTokenMessage := txToken.TxPrivacyTokenData.TxNormal.Hash()
+		message := common.HashH(append(txFee.Hash()[:], hashedTokenMessage[:]...))
+		if valid, err := verifySigNoPrivacy(txFee.GetSig(), txFee.GetSigPubKey(), message[:]); !valid {
+			if err != nil {
+				Logger.Log.Debugf("Error verifying signature of tx: %+v", err)
+				return false, NewTransactionErr(VerifyTxSigFailError, err)
+			}
+			return false, nil
+		}
+		return true, nil
+	}
 
 	// Reform Ring
 	sumOutputCoinsWithFee := calculateSumOutputsWithFee(txFee.GetProof().GetOutputCoins(), txFee.GetTxFee())

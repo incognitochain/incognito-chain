@@ -628,6 +628,20 @@ func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *sta
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
 func (tx *TxVersion2) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
+	tokenID := &common.Hash{}
+	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
+		return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+	}
+	if found, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS()); found || err != nil {
+		if found {
+			return errors.New("Cannot initTxSalary, onetimeaddress already exists in database")
+		}
+		if err != nil {
+			errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
+			return errors.New(errStr)
+		}
+	}
+
 	tx.Version = TxVersion2Number
 	tx.Type = common.TxRewardType
 	if tx.LockTime == 0 {
