@@ -928,8 +928,11 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		// Process Transaction Metadata
 		metaType := tx.GetMetadataType()
 		if metaType == metadata.WithDrawRewardResponseMeta {
-			_, publicKey, amountRes, coinID := tx.GetTransferData()
-			err := statedb.RemoveCommitteeReward(newShardState.rewardStateDB, publicKey, amountRes, *coinID)
+			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+			if err != nil || !isMinted {
+				return NewBlockChainError(RemoveCommitteeRewardError, err)
+			}
+			err = statedb.RemoveCommitteeReward(newShardState.rewardStateDB, tx.GetMetadata().(*metadata.WithDrawRewardResponse).RewardPublicKey, mintCoin.GetValue(), *coinID)
 			if err != nil {
 				return NewBlockChainError(RemoveCommitteeRewardError, err)
 			}

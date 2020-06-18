@@ -1,10 +1,10 @@
 package coin
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -395,4 +395,25 @@ func (c *CoinV2) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []byte, amount uint64) bool {
+	if c.GetValue() != amount {
+		return false
+	}
+	// check one-time address is corresponding to paymentaddress
+	r := new(operation.Scalar).FromBytesS(sharedRandom)
+	if !r.ScalarValid() {
+		return false
+	}
+	rK := new(operation.Point).ScalarMult(paymentAdd.GetPublicView(), r)
+	hash :=  operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
+	HrKG := new(operation.Point).ScalarMultBase(hash)
+	tmpPubKey := new(operation.Point).Add(HrKG, paymentAdd.GetPublicSpend())
+	fmt.Println("OTA ", tmpPubKey)
+	fmt.Println("OTA ", c.publicKey)
+	if !bytes.Equal(tmpPubKey.ToBytesS(), c.publicKey.ToBytesS()) {
+		return false
+	}
+	return true
 }

@@ -27,11 +27,11 @@ func (this *DebugTool) InitTestnet() *DebugTool {
 	return this
 }
 
-func (this *DebugTool) InitLocal() *DebugTool {
+func (this *DebugTool) InitLocal(port string) *DebugTool {
 	if this == nil {
 		this = new(DebugTool)
 	}
-	this.url = "http://127.0.0.1:9334"
+	this.url = "http://127.0.0.1:" + port
 	return this
 }
 

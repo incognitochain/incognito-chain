@@ -22,7 +22,6 @@ type Coin interface {
 	GetValue() uint64
 	GetRandomness() *operation.Scalar
 	GetIndex() uint32
-
 	IsEncrypted() bool
 
 	// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -34,6 +33,8 @@ type Coin interface {
 
 	Bytes() []byte
 	SetBytes([]byte) error
+
+	CheckCoinValid(key.PaymentAddress, []byte, uint64) bool
 }
 
 type PlainCoin interface {

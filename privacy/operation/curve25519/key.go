@@ -540,8 +540,6 @@ func MultiScalarMultKeyCached(AiLs [][8]CachedGroupElement, scalars []*Key, ) (r
 
 func MultiScalarMultKey(points []*Key, scalars []*Key) (result *Key) {
 	r := new(ProjectiveGroupElement)
-
-
 	pointLs := make([]ExtendedGroupElement, len(points))
 
 	digitsLs := make([][64]int8, len(scalars))

@@ -107,7 +107,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
-	isBurned, _, amount, tokenID, err := tx.GetTxBurnData(chainRetriever, beaconHeight)
+	isBurned, burnCoin, tokenID, err := tx.GetTxBurnData()
 	if err != nil {
 		return false, false, errors.New("Error Cannot get burn data from tx")
 	}
@@ -117,7 +117,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
 		return false, false, errors.New("Error Staking tx should transfer PRV only")
 	}
-
+	amount := burnCoin.GetValue()
 	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}

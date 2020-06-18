@@ -437,38 +437,29 @@ func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx TxBase) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+func (tx TxBase) GetReceiverData() ([]coin.Coin, error) {
 	transaction, err := NewTransactionFromTxBase(&tx)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return nil, nil, nil, err
+		return nil, err
 	}
 	return transaction.GetReceiverData()
 }
 
-func (tx TxBase) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, error) {
-	publicKeys, txRandoms, amounts, err := tx.GetReceiverData()
-	for i := 0; i < len(publicKeys); i++ {
-		fmt.Println("Public key", publicKeys[i].ToBytesS())
-		fmt.Println("Tx Ramdon", txRandoms[i].Bytes())
-		fmt.Println("Amount", amounts[i])
-	}
+func (tx TxBase) GetTxMintData() (bool, coin.Coin, *common.Hash, error) {
+	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
 		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
-		return false, nil, nil, 0, nil, err
+		return false, nil, nil, err
 	}
-	if len(publicKeys) != 1 {
+	if len(outputCoins) != 1 {
 		Logger.Log.Error("GetTxMintData : Should only have one receiver")
-		return false, nil, nil, 0, nil, errors.New("Error Tx mint has more than one receiver")
+		return false, nil, nil, errors.New("Error Tx mint has more than one receiver")
 	}
 	if inputCoins := tx.Proof.GetInputCoins(); len(inputCoins) > 0 {
-		return false, nil, nil, 0, nil, errors.New("Error this is not Tx mint")
+		return false, nil, nil, errors.New("Error this is not Tx mint")
 	}
-	if txRandoms == nil {
-		return true, publicKeys[0].ToBytesS(), nil, amounts[0], &common.PRVCoinID, nil
-	} else {
-		return true, publicKeys[0].ToBytesS(), txRandoms[0].Bytes(), amounts[0], &common.PRVCoinID, nil
-	}
+	return true, outputCoins[0], &common.PRVCoinID, nil
 }
 
 func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
@@ -500,32 +491,25 @@ func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 //	return true, publicKeys[0], nil, amounts[0], &common.PRVCoinID
 //}
 
-func (tx TxBase) GetTxBurnData(retriever metadata.ChainRetriever, blockHeight uint64) (bool, []byte, uint64, *common.Hash, error) {
-	pubkeys, _, amounts, err := tx.GetReceiverData()
+func (tx TxBase) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) {
+	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
 		Logger.Log.Errorf("Cannot get receiver data, error %v", err)
-		return false, nil, 0, nil, err
+		return false, nil, nil, err
 	}
-	if len(pubkeys) > 2 {
+	if len(outputCoins) > 2 {
 		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
-		return false, nil, 0, nil, err
+		return false, nil, nil, err
 	}
 
-	burnAccount, err := wallet.Base58CheckDeserialize(retriever.GetBurningAddress(blockHeight))
-	if err != nil {
-		return false, nil, 0, nil, err
-	}
-	burnPaymentAddress := burnAccount.KeySet.PaymentAddress
 
-	isBurned, pubkey, amount := false, []byte{}, uint64(0)
-	for i, pk := range pubkeys {
-		if bytes.Equal(burnPaymentAddress.Pk, pk.ToBytesS()) {
-			isBurned = true
-			pubkey = pk.ToBytesS()
-			amount += amounts[i]
+	for _, coin := range outputCoins {
+		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
+			return true, coin, &common.PRVCoinID, nil
 		}
+
 	}
-	return isBurned, pubkey, amount, &common.PRVCoinID, nil
+	return false, nil, nil, nil
 }
 
 // implement this func if needed
@@ -768,7 +752,7 @@ func (tx TxBase) ValidateType() bool {
 
 func (tx TxBase) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
 
-func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
 	}
@@ -790,7 +774,7 @@ func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.
 		}
 	}
 	if meta != nil {
-		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues, nil, nil)
+		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, nil, nil)
 		if err != nil {
 			Logger.Log.Error(err)
 			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)

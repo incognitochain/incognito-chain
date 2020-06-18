@@ -112,6 +112,8 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 }
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
+	//TODO Check this logic
+	return nil
 	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
 	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
 		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
@@ -160,11 +162,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 		}
 	}
-	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
-		if len(txRequestTable) > 0 {
-			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
-		}
-	}
+	//if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+	//	if len(txRequestTable) > 0 {
+	//		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	//	}
+	//}
 	return nil
 }
 
@@ -174,7 +176,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payByPrivateKey *privacy.PrivateKey,
 	transactionStateDB *statedb.StateDB,
 	bridgeStateDB *statedb.StateDB,
-	meta metadata.Metadata,
+	meta *metadata.WithDrawRewardResponse,
 	coinID common.Hash,
 	shardID byte,
 ) (metadata.Transaction, error) {
@@ -294,33 +296,6 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 	}
 
 	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
-}
-
-func (blockchain *BlockChain) GetListDecryptedOutputCoinsV1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
-	var outCoinsInBytes [][]byte
-	var err error
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
-	if keyset == nil {
-		return nil, NewBlockChainError(GetListDecryptedOutputCoinsV1ByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
-	}
-	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
-	if err != nil {
-		return nil, err
-	}
-	// loop on all outputcoin to decrypt data
-	results := make([]coin.PlainCoin, 0)
-	for _, item := range outCoinsInBytes {
-		outCoin, err := coin.NewCoinFromByte(item)
-		if err != nil {
-			Logger.log.Errorf("Cannot create coin from byte %v", err)
-			return nil, err
-		}
-		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-		if decryptedOut != nil {
-			results = append(results, decryptedOut)
-		}
-	}
-	return results, nil
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {

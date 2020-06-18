@@ -173,6 +173,7 @@ func (p *Point) MultiScalarMult(scalarLs []*Scalar, pointLs []*Point) *Point {
 		pointKeyLs[i] = &pointLs[i].key
 	}
 	key := C25519.MultiScalarMultKey(pointKeyLs, scalarKeyLs)
+
 	res, _ := new(Point).SetKey(key)
 	return res
 }

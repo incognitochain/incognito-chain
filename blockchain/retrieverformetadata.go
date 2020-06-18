@@ -39,3 +39,4 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 
 	return common.BurningAddress2
 }
+

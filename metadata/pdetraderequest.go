@@ -104,14 +104,14 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return false, false, errors.New("Wrong request info's txRandom - Cannot set txRandom from bytes")
 	}
 
-	isBurned, _, burnedAmount, burnedTokenID, err := tx.GetTxBurnData(chainRetriever, beaconHeight)
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil {
 		return false, false, err
 	}
 	if !isBurned {
 		return false, false, errors.New("Error This is not Tx Burn")
 	}
-	if pc.SellAmount != burnedAmount {
+	if pc.SellAmount != burnCoin.GetValue() {
 		return false, false, errors.New("Error Selling amount should be equal to the burned amount")
 	}
 

@@ -278,10 +278,6 @@ func (c *PlainCoinV1) SetBytes(coinBytes []byte) error {
 	return nil
 }
 
-// func (c *PlainCoinV1) GetCoinValue(privateKey *key.PrivateKey) uint64 {
-// 	return c.GetValue()
-// }
-
 type CoinObject struct {
 	PublicKey      string `json:"PublicKey"`
 	CoinCommitment string `json:"CoinCommitment"`
@@ -404,9 +400,6 @@ func (c CoinV1) IsEncrypted() bool                 { return c.CoinDetailsEncrypt
 
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {
-	if c == nil {
-		c = new(CoinV1)
-	}
 	c.CoinDetails = new(PlainCoinV1).Init()
 	c.CoinDetailsEncrypted = new(henc.HybridCipherText)
 	return c
@@ -609,4 +602,12 @@ func (c *CoinV1) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (c *CoinV1) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []byte, amount uint64) bool {
+	if !bytes.Equal(c.GetPublicKey().ToBytesS(), paymentAdd.GetPublicSpend().ToBytesS()) &&
+		amount != c.GetValue() {
+		return false
+	}
+	return true
 }

@@ -18,7 +18,6 @@ import (
 type StopAutoStakingMetadata struct {
 	MetadataBase
 	CommitteePublicKey string
-	Sig                []byte
 }
 
 func (meta *StopAutoStakingMetadata) Hash() *common.Hash {
@@ -124,10 +123,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 	//
 */
 func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if tx.IsPrivacy() {
-		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
-	}
-	isBurned, _, amount, tokenID, err := tx.GetTxBurnData(chainRetriever, beaconHeight)
+	isBurned, burnCoin, tokenID, err := tx.GetTxBurnData()
 	if err != nil {
 		return false, false, errors.New("Error Cannot get burn data from tx")
 	}
@@ -137,7 +133,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
 		return false, false, errors.New("Error StopAutoStaking tx should transfer PRV only")
 	}
-	if stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount {
+	if stopAutoStakingMetadata.Type != StopAutoStakingMeta && burnCoin.GetValue() != StopAutoStakingAmount {
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
@@ -153,15 +149,6 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 func (stopAutoStakingMetadata StopAutoStakingMetadata) GetType() int {
 	return stopAutoStakingMetadata.Type
 }
-
-func (stopAutoStakingMetadata StopAutoStakingMetadata) GetSig() []byte {
-	return stopAutoStakingMetadata.Sig
-}
-
-func (stopAutoStakingMetadata *StopAutoStakingMetadata) SetSig(sig []byte) {
-	stopAutoStakingMetadata.Sig = sig
-}
-
 
 func (stopAutoStakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stopAutoStakingMetadata)

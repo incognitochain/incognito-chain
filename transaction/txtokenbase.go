@@ -106,9 +106,9 @@ type TxTokenInterface interface {
 	GetReceivers() ([][]byte, []uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
 
-	GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error)
-	GetTxMintData() (bool, []byte, []byte,  uint64, *common.Hash, error)
-	GetTxBurnData(metadata.ChainRetriever, uint64) (bool, []byte, uint64, *common.Hash, error)
+	GetReceiverData() ([]coin.Coin, error)
+	GetTxMintData() (bool, coin.Coin, *common.Hash, error)
+	GetTxBurnData() (bool, coin.Coin, *common.Hash, error)
 
 	GetMetadataFromVinsTx(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (metadata.Metadata, error)
 	ListSerialNumbersHashH() []common.Hash
@@ -133,7 +133,7 @@ type TxTokenInterface interface {
 	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, metadata.ChainRetriever, byte, bool, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
 	ValidateType() bool
 	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
-	VerifyMinerCreatedTxBeforeGettingInBlock([]metadata.Transaction, []int, [][]string, []int, byte, metadata.ChainRetriever, *metadata.AccumulatedValues, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock(*metadata.MintData, byte, metadata.ChainRetriever, *metadata.AccumulatedValues, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
 
 	// Init Transaction, the input should be params such as: TxPrivacyInitParams
 	Init(interface{}) error
@@ -370,16 +370,16 @@ func (txToken TxTokenBase) GetTransferData() (bool, []byte, uint64, *common.Hash
 	return true, pubkeys[0], amounts[0], &txToken.TxPrivacyTokenData.PropertyID
 }
 
-func (txToken TxTokenBase) GetTxMintData() (bool, []byte, []byte, uint64, *common.Hash, error) {
+func (txToken TxTokenBase) GetTxMintData() (bool, coin.Coin, *common.Hash, error) {
 	tx := txToken.TxPrivacyTokenData.TxNormal
-	isMinted, publicKey, txRandom, amount, _, err := tx.GetTxMintData()
-	return isMinted, publicKey, txRandom, amount, &txToken.TxPrivacyTokenData.PropertyID, err
+	isMinted, outputCoin, _, err := tx.GetTxMintData()
+	return isMinted, outputCoin, &txToken.TxPrivacyTokenData.PropertyID, err
 }
 
-func (txToken TxTokenBase) GetTxBurnData(retriever metadata.ChainRetriever, blockHeight uint64) (bool, []byte, uint64, *common.Hash, error) {
+func (txToken TxTokenBase) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) {
 	tx := txToken.TxPrivacyTokenData.TxNormal
-	isBurned, pubkey, amount, _, err := tx.GetTxBurnData(retriever, blockHeight)
-	return isBurned, pubkey, amount, &txToken.TxPrivacyTokenData.PropertyID, err
+	isBurned, outputCoin, _, err := tx.GetTxBurnData()
+	return isBurned, outputCoin, &txToken.TxPrivacyTokenData.PropertyID, err
 }
 
 // CalculateBurnAmount - get tx value for pToken
@@ -704,7 +704,7 @@ func (txToken TxTokenBase) GetProof() privacy.Proof {
 }
 
 // VerifyMinerCreatedTxBeforeGettingInBlock
-func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	if !txToken.TxPrivacyTokenData.Mintable {
 		return true, nil
 	}
@@ -716,5 +716,5 @@ func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock [
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &txToken, bcr, accumulatedValues, nil, nil)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, &txToken, bcr, accumulatedValues, nil, nil)
 }

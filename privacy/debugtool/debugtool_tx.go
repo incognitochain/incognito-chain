@@ -99,15 +99,14 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 		"params": [
 			"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", 
 			{
-				"12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE":2000000000,
-				"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9":2000000000,
-				"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax":2000000000,
-				"12S42y9fq8xWXx1YpZ6KVDLGx6tLjeFWqbSBo6zGxwgVnPe1rMGxtLs87PyziCzYPEiRGdmwU1ewWFXwjLwog3X71K87ApNUrd3LQB3":2000000000,
-				"12S3yvTvWUJfubx3whjYLv23NtaNSwQMGWWScSaAkf3uQg8xdZjPFD4fG8vGvXjpRgrRioS5zuyzZbkac44rjBfs7mEdgoL4pwKu87u":2000000000,
-				"12S6mGbnS3Df5bGBaUfBTh56NRax4PvFPDhUnxvP9D6cZVjnTx9T4FsVdFT44pFE8KXTGYaHSAmb2MkpnUJzkrAe49EPHkBULM8N2ZJ":2000000000,
-				"12Rs5tQTYkWGzEdPNo2GRA1tjZ5aDCTYUyzXf6SJFq89QnY3US3ZzYSjWHVmmLUa6h8bdHHUuVYoR3iCVRoYDCNn1AfP6pxTz5YL8Aj":2000000000,
-				"12S33dTF3aVsuSxY7iniK3UULUYyLMZumExKm6DPfsqnNepGjgDZqkQCDp1Z7Te9dFKQp7G2WeeYqCr5vcDCfrA3id4x5UvL4yyLrrT":2000000000,
-				"12RysvT327ju2GTJ1RmquyRAQzPK1wezr7CCpraBLQ2VoHwz91n3rMeDFpcDiipBfmawrzTGrheEz4TrtZ5WFt8pYXkqiM5oXqucRRE":2000000000
+				"12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE":2000000000000,
+				"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9":2000000000000,
+				"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax":2000000000000,
+				"12S42y9fq8xWXx1YpZ6KVDLGx6tLjeFWqbSBo6zGxwgVnPe1rMGxtLs87PyziCzYPEiRGdmwU1ewWFXwjLwog3X71K87ApNUrd3LQB3":2000000000000,
+				"12S2x6SHiah9GToSvwXzbDeBrJzhPkENLJosgozv7AQE55xrEkVQqD95fTyGf6xt69PD4oxZ6xZ5qaPcVQAWqFjEt5TQ4cgimBgW2j2":2000000000000,
+				"12RwGQmH5iAAPaBTgrw4KmhoAUAjDnQa1Umy3AhE9S1628Yj9f8674BNbMPvT6Q3FCv8ydJu8e8WkstzHcHVZMfRskWgLkbzVdTGLqS":2000000000000,
+				"12RsfiGLXnGdYyyA28FJCSVC2A6hY1nVfVvkRjCvq5zHjXFs8eeuKv5HkigUHewBMHBBzAtr4ZnsZMK4RLPDJ1XcDDcBtLwnEuYngHp":2000000000000,
+				"12RqmK5woGNeBTy16ouYepSw4QEq28gsv2m81ebcPQ82GgS5S8PHEY37NU2aTacLRruFvjTqKCgffTeMDL83snTYz5zDp1MTLwjVhZS":2000000000000
 			}, 
 			1,   
 			1
@@ -214,8 +213,8 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA string) ([]byte, error) {
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrA)
+func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStr, tokenName string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
@@ -231,7 +230,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 			{
 				"Privacy": true,
 				"TokenID": "",
-				"TokenName": "abcxyz",
+				"TokenName": "%s",
 				"TokenSymbol": "pTTT",
 				"TokenFee": 0,
 				"TokenTxType": 0,
@@ -241,7 +240,7 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStrA st
 				}
 			}
 			]
-	}`, privKeyStrA, paymentAddStr)
+	}`, privKeyStr, tokenName, paymentAddStr)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -312,7 +311,7 @@ func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
+func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {	
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
@@ -373,9 +372,9 @@ func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, e
     "method": "withdrawreward",
     "params": [
         "%s",
-        0,
-			10,
-			0,
+        {},
+		10,
+		0,
         {
             "PaymentAddress": "%s",
             "TokenID": "%s"

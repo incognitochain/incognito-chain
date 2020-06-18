@@ -31,7 +31,7 @@ type Metadata interface {
 	ValidateMetadataByItself() bool
 	BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error)
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -122,9 +122,9 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
 
-	GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error)
-	GetTxMintData() (bool, []byte, []byte,  uint64, *common.Hash, error)
-	GetTxBurnData(ChainRetriever, uint64) (bool, []byte, uint64, *common.Hash, error)
+	GetReceiverData() ([]coin.Coin, error)
+	GetTxMintData() (bool, coin.Coin, *common.Hash, error)
+	GetTxBurnData() (bool, coin.Coin, *common.Hash, error)
 
 	GetMetadataFromVinsTx(ChainRetriever, ShardViewRetriever, BeaconViewRetriever) (Metadata, error)
 	ListSerialNumbersHashH() []common.Hash
@@ -149,12 +149,21 @@ type Transaction interface {
 	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, bool, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	ValidateType() bool
 	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock(*MintData, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 
 	// Init Transaction, the input should be params such as: TxPrivacyInitParams
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
 	Verify(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
+}
+
+type MintData struct {
+	ReturnStaking  map[string]bool
+	WithdrawReward map[string]bool
+	Txs            []Transaction
+	TxsUsed        []int
+	Insts          [][]string
+	InstsUsed      []int
 }
 
 func getPDEPoolPair(

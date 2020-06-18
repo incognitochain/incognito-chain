@@ -213,7 +213,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 	payByPrivateKey    *privacy.PrivateKey
 	transactionStateDB *statedb.StateDB
 	bridgeStateDB      *statedb.StateDB
-	meta               metadata.Metadata
+	meta               *metadata.WithDrawRewardResponse
 	coinID             common.Hash
 	txType             int
 	coinName           string
@@ -224,7 +224,7 @@ func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
 	stateDB *statedb.StateDB,
-	meta metadata.Metadata,
+	meta *metadata.WithDrawRewardResponse,
 	coinID common.Hash,
 	txType int,
 	coinName string,
@@ -297,6 +297,8 @@ func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, toke
 
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
+	params.meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+
 	if err != nil {
 		Logger.Log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err

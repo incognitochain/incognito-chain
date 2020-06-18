@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -133,33 +132,11 @@ func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
 }
 
-func (tx *TxVersion2) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
-	publicKeys := make([]*privacy.Point, 0)
-	txRandoms := make([]*coin.TxRandom, 0)
-	amounts := []uint64{}
-
+func (tx *TxVersion2) GetReceiverData() ([]coin.Coin, error) {
 	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
-		outputCoins := tx.Proof.GetOutputCoins()
-		for i:= 0; i < len(outputCoins); i++ {
-			coin := outputCoins[i].(*coin.CoinV2)
-			publicKey := coin.GetPublicKey()
-			txRandom := coin.GetTxRandom()
-			added := false
-			for j :=0; j < len(publicKeys); j ++ {
-				if bytes.Equal(publicKey.ToBytesS(), publicKeys[j].ToBytesS()) {
-					amounts[j] += coin.GetValue()
-					added = true
-					break
-				}
-			}
-			if !added {
-				publicKeys = append(publicKeys, publicKey)
-				amounts = append(amounts, coin.GetValue())
-				txRandoms = append(txRandoms, txRandom)
-			}
-		}
+		return tx.Proof.GetOutputCoins(), nil
 	}
-	return publicKeys, txRandoms, amounts, nil
+	return nil, nil
 }
 
 // ========== NORMAL INIT FUNCTIONS ==========
@@ -271,6 +248,7 @@ func (tx *TxVersion2) signOnMessage(inp []coin.PlainCoin, out []*coin.CoinV2, pa
 
 func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	// signOnMessage meta data
+	fmt.Println("SIG SIG SIG", tx.Metadata)
 	metaSig := tx.Metadata.GetSig()
 	if metaSig != nil && len(metaSig) > 0 {
 		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty or nil"))

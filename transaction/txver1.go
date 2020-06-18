@@ -36,7 +36,7 @@ func (tx *TxVersion1) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	}
 }
 
-func (tx *TxVersion1) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []uint64, error) {
+func (tx *TxVersion1) GetReceiverData() ([]coin.Coin, error) {
 	pubkeys := make([]*privacy.Point, 0)
 	amounts := []uint64{}
 
@@ -57,7 +57,14 @@ func (tx *TxVersion1) GetReceiverData() ([]*privacy.Point, []*coin.TxRandom, []u
 			}
 		}
 	}
-	return pubkeys, nil, amounts, nil
+	coins := make([]coin.Coin, 0)
+	for i := 0; i < len(pubkeys); i++ {
+		coin := new(coin.CoinV1)
+		coin.CoinDetails.SetPublicKey(pubkeys[i])
+		coin.CoinDetails.SetValue(amounts[i])
+		coins = append(coins, coin)
+	}
+	return coins, nil
 }
 
 // checkSNDerivatorExistence return true if snd exists in snDerivators list

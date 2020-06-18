@@ -58,7 +58,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		metadata.ReturnStakingMeta,
 	)
 	returnStakingTx := new(transaction.TxVersion2)
-	isBurned, _, amount, tokenID, err := txData.GetTxBurnData(blockGenerator.chain, view.GetBeaconHeight())
+	isBurned, burnCoin, tokenID, err := txData.GetTxBurnData()
 	if err != nil {
 		return nil, errors.New("Error Cannot get burn data from tx")
 	}
@@ -69,11 +69,13 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		return nil, errors.New("Error Staking tx should transfer PRV only")
 	}
 
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(amount, keyWallet.KeySet.PaymentAddress)
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(burnCoin.GetValue(), keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
+	// must set shared random to validate the coorrect of mint coin
+	returnStakingMeta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
 	err = returnStakingTx.InitTxSalary(
 		otaCoin,
 		blkProducerPrivateKey,

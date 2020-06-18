@@ -832,7 +832,6 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 	isPrivacy := proof.IsPrivacy()
 
 	if isPrivacy {
-
 		if !proof.aggregatedRangeProof.ValidateSanity() {
 			return false, errors.New("validate sanity Aggregated range proof failed")
 		}

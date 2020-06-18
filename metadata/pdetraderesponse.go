@@ -68,8 +68,10 @@ func (iRes *PDETradeResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
+	insts := mintData.Insts
+	instUsed := mintData.InstsUsed
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PDETradeRequest instruction
 			continue
@@ -133,7 +135,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		isMinted, pk, txRandom, paidAmount, assetID, err := tx.GetTxMintData()
+		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
 		if err != nil {
 			Logger.log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
 			continue
@@ -142,6 +144,8 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 			Logger.log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
 			continue
 		}
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
 		if len(receiverTxRandomFromInst) > 0 {
 			txRandomBFromInst, err := base58.Decode(receiverTxRandomFromInst)
 			if err != nil {
@@ -153,6 +157,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 				Logger.log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
 				continue
 			}
+			txRandom := mintCoin.(*coin.CoinV2).GetTxRandom()
 			if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
 				receivingAmtFromInst != paidAmount ||
 				!bytes.Equal(txRandom[:],txRandomFromInst[:]) ||

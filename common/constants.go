@@ -78,7 +78,7 @@ const (
 	PendingRole    = "pending"
 	SyncingRole    = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole    = "waiting"
-	MaxShardNumber = 2
+	MaxShardNumber = 1
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"

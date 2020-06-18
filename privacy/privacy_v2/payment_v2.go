@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -272,10 +273,21 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	}
 
 	// check output coins with privacy
-	for i := 0; i < len(proof.GetOutputCoins()); i++ {
-		if !proof.GetOutputCoins()[i].GetPublicKey().PointValid() {
+	duplicatePublicKeys := make(map[string]bool)
+	outputCoins := proof.GetOutputCoins()
+	for i := 0; i < len(outputCoins); i++ {
+		fmt.Print(outputCoins[i].GetPublicKey().ToBytesS())
+		if !outputCoins[i].GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
 		}
+
+
+		pubkeyStr := string(outputCoins[i].GetPublicKey().ToBytesS())
+		if _, ok := duplicatePublicKeys[pubkeyStr]; ok {
+			return false, errors.New("Cannot have duplicate publickey ")
+		}
+		duplicatePublicKeys[pubkeyStr] = true
+
 		if !proof.GetOutputCoins()[i].GetCommitment().PointValid() {
 			return false, errors.New("validate sanity Coin commitment of output coin failed")
 		}

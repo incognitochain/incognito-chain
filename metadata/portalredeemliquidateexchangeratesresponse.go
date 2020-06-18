@@ -79,19 +79,10 @@ func (iRes *PortalRedeemLiquidateExchangeRatesResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-	tx Transaction,
-	chainRetriever ChainRetriever,
-	ac *AccumulatedValues,
-	shardViewRetriever ShardViewRetriever,
-	beaconViewRetriever BeaconViewRetriever,
-) (bool, error) {
+func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
+	insts := mintData.Insts
+	instUsed := mintData.InstsUsed
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PortalRedeemLiquidateExchangeRatesMeta response instruction
 			continue

@@ -75,8 +75,8 @@ func (pc PDEWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever,
 		return false, false, errors.New("Wrong request info's withdrawer address")
 	}
 
-	if ok, err := tx.CheckAuthorizedSender(withdrawerAddr.Pk); err != nil {
-		fmt.Println("Check authorized sender result:", ok, err)
+	if ok, err := tx.CheckAuthorizedSender(withdrawerAddr.Pk); err != nil || !ok {
+		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}
 
@@ -107,7 +107,7 @@ func (pc PDEWithdrawalRequest) Hash() *common.Hash {
 	record += pc.WithdrawalToken1IDStr
 	record += pc.WithdrawalToken2IDStr
 	record += strconv.FormatUint(pc.WithdrawalShareAmt, 10)
-	if pc.Sig != nil && len(pc.Sig) == 0 {
+	if pc.Sig != nil && len(pc.Sig) != 0 {
 		record += string(pc.Sig)
 	}
 	// final hash
