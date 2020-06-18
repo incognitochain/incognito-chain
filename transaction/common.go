@@ -439,27 +439,21 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 }
 
 type txTokenJsonDataVersion struct {
-	Tx struct {
-		Version  int8   `json:"Version"`
-	}
+	Version  int8   `json:"Version"`
 }
 
 func NewTransactionTokenFromJsonBytes(data []byte) (TxTokenInterface, error) {
-	txTokenJsonVersion := new(txTokenJsonDataVersion)
-	if err := json.Unmarshal(data, txTokenJsonVersion); err != nil {
+	txJsonVersion := new(txJsonDataVersion)
+	if err := json.Unmarshal(data, txJsonVersion); err != nil {
 		return nil, err
 	}
-	fmt.Println(string(data))
-	fmt.Println(txTokenJsonVersion)
-	fmt.Println(txTokenJsonVersion.Tx.Version)
-	fmt.Println(txTokenJsonVersion.Tx.Version == TxVersion2Number)
-	if txTokenJsonVersion.Tx.Version == TxVersion1Number {
+	if txJsonVersion.Version == TxVersion1Number {
 		tx := new(TxTokenVersion1)
 		if err := json.Unmarshal(data, tx); err != nil {
 			return nil, err
 		}
 		return tx, nil
-	} else if txTokenJsonVersion.Tx.Version == TxVersion2Number || txTokenJsonVersion.Tx.Version == TxConversionVersion12Number {
+	} else if txJsonVersion.Version == TxVersion2Number || txJsonVersion.Version == TxConversionVersion12Number {
 		tx := new(TxTokenVersion2)
 		if err := json.Unmarshal(data, tx); err != nil {
 			fmt.Println("????????????? what")

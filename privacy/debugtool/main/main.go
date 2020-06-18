@@ -15,8 +15,8 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//b, _ := tool.CreateAndSendTransaction()
 	//fmt.Println(string(b))
 
-	b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[1] )
-	fmt.Println(string(b))
+	//b, _ := tool.CreateAndSendPrivacyCustomTokenTransaction(privateKeys[1] )
+	//fmt.Println(string(b))
 	//
 	//b, _ := tool.ListPrivacyCustomToken()
 	//res := new(debugtool.ListCustomToken)
@@ -24,17 +24,17 @@ func testInitToken(tool *debugtool.DebugTool, privateKeys []string, privateSeeds
 	//fmt.Println(len(res.Result.ListCustomToken))
 	//tokenID := res.Result.ListCustomToken[0].ID
 	//fmt.Println(string(tokenID))
-	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[0], privateKeys[1], tokenID, "4000")
+	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[1], privateKeys[2], tokenID, "4000")
 	//fmt.Println(string(b))
 
 	//b, _ := tool.ListPrivacyCustomToken()
 	//res := new(debugtool.ListCustomToken)
 	//_ = json.Unmarshal(b, res)
 	//tokenID := res.Result.ListCustomToken[0].ID
-	////b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
-	////fmt.Println(string(b))
+	//b, _ = tool.TransferPrivacyCustomToken(privateKeys[2], privateKeys[3], tokenID, "1000")
+	//fmt.Println(string(b))
 	//
-	//b, _ = tool.GetBalancePrivacyCustomToken(privateKeys[0], tokenID)
+	//b, _ = tool.GetBalancePrivacyCustomToken(privateKeys[2], tokenID)
 	//fmt.Println(string(b))
 }
 

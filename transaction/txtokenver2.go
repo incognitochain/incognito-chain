@@ -2,12 +2,12 @@ package transaction
 
 import (
 	"fmt"
-	"errors"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -142,7 +142,7 @@ func (txToken *TxTokenVersion2) initToken(params *TxPrivacyTokenInitParams) erro
 				nil,
 				nil,
 			)
-			txNormal := new(TxTokenVersion2)
+			txNormal := new(TxVersion2)
 			if err := txNormal.Init(txParams); err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
@@ -180,61 +180,29 @@ func (tx *TxVersion2) proveWithMessage(params *TxPrivacyInitParams, hashedTokenM
 
 	// Get Hash of the whole txToken then sign on it
 	message := common.HashH(append(tx.Hash()[:], hashedTokenMessage...))
+	fmt.Println("Message hash", message)
+	fmt.Println("Message hash", message)
+	fmt.Println("Message hash", message)
 	err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
 	return err
 }
 
 // Special kind of function that init and signOnMessage onto the message, not on txHash
-func (tx *TxVersion2) initWithMessage(paramsInterface interface{}, hashedTokenMessage []byte) error {
-	params, ok := paramsInterface.(*TxPrivacyInitParams)
-	if !ok {
-		return errors.New("params of tx Init is not TxPrivacyInitParam")
-	}
-
+func (tx *TxVersion2) initWithMessage(params *TxPrivacyInitParams, hashedTokenMessage []byte) error {
 	Logger.Log.Debugf("CREATING TX........\n")
-	if err := validateTxParams(params); err != nil {
-		return err
-	}
-
-	// Init tx and params (tx and params will be changed)
-	if err := tx.initializeTxAndParams(params); err != nil {
-		return err
-	}
-
-	// Check if this tx is nonPrivacyNonInput
-	// Case 1: tx ptoken transfer with ptoken fee
-	// Case 2: tx Reward
-	// If it is non privacy non input then return
-	if check, err := tx.isNonPrivacyNonInput(params); check {
-		return err
-	}
-
 	if err := tx.proveWithMessage(params, hashedTokenMessage); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (txToken *TxTokenVersion2) initPRVFee(params *TxPrivacyTokenInitParams) error {
-	// init data for tx PRV for fee
-	txPrivacyParams := NewTxPrivacyInitParams(
-		params.senderKey,
-		params.paymentInfo,
-		params.inputCoin,
-		params.feeNativeCoin,
-		params.hasPrivacyCoin,
-		params.transactionStateDB,
-		nil,
-		params.metaData,
-		params.info,
-	)
-	feeTx := new(TxVersion2)
+func (txToken *TxTokenVersion2) initPRVFee(feeTx * TxVersion2, params *TxPrivacyInitParams) error {
 	txTokenDataHash, err := txToken.TxPrivacyTokenData.Hash()
 	if err != nil {
 		Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 		return err
 	}
-	if err := feeTx.initWithMessage(txPrivacyParams, txTokenDataHash[:]); err != nil {
+	if err := feeTx.initWithMessage(params, txTokenDataHash[:]); err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
@@ -250,8 +218,34 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 		return errors.New("Cannot init TxCustomTokenPrivacy because params is not correct")
 	}
 
-	fmt.Println("Get coin length in TxTokenVersion2 init")
-	fmt.Println(len(params.inputCoin))
+	// Check validate params
+	txPrivacyParams := NewTxPrivacyInitParams(
+		params.senderKey,
+		params.paymentInfo,
+		params.inputCoin,
+		params.feeNativeCoin,
+		params.hasPrivacyCoin,
+		params.transactionStateDB,
+		nil,
+		params.metaData,
+		params.info,
+	)
+	if err := validateTxParams(txPrivacyParams); err != nil {
+		return err
+	}
+	// Init tx and params (tx and params will be changed)
+	tx := new(TxVersion2)
+	if err := tx.initializeTxAndParams(txPrivacyParams); err != nil {
+		return err
+	}
+
+	// Check if this tx is nonPrivacyNonInput
+	// Case 1: tx ptoken transfer with ptoken fee
+	// Case 2: tx Reward
+	// If it is non privacy non input then return
+	if check, err := tx.isNonPrivacyNonInput(txPrivacyParams); check {
+		return err
+	}
 
 	// check tx size
 	limitFee := uint64(0)
@@ -268,7 +262,7 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 	}
 
 	// Init PRV Fee on the whole transaction
-	if err := txToken.initPRVFee(params); err != nil {
+	if err := txToken.initPRVFee(tx, txPrivacyParams); err != nil {
 		Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
@@ -369,7 +363,26 @@ func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, s
 
 	}
 	message := common.HashH(append(txFee.Hash()[:], txTokenDataHash[:]...))
+	fmt.Println("Verifying Message hash", message)
+	fmt.Println("Verifying Message hash", message)
+	fmt.Println("Verifying Message hash", message)
 	return mlsag.Verify(mlsagSignature, ring, message[:])
+}
+
+func (txToken TxTokenVersion2) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+	// check for proof, signature ...
+	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
+		return false, err
+	}
+	meta := txToken.GetMetadata()
+	if meta != nil {
+		validateMetadata := meta.ValidateMetadataByItself()
+		if !validateMetadata {
+			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
+		}
+		return validateMetadata, nil
+	}
+	return true, nil
 }
 
 func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {

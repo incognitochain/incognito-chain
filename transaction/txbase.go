@@ -105,7 +105,6 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	return params
 }
 
-// Don't change to pointer. Because if not splitting to function like this (put this in Init func), the performance still be the same. If change to pointer it could be wrong.
 func getTxInfo(paramInfo []byte) ([]byte, error) {
 	if lenTxInfo := len(paramInfo); lenTxInfo > MaxSizeInfo {
 		return []byte{}, NewTransactionErr(ExceedSizeInfoTxError, nil)

@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -183,6 +184,27 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 		return NewTransactionErr(PrivacyTokenTxTypeNotHandleError, errors.New("can't handle this TokenTxType"))
 	}
 	return nil
+}
+
+func (txToken TxTokenVersion1) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+	// no need to check for tx init token
+	if txToken.TxPrivacyTokenData.Type == CustomTokenInit {
+		return txToken.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
+	}
+	// check for proof, signature ...
+	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
+		return false, err
+	}
+	// check for metadata
+	meta := txToken.GetMetadata()
+	if meta != nil {
+		validateMetadata := meta.ValidateMetadataByItself()
+		if !validateMetadata {
+			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
+		}
+		return validateMetadata, nil
+	}
+	return true, nil
 }
 
 func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {

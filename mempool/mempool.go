@@ -504,6 +504,17 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
+		fmt.Println("Is this tx txtoken?")
+		fmt.Println(tx)
+		fmt.Println(tx)
+		fmt.Println(tx)
+		fmt.Println(tx)
+		_, ok := tx.(transaction.TxTokenInterface)
+		if !ok {
+			fmt.Println("Not")
+		} else {
+			fmt.Println("The fck?")
+		}
 		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)

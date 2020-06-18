@@ -12,11 +12,21 @@ import (
 	"strconv"
 )
 
+func parseTxNormal(txInterface interface{}) (metadata.Transaction, error) {
+	txBytes := []byte{}
+	txBytes, err := json.Marshal(txInterface)
+	if err != nil {
+		Logger.Log.Errorf("Cannot parse tx interface to bytes, err %v", err)
+		return nil, err
+	}
+	return NewTransactionFromJsonBytes(txBytes)
+}
+
 func (txData *TxPrivacyTokenData) UnmarshalJSON(data []byte) error {
 	// For rolling version
 	type Alias TxPrivacyTokenData
 	temp := &struct {
-		TxNormal    []byte
+		TxNormal    interface{}
 		*Alias
 	}{
 		Alias: (*Alias)(txData),
@@ -27,7 +37,7 @@ func (txData *TxPrivacyTokenData) UnmarshalJSON(data []byte) error {
 		return NewTransactionErr(UnexpectedError, err)
 	}
 
-	if txData.TxNormal, err = NewTransactionFromJsonBytes(temp.TxNormal); err != nil {
+	if txData.TxNormal, err = parseTxNormal(temp.TxNormal); err != nil {
 		Logger.Log.Error(err)
 		return err
 	}

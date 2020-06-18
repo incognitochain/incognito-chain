@@ -108,7 +108,7 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 				"12Rs5tQTYkWGzEdPNo2GRA1tjZ5aDCTYUyzXf6SJFq89QnY3US3ZzYSjWHVmmLUa6h8bdHHUuVYoR3iCVRoYDCNn1AfP6pxTz5YL8Aj":2000000000,
 				"12S33dTF3aVsuSxY7iniK3UULUYyLMZumExKm6DPfsqnNepGjgDZqkQCDp1Z7Te9dFKQp7G2WeeYqCr5vcDCfrA3id4x5UvL4yyLrrT":2000000000,
 				"12RysvT327ju2GTJ1RmquyRAQzPK1wezr7CCpraBLQ2VoHwz91n3rMeDFpcDiipBfmawrzTGrheEz4TrtZ5WFt8pYXkqiM5oXqucRRE":2000000000
-			}, 
+			},
 			1,   
 			1
 		],
