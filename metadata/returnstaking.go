@@ -49,6 +49,7 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, cha
 			if autoStakingList[key] {
 				return false, errors.New("Can not return staking amount for candidate, who want to restaking.")
 			}
+			//TODO: check staking amount = tx amount
 			return true, nil
 		}
 	}

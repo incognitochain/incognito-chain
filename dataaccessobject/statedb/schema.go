@@ -41,7 +41,6 @@ var (
 	burnPrefix                         = []byte("burn-")
 
 	// portal
-	//A
 	portalFinaExchangeRatesStatePrefix            = []byte("portalfinalexchangeratesstate-")
 	portalExchangeRatesRequestStatusPrefix        = []byte("portalexchangeratesrequeststatus-")
 	portalPortingRequestStatusPrefix              = []byte("portalportingrequeststatus-")
@@ -50,20 +49,21 @@ var (
 	portalLiquidationTpExchangeRatesStatusPrefix  = []byte("portalliquidationtpexchangeratesstatus-")
 	portalLiquidationExchangeRatesPoolPrefix      = []byte("portalliquidationexchangeratespool-")
 	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
+	portalTopUpWaitingPortingStatusPrefix         = []byte("portaltopupwaitingportingstatus-")
 	portalLiquidationRedeemRequestStatusPrefix    = []byte("portalliquidationredeemrequeststatus-")
 	portalWaitingPortingRequestPrefix             = []byte("portalwaitingportingrequest-")
+	portalCustodianStatePrefix                    = []byte("portalcustodian-")
+	portalWaitingRedeemRequestsPrefix             = []byte("portalwaitingredeemrequest-")
+	portalMatchedRedeemRequestsPrefix             = []byte("portalmatchedredeemrequest-")
 
-	//B
-	portalCustodianStatePrefix        = []byte("portalcustodian-")
-	portalWaitingRedeemRequestsPrefix = []byte("portalwaitingredeemrequest-")
-
-	portalStatusPrefix                        = []byte("portalstatus-")
-	portalCustodianDepositStatusPrefix        = []byte("custodiandeposit-")
-	portalRequestPTokenStatusPrefix           = []byte("requestptoken-")
-	portalRedeemRequestStatusPrefix           = []byte("redeemrequest-")
-	portalRedeemRequestStatusByTxReqIDPrefix  = []byte("redeemrequestbytxid-")
-	portalRequestUnlockCollateralStatusPrefix = []byte("requestunlockcollateral-")
-	portalRequestWithdrawRewardStatusPrefix   = []byte("requestwithdrawportalreward-")
+	portalStatusPrefix                           = []byte("portalstatus-")
+	portalCustodianDepositStatusPrefix           = []byte("custodiandeposit-")
+	portalRequestPTokenStatusPrefix              = []byte("requestptoken-")
+	portalRedeemRequestStatusPrefix              = []byte("redeemrequest-")
+	portalRedeemRequestStatusByTxReqIDPrefix     = []byte("redeemrequestbytxid-")
+	portalRequestUnlockCollateralStatusPrefix    = []byte("requestunlockcollateral-")
+	portalRequestWithdrawRewardStatusPrefix      = []byte("requestwithdrawportalreward-")
+	portalReqMatchingRedeemStatusByTxReqIDPrefix = []byte("reqmatchredeembytxid-")
 
 	// liquidation for portal
 	portalLiquidateCustodianRunAwayPrefix = []byte("portalliquidaterunaway-")
@@ -259,7 +259,6 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 }
 
 // Portal
-//A
 func GetFinalExchangeRatesStatePrefix() []byte {
 	h := common.HashH(portalFinaExchangeRatesStatePrefix)
 	return h[:][:prefixHashKeyLength]
@@ -289,6 +288,10 @@ func PortalLiquidationCustodianDepositStatusPrefix() []byte {
 	return portalLiquidationCustodianDepositStatusPrefix
 }
 
+func PortalTopUpWaitingPortingStatusPrefix() []byte {
+	return portalTopUpWaitingPortingStatusPrefix
+}
+
 func PortalLiquidationRedeemRequestStatusPrefix() []byte {
 	return portalLiquidationRedeemRequestStatusPrefix
 }
@@ -303,7 +306,6 @@ func GetPortalLiquidationPoolPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-//B
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)
 	return h[:][:prefixHashKeyLength]
@@ -311,6 +313,11 @@ func GetPortalCustodianStatePrefix() []byte {
 
 func GetWaitingRedeemRequestPrefix() []byte {
 	h := common.HashH(portalWaitingRedeemRequestsPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetMatchedRedeemRequestPrefix() []byte {
+	h := common.HashH(portalMatchedRedeemRequestsPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -329,8 +336,8 @@ func GetLockedCollateralStatePrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetRewardFeatureStatePrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...))
+func GetRewardFeatureStatePrefix(epoch uint64) []byte {
+	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", epoch))...))
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -364,6 +371,10 @@ func PortalLiquidateCustodianRunAwayPrefix() []byte {
 
 func PortalExpiredPortingReqPrefix() []byte {
 	return portalExpiredPortingReqPrefix
+}
+
+func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
+	return portalReqMatchingRedeemStatusByTxReqIDPrefix
 }
 
 var _ = func() (_ struct{}) {

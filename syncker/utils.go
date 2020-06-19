@@ -83,6 +83,9 @@ func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]co
 	}
 
 	for {
+		if currentFinalHash == finalBlock.Hash().String() {
+			return
+		}
 		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
 		finalBlock = byHash[finalBlock.GetPrevHash().String()]
 		if finalBlock == nil || finalBlock.Hash().String() == currentFinalHash {

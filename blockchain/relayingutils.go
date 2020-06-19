@@ -49,6 +49,7 @@ func (rChain *relayingChain) getActions() [][]string {
 func (rChain *relayingChain) putAction(action []string) {
 	rChain.actions = append(rChain.actions, action)
 }
+
 // buildHeaderRelayingInst builds a new instruction from action received from ShardToBeaconBlock
 func (rChain *relayingChain) buildHeaderRelayingInst(
 	senderAddressStr string,
@@ -175,7 +176,7 @@ func NewPortalManager() *portalManager {
 	}
 }
 
-type RelayingHeaderChainState struct{
+type RelayingHeaderChainState struct {
 	BNBHeaderChain *bnbrelaying.BNBChainState
 	BTCHeaderChain *btcrelaying.BlockChain
 }
@@ -188,7 +189,6 @@ func (bc *BlockChain) InitRelayingHeaderChainStateFromDB() (*RelayingHeaderChain
 		BTCHeaderChain: btcChain,
 	}, nil
 }
-
 
 // GetBNBChainState gets bnb header chain state
 func (bc *BlockChain) GetBNBChainState() *bnbrelaying.BNBChainState {

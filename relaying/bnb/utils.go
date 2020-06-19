@@ -3,8 +3,10 @@ package bnb
 import (
 	"encoding/hex"
 	"errors"
+	client2 "github.com/binance-chain/go-sdk/client"
 	"github.com/binance-chain/go-sdk/common/bech32"
 	"github.com/binance-chain/go-sdk/common/types"
+	"github.com/binance-chain/go-sdk/keys"
 	tdmtypes "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/version"
 	"time"
@@ -31,6 +33,29 @@ func GetAccAddressString(accAddress *types.AccAddress, chainID string) (string, 
 	default:
 		return "", errors.New("Invalid network chainID")
 	}
+}
+
+func IsValidBNBAddress(bnbAddr string, chainID string) bool {
+	prefix, keyBytes, err := bech32.DecodeAndConvert(bnbAddr)
+	if err != nil || len(keyBytes) != types.AddrLen {
+		return false
+
+	}
+	if chainID == TestnetBNBChainID && prefix != types.TestNetwork.Bech32Prefixes() {
+		return false
+	}
+	if chainID == MainnetBNBChainID && prefix != types.ProdNetwork.Bech32Prefixes() {
+		return false
+	}
+
+	return true
+}
+
+func generateBNBAddress(network types.ChainNetwork) string {
+	km, _ := keys.NewKeyManager()
+	client, _ := client2.NewDexClient("dex.binance.org", network, km) // api string can be "https://testnet-dex.binance.org" for testnet
+	accn := client.GetKeyManager().GetAddr().String()
+	return accn
 }
 
 func GetGenesisBNBHeaderBlockHeight(chainID string) (int64, error) {
@@ -159,7 +184,3 @@ func getGenesisBNBBlockTestnet() *tdmtypes.Block {
 		LastCommit: &tdmtypes.Commit{},
 	}
 }
-
-
-
-
