@@ -566,7 +566,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		maxShardCommitteeSize := view.MaxShardCommitteeSize
 		minShardCommitteeSize := view.MinShardCommitteeSize
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
-		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
+		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapInstruction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
 		if err != nil {
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err

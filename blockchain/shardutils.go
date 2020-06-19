@@ -18,21 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-//=======================================BEGIN SHARD BLOCK UTIL
-func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID byte) [][]string {
-	assignInstruction := [][]string{}
-	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == "assign" && l[2] == "shard" {
-				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
-					assignInstruction = append(assignInstruction, l)
-				}
-			}
-		}
-	}
-	return assignInstruction
-}
-
 func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
@@ -87,19 +72,16 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 			crossIDs = append(crossIDs, byte(k))
 		}
 	}
-
 	return crossIDs
 }
 
-/*
-	Create Swap Action
-	Return param:
-	#1: swap instruction
-	#2: new pending validator list after swapped
-	#3: new committees after swapped
-	#4: error
-*/
-func CreateSwapAction(
+// CreateSwapInstruction creates swap instruction and return new validator list
+// Return param:
+// #1: swap instruction
+// #2: new pending validator list after swapped
+// #3: new committees after swapped
+// #4: error
+func CreateSwapInstruction(
 	pendingValidator []string,
 	commitees []string,
 	maxCommitteeSize int,
@@ -122,14 +104,12 @@ func CreateSwapAction(
 	return swapInstruction, newPendingValidator, newShardCommittees, nil
 }
 
-/*
-	Action Generate From Transaction:
-	- Stake
-		+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-	- Stop Auto Staking
-		+ ["stopautostaking" "pubkey1,pubkey2,..."]
-*/
+// CreateShardInstructionsFromTransactionAndInstruction create instruction from transactions in shard block
+// Stake:
+//  ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
+//	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
+// Stop Auto Staking:
+//	["stopautostaking" "pubkey1,pubkey2,..."]
 func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
@@ -141,11 +121,6 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	stakeShardAutoStaking := []string{}
 	stakeBeaconAutoStaking := []string{}
 	stopAutoStaking := []string{}
-	// @Notice: move build action from metadata into one loop
-	//instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
-	//if err != nil {
-	//	return nil, err
-	//}
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
@@ -226,21 +201,6 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	return instructions, nil
 }
 
-// build actions from txs and ins at shard
-func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardID byte) ([][]string, error) {
-	actions := [][]string{}
-	for _, tx := range txs {
-		meta := tx.GetMetadata()
-		if meta != nil {
-			actionPairs, err := meta.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
-			if err != nil {
-				continue
-			}
-			actions = append(actions, actionPairs...)
-		}
-	}
-	return actions, nil
-}
 func checkReturnStakingTxExistence(txId string, shardBlock *ShardBlock) bool {
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadata() != nil {
@@ -298,8 +258,9 @@ func filterReqTxs(
 	return res
 }
 
-//=======================================END SHARD BLOCK UTIL
 //====================New Merkle Tree================
+// CreateShardTxRoot create root hash for cross shard transaction
+// this root hash will be used be received shard
 func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
 	//calculate output coin hash for each shard
 	crossShardDataHash := getCrossShardDataHash(txList)
@@ -322,13 +283,11 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 	return merklePathShard, merkleShardRoot
 }
 
-/*
-	Calculate Final Hash as Hash of:
-		1. CrossTransactionFinalHash
-		2. TxTokenDataVoutFinalHash
-		3. CrossTxTokenPrivacyData
-	These hashes will be calculated as comment in getCrossShardDataHash function
-*/
+// VerifyCrossShardBlockUTXO Calculate Final Hash as Hash of:
+//	1. CrossTransactionFinalHash
+//	2. TxTokenDataVoutFinalHash
+//	3. CrossTxTokenPrivacyData
+// These hashes will be calculated as comment in getCrossShardDataHash function
 func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.Hash) bool {
 	var outputCoinHash common.Hash
 	var txTokenDataHash common.Hash
@@ -343,36 +302,33 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 	return Merkle{}.VerifyMerkleRootFromMerklePath(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
 
-//====================End New Merkle Tree================
-/*
-	Helper function: group OutputCoin into shard and get the hash of each group
-	Return value
-		- Array of hash created from 256 group cross shard data hash
-		- Length array is 256
-		- Value is sorted as shardID from low to high
-		- ShardID which have no outputcoin received hash of emptystring value
-
-	Hash Procedure:
-		- For each shard:
-			CROSS OUTPUT COIN
-			+ Get outputcoin and append to a list of that shard
-			+ Calculate value for Hash:
-				* if receiver shard has no outcoin then received hash value of empty string
-				* if receiver shard has >= 1 outcoin then concatenate all outcoin bytes value then hash
-				* At last, we compress all cross out put coin into a CrossOutputCoinFinalHash
-			TXTOKENDATA
-			+ Do the same as above
-
-			=> Then Final Hash of each shard is Hash of value in this order:
-				1. CrossOutputCoinFinalHash
-				2. TxTokenDataVoutFinalHash
-	TxTokenOut DataStructure
-		- Use Only One TxNormalTokenData for one TokenID
-		- Vouts of one tokenID from many transaction will be compress into One Vouts List
-		- Using Key-Value structure for accessing one token ID data:
-			key: token ID
-			value: TokenData of that token
-*/
+//  getCrossShardDataHash
+//	Helper function: group OutputCoin into shard and get the hash of each group
+//	Return value
+//	 - Array of hash created from 256 group cross shard data hash
+//	 - Length array is 256
+//	 - Value is sorted as shardID from low to high
+//	 - ShardID which have no outputcoin received hash of emptystring value
+//
+//	Hash Procedure:
+//	- For each shard:
+//	   CROSS OUTPUT COIN
+//		+ Get outputcoin and append to a list of that shard
+//		+ Calculate value for Hash:
+//		  * if receiver shard has no outcoin then received hash value of empty string
+//		  * if receiver shard has >= 1 outcoin then concatenate all outcoin bytes value then hash
+//	      * At last, we compress all cross out put coin into a CrossOutputCoinFinalHash
+//	   TXTOKENDATA
+//		+ Do the same as above
+//	   => Then Final Hash of each shard is Hash of value in this order:
+//		1. CrossOutputCoinFinalHash
+//		2. TxTokenDataVoutFinalHash
+//	TxTokenOut DataStructure
+//	- Use Only One TxNormalTokenData for one TokenID
+//	- Vouts of one tokenID from many transaction will be compress into One Vouts List
+//	- Using Key-Value structure for accessing one token ID data:
+//	  key: token ID
+//	  value: TokenData of that token
 func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]privacy.OutputCoin, common.MaxShardNumber)
@@ -437,7 +393,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	return combinedHash
 }
 
-// helper function to get cross data (send to a shard) from list of transaction:
+// getCrossShardData get cross data (send to a shard) from list of transaction:
 // 1. (Privacy) PRV: Output coin
 // 2. Tx Custom Token: Tx Token Data
 // 3. Privacy Custom Token: Token Data + Output coin
@@ -619,5 +575,3 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 	}
 	return newHash.IsEqual(res)
 }
-
-//=======================================END CROSS SHARD UTIL
