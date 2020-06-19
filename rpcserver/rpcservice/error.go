@@ -86,6 +86,8 @@ const (
 	GetReqRedeemStatusError
 	GetRequestWithdrawRewardStatusError
 	GetPortalRewardError
+	GetReqMatchingRedeemStatusError
+	GetReqRedeemFromLiquidationPoolStatusError
 
 	GetCustodianLiquidationStatusError
 	GetTpExchangeRatesLiquidationError
@@ -93,6 +95,9 @@ const (
 	GetExchangeRatesLiquidationPoolError
 
 	GetAmountNeededForCustodianDepositLiquidationError
+	GetCustodianTopupStatusError
+	GetCustodianTopupWaitingPortingStatusError
+	GetAmountTopUpWaitingPortingError
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
@@ -185,24 +190,24 @@ var ErrCodeMessage = map[int]struct {
 
 	//portal
 	GetFinalExchangeRatesError:                         {-9000, "Get get final exchange rates error"},
-	GetExchangeRatesIsEmpty:                            {-9001, "Exchange rates is empty"},
-	GetReqPTokenStatusError:                            {-9002, "Get request ptoken status error"},
-	GetCustodianDepositError:                           {-9003, "Get custodian deposit status error"},
-	GetPortalStateError:                                {-9004, "Get portal state error"},
-	GetPortingRequestError:                             {-9005, "Get portal request error"},
-	GetPortingRequestIsEmpty:                           {-9006, "Get portal request is empty"},
-	GetReqUnlockCollateralStatusError:                  {-9007, "Get status of request unlock collateral error"},
-	GetReqRedeemStatusError:                            {-9008, "Get status of request redeem by redeemId error"},
-	GetCustodianLiquidationStatusError:                 {-9009, "Get status of custodian liquidation error"},
-	GetAmountNeededForCustodianDepositLiquidationError: {-9010, "Get amount needed for custodian deposit liquidation error"},
-	GetTpExchangeRatesLiquidationError:                 {-9011, "Get top percentile exchange rates liquidation error"},
-	GetTpExchangeRatesLiquidationByTokenIdError:        {-9012, "Get top percentile exchange rates by token id error"},
-	GetExchangeRatesLiquidationPoolError:               {-9013, "Get exchange rates liquidation pool error"},
-	GetCustodianWithdrawError:                          {-9014, "Get custodian withdraw error"},
-	GetPortalRewardError:                               {-9015, "Get portal reward error"},
-	GetRequestWithdrawRewardStatusError:                {-9016, "Get request withdraw portal reward error"},
-	ConvertExchangeRatesError:                          {-9017, "Converting exchange rates error"},
-	GetPortingRequestFeesError:                         {-9018, "Get porting request fees error"},
+	GetReqPTokenStatusError:                            {-9001, "Get request ptoken status error"},
+	GetCustodianDepositError:                           {-9002, "Get custodian deposit status error"},
+	GetPortalStateError:                                {-9003, "Get portal state error"},
+	GetPortingRequestError:                             {-9004, "Get portal request error"},
+	GetReqUnlockCollateralStatusError:                  {-9005, "Get status of request unlock collateral error"},
+	GetReqRedeemStatusError:                            {-9006, "Get status of request redeem by redeemId error"},
+	GetAmountNeededForCustodianDepositLiquidationError: {-9007, "Get amount needed for custodian deposit liquidation error"},
+	GetExchangeRatesLiquidationPoolError:               {-9008, "Get exchange rates liquidation pool error"},
+	GetCustodianWithdrawError:                          {-9009, "Get custodian withdraw error"},
+	GetPortalRewardError:                               {-9010, "Get portal reward error"},
+	GetRequestWithdrawRewardStatusError:                {-9011, "Get request withdraw portal reward error"},
+	ConvertExchangeRatesError:                          {-9012, "Converting exchange rates error"},
+	GetPortingRequestFeesError:                         {-9013, "Get porting request fees error"},
+	GetReqMatchingRedeemStatusError:                    {-9014, "Get req matching redeem status error"},
+	GetCustodianTopupStatusError:                       {-9015, "Get custodian top up status error"},
+	GetCustodianTopupWaitingPortingStatusError:         {-9016, "Get custodian top up for waiting porting status error"},
+	GetAmountTopUpWaitingPortingError:                  {-9017, "Get amount top up for waiting porting error"},
+	GetReqRedeemFromLiquidationPoolStatusError:         {-9018, "Get redeem request form liquidation pool status error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

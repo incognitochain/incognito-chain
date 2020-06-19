@@ -263,7 +263,6 @@ func (serverObj *Server) NewServer(
 			os.Exit(2)
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
-		Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.BtcClientIP, cfg.BtcClientPort, cfg.BtcClientUsername, cfg.BtcClientPassword)
 	}
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.syncker, cPendingTxs, cRemovedTxs)
@@ -336,6 +335,7 @@ func (serverObj *Server) NewServer(
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
+		GenesisParams:   blockchain.GenesisParam,
 	})
 	if err != nil {
 		return err
@@ -2338,16 +2338,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	for _, chain := range s.blockChain.ShardChain {
 		for _, v := range chain.GetCommittee() {
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
-				for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] {
-					if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // and in shard pending committee in beacon state
-						return common.CommitteeRole, chain.GetShardID()
-					}
-				}
-				for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] {
-					if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // or in shard committee in beacon state
-						return common.CommitteeRole, chain.GetShardID()
-					}
-				}
+				return common.CommitteeRole, chain.GetShardID()
 			}
 		}
 

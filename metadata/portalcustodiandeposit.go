@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -113,12 +114,17 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 	if len(custodianDeposit.RemoteAddresses) == 0 {
 		return false, false, errors.New("remote addresses should be at least one")
 	}
+
 	for tokenID, remoteAddr := range custodianDeposit.RemoteAddresses {
 		if !common.IsPortalToken(tokenID) {
 			return false, false, errors.New("TokenID in remote address is invalid")
 		}
 		if len(remoteAddr) == 0 {
 			return false, false, errors.New("Remote address is invalid")
+		}
+		chainID := GetChainIDByTokenID(tokenID, chainRetriever)
+		if !IsValidRemoteAddress(chainRetriever, remoteAddr, tokenID, chainID) {
+			return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
 		}
 	}
 

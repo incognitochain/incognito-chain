@@ -23,8 +23,9 @@ func (rfs *RewardFeatureState) AddTotalRewards(tokenID string, amount uint64) {
 	if rfs.totalRewards == nil {
 		rfs.totalRewards = make(map[string]uint64, 0)
 		rfs.totalRewards[tokenID] = amount
+	} else {
+		rfs.totalRewards[tokenID] += amount
 	}
-	rfs.totalRewards[tokenID] += amount
 }
 
 func (rfs *RewardFeatureState) ResetTotalRewardByTokenID(tokenID string) {

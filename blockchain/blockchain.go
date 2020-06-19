@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -45,6 +44,7 @@ type Config struct {
 	MemCache          *memcache.MemoryCache
 	Interrupt         <-chan struct{}
 	ChainParams       *Params
+	GenesisParams     *GenesisParams
 	RelayShards       []byte
 	NodeMode          string
 	BlockGen          *BlockGenerator
@@ -177,7 +177,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 func (blockchain *BlockChain) initBeaconState() error {
 	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain.GetBeaconChainDatabase())
+	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
@@ -347,10 +347,10 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 			return err
 		}
 		if i%100 == 0 {
-			log.Printf("Backup Shard %+v Block %+v", shardBlock.Header.ShardID, i)
+			Logger.log.Infof("Backup Shard %+v Block %+v", shardBlock.Header.ShardID, i)
 		}
 		if i == bestShardHeight-1 {
-			log.Printf("Finish Backup Shard %+v with Block %+v", shardBlock.Header.ShardID, i)
+			Logger.log.Infof("Finish Backup Shard %+v with Block %+v", shardBlock.Header.ShardID, i)
 		}
 	}
 	return nil
@@ -385,10 +385,10 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 			return err
 		}
 		if i%100 == 0 {
-			log.Printf("Backup Beacon Block %+v", i)
+			Logger.log.Infof("Backup Beacon Block %+v", i)
 		}
 		if i == bestBeaconHeight-1 {
-			log.Printf("Finish Backup Beacon with Block %+v", i)
+			Logger.log.Infof("Finish Backup Beacon with Block %+v", i)
 		}
 	}
 	return nil

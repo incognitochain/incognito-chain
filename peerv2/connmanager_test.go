@@ -15,6 +15,7 @@ import (
 )
 
 var testHighwayAddress = "/ip4/0.0.0.0/tcp/7337/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
+var testHighwayAddress2 = "/ip4/0.0.0.0/tcp/7338/p2p/Qmba4kphPTHc3bxsgXJ6aT5SvNT2FoCXq8pe4vHs7kVSZm"
 
 func TestDiscoverHighWay(t *testing.T) {
 	type args struct {
@@ -47,6 +48,7 @@ func TestDiscoverHighWay(t *testing.T) {
 
 // TestConnectAtStart makes sure connection is established at start-up time
 func TestConnectAtStart(t *testing.T) {
+	defer configTime()()
 	h, net := setupHost()
 	// net.On("Connectedness", mock.Anything).Return(network.NotConnected).Return(network.Connected)
 	setupConnectedness(net, []network.Connectedness{network.NotConnected, network.Connected})
@@ -61,9 +63,10 @@ func TestConnectAtStart(t *testing.T) {
 		discoverer:       discoverer,
 		stop:             make(chan int),
 		registerRequests: make(chan peer.ID, 1),
+		keeper:           NewAddrKeeper(),
 	}
 	go cm.keepHighwayConnection()
-	time.Sleep(11 * time.Second)
+	time.Sleep(200 * time.Millisecond)
 	close(cm.stop)
 
 	assert.Equal(t, 1, len(cm.registerRequests), "not connect at startup")
@@ -71,25 +74,67 @@ func TestConnectAtStart(t *testing.T) {
 
 // TestConnectWhenMaxedRetry checks if new highway is picked when failing to connect to old highway for some number of times
 func TestConnectWhenMaxedRetry(t *testing.T) {
+	defer configTime()()
+
 	h, net := setupHost()
 	setupConnectedness(net, []network.Connectedness{network.NotConnected, network.Connected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected})
 	var err error
 	h.On("Connect", mock.Anything, mock.Anything).Return(err)
 
-	hwAddrs := map[string][]rpcclient.HighwayAddr{"all": []rpcclient.HighwayAddr{rpcclient.HighwayAddr{Libp2pAddr: testHighwayAddress}}}
+	hwAddrs := map[string][]rpcclient.HighwayAddr{
+		"all": []rpcclient.HighwayAddr{
+			rpcclient.HighwayAddr{Libp2pAddr: testHighwayAddress},
+			rpcclient.HighwayAddr{Libp2pAddr: testHighwayAddress2},
+		},
+	}
 	discoverer := &mocks.HighwayDiscoverer{}
-	discoverer.On("DiscoverHighway", mock.Anything, mock.Anything).Return(hwAddrs, nil).Times(2)
+	discoverer.On("DiscoverHighway", mock.Anything, mock.Anything).Return(hwAddrs, nil).Times(10)
 	cm := &ConnManager{
 		LocalHost:        &Host{Host: h},
 		discoverer:       discoverer,
 		stop:             make(chan int),
 		registerRequests: make(chan peer.ID, 1),
+		keeper:           NewAddrKeeper(),
 	}
 	go cm.keepHighwayConnection()
-	time.Sleep(10 * ReconnectHighwayTimestep)
+	time.Sleep(1 * time.Second)
 	close(cm.stop)
 
 	discoverer.AssertNumberOfCalls(t, "DiscoverHighway", 2)
+	assert.Equal(t, 1, len(cm.keeper.ignoreHWUntil))
+}
+
+// TestCheckConnectionAfterMaxedOut checks if we re-register when trying a new highway after maxing out a number of retries to the old one
+func TestCheckConnectionAfterMaxedOut(t *testing.T) {
+	h, net := setupHost()
+	// Not x 6 -> Con
+	setupConnectedness(
+		net,
+		[]network.Connectedness{
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected, network.NotConnected,
+			network.NotConnected,
+			network.Connected, network.Connected,
+		},
+	)
+	var err error
+	h.On("Connect", mock.Anything, mock.Anything).Return(err)
+
+	cm := ConnManager{
+		DiscoverPeersAddress: testHighwayAddress,
+		LocalHost:            &Host{Host: h},
+		registerRequests:     make(chan peer.ID, 5),
+		keeper:               NewAddrKeeper(),
+	}
+	for i := 0; i < 8; i++ {
+		cm.checkConnection(&peer.AddrInfo{})
+	}
+
+	assert.Equal(t, 1, len(cm.registerRequests), "not reconnect")
 }
 
 // TestReconnect checks if connection is re-established after being disconnected
@@ -112,6 +157,7 @@ func TestReconnect(t *testing.T) {
 		DiscoverPeersAddress: testHighwayAddress,
 		LocalHost:            &Host{Host: h},
 		registerRequests:     make(chan peer.ID, 5),
+		keeper:               NewAddrKeeper(),
 	}
 	for i := 0; i < 4; i++ {
 		maxed := cm.checkConnection(&peer.AddrInfo{})
@@ -122,111 +168,40 @@ func TestReconnect(t *testing.T) {
 }
 
 func TestPeriodicManageSub(t *testing.T) {
+	defer configTime()()
+
 	sc := new(subscribeCounter)
 	cm := ConnManager{
 		Requester:        &BlockRequester{},
 		stop:             make(chan int),
 		registerRequests: make(chan peer.ID, 10),
 		subscriber:       sc,
+		keeper:           NewAddrKeeper(),
 	}
 	go cm.manageRoleSubscription()
-	time.Sleep(2 * time.Second)
+	time.Sleep(RegisterTimestep + 50*time.Millisecond)
 	close(cm.stop)
 
 	assert.Equal(t, 1, sc.normal, "not subbed")
 }
 
 func TestForcedSub(t *testing.T) {
+	defer configTime()()
+
 	sc := new(subscribeCounter)
 	cm := ConnManager{
 		Requester:        &BlockRequester{},
 		stop:             make(chan int),
 		registerRequests: make(chan peer.ID, 10),
 		subscriber:       sc,
+		keeper:           NewAddrKeeper(),
 	}
 	cm.registerRequests <- peer.ID("") // Sent forced, must sub with forced = True next time
 	go cm.manageRoleSubscription()
-	time.Sleep(2 * time.Second)
+	time.Sleep(RegisterTimestep + 50*time.Millisecond)
 	close(cm.stop)
 
 	assert.Equal(t, 1, sc.forced, "not subbed")
-}
-
-func TestChooseHighwayFiltered(t *testing.T) {
-	hwAddrs := []rpcclient.HighwayAddr{
-		rpcclient.HighwayAddr{Libp2pAddr: testHighwayAddress},
-		rpcclient.HighwayAddr{Libp2pAddr: ""},
-	}
-	pid := peer.ID("")
-	_, err := chooseHighway(hwAddrs, pid)
-	assert.Nil(t, err)
-}
-
-func TestChooseHighwaySorted(t *testing.T) {
-	addr1 := "/ip4/0.0.0.0/tcp/7337/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
-	addr2 := "/ip4/0.0.0.1/tcp/7337/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
-	addr3 := "/ip4/0.0.1.0/tcp/7337/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
-	hwAddrs1 := []rpcclient.HighwayAddr{
-		rpcclient.HighwayAddr{Libp2pAddr: addr1},
-		rpcclient.HighwayAddr{Libp2pAddr: addr2},
-		rpcclient.HighwayAddr{Libp2pAddr: addr3},
-	}
-	pid := peer.ID("")
-	info1, err := chooseHighway(hwAddrs1, pid)
-	assert.Nil(t, err)
-
-	hwAddrs2 := []rpcclient.HighwayAddr{
-		rpcclient.HighwayAddr{Libp2pAddr: addr3},
-		rpcclient.HighwayAddr{Libp2pAddr: addr2},
-		rpcclient.HighwayAddr{Libp2pAddr: addr1},
-	}
-	info2, err := chooseHighway(hwAddrs2, pid)
-	assert.Nil(t, err)
-	assert.Equal(t, info1, info2)
-}
-
-func TestChoosePeerConsistent(t *testing.T) {
-	addr1 := "/ip4/0.0.0.0/tcp/7337/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
-	addr2 := "/ip4/0.0.0.0/tcp/7337/p2p/QmRWYJ1E6uXzBuY93iMkSDTSdF9XMzLhYcZKwQLLjKV2LW"
-	addr3 := "/ip4/0.0.0.0/tcp/7337/p2p/QmQT92nmuhYbRHn6pbrHF2naWSerVaqmWFrEk8p5NfFWST"
-	hwAddrs := []rpcclient.HighwayAddr{
-		rpcclient.HighwayAddr{Libp2pAddr: addr1},
-		rpcclient.HighwayAddr{Libp2pAddr: addr2},
-		rpcclient.HighwayAddr{Libp2pAddr: addr3},
-	}
-	pid := peer.ID("")
-	info, err := choosePeer(hwAddrs, pid)
-	assert.Nil(t, err)
-	assert.Equal(t, hwAddrs[1], info)
-}
-
-func TestGetAllHighways(t *testing.T) {
-	hwAddrs := map[string][]rpcclient.HighwayAddr{
-		"all": []rpcclient.HighwayAddr{rpcclient.HighwayAddr{Libp2pAddr: "abc"}, rpcclient.HighwayAddr{Libp2pAddr: "xyz"}},
-		"1":   []rpcclient.HighwayAddr{rpcclient.HighwayAddr{Libp2pAddr: "123"}},
-	}
-	discoverer := &mocks.HighwayDiscoverer{}
-	discoverer.On("DiscoverHighway", mock.Anything, mock.Anything).Return(hwAddrs, nil)
-	hws, err := getAllHighways(discoverer, "")
-	assert.Nil(t, err)
-	assert.Equal(t, hwAddrs["all"], hws)
-}
-
-func TestGetHighwayAddrsRandomly(t *testing.T) {
-	resultAddrs := map[string][]rpcclient.HighwayAddr{}
-	discoverer := &mocks.HighwayDiscoverer{}
-	rpcUsed := map[string]int{}
-	discoverer.On("DiscoverHighway", mock.Anything, mock.Anything).Return(resultAddrs, nil).Run(
-		func(args mock.Arguments) {
-			rpcUsed[args.Get(0).(string)] = 1
-		},
-	)
-	hwAddrs := []rpcclient.HighwayAddr{rpcclient.HighwayAddr{RPCUrl: "abc"}, rpcclient.HighwayAddr{RPCUrl: "xyz"}}
-	for i := 0; i < 100; i++ {
-		_, err := getHighwayAddrs(discoverer, hwAddrs)
-		assert.Nil(t, err)
-	}
-	assert.Len(t, rpcUsed, 2)
 }
 
 type subscribeCounter struct {
@@ -263,6 +238,22 @@ func setupConnectedness(net *mocks.Network, values []network.Connectedness) {
 		}
 		return values[idx]
 	})
+}
+
+func configTime() func() {
+	reconnectHighwayTimestep := ReconnectHighwayTimestep
+	requesterDialTimestep := RequesterDialTimestep
+	registerTimestep := RegisterTimestep
+	ReconnectHighwayTimestep = 100 * time.Millisecond
+	RequesterDialTimestep = 100 * time.Millisecond
+	RegisterTimestep = 100 * time.Millisecond
+
+	return func() {
+		// Revert time configuration after a test is done
+		ReconnectHighwayTimestep = reconnectHighwayTimestep
+		RequesterDialTimestep = requesterDialTimestep
+		RegisterTimestep = registerTimestep
+	}
 }
 
 func init() {

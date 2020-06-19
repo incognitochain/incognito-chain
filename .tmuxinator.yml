@@ -48,9 +48,9 @@ windows:
       # layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
       panes:
         - ./run_new.sh "b0" 2>&1 | tee b0.log
-        - sleep 1; ./run_new.sh "b1" 2>&1 | tee b1.log
-        - sleep 1; ./run_new.sh "b2" 2>&1 | tee b2.log
-        - sleep 1; ./run_new.sh "b3" 2>&1 | tee b3.log
+        - ./run_new.sh "b1" 2>&1 | tee b1.log
+        - ./run_new.sh "b2" 2>&1 | tee b2.log
+        - ./run_new.sh "b3" 2>&1 | tee b3.log
   # - s0:
   #     root: ./
   #     layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
@@ -68,30 +68,67 @@ windows:
       # layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
       panes:
         - ./run_new.sh "s0n0" 2>&1 | tee s0n0.log
-        - sleep 1; ./run_new.sh "s0n1" 2>&1 | tee s0n1.log
-        - sleep 1; ./run_new.sh "s0n2" 2>&1 | tee s0n2.log
-        - sleep 1; ./run_new.sh "s0n3" 2>&1 | tee s0n3.log
-        # - ./run_new.sh "s01"
-        # - ./run_new.sh "s02"
-        # - ./run_new.sh "s03"
-        # - ./run_new.sh "s04"
-        # - echo "./run_new.sh \"s04\""
+        - ./run_new.sh "s0n1" 2>&1 | tee s0n1.log
+        - ./run_new.sh "s0n2" 2>&1 | tee s0n2.log
+        - ./run_new.sh "s0n3" 2>&1 | tee s0n3.log
   - s1:
       root: ./
       # layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
       panes:
         - ./run_new.sh "s1n0" 2>&1 | tee s1n0.log
-        - sleep 1; ./run_new.sh "s1n1" 2>&1 | tee s1n1.log
-        - sleep 1; ./run_new.sh "s1n2" 2>&1 | tee s1n2.log
-        - sleep 1; ./run_new.sh "s1n3" 2>&1 | tee s1n3.log
+        - ./run_new.sh "s1n1" 2>&1 | tee s1n1.log
+        - ./run_new.sh "s1n2" 2>&1 | tee s1n2.log
+        - ./run_new.sh "s1n3" 2>&1 | tee s1n3.log
+  # - s2:
+  #     root: ./
+  #     panes:
+  #       - ./run_new.sh "s2n0" 2>&1 | tee s2n0.log
+  #       - ./run_new.sh "s2n1" 2>&1 | tee s2n1.log
+  #       - ./run_new.sh "s2n2" 2>&1 | tee s2n2.log
+  #       - ./run_new.sh "s2n3" 2>&1 | tee s2n3.log
+  # - s3:
+  #     root: ./
+  #     panes:
+  #       - ./run_new.sh "s3n0" 2>&1 | tee s3n0.log
+  #       - ./run_new.sh "s3n1" 2>&1 | tee s3n1.log
+  #       - ./run_new.sh "s3n2" 2>&1 | tee s3n2.log
+  #       - ./run_new.sh "s3n3" 2>&1 | tee s3n3.log
+  # - s4:
+  #     root: ./
+  #     panes:
+  #       - ./run_new.sh "s4n0" 2>&1 | tee s4n0.log
+  #       - ./run_new.sh "s4n1" 2>&1 | tee s4n1.log
+  #       - ./run_new.sh "s4n2" 2>&1 | tee s4n2.log
+  #       - ./run_new.sh "s4n3" 2>&1 | tee s4n3.log
+  # - s5:
+  #     root: ./
+  #     panes:
+  #       - ./run_new.sh "s5n0" 2>&1 | tee s5n0.log
+  #       - ./run_new.sh "s5n1" 2>&1 | tee s5n1.log
+  #       - ./run_new.sh "s5n2" 2>&1 | tee s5n2.log
+  #       - ./run_new.sh "s5n3" 2>&1 | tee s5n3.log
+  # - s6:
+  #     root: ./
+  #     panes:
+  #       - ./run_new.sh "s6n0" 2>&1 | tee s6n0.log
+  #       - ./run_new.sh "s6n1" 2>&1 | tee s6n1.log
+  #       - ./run_new.sh "s6n2" 2>&1 | tee s6n2.log
+  #       - ./run_new.sh "s6n3" 2>&1 | tee s6n3.log
+  # - s7:
+  #     root: ./
+  #     panes:
+  #       - ./run_new.sh "s7n0" 2>&1 | tee s7n0.log
+  #       - ./run_new.sh "s7n1" 2>&1 | tee s7n1.log
+  #       - ./run_new.sh "s7n2" 2>&1 | tee s7n2.log
+  #       - ./run_new.sh "s7n3" 2>&1 | tee s7n3.log
   # - fullnode:
   #     root: ./
   #     layout: tiled
   #     panes:
   #       - ./run_new.sh "full_node" > "full_node.log"
   #       - touch "full_node.log" && tail -f "full_node.log" | grep -a --line-buffered "DeBridge log"
-  - staker:
-      root: ./
-      layout: tiled
-      panes:
-        - sleep 2; ./run_new.sh "st1" 2>&1 | tee st1.log
+  # - staker:
+  #     root: ./
+  #     layout: tiled
+  #     panes:
+  #       - sleep 2; ./run_new.sh "st1" 2>&1 | tee st1.log

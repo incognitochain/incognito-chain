@@ -61,13 +61,14 @@ func (s *Engine) WatchCommitteeChange() {
 
 	//check if enable
 	if s.IsEnabled == 0 || s.config == nil {
-		fmt.Println("CONSENSUS: enable", s.IsEnabled, s.config == nil)
 		return
 	}
 
 	//extract role, layer, chainID
 	role, chainID := s.config.Node.GetUserMiningState()
-	Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
+	if s.curringMiningState.role != role || s.curringMiningState.chainID != chainID {
+		Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
+	}
 	s.curringMiningState.chainID = chainID
 	s.curringMiningState.role = role
 
@@ -151,7 +152,7 @@ func (engine *Engine) Init(config *EngineConfig) {
 }
 
 func (engine *Engine) Start() error {
-	defer Logger.Log.Infof("CONSENSUS: Start", engine.userKeyListString)
+	Logger.Log.Infof("CONSENSUS: Start")
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {
