@@ -237,3 +237,8 @@ var (
 	beaconStoreBlockTimer                   = metrics.NewRegisteredTimer("beacon/storeblock", nil)
 	beaconUpdateBestStateTimer              = metrics.NewRegisteredTimer("beacon/updatebeststate", nil)
 )
+
+const (
+	RewardBase = 1666
+	Duration   = 1000000
+)
