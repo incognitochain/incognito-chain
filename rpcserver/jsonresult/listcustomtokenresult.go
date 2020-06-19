@@ -51,3 +51,12 @@ func NewPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) *Cus
 type ListCustomToken struct {
 	ListCustomToken []CustomToken `json:"ListCustomToken"`
 }
+
+type GetCustomToken struct {
+	IsExist     bool        `json:"IsExist"`
+	CustomToken CustomToken `json:"CustomToken"`
+}
+
+func NewGetCustomToken(isExist bool, customToken CustomToken) *GetCustomToken {
+	return &GetCustomToken{IsExist: isExist, CustomToken: customToken}
+}
