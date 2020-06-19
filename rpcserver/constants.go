@@ -73,6 +73,7 @@ const (
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
+	getPrivacyCustomToken                      = "getprivacycustomtoken"
 	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
 	customTokenTxs                             = "customtoken"
