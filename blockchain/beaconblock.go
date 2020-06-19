@@ -3,19 +3,56 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type BeaconBlock struct {
-	// AggregatedSig string  `json:"AggregatedSig"`
-	// R             string  `json:"R"`
-	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
-	// ProducerSig   string  `json:"ProducerSig"`
-
 	ValidationData string `json:"ValidationData"`
 	Body           BeaconBody
 	Header         BeaconHeader
+}
+
+type BeaconBody struct {
+	// Shard State extract from shard to beacon block
+	// Store all shard state == store content of all shard to beacon block
+	ShardState   map[byte][]ShardState
+	Instructions [][]string
+}
+
+type BeaconHeader struct {
+	Version           int         `json:"Version"`
+	Height            uint64      `json:"Height"`
+	Epoch             uint64      `json:"Epoch"`
+	Round             int         `json:"Round"`
+	Timestamp         int64       `json:"Timestamp"`
+	PreviousBlockHash common.Hash `json:"PreviousBlockHash"`
+	InstructionHash   common.Hash `json:"InstructionHash"` // hash of all parameters == hash of instruction
+	ShardStateHash    common.Hash `json:"ShardStateHash"`  // each shard will have a list of blockHash, shardRoot is hash of all list
+	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
+	// This obsoletes InstructionHash but for simplicity, we keep it for now
+	InstructionMerkleRoot           common.Hash `json:"InstructionMerkleRoot"`
+	BeaconCommitteeAndValidatorRoot common.Hash `json:"BeaconCommitteeAndValidatorRoot"` //Build from two list: BeaconCommittee + BeaconPendingValidator
+	BeaconCandidateRoot             common.Hash `json:"BeaconCandidateRoot"`             // CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
+	ShardCandidateRoot              common.Hash `json:"ShardCandidateRoot"`              // CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
+	ShardCommitteeAndValidatorRoot  common.Hash `json:"ShardCommitteeAndValidatorRoot"`
+	AutoStakingRoot                 common.Hash `json:"AutoStakingRoot"`
+	ConsensusType                   string      `json:"ConsensusType"`
+	Producer                        string      `json:"Producer"`
+	ProducerPubKeyStr               string      `json:"ProducerPubKeyStr"`
+
+	//for version 2
+	Proposer    string `json:"Proposer"`
+	ProposeTime int64  `json:"ProposeTime"`
+}
+
+type ShardState struct {
+	Height     uint64
+	Hash       common.Hash
+	CrossShard []byte //In this state, shard i send cross shard tx to which shard
 }
 
 func (beaconBlock *BeaconBlock) GetVersion() int {
@@ -111,4 +148,131 @@ func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
 
 func (beaconBlock BeaconBlock) GetConsensusType() string {
 	return beaconBlock.Header.ConsensusType
+}
+
+func (beaconBlock *BeaconBody) toString() string {
+	res := ""
+	for _, l := range beaconBlock.ShardState {
+		for _, r := range l {
+			res += strconv.Itoa(int(r.Height))
+			res += r.Hash.String()
+			crossShard, _ := json.Marshal(r.CrossShard)
+			res += string(crossShard)
+
+		}
+	}
+	for _, l := range beaconBlock.Instructions {
+		for _, r := range l {
+			res += r
+		}
+	}
+	return res
+}
+
+func (beaconBody BeaconBody) Hash() common.Hash {
+	return common.HashH([]byte(beaconBody.toString()))
+}
+
+func (beaconHeader *BeaconHeader) toString() string {
+	res := ""
+	// res += beaconHeader.ProducerAddress.String()
+	res += fmt.Sprintf("%v", beaconHeader.Version)
+	res += fmt.Sprintf("%v", beaconHeader.Height)
+	res += fmt.Sprintf("%v", beaconHeader.Epoch)
+	res += fmt.Sprintf("%v", beaconHeader.Round)
+	res += fmt.Sprintf("%v", beaconHeader.Timestamp)
+	res += beaconHeader.PreviousBlockHash.String()
+	res += beaconHeader.BeaconCommitteeAndValidatorRoot.String()
+	res += beaconHeader.BeaconCandidateRoot.String()
+	res += beaconHeader.ShardCandidateRoot.String()
+	res += beaconHeader.ShardCommitteeAndValidatorRoot.String()
+	res += beaconHeader.AutoStakingRoot.String()
+	res += beaconHeader.ShardStateHash.String()
+	res += beaconHeader.InstructionHash.String()
+
+	if beaconHeader.Version == 2 {
+		res += beaconHeader.Proposer
+		res += fmt.Sprintf("%v", beaconHeader.ProposeTime)
+	}
+	return res
+}
+
+func (beaconBlock *BeaconHeader) MetaHash() common.Hash {
+	return common.Keccak256([]byte(beaconBlock.toString()))
+}
+
+func (beaconBlock *BeaconHeader) Hash() common.Hash {
+	// Block header of beacon uses Keccak256 as a hash func to check on Ethereum when relaying blocks
+	blkMetaHash := beaconBlock.MetaHash()
+	blkInstHash := beaconBlock.InstructionMerkleRoot
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+	return common.Keccak256(combined)
+}
+
+func CreateGenesisBeaconBlock(
+	version int,
+	net uint16,
+	genesisBlockTime string,
+	genesisParams GenesisParams,
+) *BeaconBlock {
+	inst := [][]string{}
+	shardAutoStaking := []string{}
+	beaconAutoStaking := []string{}
+	for i := 0; i < len(genesisParams.PreSelectShardNodeSerializedPubkey); i++ {
+		shardAutoStaking = append(shardAutoStaking, "false")
+	}
+	for i := 0; i < len(genesisParams.PreSelectBeaconNodeSerializedPubkey); i++ {
+		beaconAutoStaking = append(beaconAutoStaking, "false")
+	}
+	// build validator beacon
+	// test generate public key in utility/generateKeys
+	beaconAssingInstruction := []string{StakeAction}
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPubkey[:], ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
+	beaconAssingInstruction = append(beaconAssingInstruction, []string{""}...)
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPaymentAddress[:], ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconAutoStaking[:], ","))
+
+	shardAssingInstruction := []string{StakeAction}
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPubkey[:], ","))
+	shardAssingInstruction = append(shardAssingInstruction, "shard")
+	shardAssingInstruction = append(shardAssingInstruction, []string{""}...)
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPaymentAddress[:], ","))
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardAutoStaking[:], ","))
+
+	inst = append(inst, beaconAssingInstruction)
+	inst = append(inst, shardAssingInstruction)
+
+	// init network param
+	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
+
+	layout := "2006-01-02T15:04:05.000Z"
+	str := genesisBlockTime
+	genesisTime, err := time.Parse(layout, str)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	body := BeaconBody{ShardState: nil, Instructions: inst}
+	header := BeaconHeader{
+		Timestamp:                       genesisTime.Unix(),
+		Version:                         version,
+		Epoch:                           1,
+		Height:                          1,
+		Round:                           1,
+		PreviousBlockHash:               common.Hash{},
+		BeaconCommitteeAndValidatorRoot: common.Hash{},
+		BeaconCandidateRoot:             common.Hash{},
+		ShardCandidateRoot:              common.Hash{},
+		ShardCommitteeAndValidatorRoot:  common.Hash{},
+		ShardStateHash:                  common.Hash{},
+		InstructionHash:                 common.Hash{},
+	}
+
+	block := &BeaconBlock{
+		Body:   body,
+		Header: header,
+	}
+
+	return block
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-//===================================Util for Beacon=============================
 func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
