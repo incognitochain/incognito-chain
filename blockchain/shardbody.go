@@ -53,7 +53,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 			return NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
 		switch txType {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 			{
 				tx, parseErr = transaction.NewTransactionFromJsonBytes(txTempJson)
 			}

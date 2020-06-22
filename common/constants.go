@@ -47,7 +47,8 @@ const (
 	TxNormalType        = "n"  // normal tx(send and receive coin)
 	TxRewardType        = "s"  // reward tx
 	TxReturnStakingType = "rs" //
-	TxConversionType = TxNormalType // Convert 1 - 2
+	TxConversionType = "cv" // Convert 1 - 2 normal tx
+	TxTokenConversionType = "tcv" // Convert 1 - 2 token tx
 	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )

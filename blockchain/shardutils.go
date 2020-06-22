@@ -386,7 +386,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 		switch tx.GetType() {
 		//==================For PRV Transfer Only
 		//TxReturnStakingType cannot be crossshard tx
-		case common.TxNormalType, common.TxRewardType:
+		case common.TxNormalType, common.TxRewardType, common.TxConversionType:
 			{
 				// Proof Process
 				if tx.GetProof() != nil {

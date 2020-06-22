@@ -185,7 +185,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 		}
 
 		switch tx.GetType() {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 			{
 				for pubkey, data := range snDs {
 					if acceptedSnD[pubkey] == nil {

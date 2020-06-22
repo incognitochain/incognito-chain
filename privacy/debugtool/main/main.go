@@ -189,7 +189,11 @@ func main() {
 		tool = SwitchPort(args[1])
 	}
 	if args[0] == "convert" {
-		ConvertCoinVersion(tool, privateKeys[0])
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		ConvertCoinVersion(tool, privateKeys[index])
 	}
 	if args[0] == "send" {
 		sendTx(tool)

@@ -1628,7 +1628,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 				item.Hash = txDetail.Hash().String()
 				item.Type = txDetail.GetType()
 				switch item.Type {
-				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 					{
 						item.Version = txDetail.GetVersion()
 						item.IsPrivacy = txDetail.IsPrivacy()
@@ -1781,7 +1781,7 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	results[common.PRVCoinID.String()] = 0
 
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 		{
 			prvOutputs, _ := txService.DecryptOutputCoinByKey(tx.GetProof().GetOutputCoins(), keyParam)
 			if len(prvOutputs) > 0 {

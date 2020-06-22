@@ -29,37 +29,19 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 		Fee:           txDesc.Desc.Fee,
 		FeePerKB:      txDesc.Desc.FeePerKB,
 	}
-	switch tx.GetType() {
-	//==================For PRV Transfer Only
-	case common.TxNormalType:
-		{
-			valueTx, err := json.Marshal(tx)
-			if err != nil {
-				return err
-			}
-			valueDesc, err := json.Marshal(tempDesc)
-			if err != nil {
-				return err
-			}
-			err = tp.config.DataBaseMempool.AddTransaction(txHash, common.TxNormalType, valueTx, valueDesc)
-			if err != nil {
-				return err
-			}
+
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType {
+		valueTx, err := json.Marshal(tx)
+		if err != nil {
+			return err
 		}
-	case common.TxCustomTokenPrivacyType:
-		{
-			valueTx, err := json.Marshal(tx)
-			if err != nil {
-				return err
-			}
-			valueDesc, err := json.Marshal(tempDesc)
-			if err != nil {
-				return err
-			}
-			err = tp.config.DataBaseMempool.AddTransaction(txHash, common.TxCustomTokenPrivacyType, valueTx, valueDesc)
-			if err != nil {
-				return err
-			}
+		valueDesc, err := json.Marshal(tempDesc)
+		if err != nil {
+			return err
+		}
+		err = tp.config.DataBaseMempool.AddTransaction(txHash, tx.GetType(), valueTx, valueDesc)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -154,7 +136,7 @@ func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 	txDesc := TxDesc{}
 
 	switch txType {
-	case common.TxNormalType:
+	case common.TxNormalType, common.TxConversionType:
 		{
 			txDesc.Desc.Tx, err = transaction.NewTransactionFromJsonBytes(valueTx)
 			if err != nil {

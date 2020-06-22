@@ -147,7 +147,7 @@ func checkSanityMetadataVersionSizeProofTypeInfo(tx metadata.Transaction, chainR
 
 	// check Type is normal or salary tx
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType: //is valid
 	default:
 		return false, NewTransactionErr(RejectTxType, fmt.Errorf("wrong tx type with %s", tx.GetType()))
 	}

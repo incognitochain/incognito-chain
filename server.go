@@ -776,7 +776,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			if !txDesc.IsFowardMessage {
 				tx := txDesc.Desc.Tx
 				switch tx.GetType() {
-				case common.TxNormalType:
+				case common.TxNormalType, common.TxConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 						if err != nil {
