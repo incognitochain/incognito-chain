@@ -237,12 +237,12 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 // 1. Shard To Beacon Blocks will be get from Shard To Beacon Pool (only valid block)
 // 2. Process shards independently, for each shard:
 //	a. Shard To Beacon Block List must be compatible with current shard state in beacon best state:
-//		+ Increased continuosly in height (10, 11, 12,...)
-//			Ex: Shard state in beacon best state has height 11 then shard to beacon block list must have first block in list with height 12
-//		+ Shard To Beacon Block List must have incremental height in list (10, 11, 12,... NOT 10, 12,...)
-//		+ Shard To Beacon Block List can be verify with and only with current shard committee in beacon best state
-//		+ DO NOT accept Shard To Beacon Block List that can have two arbitrary blocks that can be verify with two different committee set
-//		+ If in Shard To Beacon Block List have one block with Swap Instruction, then this block must be the last block in this list (or only block in this list)
+//  + Increased continuosly in height (10, 11, 12,...)
+//	  Ex: Shard state in beacon best state has height 11 then shard to beacon block list must have first block in list with height 12
+//  + Shard To Beacon Block List must have incremental height in list (10, 11, 12,... NOT 10, 12,...)
+//  + Shard To Beacon Block List can be verify with and only with current shard committee in beacon best state
+//  + DO NOT accept Shard To Beacon Block List that can have two arbitrary blocks that can be verify with two different committee set
+//  + If in Shard To Beacon Block List have one block with Swap Instruction, then this block must be the last block in this list (or only block in this list)
 // return param:
 // 1. shard state
 // 2. valid stake instruction
@@ -299,60 +299,6 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	return shardStates, validStakeInstructions, validSwapInstructions, bridgeInstructions, acceptedRewardInstructions, validStopAutoStakingInstructions
-}
-
-func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []string {
-	for _, committees := range beaconBestState.GetShardCommittee() {
-		committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
-		if err != nil {
-			panic(err)
-		}
-		stakers = common.GetValidStaker(committeesStr, stakers)
-	}
-	for _, validators := range beaconBestState.GetShardPendingValidator() {
-		validatorsStr, err := incognitokey.CommitteeKeyListToString(validators)
-		if err != nil {
-			panic(err)
-		}
-		stakers = common.GetValidStaker(validatorsStr, stakers)
-	}
-
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
-	if err != nil {
-		panic(err)
-	}
-	stakers = common.GetValidStaker(beaconCommitteeStr, stakers)
-
-	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
-	if err != nil {
-		panic(err)
-	}
-	stakers = common.GetValidStaker(beaconPendingValidatorStr, stakers)
-
-	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
-	if err != nil {
-		panic(err)
-	}
-	stakers = common.GetValidStaker(candidateBeaconWaitingForCurrentRandomStr, stakers)
-
-	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
-	if err != nil {
-		panic(err)
-	}
-	stakers = common.GetValidStaker(candidateBeaconWaitingForNextRandomStr, stakers)
-
-	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
-	if err != nil {
-		panic(err)
-	}
-	stakers = common.GetValidStaker(candidateShardWaitingForCurrentRandomStr, stakers)
-
-	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
-	if err != nil {
-		panic(err)
-	}
-	stakers = common.GetValidStaker(candidateShardWaitingForNextRandomStr, stakers)
-	return stakers
 }
 
 // GetShardStateFromBlock get state (information) from shard-to-beacon block
