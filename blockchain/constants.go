@@ -29,6 +29,7 @@ const (
 	UpperBoundPercentForIncDAO    = 10
 	GetValidBlock                 = 20
 	TestRandom                    = true
+	NumberOfFixedBlockValidators  = 0
 	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
@@ -92,6 +93,12 @@ var PreSelectBeaconNodeMainnetSerializedPaymentAddress = []string{}
 var PreSelectShardNodeMainnetSerializedPubkey = []string{}
 var PreSelectShardNodeMainnetSerializedPaymentAddress = []string{}
 
+var SelectBeaconNodeMainnetSerializedPubkeyV2 = make(map[uint64][]string)
+var SelectBeaconNodeMainnetSerializedPaymentAddressV2 = make(map[uint64][]string)
+var SelectShardNodeMainnetSerializedPubkeyV2 = make(map[uint64][]string)
+var SelectShardNodeMainnetSerializedPaymentAddressV2 = make(map[uint64][]string)
+var MainnetReplaceCommitteeEpoch = []uint64{}
+
 // END CONSTANT for network MAINNET
 
 // CONSTANT for network TESTNET
@@ -145,14 +152,29 @@ var PreSelectBeaconNodeTestnetSerializedPaymentAddress = []string{}
 var PreSelectShardNodeTestnetSerializedPubkey = []string{}
 var PreSelectShardNodeTestnetSerializedPaymentAddress = []string{}
 
+// VARIABLE for testnet
+var SelectBeaconNodeTestnetSerializedPubkeyV2 = make(map[uint64][]string)
+var SelectBeaconNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
+var SelectShardNodeTestnetSerializedPubkeyV2 = make(map[uint64][]string)
+var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
+var TestnetReplaceCommitteeEpoch = []uint64{}
+
+var IsTestNet = true
+
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
 		return
 	}
 	var keyData []byte
+	var keyDataV2 []byte
 	var err error
 
 	keyData, err = ioutil.ReadFile("keylist.json")
+	if err != nil {
+		panic(err)
+	}
+
+	keyDataV2, err = ioutil.ReadFile("keylist-v2.json")
 	if err != nil {
 		panic(err)
 	}
@@ -168,15 +190,24 @@ func init() {
 		Shard  map[int][]AccountKey
 		Beacon []AccountKey
 	}
+	type KeyListV2 struct {
+		Epoch  uint64
+		Shard  map[int][]AccountKey
+		Beacon []AccountKey
+	}
 
 	keylist := KeyList{}
+	keylistV2 := []KeyListV2{}
 
 	err = json.Unmarshal(keyData, &keylist)
 	if err != nil {
 		panic(err)
 	}
 
-	var IsTestNet = true
+	err = json.Unmarshal(keyDataV2, &keylistV2)
+	if err != nil {
+		panic(err)
+	}
 	if IsTestNet {
 		for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
@@ -189,16 +220,44 @@ func init() {
 				PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
 			}
 		}
+		for _, v := range keylistV2 {
+			epoch := v.Epoch
+			TestnetReplaceCommitteeEpoch = append(TestnetReplaceCommitteeEpoch, epoch)
+			for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
+				SelectBeaconNodeTestnetSerializedPubkeyV2[epoch] = append(SelectBeaconNodeTestnetSerializedPubkeyV2[epoch], v.Beacon[i].CommitteePublicKey)
+				SelectBeaconNodeTestnetSerializedPaymentAddressV2[epoch] = append(SelectBeaconNodeTestnetSerializedPaymentAddressV2[epoch], v.Beacon[i].PaymentAddress)
+			}
+			for i := 0; i < TestNetActiveShards; i++ {
+				for j := 0; j < TestNetMinShardCommitteeSize; j++ {
+					SelectShardNodeTestnetSerializedPubkeyV2[epoch] = append(SelectShardNodeTestnetSerializedPubkeyV2[epoch], v.Shard[i][j].CommitteePublicKey)
+					SelectShardNodeTestnetSerializedPaymentAddressV2[epoch] = append(SelectShardNodeTestnetSerializedPaymentAddressV2[epoch], v.Shard[i][j].PaymentAddress)
+				}
+			}
+		}
 	} else {
+		GenesisParam = genesisParamsMainnetNew
 		for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
 			PreSelectBeaconNodeMainnetSerializedPubkey = append(PreSelectBeaconNodeMainnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
 			PreSelectBeaconNodeMainnetSerializedPaymentAddress = append(PreSelectBeaconNodeMainnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
 		}
-
 		for i := 0; i < MainNetActiveShards; i++ {
 			for j := 0; j < MainNetMinShardCommitteeSize; j++ {
 				PreSelectShardNodeMainnetSerializedPubkey = append(PreSelectShardNodeMainnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
 				PreSelectShardNodeMainnetSerializedPaymentAddress = append(PreSelectShardNodeMainnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			}
+		}
+		for _, v := range keylistV2 {
+			epoch := v.Epoch
+			MainnetReplaceCommitteeEpoch = append(MainnetReplaceCommitteeEpoch, epoch)
+			for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
+				SelectBeaconNodeMainnetSerializedPubkeyV2[epoch] = append(SelectBeaconNodeMainnetSerializedPubkeyV2[epoch], v.Beacon[i].CommitteePublicKey)
+				SelectBeaconNodeMainnetSerializedPaymentAddressV2[epoch] = append(SelectBeaconNodeMainnetSerializedPaymentAddressV2[epoch], v.Beacon[i].PaymentAddress)
+			}
+			for i := 0; i < MainNetActiveShards; i++ {
+				for j := 0; j < MainNetMinShardCommitteeSize; j++ {
+					SelectShardNodeMainnetSerializedPubkeyV2[epoch] = append(SelectShardNodeMainnetSerializedPubkeyV2[epoch], v.Shard[i][j].CommitteePublicKey)
+					SelectShardNodeMainnetSerializedPaymentAddressV2[epoch] = append(SelectShardNodeMainnetSerializedPaymentAddressV2[epoch], v.Shard[i][j].PaymentAddress)
+				}
 			}
 		}
 	}

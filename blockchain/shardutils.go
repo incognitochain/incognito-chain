@@ -104,6 +104,21 @@ func CreateSwapInstruction(
 	return swapInstruction, newPendingValidator, newShardCommittees, nil
 }
 
+func CreateShardSwapActionForKeyListV2(
+	genesisParam *GenesisParams,
+	pendingValidator []string,
+	shardCommittees []string,
+	minCommitteeSize int,
+	activeShard int,
+	shardID byte,
+	epoch uint64,
+) ([]string, []string, []string) {
+	newPendingValidator := pendingValidator
+	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
+	remainShardCommittees := shardCommittees[minCommitteeSize:]
+	return swapInstruction[shardID], newPendingValidator, append(newShardCommittees[shardID], remainShardCommittees...)
+}
+
 // CreateShardInstructionsFromTransactionAndInstruction create instruction from transactions in shard block
 // Stake:
 //  ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]

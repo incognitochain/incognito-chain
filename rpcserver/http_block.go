@@ -111,7 +111,7 @@ func (httpServer *HttpServer) handleRetrieveBlockByHeight(params interface{}, cl
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
 		shardID, ok := paramArray[1].(float64)
-		if !ok {
+		if !ok || shardID < 0 {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
 		}
 		verbosity, ok := paramArray[2].(string)
