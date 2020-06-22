@@ -385,9 +385,6 @@ func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, s
 
 	}
 	message := common.HashH(append(txFee.Hash()[:], txTokenDataHash[:]...))
-	fmt.Println("Verifying Message hash", message)
-	fmt.Println("Verifying Message hash", message)
-	fmt.Println("Verifying Message hash", message)
 	return mlsag.Verify(mlsagSignature, ring, message[:])
 }
 

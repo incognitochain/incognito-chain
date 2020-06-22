@@ -178,6 +178,7 @@ type TxTokenInterface interface {
 	IsCoinsBurning(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) bool
 
 	// =================== FUNCTIONS THAT VALIDATE STUFFS ===================
+	ValidateTxReturnStaking(stateDB *statedb.StateDB) bool
 	ValidateTxSalary(*statedb.StateDB) (bool, error)
 	ValidateTxWithCurrentMempool(metadata.MempoolRetriever) error
 	ValidateSanityData(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) (bool, error)

@@ -581,15 +581,15 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				if outputCoin.GetVersion() != 2 {
 					continue
 				}
-				shardIDcoin, _ := outputCoin.GetShardID()
-				fmt.Println("Coin Version =", outputCoin.GetVersion())
-				fmt.Println("Coin ShardID =", shardIDcoin)
-				fmt.Println("Coin ShardID =", shardIDcoin)
-				fmt.Println("Coin Index =", outputCoin.GetIndex())
-				fmt.Println("Coin Value =", outputCoin.GetValue())
-				fmt.Println("Coin Info =", outputCoin.GetInfo())
-				fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
-				fmt.Println("TokenID of coin =", view.tokenID)
+				//shardIDcoin, _ := outputCoin.GetShardID()
+				//fmt.Println("Coin Version =", outputCoin.GetVersion())
+				//fmt.Println("Coin ShardID =", shardIDcoin)
+				//fmt.Println("Coin ShardID =", shardIDcoin)
+				//fmt.Println("Coin Index =", outputCoin.GetIndex())
+				//fmt.Println("Coin Value =", outputCoin.GetValue())
+				//fmt.Println("Coin Info =", outputCoin.GetInfo())
+				//fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
+				//fmt.Println("TokenID of coin =", view.tokenID)
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
 			}

@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+
 	//"os"
 	//"strconv"
 
@@ -149,16 +152,16 @@ func main() {
 		"112t8rnX2FzscSBNqNAMuQfeSQhMPamSAKDX9f7X7Nft6JR4hfxNh5WJ8r9jeAmbmzTytW8hvpeXVn9FwLD8fjuvn4k7oHtXeh2YxnMDUzZv",
 		"112t8rnXoEWG5H8x1odKxSj6sbLXowTBsVVkAxNWr5WnsbSTDkRiVrSdPy8QfMujntKRYBqywKMJCyhMpdr93T3XiUD5QJR1QFtTpYKpjBEx",
 	}
-	//privateSeeds := []string{
-	//	"12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn",
-	//	"158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs",
-	//	"1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc",
-	//	"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
-	//	"1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc",
-	//	"158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs",
-	//	"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
-	//	"1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq",
-	//}
+	privateSeeds := []string{
+		"12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn",
+		"158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs",
+		"1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc",
+		"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
+		"1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc",
+		"158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs",
+		"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
+		"1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq",
+	}
 
 	//paymentKeys := []string{
 	//	"",
@@ -170,91 +173,91 @@ func main() {
 
 	//InitToken(tool, privateKeys[0], "something")
 
-	a := ListTokens(tool)
-	tokenID := a.Result.ListCustomToken[0].ID
+	//a := ListTokens(tool)
+	//tokenID := a.Result.ListCustomToken[0].ID
 
 	//TransferToken(tool, privateKeys[0], privateKeys[1], tokenID,"1000")
 
-	GetBalanceToken(tool, privateKeys[1], tokenID)
+	//GetBalanceToken(tool, privateKeys[1], tokenID)
 
-	//if len(os.Args) <= 1 {
-	//	return
-	//}
-	//
-	//args := os.Args[1:]
-	//if args[0] == "port" {
-	//	tool = SwitchPort(args[1])
-	//}
-	//if args[0] == "convert" {
-	//	ConvertCoinVersion(tool, privateKeys[0])
-	//}
-	//if args[0] == "send" {
-	//	sendTx(tool)
-	//}
-	//if args[0] == "outcoin" {
-	//	index, err := strconv.ParseInt(args[1], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	GetPRVOutPutCoin(tool, privateKeys[index])
-	//}
-	//if args[0] == "balance" {
-	//	index, err := strconv.ParseInt(args[1], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	GetPRVBalance(tool, privateKeys[index])
-	//}
-	//if args[0] == "mempool" {
-	//	GetRawMempool(tool)
-	//}
-	//if args[0] == "txhash" {
-	//	GetTxByHash(tool, args[1])
-	//}
-	//if args[0] == "staking" {
-	//	index, err := strconv.ParseInt(args[1], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	Staking(tool, privateKeys[index], privateSeeds[index])
-	//}
-	//if args[0] == "unstaking" {
-	//	index, err := strconv.ParseInt(args[1], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	UnStaking(tool, privateKeys[index], privateSeeds[index])
-	//}
-	//
-	//if args[0] == "reward" {
-	//	index, err := strconv.ParseInt(args[1], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	tokenID := "0000000000000000000000000000000000000000000000000000000000000004"
-	//	if len(args[2]) > 0 {
-	//		tokenID = args[2]
-	//	}
-	//	WithdrawReward(tool, privateKeys[index], tokenID)
-	//}
-	//if args[0] == "transfer" {
-	//	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	indexTo, err := strconv.ParseInt(args[2], 10, 32)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	TransferPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
-	//}
-	//
-	//if args[0] == "payment" {
-	//	fmt.Println("Payment Address", privateKeyToPaymentAddress(args[1]))
-	//}
-	//
-	//if args[0] == "public" {
-	//	fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
-	//}
+	if len(os.Args) <= 1 {
+		return
+	}
+
+	args := os.Args[1:]
+	if args[0] == "port" {
+		tool = SwitchPort(args[1])
+	}
+	if args[0] == "convert" {
+		ConvertCoinVersion(tool, privateKeys[0])
+	}
+	if args[0] == "send" {
+		sendTx(tool)
+	}
+	if args[0] == "outcoin" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		GetPRVOutPutCoin(tool, privateKeys[index])
+	}
+	if args[0] == "balance" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		GetPRVBalance(tool, privateKeys[index])
+	}
+	if args[0] == "mempool" {
+		GetRawMempool(tool)
+	}
+	if args[0] == "txhash" {
+		GetTxByHash(tool, args[1])
+	}
+	if args[0] == "staking" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		Staking(tool, privateKeys[index], privateSeeds[index])
+	}
+	if args[0] == "unstaking" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		UnStaking(tool, privateKeys[index], privateSeeds[index])
+	}
+
+	if args[0] == "reward" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		tokenID := "0000000000000000000000000000000000000000000000000000000000000004"
+		if len(args[2]) > 0 {
+			tokenID = args[2]
+		}
+		WithdrawReward(tool, privateKeys[index], tokenID)
+	}
+	if args[0] == "transfer" {
+		indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		indexTo, err := strconv.ParseInt(args[2], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		TransferPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
+	}
+
+	if args[0] == "payment" {
+		fmt.Println("Payment Address", privateKeyToPaymentAddress(args[1]))
+	}
+
+	if args[0] == "public" {
+		fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
+	}
 
 }
