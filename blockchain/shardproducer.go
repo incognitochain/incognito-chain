@@ -574,10 +574,11 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
 			swapInstruction, shardPendingValidator, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, shardPendingValidator, backupShardCommittee, NumberOfFixedBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
 		} else {
-		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapInstruction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
-		if err != nil {
-			Logger.log.Error(err)
-			return instructions, shardPendingValidator, shardCommittee, err
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapInstruction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
+			if err != nil {
+				Logger.log.Error(err)
+				return instructions, shardPendingValidator, shardCommittee, err
+			}
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
@@ -593,7 +594,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 			}
 			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 		}
-		// }
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
