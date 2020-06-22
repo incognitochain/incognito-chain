@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func NewSignedHeader (h *types.Header, lastCommit *types.Commit) *types.SignedHeader{
+func NewSignedHeader(h *types.Header, lastCommit *types.Commit) *types.SignedHeader {
 	return &types.SignedHeader{
 		Header: h,
 		Commit: lastCommit,
@@ -52,14 +52,14 @@ func VerifySignature(sh *types.SignedHeader, chainID string) error {
 	}
 
 	// not greater than 2/3 voting power
-	if totalVotingPower <= int64(totalVotingPowerParam) * 2 / 3 {
+	if totalVotingPower <= int64(totalVotingPowerParam)*2/3 {
 		return NewBNBRelayingError(InvalidSignatureSignedHeaderErr, errors.New("not greater than 2/3 voting power"))
 	}
 
 	return nil
 }
 
-func VerifySignedHeader(sh *types.SignedHeader, chainID string) (bool, error){
+func VerifySignedHeader(sh *types.SignedHeader, chainID string) (bool, error) {
 	err := sh.ValidateBasic(chainID)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, err)

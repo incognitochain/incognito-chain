@@ -3,9 +3,9 @@ package bnb
 //todo: need to update param before deploying
 const (
 	// fixed params
-	DenomBNB = "BNB"
+	DenomBNB              = "BNB"
 	MinConfirmationsBlock = 3
-	MaxOrphanBlocks = 1000
+	MaxOrphanBlocks       = 1000
 
 	// mainnet
 	MainnetBNBChainID         = "Binance-Chain-Tigris"
