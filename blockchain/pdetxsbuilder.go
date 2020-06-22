@@ -128,7 +128,7 @@ func buildTradeResTx(
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
 
-	resTx := &transaction.TxTokenBase{}
+	resTx := &transaction.TxTokenVersion2{}
 	err = resTx.InitTxTokenSalary(otaCoin, producerPrivateKey, transactionStateDB, meta, &propID, "")
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", err)
@@ -300,7 +300,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	resTx := &transaction.TxTokenBase{}
+	resTx := &transaction.TxTokenVersion2{}
 	err = resTx.InitTxTokenSalary(otaCoin, producerPrivateKey, shardView.GetCopiedFeatureStateDB(), meta, &propID, "")
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing withdrawal response (privacy custom token) tx: %+v", err)
@@ -387,23 +387,19 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxTokenBase{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			beaconView.GetBeaconFeatureStateDB(),
-		),
+	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+		producerPrivateKey, []*privacy.PaymentInfo{},
+		nil, 0, tokenParams,
+		shardView.GetCopiedTransactionStateDB(), meta,
+		false, false, shardID,
+		nil, beaconView.GetBeaconFeatureStateDB(),
 	)
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if err != nil {
+		Logger.log.Errorf("Cannot new transaction token from params, err %v", err)
+		return nil, err
+	}
+	initErr := resTx.Init(txTokenParams)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution response (privacy custom token) tx: %+v", initErr)
 		return nil, nil
@@ -490,24 +486,19 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxTokenBase{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			beaconView.GetBeaconFeatureStateDB(),
-		),
+	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+		producerPrivateKey, []*privacy.PaymentInfo{},
+		nil, 0, tokenParams,
+		shardView.GetCopiedTransactionStateDB(), meta,
+		false, false,
+		shardID, nil, beaconView.GetBeaconFeatureStateDB(),
 	)
-	if initErr != nil {
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if err != nil {
+		Logger.log.Errorf("Cannot new transaction token from params, err %v", err)
+		return nil, err
+	}
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing matched and returned contribution response (privacy custom token) tx: %+v", initErr)
 		return nil, nil
 	}

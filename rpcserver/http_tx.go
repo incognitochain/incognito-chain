@@ -576,12 +576,14 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
+
+	tokenData := tx.GetTxPrivacyTokenData()
 	result := jsonresult.CreateTransactionTokenResult{
-		ShardID:         common.GetShardIDFromLastByte(tx.TxBase.PubKeyLastByteSender),
+		ShardID:         common.GetShardIDFromLastByte(tx.GetTxBase().GetSenderAddrLastByte()),
 		TxID:            tx.Hash().String(),
-		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
-		TokenName:       tx.TxPrivacyTokenData.PropertyName,
-		TokenAmount:     tx.TxPrivacyTokenData.Amount,
+		TokenID:         tokenData.PropertyID.String(),
+		TokenName:       tokenData.PropertyName,
+		TokenAmount:     tokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -609,12 +611,13 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
+	tokenData := tx.GetTxPrivacyTokenData()
 	result := jsonresult.CreateTransactionTokenResult{
 		TxID:        tx.Hash().String(),
-		TokenID:     tx.TxPrivacyTokenData.PropertyID.String(),
-		TokenName:   tx.TxPrivacyTokenData.PropertyName,
-		TokenAmount: tx.TxPrivacyTokenData.Amount,
-		ShardID:     common.GetShardIDFromLastByte(tx.TxBase.PubKeyLastByteSender),
+		TokenID:     tokenData.PropertyID.String(),
+		TokenName:   tokenData.PropertyName,
+		TokenAmount: tokenData.Amount,
+		ShardID:     common.GetShardIDFromLastByte(tx.GetTxBase().GetSenderAddrLastByte()),
 	}
 	return result, nil
 }

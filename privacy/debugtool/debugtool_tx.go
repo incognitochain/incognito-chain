@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -311,7 +312,7 @@ func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {	
+func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)

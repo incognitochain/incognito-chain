@@ -18,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type BlockService struct {
@@ -217,13 +216,12 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			transactionResult.Hash = tx.Hash().String()
 			switch tx.GetType() {
 			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-				txN := tx.(*transaction.TxBase)
-				data, err := json.Marshal(txN)
+				data, err := json.Marshal(tx)
 				if err != nil {
 					return nil, NewRPCError(JsonError, err)
 				}
 				transactionResult.HexData = hex.EncodeToString(data)
-				transactionResult.Locktime = txN.LockTime
+				transactionResult.Locktime = tx.GetLockTime()
 			}
 			result.Txs = append(result.Txs, transactionResult)
 		}
@@ -338,13 +336,12 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				transactionT.Hash = tx.Hash().String()
 				switch tx.GetType() {
 				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-					txN := tx.(*transaction.TxBase)
-					data, err := json.Marshal(txN)
+					data, err := json.Marshal(tx)
 					if err != nil {
 						return nil, NewRPCError(JsonError, err)
 					}
 					transactionT.HexData = hex.EncodeToString(data)
-					transactionT.Locktime = txN.LockTime
+					transactionT.Locktime = tx.GetLockTime()
 				}
 				res.Txs = append(res.Txs, transactionT)
 			}

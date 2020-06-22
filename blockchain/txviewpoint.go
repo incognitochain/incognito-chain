@@ -31,7 +31,10 @@ type TxViewPoint struct {
 
 	// data of PRIVACY custom token
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint // sub tx viewpoint for token
-	privacyCustomTokenTxs       map[int32]*transaction.TxTokenBase
+
+	// This is Token Transaction
+	privacyCustomTokenTxs       map[int32]transaction.TxTokenInterface
+
 	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
 
 	// use to fetch tx - pubkey
@@ -49,7 +52,7 @@ func NewTxViewPoint(shardID byte, height uint64) *TxViewPoint {
 		mapSnD:                      make(map[string][][]byte),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
-		privacyCustomTokenTxs:       make(map[int32]*transaction.TxTokenBase),
+		privacyCustomTokenTxs:       make(map[int32]transaction.TxTokenInterface),
 		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
 		txByPubKey:                  make(map[string]interface{}),
 	}
@@ -199,10 +202,11 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 			}
 		case common.TxCustomTokenPrivacyType:
 			{
-				tx := tx.(*transaction.TxTokenBase)
+				tx := tx.(transaction.TxTokenInterface)
+				tokenData := tx.GetTxPrivacyTokenData()
 				subView := NewTxViewPoint(block.Header.ShardID, block.Header.Height)
-				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPointFromProof(stateDB, subView.shardID, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
+				subView.tokenID = &tokenData.PropertyID
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPointFromProof(stateDB, subView.shardID, tokenData.TxNormal.GetProof(), subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}

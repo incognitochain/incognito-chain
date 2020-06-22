@@ -41,66 +41,33 @@ type TxBase struct {
 	cachedActualSize *uint64 // cached actualsize data for tx
 }
 
+func NewTransactionFromParams(params *TxPrivacyInitParams) (metadata.Transaction, error) {
+	inputCoins := params.inputCoins
+	check := [3]bool{false, false, false}
+	for i := 0; i < len(inputCoins); i += 1 {
+		check[inputCoins[i].GetVersion()] = true
+	}
+	if check[1] && check[2] {
+		return nil, errors.New("Cannot create transaction from txprivacyinitparams, have both coin version 1 and 2")
+	}
+	if !check[1] && !check[2] {
+		return new(TxVersion2), nil
+		//return nil, errors.New("Cannot create transaction from txprivacyinitparams, does not have both coin version 1 and 2")
+	}
+	if check[1] {
+		return new(TxVersion1), nil
+	}
+	if check[2] {
+		return new(TxVersion2), nil
+	}
+	return nil, errors.New("Something is wrong when NewTransactionFromParams")
+}
+
+func NewEmptyTx() metadata.Transaction {
+	return new(TxVersion2)
+}
+
 // Function that choose which version to create metadata Transaction
-func NewTxPrivacyFromParams(params *TxPrivacyInitParams) (metadata.Transaction, error) {
-	version, err := getTxVersionFromCoins(params.inputCoins)
-	if err != nil {
-		Logger.Log.Errorf("Cannot get version from params")
-		return nil, err
-	}
-	if version == txVersion1Number {
-		return new(TxVersion1), nil
-	} else if version == txVersion2Number {
-		return new(TxVersion2), nil
-	}
-	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
-}
-
-func NewTxPrivacyFromVersionNumber(version int8) (metadata.Transaction, error) {
-	if version == txVersion1Number {
-		return new(TxVersion1), nil
-	} else if version == txVersion2Number {
-		return new(TxVersion2), nil
-	}
-	return nil, errors.New("Version is not 1 or 2, cannot NewTxPrivacyFromParams")
-}
-
-// This function copies values from TxBase to metadata.Transaction
-// It does not copy sigPrivKey because it is private field
-func NewTransactionFromTxBase(tx *TxBase) (metadata.Transaction, error) {
-	metaTx, err := NewTxPrivacyFromVersionNumber(tx.GetVersion())
-	if err != nil {
-		return nil, err
-	}
-	metaTx.SetVersion(tx.GetVersion())
-	metaTx.SetType(tx.GetType())
-	metaTx.SetLockTime(tx.GetLockTime())
-	metaTx.SetTxFee(tx.GetTxFee())
-	metaTx.SetInfo(tx.GetInfo())
-	metaTx.SetSigPubKey(tx.GetSigPubKey())
-	metaTx.SetSig(tx.GetSig())
-	metaTx.SetProof(tx.GetProof())
-	metaTx.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-	metaTx.SetMetadata(tx.GetMetadata())
-	return metaTx, nil
-}
-
-// This function copies values from metadata.Transaction to TxBase
-// It does not copy sigPrivKey because it is private field
-func NewTxBaseFromTransaction(txMetadata metadata.Transaction) *TxBase {
-	txBase := new(TxBase)
-	txBase.SetVersion(txMetadata.GetVersion())
-	txBase.SetType(txMetadata.GetType())
-	txBase.SetLockTime(txMetadata.GetLockTime())
-	txBase.SetTxFee(txMetadata.GetTxFee())
-	txBase.SetInfo(txMetadata.GetInfo())
-	txBase.SetSigPubKey(txMetadata.GetSigPubKey())
-	txBase.SetSig(txMetadata.GetSig())
-	txBase.SetProof(txMetadata.GetProof())
-	txBase.SetGetSenderAddrLastByte(txMetadata.GetSenderAddrLastByte())
-	txBase.SetMetadata(txMetadata.GetMetadata())
-	return txBase
-}
 
 type TxPrivacyInitParams struct {
 	senderSK    *privacy.PrivateKey
@@ -138,7 +105,6 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	return params
 }
 
-// Don't change to pointer. Because if not splitting to function like this (put this in Init func), the performance still be the same. If change to pointer it could be wrong.
 func getTxInfo(paramInfo []byte) ([]byte, error) {
 	if lenTxInfo := len(paramInfo); lenTxInfo > MaxSizeInfo {
 		return []byte{}, NewTransactionErr(ExceedSizeInfoTxError, nil)
@@ -266,11 +232,11 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 	}
 
 	var res privacy.Proof
-	if ver == txVersion1Number {
+	if ver == TxVersion1Number {
 		res = &zkp.PaymentProof{}
-	} else if ver == txVersion2Number {
+	} else if ver == TxVersion2Number {
 		res = &privacy_v2.PaymentProofV2{}
-	} else if ver == txConversionVersion12Number {
+	} else if ver == TxConversionVersion12Number {
 		res = &privacy_v2.ConversionProofVer1ToVer2{}
 	} else {
 		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2 or -1")
@@ -369,15 +335,6 @@ func (tx *TxBase) SetMetadata(meta metadata.Metadata) { tx.Metadata = meta }
 
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 
-func (tx TxBase) CheckAuthorizedSender(publicKey []byte) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(&tx)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return false, err
-	}
-	return transaction.CheckAuthorizedSender(publicKey)
-}
-
 func (tx TxBase) GetTxActualSize() uint64 {
 	//txBytes, _ := json.Marshal(tx)
 	//txSizeInByte := len(txBytes)
@@ -437,31 +394,6 @@ func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx TxBase) GetReceiverData() ([]coin.Coin, error) {
-	transaction, err := NewTransactionFromTxBase(&tx)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return nil, err
-	}
-	return transaction.GetReceiverData()
-}
-
-func (tx TxBase) GetTxMintData() (bool, coin.Coin, *common.Hash, error) {
-	outputCoins, err := tx.GetReceiverData()
-	if err != nil {
-		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
-		return false, nil, nil, err
-	}
-	if len(outputCoins) != 1 {
-		Logger.Log.Error("GetTxMintData : Should only have one receiver")
-		return false, nil, nil, errors.New("Error Tx mint has more than one receiver")
-	}
-	if inputCoins := tx.Proof.GetInputCoins(); len(inputCoins) > 0 {
-		return false, nil, nil, errors.New("Error this is not Tx mint")
-	}
-	return true, outputCoins[0], &common.PRVCoinID, nil
-}
-
 func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	pubkeys, amounts := tx.GetReceivers()
 	if len(pubkeys) == 0 {
@@ -473,43 +405,6 @@ func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 		return false, nil, 0, &common.PRVCoinID
 	}
 	return true, pubkeys[0], amounts[0], &common.PRVCoinID
-}
-
-//func (tx TxBase) GetTxMintData() (bool, *privacy.Point, *coin.TxRandom, uint64, *common.Hash) {
-//	publicKeys, txRandoms, amounts, err := tx.GetReceiverData()
-//	if err != nil {
-//		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
-//		return false, nil, nil, 0, &common.PRVCoinID
-//	}
-//	if len(publicKeys) != 1 {
-//		Logger.Log.Error("GetTxMintData receiver: one only")
-//		return false, nil, nil, 0, &common.PRVCoinID
-//	}
-//	if txRandoms != nil {
-//		return true, publicKeys[0] , txRandoms[0], amounts[0], &common.PRVCoinID
-//	}
-//	return true, publicKeys[0], nil, amounts[0], &common.PRVCoinID
-//}
-
-func (tx TxBase) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) {
-	outputCoins, err := tx.GetReceiverData()
-	if err != nil {
-		Logger.Log.Errorf("Cannot get receiver data, error %v", err)
-		return false, nil, nil, err
-	}
-	if len(outputCoins) > 2 {
-		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
-		return false, nil, nil, err
-	}
-
-
-	for _, coin := range outputCoins {
-		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
-			return true, coin, &common.PRVCoinID, nil
-		}
-
-	}
-	return false, nil, nil, nil
 }
 
 // implement this func if needed
@@ -664,42 +559,6 @@ func (tx TxBase) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.
 
 // =================== FUNCTIONS THAT VALIDATE STUFFS ===================
 
-func (tx TxBase) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(&tx)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return false, err
-	}
-	return transaction.ValidateTxSalary(db)
-}
-
-func (tx TxBase) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	transaction, err := NewTransactionFromTxBase(&tx)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return false, err
-	}
-	return transaction.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
-}
-
-func (tx TxBase) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	if tx.GetType() == common.TxRewardType {
-		return tx.ValidateTxSalary(transactionStateDB)
-	}
-	if tx.GetType() == common.TxReturnStakingType {
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil
-	}
-	if tx.Version == txConversionVersion12Number {
-		return validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
-	}
-	transaction, err := NewTransactionFromTxBase(&tx)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create new transaction from txBase")
-		return false, err
-	}
-	return transaction.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
-}
-
 func (tx TxBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	if tx.Proof == nil {
 		return nil
@@ -751,170 +610,3 @@ func (tx TxBase) ValidateType() bool {
 }
 
 func (tx TxBase) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
-
-func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	if tx.IsPrivacy() {
-		return true, nil
-	}
-	proof := tx.GetProof()
-	meta := tx.GetMetadata()
-
-	inputCoins := make([]coin.PlainCoin, 0)
-	outputCoins := make([]coin.Coin, 0)
-	if tx.GetProof() != nil {
-		inputCoins = tx.GetProof().GetInputCoins()
-		outputCoins = tx.GetProof().GetOutputCoins()
-	}
-	if proof != nil && len(inputCoins) == 0 && len(outputCoins) > 0 { // coinbase tx
-		if meta == nil {
-			return false, nil
-		}
-		if !meta.IsMinerCreatedMetaType() {
-			return false, nil
-		}
-	}
-	if meta != nil {
-		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, nil, nil)
-		if err != nil {
-			Logger.Log.Error(err)
-			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
-		}
-		return ok, nil
-	}
-	return true, nil
-}
-
-func (tx TxBase) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	prvCoinID := &common.Hash{}
-	err := prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return false, err
-	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
-	if !ok {
-		return false, err
-	}
-	meta := tx.GetMetadata()
-	if meta != nil {
-		if hasPrivacy {
-			return false, errors.New("Metadata can not exist in not privacy tx")
-		}
-		validateMetadata := meta.ValidateMetadataByItself()
-		if validateMetadata {
-			return validateMetadata, nil
-		} else {
-			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
-		}
-	}
-	return true, nil
-}
-
-func (tx TxBase) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
-		return nil
-	}
-	meta := tx.GetMetadata()
-	if meta != nil {
-		metaTx, err := NewTransactionFromTxBase(&tx)
-		if err != nil {
-			return err
-		}
-		isContinued, err := meta.ValidateTxWithBlockChain(metaTx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
-		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
-		if err != nil {
-			Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
-			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
-		}
-		if !isContinued {
-			return nil
-		}
-	}
-	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
-}
-
-func (tx TxBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	meta := tx.GetMetadata()
-	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", meta)
-	if meta != nil {
-		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
-		txMeta, err := NewTransactionFromTxBase(&tx)
-		if err != nil {
-			return false, err
-		}
-		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, txMeta)
-		Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
-		if err != nil || !ok || !isContinued {
-			return ok, err
-		}
-	}
-	Logger.Log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
-	//check version
-	if tx.GetVersion() > txVersion2Number {
-		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), currentTxVersion))
-	}
-	// check LockTime before now
-	if int64(tx.GetLockTime()) > time.Now().Unix() {
-		return false, NewTransactionErr(RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.GetLockTime()))
-	}
-
-	// check tx size
-	actualTxSize := tx.GetTxActualSize()
-	if actualTxSize > common.MaxTxSize {
-		return false, NewTransactionErr(RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
-	}
-
-	// check sanity of Proof
-	if tx.GetProof() != nil {
-		ok, err := tx.GetProof().ValidateSanity()
-		if !ok || err != nil {
-			s := ""
-			if !ok {
-				s = "ValidateSanity Proof got error: ok = false\n"
-			} else {
-				s = fmt.Sprintf("ValidateSanity Proof got error: error %s\n", err.Error())
-			}
-			return false, errors.New(s)
-		}
-	}
-
-	// check Type is normal or salary tx
-	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
-	default:
-		return false, NewTransactionErr(RejectTxType, fmt.Errorf("wrong tx type with %s", tx.GetType()))
-	}
-
-	//if txN.Type != common.TxNormalType && txN.Type != common.TxRewardType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
-	//	return false, errors.New("wrong tx type")
-	//}
-
-	// check info field
-	info := tx.GetInfo()
-	if len(info) > 512 {
-		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(info), 512))
-	}
-
-	return true, nil
-}
-
-// ============= Init Transaction, the input should be params such as: TxPrivacyInitParams ============
-// Please dont use other init function of TxVer1 and TxVer2
-// Because in other package cannot type assert the right type TxBase, or TxVer1, or TxVer2
-func (tx *TxBase) Init(paramsInterface interface{}) error {
-	txPrivacyParams, ok := paramsInterface.(*TxPrivacyInitParams)
-	if !ok {
-		return errors.New("params of tx Init is not TxPrivacyInitParam")
-	}
-	transaction, err := NewTxPrivacyFromParams(txPrivacyParams)
-	if err != nil {
-		return err
-	}
-	err = transaction.Init(paramsInterface)
-	if err != nil {
-		Logger.Log.Errorf("Cannot init transaction, err %v", err)
-		return err
-	}
-	// Copy value from transaction to txBase
-	*tx = *NewTxBaseFromTransaction(transaction)
-	return nil
-}
