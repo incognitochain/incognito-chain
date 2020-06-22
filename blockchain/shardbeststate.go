@@ -54,7 +54,6 @@ type ShardBestState struct {
 	MetricBlockHeight      uint64
 	//================================ StateDB Method
 	// block height => root hash
-	PreCommitteeHash           common.Hash `json:"PreCommitteeHash"` // Save hash of pending validators
 	consensusStateDB           *statedb.StateDB
 	ConsensusStateDBRootHash   common.Hash
 	transactionStateDB         *statedb.StateDB

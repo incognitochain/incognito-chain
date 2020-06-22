@@ -1420,18 +1420,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	// //Backup rawDB=============================START
-
-	if err := newBestState.storeBeaconPreCommitteeHash(batch, blockchain); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	if err := newBestState.storeShardPreCommitteeHash(batch, blockchain); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	//
-
 	if err := rawdbv2.StoreBeaconBlock(batch, blockHeight, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}

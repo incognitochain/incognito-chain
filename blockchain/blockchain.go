@@ -462,12 +462,32 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic(err)
 		}
 
-		err = v.restoreBeaconPreCommitteeInfo(blockchain)
+		err = v.restoreBeaconPendingValidator()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreShardPreCommitteeInfo(blockchain)
+		err = v.restoreShardPendingValidator()
+		if err != nil {
+			panic(err)
+		}
+
+		err = v.restoreCandidateBeaconWaitingForCurrentRandom()
+		if err != nil {
+			panic(err)
+		}
+
+		err = v.restoreCandidateBeaconWaitingForNextRandom()
+		if err != nil {
+			panic(err)
+		}
+
+		err = v.restoreCandidateShardWaitingForCurrentRandom()
+		if err != nil {
+			panic(err)
+		}
+
+		err = v.restoreCandidateShardWaitingForNextRandom()
 		if err != nil {
 			panic(err)
 		}
