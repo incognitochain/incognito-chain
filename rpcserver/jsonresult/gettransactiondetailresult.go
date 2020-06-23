@@ -227,7 +227,11 @@ func (c *CoinRPCV1) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
 	c.Randomness = OperationScalarPtrToScalar(coinv1.GetRandomness())
 	c.Value = coinv1.CoinDetails.GetValue()
 	c.Info = EncodeBase58Check(coinv1.GetInfo())
-	c.CoinDetailsEncrypted = EncodeBase58Check(coinv1.CoinDetailsEncrypted.Bytes())
+	if coinv1.CoinDetailsEncrypted != nil {
+		c.CoinDetailsEncrypted = EncodeBase58Check(coinv1.CoinDetailsEncrypted.Bytes())
+	} else {
+		c.CoinDetailsEncrypted = ""
+	}
 	return c
 }
 
