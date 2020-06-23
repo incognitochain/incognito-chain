@@ -165,8 +165,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			continue
 		case metadata.ReturnStakingMeta:
 			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
-			if _, ok := txReturnTable[returnMeta.StakerAddress.String()]; !ok {
-				txReturnTable[returnMeta.StakerAddress.String()] = true
+			if _, ok := txReturnTable[returnMeta.TxID]; !ok {
+				txReturnTable[returnMeta.TxID] = true
 			} else {
 				return errors.New("Double spent transaction return staking for a candidate.")
 			}

@@ -5,10 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
 	"strconv"
 )
 
@@ -73,13 +73,14 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
+	feederAddress := chainRetriever.GetPortalFeederAddress()
+	if portalExchangeRates.SenderAddress != feederAddress {
+		return false, false, fmt.Errorf("Sender must be feeder's address %v\n", feederAddress)
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(portalExchangeRates.SenderAddress)
 	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("SenderAddress incorrect"))
+		return false, false, errors.New("SenderAddress incorrect")
 	}
 
 	senderAddr := keyWallet.KeySet.PaymentAddress

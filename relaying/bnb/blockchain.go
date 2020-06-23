@@ -11,6 +11,7 @@ import (
 )
 
 var dbPath = ""
+
 func setDBPath(path string) {
 	if dbPath == "" {
 		dbPath = path
