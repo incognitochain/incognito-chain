@@ -208,6 +208,12 @@ func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
+func (beaconBestState *BeaconBestState) GetProducerIndexFromBlock(block *BeaconBlock) int {
+	//TODO: revert his
+	//return (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
+	return 0
+}
+
 func (beaconBestState *BeaconBestState) SetBestShardHeight(shardID byte, height uint64) {
 
 	beaconBestState.BestShardHeight[shardID] = height

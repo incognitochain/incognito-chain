@@ -57,6 +57,7 @@ const (
 	BuildTokenParamError
 	BuildPrivacyTokenParamError
 	GetListPrivacyCustomTokenBalanceError
+	GetPrivacyTokenError
 	// reject tx
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError
@@ -142,6 +143,7 @@ var ErrCodeMessage = map[int]struct {
 	TokenIsInvalidError:                   {-1018, "Token is invalid"},
 	GetKeySetFromPrivateKeyError:          {-1019, "Get KeySet From Private Key Error"},
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
+	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},

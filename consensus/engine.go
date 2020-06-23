@@ -69,6 +69,7 @@ func (s *Engine) WatchCommitteeChange() {
 	if s.curringMiningState.role != role || s.curringMiningState.chainID != chainID {
 		Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
 	}
+
 	s.curringMiningState.chainID = chainID
 	s.curringMiningState.role = role
 
@@ -107,20 +108,10 @@ func (s *Engine) WatchCommitteeChange() {
 			if len(s.config.Blockchain.ShardChain)-1 < chainID {
 				panic("Chain " + chainName + " not available")
 			}
-			if s.version == 1 {
-				if chainID == -1 {
-					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.Log)
-				} else {
-					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.Log)
-				}
-			} else {
-				if chainID == -1 {
-					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.Log)
-				} else {
-					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.Log)
-				}
-			}
-
+			s.initProcess(chainID, chainName)
+		} else if s.updateVersion(chainID) { // within 3s, we change consensus version -> enough for 10s block
+			s.BFTProcess[chainID].Stop()
+			s.initProcess(chainID, chainName)
 		}
 
 		s.BFTProcess[chainID].Start()
@@ -136,6 +127,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 func NewConsensusEngine() *Engine {
 	Logger.Log.Infof("CONSENSUS: NewConsensusEngine")
+
 	engine := &Engine{
 		BFTProcess:           make(map[int]ConsensusInterface),
 		consensusName:        common.BlsConsensus,
@@ -143,7 +135,40 @@ func NewConsensusEngine() *Engine {
 		version:              1,
 		lock:                 new(sync.Mutex),
 	}
+
 	return engine
+}
+
+func (engine *Engine) initProcess(chainID int, chainName string) {
+	if engine.version == 1 {
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+		}
+	} else {
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+		}
+	}
+}
+
+func (engine *Engine) updateVersion(chainID int) bool {
+	chainEpoch := uint64(1)
+	if chainID == -1 {
+		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
+	} else {
+		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
+	}
+
+	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch && engine.version <= 1 {
+		engine.version = 2
+		return true
+	}
+
+	return false
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
@@ -152,7 +177,7 @@ func (engine *Engine) Init(config *EngineConfig) {
 }
 
 func (engine *Engine) Start() error {
-	Logger.Log.Infof("CONSENSUS: Start")
+	defer Logger.Log.Infof("CONSENSUS: Start")
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {

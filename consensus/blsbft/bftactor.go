@@ -30,11 +30,11 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
+		TimeStart         time.Time
 		Block             common.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
-		TimeStart         time.Time
 		Votes             map[string]vote
 		Round             int
 		NextHeight        uint64
@@ -367,14 +367,17 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
+		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
 		return
 	}
+
 	e.isOngoing = false
-	e.setState(newround)
+	e.setState("")
 	if e.waitForNextRound() {
 		return
 	}
+	e.setState(newround)
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
@@ -451,8 +454,8 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		}
 		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
 	}
-
 }
+
 func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT {
 	var newInstance BLSBFT
 	newInstance.Chain = chain

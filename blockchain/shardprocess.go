@@ -179,15 +179,16 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 	//========Post verification: verify new beaconstate with corresponding block
-	if shouldValidate {
-		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
-			return err
-		}
-	} else {
-		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	//if shouldValidate {
+	Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+		fmt.Println("Instructions", shardBlock.Body.Instructions)
+		return err
 	}
-	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	//} else {
+	//	Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	//}
+
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	err = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
 	if err != nil {
@@ -732,6 +733,10 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if err != nil {
 		return err
 	}
+	// TODO: 0xmerman
+	fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
+	shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
+
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(shardBlock.Body.Instructions) != 0 {
@@ -745,7 +750,14 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	for _, l := range shardBlock.Body.Instructions {
 		if l[0] == SwapAction {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, shardBestState.MinShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
+			maxShardCommitteeSize := shardBestState.MaxShardCommitteeSize - NumberOfFixedBlockValidators
+			var minShardCommitteeSize int
+			if shardBestState.MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+				minShardCommitteeSize = 0
+			} else {
+				minShardCommitteeSize = shardBestState.MinShardCommitteeSize - NumberOfFixedBlockValidators
+			}
+			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
 				return NewBlockChainError(SwapValidatorError, err)
@@ -818,7 +830,8 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if err != nil {
 		return err
 	}
-	shardBestState.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	//TODO: merman
+	shardBestState.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append(fixedProducerShardValidators, shardCommittee...))
 	if err != nil {
 		return err
 	}

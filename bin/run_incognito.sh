@@ -35,7 +35,7 @@ if [ -z "$RPC_PORT" ]; then RPC_PORT=9334; fi
 
 if [ -z "$WS_PORT" ]; then WS_PORT=19334; fi
 
-if [ -n "$FULLNODE" ] && [ "$FULLNODE" == "1" ]; then
+if [ -n "$FULLNODE" ] &&  [ "$FULLNODE" = "1" ]; then
     echo ./incognito --nodemode "relay" --relayshards "all" -n $NAME --discoverpeers --discoverpeersaddress $BOOTNODE_IP --nodemode "relay" --datadir "/data" --listen "0.0.0.0:$NODE_PORT" --externaladdress "$PUBLIC_IP:$NODE_PORT" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --testnet $TESTNET --limitfee $LIMIT_FEE --norpcauth --rpclisten "0.0.0.0:$RPC_PORT" --rpcwslisten "0.0.0.0:$WS_PORT" --loglevel "info" > cmd.sh
    ./incognito --nodemode "relay" --relayshards "all" -n $NAME --discoverpeers --discoverpeersaddress $BOOTNODE_IP --nodemode "relay" --datadir "/data" --listen "0.0.0.0:$NODE_PORT" --externaladdress "$PUBLIC_IP:$NODE_PORT" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --testnet $TESTNET --limitfee $LIMIT_FEE --norpcauth --rpclisten "0.0.0.0:$RPC_PORT" --rpcwslisten "0.0.0.0:$WS_PORT" --loglevel "info" --rpcmaxclients 1500 2>/data/error.log | cronolog /data/$CONTRACT_IP-%Y-%m-%d.log
 elif [ -n "$PRIVATEKEY" ]; then

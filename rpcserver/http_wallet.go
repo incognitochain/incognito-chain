@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -379,6 +380,34 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	}
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params is invalid"))
+	}
+	tokenIDStr, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params type is invalid"))
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("tokenID to hash failed %+v", err))
+	}
+	for _, i := range httpServer.blockService.BlockChain.GetShardIDs() {
+		shardID := byte(i)
+		tokenState, isExist, err := httpServer.blockService.BlockChain.GetPrivacyTokenState(*tokenID, shardID)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPrivacyTokenError, err)
+		}
+		if isExist {
+			customToken := jsonresult.NewPrivacyToken(tokenState)
+			return jsonresult.NewGetCustomToken(isExist, *customToken), nil
+		}
+	}
+	return jsonresult.NewGetCustomToken(false, jsonresult.CustomToken{}), nil
+}
+
 func (httpServer *HttpServer) handleListPrivacyCustomTokenByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {

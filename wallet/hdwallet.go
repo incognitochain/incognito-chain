@@ -13,7 +13,6 @@ import (
 // burnAddress1BytesDecode,_, err := base58.Base58Check{}.Decode("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 var burnAddress1BytesDecode = []byte{1, 32, 99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0, 0, 163, 228, 236, 208}
 
-
 // KeyWallet represents with bip32 standard
 type KeyWallet struct {
 	Depth       byte   // 1 bytes
@@ -161,7 +160,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 	}
 	keyType := data[0]
 	if keyType == PriKeyType {
-		if len(data) != privKeySerializedBytesLen{
+		if len(data) != privKeySerializedBytesLen {
 			return nil, NewWalletError(InvalidSeserializedKey, nil)
 		}
 
@@ -172,8 +171,8 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		key.KeySet.PrivateKey = make([]byte, keyLength)
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PaymentAddressType {
-		if !bytes.Equal(burnAddress1BytesDecode, data){
-			if len(data) != paymentAddrSerializedBytesLen{
+		if !bytes.Equal(burnAddress1BytesDecode, data) {
+			if len(data) != paymentAddrSerializedBytesLen {
 				return nil, NewWalletError(InvalidSeserializedKey, nil)
 			}
 		}
@@ -184,7 +183,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		copy(key.KeySet.PaymentAddress.Pk[:], data[2:2+apkKeyLength])
 		copy(key.KeySet.PaymentAddress.Tk[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
-		if len(data) != readOnlyKeySerializedBytesLen{
+		if len(data) != readOnlyKeySerializedBytesLen {
 			return nil, NewWalletError(InvalidSeserializedKey, nil)
 		}
 

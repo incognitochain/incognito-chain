@@ -544,12 +544,11 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		swapInstruction       = []string{}
 		// err                   error
 	)
+	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
-		// TODO: 0xmerman
 		backupShardCommittee := shardCommittee
-		//fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
+		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
 		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
-
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
@@ -568,8 +567,14 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
 
-		maxShardCommitteeSize := view.MaxShardCommitteeSize
-		minShardCommitteeSize := view.MinShardCommitteeSize
+		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedBlockValidators
+		var minShardCommitteeSize int
+		if view.MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+			minShardCommitteeSize = 0
+		} else {
+			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedBlockValidators
+		}
+
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
 		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
@@ -580,10 +585,13 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 				Logger.log.Error(err)
 				return instructions, shardPendingValidator, shardCommittee, err
 			}
+			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
+		// NOTE: shardCommittee must be finalized before building Bridge instruction here
+		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
-		if shardID == bridgeID {
+		if shardID == bridgeID && committeeChanged(swapInstruction) {
 			blockHeight := view.ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
@@ -592,7 +600,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 			}
 			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 		}
-		// }
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
@@ -754,4 +761,16 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 	seed := make([]byte, 16)
 	rand.Read(seed)
 	return privacy.GeneratePrivateKey(seed)
+}
+
+// committeeChanged checks if swap instructions really changed the committee list
+// (not just empty swap instruction)
+func committeeChanged(swap []string) bool {
+	if len(swap) < 3 {
+		return false
+	}
+
+	in := swap[1]
+	out := swap[2]
+	return len(in) > 0 || len(out) > 0
 }

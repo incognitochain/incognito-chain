@@ -257,11 +257,17 @@ func SwapValidator(
 	currentGoodProducers := filterValidators(currentValidators, producersBlackList, false)
 	goodPendingValidatorsLen := len(goodPendingValidators)
 	currentGoodProducersLen := len(currentGoodProducers)
-
+	// number of good producer more than minimum needed producer to continue
 	if currentGoodProducersLen >= minCommittee {
+		// current number of good producer reach maximum committee size => swap
 		if currentGoodProducersLen == maxCommittee {
 			offset = swapOffset
 		}
+		// if not then number of good producer are less than maximum committee size
+		// push more pending validator into committee list
+
+		// if number of current good pending validators are less than maximum push offset
+		// then push all good pending validator into committee
 		if offset > goodPendingValidatorsLen {
 			offset = goodPendingValidatorsLen
 		}
