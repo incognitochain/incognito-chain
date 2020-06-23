@@ -29,7 +29,7 @@ import (
 type BeaconBestState struct {
 	BestBlockHash                          common.Hash                                `json:"BestBlockHash"`         // The hash of the block.
 	PreviousBestBlockHash                  common.Hash                                `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock                              BeaconBlock                                `json:"BestBlock"`             // The block.
+	BestBlock                              BeaconBlock                                `json:"-"`                     // The block.
 	BestShardHash                          map[byte]common.Hash                       `json:"BestShardHash"`
 	BestShardHeight                        map[byte]uint64                            `json:"BestShardHeight"`
 	Epoch                                  uint64                                     `json:"Epoch"`
@@ -66,8 +66,6 @@ type BeaconBestState struct {
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
 	BlockMaxCreateTime     time.Duration
-	//================================ local state
-	currentPDEState *CurrentPDEState
 	//================================ StateDB Method
 	// block height => root hash
 	consensusStateDB         *statedb.StateDB
@@ -128,7 +126,6 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
-	beaconBestState.currentPDEState = new(CurrentPDEState)
 	return beaconBestState
 }
 
@@ -602,7 +599,10 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
-	//beaconBestState.currentPDEState = target.currentPDEState.Copy()
+
+	// TODO: @tin: re-produce field that not marshal
+	beaconBestState.BestBlock = target.BestBlock
+
 	return nil
 }
 

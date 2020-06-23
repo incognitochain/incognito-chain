@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -33,15 +33,14 @@ func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 	return assignInstruction
 }
 
-func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		hashes, err := rawdbv2.GetBeaconBlockHashByIndex(db, i)
+		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), i)
 		if err != nil {
-			return beaconBlocks, err
+			return nil, err
 		}
-		hash := hashes[0]
-		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, hash)
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconHash)
 		if err != nil {
 			return beaconBlocks, err
 		}

@@ -44,6 +44,8 @@ const (
 	PortalRewardInfoObjectType
 	LockedCollateralStateObjectType
 	RewardFeatureStateObjectType
+
+	BlockHashObjectType
 )
 
 // Prefix length

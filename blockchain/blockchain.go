@@ -189,6 +189,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.BeaconCommittee, initBeaconBestState.RewardReceiver, initBeaconBestState.AutoStaking); err != nil {
 		return err
 	}
+	if err := statedb.StoreBeaconBlockHashByIndex(initBeaconBestState.consensusStateDB, initBlockHeight, initBlockHash); err != nil {
+		return err
+	}
+
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -200,9 +204,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBeaconBestState.consensusStateDB.ClearObjects()
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
-		return err
-	}
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash); err != nil {
 		return err
 	}
 	// State Root Hash
@@ -355,7 +356,7 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 }
 
 func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
-	bestStateBytes, err := rawdbv2.GetBeaconBestState(blockchain.GetBeaconChainDatabase())
+	bestStateBytes, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
@@ -405,7 +406,7 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
 	b, _ := json.Marshal(allViews)
-	return rawdbv2.StoreBeaconBestState(db, b)
+	return rawdbv2.StoreBeaconViews(db, b)
 }
 
 /*
@@ -413,7 +414,7 @@ Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
 	allViews := []*BeaconBestState{}
-	b, err := rawdbv2.GetBeaconBestState(blockchain.GetBeaconChainDatabase())
+	b, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
 	}
@@ -422,19 +423,28 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		return err
 	}
 	for _, v := range allViews {
-		if !blockchain.BeaconChain.multiView.AddView(v) {
-			panic("Restart beacon views fail")
-		}
+
 		err := v.InitStateRootHash(blockchain)
 		if err != nil {
 			panic(err)
 		}
-		currentPDEState, err := InitCurrentPDEStateFromDB(v.featureStateDB, v.BeaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil
+
+		// TODO: re-produce field that not marshal
+		//best block
+		block, _, err := blockchain.GetBeaconBlockByHash(v.BestBlockHash)
+		if err != nil || block == nil {
+			fmt.Println("block ", block)
+			panic(err)
 		}
-		v.currentPDEState = currentPDEState
+		v.BestBlock = *block
+		//@tin beacon committee
+		//@tin shard committee
+
+		// finish reproduce
+		if !blockchain.BeaconChain.multiView.AddView(v) {
+			panic("Restart beacon views fail")
+		}
+
 	}
 	return nil
 }

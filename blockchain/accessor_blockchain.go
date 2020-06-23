@@ -12,98 +12,98 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
-func (blockchain *BlockChain) StoreShardBestState(shardID byte) error {
-	return rawdbv2.StoreShardBestState(blockchain.GetShardChainDatabase(shardID), shardID, blockchain.GetBestStateShard(shardID))
-}
+//func (blockchain *BlockChain) StoreShardBestState(shardID byte) error {
+//	return rawdbv2.StoreShardBestState(blockchain.GetShardChainDatabase(shardID), shardID, blockchain.GetBestStateShard(shardID))
+//}
 
-func (blockchain *BlockChain) FinalizedShardBlock(shardBlock *ShardBlock) error {
-	return rawdbv2.FinalizedShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), shardBlock.Header.ShardID, shardBlock.Header.Hash())
-}
+//func (blockchain *BlockChain) FinalizedShardBlock(shardBlock *ShardBlock) error {
+//	return rawdbv2.FinalizedShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), shardBlock.Header.ShardID, shardBlock.Header.Hash())
+//}
 
-func (blockchain *BlockChain) GetFinalizedShardBlock(shardID byte) (*ShardBlock, uint64, error) {
-	hash, err := rawdbv2.GetFinalizedShardBlock(blockchain.GetShardChainDatabase(shardID), shardID)
-	if err != nil {
-		return nil, 0, err
-	}
-	shardBlock, height, err := blockchain.GetShardBlockByHash(hash)
-	if err != nil {
-		return nil, 0, err
-	}
-	return shardBlock, height, nil
-}
+//func (blockchain *BlockChain) GetFinalizedShardBlock(shardID byte) (*ShardBlock, uint64, error) {
+//	hash, err := rawdbv2.GetFinalizedShardBlock(blockchain.GetShardChainDatabase(shardID), shardID)
+//	if err != nil {
+//		return nil, 0, err
+//	}
+//	shardBlock, height, err := blockchain.GetShardBlockByHash(hash)
+//	if err != nil {
+//		return nil, 0, err
+//	}
+//	return shardBlock, height, nil
+//}
 
-func (blockchain *BlockChain) DeleteShardBlockByView(shardID byte, view common.Hash) error {
-	return rawdbv2.DeleteShardBlockByView(blockchain.GetShardChainDatabase(shardID), view)
-}
+//func (blockchain *BlockChain) DeleteShardBlockByView(shardID byte, view common.Hash) error {
+//	return rawdbv2.DeleteShardBlockByView(blockchain.GetShardChainDatabase(shardID), view)
+//}
 
-func (blockchain *BlockChain) GetShardBlockByHeightAndView(shardID byte, height uint64, view common.Hash) (*ShardBlock, error) {
-	finalShardBlock, finalHeight, err := blockchain.GetFinalizedShardBlock(shardID)
-	if err != nil {
-		return nil, err
-	}
-	if height == finalHeight {
-		return finalShardBlock, nil
-	}
-	if height < finalHeight {
-		shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
-		if err != nil {
-			return nil, err
-		}
-		shardBlock := NewShardBlock()
-		for _, v := range shardBlocks {
-			shardBlock = v
-			break
-		}
-		return shardBlock, nil
-	}
-	if height > finalHeight {
-		shardBlockIndexes, err := rawdbv2.GetShardBlockByView(blockchain.GetShardChainDatabase(shardID), view)
-		if err != nil {
-			return nil, err
-		}
-		if blockHash, ok := shardBlockIndexes[height]; !ok {
-			return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
-		} else {
-			shardBlock, shardHeight, err := blockchain.GetShardBlockByHash(blockHash)
-			if err != nil {
-				return nil, err
-			}
-			if shardHeight != height {
-				return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
-			}
-			return shardBlock, nil
-		}
-	}
-	return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
-}
+//func (blockchain *BlockChain) GetShardBlockByHeightAndView(shardID byte, height uint64, view common.Hash) (*ShardBlock, error) {
+//	finalShardBlock, finalHeight, err := blockchain.GetFinalizedShardBlock(shardID)
+//	if err != nil {
+//		return nil, err
+//	}
+//	if height == finalHeight {
+//		return finalShardBlock, nil
+//	}
+//	if height < finalHeight {
+//		shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
+//		if err != nil {
+//			return nil, err
+//		}
+//		shardBlock := NewShardBlock()
+//		for _, v := range shardBlocks {
+//			shardBlock = v
+//			break
+//		}
+//		return shardBlock, nil
+//	}
+//	if height > finalHeight {
+//		shardBlockIndexes, err := rawdbv2.GetShardBlockByView(blockchain.GetShardChainDatabase(shardID), view)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if blockHash, ok := shardBlockIndexes[height]; !ok {
+//			return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
+//		} else {
+//			shardBlock, shardHeight, err := blockchain.GetShardBlockByHash(blockHash)
+//			if err != nil {
+//				return nil, err
+//			}
+//			if shardHeight != height {
+//				return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
+//			}
+//			return shardBlock, nil
+//		}
+//	}
+//	return nil, fmt.Errorf("Shard %+v, Block Height %+v, View %+v, not found", shardID, height, view)
+//}
 
-func (blockchain *BlockChain) StoreBeaconBestState() error {
-	beaconBestStateBytes, err := json.Marshal(blockchain.GetBeaconBestState())
-	if err != nil {
-		return err
-	}
-	return rawdbv2.StoreBeaconBestState(blockchain.GetBeaconChainDatabase(), beaconBestStateBytes)
-}
+//func (blockchain *BlockChain) StoreBeaconBestState() error {
+//	beaconBestStateBytes, err := json.Marshal(blockchain.GetBeaconBestState())
+//	if err != nil {
+//		return err
+//	}
+//	return rawdbv2.StoreBeaconBestState(blockchain.GetBeaconChainDatabase(), beaconBestStateBytes)
+//}
 
-func (blockchain *BlockChain) FinalizedBeaconBlock(beaconBlock *BeaconBlock) error {
-	return rawdbv2.FinalizedBeaconBlock(blockchain.GetBeaconChainDatabase(), beaconBlock.Header.Hash())
-}
+//func (blockchain *BlockChain) FinalizedBeaconBlock(beaconBlock *BeaconBlock) error {
+//	return rawdbv2.FinalizedBeaconBlock(blockchain.GetBeaconChainDatabase(), beaconBlock.Header.Hash())
+//}
+//
+//func (blockchain *BlockChain) GetFinalizedBeaconBlock() (*BeaconBlock, uint64, error) {
+//	hash, err := rawdbv2.GetFinalizedBeaconBlock(blockchain.GetBeaconChainDatabase())
+//	if err != nil {
+//		return nil, 0, err
+//	}
+//	beaconBlock, height, err := blockchain.GetBeaconBlockByHash(hash)
+//	if err != nil {
+//		return nil, 0, err
+//	}
+//	return beaconBlock, height, nil
+//}
 
-func (blockchain *BlockChain) GetFinalizedBeaconBlock() (*BeaconBlock, uint64, error) {
-	hash, err := rawdbv2.GetFinalizedBeaconBlock(blockchain.GetBeaconChainDatabase())
-	if err != nil {
-		return nil, 0, err
-	}
-	beaconBlock, height, err := blockchain.GetBeaconBlockByHash(hash)
-	if err != nil {
-		return nil, 0, err
-	}
-	return beaconBlock, height, nil
-}
-
-func (blockchain *BlockChain) DeleteBeaconBlockByView(view common.Hash) error {
-	return rawdbv2.DeleteBeaconBlockByView(blockchain.GetBeaconChainDatabase(), view)
-}
+//func (blockchain *BlockChain) DeleteBeaconBlockByView(view common.Hash) error {
+//	return rawdbv2.DeleteBeaconBlockByView(blockchain.GetBeaconChainDatabase(), view)
+//}
 
 func (blockchain *BlockChain) GetBeaconBlockByHeightAndView(height uint64, viewHash common.Hash) (*BeaconBlock, error) {
 	finalView := blockchain.BeaconChain.GetFinalView()
@@ -138,26 +138,25 @@ func (blockchain *BlockChain) GetShardBlockHeightByHash(hash common.Hash) (uint6
 	return 0, 0, NewBlockChainError(GetShardBlockHeightByHashError, fmt.Errorf("Not found shard block height by hash %+v ", hash))
 }
 
-func (blockchain *BlockChain) GetBeaconBlockHashByHeight(height uint64) ([]common.Hash, error) {
-	return rawdbv2.GetBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), height)
-}
+//func (blockchain *BlockChain) GetBeaconBlockHashByHeight(height uint64) (common.Hash, error) {
+//	return statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().consensusStateDB, height)
+//}
 
 func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBlock, error) {
 	if blockchain.IsTest {
 		return []*BeaconBlock{}, nil
 	}
 	beaconBlocks := []*BeaconBlock{}
-	beaconBlockHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), height)
+	beaconBlockHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), height)
 	if err != nil {
 		return nil, err
 	}
-	for _, beaconBlockHash := range beaconBlockHashes {
-		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconBlockHash)
-		if err != nil {
-			return nil, err
-		}
-		beaconBlocks = append(beaconBlocks, beaconBlock)
+
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconBlockHash)
+	if err != nil {
+		return nil, err
 	}
+	beaconBlocks = append(beaconBlocks, beaconBlock)
 
 	return beaconBlocks, nil
 }
@@ -189,32 +188,31 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
-func (blockchain *BlockChain) GetShardBlockHashByHeight(height uint64, shardID byte) ([]common.Hash, error) {
-	hashes := []common.Hash{}
-	m, err := rawdbv2.GetShardBlockByIndex(blockchain.GetShardChainDatabase(shardID), shardID, height)
+func (blockchain *BlockChain) GetShardBlockHashByHeight(height uint64, shardID byte) (common.Hash, error) {
+	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB.Copy(), shardID, height)
 	if err != nil {
-		return hashes, err
+		return hash, err
 	}
-	for k, _ := range m {
-		hashes = append(hashes, k)
-	}
-	return hashes, nil
+
+	return hash, nil
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*ShardBlock, error) {
 	shardBlockMap := make(map[common.Hash]*ShardBlock)
-	m, err := rawdbv2.GetShardBlockByIndex(blockchain.GetShardChainDatabase(shardID), shardID, height)
+	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB.Copy(), shardID, height)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range m {
-		shardBlock := NewShardBlock()
-		err := json.Unmarshal(v, shardBlock)
-		if err != nil {
-			return nil, err
-		}
-		shardBlockMap[k] = shardBlock
+	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
+	if err != nil {
+		return nil, err
 	}
+	shardBlock := NewShardBlock()
+	err = json.Unmarshal(data, shardBlock)
+	if err != nil {
+		return nil, err
+	}
+	shardBlockMap[*shardBlock.Hash()] = shardBlock
 	return shardBlockMap, err
 }
 
