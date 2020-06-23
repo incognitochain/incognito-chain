@@ -44,10 +44,10 @@ const (
 
 // For all Transaction information
 const (
-	TxNormalType        = "n"  // normal tx(send and receive coin)
-	TxRewardType        = "s"  // reward tx
-	TxReturnStakingType = "rs" //
-	TxConversionType = "cv" // Convert 1 - 2 normal tx
+	TxNormalType          = "n"   // normal tx(send and receive coin)
+	TxRewardType          = "s"   // reward tx
+	TxReturnStakingType   = "rs"  //
+	TxConversionType      = "cv"  // Convert 1 - 2 normal tx
 	TxTokenConversionType = "tcv" // Convert 1 - 2 token tx
 	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
@@ -79,7 +79,7 @@ const (
 	PendingRole    = "pending"
 	SyncingRole    = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole    = "waiting"
-	MaxShardNumber = 1
+	MaxShardNumber = 8
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
