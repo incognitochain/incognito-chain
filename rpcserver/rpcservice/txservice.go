@@ -264,12 +264,6 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
-	fmt.Println("First Inside chooseOutsCoinByKeyset")
-	fmt.Println("First Inside chooseOutsCoinByKeyset")
-	fmt.Println("First Inside chooseOutsCoinByKeyset")
-	fmt.Println(len(plainCoins))
-	fmt.Println(len(plainCoins))
-	fmt.Println(len(plainCoins))
 	// remove out coin in mem pool
 	plainCoins, err = txService.filterMemPoolOutcoinsToSpent(plainCoins)
 	if err != nil {
@@ -279,12 +273,6 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		return nil, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
 	}
 
-	fmt.Println("Second Inside chooseOutsCoinByKeyset")
-	fmt.Println("Second Inside chooseOutsCoinByKeyset")
-	fmt.Println("Second Inside chooseOutsCoinByKeyset")
-	fmt.Println(len(plainCoins))
-	fmt.Println(len(plainCoins))
-	fmt.Println(len(plainCoins))
 	// Use Knapsack to get candiate output coin
 	candidatePlainCoins, outCoins, candidateOutputCoinAmount, err := txService.chooseBestOutCoinsToSpent(plainCoins, totalAmmount)
 	if err != nil {

@@ -5855,3 +5855,745 @@ syncker: receive beacon block 336
 2020-06-18 16:07:11.729 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 336, with hash d584778134759a568b46cc9195b558da67da99d1ef6e3bde169b7329711fb25d
 2020-06-18 16:07:12.691 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
 2020-06-18 16:07:15.696 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:18.699 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 337 
+2020-06-18 16:07:21.702 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:21.747 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 337
+2020-06-18 16:07:21.751 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  337 with hash [224 3 7 54 207 93 37 119 241 223 155 8 204 156 170 162 196 80 158 238 103 86 4 204 200 98 182 169 225 205 206 204]
+2020-06-18 16:07:21.755 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 337 with hash [224 3 7 54 207 93 37 119 241 223 155 8 204 156 170 162 196 80 158 238 103 86 4 204 200 98 182 169 225 205 206 204]
+2020-06-18 16:07:21.755 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.352µs
+2020-06-18 16:07:21.755 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.582µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:21.755 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.103µs
+2020-06-18 16:07:21.755 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 27.091µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:21.755 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.303µs
+2020-06-18 16:07:21.756 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.976µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:21.756 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.86µs
+2020-06-18 16:07:21.756 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.867µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:21.756 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 337, with hash cccecde1a9b662c8cc045667ee9e50c4a2aa9ccc089bdff177255dcf360703e0
+2020-06-18 16:07:24.705 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:27.708 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:30.711 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 338 
+2020-06-18 16:07:31.774 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 338
+2020-06-18 16:07:31.779 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  338 with hash [76 150 237 136 179 210 237 118 212 229 57 250 248 216 69 141 217 168 25 61 9 46 113 52 229 86 236 236 208 9 65 183]
+2020-06-18 16:07:31.784 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 338 with hash [76 150 237 136 179 210 237 118 212 229 57 250 248 216 69 141 217 168 25 61 9 46 113 52 229 86 236 236 208 9 65 183]
+2020-06-18 16:07:31.785 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.172µs
+2020-06-18 16:07:31.785 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.703µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:31.785 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 21.166µs
+2020-06-18 16:07:31.785 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 26.859µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:31.785 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.21µs
+2020-06-18 16:07:31.785 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.946µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:31.785 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.661µs
+2020-06-18 16:07:31.785 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.926µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:31.786 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 338, with hash b74109d0ecec56e534712e093d19a8d98d45d8f8fa39e5d476edd2b388ed964c
+2020-06-18 16:07:33.716 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:36.718 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:39.723 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 339 
+2020-06-18 16:07:41.806 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 339
+2020-06-18 16:07:41.812 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  339 with hash [95 12 242 253 238 159 164 6 224 164 41 164 169 148 199 90 215 71 240 237 71 33 188 229 231 139 27 84 7 84 220 74]
+2020-06-18 16:07:41.817 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 339 with hash [95 12 242 253 238 159 164 6 224 164 41 164 169 148 199 90 215 71 240 237 71 33 188 229 231 139 27 84 7 84 220 74]
+2020-06-18 16:07:41.817 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.454µs
+2020-06-18 16:07:41.818 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.46µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:41.818 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 22.292µs
+2020-06-18 16:07:41.818 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 45.306µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:41.818 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.965µs
+2020-06-18 16:07:41.818 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.801µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:41.818 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.346µs
+2020-06-18 16:07:41.818 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.163µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:41.819 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 339, with hash 4adc5407541b8be7e5bc2147edf047d75ac794a9a429a4e006a49feefdf20c5f
+2020-06-18 16:07:42.727 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:45.729 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:48.733 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 340 
+2020-06-18 16:07:51.738 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:51.833 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 340
+2020-06-18 16:07:51.839 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  340 with hash [207 92 248 182 55 84 141 186 144 219 10 104 127 8 150 100 178 81 196 52 167 203 1 157 109 89 120 148 128 214 151 81]
+2020-06-18 16:07:51.846 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 340 with hash [207 92 248 182 55 84 141 186 144 219 10 104 127 8 150 100 178 81 196 52 167 203 1 157 109 89 120 148 128 214 151 81]
+2020-06-18 16:07:51.847 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.077µs
+2020-06-18 16:07:51.847 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.385µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:51.847 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 30.637µs
+2020-06-18 16:07:51.847 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 43.256µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:51.847 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.087µs
+2020-06-18 16:07:51.847 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.125µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:51.847 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.98µs
+2020-06-18 16:07:51.847 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.464µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:07:51.848 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 340, with hash 5197d6809478596d9d01cba734c451b26496087f680adb90ba8d5437b6f85ccf
+2020-06-18 16:07:54.739 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:07:57.743 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:00.744 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 341 
+2020-06-18 16:08:01.868 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 341
+2020-06-18 16:08:01.873 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  341 with hash [8 48 127 154 108 3 75 255 242 244 254 98 11 37 103 165 180 39 103 252 159 108 230 102 148 117 97 3 1 188 83 81]
+2020-06-18 16:08:01.878 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 341 with hash [8 48 127 154 108 3 75 255 242 244 254 98 11 37 103 165 180 39 103 252 159 108 230 102 148 117 97 3 1 188 83 81]
+2020-06-18 16:08:01.879 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.71µs
+2020-06-18 16:08:01.879 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.53µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:01.879 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.442µs
+2020-06-18 16:08:01.879 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 25.481µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:01.879 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.235µs
+2020-06-18 16:08:01.879 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.803µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:01.879 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.834µs
+2020-06-18 16:08:01.879 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.623µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:01.880 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 341, with hash 5153bc010361759466e66c9ffc6727b4a567250b62fef4f2ff4b036c9a7f3008
+2020-06-18 16:08:03.748 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:06.751 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:09.753 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 342 
+2020-06-18 16:08:11.896 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 342
+2020-06-18 16:08:11.900 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  342 with hash [13 220 44 74 32 193 144 145 223 174 241 217 179 26 241 138 245 98 81 144 21 69 16 41 223 60 20 93 106 42 136 201]
+2020-06-18 16:08:11.904 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 342 with hash [13 220 44 74 32 193 144 145 223 174 241 217 179 26 241 138 245 98 81 144 21 69 16 41 223 60 20 93 106 42 136 201]
+2020-06-18 16:08:11.905 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.978µs
+2020-06-18 16:08:11.905 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.746µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:11.905 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 21.41µs
+2020-06-18 16:08:11.905 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 26.869µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:11.905 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.554µs
+2020-06-18 16:08:11.905 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.253µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:11.905 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.924µs
+2020-06-18 16:08:11.905 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.677µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:11.906 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 342, with hash c9882a6a5d143cdf29104515905162f58af11ab3d9f1aedf9190c1204a2cdc0d
+2020-06-18 16:08:12.758 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:15.762 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:18.765 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 343 
+2020-06-18 16:08:21.768 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:21.928 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 343
+2020-06-18 16:08:21.933 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  343 with hash [37 140 176 224 222 159 66 108 118 70 92 243 20 153 185 122 83 88 255 244 202 48 1 239 3 86 126 161 7 58 74 49]
+2020-06-18 16:08:21.939 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 343 with hash [37 140 176 224 222 159 66 108 118 70 92 243 20 153 185 122 83 88 255 244 202 48 1 239 3 86 126 161 7 58 74 49]
+2020-06-18 16:08:21.939 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.314µs
+2020-06-18 16:08:21.939 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.432µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:21.940 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 19.1µs
+2020-06-18 16:08:21.940 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 25.605µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:21.940 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.629µs
+2020-06-18 16:08:21.940 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.136µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:21.940 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.996µs
+2020-06-18 16:08:21.940 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.879µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:21.941 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 343, with hash 314a3a07a17e5603ef0130caf4ff58537ab99914f35c46766c429fdee0b08c25
+2020-06-18 16:08:24.771 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:27.776 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:30.780 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 344 
+2020-06-18 16:08:31.962 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 344
+2020-06-18 16:08:31.965 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  344 with hash [65 156 1 137 90 18 123 51 134 38 250 170 209 247 183 247 57 5 71 28 248 77 88 174 40 39 140 24 127 107 7 227]
+2020-06-18 16:08:31.972 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 344 with hash [65 156 1 137 90 18 123 51 134 38 250 170 209 247 183 247 57 5 71 28 248 77 88 174 40 39 140 24 127 107 7 227]
+2020-06-18 16:08:31.973 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.57µs
+2020-06-18 16:08:31.973 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.851µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:31.973 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 33.444µs
+2020-06-18 16:08:31.973 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 28.642µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:31.973 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.561µs
+2020-06-18 16:08:31.973 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.98µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:31.973 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.03µs
+2020-06-18 16:08:31.973 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.965µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:31.974 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 344, with hash e3076b7f188c2728ae584df81c470539f7b7f7d1aafa2686337b125a89019c41
+2020-06-18 16:08:33.795 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:36.798 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:39.803 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 345 
+2020-06-18 16:08:41.996 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 345
+2020-06-18 16:08:42.001 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  345 with hash [147 86 43 217 52 143 122 62 89 1 176 178 62 194 36 227 3 123 69 89 56 15 100 128 252 94 168 188 80 46 128 226]
+2020-06-18 16:08:42.008 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 345 with hash [147 86 43 217 52 143 122 62 89 1 176 178 62 194 36 227 3 123 69 89 56 15 100 128 252 94 168 188 80 46 128 226]
+2020-06-18 16:08:42.009 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 9.386µs
+2020-06-18 16:08:42.009 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.652µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:42.009 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 40.993µs
+2020-06-18 16:08:42.009 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 30.389µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:42.009 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.504µs
+2020-06-18 16:08:42.009 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.924µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:42.009 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.702µs
+2020-06-18 16:08:42.009 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.667µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:42.010 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 345, with hash e2802e50bca85efc80640f3859457b03e324c23eb2b001593e7a8f34d92b5693
+2020-06-18 16:08:42.805 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:45.806 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:48.811 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 346 
+2020-06-18 16:08:51.820 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:52.031 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 346
+2020-06-18 16:08:52.038 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  346 with hash [34 200 236 231 170 76 196 149 158 170 234 97 251 91 139 122 83 215 173 107 94 13 124 173 70 0 72 88 40 224 125 103]
+2020-06-18 16:08:52.045 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 346 with hash [34 200 236 231 170 76 196 149 158 170 234 97 251 91 139 122 83 215 173 107 94 13 124 173 70 0 72 88 40 224 125 103]
+2020-06-18 16:08:52.045 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.938µs
+2020-06-18 16:08:52.045 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.289µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:52.046 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.213µs
+2020-06-18 16:08:52.046 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 37.087µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:52.046 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.591µs
+2020-06-18 16:08:52.046 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.197µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:52.046 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.435µs
+2020-06-18 16:08:52.046 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.269µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:08:52.047 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 346, with hash 677de02858480046ad7c0d5e6badd7537a8b5bfb61eaaa9e95c44caae7ecc822
+2020-06-18 16:08:54.827 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:08:57.837 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:09:00.843 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 347 
+2020-06-18 16:09:02.086 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 347
+2020-06-18 16:09:02.094 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  347 with hash [133 61 75 131 159 36 97 147 55 56 167 169 163 71 28 103 184 201 71 17 88 198 109 70 225 159 245 81 213 16 69 81]
+2020-06-18 16:09:02.102 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 347 with hash [133 61 75 131 159 36 97 147 55 56 167 169 163 71 28 103 184 201 71 17 88 198 109 70 225 159 245 81 213 16 69 81]
+2020-06-18 16:09:02.103 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.506µs
+2020-06-18 16:09:02.103 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.415µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:09:02.103 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.865µs
+2020-06-18 16:09:02.103 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 50.481µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:09:02.103 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.536µs
+2020-06-18 16:09:02.103 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.606µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:09:02.103 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.322µs
+2020-06-18 16:09:02.103 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.152µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:09:02.104 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 347, with hash 514510d551f59fe1466dc6581147c9b8671c47a3a9a738379361249f834b3d85
+2020-06-18 16:09:03.852 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:09:06.860 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:56:51.010 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 348 
+2020-06-18 16:56:53.013 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 348
+2020-06-18 16:56:53.025 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  348 with hash [96 201 17 228 97 90 132 158 204 34 87 187 55 2 47 0 215 80 67 176 148 222 125 46 138 195 137 82 61 140 103 19]
+2020-06-18 16:56:53.036 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 348 with hash [96 201 17 228 97 90 132 158 204 34 87 187 55 2 47 0 215 80 67 176 148 222 125 46 138 195 137 82 61 140 103 19]
+2020-06-18 16:56:53.039 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.037µs
+2020-06-18 16:56:53.040 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.182µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:56:53.040 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 46.213µs
+2020-06-18 16:56:53.040 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 34.102µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:56:53.040 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.506µs
+2020-06-18 16:56:53.040 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.247µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:56:53.040 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.865µs
+2020-06-18 16:56:53.040 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.698µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:56:53.047 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 348, with hash 13678c3d5289c38a2e7dde94b04350d7002f0237bb5722cc9e845a61e411c960
+2020-06-18 16:56:54.013 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:56:57.020 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:00.023 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 349 
+2020-06-18 16:57:03.024 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:03.060 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 349
+2020-06-18 16:57:03.069 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  349 with hash [175 97 137 182 241 175 167 179 230 91 206 108 200 204 216 112 83 16 26 157 242 55 251 36 176 247 168 21 107 71 246 186]
+2020-06-18 16:57:03.082 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 349 with hash [175 97 137 182 241 175 167 179 230 91 206 108 200 204 216 112 83 16 26 157 242 55 251 36 176 247 168 21 107 71 246 186]
+2020-06-18 16:57:03.086 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 7.049µs
+2020-06-18 16:57:03.086 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 5.432µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:03.086 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 31.355µs
+2020-06-18 16:57:03.087 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 39.467µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:03.087 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 33.781µs
+2020-06-18 16:57:03.087 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.673µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:03.087 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.425µs
+2020-06-18 16:57:03.087 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.645µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:03.096 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 349, with hash baf6476b15a8f7b024fb37f29d1a105370d8ccc86cce5be6b3a7aff1b68961af
+2020-06-18 16:57:05.925 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:08.921 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 350 
+2020-06-18 16:57:11.924 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:12.998 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 350
+2020-06-18 16:57:13.009 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  350 with hash [212 65 48 149 179 178 229 162 207 203 73 164 206 28 233 118 6 212 216 206 78 186 15 63 160 155 143 72 217 11 124 196]
+2020-06-18 16:57:13.018 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 350 with hash [212 65 48 149 179 178 229 162 207 203 73 164 206 28 233 118 6 212 216 206 78 186 15 63 160 155 143 72 217 11 124 196]
+2020-06-18 16:57:13.020 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.071µs
+2020-06-18 16:57:13.020 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.982µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:13.020 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 27.454µs
+2020-06-18 16:57:13.020 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 37.399µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:13.020 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.65µs
+2020-06-18 16:57:13.020 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.863µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:13.020 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.78µs
+2020-06-18 16:57:13.020 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.595µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:13.022 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 350, with hash c47c0bd9488f9ba03f0fba4eced8d40676e91ccea449cbcfa2e5b2b3953041d4
+2020-06-18 16:57:14.922 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:17.921 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:20.922 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 351 
+2020-06-18 16:57:23.025 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 351
+2020-06-18 16:57:23.030 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  351 with hash [79 74 213 166 155 218 220 11 84 205 21 200 10 19 156 31 221 232 7 58 110 147 83 136 217 59 75 184 222 39 221 139]
+2020-06-18 16:57:23.034 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 351 with hash [79 74 213 166 155 218 220 11 84 205 21 200 10 19 156 31 221 232 7 58 110 147 83 136 217 59 75 184 222 39 221 139]
+2020-06-18 16:57:23.035 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.914µs
+2020-06-18 16:57:23.035 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.101µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:23.035 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 19.747µs
+2020-06-18 16:57:23.035 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 18.812µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:23.035 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.255µs
+2020-06-18 16:57:23.035 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.927µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:23.035 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.766µs
+2020-06-18 16:57:23.035 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.58µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:23.036 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 351, with hash 8bdd27deb84b3bd98853936e3a07e8dd1f9c130ac815cd540bdcda9ba6d54a4f
+2020-06-18 16:57:23.925 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:26.928 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:29.929 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 352 
+2020-06-18 16:57:32.928 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:33.053 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 352
+2020-06-18 16:57:33.057 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  352 with hash [136 174 150 195 118 117 29 124 242 130 237 4 52 14 1 30 104 22 124 101 227 106 130 59 208 116 80 141 210 116 246 219]
+2020-06-18 16:57:33.075 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 352 with hash [136 174 150 195 118 117 29 124 242 130 237 4 52 14 1 30 104 22 124 101 227 106 130 59 208 116 80 141 210 116 246 219]
+2020-06-18 16:57:33.075 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.576µs
+2020-06-18 16:57:33.075 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.34µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:33.076 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 24.688µs
+2020-06-18 16:57:33.076 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 24.407µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:33.076 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.134µs
+2020-06-18 16:57:33.076 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.947µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:33.076 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.05µs
+2020-06-18 16:57:33.076 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.081µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:33.077 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 352, with hash dbf674d28d5074d03b826ae3657c16681e010e3404ed82f27c1d7576c396ae88
+2020-06-18 16:57:35.937 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:38.937 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 353 
+2020-06-18 16:57:41.941 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:43.094 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 353
+2020-06-18 16:57:43.102 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  353 with hash [147 201 52 16 86 214 102 152 229 122 50 8 66 147 167 240 106 206 179 45 87 244 51 70 8 222 177 88 136 81 103 40]
+2020-06-18 16:57:43.110 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 353 with hash [147 201 52 16 86 214 102 152 229 122 50 8 66 147 167 240 106 206 179 45 87 244 51 70 8 222 177 88 136 81 103 40]
+2020-06-18 16:57:43.110 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.716µs
+2020-06-18 16:57:43.110 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.801µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:43.110 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.89µs
+2020-06-18 16:57:43.110 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 39.367µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:43.111 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.601µs
+2020-06-18 16:57:43.111 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.743µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:43.111 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.543µs
+2020-06-18 16:57:43.111 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.284µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:43.112 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 353, with hash 2867518858b1de084633f4572db3ce6af0a7934208327ae59866d6561034c993
+2020-06-18 16:57:44.945 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:47.949 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:50.955 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 354 
+2020-06-18 16:57:53.129 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 354
+2020-06-18 16:57:53.136 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  354 with hash [23 29 190 172 154 84 124 20 129 131 170 173 206 6 236 149 171 98 242 172 144 2 243 14 193 2 4 203 226 166 159 71]
+2020-06-18 16:57:53.143 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 354 with hash [23 29 190 172 154 84 124 20 129 131 170 173 206 6 236 149 171 98 242 172 144 2 243 14 193 2 4 203 226 166 159 71]
+2020-06-18 16:57:53.144 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.343µs
+2020-06-18 16:57:53.144 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.567µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:53.144 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 33.047µs
+2020-06-18 16:57:53.144 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 39.224µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:53.145 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.766µs
+2020-06-18 16:57:53.145 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.521µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:53.145 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.571µs
+2020-06-18 16:57:53.145 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.985µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:57:53.147 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 354, with hash 479fa6e2cb0402c10ef30290acf262ab95ec06ceadaa8381147c549aacbe1d17
+2020-06-18 16:57:53.958 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:56.962 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:57:59.967 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 355 
+2020-06-18 16:58:02.971 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:03.170 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 355
+2020-06-18 16:58:03.175 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  355 with hash [59 44 140 157 25 179 242 11 65 161 193 174 226 212 229 234 118 102 83 144 190 131 208 180 14 75 127 225 220 24 20 87]
+2020-06-18 16:58:03.181 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 355 with hash [59 44 140 157 25 179 242 11 65 161 193 174 226 212 229 234 118 102 83 144 190 131 208 180 14 75 127 225 220 24 20 87]
+2020-06-18 16:58:03.182 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.778µs
+2020-06-18 16:58:03.182 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.032µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:03.182 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 24.889µs
+2020-06-18 16:58:03.182 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 29.393µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:03.182 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.256µs
+2020-06-18 16:58:03.182 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.025µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:03.182 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.827µs
+2020-06-18 16:58:03.182 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.475µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:03.183 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 355, with hash 571418dce17f4b0eb4d083be90536676eae5d4e2aec1a1410bf2b3199d8c2c3b
+2020-06-18 16:58:05.973 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:08.977 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 356 
+2020-06-18 16:58:11.980 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:13.203 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 356
+2020-06-18 16:58:13.212 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  356 with hash [57 87 103 179 50 182 129 248 253 223 255 186 137 206 56 57 225 116 28 28 66 3 192 197 86 6 74 215 27 82 55 4]
+2020-06-18 16:58:13.217 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 356 with hash [57 87 103 179 50 182 129 248 253 223 255 186 137 206 56 57 225 116 28 28 66 3 192 197 86 6 74 215 27 82 55 4]
+2020-06-18 16:58:13.218 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.18µs
+2020-06-18 16:58:13.218 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.652µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:13.218 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 28.368µs
+2020-06-18 16:58:13.218 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 30.778µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:13.218 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.301µs
+2020-06-18 16:58:13.218 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.344µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:13.218 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.065µs
+2020-06-18 16:58:13.218 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 7.576µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:13.219 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 356, with hash 0437521bd74a0656c5c003421c1c74e13938ce89baffdffdf881b632b3675739
+2020-06-18 16:58:14.983 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:17.983 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:20.986 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 357 
+2020-06-18 16:58:23.231 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 357
+2020-06-18 16:58:23.237 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  357 with hash [66 3 80 84 232 239 121 17 31 84 43 128 188 46 15 14 49 22 9 101 31 44 48 49 189 17 202 39 132 125 243 91]
+2020-06-18 16:58:23.242 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 357 with hash [66 3 80 84 232 239 121 17 31 84 43 128 188 46 15 14 49 22 9 101 31 44 48 49 189 17 202 39 132 125 243 91]
+2020-06-18 16:58:23.243 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.184µs
+2020-06-18 16:58:23.243 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.365µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:23.243 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 19.426µs
+2020-06-18 16:58:23.243 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 31.031µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:23.243 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.387µs
+2020-06-18 16:58:23.243 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.982µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:23.243 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.946µs
+2020-06-18 16:58:23.243 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.548µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:23.244 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 357, with hash 5bf37d8427ca11bd31302c1f650916310e0f2ebc802b541f1179efe854500342
+2020-06-18 16:58:23.988 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:26.989 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:29.994 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 358 
+2020-06-18 16:58:32.997 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:33.255 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 358
+2020-06-18 16:58:33.261 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  358 with hash [163 253 92 75 22 20 156 112 25 150 34 232 226 7 205 213 123 138 132 116 248 242 41 254 168 223 202 81 81 7 116 83]
+2020-06-18 16:58:33.272 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 358 with hash [163 253 92 75 22 20 156 112 25 150 34 232 226 7 205 213 123 138 132 116 248 242 41 254 168 223 202 81 81 7 116 83]
+2020-06-18 16:58:33.274 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.662µs
+2020-06-18 16:58:33.274 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.531µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:33.274 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 30.008µs
+2020-06-18 16:58:33.274 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 26.978µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:33.274 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.913µs
+2020-06-18 16:58:33.274 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.538µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:33.274 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.326µs
+2020-06-18 16:58:33.274 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.107µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:33.276 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 358, with hash 5374075151cadfa8fe29f2f874848a7bd5cd07e2e8229619709c14164b5cfda3
+2020-06-18 16:58:36.001 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:39.006 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 359 
+2020-06-18 16:58:42.007 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:43.286 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 359
+2020-06-18 16:58:43.292 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  359 with hash [172 105 128 161 110 43 41 8 87 160 95 111 183 184 227 100 123 203 183 118 190 244 51 196 178 2 169 135 241 167 216 195]
+2020-06-18 16:58:43.299 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 359 with hash [172 105 128 161 110 43 41 8 87 160 95 111 183 184 227 100 123 203 183 118 190 244 51 196 178 2 169 135 241 167 216 195]
+2020-06-18 16:58:43.300 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.511µs
+2020-06-18 16:58:43.300 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.091µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:43.300 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 22.43µs
+2020-06-18 16:58:43.300 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 27.654µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:43.300 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.561µs
+2020-06-18 16:58:43.300 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.174µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:43.300 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.071µs
+2020-06-18 16:58:43.300 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.041µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:43.301 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 359, with hash c3d8a7f187a902b2c433f4be76b7cb7b64e3b8b76f5fa05708292b6ea18069ac
+2020-06-18 16:58:45.009 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:48.013 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:51.014 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 360 
+2020-06-18 16:58:53.314 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 360
+2020-06-18 16:58:53.319 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  360 with hash [213 44 203 148 225 153 3 151 210 8 14 11 143 154 11 142 91 186 163 220 233 104 82 140 198 237 173 41 85 98 87 176]
+2020-06-18 16:58:53.324 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 360 with hash [213 44 203 148 225 153 3 151 210 8 14 11 143 154 11 142 91 186 163 220 233 104 82 140 198 237 173 41 85 98 87 176]
+2020-06-18 16:58:53.325 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.591µs
+2020-06-18 16:58:53.325 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.597µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:53.325 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.242µs
+2020-06-18 16:58:53.325 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 28.63µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:53.325 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.532µs
+2020-06-18 16:58:53.325 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.535µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:53.325 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.267µs
+2020-06-18 16:58:53.325 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.924µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:58:53.326 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 360, with hash b057625529adedc68c5268e9dca3ba5b8e0b9a8f0b0e08d2970399e194cb2cd5
+2020-06-18 16:58:54.019 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:58:56.875 mempool.go:173 [INF] Mempool log: MonitorPool: Start to collect timeout ttl tx
+2020-06-18 16:58:56.876 mempool.go:180 [INF] Mempool log: MonitorPool: End to collect timeout ttl tx - Count of txsToBeRemoved=0
+2020-06-18 16:58:56.875 addrkeeper.go:164 [INF] Peerv2 log: Full RPC address list: [{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330} { 0.0.0.0:9330}]
+2020-06-18 16:58:56.876 addrkeeper.go:172 [INF] Peerv2 log: RPCing addr {/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330} from list [{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330} { 0.0.0.0:9330}]
+2020-06-18 16:58:56.877 addrkeeper.go:201 [INF] Peerv2 log: Got map[all:[{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330}]] from bootnode
+2020-06-18 16:58:56.877 addrkeeper.go:48 [INF] Peerv2 log: Updated highway addresses: [{Libp2pAddr:/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN RPCUrl:0.0.0.0:9330} {Libp2pAddr: RPCUrl:0.0.0.0:9330}]
+2020-06-18 16:58:56.877 addrkeeper.go:111 [INF] Peerv2 log: Full known addrs: [{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330}]
+2020-06-18 16:58:56.877 addrkeeper.go:118 [INF] Peerv2 log: Choosing highway to connect from non-ignored list [{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330}]
+2020-06-18 16:58:56.879 addrkeeper.go:55 [INF] Peerv2 log: Chosen address: {Libp2pAddr:/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN RPCUrl:0.0.0.0:9330}
+2020-06-18 16:58:57.023 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:00.025 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 361 
+2020-06-18 16:59:03.029 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:03.335 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 361
+2020-06-18 16:59:03.342 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  361 with hash [214 211 92 221 21 46 92 252 173 24 219 160 68 156 176 107 138 208 178 156 6 14 174 228 40 234 188 209 19 213 182 205]
+2020-06-18 16:59:03.348 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 361 with hash [214 211 92 221 21 46 92 252 173 24 219 160 68 156 176 107 138 208 178 156 6 14 174 228 40 234 188 209 19 213 182 205]
+2020-06-18 16:59:03.349 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.457µs
+2020-06-18 16:59:03.349 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.784µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:03.349 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 23.817µs
+2020-06-18 16:59:03.349 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 25.958µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:03.349 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.389µs
+2020-06-18 16:59:03.349 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.281µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:03.349 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.082µs
+2020-06-18 16:59:03.349 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.044µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:03.350 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 361, with hash cdb6d513d1bcea28e4ae0e069cb2d08a6bb09c44a0db18adfc5c2e15dd5cd3d6
+2020-06-18 16:59:06.032 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:09.033 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 362 
+2020-06-18 16:59:12.037 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:13.359 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 362
+2020-06-18 16:59:13.365 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  362 with hash [69 9 64 105 90 166 174 34 76 250 34 80 253 119 253 131 114 159 189 232 58 137 77 41 94 53 87 192 22 147 238 42]
+2020-06-18 16:59:13.370 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 362 with hash [69 9 64 105 90 166 174 34 76 250 34 80 253 119 253 131 114 159 189 232 58 137 77 41 94 53 87 192 22 147 238 42]
+2020-06-18 16:59:13.371 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.621µs
+2020-06-18 16:59:13.371 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.153µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:13.371 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 27.712µs
+2020-06-18 16:59:13.371 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 30.56µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:13.371 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.583µs
+2020-06-18 16:59:13.371 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.847µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:13.371 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.112µs
+2020-06-18 16:59:13.371 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.902µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:13.372 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 362, with hash 2aee9316c057355e294d893ae8bd9f7283fd77fd5022fa4c22aea65a69400945
+2020-06-18 16:59:15.042 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:18.045 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:21.046 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 363 
+2020-06-18 16:59:23.379 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 363
+2020-06-18 16:59:23.385 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  363 with hash [76 87 76 122 193 124 203 4 204 171 252 189 177 77 11 58 56 49 81 232 87 231 231 80 143 9 165 148 192 183 17 203]
+2020-06-18 16:59:23.391 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 363 with hash [76 87 76 122 193 124 203 4 204 171 252 189 177 77 11 58 56 49 81 232 87 231 231 80 143 9 165 148 192 183 17 203]
+2020-06-18 16:59:23.391 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.236µs
+2020-06-18 16:59:23.392 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 5.193µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:23.392 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 40.572µs
+2020-06-18 16:59:23.392 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 44.867µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:23.392 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.637µs
+2020-06-18 16:59:23.392 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.725µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:23.392 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.482µs
+2020-06-18 16:59:23.392 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.011µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:23.393 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 363, with hash cb11b7c094a5098f50e7e757e85131383a0b4db1bdfcabcc04cb7cc17a4c574c
+2020-06-18 16:59:24.050 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:27.050 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:30.051 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 364 
+2020-06-18 16:59:33.052 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:33.407 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 364
+2020-06-18 16:59:33.415 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  364 with hash [38 179 141 20 79 135 17 93 202 0 250 20 223 48 51 224 79 34 197 18 22 210 138 64 219 135 22 216 157 13 194 131]
+2020-06-18 16:59:33.422 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 364 with hash [38 179 141 20 79 135 17 93 202 0 250 20 223 48 51 224 79 34 197 18 22 210 138 64 219 135 22 216 157 13 194 131]
+2020-06-18 16:59:33.423 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.95µs
+2020-06-18 16:59:33.423 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.943µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:33.423 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 26.276µs
+2020-06-18 16:59:33.423 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 35.659µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:33.423 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.758µs
+2020-06-18 16:59:33.423 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.443µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:33.423 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.526µs
+2020-06-18 16:59:33.423 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.204µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:33.425 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 364, with hash 83c20d9dd81687db408ad21612c5224fe03330df14fa00ca5d11874f148db326
+2020-06-18 16:59:36.053 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:39.058 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 365 
+2020-06-18 16:59:42.061 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:43.446 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 365
+2020-06-18 16:59:43.455 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  365 with hash [129 101 110 194 198 41 94 219 81 131 97 161 93 14 187 17 14 9 232 143 156 253 125 123 99 18 59 191 53 6 234 93]
+2020-06-18 16:59:43.459 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 365 with hash [129 101 110 194 198 41 94 219 81 131 97 161 93 14 187 17 14 9 232 143 156 253 125 123 99 18 59 191 53 6 234 93]
+2020-06-18 16:59:43.460 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 8.415µs
+2020-06-18 16:59:43.460 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 14.684µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:43.461 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 50.342µs
+2020-06-18 16:59:43.461 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 54.265µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:43.461 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 5.876µs
+2020-06-18 16:59:43.461 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 5.078µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:43.461 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.76µs
+2020-06-18 16:59:43.461 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.316µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:43.462 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 365, with hash 5dea0635bf3b12637b7dfd9c8fe8090e11bb0e5da1618351db5e29c6c26e6581
+2020-06-18 16:59:45.065 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:48.068 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:51.069 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 366 
+2020-06-18 16:59:53.477 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 366
+2020-06-18 16:59:53.483 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  366 with hash [151 199 99 189 170 85 173 157 254 236 106 57 67 73 208 72 176 1 204 131 131 246 19 44 64 191 32 28 157 226 229 95]
+2020-06-18 16:59:53.488 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 366 with hash [151 199 99 189 170 85 173 157 254 236 106 57 67 73 208 72 176 1 204 131 131 246 19 44 64 191 32 28 157 226 229 95]
+2020-06-18 16:59:53.489 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 6.495µs
+2020-06-18 16:59:53.489 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 12.347µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:53.489 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 53.866µs
+2020-06-18 16:59:53.489 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 58.317µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:53.489 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 5.394µs
+2020-06-18 16:59:53.489 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.748µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:53.489 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 5.868µs
+2020-06-18 16:59:53.489 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.518µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 16:59:53.491 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 366, with hash 5fe5e29d1c20bf402c13f68383cc01b048d04943396aecfe9dad55aabd63c797
+2020-06-18 16:59:54.071 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 16:59:57.073 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:00.075 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 367 
+2020-06-18 17:00:03.076 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:03.498 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 367
+2020-06-18 17:00:03.502 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  367 with hash [210 232 129 159 41 9 90 186 31 112 148 128 12 172 1 127 212 2 142 182 110 117 7 98 253 50 53 134 191 190 70 35]
+2020-06-18 17:00:03.507 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 367 with hash [210 232 129 159 41 9 90 186 31 112 148 128 12 172 1 127 212 2 142 182 110 117 7 98 253 50 53 134 191 190 70 35]
+2020-06-18 17:00:03.508 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.959µs
+2020-06-18 17:00:03.508 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 18.222µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:03.508 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 44.875µs
+2020-06-18 17:00:03.508 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 41.976µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:03.508 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.699µs
+2020-06-18 17:00:03.508 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.488µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:03.508 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.136µs
+2020-06-18 17:00:03.508 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.471µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:03.509 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 367, with hash 2346bebf863532fd6207756eb68e02d47f01ac0c8094701fba5a09299f81e8d2
+2020-06-18 17:00:06.077 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:09.077 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 368 
+2020-06-18 17:00:12.083 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:13.525 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 368
+2020-06-18 17:00:13.531 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  368 with hash [16 144 26 55 125 163 115 152 220 11 45 76 56 217 184 247 182 234 202 236 219 118 237 12 25 55 91 195 177 132 79 172]
+2020-06-18 17:00:13.536 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 368 with hash [16 144 26 55 125 163 115 152 220 11 45 76 56 217 184 247 182 234 202 236 219 118 237 12 25 55 91 195 177 132 79 172]
+2020-06-18 17:00:13.537 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.124µs
+2020-06-18 17:00:13.537 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.752µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:13.537 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 25.741µs
+2020-06-18 17:00:13.537 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 36.871µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:13.537 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.445µs
+2020-06-18 17:00:13.537 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.105µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:13.537 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.071µs
+2020-06-18 17:00:13.537 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.802µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:13.538 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 368, with hash ac4f84b1c35b37190ced76dbeccaeab6f7b8d9384c2d0bdc9873a37d371a9010
+2020-06-18 17:00:15.087 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:18.091 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:21.095 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 369 
+2020-06-18 17:00:23.551 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 369
+2020-06-18 17:00:23.555 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  369 with hash [173 200 1 56 165 218 128 27 180 40 154 114 229 191 80 241 8 38 3 107 162 195 97 238 164 82 75 242 99 163 69 141]
+2020-06-18 17:00:23.559 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 369 with hash [173 200 1 56 165 218 128 27 180 40 154 114 229 191 80 241 8 38 3 107 162 195 97 238 164 82 75 242 99 163 69 141]
+2020-06-18 17:00:23.559 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.28µs
+2020-06-18 17:00:23.559 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.839µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:23.559 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 22.398µs
+2020-06-18 17:00:23.560 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 26.187µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:23.560 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.184µs
+2020-06-18 17:00:23.560 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.234µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:23.560 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.822µs
+2020-06-18 17:00:23.560 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.096µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:23.560 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 369, with hash 8d45a363f24b52a4ee61c3a26b032608f150bfe5729a28b41b80daa53801c8ad
+2020-06-18 17:00:24.097 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:27.100 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:30.105 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 370 
+2020-06-18 17:00:33.107 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:33.577 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 370
+2020-06-18 17:00:33.583 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  370 with hash [47 78 63 151 223 165 135 184 250 189 230 105 3 114 145 120 203 104 204 140 154 84 83 118 26 134 206 158 162 9 192 75]
+2020-06-18 17:00:33.588 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 370 with hash [47 78 63 151 223 165 135 184 250 189 230 105 3 114 145 120 203 104 204 140 154 84 83 118 26 134 206 158 162 9 192 75]
+2020-06-18 17:00:33.588 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.77µs
+2020-06-18 17:00:33.588 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.736µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:33.588 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 21.917µs
+2020-06-18 17:00:33.588 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 27.555µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:33.588 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.191µs
+2020-06-18 17:00:33.588 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.973µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:33.588 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.048µs
+2020-06-18 17:00:33.588 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.924µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:33.589 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 370, with hash 4bc009a29ece861a7653549a8ccc68cb7891720369e6bdfab887a5df973f4e2f
+2020-06-18 17:00:36.110 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:39.110 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 371 
+2020-06-18 17:00:42.115 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:43.601 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 371
+2020-06-18 17:00:43.605 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  371 with hash [139 145 91 180 57 226 97 136 188 231 20 56 44 15 175 3 38 90 120 83 93 185 217 125 113 21 249 4 75 198 127 128]
+2020-06-18 17:00:43.610 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 371 with hash [139 145 91 180 57 226 97 136 188 231 20 56 44 15 175 3 38 90 120 83 93 185 217 125 113 21 249 4 75 198 127 128]
+2020-06-18 17:00:43.611 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 6.256µs
+2020-06-18 17:00:43.611 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 15.417µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:43.611 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 57.211µs
+2020-06-18 17:00:43.611 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 51.874µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:43.611 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.762µs
+2020-06-18 17:00:43.611 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.54µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:43.611 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.129µs
+2020-06-18 17:00:43.611 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.965µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:43.612 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 371, with hash 807fc64b04f915717dd9b95d53785a2603af0f2c3814e7bc8861e239b45b918b
+2020-06-18 17:00:45.121 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:48.125 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:51.127 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 372 
+2020-06-18 17:00:51.624 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 372
+2020-06-18 17:00:51.628 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  372 with hash [39 7 149 172 1 196 180 201 44 122 207 209 218 206 236 128 15 53 103 194 236 169 48 219 107 173 82 41 84 13 3 101]
+2020-06-18 17:00:51.632 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 372 with hash [39 7 149 172 1 196 180 201 44 122 207 209 218 206 236 128 15 53 103 194 236 169 48 219 107 173 82 41 84 13 3 101]
+2020-06-18 17:00:51.633 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.786µs
+2020-06-18 17:00:51.633 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 14.057µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:51.633 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 28.971µs
+2020-06-18 17:00:51.633 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 36.913µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:51.633 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.685µs
+2020-06-18 17:00:51.633 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.589µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:51.633 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.166µs
+2020-06-18 17:00:51.633 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.696µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:00:51.634 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 372, with hash 65030d542952ad6bdb30a9ecc267350f80eccedad1cf7a2cc9b4c401ac950727
+2020-06-18 17:00:54.131 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:00:57.135 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:00.139 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 373 
+2020-06-18 17:01:01.640 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 373
+2020-06-18 17:01:01.644 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  373 with hash [34 137 205 27 247 102 23 189 225 215 133 115 246 32 78 221 247 63 253 81 107 12 180 175 128 87 243 170 161 235 35 115]
+2020-06-18 17:01:01.648 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 373 with hash [34 137 205 27 247 102 23 189 225 215 133 115 246 32 78 221 247 63 253 81 107 12 180 175 128 87 243 170 161 235 35 115]
+2020-06-18 17:01:01.649 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 4.728µs
+2020-06-18 17:01:01.649 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 7.242µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:01.649 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 22.472µs
+2020-06-18 17:01:01.649 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 27.928µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:01.649 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.729µs
+2020-06-18 17:01:01.649 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.109µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:01.649 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.986µs
+2020-06-18 17:01:01.649 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.434µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:01.650 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 373, with hash 7323eba1aaf35780afb40c6b51fd3ff7dd4e20f67385d7e1bd1766f71bcd8922
+2020-06-18 17:01:03.144 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:06.147 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:09.153 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 374 
+2020-06-18 17:01:11.667 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 374
+2020-06-18 17:01:11.670 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  374 with hash [155 187 107 198 2 98 205 198 99 29 191 143 12 160 42 96 2 60 225 113 94 138 186 126 209 43 170 77 101 217 143 163]
+2020-06-18 17:01:11.674 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 374 with hash [155 187 107 198 2 98 205 198 99 29 191 143 12 160 42 96 2 60 225 113 94 138 186 126 209 43 170 77 101 217 143 163]
+2020-06-18 17:01:11.675 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.507µs
+2020-06-18 17:01:11.675 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.901µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:11.675 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 24.443µs
+2020-06-18 17:01:11.675 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 25.175µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:11.675 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.18µs
+2020-06-18 17:01:11.675 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.001µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:11.675 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.611µs
+2020-06-18 17:01:11.675 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.845µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:11.676 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 374, with hash a38fd9654daa2bd17eba8a5e71e13c02602aa00c8fbf1d63c6cd6202c66bbb9b
+2020-06-18 17:01:12.155 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:15.159 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:18.163 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:21.166 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 375 
+2020-06-18 17:01:21.689 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 375
+2020-06-18 17:01:21.695 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  375 with hash [137 165 89 161 248 1 12 228 244 12 152 48 245 156 177 187 202 252 189 10 107 227 169 160 108 195 204 245 220 231 123 7]
+2020-06-18 17:01:21.701 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 375 with hash [137 165 89 161 248 1 12 228 244 12 152 48 245 156 177 187 202 252 189 10 107 227 169 160 108 195 204 245 220 231 123 7]
+2020-06-18 17:01:21.704 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 102.512µs
+2020-06-18 17:01:21.704 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 5 size 1.55 kB time 72.344µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:21.704 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 20.653µs
+2020-06-18 17:01:21.704 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 24.789µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:21.704 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.616µs
+2020-06-18 17:01:21.704 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.233µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:21.704 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.185µs
+2020-06-18 17:01:21.704 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.269µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:21.705 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 375, with hash 077be7dcf5ccc36ca0a9e36b0abdfccabbb19cf530980cf4e40c01f8a159a589
+2020-06-18 17:01:24.167 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:27.170 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:30.172 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 376 
+2020-06-18 17:01:31.720 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 376
+2020-06-18 17:01:31.724 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  376 with hash [2 191 48 12 190 151 231 49 255 140 22 238 70 204 56 83 21 234 42 203 153 204 154 150 112 163 232 129 5 50 136 137]
+2020-06-18 17:01:31.728 beaconprocess.go:932 [INF] BlockChain log: Random number found 2703469782474889196
+2020-06-18 17:01:31.728 beaconutils.go:129 [CRT] BlockChain log: calculateCandidateShardID/shardID 0
+2020-06-18 17:01:31.728 beaconutils.go:129 [CRT] BlockChain log: calculateCandidateShardID/shardID 0
+2020-06-18 17:01:31.729 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 376 with hash [2 191 48 12 190 151 231 49 255 140 22 238 70 204 56 83 21 234 42 203 153 204 154 150 112 163 232 129 5 50 136 137]
+2020-06-18 17:01:31.729 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 97.422µs
+2020-06-18 17:01:31.729 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 5 size 1.55 kB time 61.495µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:31.729 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 18.273µs
+2020-06-18 17:01:31.729 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 20.01µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:31.729 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.446µs
+2020-06-18 17:01:31.729 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.148µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:31.729 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.984µs
+2020-06-18 17:01:31.729 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.841µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:31.730 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 376, with hash 8988320581e8a370969acc99cb2aea155338cc46ee168cff31e797be0c30bf02
+2020-06-18 17:01:33.175 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:36.176 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:39.181 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 377 
+2020-06-18 17:01:41.743 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 377
+2020-06-18 17:01:41.749 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  377 with hash [93 97 75 13 62 196 4 133 112 249 85 248 190 58 54 233 213 59 183 9 224 250 163 201 150 178 23 210 53 101 173 93]
+2020-06-18 17:01:41.754 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 377 with hash [93 97 75 13 62 196 4 133 112 249 85 248 190 58 54 233 213 59 183 9 224 250 163 201 150 178 23 210 53 101 173 93]
+2020-06-18 17:01:41.754 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.632µs
+2020-06-18 17:01:41.754 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.563µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:41.754 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 24.551µs
+2020-06-18 17:01:41.754 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 27.843µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:41.754 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.556µs
+2020-06-18 17:01:41.754 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.446µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:41.755 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.533µs
+2020-06-18 17:01:41.755 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.907µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:41.755 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 377, with hash 5dad6535d217b296c9a3fae009b73bd5e9363abef855f9708504c43e0d4b615d
+2020-06-18 17:01:42.184 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:45.185 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:48.187 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:51.191 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 378 
+2020-06-18 17:01:51.769 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 378
+2020-06-18 17:01:51.774 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  378 with hash [92 35 243 57 108 144 226 46 193 48 77 190 207 132 63 214 91 223 250 12 152 74 118 206 81 203 221 237 70 36 120 225]
+2020-06-18 17:01:51.779 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 378 with hash [92 35 243 57 108 144 226 46 193 48 77 190 207 132 63 214 91 223 250 12 152 74 118 206 81 203 221 237 70 36 120 225]
+2020-06-18 17:01:51.779 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.189µs
+2020-06-18 17:01:51.779 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.587µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:51.779 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 21.312µs
+2020-06-18 17:01:51.779 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 25.62µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:51.779 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.511µs
+2020-06-18 17:01:51.779 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.286µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:51.780 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.953µs
+2020-06-18 17:01:51.780 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.886µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:01:51.780 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 378, with hash e1782446edddcb51ce764a980cfadf5bd63f84cfbe4d30c12ee2906c39f3235c
+2020-06-18 17:01:54.194 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:01:57.196 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:00.198 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 379 
+2020-06-18 17:02:01.791 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 379
+2020-06-18 17:02:01.795 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  379 with hash [237 198 186 167 90 252 96 138 213 132 45 170 180 252 159 173 200 244 205 193 62 48 228 242 55 130 50 26 164 53 73 212]
+2020-06-18 17:02:01.799 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 379 with hash [237 198 186 167 90 252 96 138 213 132 45 170 180 252 159 173 200 244 205 193 62 48 228 242 55 130 50 26 164 53 73 212]
+2020-06-18 17:02:01.800 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.486µs
+2020-06-18 17:02:01.800 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 3.867µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:01.800 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 20.163µs
+2020-06-18 17:02:01.800 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 30.823µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:01.800 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 1.855µs
+2020-06-18 17:02:01.800 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 2.087µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:01.800 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 2.011µs
+2020-06-18 17:02:01.800 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 1.786µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:01.801 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 379, with hash d44935a41a328237f2e4303ec1cdf4c8ad9ffcb4aa2d84d58a60fc5aa7bac6ed
+2020-06-18 17:02:03.201 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:06.206 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:09.209 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+syncker: receive beacon block 380 
+2020-06-18 17:02:11.813 beaconsyncprocess.go:242 [INF] Syncker log : Syncker: Insert beacon from pool 380
+2020-06-18 17:02:11.822 beaconprocess.go:85 [INF] BlockChain log: BEACON | InsertBeaconBlock  380 with hash [12 221 170 160 93 9 69 168 50 81 220 131 118 145 137 95 99 146 64 52 105 48 250 93 24 184 115 225 49 95 145 22]
+2020-06-18 17:02:11.831 beaconprocess.go:231 [INF] BlockChain log: BEACON | Process Store Beacon Block Height 380 with hash [12 221 170 160 93 9 69 168 50 81 220 131 118 145 137 95 99 146 64 52 105 48 250 93 24 184 115 225 49 95 145 22]
+2020-06-18 17:02:11.832 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 7.411µs
+2020-06-18 17:02:11.832 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 8.733µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:11.833 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 56.887µs
+2020-06-18 17:02:11.833 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 113.964µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:11.833 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 6.402µs
+2020-06-18 17:02:11.833 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 4.744µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:11.833 statedb.go:161 [INF] DAO log: StateDB commit and return root hash time 3.928µs
+2020-06-18 17:02:11.833 intermediatewriter.go:720 [INF] Trie log: Persisted trie from memory database nodes 0 size 0.00 B time 5.309µs gcnodes 0 gcsize 0.00 B gctime 0s livenodes 1 livesize 0.00 B
+2020-06-18 17:02:11.835 beaconprocess.go:252 [INF] BlockChain log: BEACON | Finish Insert new Beacon Block 380, with hash 16915f31e173b8185dfa3069344092635f89917683dc5132a845095da0aadd0c
+2020-06-18 17:02:12.214 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:15.217 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:18.220 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:21.221 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:24.224 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:26.870 blockrequester.go:73 [WRN] Peerv2 log: BlockRequester is not ready, dialing
+2020-06-18 17:02:26.870 connmanager.go:277 [INF] Peerv2 log: Not connected to highway, connecting
+2020-06-18 17:02:26.870 blockrequester.go:57 [INF] Peerv2 log: Closing old requester connection
+2020-06-18 17:02:26.871 connmanager.go:281 [ERR] Peerv2 log: Could not connect to highway: failed to dial : all dials failed
+  * [/ip4/127.0.0.1/tcp/7337] dial tcp4 127.0.0.1:7337: connect: connection refused
+  * [/ip4/0.0.0.0/tcp/7337] dial tcp4 0.0.0.0:7337: connect: connection refused
+  * [/ip4/192.168.1.9/tcp/7337] dial tcp4 192.168.1.9:7337: connect: connection refused {QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN: [/ip4/0.0.0.0/tcp/7337]}
+2020-06-18 17:02:27.291 engine.go:70 [INF] Consensus log: Node state role:  chainID: -2
+2020-06-18 17:02:27.871 connmanager.go:314 [ERR] Peerv2 log: Waiting to establish connection to highway: new highway = QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN, current = 

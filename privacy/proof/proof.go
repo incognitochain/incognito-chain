@@ -11,7 +11,6 @@ import (
 // Paymentproof
 type Proof interface {
 	GetVersion() uint8
-
 	Init()
 	GetInputCoins() []coin.PlainCoin
 	GetOutputCoins() []coin.Coin

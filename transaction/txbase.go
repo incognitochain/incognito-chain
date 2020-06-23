@@ -502,7 +502,6 @@ func (tx TxBase) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) {
 		return false, nil, nil, err
 	}
 
-
 	for _, coin := range outputCoins {
 		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
 			return true, coin, &common.PRVCoinID, nil
@@ -774,7 +773,7 @@ func (tx TxBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.Min
 		}
 	}
 	if meta != nil {
-		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, nil, nil)
+		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, retriever, viewRetriever)
 		if err != nil {
 			Logger.Log.Error(err)
 			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)

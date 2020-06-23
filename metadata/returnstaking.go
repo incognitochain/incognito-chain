@@ -112,7 +112,7 @@ func (sbsRes ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			if ok := mintCoin.CheckCoinValid(sbsRes.StakerAddress, sbsRes.SharedRandom, burnCoin.GetValue()); !ok {
 				return false, errors.New("Return Staking: Mint Coin is invalid for corresponding Staker Payment Address")
 			}
-			fmt.Print("Check Mint Reward Response Valid OK OK OK")
+			fmt.Print("Check Mint Return Staking Valid OK OK OK")
 
 			return true, nil
 		}

@@ -110,7 +110,7 @@ func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	//	return false, errors.New("Check authorized sender failed because tx.Metadata is not correct type")
 	//}
 	metaSig := tx.Metadata.GetSig()
-	fmt.Println("Metadata Sig", metaSig)
+	fmt.Println("Metadata Signature", metaSig)
 	if metaSig == nil || len(metaSig) == 0 {
 		Logger.Log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
 		return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
@@ -129,6 +129,7 @@ func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 		Logger.Log.Error(err)
 		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
+	fmt.Println("[CheckAuthorizedSender] Metadata Signature - Validate OK")
 	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
 }
 
@@ -248,7 +249,6 @@ func (tx *TxVersion2) signOnMessage(inp []coin.PlainCoin, out []*coin.CoinV2, pa
 
 func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	// signOnMessage meta data
-	fmt.Println("SIG SIG SIG", tx.Metadata)
 	metaSig := tx.Metadata.GetSig()
 	if metaSig != nil && len(metaSig) > 0 {
 		return NewTransactionErr(UnexpectedError, errors.New("meta.Sig should be empty or nil"))
@@ -267,9 +267,6 @@ func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	}
 
 	// convert signature to byte array
-	fmt.Println("Set Signature ")
-	fmt.Println("Set Signature ")
-	fmt.Println("Set Signature ")
 	tx.Metadata.SetSig(signature.Bytes())
 	fmt.Println("Signature Detail", tx.Metadata.GetSig())
 	return nil

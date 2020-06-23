@@ -112,61 +112,54 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 }
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
-	//TODO Check this logic
-	return nil
-	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
-	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
-		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
-		if len(shardBlock.Body.Transactions) != len(txsSpamRemoved) {
-			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBlock.Body.Transactions)-len(txsSpamRemoved))
-		}
-	}
-	txReturnTable := map[string]bool{}
+	fmt.Println("Validate response tx for withdraw reward requests")
+	fmt.Println("Validate response tx for withdraw reward requests")
+	// remove double withdraw request
+	withdrawReqTable := make(map[string]privacy.PaymentAddress)
 	for _, tx := range shardBlock.Body.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.WithDrawRewardResponseMeta:
-			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			requester := getRequesterFromPKnCoinID(requesterRes, *coinID)
-			txReq, isExist := txRequestTable[requester]
-			if !isExist {
-				return errors.New("This response dont match with any request")
-			}
-			requestMeta := txReq.GetMetadata().(*metadata.WithDrawRewardRequest)
-			responseMeta := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
-			if res, err := coinID.Cmp(&requestMeta.TokenID); err != nil || res != 0 {
-				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v, error %v", coinID, requestMeta.TokenID, err)
-			}
-			if cmp, err := responseMeta.TxRequest.Cmp(txReq.Hash()); (cmp != 0) || (err != nil) {
-				Logger.log.Errorf("Response does not match with request, response link to txID %v, request txID %v, error %v", responseMeta.TxRequest.String(), txReq.Hash().String(), err)
-			}
-			tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-			Logger.log.Infof("Token ID %+v", requestMeta.TokenID)
-			Logger.log.Infof("Coin ID %+v", *coinID)
-			Logger.log.Infof("Amount Request %+v", amountRes)
-			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
-			amount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(), tempPublicKey, requestMeta.TokenID)
-			if (amount == 0) || (err != nil) {
-				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
-			}
-			if amount != amountRes {
-				return errors.Errorf("Wrong amount for token %v, get from db %v, response amount %v", requestMeta.TokenID, amount, amountRes)
-			}
-			delete(txRequestTable, requester)
-			continue
-		case metadata.ReturnStakingMeta:
-			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
-			if _, ok := txReturnTable[returnMeta.TxID]; !ok {
-				txReturnTable[returnMeta.TxID] = true
-			} else {
-				return errors.New("Double spent transaction return staking for a candidate.")
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			metaRequest := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), metaRequest.TokenID.String())
+			if _, ok := withdrawReqTable[mapKey]; !ok {
+				withdrawReqTable[mapKey] = metaRequest.PaymentAddress
 			}
 		}
 	}
-	//if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
-	//	if len(txRequestTable) > 0 {
-	//		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
-	//	}
-	//}
+	fmt.Println("Request Table", withdrawReqTable)
+	// check tx withdraw response valid with request
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			//check valid info with tx request
+			metaResponse := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), metaResponse.TokenID.String())
+			fmt.Println("Map Key", mapKey)
+			rewardPaymentAddress, ok := withdrawReqTable[mapKey]
+			if !ok {
+				return errors.Errorf("[Mint Withdraw Reward] This response dont match with any request in this block - Reward Address: %v", mapKey)
+			} else {
+				delete(withdrawReqTable, mapKey)
+			}
+			fmt.Println("Check corresponding request and response")
+			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+			//check tx mint
+			if err != nil || !isMinted {
+				return errors.Errorf("[Mint Withdraw Reward] It is not tx mint with error: %v", err)
+			}
+			//check tokenID
+			if cmp, err := metaResponse.TokenID.Cmp(coinID); err != nil || cmp != 0 {
+				return errors.Errorf("[Mint Withdraw Reward] Token dont match: %v and %v", metaResponse.TokenID.String(), coinID.String())
+			}
+			fmt.Println("Check Valid mint tx")
+			//check amount & receiver
+			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
+				base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), *coinID)
+			if ok := mintCoin.CheckCoinValid(rewardPaymentAddress, metaResponse.SharedRandom, rewardAmount); !ok {
+				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
+			}
+			fmt.Println("Check Valid Amount and Receiver")
+		}
+	}
+
 	return nil
 }
 
@@ -215,27 +208,31 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 // @Notice: change from body.Transaction -> transactions
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
-	txRequestTable := reqTableFromReqTxs(transactions)
-	txsResponse := []metadata.Transaction{}
-	for key, value := range txRequestTable {
-		txRes, err := blockchain.buildWithDrawTransactionResponse(view, &value, blkProducerPrivateKey, shardID)
-		if err != nil {
-			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
-			delete(txRequestTable, key)
-			continue
-		} else {
-			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
+	fmt.Println("Build response tx for withdraw reward requests")
+	fmt.Println("Build response tx for withdraw reward requests")
+
+	withdrawReqTable := make(map[string]metadata.Transaction)
+	for _, tx := range transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			metaReq := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaReq.PaymentAddress.Pk, common.Base58Version), metaReq.TokenID.String())
+			if _, ok := withdrawReqTable[mapKey]; !ok {
+				withdrawReqTable[mapKey] = tx
+			}
 		}
-		txsResponse = append(txsResponse, txRes)
 	}
-	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
-	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
-		len(transactions),
-		len(txRequestTable),
-		len(transactions)-len(txsSpamRemoved),
-		len(txsResponse))
-	txsSpamRemoved = append(txsSpamRemoved, txsResponse...)
-	return txsSpamRemoved, nil
+	fmt.Println("Request Table: ", withdrawReqTable)
+	txsResponse := []metadata.Transaction{}
+	for _, txRequest := range withdrawReqTable {
+		txResponse, err := blockchain.buildWithDrawTransactionResponse(view, &txRequest, blkProducerPrivateKey, shardID)
+		if err != nil {
+			Logger.log.Errorf("[Withdraw Reward] Build transactions response for tx %v return errors %v", txRequest, err)
+			continue
+		}
+		txsResponse = append(txsResponse, txResponse)
+		Logger.log.Infof("[Withdraw Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", txRequest, txResponse)
+	}
+	return append(transactions, txsResponse...), nil
 }
 
 func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([][]byte, error) {

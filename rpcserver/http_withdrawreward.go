@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -40,10 +39,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	fmt.Println("Metadata Version ", meta.Version)
-	fmt.Println("Metadata tokenID ", meta.TokenID)
-	fmt.Println("Metadata payment address ", meta.PaymentAddress)
-	fmt.Println("Metadata type ", meta.Type)
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {

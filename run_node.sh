@@ -14,6 +14,24 @@ fi
 if [ "$1" == "shard0-3" ]; then
 ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnY42xRqJghQX3zvhgEa2ZJBwSzJ46SXyVQEam1yNpN4bfAqJwh1SsobjHAz8wwRvwnqJBfxrbwUuTxqgEbuEE8yMu6F14QmwtwyM43" --nodemode "auto" --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337" 
 fi
+if [ "$1" == "shard0-4" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXWRThUTJQgoyH6evV8w19dFZfKWpCh8rZpfymW9JTgKPEVQS44nDRPpsooJiGStHxu81m3HA84t9DBVobz8hgBKRMcz2hddPWNX9N" --nodemode "auto" --datadir "data/shard0-4" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --rpcwslisten "127.0.0.1:19338"
+fi
+if [ "$1" == "shard0-5" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXfotCdLe7Gb8z13Qr2QqAneRYQPYN8faYTp8WLZCbd2JY2iSdB2qgxhhrkQ2PNZxrxZAj8944TjEEdjzPbhUTKUspxhA4vTFDW6aV" --nodemode "auto" --datadir "data/shard0-5" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339"
+fi
+if [ "$1" == "shard0-6" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnX2FzscSBNqNAMuQfeSQhMPamSAKDX9f7X7Nft6JR4hfxNh5WJ8r9jeAmbmzTytW8hvpeXVn9FwLD8fjuvn4k7oHtXeh2YxnMDUzZv" --nodemode "auto" --datadir "data/shard0-6" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340"
+fi
+if [ "$1" == "shard0-7" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXoEWG5H8x1odKxSj6sbLXowTBsVVkAxNWr5WnsbSTDkRiVrSdPy8QfMujntKRYBqywKMJCyhMpdr93T3XiUD5QJR1QFtTpYKpjBEx" --nodemode "auto" --datadir "data/shard0-7" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341"
+fi
+if [ "$1" == "shard0-8" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXoEWG5H8x1odKxSj6sbLXowTBsVVkAxNWr5WnsbSTDkRiVrSdPy8QfMujntKRYBqywKMJCyhMpdr93T3XiUD5QJR1QFtTpYKpjBEx" --nodemode "auto" --datadir "data/shard0-8" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9442" --norpcauth --rpclisten "0.0.0.0:9342" --rpcwslisten "127.0.0.1:19342"
+fi
+if [ "$1" == "shard0-9" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXoEWG5H8x1odKxSj6sbLXowTBsVVkAxNWr5WnsbSTDkRiVrSdPy8QfMujntKRYBqywKMJCyhMpdr93T3XiUD5QJR1QFtTpYKpjBEx" --nodemode "auto" --datadir "data/shard0-9" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9443" --norpcauth --rpclisten "0.0.0.0:9343" --rpcwslisten "127.0.0.1:19343"
+fi
 
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
