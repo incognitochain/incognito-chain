@@ -551,3 +551,12 @@ func AssertAndConvertStrToNumber(numStr interface{}) (uint64, error) {
 	}
 	return strconv.ParseUint(assertedNumStr, 10, 64)
 }
+
+func IndexOfUint64(target uint64, arr []uint64) int {
+	for i, v := range arr {
+		if v == target {
+			return i
+		}
+	}
+	return -1
+}

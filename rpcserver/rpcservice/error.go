@@ -58,6 +58,7 @@ const (
 	BuildTokenParamError
 	BuildPrivacyTokenParamError
 	GetListPrivacyCustomTokenBalanceError
+	GetPrivacyTokenError
 	// reject tx
 	RejectInvalidTxFeeTooLargeError
 	RejectInvalidTxFeeError
@@ -144,8 +145,8 @@ var ErrCodeMessage = map[int]struct {
 	TokenIsInvalidError:                   {-1018, "Token is invalid"},
 	GetKeySetFromPrivateKeyError:          {-1019, "Get KeySet From Private Key Error"},
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
-	GetOutputCoinsVer1Error: 			   {-1021, "Get output coins of ver 1 Error"},
-
+	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
+	GetOutputCoinsVer1Error:               {-1022, "Get output coins of ver 1 Error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},
@@ -160,31 +161,31 @@ var ErrCodeMessage = map[int]struct {
 	GetClonedShardBestStateError:  {-3001, "Get Cloned Shard Best State Error"},
 
 	// tx -4xxx
-	CreateTxDataError:                {-4001, "Can not create tx"},
-	SendTxDataError:                  {-4002, "Can not send tx"},
-	Base58ChedkDataOfTxInvalid:       {-4003, "Base58Check encode data of tx is invalid, can not decode"},
-	JsonDataOfTxInvalid:              {-4004, "Json string data of tx is invalid, can not unmarshal"},
-	ListDecryptedOutputCoinsByKeyError:        {-4005, "List Output Coins By Key Error"},
-	ListUnspentOutputCoinsByKeyError: {-4006, "List Unspent Output Coins By Key Error"},
-	SendRawTransactionError:          {-4007, "Send Raw Transaction Error"},
-	BuildTokenParamError:             {-4008, "Build Token Param Error"},
-	BuildPrivacyTokenParamError:      {-4009, "Build Privacy Token Param Error"},
+	CreateTxDataError:                  {-4001, "Can not create tx"},
+	SendTxDataError:                    {-4002, "Can not send tx"},
+	Base58ChedkDataOfTxInvalid:         {-4003, "Base58Check encode data of tx is invalid, can not decode"},
+	JsonDataOfTxInvalid:                {-4004, "Json string data of tx is invalid, can not unmarshal"},
+	ListDecryptedOutputCoinsByKeyError: {-4005, "List Output Coins By Key Error"},
+	ListUnspentOutputCoinsByKeyError:   {-4006, "List Unspent Output Coins By Key Error"},
+	SendRawTransactionError:            {-4007, "Send Raw Transaction Error"},
+	BuildTokenParamError:               {-4008, "Build Token Param Error"},
+	BuildPrivacyTokenParamError:        {-4009, "Build Privacy Token Param Error"},
 	// socket/subcribe -5xxx
 	SubcribeError:   {-5000, "Failed to subcribe"},
 	UnsubcribeError: {-5001, "Failed to unsubcribe"},
 
 	// tx pool -6xxx
-	GeTxFromPoolError:            {-6000, "Get tx from mempool error"},
-	TxPoolRejectTxError:          {-6001, "Pool reject tx by unexpected error"},
-	RejectInvalidTxSizeError:     {-6002, "Pool reject tx by invalid size"},
-	RejectInvalidTxTypeError:     {-6003, "Pool reject tx by invalid type"},
-	RejectInvalidTxError:         {-6004, "Pool reject invalid tx: signature, or proof or verify by itself fail"},
-	RejectDoubleSpendTxError:     {-6005, "Pool reject double spend tx, double spend with blockchain or mempool"},
-	RejectDuplicateTxInPoolError: {-6006, "Tx already exist in pool"},
-	RejectInvalidTxVersionError:  {-6007, "Reject tx by invalid version"},
-	RejectSanityTxLocktime:       {-6008, "Reject wrong tx by locktime"},
-	RejectReplacementTx:          {-6009, "Reject error replacement or cancel transaction"},
-	RejectInvalidFeeError:        {-6010, "Reject Invalid Fee Error"},
+	GeTxFromPoolError:               {-6000, "Get tx from mempool error"},
+	TxPoolRejectTxError:             {-6001, "Pool reject tx by unexpected error"},
+	RejectInvalidTxSizeError:        {-6002, "Pool reject tx by invalid size"},
+	RejectInvalidTxTypeError:        {-6003, "Pool reject tx by invalid type"},
+	RejectInvalidTxError:            {-6004, "Pool reject invalid tx: signature, or proof or verify by itself fail"},
+	RejectDoubleSpendTxError:        {-6005, "Pool reject double spend tx, double spend with blockchain or mempool"},
+	RejectDuplicateTxInPoolError:    {-6006, "Tx already exist in pool"},
+	RejectInvalidTxVersionError:     {-6007, "Reject tx by invalid version"},
+	RejectSanityTxLocktime:          {-6008, "Reject wrong tx by locktime"},
+	RejectReplacementTx:             {-6009, "Reject error replacement or cancel transaction"},
+	RejectInvalidFeeError:           {-6010, "Reject Invalid Fee Error"},
 	RejectInvalidTxFeeTooLargeError: {-6011, "Reject invalid tx fee because fee is too large"},
 
 	// decentralized bridge

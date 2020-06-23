@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestGetProofByTxHash(t *testing.T){
+func TestGetProofByTxHash(t *testing.T) {
 	txProof, err := getProofByTxHash("421B68266AC570DEC49A12B1DDA0518D59205F4A874A24DB0F9448D4E03720A3", MainnetURLRemote)
 	assert.Nil(t, err)
 	fmt.Printf("txProof %v\n", txProof.Data)
@@ -33,7 +33,7 @@ func TestParseBNBTxFromData(t *testing.T) {
 
 	outputCoins := tx.Msgs[0].(msg.SendMsg).Outputs[0].Coins
 	actualAmount := int64(0)
-	for _, coin := range outputCoins{
+	for _, coin := range outputCoins {
 		actualAmount += coin.Amount
 	}
 	assert.Equal(t, amount, actualAmount)

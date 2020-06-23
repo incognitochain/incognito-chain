@@ -15,30 +15,30 @@ var (
 	nextShardCandidatePrefix           = []byte("next-sha-cand-")
 	currentShardCandidatePrefix        = []byte("cur-sha-cand-")
 	nextBeaconCandidatePrefix          = []byte("next-bea-cand-")
-	currentBeaconCandidatePrefix = []byte("cur-bea-cand-")
-	committeeRewardPrefix        = []byte("committee-reward-")
-	rewardRequestPrefix          = []byte("reward-request-")
-	blackListProducerPrefix      = []byte("black-list-")
-	serialNumberPrefix           = []byte("serial-number-")
-	commitmentPrefix             = []byte("com-value-")
-	commitmentIndexPrefix        = []byte("com-index-")
-	commitmentLengthPrefix       = []byte("com-length-")
-	snDerivatorPrefix            = []byte("sn-derivator-")
-	outputCoinPrefix             = []byte("output-coin-")
-	otaCoinPrefix                = []byte("ota-coin-")
-	otaCoinIndexPrefix        	= []byte("ota-index-")
-	otaCoinLengthPrefix       	= []byte("ota-length-")
-	onetimeAddressPrefix			= []byte("onetime-address-")
-	tokenPrefix                  = []byte("token-")
-	tokenTransactionPrefix       = []byte("token-transaction-")
-	waitingPDEContributionPrefix = []byte("waitingpdecontribution-")
-	pdePoolPrefix                = []byte("pdepool-")
-	pdeSharePrefix               = []byte("pdeshare-")
-	pdeTradeFeePrefix            = []byte("pdetradefee-")
-	pdeContributionStatusPrefix  = []byte("pdecontributionstatus-")
-	pdeTradeStatusPrefix         = []byte("pdetradestatus-")
-	pdeWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
-	pdeStatusPrefix              = []byte("pdestatus-")
+	currentBeaconCandidatePrefix       = []byte("cur-bea-cand-")
+	committeeRewardPrefix              = []byte("committee-reward-")
+	rewardRequestPrefix                = []byte("reward-request-")
+	blackListProducerPrefix            = []byte("black-list-")
+	serialNumberPrefix                 = []byte("serial-number-")
+	commitmentPrefix                   = []byte("com-value-")
+	commitmentIndexPrefix              = []byte("com-index-")
+	commitmentLengthPrefix             = []byte("com-length-")
+	snDerivatorPrefix                  = []byte("sn-derivator-")
+	outputCoinPrefix                   = []byte("output-coin-")
+	otaCoinPrefix                      = []byte("ota-coin-")
+	otaCoinIndexPrefix                 = []byte("ota-index-")
+	otaCoinLengthPrefix                = []byte("ota-length-")
+	onetimeAddressPrefix               = []byte("onetime-address-")
+	tokenPrefix                        = []byte("token-")
+	tokenTransactionPrefix             = []byte("token-transaction-")
+	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
+	pdePoolPrefix                      = []byte("pdepool-")
+	pdeSharePrefix                     = []byte("pdeshare-")
+	pdeTradeFeePrefix                  = []byte("pdetradefee-")
+	pdeContributionStatusPrefix        = []byte("pdecontributionstatus-")
+	pdeTradeStatusPrefix               = []byte("pdetradestatus-")
+	pdeWithdrawalStatusPrefix          = []byte("pdewithdrawalstatus-")
+	pdeStatusPrefix                    = []byte("pdestatus-")
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
@@ -284,7 +284,6 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 }
 
 // Portal
-//A
 func GetFinalExchangeRatesStatePrefix() []byte {
 	h := common.HashH(portalFinaExchangeRatesStatePrefix)
 	return h[:][:prefixHashKeyLength]
@@ -332,7 +331,6 @@ func GetPortalLiquidationPoolPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-//B
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)
 	return h[:][:prefixHashKeyLength]
@@ -363,8 +361,8 @@ func GetLockedCollateralStatePrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetRewardFeatureStatePrefix(beaconHeight uint64) []byte {
-	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...))
+func GetRewardFeatureStatePrefix(epoch uint64) []byte {
+	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", epoch))...))
 	return h[:][:prefixHashKeyLength]
 }
 

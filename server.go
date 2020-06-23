@@ -334,6 +334,7 @@ func (serverObj *Server) NewServer(
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
+		GenesisParams:   blockchain.GenesisParam,
 	})
 	if err != nil {
 		return err
@@ -2334,16 +2335,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	for _, chain := range s.blockChain.ShardChain {
 		for _, v := range chain.GetCommittee() {
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
-				for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] {
-					if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // and in shard pending committee in beacon state
-						return common.CommitteeRole, chain.GetShardID()
-					}
-				}
-				for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] {
-					if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // or in shard committee in beacon state
-						return common.CommitteeRole, chain.GetShardID()
-					}
-				}
+				return common.CommitteeRole, chain.GetShardID()
 			}
 		}
 
