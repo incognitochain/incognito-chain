@@ -409,31 +409,32 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 	for _, indexTx := range indices {
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
+		tokenData := privacyCustomTokenTx.GetTxPrivacyTokenData()
 		isBridgeToken := false
 		for _, tempBridgeToken := range allBridgeTokens {
-			if tempBridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], tempBridgeToken.TokenID[:]) {
+			if tempBridgeToken.TokenID != nil && bytes.Equal(tokenData.PropertyID[:], tempBridgeToken.TokenID[:]) {
 				isBridgeToken = true
 			}
 		}
-		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
+		switch tokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
+				tokenID := tokenData.PropertyID
 				existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 				if !existed {
 					// check is bridge token
-					tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
-					name := privacyCustomTokenTx.TxPrivacyTokenData.PropertyName
-					symbol := privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol
-					mintable := privacyCustomTokenTx.TxPrivacyTokenData.Mintable
-					amount := privacyCustomTokenTx.TxPrivacyTokenData.Amount
-					info := privacyCustomTokenTx.TxBase.Info
+					tokenID := tokenData.PropertyID
+					name := tokenData.PropertyName
+					symbol := tokenData.PropertySymbol
+					mintable := tokenData.Mintable
+					amount := tokenData.Amount
+					info := privacyCustomTokenTx.GetInfo()
 					txHash := *privacyCustomTokenTx.Hash()
 					tokenType := statedb.InitToken
 					if isBridgeToken {
 						tokenType = statedb.BridgeToken
 					}
-					Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
+					Logger.log.Info("Store custom token when it is issued", tokenData.PropertyID, tokenData.PropertySymbol, tokenData.PropertyName)
 					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
 					if err != nil {
 						return err
@@ -445,7 +446,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 				Logger.log.Infof("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash())
+		err = statedb.StorePrivacyTokenTx(transactionStateRoot, tokenData.PropertyID, *privacyCustomTokenTx.Hash())
 		if err != nil {
 			return err
 		}
@@ -577,15 +578,15 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				if outputCoin.GetVersion() != 2 {
 					continue
 				}
-				shardIDcoin, _ := outputCoin.GetShardID()
-				fmt.Println("Coin Version =", outputCoin.GetVersion())
-				fmt.Println("Coin ShardID =", shardIDcoin)
-				fmt.Println("Coin ShardID =", shardIDcoin)
-				fmt.Println("Coin Index =", outputCoin.GetIndex())
-				fmt.Println("Coin Value =", outputCoin.GetValue())
-				fmt.Println("Coin Info =", outputCoin.GetInfo())
-				fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
-				fmt.Println("TokenID of coin =", view.tokenID)
+				//shardIDcoin, _ := outputCoin.GetShardID()
+				//fmt.Println("Coin Version =", outputCoin.GetVersion())
+				//fmt.Println("Coin ShardID =", shardIDcoin)
+				//fmt.Println("Coin ShardID =", shardIDcoin)
+				//fmt.Println("Coin Index =", outputCoin.GetIndex())
+				//fmt.Println("Coin Value =", outputCoin.GetValue())
+				//fmt.Println("Coin Info =", outputCoin.GetInfo())
+				//fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
+				//fmt.Println("TokenID of coin =", view.tokenID)
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
 			}

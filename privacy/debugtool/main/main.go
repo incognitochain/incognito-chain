@@ -3,10 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/debugtool"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"os"
 	"strconv"
+
+	//"os"
+	//"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy/debugtool"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func sendTx(tool *debugtool.DebugTool) {
@@ -45,12 +49,13 @@ func TransferToken(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID, a
 	fmt.Println("========== END TRANSFER TOKEN ==========")
 }
 
-func GetBalanceToken (tool *debugtool.DebugTool, privkey, tokenID string) {
+func GetBalanceToken(tool *debugtool.DebugTool, privkey, tokenID string) {
 	fmt.Println("========== GET TOKEN BALANCE ==========")
 	b, _ := tool.GetBalancePrivacyCustomToken(privkey, tokenID)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET TOKEN BALANCE ==========")
 }
+
 //TokenID of coin = [191 233 71 70 219 216 161 134 234 186 130 184 9 0 113 206 223 234 207 61 3 200 250 114 247 71 54 72 233 45 223 116]
 
 //With tokenID = [191 233 71 70 219 216 161 134 234 186 130 184 9 0 113 206 223 234 207 61 3 200 250 114 247 71 54 72 233 45 223 116]
@@ -82,54 +87,54 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
 }
 
-func GetPRVBalance (tool *debugtool.DebugTool, privkey string) {
+func GetPRVBalance(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== GET PRV BALANCE ==========")
 	b, _ := tool.GetBalanceByPrivatekey(privkey)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV BALANCE ==========")
 }
 
-func GetRawMempool (tool *debugtool.DebugTool) {
+func GetRawMempool(tool *debugtool.DebugTool) {
 	fmt.Println("========== GET RAW MEMPOOL ==========")
 	b, _ := tool.GetRawMempool()
 	fmt.Println(string(b))
 	fmt.Println("========== END GET RAW MEMPOOL ==========")
 }
 
-func GetTxByHash (tool *debugtool.DebugTool, txHash string) {
+func GetTxByHash(tool *debugtool.DebugTool, txHash string) {
 	fmt.Println("========== GET TX BY HASH ==========")
 	b, _ := tool.GetTransactionByHash(txHash)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET TX BY HASH ==========")
 }
 
-func Staking( tool *debugtool.DebugTool, privKey string, privSeed string ) {
+func Staking(tool *debugtool.DebugTool, privKey string, privSeed string) {
 	fmt.Println("========== STAKING  ==========")
 	b, _ := tool.Stake(privKey, privSeed)
 	fmt.Println(string(b))
 	fmt.Println("========== END STAKING ==========")
 }
 
-func UnStaking(tool *debugtool.DebugTool, privKey string, privSeed string ) {
+func UnStaking(tool *debugtool.DebugTool, privKey string, privSeed string) {
 	fmt.Println("========== UN-STAKING  ==========")
 	b, _ := tool.Unstake(privKey, privSeed)
 	fmt.Println(string(b))
 	fmt.Println("========== END UN-STAKING ==========")
 }
 
-func WithdrawReward(tool *debugtool.DebugTool, privKey string, tokenID string ) {
+func WithdrawReward(tool *debugtool.DebugTool, privKey string, tokenID string) {
 	fmt.Println("========== WITHDRAW REWARD  ==========")
 	b, _ := tool.WithdrawReward(privKey, tokenID)
 	fmt.Println(string(b))
 	fmt.Println("========== END WITHDRAW REWARD  ==========")
 }
 
-func SwitchPort(newPort string) *debugtool.DebugTool{
+func SwitchPort(newPort string) *debugtool.DebugTool {
 	tool := new(debugtool.DebugTool).InitLocal(newPort)
 	return tool
 }
 
-func  TransferPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
+func TransferPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
 	fmt.Println("========== TRANSFER PRV  ==========")
 	b, _ := tool.CreateAndSendTransactionFromAToB(fromPrivKey, toPrivKey, amount)
 	fmt.Println(string(b))
@@ -171,6 +176,15 @@ func main() {
 
 	tool := new(debugtool.DebugTool).InitLocal("9334")
 
+	//InitToken(tool, privateKeys[0], "something")
+
+	//a := ListTokens(tool)
+	//tokenID := a.Result.ListCustomToken[0].ID
+
+	//TransferToken(tool, privateKeys[0], privateKeys[1], tokenID,"1000")
+
+	//GetBalanceToken(tool, privateKeys[1], tokenID)
+
 	if len(os.Args) <= 1 {
 		return
 	}
@@ -180,7 +194,11 @@ func main() {
 		tool = SwitchPort(args[1])
 	}
 	if args[0] == "convert" {
-		ConvertCoinVersion(tool, privateKeys[0])
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		ConvertCoinVersion(tool, privateKeys[index])
 	}
 	if args[0] == "send" {
 		sendTx(tool)
@@ -250,6 +268,5 @@ func main() {
 	if args[0] == "public" {
 		fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
 	}
-
 
 }

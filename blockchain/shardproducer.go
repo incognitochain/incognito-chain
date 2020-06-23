@@ -14,7 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 // NewBlockShard Create New block Shard:
@@ -155,10 +154,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 
 	for _, tx := range newShardBlock.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
-		txType := tx.GetType()
-		if txType == common.TxCustomTokenPrivacyType {
-			txCustomPrivacy := tx.(*transaction.TxTokenBase)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			totalTxsFee[*tx.GetTokenID()] = tx.GetTxFeeToken()
 		}
 	}
 	newShardBlock.Header = ShardHeader{

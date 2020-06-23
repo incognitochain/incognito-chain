@@ -77,7 +77,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdPrivacyCustomToken:
 		msg = &MessageTxPrivacyToken{
-			Transaction: &transaction.TxTokenBase{},
+			Transaction: transaction.NewEmptyTxToken(),
 		}
 		break
 	case CmdGetBlockBeacon:
@@ -90,7 +90,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdTx:
 		msg = &MessageTx{
-			Transaction: &transaction.TxBase{},
+			Transaction: transaction.NewEmptyTx(),
 		}
 		break
 	case CmdVersion:

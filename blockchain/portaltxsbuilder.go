@@ -280,26 +280,26 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxTokenBase{}
-	txStateDB := curView.GetCopiedTransactionStateDB()
-	featureStateDB := beaconState.GetBeaconFeatureStateDB()
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			txStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
+	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+		producerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		tokenParams,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+		false,
+		false,
+		shardID,
+		nil,
+		beaconState.GetBeaconFeatureStateDB(),
 	)
-	if initErr != nil {
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if err != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, err
+	}
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing request ptoken response tx: %+v", initErr)
 		return nil, nil
 	}
@@ -476,30 +476,29 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxTokenBase{}
-	txStateDB := curView.GetCopiedTransactionStateDB()
-	featureStateDB := beaconState.GetBeaconFeatureStateDB()
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			txStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
+	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+		producerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		tokenParams,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+		false,
+		false,
+		shardID,
+		nil,
+		beaconState.GetBeaconFeatureStateDB(),
 	)
-	if initErr != nil {
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if err != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, err
+	}
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
 		return nil, nil
 	}
-
 	Logger.log.Info("[Shard buildPortalRejectedRedeemRequestTx] Finished...")
 	return resTx, nil
 }
@@ -634,27 +633,27 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 			TokenInput:  []coin.PlainCoin{},
 			Mintable:    true,
 		}
-		resTx := &transaction.TxTokenBase{}
-		txStateDB := curView.GetCopiedTransactionStateDB()
-		featureStateDB := baeconState.GetBeaconFeatureStateDB()
-		err = resTx.Init(
-			transaction.NewTxPrivacyTokenInitParams(
-				producerPrivateKey,
-				[]*privacy.PaymentInfo{},
-				nil,
-				0,
-				tokenParams,
-				txStateDB,
-				meta,
-				false,
-				false,
-				shardID,
-				nil,
-				featureStateDB,
-			),
+		txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			curView.GetCopiedTransactionStateDB(),
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+			baeconState.GetBeaconFeatureStateDB(),
 		)
+		resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", err)
+			Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+			return nil, err
+		}
+		if initErr := resTx.Init(txTokenParams); initErr != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", initErr)
 			return nil, nil
 		}
 		return resTx, nil
@@ -769,30 +768,29 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	resTx := &transaction.TxTokenBase{}
-	txStateDB := curView.GetCopiedTransactionStateDB()
-	featureStateDB := baeconState.GetBeaconFeatureStateDB()
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			txStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
+	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+		producerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		tokenParams,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+		false,
+		false,
+		shardID,
+		nil,
+		baeconState.GetBeaconFeatureStateDB(),
 	)
-	if initErr != nil {
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if err != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, err
+	}
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
 		return nil, nil
 	}
-
 	Logger.log.Info("[Shard buildPortalRefundRedeemFromLiquidationTx] Finished...")
 	return resTx, nil
 }

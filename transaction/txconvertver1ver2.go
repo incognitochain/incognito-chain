@@ -102,8 +102,8 @@ func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParam
 		tx.LockTime = time.Now().Unix()
 	}
 	tx.Fee = params.fee
-	tx.Version = txConversionVersion12Number
-	tx.Type = common.TxNormalType
+	tx.Version = TxConversionVersion12Number
+	tx.Type = common.TxConversionType
 	tx.Metadata = params.metaData
 	if tx.Info, err = getTxInfo(params.info); err != nil {
 		return err

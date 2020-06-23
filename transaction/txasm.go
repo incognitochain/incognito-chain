@@ -331,19 +331,6 @@ func (txToken *TxTokenBase) InitForASM(params *TxPrivacyTokenInitParamsForASM, s
 	return nil
 }
 
-// CustomTokenParamTx - use for rpc request json body
-type CustomTokenPrivacyParamTx struct {
-	PropertyID     string                 `json:"TokenID"`
-	PropertyName   string                 `json:"TokenName"`
-	PropertySymbol string                 `json:"TokenSymbol"`
-	Amount         uint64                 `json:"TokenAmount"`
-	TokenTxType    int                    `json:"TokenTxType"`
-	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
-	TokenInput     []coin.PlainCoin    `json:"TokenInput"`
-	Mintable       bool                   `json:"TokenMintable"`
-	Fee            uint64                 `json:"TokenFee"`
-}
-
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
 func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy.PaymentInfo, int64, error) {

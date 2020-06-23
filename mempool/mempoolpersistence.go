@@ -29,39 +29,19 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 		Fee:           txDesc.Desc.Fee,
 		FeePerKB:      txDesc.Desc.FeePerKB,
 	}
-	switch tx.GetType() {
-	//==================For PRV Transfer Only
-	case common.TxNormalType:
-		{
-			normalTx := tx.(*transaction.TxBase)
-			valueTx, err := json.Marshal(normalTx)
-			if err != nil {
-				return err
-			}
-			valueDesc, err := json.Marshal(tempDesc)
-			if err != nil {
-				return err
-			}
-			err = tp.config.DataBaseMempool.AddTransaction(txHash, common.TxNormalType, valueTx, valueDesc)
-			if err != nil {
-				return err
-			}
+
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType {
+		valueTx, err := json.Marshal(tx)
+		if err != nil {
+			return err
 		}
-	case common.TxCustomTokenPrivacyType:
-		{
-			customTokenPrivacyTx := tx.(*transaction.TxTokenBase)
-			valueTx, err := json.Marshal(customTokenPrivacyTx)
-			if err != nil {
-				return err
-			}
-			valueDesc, err := json.Marshal(tempDesc)
-			if err != nil {
-				return err
-			}
-			err = tp.config.DataBaseMempool.AddTransaction(txHash, common.TxCustomTokenPrivacyType, valueTx, valueDesc)
-			if err != nil {
-				return err
-			}
+		valueDesc, err := json.Marshal(tempDesc)
+		if err != nil {
+			return err
+		}
+		err = tp.config.DataBaseMempool.AddTransaction(txHash, tx.GetType(), valueTx, valueDesc)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -152,30 +132,27 @@ func (tp *TxPool) removeTransactionFromDatabaseMP(txHash *common.Hash) error {
 
 // unMarshallTxDescFromDatabase - convert tx data in mempool database persistence into TxDesc
 func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (*TxDesc, error) {
+	var err error
 	txDesc := TxDesc{}
+
 	switch txType {
-	case common.TxNormalType:
+	case common.TxNormalType, common.TxConversionType:
 		{
-			tx := transaction.TxBase{}
-			err := json.Unmarshal(valueTx, &tx)
+			txDesc.Desc.Tx, err = transaction.NewTransactionFromJsonBytes(valueTx)
 			if err != nil {
 				return nil, err
 			}
-
-			txDesc.Desc.Tx = &tx
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
-			customTokenPrivacyTx := transaction.TxTokenBase{}
-			err := json.Unmarshal(valueTx, &customTokenPrivacyTx)
+			txDesc.Desc.Tx, err = transaction.NewTransactionTokenFromJsonBytes(valueTx)
 			if err != nil {
 				return nil, err
 			}
-			txDesc.Desc.Tx = &customTokenPrivacyTx
 		}
 	}
 	tempDesc := TempDesc{}
-	err := json.Unmarshal(valueDesc, &tempDesc)
+	err = json.Unmarshal(valueDesc, &tempDesc)
 	if err != nil {
 		return nil, err
 	}

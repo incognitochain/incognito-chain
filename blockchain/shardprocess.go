@@ -339,8 +339,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
 		if txType == common.TxCustomTokenPrivacyType {
-			txCustomPrivacy := tx.(*transaction.TxTokenBase)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
+			totalTxsFee[txTokenData.PropertyID] = txTokenData.TxNormal.GetTxFee()
 		}
 	}
 	tokenIDsfromTxs := make([]common.Hash, 0)

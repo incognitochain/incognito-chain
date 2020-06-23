@@ -4,19 +4,19 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
-	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"math/big"
 	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
@@ -97,6 +97,15 @@ type TxVersion2 struct {
 	TxBase
 }
 
+// ========== GET FUNCTION ===========
+
+func (tx *TxVersion2) GetReceiverData() ([]coin.Coin, error) {
+	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
+		return tx.Proof.GetOutputCoins(), nil
+	}
+	return nil, nil
+}
+
 // ========== CHECK FUNCTION ===========
 
 func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
@@ -131,13 +140,6 @@ func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	}
 	fmt.Println("[CheckAuthorizedSender] Metadata Signature - Validate OK")
 	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
-}
-
-func (tx *TxVersion2) GetReceiverData() ([]coin.Coin, error) {
-	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
-		return tx.Proof.GetOutputCoins(), nil
-	}
-	return nil, nil
 }
 
 // ========== NORMAL INIT FUNCTIONS ==========
@@ -492,10 +494,56 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	return true, nil
 }
 
+func (tx TxVersion2) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
+	if tx.IsPrivacy() {
+		return true, nil
+	}
+	proof := tx.GetProof()
+	meta := tx.GetMetadata()
+
+	inputCoins := make([]coin.PlainCoin, 0)
+	outputCoins := make([]coin.Coin, 0)
+	if tx.GetProof() != nil {
+		inputCoins = tx.GetProof().GetInputCoins()
+		outputCoins = tx.GetProof().GetOutputCoins()
+	}
+	if proof != nil && len(inputCoins) == 0 && len(outputCoins) > 0 { // coinbase tx
+		if meta == nil {
+			return false, nil
+		}
+		if !meta.IsMinerCreatedMetaType() {
+			return false, nil
+		}
+	}
+	if meta != nil {
+		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, nil, nil)
+		if err != nil {
+			Logger.Log.Error(err)
+			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
+		}
+		return ok, nil
+	}
+	return true, nil
+}
+
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
 func (tx *TxVersion2) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
-	tx.Version = txVersion2Number
+	tokenID := &common.Hash{}
+	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
+		return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+	}
+	if found, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS()); found || err != nil {
+		if found {
+			return errors.New("Cannot initTxSalary, onetimeaddress already exists in database")
+		}
+		if err != nil {
+			errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
+			return errors.New(errStr)
+		}
+	}
+
+	tx.Version = TxVersion2Number
 	tx.Type = common.TxRewardType
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
@@ -510,7 +558,7 @@ func (tx *TxVersion2) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.Pri
 	tx.Proof = proof
 
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
-	tx.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes) - 1]
+	tx.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes)-1]
 
 	// signOnMessage Tx using ver1 schnorr
 	tx.sigPrivKey = *privateKey
@@ -592,4 +640,35 @@ func (tx *TxVersion2) HashWithoutMetadataSig() *common.Hash {
 	hash := common.HashH(inBytes)
 	//tx.cachedHash = &hash
 	return &hash
+}
+
+// ========== VALIDATE FUNCTIONS ============
+
+func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	check, err := checkSanityMetadataVersionSizeProofTypeInfo(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	if !check {
+		if err != nil {
+			Logger.Log.Errorf("Cannot check sanity of metadata, version, size, proof, type and info: err %v", err)
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// ========== SHARED FUNCTIONS ============
+
+func (tx TxVersion2) GetTxMintData() (bool, coin.Coin, *common.Hash, error) { return getTxMintData(&tx) }
+
+func (tx TxVersion2) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) { return getTxBurnData(&tx) }
+
+func (tx TxVersion2) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+	return validateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+}
+
+func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+	return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+}
+
+func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+	return validateTxByItself(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
 }
