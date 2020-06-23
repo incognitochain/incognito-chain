@@ -342,6 +342,8 @@ func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 }
 
 func (this *DebugTool) Unstake(privKey string, seed string) ([]byte, error) {
+	//private key [4]
+	//wrongPrivKey := "112t8rnXWRThUTJQgoyH6evV8w19dFZfKWpCh8rZpfymW9JTgKPEVQS44nDRPpsooJiGStHxu81m3HA84t9DBVobz8hgBKRMcz2hddPWNX9N"
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)

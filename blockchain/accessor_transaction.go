@@ -114,7 +114,7 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
 	fmt.Println("Validate response tx for withdraw reward requests")
 	fmt.Println("Validate response tx for withdraw reward requests")
-	// remove double withdraw request
+	// filter double withdraw request
 	withdrawReqTable := make(map[string]privacy.PaymentAddress)
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
@@ -126,7 +126,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 		}
 	}
 	fmt.Println("Request Table", withdrawReqTable)
-	// check tx withdraw response valid with request
+	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			//check valid info with tx request
@@ -153,10 +153,13 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			//check amount & receiver
 			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
 				base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), *coinID)
+			if err != nil {
+				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount")
+			}
 			if ok := mintCoin.CheckCoinValid(rewardPaymentAddress, metaResponse.SharedRandom, rewardAmount); !ok {
 				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
 			}
-			fmt.Println("Check Valid Amount and Receiver")
+			fmt.Println("Check Valid Amount and Receiver OK")
 		}
 	}
 

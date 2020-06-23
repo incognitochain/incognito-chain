@@ -516,7 +516,7 @@ func (tx TxVersion2) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata
 		}
 	}
 	if meta != nil {
-		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, nil, nil)
+		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, retriever, viewRetriever)
 		if err != nil {
 			Logger.Log.Error(err)
 			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)

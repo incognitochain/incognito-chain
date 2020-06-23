@@ -548,5 +548,5 @@ func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *me
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, &txToken, bcr, accumulatedValues, nil, nil)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, &txToken, bcr, accumulatedValues, retriever, viewRetriever)
 }
