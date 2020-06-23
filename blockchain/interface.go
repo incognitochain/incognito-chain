@@ -76,3 +76,26 @@ type Syncker interface {
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }
+
+type BeaconCommitteeState interface {
+	GenerateCommitteeRootHashes(shardInstruction []string) ([]common.Hash, error)
+	UpdateCommitteeState(beaconInstruction []string) (committeeChange, error)
+	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
+	GetBeaconCommittee() []incognitokey.CommitteePublicKey
+	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
+	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
+	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
+	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
+	GetAutoStaking() map[string]bool
+	GetRewardReceiver() map[string]string
+}
+type ShardCommitteeState interface {
+	GenerateCommitteeRootHashes(shardID byte, instruction []string) ([]common.Hash, error)
+	UpdateCommitteeState(shardID byte, instruction []string) (committeeChange, error)
+	ValidateCommitteeRootHashes(shardID byte, rootHashes []common.Hash) (bool, error)
+	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey
+}
