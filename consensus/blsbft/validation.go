@@ -3,6 +3,7 @@ package blsbft
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -87,6 +88,16 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
+	}
+
+	if block.GetHeight() == 276939 {
+
+		fmt.Println("[optimize-beststate] valData.ValidatiorsIdx:", valData.ValidatiorsIdx)
+
+		for _, v := range committee {
+			str, _ := v.ToBase58()
+			fmt.Println("[optimize-beststate] committee key:", str)
+		}
 	}
 
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {

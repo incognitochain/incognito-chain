@@ -230,6 +230,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
+
+	// get committeeByHeight
 }
 
 // Commands that are available to a limited user

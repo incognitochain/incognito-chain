@@ -104,10 +104,12 @@ func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForNextRand
 func (shardBestState *ShardBestState) restoreCommittee(shardID byte) error {
 
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
+
 	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 	for i, v := range committeePublicKey {
 		shardBestState.ShardCommittee[i] = v
 	}
+
 	return nil
 }
 
