@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
@@ -58,7 +59,7 @@ CONTINUE_VERIFY:
 	curView := view.(*BeaconBestState)
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	committeeChange := newCommitteeChange()
+	committeeChange := committeestate.NewCommitteeChange()
 	if err := blockchain.verifyPreProcessingBeaconBlock(curView, beaconBlock, isPreSign); err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
-	committeeChange := newCommitteeChange()
+	committeeChange := committeestate.NewCommitteeChange()
 
 	//check view if exited
 	checkView := blockchain.BeaconChain.GetViewByHash(*beaconBlock.Hash())
@@ -686,7 +687,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, blockchain *BlockChain, committeeChange *committeeChange) (*BeaconBestState, error) {
+func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, blockchain *BlockChain, committeeChange *committeestate.CommitteeChange) (*BeaconBestState, error) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(oldBestState); err != nil {
@@ -754,9 +755,9 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 	}
 	// update candidate list after processing instructions
 	beaconBestState.CandidateBeaconWaitingForNextRandom = append(beaconBestState.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
-	committeeChange.nextEpochBeaconCandidateAdded = append(committeeChange.nextEpochBeaconCandidateAdded, newBeaconCandidate...)
+	committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, newBeaconCandidate...)
 	beaconBestState.CandidateShardWaitingForNextRandom = append(beaconBestState.CandidateShardWaitingForNextRandom, newShardCandidate...)
-	committeeChange.nextEpochShardCandidateAdded = append(committeeChange.nextEpochShardCandidateAdded, newShardCandidate...)
+	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidate...)
 	if beaconBestState.BeaconHeight%chainParamEpoch == 1 && beaconBestState.BeaconHeight != 1 {
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
@@ -765,16 +766,16 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 		// snap shot candidate list, prepare to get random number (beaconHeight == random time)
 		if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
 			// snapshot candidate list
-			committeeChange.currentEpochShardCandidateAdded = beaconBestState.CandidateShardWaitingForNextRandom
+			committeeChange.CurrentEpochShardCandidateAdded = beaconBestState.CandidateShardWaitingForNextRandom
 			beaconBestState.CandidateShardWaitingForCurrentRandom = beaconBestState.CandidateShardWaitingForNextRandom
-			committeeChange.currentEpochBeaconCandidateAdded = beaconBestState.CandidateBeaconWaitingForNextRandom
+			committeeChange.CurrentEpochBeaconCandidateAdded = beaconBestState.CandidateBeaconWaitingForNextRandom
 			beaconBestState.CandidateBeaconWaitingForCurrentRandom = beaconBestState.CandidateBeaconWaitingForNextRandom
 			Logger.log.Debug("Beacon Process: CandidateShardWaitingForCurrentRandom: ", beaconBestState.CandidateShardWaitingForCurrentRandom)
 			Logger.log.Debug("Beacon Process: CandidateBeaconWaitingForCurrentRandom: ", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 			// reset candidate list
-			committeeChange.nextEpochShardCandidateRemoved = beaconBestState.CandidateShardWaitingForNextRandom
+			committeeChange.NextEpochShardCandidateRemoved = beaconBestState.CandidateShardWaitingForNextRandom
 			beaconBestState.CandidateShardWaitingForNextRandom = []incognitokey.CommitteePublicKey{}
-			committeeChange.nextEpochBeaconCandidateRemoved = beaconBestState.CandidateBeaconWaitingForNextRandom
+			committeeChange.NextEpochBeaconCandidateRemoved = beaconBestState.CandidateBeaconWaitingForNextRandom
 			beaconBestState.CandidateBeaconWaitingForNextRandom = []incognitokey.CommitteePublicKey{}
 			// assign random timestamp
 			beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
@@ -797,7 +798,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 			if err != nil {
 				panic(err)
 			}
-			committeeChange.nextEpochShardCandidateAdded = append(committeeChange.nextEpochShardCandidateAdded, remainShardCandidates...)
+			committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, remainShardCandidates...)
 			// append remain candidate into shard waiting for next random list
 			beaconBestState.CandidateShardWaitingForNextRandom = append(beaconBestState.CandidateShardWaitingForNextRandom, remainShardCandidates...)
 			// assign candidate into shard pending validator list
@@ -806,10 +807,10 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 				if err != nil {
 					panic(err)
 				}
-				committeeChange.shardSubstituteAdded[shardID] = candidateList
+				committeeChange.ShardSubstituteAdded[shardID] = candidateList
 				beaconBestState.ShardPendingValidator[shardID] = append(beaconBestState.ShardPendingValidator[shardID], candidateList...)
 			}
-			committeeChange.currentEpochShardCandidateRemoved = beaconBestState.CandidateShardWaitingForCurrentRandom
+			committeeChange.CurrentEpochShardCandidateRemoved = beaconBestState.CandidateShardWaitingForCurrentRandom
 			// delete CandidateShardWaitingForCurrentRandom list
 			beaconBestState.CandidateShardWaitingForCurrentRandom = []incognitokey.CommitteePublicKey{}
 			// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
@@ -817,9 +818,9 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 			if err != nil {
 				return nil, NewBlockChainError(ShuffleBeaconCandidateError, err)
 			}
-			committeeChange.currentEpochBeaconCandidateRemoved = beaconBestState.CandidateBeaconWaitingForCurrentRandom
+			committeeChange.CurrentEpochBeaconCandidateRemoved = beaconBestState.CandidateBeaconWaitingForCurrentRandom
 			beaconBestState.CandidateBeaconWaitingForCurrentRandom = []incognitokey.CommitteePublicKey{}
-			committeeChange.beaconSubstituteAdded = newBeaconPendingValidator
+			committeeChange.BeaconSubstituteAdded = newBeaconPendingValidator
 			beaconBestState.BeaconPendingValidator = append(beaconBestState.BeaconPendingValidator, newBeaconPendingValidator...)
 		}
 	}
@@ -860,7 +861,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		snapshotAutoStaking[k] = v
 	}
 	for _, instruction := range genesisBeaconBlock.Body.Instructions {
-		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, newCommitteeChange(), snapshotAutoStaking)
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, committeestate.NewCommitteeChange(), snapshotAutoStaking)
 		if err != nil {
 			return err
 		}
@@ -926,7 +927,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //  #3 new beacon candidate
 //  #4 new shard candidate
 
-func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange, autoStaking map[string]bool) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeestate.CommitteeChange, autoStaking map[string]bool) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	if len(instruction) < 1 {
@@ -956,7 +957,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 				// if found in committee list then turn off auto staking
 				if _, ok := beaconBestState.AutoStaking[committeePublicKey]; ok {
 					beaconBestState.AutoStaking[committeePublicKey] = false
-					committeeChange.stopAutoStaking = append(committeeChange.stopAutoStaking, committeePublicKey)
+					committeeChange.StopAutoStaking = append(committeeChange.StopAutoStaking, committeePublicKey)
 				}
 			}
 		}
@@ -1002,13 +1003,13 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 					}
 					// update shard pending validator
-					committeeChange.shardSubstituteRemoved[shardID] = append(committeeChange.shardSubstituteRemoved[shardID], inPublickeyStructs...)
+					committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID], inPublickeyStructs...)
 					beaconBestState.ShardPendingValidator[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(tempShardPendingValidator)
 					if err != nil {
 						return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 					}
 					// add new public key to committees
-					committeeChange.shardCommitteeAdded[shardID] = append(committeeChange.shardCommitteeAdded[shardID], inPublickeyStructs...)
+					committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], inPublickeyStructs...)
 					beaconBestState.ShardCommittee[shardID] = append(beaconBestState.ShardCommittee[shardID], inPublickeyStructs...)
 				}
 				// delete out public key out of current committees
@@ -1025,7 +1026,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 					}
 					// remove old public key in shard committee update shard committee
-					committeeChange.shardCommitteeRemoved[shardID] = append(committeeChange.shardCommitteeRemoved[shardID], outPublickeyStructs...)
+					committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], outPublickeyStructs...)
 					beaconBestState.ShardCommittee[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(tempShardCommittees)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
@@ -1065,13 +1066,13 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 					}
 					// update beacon pending validator
-					committeeChange.beaconSubstituteRemoved = append(committeeChange.beaconSubstituteRemoved, inPublickeyStructs...)
+					committeeChange.BeaconSubstituteRemoved = append(committeeChange.BeaconSubstituteRemoved, inPublickeyStructs...)
 					beaconBestState.BeaconPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(tempBeaconPendingValidator)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 					}
 					// add new public key to beacon committee
-					committeeChange.beaconCommitteeAdded = append(committeeChange.beaconCommitteeAdded, inPublickeyStructs...)
+					committeeChange.BeaconCommitteeAdded = append(committeeChange.BeaconCommitteeAdded, inPublickeyStructs...)
 					beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, inPublickeyStructs...)
 				}
 				if len(instruction[2]) > 0 {
@@ -1088,7 +1089,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 					}
 					// remove old public key in beacon committee and update beacon best state
-					committeeChange.beaconCommitteeRemoved = append(committeeChange.beaconCommitteeRemoved, outPublickeyStructs...)
+					committeeChange.BeaconCommitteeRemoved = append(committeeChange.BeaconCommitteeRemoved, outPublickeyStructs...)
 					beaconBestState.BeaconCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(tempBeaconCommittes)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
@@ -1168,7 +1169,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 }
 
-func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, committeeChange *committeeChange) error {
+func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, committeeChange *committeestate.CommitteeChange) error {
 	if instruction[0] == SwapAction {
 		if instruction[1] == "" && instruction[2] == "" {
 			return nil
@@ -1200,15 +1201,15 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 			}
 			shardID := byte(temp)
 			// update shard pending validator
-			committeeChange.shardCommitteeRemoved[shardID] = append(committeeChange.shardCommitteeRemoved[shardID], outPublicKeyStructs...)
+			committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], outPublicKeyStructs...)
 			// add new public key to committees
-			committeeChange.shardCommitteeAdded[shardID] = append(committeeChange.shardCommitteeAdded[shardID], inPublicKeyStructs...)
+			committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], inPublicKeyStructs...)
 			remainedShardCommittees := beaconBestState.ShardCommittee[shardID][removedCommittee:]
 			beaconBestState.ShardCommittee[shardID] = append(inPublicKeyStructs, remainedShardCommittees...)
 		} else if instruction[3] == "beacon" {
-			committeeChange.beaconCommitteeRemoved = append(committeeChange.beaconCommitteeRemoved, outPublicKeyStructs...)
+			committeeChange.BeaconCommitteeRemoved = append(committeeChange.BeaconCommitteeRemoved, outPublicKeyStructs...)
 			// add new public key to committees
-			committeeChange.beaconCommitteeAdded = append(committeeChange.beaconCommitteeAdded, inPublicKeyStructs...)
+			committeeChange.BeaconCommitteeAdded = append(committeeChange.BeaconCommitteeAdded, inPublicKeyStructs...)
 			remainedBeaconCommittees := beaconBestState.BeaconCommittee[removedCommittee:]
 			beaconBestState.BeaconCommittee = append(inPublicKeyStructs, remainedBeaconCommittees...)
 		}
@@ -1222,26 +1223,26 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange *committeeChange) error {
-	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.stopAutoStaking)
+func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange *committeestate.CommitteeChange) error {
+	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStaking)
 	if err != nil {
 		return err
 	}
 	for _, committeePublicKey := range stopAutoStakingIncognitoKey {
-		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.nextEpochBeaconCandidateAdded) > -1 {
+		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.NextEpochBeaconCandidateAdded) > -1 {
 			continue
 		}
-		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.currentEpochBeaconCandidateAdded) > -1 {
+		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.CurrentEpochBeaconCandidateAdded) > -1 {
 			continue
 		}
-		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.nextEpochShardCandidateAdded) > -1 {
+		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.NextEpochShardCandidateAdded) > -1 {
 			continue
 		}
-		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.currentEpochShardCandidateAdded) > -1 {
+		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.CurrentEpochShardCandidateAdded) > -1 {
 			continue
 		}
 		flag := false
-		for _, v := range committeeChange.shardSubstituteAdded {
+		for _, v := range committeeChange.ShardSubstituteAdded {
 			if incognitokey.IndexOfCommitteeKey(committeePublicKey, v) > -1 {
 				flag = true
 				break
@@ -1250,7 +1251,7 @@ func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange
 		if flag {
 			continue
 		}
-		for _, v := range committeeChange.shardCommitteeAdded {
+		for _, v := range committeeChange.ShardCommitteeAdded {
 			if incognitokey.IndexOfCommitteeKey(committeePublicKey, v) > -1 {
 				flag = true
 				break
@@ -1259,33 +1260,33 @@ func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange
 		if flag {
 			continue
 		}
-		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.beaconSubstituteAdded) > -1 {
+		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.BeaconSubstituteAdded) > -1 {
 			continue
 		}
-		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.beaconCommitteeAdded) > -1 {
+		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.BeaconCommitteeAdded) > -1 {
 			continue
 		}
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, beaconBestState.CandidateBeaconWaitingForNextRandom) > -1 {
-			committeeChange.nextEpochBeaconCandidateAdded = append(committeeChange.nextEpochBeaconCandidateAdded, committeePublicKey)
+			committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, committeePublicKey)
 		}
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, beaconBestState.CandidateBeaconWaitingForCurrentRandom) > -1 {
-			committeeChange.currentEpochBeaconCandidateAdded = append(committeeChange.currentEpochBeaconCandidateAdded, committeePublicKey)
+			committeeChange.CurrentEpochBeaconCandidateAdded = append(committeeChange.CurrentEpochBeaconCandidateAdded, committeePublicKey)
 		}
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, beaconBestState.CandidateShardWaitingForNextRandom) > -1 {
-			committeeChange.nextEpochShardCandidateAdded = append(committeeChange.nextEpochShardCandidateAdded, committeePublicKey)
+			committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, committeePublicKey)
 		}
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, beaconBestState.CandidateShardWaitingForCurrentRandom) > -1 {
-			committeeChange.currentEpochShardCandidateAdded = append(committeeChange.currentEpochShardCandidateAdded, committeePublicKey)
+			committeeChange.CurrentEpochShardCandidateAdded = append(committeeChange.CurrentEpochShardCandidateAdded, committeePublicKey)
 		}
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, beaconBestState.BeaconPendingValidator) > -1 {
-			committeeChange.beaconSubstituteAdded = append(committeeChange.beaconSubstituteAdded, committeePublicKey)
+			committeeChange.BeaconSubstituteAdded = append(committeeChange.BeaconSubstituteAdded, committeePublicKey)
 		}
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, beaconBestState.BeaconCommittee) > -1 {
-			committeeChange.beaconCommitteeAdded = append(committeeChange.beaconCommitteeAdded, committeePublicKey)
+			committeeChange.BeaconCommitteeAdded = append(committeeChange.BeaconCommitteeAdded, committeePublicKey)
 		}
 		for k, v := range beaconBestState.ShardCommittee {
 			if incognitokey.IndexOfCommitteeKey(committeePublicKey, v) > -1 {
-				committeeChange.shardCommitteeAdded[k] = append(committeeChange.shardCommitteeAdded[k], committeePublicKey)
+				committeeChange.ShardCommitteeAdded[k] = append(committeeChange.ShardCommitteeAdded[k], committeePublicKey)
 				flag = true
 				break
 			}
@@ -1295,7 +1296,7 @@ func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange
 		}
 		for k, v := range beaconBestState.ShardPendingValidator {
 			if incognitokey.IndexOfCommitteeKey(committeePublicKey, v) > -1 {
-				committeeChange.shardSubstituteAdded[k] = append(committeeChange.shardSubstituteAdded[k], committeePublicKey)
+				committeeChange.ShardSubstituteAdded[k] = append(committeeChange.ShardSubstituteAdded[k], committeePublicKey)
 				flag = true
 				break
 			}
@@ -1313,7 +1314,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	snapshotBeaconCommittees []incognitokey.CommitteePublicKey,
 	snapshotAllShardCommittees map[byte][]incognitokey.CommitteePublicKey,
 	snapshotRewardReceivers map[string]string,
-	committeeChange *committeeChange,
+	committeeChange *committeestate.CommitteeChange,
 ) error {
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
@@ -1323,68 +1324,68 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.nextEpochShardCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.currentEpochBeaconCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.nextEpochBeaconCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.shardSubstituteAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.shardCommitteeAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.beaconSubstituteAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.beaconCommitteeAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
+	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
 	// Deleted
-	err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.currentEpochShardCandidateRemoved)
+	err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.nextEpochShardCandidateRemoved)
+	err = statedb.DeleteNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.currentEpochBeaconCandidateRemoved)
+	err = statedb.DeleteCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.nextEpochBeaconCandidateRemoved)
+	err = statedb.DeleteNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.shardSubstituteRemoved)
+	err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.shardCommitteeRemoved)
+	err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.beaconSubstituteRemoved)
+	err = statedb.DeleteBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.beaconCommitteeRemoved)
+	err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeRemoved)
 	if err != nil {
 		return err
 	}

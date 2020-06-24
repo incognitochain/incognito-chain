@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -79,7 +80,7 @@ type Syncker interface {
 
 type BeaconCommitteeState interface {
 	GenerateCommitteeRootHashes(shardInstruction []string) ([]common.Hash, error)
-	UpdateCommitteeState(beaconInstruction []string) (committeeChange, error)
+	UpdateCommitteeState(beaconInstruction []string) (committeestate.CommitteeChange, error)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
@@ -94,7 +95,7 @@ type BeaconCommitteeState interface {
 }
 type ShardCommitteeState interface {
 	GenerateCommitteeRootHashes(shardID byte, instruction []string) ([]common.Hash, error)
-	UpdateCommitteeState(shardID byte, instruction []string) (committeeChange, error)
+	UpdateCommitteeState(shardID byte, instruction []string) (committeestate.CommitteeChange, error)
 	ValidateCommitteeRootHashes(shardID byte, rootHashes []common.Hash) (bool, error)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey

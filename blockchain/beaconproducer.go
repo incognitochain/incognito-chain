@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/rand"
 	"reflect"
@@ -127,7 +128,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============End Build Body================
 	//============Update Beacon Best State================
 	// Process new block with beststate
-	newBeaconBeststate, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain, newCommitteeChange())
+	newBeaconBeststate, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain, committeestate.NewCommitteeChange())
 	if err != nil {
 		return nil, err
 	}
