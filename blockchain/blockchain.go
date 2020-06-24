@@ -528,7 +528,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		return err
 	}
 	fmt.Println("debug RestoreShardViews", len(allViews))
-	for i, v := range allViews {
+	for _, v := range allViews {
 
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
@@ -551,10 +551,6 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
-
-		fmt.Println("[optimize-beststate] index view:", i)
-		fmt.Println("[optimize-beststate] v.Hash():", v.Hash())
-		fmt.Println("[optimize-beststate] len(v.ShardCommittee):", len(v.ShardCommittee))
 
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")

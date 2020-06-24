@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -104,6 +105,12 @@ func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForNextRand
 func (shardBestState *ShardBestState) restoreCommittee(shardID byte) error {
 
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
+
+	fmt.Println("[optimize-beststate] len(committeePublicKey):", len(committeePublicKey))
+	for _, v := range committeePublicKey {
+		key, _ := v.ToBase58()
+		fmt.Println("[optimize-beststate] key:", key)
+	}
 
 	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 	for i, v := range committeePublicKey {
