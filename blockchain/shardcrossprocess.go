@@ -72,7 +72,7 @@ func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash(
 func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) UnmarshalJSON(data []byte) error {
 	type Alias ContentCrossShardTokenPrivacyData
 	temp := &struct {
-		OutputCoin []string
+		OutputCoin []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(contentCrossShardTokenPrivacyData),
@@ -81,7 +81,7 @@ func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) Unma
 		Logger.log.Error("UnmarshalJSON ContentCrossShardTokenPrivacyData", err)
 		return err
 	}
-	outputCoinList, err := coin.ParseCoinsStr(temp.OutputCoin)
+	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
 		Logger.log.Error("UnmarshalJSON Cannot parse crossOutputCoins", err)
 		return err
@@ -101,7 +101,7 @@ func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
 func (crossOutputCoin *CrossOutputCoin) UnmarshalJSON(data []byte) error {
 	type Alias CrossOutputCoin
 	temp := &struct {
-		OutputCoin []string
+		OutputCoin []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(crossOutputCoin),
@@ -110,7 +110,7 @@ func (crossOutputCoin *CrossOutputCoin) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON CrossOutputCoin", err)
 		return err
 	}
-	outputCoinList, err := coin.ParseCoinsStr(temp.OutputCoin)
+	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
 		Logger.log.Error("UnmarshalJSON Cannot parse CrossOutputCoin", err)
 		return err
@@ -136,16 +136,16 @@ func (crossTransaction CrossTransaction) Hash() common.Hash {
 func (crossTransaction *CrossTransaction) UnmarshalJSON(data []byte) error {
 	type Alias CrossTransaction
 	temp := &struct {
-		OutputCoin []string
+		OutputCoin []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(crossTransaction),
 	}
 	if err := json.Unmarshal(data, temp); err != nil {
-		Logger.log.Error("UnmarshalJSON CrossTransaction", string(data))
+		Logger.log.Error("UnmarshalJSON CrossTransaction", string(data), err)
 		return err
 	}
-	outputCoinList, err := coin.ParseCoinsStr(temp.OutputCoin)
+	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
 		Logger.log.Error("UnmarshalJSON Cannot parse CrossTransaction", err)
 		return err

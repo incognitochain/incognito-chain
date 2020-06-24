@@ -566,7 +566,7 @@ func calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []ContentCrossShar
 	return common.HashH(tmpByte)
 }
 
-func cloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPrivacyTokenData) ContentCrossShardTokenPrivacyData {
+func cloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxTokenData) ContentCrossShardTokenPrivacyData {
 	newContentCrossTokenPrivacyData := ContentCrossShardTokenPrivacyData{
 		PropertyID:     txTokenPrivacyData.PropertyID,
 		PropertyName:   txTokenPrivacyData.PropertyName,

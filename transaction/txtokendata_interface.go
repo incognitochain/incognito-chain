@@ -13,21 +13,11 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
-func parseTxNormal(txInterface interface{}) (metadata.Transaction, error) {
-	txBytes := []byte{}
-	txBytes, err := json.Marshal(txInterface)
-	if err != nil {
-		Logger.Log.Errorf("Cannot parse tx interface to bytes, err %v", err)
-		return nil, err
-	}
-	return NewTransactionFromJsonBytes(txBytes)
-}
-
-func (txData *TxPrivacyTokenData) UnmarshalJSON(data []byte) error {
+func (txData *TxTokenData) UnmarshalJSON(data []byte) error {
 	// For rolling version
-	type Alias TxPrivacyTokenData
+	type Alias TxTokenData
 	temp := &struct {
-		TxNormal interface{}
+		TxNormal json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(txData),
@@ -38,14 +28,14 @@ func (txData *TxPrivacyTokenData) UnmarshalJSON(data []byte) error {
 		return NewTransactionErr(UnexpectedError, err)
 	}
 
-	if txData.TxNormal, err = parseTxNormal(temp.TxNormal); err != nil {
+	if txData.TxNormal, err = NewTransactionFromJsonBytes(temp.TxNormal); err != nil {
 		Logger.Log.Error(err)
 		return err
 	}
 	return nil
 }
 
-type TxPrivacyTokenData struct {
+type TxTokenData struct {
 	// TxNormal is the normal transaction, it will never be token transaction
 	TxNormal       metadata.Transaction
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
@@ -57,35 +47,35 @@ type TxPrivacyTokenData struct {
 	Amount   uint64 // init amount
 }
 
-func (txData TxPrivacyTokenData) GetPropertyID() common.Hash { return txData.PropertyID }
+func (txData TxTokenData) GetPropertyID() common.Hash { return txData.PropertyID }
 
-func (txData *TxPrivacyTokenData) SetPropertyID(propID common.Hash) { txData.PropertyID = propID }
+func (txData *TxTokenData) SetPropertyID(propID common.Hash) { txData.PropertyID = propID }
 
-func (txData TxPrivacyTokenData) GetPropertyName() string { return txData.PropertyName }
+func (txData TxTokenData) GetPropertyName() string { return txData.PropertyName }
 
-func (txData *TxPrivacyTokenData) SetPropertyName(propertyName string) {
+func (txData *TxTokenData) SetPropertyName(propertyName string) {
 	txData.PropertyName = propertyName
 }
 
-func (txData TxPrivacyTokenData) GetPropertySymbol() string { return txData.PropertySymbol }
+func (txData TxTokenData) GetPropertySymbol() string { return txData.PropertySymbol }
 
-func (txData *TxPrivacyTokenData) SetPropertySymbol(propertySymbol string) {
+func (txData *TxTokenData) SetPropertySymbol(propertySymbol string) {
 	txData.PropertySymbol = propertySymbol
 }
 
-func (txData TxPrivacyTokenData) GetType() int { return txData.Type }
+func (txData TxTokenData) GetType() int { return txData.Type }
 
-func (txData *TxPrivacyTokenData) SetType(t int) { txData.Type = t }
+func (txData *TxTokenData) SetType(t int) { txData.Type = t }
 
-func (txData TxPrivacyTokenData) IsMintable() bool { return txData.Mintable }
+func (txData TxTokenData) IsMintable() bool { return txData.Mintable }
 
-func (txData *TxPrivacyTokenData) SetMintable(mintable bool) { txData.Mintable = mintable }
+func (txData *TxTokenData) SetMintable(mintable bool) { txData.Mintable = mintable }
 
-func (txData TxPrivacyTokenData) GetAmount() uint64 { return txData.Amount }
+func (txData TxTokenData) GetAmount() uint64 { return txData.Amount }
 
-func (txData *TxPrivacyTokenData) SetAmount(amount uint64) { txData.Amount = amount }
+func (txData *TxTokenData) SetAmount(amount uint64) { txData.Amount = amount }
 
-func (txData TxPrivacyTokenData) String() string {
+func (txData TxTokenData) String() string {
 	record := txData.PropertyName
 	record += txData.PropertySymbol
 	record += fmt.Sprintf("%d", txData.Amount)
@@ -113,7 +103,7 @@ func (txData TxPrivacyTokenData) String() string {
 }
 
 // Hash - return hash of custom token data, be used as Token ID
-func (txData TxPrivacyTokenData) Hash() (*common.Hash, error) {
+func (txData TxTokenData) Hash() (*common.Hash, error) {
 	point := operation.HashToPoint([]byte(txData.String()))
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
@@ -149,8 +139,8 @@ type TxTokenInterface interface {
 	GetMetadata() metadata.Metadata
 	SetMetadata(metadata.Metadata)
 
-	GetTxPrivacyTokenData() TxPrivacyTokenData
-	SetTxPrivacyTokenData(TxPrivacyTokenData)
+	GetTxPrivacyTokenData() TxTokenData
+	SetTxPrivacyTokenData(TxTokenData)
 	GetTxBase() metadata.Transaction
 	SetTxBase(metadata.Transaction)
 

@@ -53,15 +53,15 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 	// check action type and create privacy custom toke data
 	var handled = false
 	// Add token data component
-	txToken.TxPrivacyTokenData.SetType(params.tokenParams.TokenTxType)
-	txToken.TxPrivacyTokenData.SetPropertyName(params.tokenParams.PropertyName)
-	txToken.TxPrivacyTokenData.SetPropertySymbol(params.tokenParams.PropertySymbol)
+	txToken.TxTokenData.SetType(params.tokenParams.TokenTxType)
+	txToken.TxTokenData.SetPropertyName(params.tokenParams.PropertyName)
+	txToken.TxTokenData.SetPropertySymbol(params.tokenParams.PropertySymbol)
 
 	switch params.tokenParams.TokenTxType {
 		case CustomTokenInit: {
 			// case init a new privacy custom token
 			handled = true
-			txToken.TxPrivacyTokenData.SetAmount(params.tokenParams.Amount)
+			txToken.TxTokenData.SetAmount(params.tokenParams.Amount)
 
 			temp := new(TxVersion1)
 			temp.SetVersion(TxVersion1Number)
@@ -103,9 +103,9 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 				Logger.Log.Error(errors.New("can't signOnMessage this tx"))
 				return NewTransactionErr(SignTxError, err)
 			}
-			txToken.TxPrivacyTokenData.TxNormal = temp
+			txToken.TxTokenData.TxNormal = temp
 
-			hashInitToken, err := txToken.TxPrivacyTokenData.Hash()
+			hashInitToken, err := txToken.TxTokenData.Hash()
 			if err != nil {
 				Logger.Log.Error(errors.New("can't hash this token data"))
 				return NewTransactionErr(UnexpectedError, err)
@@ -116,8 +116,8 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 				if err != nil {
 					return NewTransactionErr(TokenIDInvalidError, err, propertyID.String())
 				}
-				txToken.TxPrivacyTokenData.PropertyID = *propertyID
-				txToken.TxPrivacyTokenData.Mintable = true
+				txToken.TxTokenData.PropertyID = *propertyID
+				txToken.TxTokenData.Mintable = true
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
@@ -127,8 +127,8 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 					Logger.Log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
-				txToken.TxPrivacyTokenData.PropertyID = newHashInitToken
-				Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txToken.TxPrivacyTokenData.PropertyID.String())
+				txToken.TxTokenData.PropertyID = newHashInitToken
+				Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txToken.TxTokenData.PropertyID.String())
 			}
 		}
 		case CustomTokenTransfer: {
@@ -162,11 +162,11 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			}
 
 			Logger.Log.Debugf("Token %+v wil be transfered with", propertyID)
-			txToken.TxPrivacyTokenData.SetPropertyID(*propertyID)
-			txToken.TxPrivacyTokenData.SetMintable(params.tokenParams.Mintable)
+			txToken.TxTokenData.SetPropertyID(*propertyID)
+			txToken.TxTokenData.SetMintable(params.tokenParams.Mintable)
 
-			txToken.TxPrivacyTokenData.TxNormal = new(TxVersion1)
-			err := txToken.TxPrivacyTokenData.TxNormal.Init(NewTxPrivacyInitParams(params.senderKey,
+			txToken.TxTokenData.TxNormal = new(TxVersion1)
+			err := txToken.TxTokenData.TxNormal.Init(NewTxPrivacyInitParams(params.senderKey,
 				params.tokenParams.Receiver,
 				params.tokenParams.TokenInput,
 				params.tokenParams.Fee,
@@ -188,7 +188,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 
 func (txToken TxTokenVersion1) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// no need to check for tx init token
-	if txToken.TxPrivacyTokenData.Type == CustomTokenInit {
+	if txToken.TxTokenData.Type == CustomTokenInit {
 		return txToken.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
 	}
 	// check for proof, signature ...
@@ -212,9 +212,9 @@ func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transact
 	ok, err := txToken.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
 	if ok {
 		// validate for pToken
-		tokenID := txToken.TxPrivacyTokenData.PropertyID
-		if txToken.TxPrivacyTokenData.Type == CustomTokenInit {
-			if txToken.Tx.GetType() == common.TxRewardType && txToken.TxPrivacyTokenData.Mintable {
+		tokenID := txToken.TxTokenData.PropertyID
+		if txToken.TxTokenData.Type == CustomTokenInit {
+			if txToken.Tx.GetType() == common.TxRewardType && txToken.TxTokenData.Mintable {
 				isBridgeCentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
 				isBridgeDecentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
 				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
@@ -233,8 +233,8 @@ func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transact
 				Logger.Log.Errorf("Cannot create txPrivacyFromVersionNumber from TxPrivacyTokenDataVersion1, err %v", err)
 				return false, err
 			}
-			return txToken.TxPrivacyTokenData.TxNormal.ValidateTransaction(
-				txToken.TxPrivacyTokenData.TxNormal.IsPrivacy(),
+			return txToken.TxTokenData.TxNormal.ValidateTransaction(
+				txToken.TxTokenData.TxNormal.IsPrivacy(),
 				transactionStateDB, bridgeStateDB, shardID, &tokenID, isBatch, isNewTransaction)
 		}
 	}

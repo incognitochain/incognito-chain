@@ -478,7 +478,7 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 		offset += 1
 		if offset+lenOutputCoin > len(bytes) {
 			// out of range
-			return errors.New("out of range Parse output coin details")
+			return errors.New("out of range Parse output coin details 1")
 		}
 		err := c.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
 		if err != nil {
@@ -486,13 +486,13 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 			// try get 2-byte for len
 			if offset+1 > len(bytes) {
 				// out of range
-				return errors.New("out of range Parse output coin details")
+				return errors.New("out of range Parse output coin details 2 ")
 			}
 			lenOutputCoin = common.BytesToInt(bytes[offset-1 : offset+1])
 			offset += 1
 			if offset+lenOutputCoin > len(bytes) {
 				// out of range
-				return errors.New("out of range Parse output coin details")
+				return errors.New("out of range Parse output coin details 3 ")
 			}
 			err1 := c.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
 			return err1
@@ -502,13 +502,13 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 		// try get 2-byte for len
 		if offset+2 > len(bytes) {
 			// out of range
-			return errors.New("out of range Parse output coin details")
+			return errors.New("out of range Parse output coin details 4")
 		}
 		lenOutputCoin = common.BytesToInt(bytes[offset : offset+2])
 		offset += 2
 		if offset+lenOutputCoin > len(bytes) {
 			// out of range
-			return errors.New("out of range Parse output coin details")
+			return errors.New("out of range Parse output coin details 5")
 		}
 		err1 := c.CoinDetails.SetBytes(bytes[offset : offset+lenOutputCoin])
 		return err1
@@ -575,33 +575,6 @@ func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	}
 	err := errors.New("coin publicKey does not equal keyset paymentAddress")
 	return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
-}
-
-//MarshalJSON (CoinV1) converts coin to bytes array,
-//base58 check encode that bytes array into string
-//json.Marshal the string
-func (c CoinV1) MarshalJSON() ([]byte, error) {
-	data := c.Bytes()
-	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
-	return json.Marshal(temp)
-}
-
-// UnmarshalJSON (Coin) receives bytes array of coin (it was be MarshalJSON before),
-// json.Unmarshal the bytes array to string
-// base58 check decode that string to bytes array
-// and set bytes array to coin
-func (c *CoinV1) UnmarshalJSON(data []byte) error {
-	dataStr := ""
-	_ = json.Unmarshal(data, &dataStr)
-	temp, _, err := base58.Base58Check{}.Decode(dataStr)
-	if err != nil {
-		return err
-	}
-	err = c.SetBytes(temp)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *CoinV1) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []byte, amount uint64) bool {

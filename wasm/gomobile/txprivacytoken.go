@@ -32,7 +32,7 @@ func InitPrivacyTokenTx(args string, serverTime int64) (string, error) {
 		return "", err
 	}
 
-	tokenIDBytes := tx.TxPrivacyTokenData.PropertyID.GetBytes()
+	tokenIDBytes := tx.TxTokenData.PropertyID.GetBytes()
 
 	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
 	resBytes := append(txJson, lockTimeBytes...)
@@ -133,7 +133,7 @@ func InitBurningRequestTx(args string, serverTime int64) (string, error) {
 		return "", err
 	}
 
-	tokenIDBytes := tx.TxPrivacyTokenData.PropertyID.GetBytes()
+	tokenIDBytes := tx.TxTokenData.PropertyID.GetBytes()
 
 	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
 	resBytes := append(txJson, lockTimeBytes...)

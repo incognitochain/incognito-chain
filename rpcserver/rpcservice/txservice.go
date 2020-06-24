@@ -1223,7 +1223,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 	return totalValue, nil
 }
 
-func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, *transaction.TxPrivacyTokenData, error) {
+func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, *transaction.TxTokenData, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
@@ -1236,7 +1236,7 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 	if tokenStates == nil {
 		return nil, nil, errors.New("Token not found")
 	}
-	tokenData := &transaction.TxPrivacyTokenData{}
+	tokenData := &transaction.TxTokenData{}
 	txs := []common.Hash{}
 	tokenData.PropertyName = tokenStates.PropertyName()
 	tokenData.PropertySymbol = tokenStates.PropertySymbol()

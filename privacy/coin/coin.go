@@ -1,17 +1,15 @@
 package coin
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 type Coin interface {
-	MarshalJSON() ([]byte, error)
-	UnmarshalJSON(data []byte) error
-
 	GetVersion() uint8
 	GetShardID() (uint8, error)
 	GetCommitment() *operation.Point
@@ -86,14 +84,16 @@ func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 // First byte should determine the version
 func NewCoinFromByte(b []byte) (Coin, error) {
 	version := b[0]
-	var c Coin
 	if version == CoinVersion2 {
-		c = new(CoinV2)
+		c := new(CoinV2)
+		err := c.SetBytes(b)
+		return c, err
 	} else {
-		c = new(CoinV1)
+		c := new(CoinV1)
+		err := json.Unmarshal(b, &c)
+		return c, err
 	}
-	err := c.SetBytes(b)
-	return c, err
+
 }
 
 // Check whether the utxo is from this address
@@ -119,15 +119,20 @@ func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
 	}
 }
 
-func ParseCoinsStr (coins []string) ([]Coin, error) {
-	coinList := make([]Coin, len(coins))
-	for i:=0; i<  len(coins); i++ {
-		coinBytes, _, err := base58.Base58Check{}.Decode(coins[i])
-		if err != nil {
-			return nil, err
-		}
-		if coin, err := NewCoinFromByte(coinBytes); err != nil {
-			return nil, err
+func ParseCoinsFromBytes(data []json.RawMessage) ([]Coin, error) {
+	fmt.Println("Len of Coins:", len(data))
+	coinList := make([]Coin, len(data))
+	for i := 0; i < len(data); i++ {
+		fmt.Print(string(data[i]))
+		fmt.Print(data[i])
+
+		if coin, err := NewCoinFromByte(data[i]); err != nil {
+			coinV1 := new(CoinV1)
+			if err := json.Unmarshal(data[i], &coinV1); err != nil {
+				return nil, err
+			}
+			coinList[i] = coinV1
+			fmt.Println(coinV1)
 		} else {
 			coinList[i] = coin
 		}

@@ -108,7 +108,7 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
 	type Alias CrossShardBlock
 	temp := &struct {
-		CrossOutputCoin []string
+		CrossOutputCoin []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(crossShardBlock),
@@ -119,7 +119,7 @@ func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	outputCoinList, err := coin.ParseCoinsStr(temp.CrossOutputCoin)
+	outputCoinList, err := coin.ParseCoinsFromBytes(temp.CrossOutputCoin)
 	if err != nil {
 		Logger.log.Error("UnmarshalJSON Cannot parse crossOutputCoins", err)
 		return err
