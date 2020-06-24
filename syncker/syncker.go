@@ -140,6 +140,19 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
+			if synckerManager.ShardSyncProcess[shardBlk.GetShardID()] != nil {
+				synckerManager.ShardSyncProcess[shardBlk.GetShardID()].shardPeerStateCh <- &wire.MessagePeerState{
+					Shards: map[byte]wire.ChainState{
+						byte(shardBlk.GetShardID()): {
+							Timestamp: shardBlk.Header.Timestamp,
+							BlockHash: *shardBlk.Hash(),
+							Height:    shardBlk.GetHeight(),
+						},
+					},
+					SenderID:  peerID,
+					Timestamp: time.Now().Unix(),
+				}
+			}
 		}
 
 	case *blockchain.ShardToBeaconBlock:
