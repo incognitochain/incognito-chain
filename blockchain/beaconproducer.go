@@ -304,14 +304,6 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 
 // GetShardStateFromBlock get state (information) from shard-to-beacon block
 // state will be presented as instruction
-//	Swap instruction format:
-//	- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
-//	- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
-//	Stake instruction format:
-//	- ["stake" "pubkey1,pubkey2,..." "shard" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..." "flag1,flag2,..."]
-//	- ["stake" "pubkey1,pubkey2,..." "beacon" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..." "flag1,flag2,..."]
-//	Stop Auto Staking instruction format:
-//	- ["stopautostaking" "pubkey1,pubkey2,..."]
 //	Return Params:
 //	1. ShardState
 //	2. Stake Instruction
@@ -492,14 +484,8 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 
 //  GenerateInstruction generate instruction for new beacon block
 //  Instruction Type:
-//  - swap instruction format
-//    + ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
-//    + ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 //  - random instruction format
 //    + ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-//  - stake instruction format
-//    + ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,...", "flag1,flag2..."]
-//    + ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,...", "flag1,flag2..."]
 //  - assign instruction fomart
 //    + ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
 func (beaconBestState *BeaconBestState) GenerateInstruction(

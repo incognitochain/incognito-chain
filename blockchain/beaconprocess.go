@@ -913,8 +913,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //		["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 //	- store random number into beststate
 //  - Swap Instruction format
-//		["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
-//		["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 //    + Update shard/beacon pending validator and shard/beacon committee in beststate
 //  - Stake Instruction
 //	  + format
