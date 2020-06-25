@@ -1,38 +1,56 @@
 package instruction
 
-type Inst interface {
-	GetType() uint
-	ToString() []string
+import "github.com/pkg/errors"
+
+type InstructionManager struct {
+	swapInstructions          []*SwapInstruction
+	stakeInstructions         []*StakeInstruction
+	assignInstructions        []*AssignInstruction
+	stopAutoStakeInstructions []*StopAutoStakeInstruction
 }
 
-const (
-	I_SWAP          = 1
-	I_RANDOM        = 1 << 1
-	I_STAKE         = 1 << 2
-	I_ASSIGN        = 1 << 3
-	I_STOPAUTOSTAKE = 1 << 4
-)
-
-type InstManager struct {
-	instructions []Inst
-}
-
-func ImportInstructionFromStringArray(instStr [][]string) *InstManager {
-	insts := InstManager{}
-	for _, inst := range instStr {
-		insts.instructions = append(insts.instructions, processInstructionString(inst))
-	}
-	return &insts
-}
-
-func processInstructionString(str []string) Inst {
-	return nil
-}
-
-func (s *InstManager) filter(instTypeMap uint, cb func(Inst) bool) {
-	for _, v := range s.instructions {
-		if v.GetType()&instTypeMap != 0 {
-			cb(v)
+func ImportInstructionFromStringArray(instructions [][]string, chainID int) (*InstructionManager, error) {
+	instructionManager := new(InstructionManager)
+	for _, instruction := range instructions {
+		if len(instruction) < 1 {
+			continue
+		}
+		switch instruction[0] {
+		case SWAP_ACTION:
+			swapInstruction, err := importSwapInstructionFromString(instruction, chainID)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.swapInstructions = append(instructionManager.swapInstructions, swapInstruction)
+		case ASSIGN_ACTION:
+			assignInstruction, err := importAssignInstructionFromString(instruction)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.assignInstructions = append(instructionManager.assignInstructions, assignInstruction)
+		case STAKE_ACTION:
+			stakeInstruction, err := importStakeInstructionFromString(instruction)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.stakeInstructions = append(instructionManager.stakeInstructions, stakeInstruction)
+		case STOP_AUTO_STAKE_ACTION:
+			stopAutoStakeInstruction, err := importStopAutoStakeInstructionFromString(instruction)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.stopAutoStakeInstructions = append(instructionManager.stopAutoStakeInstructions, stopAutoStakeInstruction)
 		}
 	}
+	return instructionManager, nil
+}
+
+// FilterInstructions filter duplicate instruction
+// duplicate instruction is result from delay of shard and beacon
+func (i *InstructionManager) FilterInstructions() {
+
+}
+
+func (i *InstructionManager) ToString() [][]string {
+	return [][]string{}
 }

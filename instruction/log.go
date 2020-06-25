@@ -1,14 +1,14 @@
-package consensus
+package instruction
 
 import "github.com/incognitochain/incognito-chain/common"
 
-type consensusLogger struct {
+type instructionLogger struct {
 	Log common.Logger
 }
 
-func (consensusLogger *consensusLogger) Init(inst common.Logger) {
-	consensusLogger.Log = inst
+func (i *instructionLogger) Init(inst common.Logger) {
+	i.Log = inst
 }
 
 // Global instant to use
-var Logger = consensusLogger{}
+var Logger = instructionLogger{}

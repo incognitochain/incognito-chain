@@ -1,4 +1,4 @@
-package committeestate
+package instruction
 
 import (
 	"fmt"
@@ -6,38 +6,83 @@ import (
 )
 
 type StakeInstruction struct {
-	Action          int
-	InPublicKey     string
-	OutPublicKey    string
-	Chain           int
-	RewardReceiver  string
-	AutoStakingFlag bool
+	Action          string
+	PublicKeys      []string
+	Chain           string
+	TxStakes        []string
+	RewardReceivers []string
+	AutoStakingFlag []bool
 }
 
-type ImportFromString
+func NewStakeInstruction() *StakeInstruction {
+	return &StakeInstruction{Action: STAKE_ACTION}
+}
+
+func importStakeInstructionFromString(instruction []string) (*StakeInstruction, error) {
+	if err := validateStakeInstructionSanityData(instruction); err != nil {
+		return nil, err
+	}
+	stakeInstruction := NewStakeInstruction()
+	stakeInstruction.PublicKeys = strings.Split(instruction[1], SPLITTER)
+	stakeInstruction.TxStakes = strings.Split(instruction[3], SPLITTER)
+	stakeInstruction.RewardReceivers = strings.Split(instruction[4], SPLITTER)
+	tempAutoStakings := strings.Split(instruction[5], SPLITTER)
+	autoStakeFlags := []bool{}
+	for _, v := range tempAutoStakings {
+		if v == TRUE {
+			autoStakeFlags = append(autoStakeFlags, true)
+		} else {
+			autoStakeFlags = append(autoStakeFlags, false)
+		}
+	}
+	stakeInstruction.AutoStakingFlag = autoStakeFlags
+	stakeInstruction.Chain = instruction[2]
+	return stakeInstruction, nil
+}
+
+func (s *StakeInstruction) toString() []string {
+	stakeInstructionStr := []string{STAKE_ACTION}
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
+	stakeInstructionStr = append(stakeInstructionStr, s.Chain)
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.TxStakes, SPLITTER))
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.RewardReceivers, SPLITTER))
+	tempStopAutoStakeFlag := []string{}
+	for _, v := range s.AutoStakingFlag {
+		if v == true {
+			tempStopAutoStakeFlag = append(tempStopAutoStakeFlag, TRUE)
+		} else {
+			tempStopAutoStakeFlag = append(tempStopAutoStakeFlag, FALSE)
+		}
+	}
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
+	return stakeInstructionStr
+}
+
 // validate stake instruction sanity
-func validateStakeInstructionSanity(instruction []string) error {
+// beaconprocess.go: 1122 - 1165
+// beaconproducer.go: 386
+func validateStakeInstructionSanityData(instruction []string) error {
 	if len(instruction) != 6 {
-		return NewCommitteeStateError(ErrStakeInstructionSanity, fmt.Errorf("invalid length, %+v", instruction))
+		return fmt.Errorf("invalid length, %+v", instruction)
 	}
-	if instruction[0] != stakeAction {
-		return NewCommitteeStateError(ErrStakeInstructionSanity, fmt.Errorf("invalid swap action, %+v", instruction))
+	if instruction[0] != STAKE_ACTION {
+		return fmt.Errorf("invalid stake action, %+v", instruction)
 	}
-	if instruction[2] != shardInst && instruction[2] != beaconInst {
-		return NewCommitteeStateError(ErrStakeInstructionSanity, fmt.Errorf("invalid swap action, %+v", instruction))
+	if instruction[2] != SHARD_INST && instruction[2] != BEACON_INST {
+		return fmt.Errorf("invalid chain id, %+v", instruction)
 	}
-	publicKeys := strings.Split(instruction[1], splitter)
-	txStakes := strings.Split(instruction[3], splitter)
-	rewardReceivers := strings.Split(instruction[4], splitter)
-	autoStakings := strings.Split(instruction[5], splitter)
+	publicKeys := strings.Split(instruction[1], SPLITTER)
+	txStakes := strings.Split(instruction[3], SPLITTER)
+	rewardReceivers := strings.Split(instruction[4], SPLITTER)
+	autoStakings := strings.Split(instruction[5], SPLITTER)
 	if len(publicKeys) != len(txStakes) {
-		return NewCommitteeStateError(ErrStakeInstructionSanity, fmt.Errorf("invalid public key & tx stake length, %+v", instruction))
+		return fmt.Errorf("invalid public key & tx stake length, %+v", instruction)
 	}
 	if len(rewardReceivers) != len(txStakes) {
-		return NewCommitteeStateError(ErrStakeInstructionSanity, fmt.Errorf("invalid reward receivers & tx stake length, %+v", instruction))
+		return fmt.Errorf("invalid reward receivers & tx stake length, %+v", instruction)
 	}
 	if len(rewardReceivers) != len(autoStakings) {
-		return NewCommitteeStateError(ErrStakeInstructionSanity, fmt.Errorf("invalid reward receivers & tx auto staking length, %+v", instruction))
+		return fmt.Errorf("invalid reward receivers & tx auto staking length, %+v", instruction)
 	}
 	return nil
 }
