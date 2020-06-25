@@ -50,7 +50,7 @@ func (tx *TxVersion1) GetReceiverData() ([]coin.Coin, error) {
 	}
 	coins := make([]coin.Coin, 0)
 	for i := 0; i < len(pubkeys); i++ {
-		coin := new(coin.CoinV1)
+		coin := new(coin.CoinV1).Init()
 		coin.CoinDetails.SetPublicKey(pubkeys[i])
 		coin.CoinDetails.SetValue(amounts[i])
 		coins = append(coins, coin)
