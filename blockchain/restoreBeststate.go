@@ -24,6 +24,10 @@ func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		committeePublicKey := statedb.GetOneShardCommittee(beaconBestState.consensusStateDB, byte(i))
+
+		//fmt.Println("[optimize-beststate] BeaconBestState.restoreShardCommittee() i:", i)
+		//fmt.Println("[optimize-beststate] BeaconBestState.restoreShardCommittee() len(committeePublicKey):", len(committeePublicKey))
+
 		beaconBestState.ShardCommittee[byte(i)] = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 		for index, value := range committeePublicKey {
 			beaconBestState.ShardCommittee[byte(i)][index] = value
@@ -102,7 +106,7 @@ func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForNextRand
 }
 
 //RecoverCommittee ...
-func (shardBestState *ShardBestState) restoreCommittee(shardID byte) error {
+func (shardBestState *ShardBestState) restoreCommittee(shardID byte, chain *BlockChain) error {
 
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
 

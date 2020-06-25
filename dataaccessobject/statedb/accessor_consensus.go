@@ -15,7 +15,7 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 		if err != nil {
 			return err
 		}
-		incPublicKey := incognitokey.CommitteeKeyListToMapString([]incognitokey.CommitteePublicKey{committee})
+		incPublicKey := incognitokey.CommitteeKeyListToStringList([]incognitokey.CommitteePublicKey{committee})
 		committeeString, err := committee.ToBase58()
 		if err != nil {
 			return err

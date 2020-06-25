@@ -542,7 +542,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		err = v.restoreCommittee(shardID)
+		err = v.restoreCommittee(shardID, blockchain)
 		if err != nil {
 			panic(err)
 		}

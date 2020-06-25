@@ -163,7 +163,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	}
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	newBestState, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, newCommitteeChange())
+	newBestState, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committeeChange)
 	if err != nil {
 		return err
 	}
@@ -470,7 +470,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	if err != nil {
 		return err
 	}
-	shardPendingValidator, _, _ := blockchain.processInstructionFromBeacon(curView, beaconBlocks, shardID, newCommitteeChange())
+	shardPendingValidator, _, _ := blockchain.processInstructionFromBeacon(curView, beaconBlocks, shardID, newCommitteeChange()) // "[optimize-beststate]"
 	if curView.BeaconHeight == shardBlock.Header.BeaconHeight {
 		isOldBeaconHeight = true
 	}
@@ -1014,6 +1014,18 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 			Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
 		}
 	}
+
+	//fmt.Println("[optimize-beststate] len(committeeChange.shardCommitteeAdded[shardID]):", len(committeeChange.shardCommitteeAdded[shardID]))
+	//fmt.Println("[optimize-beststate] len(committeeChange.shardSubstituteAdded[shardID]):", len(committeeChange.shardSubstituteAdded[shardID]))
+
+	//addedCommittees, removedCommittees, err := getChangeCommittees(newShardState.ShardCommittee, newShardState.ShardCommittee)
+	//addedSubstitutesValidator, removedSubstitutesValidator, err := getChangeCommittees(newShardState.ShardPendingValidator, newShardState.ShardPendingValidator)
+
+	//if err != nil {
+	//	Logger.log.Debug(NewBlockChainError(StoreShardBlockError, err))
+	//	return NewBlockChainError(StoreShardBlockError, err)
+	//}
+
 	if len(committeeChange.shardCommitteeAdded[shardID]) > 0 || len(committeeChange.shardSubstituteAdded[shardID]) > 0 {
 		beaconConsensusStateRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconChainDatabase(), beaconBlock.Header.Height)
 		if err != nil {
@@ -1044,20 +1056,25 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 			}
 		}
 		//statedb===========================START
+
+		//err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, addedCommittees, rewardReceiver, autoStaking)
 		err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID], rewardReceiver, autoStaking)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 
+		//err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, addedSubstitutesValidator, rewardReceiver, autoStaking)
 		err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID], rewardReceiver, autoStaking)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 	}
+	//err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, removedCommittees)
 	err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeRemoved[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	//err = statedb.DeleteOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, removedSubstitutesValidator)
 	err = statedb.DeleteOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.shardSubstituteRemoved[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
@@ -1177,6 +1194,43 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	}
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
+
+	// get map shard committee
+
+	mapByte, err := json.Marshal(newShardState.ShardCommittee)
+	if err != nil {
+		panic(err)
+	}
+
+	committeePublicKey := statedb.GetOneShardCommittee(newShardState.consensusStateDB, shardID)
+	databaseByte, err := json.Marshal(committeePublicKey)
+	if err != nil {
+		panic(err)
+	}
+
+	if !bytes.Equal(mapByte, databaseByte) {
+
+		fmt.Println("[optimize-beststate-debug] newShardState.ShardHeight:", newShardState.ShardHeight)
+
+		fmt.Println("[optimize-beststate-debug] len(newShardState.ShardCommittee):", len(newShardState.ShardCommittee))
+
+		for _, v := range newShardState.ShardCommittee {
+			key, _ := v.ToBase58()
+			fmt.Println("[optimize-beststate] key in newShardState.ShardCommittee:", key)
+		}
+
+		fmt.Println("[optimize-beststate-debug] len(committeePublicKey):", len(committeePublicKey))
+
+		for _, v := range committeePublicKey {
+			key, _ := v.ToBase58()
+			fmt.Println("[optimize-beststate] key in committeePublicKey:", key)
+		}
+
+		panic("mapByte and databaseByte of shard best state is not similar")
+	}
+
+	// get shard committee database
+
 	return nil
 }
 
