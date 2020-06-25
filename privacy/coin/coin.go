@@ -84,14 +84,28 @@ func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 // First byte should determine the version
 func NewCoinFromByte(b []byte) (Coin, error) {
 	version := b[0]
+
+
 	if version == CoinVersion2 {
 		c := new(CoinV2)
 		err := c.SetBytes(b)
+		fmt.Println(string(b))
+		fmt.Println(string(b))
+		fmt.Println(string(b))
+		fmt.Println(err)
 		return c, err
 	} else {
+		fmt.Println(b)
+		fmt.Println(b)
+		fmt.Println(b)
+		fmt.Println(string(b))
+		panic("OK")
 		c := new(CoinV1)
-		err := json.Unmarshal(b, &c)
-		return c, err
+		if err := json.Unmarshal(b, &c); err != nil {
+			err = c.SetBytes(b)
+			return c, err
+		}
+		return c, nil
 	}
 
 }
@@ -120,19 +134,10 @@ func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
 }
 
 func ParseCoinsFromBytes(data []json.RawMessage) ([]Coin, error) {
-	fmt.Println("Len of Coins:", len(data))
 	coinList := make([]Coin, len(data))
 	for i := 0; i < len(data); i++ {
-		fmt.Print(string(data[i]))
-		fmt.Print(data[i])
-
 		if coin, err := NewCoinFromByte(data[i]); err != nil {
-			coinV1 := new(CoinV1)
-			if err := json.Unmarshal(data[i], &coinV1); err != nil {
-				return nil, err
-			}
-			coinList[i] = coinV1
-			fmt.Println(coinV1)
+			return nil, err
 		} else {
 			coinList[i] = coin
 		}

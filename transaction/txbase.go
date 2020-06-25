@@ -252,9 +252,10 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	// For rolling version
 	type Alias TxBase
+	fmt.Println(string(data))
 	temp := &struct {
-		Metadata interface{}
-		Proof    interface{}
+		Metadata *json.RawMessage
+		Proof    *json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(tx),
@@ -264,19 +265,28 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 		Logger.Log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-	if parseErr != nil {
-		Logger.Log.Error(parseErr)
-		return parseErr
-	}
-	tx.SetMetadata(meta)
-	proof, proofErr := parseProof(temp.Proof, tx.Version)
-	if proofErr != nil {
-		Logger.Log.Error(proofErr)
-		return proofErr
-	}
-	tx.SetProof(proof)
 
+	if temp.Metadata == nil {
+		tx.SetMetadata(nil)
+	} else {
+		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		if parseErr != nil {
+			Logger.Log.Error(parseErr)
+			return parseErr
+		}
+		tx.SetMetadata(meta)
+	}
+
+	if temp.Proof == nil {
+		tx.SetProof(nil)
+	} else {
+		proof, proofErr := parseProof(temp.Proof, tx.Version)
+		if proofErr != nil {
+			Logger.Log.Error(proofErr)
+			return proofErr
+		}
+		tx.SetProof(proof)
+	}
 	return nil
 }
 

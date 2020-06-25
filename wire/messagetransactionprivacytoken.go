@@ -3,6 +3,7 @@ package wire
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
@@ -40,9 +41,16 @@ func (msg *MessageTxPrivacyToken) JsonSerialize() ([]byte, error) {
 }
 
 func (msg *MessageTxPrivacyToken) JsonDeserialize(jsonStr string) error {
-	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), msg)
-	return err
+	jsonDecode, err := hex.DecodeString(jsonStr)
+	if err != nil {
+		return err
+	}
+	txToken, err := transaction.NewTransactionFromJsonBytes(jsonDecode)
+	if err != nil {
+		return err
+	}
+	msg.Transaction = txToken
+	return nil
 }
 
 func (msg *MessageTxPrivacyToken) SetSenderID(senderID peer.ID) error {

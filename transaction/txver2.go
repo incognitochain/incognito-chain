@@ -645,6 +645,9 @@ func (tx *TxVersion2) HashWithoutMetadataSig() *common.Hash {
 // ========== VALIDATE FUNCTIONS ============
 
 func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	if tx.Proof == nil {
+		return false, errors.New("Tx Privacy Ver 2 must have proof")
+	}
 	check, err := checkSanityMetadataVersionSizeProofTypeInfo(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check {
 		if err != nil {
