@@ -35,6 +35,7 @@ type ConsensusInterface interface {
 	Stop() error
 	// IsOngoing - check whether consensus is currently voting on a block
 	IsOngoing() bool
+	IsStarted() bool
 	// ProcessBFTMsg - process incoming BFT message
 	ProcessBFTMsg(msg *wire.MessageBFT)
 	// ValidateProducerSig - validate a block producer signature
