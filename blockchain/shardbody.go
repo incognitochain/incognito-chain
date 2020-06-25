@@ -43,9 +43,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
 		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
-		fmt.Println("DEBUG Unmarshal")
-		fmt.Println("DEBUG Unmarshal")
-		fmt.Println("DEBUG Unmarshal", string(txTempJson))
+		Logger.log.Debug("DEBUG Unmarshal", string(txTempJson))
 
 		var tx metadata.Transaction
 		var parseErr error
