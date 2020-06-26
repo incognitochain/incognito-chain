@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -34,24 +33,27 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawConvertVer1ToVer2Transaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawConvertVer1ToVer2Transaction(params interface{}, closeChan <-chan struct{}) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction params: %+v", params)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxSwitchVer1ToVer2Param(params)
 	if errNewParam != nil {
+		fmt.Println("Bean error")
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawConvertVer1ToVer2Transaction(createRawTxParam, nil)
+	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawConvertVer1ToVer2Transaction(createRawTxParam)
 	if err != nil {
+		fmt.Println("TxHash, TxBytes, txShardID error")
 		// return hex for a new tx
 		return nil, err
 	}
 
 	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
 	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction result: %+v", result)
-	return result, nil
+
+	return &result, nil
 }
 
 // handleSendTransaction implements the sendtransaction command.
@@ -88,18 +90,16 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 
 func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2Transaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction params: %+v", params)
-	var err error
-	data, err := httpServer.handleCreateRawConvertVer1ToVer2Transaction(params, closeChan)
-	if err.(*rpcservice.RPCError) != nil {
+	tx, err := httpServer.handleCreateRawConvertVer1ToVer2Transaction(params, closeChan)
+	if err != nil {
 		Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
-	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err.(*rpcservice.RPCError) != nil {
+	if err != nil {
 		Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2Transaction result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
@@ -110,9 +110,8 @@ func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2Transaction(param
 
 // handleCreateAndSendTx - RPC creates transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var err error
 	data, err := httpServer.handleCreateRawTransaction(params, closeChan)
-	if err.(*rpcservice.RPCError) != nil {
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
@@ -120,7 +119,7 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err.(*rpcservice.RPCError) != nil {
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
@@ -563,18 +562,55 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateRawConvertCoinVer1ToVer2TxToken(params interface{}, closeChan <-chan struct{}) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError){
+	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction params: %+v", params)
+
+	// create new param to build raw tx from param interface
+	createRawTxTokenParam, errNewParam := bean.NewCreateRawPrivacyTokenTxConversionVer1To2Param(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	txHash, txBytes, txShardID, err := httpServer.txService.BuildRawConvertVer1ToVer2Token(createRawTxTokenParam)
+	if err != nil {
+		// return hex for a new tx
+		return nil, err
+	}
+
+	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
+	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction result: %+v", result)
+	return &result, nil
+}
+
+func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2TxToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleCreateConvertCoinVer1ToVer2TxToken params: %+v", params)
+
+	tx, errTx := httpServer.handleCreateRawConvertCoinVer1ToVer2TxToken(params, closeChan)
+	if errTx != nil {
+		return nil, errTx
+	}
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	_, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err != nil {
+		Logger.log.Errorf("handleCreateConvertCoinVer1ToVer2TxToken result: %+v, err: %+v", nil, err)
+		return nil, err
+	}
+	return tx, nil
+}
+
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
 func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var err error
 	tx, err := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, nil)
-	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	byteArrays, errJson := json.Marshal(tx)
+	if errJson != nil {
+		Logger.log.Error(errJson)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, errJson)
 	}
 
 	tokenData := tx.GetTxPrivacyTokenData()
@@ -632,8 +668,7 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	txId, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
-	_ = txId
+	_, err = httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	if err != nil {
 		Logger.log.Errorf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err

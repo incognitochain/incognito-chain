@@ -102,6 +102,7 @@ var HttpHandler = map[string]httpHandler{
 	getTotalTransaction: (*HttpServer).handleGetTotalTransaction,
 
 	// custom token which support privacy
+	createConvertCoinVer1ToVer2TxToken:  		(*HttpServer).handleCreateConvertCoinVer1ToVer2TxToken,
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
 	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,

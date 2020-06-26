@@ -347,9 +347,9 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo
 	// encrypt coin details (Randomness)
 	// hide information of output coins except coin commitments, public key, snDerivators
 	for i := 0; i < len(proof.outputCoins); i++ {
-		err = proof.outputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
-		if err.(*errhandler.PrivacyError) != nil {
-			return nil, err.(*errhandler.PrivacyError)
+		errEncrypt := proof.outputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+		if errEncrypt != nil {
+			return nil, errEncrypt
 		}
 		proof.outputCoins[i].CoinDetails.SetKeyImage(nil)
 		proof.outputCoins[i].CoinDetails.SetValue(0)

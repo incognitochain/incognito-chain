@@ -112,8 +112,6 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 }
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
-	fmt.Println("Validate response tx for withdraw reward requests")
-	fmt.Println("Validate response tx for withdraw reward requests")
 	// filter double withdraw request
 	withdrawReqTable := make(map[string]privacy.PaymentAddress)
 	for _, tx := range shardBlock.Body.Transactions {
@@ -125,7 +123,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 		}
 	}
-	fmt.Println("Validate withdraw Request Table", withdrawReqTable)
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
@@ -208,9 +205,6 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 // @Notice: change from body.Transaction -> transactions
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
-	fmt.Println("Build response tx for withdraw reward requests")
-	fmt.Println("Build response tx for withdraw reward requests")
-
 	withdrawReqTable := make(map[string]metadata.Transaction)
 	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
@@ -221,7 +215,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 			}
 		}
 	}
-	fmt.Println("Build Request Table: ", withdrawReqTable)
 	txsResponse := []metadata.Transaction{}
 	for _, txRequest := range withdrawReqTable {
 		txResponse, err := blockchain.buildWithDrawTransactionResponse(view, &txRequest, blkProducerPrivateKey, shardID)

@@ -3,6 +3,7 @@ package coin
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -85,8 +86,8 @@ func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 func NewCoinFromByte(b []byte) (Coin, error) {
 	coinV1 := new(CoinV1)
 	coinV2 := new(CoinV2)
-	if errV2 := json.Unmarshal(b, &coinV2); errV2 != nil {
-		if errV1 := json.Unmarshal(b, &coinV1); errV1 != nil {
+	if errV2 := json.Unmarshal(b, coinV2); errV2 != nil {
+		if errV1 := json.Unmarshal(b, coinV1); errV1 != nil {
 			version := b[0]
 			if version == CoinVersion2 {
 				err := coinV2.SetBytes(b)

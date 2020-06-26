@@ -1,15 +1,17 @@
 package transaction
 
 import (
+	"fmt"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"math/big"
 	"math/rand"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -143,6 +145,7 @@ func NewEstimateTxSizeParam(numInputCoins, numPayments int,
 	return estimateTxSizeParam
 }
 
+// TODO PRIVACY recheck estimateTxSize when on ver2
 // EstimateTxSize returns the estimated size of the tx in kilobyte
 func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	sizeVersion := uint64(1)  // int8
@@ -416,52 +419,79 @@ func signNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signature
 // Used to parse json
 type txJsonDataVersion struct {
 	Version int8 `json:"Version"`
+	Type    string
 }
 
+// Return normal transaction from bytes
 func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
+	fmt.Println(string(data))
 	txJsonVersion := new(txJsonDataVersion)
 	if err := json.Unmarshal(data, txJsonVersion); err != nil {
 		return nil, err
 	}
-	switch txJsonVersion.Version {
-	case int8(TxVersion1Number), int8(TxVersion0Number):
-		tx := new(TxVersion1)
-		if err := json.Unmarshal(data, tx); err != nil {
-			return nil, err
+	if txJsonVersion.Type == common.TxConversionType {
+		if txJsonVersion.Version == int8(TxConversionVersion12Number) {
+			tx := new(TxVersion2)
+			if err := json.Unmarshal(data, tx); err != nil {
+				return nil, err
+			}
+			return tx, nil
+		} else {
+			return nil, errors.New("Cannot new txConversion from jsonBytes, type is incorrect.")
 		}
-		return tx, nil
-	case int8(TxVersion2Number), int8(TxConversionVersion12Number):
-		tx := new(TxVersion2)
-		if err := json.Unmarshal(data, tx); err != nil {
-			return nil, err
+	} else {
+		switch txJsonVersion.Version {
+		case int8(TxVersion1Number), int8(TxVersion0Number):
+			tx := new(TxVersion1)
+			if err := json.Unmarshal(data, tx); err != nil {
+				return nil, err
+			}
+			return tx, nil
+		case int8(TxVersion2Number):
+			tx := new(TxVersion2)
+			if err := json.Unmarshal(data, tx); err != nil {
+				return nil, err
+			}
+			return tx, nil
+		default:
+			return nil, errors.New("Cannot new tx from jsonBytes, version is incorrect")
 		}
-		return tx, nil
-	default:
-		return nil, errors.New("Cannot new transaction from json, version is wrong")
 	}
 }
 
-type txTokenJsonDataVersion struct {
-	Version int8 `json:"Version"`
-}
-
+// Return token transaction from bytes
 func NewTransactionTokenFromJsonBytes(data []byte) (TxTokenInterface, error) {
 	txJsonVersion := new(txJsonDataVersion)
 	if err := json.Unmarshal(data, txJsonVersion); err != nil {
 		return nil, err
 	}
-	if txJsonVersion.Version == TxVersion1Number {
-		tx := new(TxTokenVersion1)
-		if err := json.Unmarshal(data, tx); err != nil {
-			return nil, err
+
+	if txJsonVersion.Type == common.TxTokenConversionType {
+		if txJsonVersion.Version == TxConversionVersion12Number {
+			tx := new(TxTokenVersion2)
+			if err := json.Unmarshal(data, tx); err != nil {
+				return nil, err
+			}
+			return tx, nil
+		} else {
+			return nil, errors.New("Cannot new txTokenConversion from jsonBytes, version is incorrect")
 		}
-		return tx, nil
-	} else if txJsonVersion.Version == TxVersion2Number || txJsonVersion.Version == TxConversionVersion12Number {
-		tx := new(TxTokenVersion2)
-		if err := json.Unmarshal(data, tx); err != nil {
-			return nil, err
+	} else {
+		switch txJsonVersion.Version {
+		case int8(TxVersion1Number), TxVersion0Number:
+			tx := new(TxTokenVersion1)
+			if err := json.Unmarshal(data, tx); err != nil {
+				return nil, err
+			}
+			return tx, nil
+		case int8(TxVersion2Number):
+			tx := new(TxTokenVersion2)
+			if err := json.Unmarshal(data, tx); err != nil {
+				return nil, err
+			}
+			return tx, nil
+		default:
+			return nil, errors.New("Cannot new txToken from bytes because version is incorrect")
 		}
-		return tx, nil
 	}
-	return nil, errors.New("Cannot new transaction token from json, version is not 1 or 2 or -1")
 }

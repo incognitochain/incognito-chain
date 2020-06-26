@@ -89,7 +89,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				result.ProofDetail.ConvertFromProof(result.Proof)
 			}
 		}
-	case common.TxCustomTokenPrivacyType:
+	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
 			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
 			result = &TransactionDetail{

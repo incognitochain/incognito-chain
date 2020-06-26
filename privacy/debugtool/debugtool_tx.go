@@ -301,6 +301,20 @@ func (this *DebugTool) GetBalancePrivacyCustomToken(privKeyStr string, tokenID s
 	return this.SendPostRequestWithQuery(query)
 }
 
+func (this *DebugTool) SwitchTokenCoinVersion(privKey string, tokenID string) ([]byte, error) {
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "createconvertcoinver1tover2txtoken",
+		"params": [
+			"%s",
+			"%s",
+			1
+		],
+		"id": 1
+	}`, privKey, tokenID)
+	return this.SendPostRequestWithQuery(query)
+}
+
 func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",

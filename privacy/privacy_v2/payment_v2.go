@@ -108,9 +108,9 @@ func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	err = proof.SetBytes(temp)
-	if err.(*errhandler.PrivacyError) != nil {
-		return err
+	errSetBytes := proof.SetBytes(temp)
+	if errSetBytes != nil {
+		return errSetBytes
 	}
 	return nil
 }
@@ -153,10 +153,10 @@ func (proof PaymentProofV2) Bytes() []byte {
 
 func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
 	if len(proofbytes) == 0 {
-		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
+		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, errors.New("Proof bytes is zero"))
 	}
 	if proofbytes[0] != proof.GetVersion() {
-		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, nil)
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Proof bytes version is incorrect"))
 	}
 	proof.SetVersion()
 	offset := 1
