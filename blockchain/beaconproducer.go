@@ -3,13 +3,14 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/rand"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
@@ -520,12 +521,12 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 		allCommitteeValidatorCandidate := []string{}
 		// avoid dead lock
 		// if producer new block then lock beststate
-		if isProducer {
-			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
-		} else {
-			// if process block then do not lock beststate
-			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
-		}
+		// if isProducer {
+		// 	allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
+		// } else {
+		// if process block then do not lock beststate
+		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
+		// }
 		tempStopAutoStakingPublicKeys := strings.Split(instruction[1], ",")
 		for _, tempStopAutoStakingPublicKey := range tempStopAutoStakingPublicKeys {
 			if common.IndexOfStr(tempStopAutoStakingPublicKey, allCommitteeValidatorCandidate) > -1 {
