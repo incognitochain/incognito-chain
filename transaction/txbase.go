@@ -254,7 +254,7 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	// For rolling version
 	type Alias TxBase
-	fmt.Println(string(data))
+	//fmt.Println(string(data))
 	temp := &struct {
 		Metadata *json.RawMessage
 		Proof    *json.RawMessage
