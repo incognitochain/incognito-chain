@@ -50,7 +50,7 @@ func importSwapInstructionFromString(instruction []string, chainID int) (*SwapIn
 	return swapInstruction, nil
 }
 
-func (s *SwapInstruction) toString() []string {
+func (s *SwapInstruction) ToString() []string {
 	swapInstructionStr := []string{SWAP_ACTION}
 	swapInstructionStr = append(swapInstructionStr, strings.Join(s.InPublicKeys, SPLITTER))
 	swapInstructionStr = append(swapInstructionStr, strings.Join(s.OutPublicKeys, SPLITTER))

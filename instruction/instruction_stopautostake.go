@@ -26,7 +26,7 @@ func importStopAutoStakeInstructionFromString(instruction []string) (*StopAutoSt
 	return stopAutoStakeInstruction, nil
 }
 
-func (s *StopAutoStakeInstruction) toString() []string {
+func (s *StopAutoStakeInstruction) ToString() []string {
 	stopAutoStakeInstructionStr := []string{STOP_AUTO_STAKE_ACTION}
 	stopAutoStakeInstructionStr = append(stopAutoStakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
 	return stopAutoStakeInstructionStr

@@ -65,19 +65,19 @@ func (i *InstructionManager) ToString(action string) [][]string {
 	switch action {
 	case ASSIGN_ACTION:
 		for _, assignInstruction := range i.assignInstructions {
-			instructions = append(instructions, assignInstruction.toString())
+			instructions = append(instructions, assignInstruction.ToString())
 		}
 	case SWAP_ACTION:
 		for _, swapInstruction := range i.swapInstructions {
-			instructions = append(instructions, swapInstruction.toString())
+			instructions = append(instructions, swapInstruction.ToString())
 		}
 	case STAKE_ACTION:
 		for _, stakeInstruction := range i.stakeInstructions {
-			instructions = append(instructions, stakeInstruction.toString())
+			instructions = append(instructions, stakeInstruction.ToString())
 		}
 	case STOP_AUTO_STAKE_ACTION:
 		for _, stopAutoStakeInstruction := range i.stopAutoStakeInstructions {
-			instructions = append(instructions, stopAutoStakeInstruction.toString())
+			instructions = append(instructions, stopAutoStakeInstruction.ToString())
 		}
 	}
 	return [][]string{}

@@ -38,7 +38,7 @@ func importAssignInstructionFromString(instruction []string) (*AssignInstruction
 	return assignIntruction, nil
 }
 
-func (s *AssignInstruction) toString() []string {
+func (s *AssignInstruction) ToString() []string {
 	assignInstructionStr := []string{ASSIGN_ACTION}
 	assignInstructionStr = append(assignInstructionStr, strings.Join(s.ShardCandidate, SPLITTER))
 	assignInstructionStr = append(assignInstructionStr, "shard")

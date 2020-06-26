@@ -44,7 +44,7 @@ func importStakeInstructionFromString(instruction []string) (*StakeInstruction, 
 	return stakeInstruction, nil
 }
 
-func (s *StakeInstruction) toString() []string {
+func (s *StakeInstruction) ToString() []string {
 	stakeInstructionStr := []string{STAKE_ACTION}
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
 	stakeInstructionStr = append(stakeInstructionStr, s.Chain)
