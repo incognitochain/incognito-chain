@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	instruction2 "github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -348,29 +348,29 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	// extract instructions
-	for _, instruction := range instructions {
-		if len(instruction) > 0 {
-			if instruction[0] == instruction2.STAKE_ACTION {
-				stakeInstructionFromShardBlock = append(stakeInstructionFromShardBlock, instruction)
+	for _, inst := range instructions {
+		if len(inst) > 0 {
+			if inst[0] == instruction.STAKE_ACTION {
+				stakeInstructionFromShardBlock = append(stakeInstructionFromShardBlock, inst)
 			}
-			if instruction[0] == instruction2.SWAP_ACTION {
+			if inst[0] == instruction.SWAP_ACTION {
 				//- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 				//- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 				// validate swap instruction
 				// only allow shard to swap committee for it self
-				if instruction[3] == "beacon" {
+				if inst[3] == "beacon" {
 					continue
 				}
-				if instruction[3] == "shard" && len(instruction) != 6 && instruction[4] != strconv.Itoa(int(shardID)) {
+				if inst[3] == "shard" && len(inst) != 6 && inst[4] != strconv.Itoa(int(shardID)) {
 					continue
 				}
-				swapInstructions[shardID] = append(swapInstructions[shardID], instruction)
+				swapInstructions[shardID] = append(swapInstructions[shardID], inst)
 			}
-			if instruction[0] == instruction2.STOP_AUTO_STAKE_ACTION {
-				if len(instruction) != 2 {
+			if inst[0] == instruction.STOP_AUTO_STAKE_ACTION {
+				if len(inst) != 2 {
 					continue
 				}
-				stopAutoStakingInstructionsFromBlock = append(stopAutoStakingInstructionsFromBlock, instruction)
+				stopAutoStakingInstructionsFromBlock = append(stopAutoStakingInstructionsFromBlock, inst)
 			}
 		}
 	}
@@ -429,13 +429,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	}
 	if len(stakeShardPublicKeys) > 0 {
 		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
-		stakeInstructions = append(stakeInstructions, []string{instruction2.STAKE_ACTION, strings.Join(stakeShardPublicKeys, ","), "shard", strings.Join(stakeShardTx, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")})
+		stakeInstructions = append(stakeInstructions, []string{instruction.STAKE_ACTION, strings.Join(stakeShardPublicKeys, ","), "shard", strings.Join(stakeShardTx, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")})
 	}
 	if len(stakeBeaconPublicKeys) > 0 {
 		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeBeaconPublicKeys...)
-		stakeInstructions = append(stakeInstructions, []string{instruction2.STAKE_ACTION, strings.Join(stakeBeaconPublicKeys, ","), "beacon", strings.Join(stakeBeaconTx, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")})
+		stakeInstructions = append(stakeInstructions, []string{instruction.STAKE_ACTION, strings.Join(stakeBeaconPublicKeys, ","), "beacon", strings.Join(stakeBeaconTx, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")})
 	}
-	for _, instruction := range stopAutoStakingInstructionsFromBlock {
+	for _, inst := range stopAutoStakingInstructionsFromBlock {
 		allCommitteeValidatorCandidate := []string{}
 		// avoid dead lock
 		// if producer new block then lock beststate
@@ -445,7 +445,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 			// if process block then do not lock beststate
 			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 		}
-		tempStopAutoStakingPublicKeys := strings.Split(instruction[1], ",")
+		tempStopAutoStakingPublicKeys := strings.Split(inst[1], ",")
 		for _, tempStopAutoStakingPublicKey := range tempStopAutoStakingPublicKeys {
 			if common.IndexOfStr(tempStopAutoStakingPublicKey, allCommitteeValidatorCandidate) > -1 {
 				stopAutoStakingPublicKeys = append(stopAutoStakingPublicKeys, tempStopAutoStakingPublicKey)
@@ -453,7 +453,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 		}
 	}
 	if len(stopAutoStakingPublicKeys) > 0 {
-		stopAutoStakingInstructions = append(stopAutoStakingInstructions, []string{instruction2.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStakingPublicKeys, ",")})
+		stopAutoStakingInstructions = append(stopAutoStakingInstructions, []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStakingPublicKeys, ",")})
 	}
 	// Create bridge instruction
 	if len(instructions) > 0 || shardBlock.Header.Height%10 == 0 {
@@ -627,7 +627,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 				shardID := byte(key)
 				candidates := assignedCandidates[shardID]
 				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
-				shardAssingInstruction := []string{instruction2.ASSIGN_ACTION}
+				shardAssingInstruction := []string{instruction.ASSIGN_ACTION}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
 				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardID))
@@ -673,7 +673,7 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 		randInt := ran.Int()
 		var strs []string
 		reses := []string{strconv.Itoa(randInt), strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
-		strs = append(strs, instruction2.RANDOM_ACTION)
+		strs = append(strs, instruction.RANDOM_ACTION)
 		strs = append(strs, reses...)
 		strs = append(strs, strconv.Itoa(int(timestamp)))
 		return strs, int64(randInt), nil
