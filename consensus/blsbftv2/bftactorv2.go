@@ -52,6 +52,10 @@ func (e BLSBFT_V2) IsOngoing() bool {
 	return e.isStarted
 }
 
+func (e BLSBFT_V2) IsStarted() bool {
+	return e.isStarted
+}
+
 type ProposeBlockInfo struct {
 	block      common.BlockInterface
 	votes      map[string]BFTVote //pk->BFTVote
@@ -64,8 +68,8 @@ func (e *BLSBFT_V2) GetConsensusName() string {
 }
 
 func (e *BLSBFT_V2) Stop() error {
-	fmt.Println("debug BLS stop")
 	if e.isStarted {
+		e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
 		select {
 		case <-e.StopCh:
 			return nil
