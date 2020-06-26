@@ -16,21 +16,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBestState, swapPublicKey string, blkProducerPrivateKey *privacy.PrivateKey, committeeShardID byte) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBestState, swapPublicKey string, txStaking common.Hash, blkProducerPrivateKey *privacy.PrivateKey, committeeShardID byte) (metadata.Transaction, error) {
 	//publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	//_, committeeShardID := blockGenerator.chain.GetBeaconBestState().GetPubkeyRole(publicKey, 0)
 
-	Logger.log.Infof("Return Staking Amount public key %+v, staking transaction hash %+v, shardID %+v", swapPublicKey, view.StakingTx, committeeShardID)
-	tx, ok := view.StakingTx[swapPublicKey]
-	if !ok {
-		return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
-	}
-	var txHash = &common.Hash{}
-	err := (&common.Hash{}).Decode(txHash, tx)
-	if err != nil {
-		return nil, NewBlockChainError(DecodeHashError, err)
-	}
-	blockHash, index, err := rawdbv2.GetTransactionByHash(blockGenerator.chain.GetShardChainDatabase(committeeShardID), *txHash)
+	Logger.log.Infof("Return Staking Amount public key %+v, staking transaction hash %+v, shardID %+v", swapPublicKey, txStaking, committeeShardID)
+	// tx, ok := view.StakingTx[swapPublicKey]
+	// if !ok {
+	// 	return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
+	// }
+	// var txHash = &common.Hash{}
+	// err := (&common.Hash{}).Decode(txHash, tx)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(DecodeHashError, err)
+	// }
+	blockHash, index, err := rawdbv2.GetTransactionByHash(blockGenerator.chain.GetShardChainDatabase(committeeShardID), txStaking)
 	if err != nil {
 		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
@@ -51,7 +51,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, committeeShardID))
 	}
 	returnStakingMeta := metadata.NewReturnStaking(
-		tx,
+		txStaking.String(),
 		keyWallet.KeySet.PaymentAddress,
 		metadata.ReturnStakingMeta,
 	)
@@ -124,7 +124,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *BeaconB
 }
 
 func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*BeaconBlock, shardID byte) error {
-	cStates := make(map[int][]*statedb.CommitteeState)
+	cInfos := make(map[int][]*statedb.StakerInfo)
 	isInit := false
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
@@ -196,9 +196,9 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					cStates = statedb.GetAllCommitteeState(beaconConsensusStateDB, blockchain.GetShardIDs())
+					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, cStates[int(shardToProcess)])
+				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, cInfos[int(shardToProcess)])
 				if err != nil {
 					return err
 				}
@@ -210,9 +210,16 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeStates []*statedb.CommitteeState) (err error) {
-	committeeSize := len(committeeStates)
-	for _, candidate := range committeeStates {
+func (blockchain *BlockChain) addShardCommitteeRewardV2(
+	rewardStateDB *statedb.StateDB,
+	shardID byte,
+	rewardInfoShardToProcess *metadata.ShardBlockRewardInfo,
+	cStakeInfos []*statedb.StakerInfo,
+) (
+	err error,
+) {
+	committeeSize := len(cStakeInfos)
+	for _, candidate := range cStakeInfos {
 		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
 			for key, value := range rewardInfoShardToProcess.ShardReward {
 				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)

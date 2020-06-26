@@ -3,12 +3,14 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -297,32 +299,26 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
-	tempAutoStakingM := make(map[uint64]map[string]bool)
+	// tempAutoStakingM := make(map[uint64]map[string]bool)
 	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
 	for _, beaconBlock := range beaconBlocks {
-		autoStaking, ok := tempAutoStakingM[beaconBlock.Header.Height]
-		if !ok {
-			beaconConsensusStateRootHash, err := blockGenerator.chain.GetBeaconConsensusRootHash(blockGenerator.chain.GetBeaconChainDatabase(), beaconBlock.Header.Height-1)
-			if err != nil {
-				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
-			}
-			beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetBeaconChainDatabase()))
-			if err != nil {
-				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
-			}
-			_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, blockGenerator.chain.GetShardIDs())
-			tempAutoStakingM[beaconBlock.Header.Height] = newAutoStaking
-			autoStaking = newAutoStaking
-		}
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
-					// If out public key has auto staking then ignore this public key
-					res, ok := autoStaking[outPublicKeys]
-					if ok && res {
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconView.consensusStateDB, outPublicKeys)
+					if err != nil {
+						Logger.log.Error(err)
 						continue
 					}
-					tx, err := blockGenerator.buildReturnStakingAmountTx(curView, outPublicKeys, producerPrivateKey, shardID)
+					if !has || stakerInfo == nil {
+						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", outPublicKeys))
+						continue
+					}
+					if stakerInfo.AutoStaking() {
+						continue
+					}
+					// Logger.log.Infof("Return Staking Amount %v for public key %+v, staking transaction hash %+v, shardID %+v", stakerInfo.StakingAmount(), outPublicKeys, stakerInfo.TxStakingID(), shardID)
+					tx, err := blockGenerator.buildReturnStakingAmountTx(curView, outPublicKeys, stakerInfo.TxStakingID(), producerPrivateKey, shardID)
 					if err != nil {
 						if strings.Index(err.Error(), "No staking tx in best state") == -1 {
 							Logger.log.Error(err)

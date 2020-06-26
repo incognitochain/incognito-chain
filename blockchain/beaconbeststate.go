@@ -45,7 +45,8 @@ type BeaconBestState struct {
 	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForNextRandom"`
 	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
-	AutoStaking                            map[string]bool                            `json:"AutoStaking"`
+	AutoStaking                            map[string]bool                            `json:"-"`
+	StakingTx                              map[string]common.Hash                     `json:"-"`
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
@@ -118,6 +119,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	beaconBestState.AutoStaking = make(map[string]bool)
+	beaconBestState.StakingTx = make(map[string]common.Hash)
 	beaconBestState.Params = make(map[string]string)
 	beaconBestState.CurrentRandomNumber = -1
 	beaconBestState.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize

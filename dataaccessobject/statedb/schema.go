@@ -3,9 +3,10 @@ package statedb
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 var (
@@ -39,6 +40,7 @@ var (
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
+	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// portal
 	//A
@@ -109,6 +111,16 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		panic("role not exist: " + strconv.Itoa(role))
 	}
 }
+
+func GetStakerInfoPrefix() []byte {
+	return stakerInfoPrefix
+}
+
+func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
+	temp := append(stakerInfoPrefix, stakerPublicKey...)
+	return common.HashH(temp)
+}
+
 func GetCommitteeRewardPrefix() []byte {
 	h := common.HashH(committeeRewardPrefix)
 	return h[:][:prefixHashKeyLength]

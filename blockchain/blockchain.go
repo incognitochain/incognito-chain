@@ -183,10 +183,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlockHash := initBeaconBestState.BestBlock.Header.Hash()
 	initBlockHeight := initBeaconBestState.BestBlock.Header.Height
 	// Insert new block into beacon chain
-	if err := statedb.StoreAllShardCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.ShardCommittee, initBeaconBestState.RewardReceiver, initBeaconBestState.AutoStaking); err != nil {
+	if err := statedb.StoreAllShardCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.ShardCommittee); err != nil {
 		return err
 	}
-	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.BeaconCommittee, initBeaconBestState.RewardReceiver, initBeaconBestState.AutoStaking); err != nil {
+	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.BeaconCommittee); err != nil {
 		return err
 	}
 	if err := statedb.StoreBeaconBlockHashByIndex(initBeaconBestState.consensusStateDB, initBlockHeight, initBlockHash); err != nil {
@@ -446,7 +446,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
 		}
-
 	}
 	return nil
 }

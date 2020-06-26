@@ -46,6 +46,7 @@ const (
 	RewardFeatureStateObjectType
 
 	BlockHashObjectType
+	StakerObjectType
 )
 
 // Prefix length
