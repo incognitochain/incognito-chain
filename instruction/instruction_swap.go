@@ -7,7 +7,6 @@ import (
 )
 
 type SwapInstruction struct {
-	Action        string
 	InPublicKeys  []string
 	OutPublicKeys []string
 	ChainID       int
@@ -18,7 +17,56 @@ type SwapInstruction struct {
 }
 
 func NewSwapInstruction() *SwapInstruction {
-	return &SwapInstruction{Action: SWAP_ACTION}
+	return &SwapInstruction{}
+}
+
+func (s *SwapInstruction) GetType() string {
+	return SWAP_ACTION
+}
+
+func (s *SwapInstruction) ToString() []string {
+	swapInstructionStr := []string{SWAP_ACTION}
+	swapInstructionStr = append(swapInstructionStr, strings.Join(s.InPublicKeys, SPLITTER))
+	swapInstructionStr = append(swapInstructionStr, strings.Join(s.OutPublicKeys, SPLITTER))
+	if s.ChainID == BEACON_CHAIN_ID {
+		swapInstructionStr = append(swapInstructionStr, BEACON_INST)
+		if len(s.NewRewardReceivers) > 0 {
+			swapInstructionStr = append(swapInstructionStr, "")
+		}
+	} else {
+		swapInstructionStr = append(swapInstructionStr, SHARD_INST)
+		swapInstructionStr = append(swapInstructionStr, fmt.Sprintf("%v", s.ChainID))
+	}
+	swapInstructionStr = append(swapInstructionStr, strings.Join(s.PunishedPublicKeys, SPLITTER))
+	if len(s.NewRewardReceivers) > 0 {
+		swapInstructionStr = append(swapInstructionStr, strings.Join(s.NewRewardReceivers, SPLITTER))
+	}
+	return swapInstructionStr
+}
+
+func (s *SwapInstruction) SetInPublicKeys(inPublicKeys []string) *SwapInstruction {
+	s.InPublicKeys = inPublicKeys
+	return s
+}
+
+func (s *SwapInstruction) SetOutPublicKeys(outPublicKeys []string) *SwapInstruction {
+	s.OutPublicKeys = outPublicKeys
+	return s
+}
+
+func (s *SwapInstruction) SetChainID(chainID int) *SwapInstruction {
+	s.ChainID = chainID
+	return s
+}
+
+func (s *SwapInstruction) SetPunishedPublicKeys(punishedPublicKeys []string) *SwapInstruction {
+	s.PunishedPublicKeys = punishedPublicKeys
+	return s
+}
+
+func (s *SwapInstruction) SetNewRewardReceivers(newRewardReceivers []string) *SwapInstruction {
+	s.NewRewardReceivers = newRewardReceivers
+	return s
 }
 
 func importSwapInstructionFromString(instruction []string, chainID int) (*SwapInstruction, error) {
@@ -48,26 +96,6 @@ func importSwapInstructionFromString(instruction []string, chainID int) (*SwapIn
 		}
 	}
 	return swapInstruction, nil
-}
-
-func (s *SwapInstruction) ToString() []string {
-	swapInstructionStr := []string{SWAP_ACTION}
-	swapInstructionStr = append(swapInstructionStr, strings.Join(s.InPublicKeys, SPLITTER))
-	swapInstructionStr = append(swapInstructionStr, strings.Join(s.OutPublicKeys, SPLITTER))
-	if s.ChainID == BEACON_CHAIN_ID {
-		swapInstructionStr = append(swapInstructionStr, BEACON_INST)
-		if len(s.NewRewardReceivers) > 0 {
-			swapInstructionStr = append(swapInstructionStr, "")
-		}
-	} else {
-		swapInstructionStr = append(swapInstructionStr, SHARD_INST)
-		swapInstructionStr = append(swapInstructionStr, fmt.Sprintf("%v", s.ChainID))
-	}
-	swapInstructionStr = append(swapInstructionStr, strings.Join(s.PunishedPublicKeys, SPLITTER))
-	if len(s.NewRewardReceivers) > 0 {
-		swapInstructionStr = append(swapInstructionStr, strings.Join(s.NewRewardReceivers, SPLITTER))
-	}
-	return swapInstructionStr
 }
 
 // validate swap instruction sanity

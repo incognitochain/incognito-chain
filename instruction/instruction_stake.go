@@ -6,7 +6,6 @@ import (
 )
 
 type StakeInstruction struct {
-	Action          string
 	PublicKeys      []string
 	Chain           string
 	TxStakes        []string
@@ -15,11 +14,58 @@ type StakeInstruction struct {
 }
 
 func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []string, rewardReceivers []string, autoStakingFlag []bool) *StakeInstruction {
-	return &StakeInstruction{Action: STAKE_ACTION, PublicKeys: publicKeys, Chain: chain, TxStakes: txStakes, RewardReceivers: rewardReceivers, AutoStakingFlag: autoStakingFlag}
+	return &StakeInstruction{PublicKeys: publicKeys, Chain: chain, TxStakes: txStakes, RewardReceivers: rewardReceivers, AutoStakingFlag: autoStakingFlag}
 }
 
 func NewStakeInstruction() *StakeInstruction {
-	return &StakeInstruction{Action: STAKE_ACTION}
+	return &StakeInstruction{}
+}
+
+func (s *StakeInstruction) GetType() string {
+	return STAKE_ACTION
+}
+
+func (s *StakeInstruction) SetPublicKeys(publicKeys []string) *StakeInstruction {
+	s.PublicKeys = publicKeys
+	return s
+}
+
+func (s *StakeInstruction) SetChain(chain string) *StakeInstruction {
+	s.Chain = chain
+	return s
+}
+
+func (s *StakeInstruction) SetTxStakes(txStakes []string) *StakeInstruction {
+	s.TxStakes = txStakes
+	return s
+}
+
+func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeInstruction {
+	s.RewardReceivers = rewardReceivers
+	return s
+}
+
+func (s *StakeInstruction) SetAutoStakingFlag(autoStakingFlag []bool) *StakeInstruction {
+	s.AutoStakingFlag = autoStakingFlag
+	return s
+}
+
+func (s *StakeInstruction) ToString() []string {
+	stakeInstructionStr := []string{STAKE_ACTION}
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
+	stakeInstructionStr = append(stakeInstructionStr, s.Chain)
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.TxStakes, SPLITTER))
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.RewardReceivers, SPLITTER))
+	tempStopAutoStakeFlag := []string{}
+	for _, v := range s.AutoStakingFlag {
+		if v == true {
+			tempStopAutoStakeFlag = append(tempStopAutoStakeFlag, TRUE)
+		} else {
+			tempStopAutoStakeFlag = append(tempStopAutoStakeFlag, FALSE)
+		}
+	}
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
+	return stakeInstructionStr
 }
 
 func importStakeInstructionFromString(instruction []string) (*StakeInstruction, error) {
@@ -42,24 +88,6 @@ func importStakeInstructionFromString(instruction []string) (*StakeInstruction, 
 	stakeInstruction.AutoStakingFlag = autoStakeFlags
 	stakeInstruction.Chain = instruction[2]
 	return stakeInstruction, nil
-}
-
-func (s *StakeInstruction) ToString() []string {
-	stakeInstructionStr := []string{STAKE_ACTION}
-	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
-	stakeInstructionStr = append(stakeInstructionStr, s.Chain)
-	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.TxStakes, SPLITTER))
-	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.RewardReceivers, SPLITTER))
-	tempStopAutoStakeFlag := []string{}
-	for _, v := range s.AutoStakingFlag {
-		if v == true {
-			tempStopAutoStakeFlag = append(tempStopAutoStakeFlag, TRUE)
-		} else {
-			tempStopAutoStakeFlag = append(tempStopAutoStakeFlag, FALSE)
-		}
-	}
-	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
-	return stakeInstructionStr
 }
 
 // validate stake instruction sanity

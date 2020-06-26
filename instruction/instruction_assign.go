@@ -12,13 +12,34 @@ var (
 )
 
 type AssignInstruction struct {
-	Action         string
-	ChainID        int
-	ShardCandidate []string
+	ChainID         int
+	ShardCandidates []string
 }
 
 func NewAssignInstruction() *AssignInstruction {
-	return &AssignInstruction{Action: ASSIGN_ACTION}
+	return &AssignInstruction{}
+}
+
+func (a *AssignInstruction) GetType() string {
+	return ASSIGN_ACTION
+}
+
+func (a *AssignInstruction) ToString() []string {
+	assignInstructionStr := []string{ASSIGN_ACTION}
+	assignInstructionStr = append(assignInstructionStr, strings.Join(a.ShardCandidates, SPLITTER))
+	assignInstructionStr = append(assignInstructionStr, "shard")
+	assignInstructionStr = append(assignInstructionStr, fmt.Sprintf("%v", a.ChainID))
+	return assignInstructionStr
+}
+
+func (a *AssignInstruction) SetChainID(chainID int) *AssignInstruction {
+	a.ChainID = chainID
+	return a
+}
+
+func (a *AssignInstruction) SetShardCandidates(shardCandidates []string) *AssignInstruction {
+	a.ShardCandidates = shardCandidates
+	return a
 }
 
 func importAssignInstructionFromString(instruction []string) (*AssignInstruction, error) {
@@ -33,17 +54,9 @@ func importAssignInstructionFromString(instruction []string) (*AssignInstruction
 		return nil, err
 	}
 	if len(instruction[3]) > 0 {
-		assignIntruction.ShardCandidate = strings.Split(instruction[3], SPLITTER)
+		assignIntruction.ShardCandidates = strings.Split(instruction[3], SPLITTER)
 	}
 	return assignIntruction, nil
-}
-
-func (s *AssignInstruction) ToString() []string {
-	assignInstructionStr := []string{ASSIGN_ACTION}
-	assignInstructionStr = append(assignInstructionStr, strings.Join(s.ShardCandidate, SPLITTER))
-	assignInstructionStr = append(assignInstructionStr, "shard")
-	assignInstructionStr = append(assignInstructionStr, fmt.Sprintf("%v", s.ChainID))
-	return assignInstructionStr
 }
 
 func validateAssignInstructionSanity(instruction []string) error {

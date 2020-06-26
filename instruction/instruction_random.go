@@ -5,48 +5,48 @@ import (
 )
 
 //Random Instruction which get nonce from bitcoin block
-type RandomInst struct {
-	btcNonce       uint64
-	btcBlockHeight uint64
-	checkpointTime uint64
-	btcBlockTime   uint64
+type RandomInstruction struct {
+	BtcNonce       uint64
+	BtcBlockHeight uint64
+	CheckpointTime uint64
+	BtcBlockTime   uint64
 }
 
-func NewRandomInst() *RandomInst {
-	s := &RandomInst{}
+func NewRandomInst() *RandomInstruction {
+	s := &RandomInstruction{}
 	return s
 }
 
-func (s *RandomInst) GetType() string {
+func (s *RandomInstruction) GetType() string {
 	return RANDOM_ACTION
 }
 
-func (s *RandomInst) SetNonce(n uint64) *RandomInst {
-	s.btcNonce = n
+func (s *RandomInstruction) SetNonce(n uint64) *RandomInstruction {
+	s.BtcNonce = n
 	return s
 }
 
-func (s *RandomInst) SetBtcBlockHeight(n uint64) *RandomInst {
-	s.btcNonce = n
+func (s *RandomInstruction) SetBtcBlockHeight(n uint64) *RandomInstruction {
+	s.BtcNonce = n
 	return s
 }
 
-func (s *RandomInst) SetBtcBlockTime(n uint64) *RandomInst {
-	s.btcBlockTime = n
+func (s *RandomInstruction) SetBtcBlockTime(n uint64) *RandomInstruction {
+	s.BtcBlockTime = n
 	return s
 }
 
-func (s *RandomInst) SetCheckpointTime(n uint64) *RandomInst {
-	s.checkpointTime = n
+func (s *RandomInstruction) SetCheckpointTime(n uint64) *RandomInstruction {
+	s.CheckpointTime = n
 	return s
 }
 
-func (s *RandomInst) ToString() []string {
+func (s *RandomInstruction) ToString() []string {
 	strs := []string{}
-	strs = append(strs, "random")
-	strs = append(strs, strconv.Itoa(int(s.btcNonce)))
-	strs = append(strs, strconv.Itoa(int(s.btcBlockHeight)))
-	strs = append(strs, strconv.Itoa(int(s.checkpointTime)))
-	strs = append(strs, strconv.Itoa(int(s.btcBlockTime)))
+	strs = append(strs, RANDOM_ACTION)
+	strs = append(strs, strconv.Itoa(int(s.BtcNonce)))
+	strs = append(strs, strconv.Itoa(int(s.BtcBlockHeight)))
+	strs = append(strs, strconv.Itoa(int(s.CheckpointTime)))
+	strs = append(strs, strconv.Itoa(int(s.BtcBlockTime)))
 	return strs
 }
