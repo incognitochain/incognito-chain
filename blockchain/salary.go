@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -88,7 +89,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *BeaconB
 		if len(inst) <= 2 {
 			continue
 		}
-		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+		if inst[0] == instruction.SET_ACTION || inst[0] == instruction.STAKE_ACTION || inst[0] == instruction.RANDOM_ACTION || inst[0] == instruction.SWAP_ACTION || inst[0] == instruction.ASSIGN_ACTION {
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])
@@ -130,7 +131,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == StakeAction || l[0] == RandomAction {
+			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION {
 				continue
 			}
 			if len(l) <= 2 {

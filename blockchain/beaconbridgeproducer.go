@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"math/big"
 	"strconv"
 
@@ -22,7 +23,7 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 		if len(inst) < 2 {
 			continue
 		}
-		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
+		if inst[0] == instruction.SET_ACTION || inst[0] == instruction.STAKE_ACTION || inst[0] == instruction.SWAP_ACTION || inst[0] == instruction.RANDOM_ACTION || inst[0] == instruction.ASSIGN_ACTION {
 			continue
 		}
 

@@ -289,7 +289,7 @@ func (beaconBestState *BeaconBestState) GenerateInstructionV2(
 				shardID := byte(key)
 				candidates := assignedCandidates[shardID]
 				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
-				shardAssingInstruction := []string{AssignAction}
+				shardAssingInstruction := []string{instruction.ASSIGN_ACTION}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
 				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardID))

@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	instruction2 "github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -220,7 +221,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *ShardBlock) {
 	isSwapInstContained := false
 	for _, inst := range shardBlock.Body.Instructions {
-		if len(inst) > 0 && inst[0] == SwapAction {
+		if len(inst) > 0 && inst[0] == instruction2.SWAP_ACTION {
 			isSwapInstContained = true
 			break
 		}
@@ -742,7 +743,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	}
 	// Swap committee
 	for _, l := range shardBlock.Body.Instructions {
-		if l[0] == SwapAction {
+		if l[0] == instruction2.SWAP_ACTION {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, shardBestState.MinShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
 			if err != nil {
@@ -827,7 +828,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 func (shardBestState *ShardBestState) processShardBlockInstructionForKeyListV2(blockchain *BlockChain, shardBlock *ShardBlock, committeeChange *incognitokey.CommitteeChange) error {
 	shardID := shardBlock.Header.ShardID
 	for _, instruction := range shardBlock.Body.Instructions {
-		if instruction[0] == SwapAction {
+		if instruction[0] == instruction2.SWAP_ACTION {
 			shardPendingValidatorStruct := shardBestState.ShardPendingValidator
 			inPublicKeys := strings.Split(instruction[1], ",")
 			inPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(inPublicKeys)
@@ -1011,7 +1012,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		rewardReceiver, autoStaking := statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, blockchain.GetShardIDs())
 		if common.IndexOfUint64(shardBlock.Header.BeaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			for _, instruction := range shardBlock.Body.Instructions {
-				if instruction[0] == SwapAction {
+				if instruction[0] == instruction2.SWAP_ACTION {
 					inRewardReceiver := strings.Split(instruction[6], ",")
 					outPublicKeys := strings.Split(instruction[2], ",")
 					outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)

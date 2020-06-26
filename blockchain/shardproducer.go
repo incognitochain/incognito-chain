@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -316,7 +317,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			autoStaking = newAutoStaking
 		}
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == SwapAction {
+			if l[0] == instruction.SWAP_ACTION {
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
 					// If out public key has auto staking then ignore this public key
 					res, ok := autoStaking[outPublicKeys]
@@ -342,7 +343,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 
 			}
-			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
+			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION || l[0] == instruction.ASSIGN_ACTION || l[0] == instruction.SWAP_ACTION {
 				continue
 			}
 			if len(l) <= 2 {
@@ -475,7 +476,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestSta
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			// Process Assign Instruction
-			if l[0] == AssignAction && l[2] == "shard" {
+			if l[0] == instruction.ASSIGN_ACTION && l[2] == "shard" {
 				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
 					tempNewShardPendingValidator := strings.Split(l[1], ",")
 					shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
@@ -485,7 +486,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestSta
 			}
 			// Get Staking Tx
 			// assume that stake instruction already been validated by beacon committee
-			if l[0] == StakeAction && l[2] == "beacon" {
+			if l[0] == instruction.STAKE_ACTION && l[2] == "beacon" {
 				beacon := strings.Split(l[1], ",")
 				newBeaconCandidates := []string{}
 				newBeaconCandidates = append(newBeaconCandidates, beacon...)
@@ -504,7 +505,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestSta
 					}
 				}
 			}
-			if l[0] == StakeAction && l[2] == "shard" {
+			if l[0] == instruction.STAKE_ACTION && l[2] == "shard" {
 				shard := strings.Split(l[1], ",")
 				newShardCandidates := []string{}
 				newShardCandidates = append(newShardCandidates, shard...)

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strings"
 )
@@ -129,7 +130,7 @@ func (blockchain *BlockChain) processForSlashing(slashStateDB *statedb.StateDB, 
 		if len(inst) == 0 {
 			continue
 		}
-		if inst[0] != SwapAction {
+		if inst[0] != instruction.SWAP_ACTION {
 			continue
 		}
 		badProducersWithPunishmentBytes := []byte{}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	instruction2 "github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -349,10 +350,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	// extract instructions
 	for _, instruction := range instructions {
 		if len(instruction) > 0 {
-			if instruction[0] == StakeAction {
+			if instruction[0] == instruction2.STAKE_ACTION {
 				stakeInstructionFromShardBlock = append(stakeInstructionFromShardBlock, instruction)
 			}
-			if instruction[0] == SwapAction {
+			if instruction[0] == instruction2.SWAP_ACTION {
 				//- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 				//- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 				// validate swap instruction
@@ -365,7 +366,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 				}
 				swapInstructions[shardID] = append(swapInstructions[shardID], instruction)
 			}
-			if instruction[0] == StopAutoStake {
+			if instruction[0] == instruction2.STOP_AUTO_STAKE_ACTION {
 				if len(instruction) != 2 {
 					continue
 				}
@@ -428,11 +429,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	}
 	if len(stakeShardPublicKeys) > 0 {
 		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
-		stakeInstructions = append(stakeInstructions, []string{StakeAction, strings.Join(stakeShardPublicKeys, ","), "shard", strings.Join(stakeShardTx, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")})
+		stakeInstructions = append(stakeInstructions, []string{instruction2.STAKE_ACTION, strings.Join(stakeShardPublicKeys, ","), "shard", strings.Join(stakeShardTx, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")})
 	}
 	if len(stakeBeaconPublicKeys) > 0 {
 		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeBeaconPublicKeys...)
-		stakeInstructions = append(stakeInstructions, []string{StakeAction, strings.Join(stakeBeaconPublicKeys, ","), "beacon", strings.Join(stakeBeaconTx, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")})
+		stakeInstructions = append(stakeInstructions, []string{instruction2.STAKE_ACTION, strings.Join(stakeBeaconPublicKeys, ","), "beacon", strings.Join(stakeBeaconTx, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")})
 	}
 	for _, instruction := range stopAutoStakingInstructionsFromBlock {
 		allCommitteeValidatorCandidate := []string{}
@@ -452,7 +453,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 		}
 	}
 	if len(stopAutoStakingPublicKeys) > 0 {
-		stopAutoStakingInstructions = append(stopAutoStakingInstructions, []string{StopAutoStake, strings.Join(stopAutoStakingPublicKeys, ",")})
+		stopAutoStakingInstructions = append(stopAutoStakingInstructions, []string{instruction2.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStakingPublicKeys, ",")})
 	}
 	// Create bridge instruction
 	if len(instructions) > 0 || shardBlock.Header.Height%10 == 0 {
@@ -626,7 +627,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 				shardID := byte(key)
 				candidates := assignedCandidates[shardID]
 				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
-				shardAssingInstruction := []string{AssignAction}
+				shardAssingInstruction := []string{instruction2.ASSIGN_ACTION}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
 				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardID))
@@ -672,7 +673,7 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 		randInt := ran.Int()
 		var strs []string
 		reses := []string{strconv.Itoa(randInt), strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
-		strs = append(strs, RandomAction)
+		strs = append(strs, instruction2.RANDOM_ACTION)
 		strs = append(strs, reses...)
 		strs = append(strs, strconv.Itoa(int(timestamp)))
 		return strs, int64(randInt), nil

@@ -268,17 +268,6 @@ func init() {
 
 // END CONSTANT for network TESTNET
 
-// -------------- FOR INSTRUCTION --------------
-// Action for instruction
-const (
-	SetAction     = "set"
-	SwapAction    = "swap"
-	RandomAction  = "random"
-	StakeAction   = "stake"
-	AssignAction  = "assign"
-	StopAutoStake = "stopautostake"
-)
-
 var (
 	shardInsertBlockTimer                  = metrics.NewRegisteredTimer("shard/insert", nil)
 	shardVerifyPreprocesingTimer           = metrics.NewRegisteredTimer("shard/verify/preprocessing", nil)

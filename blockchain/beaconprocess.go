@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	instruction2 "github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
@@ -931,7 +932,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 		return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-	if instruction[0] == RandomAction {
+	if instruction[0] == instruction2.RANDOM_ACTION {
 		temp, err := strconv.Atoi(instruction[1])
 		if err != nil {
 			return NewBlockChainError(ProcessRandomInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
@@ -940,7 +941,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 		Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		return nil, true, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}
-	if instruction[0] == StopAutoStake {
+	if instruction[0] == instruction2.STOP_AUTO_STAKE_ACTION {
 		committeePublicKeys := strings.Split(instruction[1], ",")
 		for _, committeePublicKey := range committeePublicKeys {
 			allCommitteeValidatorCandidate := beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
@@ -959,7 +960,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 			}
 		}
 	}
-	if instruction[0] == SwapAction {
+	if instruction[0] == instruction2.SWAP_ACTION {
 		if common.IndexOfUint64(beaconBestState.BeaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 || len(instruction) == 7 {
 			err := beaconBestState.processSwapInstructionForKeyListV2(instruction, committeeChange)
 			if err != nil {
@@ -1118,7 +1119,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	// Update candidate
 	// get staking candidate list and store
 	// store new staking candidate
-	if instruction[0] == StakeAction && instruction[2] == "beacon" {
+	if instruction[0] == instruction2.STAKE_ACTION && instruction[2] == "beacon" {
 		beaconCandidates := strings.Split(instruction[1], ",")
 		beaconCandidatesStructs, err := incognitokey.CommitteeBase58KeyListToStruct(beaconCandidates)
 		if err != nil {
@@ -1141,7 +1142,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 		newBeaconCandidates = append(newBeaconCandidates, beaconCandidatesStructs...)
 		return nil, false, newBeaconCandidates, newShardCandidates
 	}
-	if instruction[0] == StakeAction && instruction[2] == "shard" {
+	if instruction[0] == instruction2.STAKE_ACTION && instruction[2] == "shard" {
 		shardCandidates := strings.Split(instruction[1], ",")
 		shardCandidatesStructs, err := incognitokey.CommitteeBase58KeyListToStruct(shardCandidates)
 		if err != nil {
@@ -1167,7 +1168,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 }
 
 func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, committeeChange *incognitokey.CommitteeChange) error {
-	if instruction[0] == SwapAction {
+	if instruction[0] == instruction2.SWAP_ACTION {
 		if instruction[1] == "" && instruction[2] == "" {
 			return nil
 		}

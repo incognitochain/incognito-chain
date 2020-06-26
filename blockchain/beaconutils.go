@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
@@ -20,10 +21,10 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 		if len(v) < 1 {
 			continue
 		}
-		if v[0] == StakeAction && v[2] == "beacon" {
+		if v[0] == instruction.STAKE_ACTION && v[2] == "beacon" {
 			beacon = strings.Split(v[1], ",")
 		}
-		if v[0] == StakeAction && v[2] == "shard" {
+		if v[0] == instruction.STAKE_ACTION && v[2] == "shard" {
 			shard = strings.Split(v[1], ",")
 		}
 	}
@@ -276,10 +277,10 @@ func getStakeValidatorArrayString(v []string) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
 	if len(v) > 0 {
-		if v[0] == StakeAction && v[2] == "beacon" {
+		if v[0] == instruction.STAKE_ACTION && v[2] == "beacon" {
 			beacon = strings.Split(v[1], ",")
 		}
-		if v[0] == StakeAction && v[2] == "shard" {
+		if v[0] == instruction.STAKE_ACTION && v[2] == "shard" {
 			shard = strings.Split(v[1], ",")
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
+	instruction2 "github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
@@ -193,7 +194,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
+		instruction := []string{instruction2.STAKE_ACTION, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
@@ -205,12 +206,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			return nil, fmt.Errorf("Failed To Convert Stake Beacon Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
+		instruction := []string{instruction2.STAKE_ACTION, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
 		// ["stopautostaking" "pubkey1,pubkey2,..."]
-		instruction := []string{StopAutoStake, strings.Join(stopAutoStaking, ",")}
+		instruction := []string{instruction2.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
 		instructions = append(instructions, instruction)
 	}
 	return instructions, nil
