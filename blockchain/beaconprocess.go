@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
@@ -59,7 +58,7 @@ CONTINUE_VERIFY:
 	curView := view.(*BeaconBestState)
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	committeeChange := committeestate.NewCommitteeChange()
+	committeeChange := incognitokey.NewCommitteeChange()
 	if err := blockchain.verifyPreProcessingBeaconBlock(curView, beaconBlock, isPreSign); err != nil {
 		return err
 	}
@@ -87,7 +86,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
-	committeeChange := committeestate.NewCommitteeChange()
+	committeeChange := incognitokey.NewCommitteeChange()
 
 	//check view if exited
 	checkView := blockchain.BeaconChain.GetViewByHash(*beaconBlock.Hash())
@@ -687,7 +686,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, blockchain *BlockChain, committeeChange *committeestate.CommitteeChange) (*BeaconBestState, error) {
+func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, blockchain *BlockChain, committeeChange *incognitokey.CommitteeChange) (*BeaconBestState, error) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(oldBestState); err != nil {
@@ -861,7 +860,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		snapshotAutoStaking[k] = v
 	}
 	for _, instruction := range genesisBeaconBlock.Body.Instructions {
-		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, committeestate.NewCommitteeChange(), snapshotAutoStaking)
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, incognitokey.NewCommitteeChange(), snapshotAutoStaking)
 		if err != nil {
 			return err
 		}
@@ -925,7 +924,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //  #3 new beacon candidate
 //  #4 new shard candidate
 
-func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeestate.CommitteeChange, autoStaking map[string]bool) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *incognitokey.CommitteeChange, autoStaking map[string]bool) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	if len(instruction) < 1 {
@@ -1167,7 +1166,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 }
 
-func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, committeeChange *committeestate.CommitteeChange) error {
+func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, committeeChange *incognitokey.CommitteeChange) error {
 	if instruction[0] == SwapAction {
 		if instruction[1] == "" && instruction[2] == "" {
 			return nil
@@ -1221,7 +1220,7 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange *committeestate.CommitteeChange) error {
+func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange *incognitokey.CommitteeChange) error {
 	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStaking)
 	if err != nil {
 		return err
@@ -1312,7 +1311,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	snapshotBeaconCommittees []incognitokey.CommitteePublicKey,
 	snapshotAllShardCommittees map[byte][]incognitokey.CommitteePublicKey,
 	snapshotRewardReceivers map[string]string,
-	committeeChange *committeestate.CommitteeChange,
+	committeeChange *incognitokey.CommitteeChange,
 ) error {
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())

@@ -14,6 +14,10 @@ type StakeInstruction struct {
 	AutoStakingFlag []bool
 }
 
+func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []string, rewardReceivers []string, autoStakingFlag []bool) *StakeInstruction {
+	return &StakeInstruction{Action: STAKE_ACTION, PublicKeys: publicKeys, Chain: chain, TxStakes: txStakes, RewardReceivers: rewardReceivers, AutoStakingFlag: autoStakingFlag}
+}
+
 func NewStakeInstruction() *StakeInstruction {
 	return &StakeInstruction{Action: STAKE_ACTION}
 }

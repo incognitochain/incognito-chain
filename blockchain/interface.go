@@ -81,7 +81,7 @@ type Syncker interface {
 type BeaconCommitteeState interface {
 	GenerateBeaconCommitteeInstruction(env *committeestate.BeaconCommitteeStateEnvironment)
 	GenerateCommitteeRootHashes(beaconInstruction [][]string) ([]common.Hash, error)
-	UpdateCommitteeState(newBeaconHeight uint64, newBeaconHash common.Hash, beaconInstructions [][]string) (*committeestate.CommitteeChange, error)
+	UpdateCommitteeState(newBeaconHeight uint64, newBeaconHash common.Hash, beaconInstructions [][]string) (*incognitokey.CommitteeChange, error)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
@@ -99,7 +99,7 @@ type BeaconCommitteeState interface {
 type ShardCommitteeState interface {
 	GenerateShardCommitteeInstruction(env *committeestate.ShardCommitteeStateEnvironment)
 	GenerateCommitteeRootHashes(shardID byte, instruction []string) ([]common.Hash, error)
-	UpdateCommitteeState(shardID byte, instruction []string) (*committeestate.CommitteeChange, error)
+	UpdateCommitteeState(shardID byte, instruction []string) (*incognitokey.CommitteeChange, error)
 	ValidateCommitteeRootHashes(shardID byte, rootHashes []common.Hash) (bool, error)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey

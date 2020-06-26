@@ -48,7 +48,7 @@ func (b BeaconCommitteeStateV1) GenerateCommitteeRootHashes(beaconInstruction []
 	panic("implement me")
 }
 
-func (b *BeaconCommitteeStateV1) UpdateCommitteeState(newBeaconHeight uint64, newBeaconHash common.Hash, beaconInstructions [][]string) (*CommitteeChange, error) {
+func (b *BeaconCommitteeStateV1) UpdateCommitteeState(newBeaconHeight uint64, newBeaconHash common.Hash, beaconInstructions [][]string) (*incognitokey.CommitteeChange, error) {
 	panic("implement me")
 }
 
