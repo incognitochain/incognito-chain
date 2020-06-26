@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	MaxSizeInfoCoin = 255
-	//CoinVersion1    = 1
-	CoinVersion2    = 2
+	MaxSizeInfoCoin   = 255
+	JsonMarshalFlag   = 34
+	CoinVersion1      = 1
+	CoinVersion2      = 2
 	TxRandomGroupSize = 36
 )
 
@@ -18,7 +19,6 @@ func getMin(a, b int) int {
 	}
 	return b
 }
-
 
 func CreatePaymentInfosFromPlainCoinsAndAddress(c []PlainCoin, paymentAddress key.PaymentAddress, message []byte) []*key.PaymentInfo {
 	sumAmount := uint64(0)

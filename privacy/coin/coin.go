@@ -2,6 +2,7 @@ package coin
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -80,32 +81,30 @@ func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 	return c, err
 }
 
-// First byte should determine the version
+// First byte should determine the version or json marshal "34"
 func NewCoinFromByte(b []byte) (Coin, error) {
-	version := b[0]
-
-	if version == CoinVersion2 {
-		c := new(CoinV2)
-		err := c.SetBytes(b)
-		//fmt.Println(string(b))
-		//fmt.Println(string(b))
-		//fmt.Println(string(b))
-		//fmt.Println(err)
-		return c, err
-	} else {
-		//fmt.Println(b)
-		//fmt.Println(b)
-		//fmt.Println(b)
-		//fmt.Println(string(b))
-		//panic("OK")
-		c := new(CoinV1)
-		if err := json.Unmarshal(b, &c); err != nil {
-			err = c.SetBytes(b)
-			return c, err
+	coinV1 := new(CoinV1)
+	coinV2 := new(CoinV2)
+	if errV2 := json.Unmarshal(b, &coinV2); errV2 != nil {
+		if errV1 := json.Unmarshal(b, &coinV1); errV1 != nil {
+			version := b[0]
+			if version == CoinVersion2 {
+				err := coinV2.SetBytes(b)
+				fmt.Println("New Coin From Byte V2", coinV2.publicKey, err)
+				return coinV2, err
+			} else {
+				err := coinV1.SetBytes(b)
+				fmt.Println("New Coin From Byte V1", coinV1.CoinDetails.publicKey, err)
+				return coinV1, err
+			}
+		} else {
+			fmt.Println("New Coin From Byte V1", coinV1.CoinDetails.publicKey)
+			return coinV1, nil
 		}
-		return c, nil
+	} else {
+		fmt.Println("New Coin From Byte V2", coinV2.publicKey)
+		return coinV2, nil
 	}
-
 }
 
 // Check whether the utxo is from this address

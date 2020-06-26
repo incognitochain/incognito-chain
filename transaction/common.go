@@ -210,7 +210,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress       *privacy.PaymentAddress
 	amount             uint64
-	txRandom		   *coin.TxRandom
+	txRandom           *coin.TxRandom
 	payByPrivateKey    *privacy.PrivateKey
 	transactionStateDB *statedb.StateDB
 	bridgeStateDB      *statedb.StateDB
@@ -305,18 +305,18 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		return nil, err
 	}
 	switch params.txType {
-		case NormalCoinType:
-			tx := new(TxVersion2)
-			err = tx.InitTxSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB, params.meta)
-			return tx, err
-		case CustomTokenPrivacyType:
-			var propertyID [common.HashSize]byte
-			copy(propertyID[:], params.coinID[:])
-			propID := common.Hash(propertyID)
-			tx := new(TxTokenVersion2)
-			err = tx.InitTxTokenSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB,
-				params.meta, &propID, params.coinName)
-			return tx, err
+	case NormalCoinType:
+		tx := new(TxVersion2)
+		err = tx.InitTxSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB, params.meta)
+		return tx, err
+	case CustomTokenPrivacyType:
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], params.coinID[:])
+		propID := common.Hash(propertyID)
+		tx := new(TxTokenVersion2)
+		err = tx.InitTxTokenSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB,
+			params.meta, &propID, params.coinName)
+		return tx, err
 	}
 	return nil, nil
 }
@@ -415,7 +415,7 @@ func signNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signature
 
 // Used to parse json
 type txJsonDataVersion struct {
-	Version  int8   `json:"Version"`
+	Version int8 `json:"Version"`
 }
 
 func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
@@ -424,30 +424,25 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 		return nil, err
 	}
 	switch txJsonVersion.Version {
-		case int8(TxVersion1Number):
-			tx := new(TxVersion1)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		case int8(TxVersion2Number), int8(TxConversionVersion12Number):
-			tx := new(TxVersion2)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		default:
-			tx := new(TxVersion1)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
+	case int8(TxVersion1Number), int8(TxVersion0Number):
+		tx := new(TxVersion1)
+		if err := json.Unmarshal(data, tx); err != nil {
+			return nil, err
+		}
+		return tx, nil
+	case int8(TxVersion2Number), int8(TxConversionVersion12Number):
+		tx := new(TxVersion2)
+		if err := json.Unmarshal(data, tx); err != nil {
+			return nil, err
+		}
+		return tx, nil
+	default:
+		return nil, errors.New("Cannot new transaction from json, version is wrong")
 	}
-	return nil, errors.New("Cannot new transaction from json, version is wrong")
 }
 
 type txTokenJsonDataVersion struct {
-	Version  int8   `json:"Version"`
+	Version int8 `json:"Version"`
 }
 
 func NewTransactionTokenFromJsonBytes(data []byte) (TxTokenInterface, error) {

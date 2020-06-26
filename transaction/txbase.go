@@ -232,15 +232,17 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 	}
 
 	var res privacy.Proof
-	if ver == TxVersion1Number {
+	switch ver {
+	case TxVersion1Number, TxVersion0Number:
 		res = &zkp.PaymentProof{}
-	} else if ver == TxVersion2Number {
+	case TxVersion2Number:
 		res = &privacy_v2.PaymentProofV2{}
-	} else if ver == TxConversionVersion12Number {
+	case TxConversionVersion12Number:
 		res = &privacy_v2.ConversionProofVer1ToVer2{}
-	} else {
+	default:
 		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2 or -1")
 	}
+
 	res.Init()
 	err = json.Unmarshal(proofInBytes, res)
 	if err != nil {

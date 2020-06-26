@@ -50,7 +50,7 @@ type Tx = metadata.Transaction
 
 type TxTokenBase struct {
 	Tx
-	TxTokenData TxTokenData
+	TxTokenData TxTokenData `json:"TxPrivacyTokenData"`
 }
 
 func GetTxTokenDataFromTransaction(tx metadata.Transaction) *TxTokenData {
@@ -150,7 +150,7 @@ func (txToken *TxTokenBase) CheckAuthorizedSender([]byte) (bool, error) {
 func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {
 	type TemporaryTxToken struct {
 		TxBase
-		TxPrivacyTokenData TxTokenData
+		TxPrivacyTokenData TxTokenData `json:"TxPrivacyTokenData"`
 	}
 	tempTx := TemporaryTxToken{}
 	tempTx.TxPrivacyTokenData = txToken.GetTxPrivacyTokenData()
@@ -176,7 +176,7 @@ func (txToken *TxTokenBase) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	temp := &struct {
-		TxTokenData TxTokenData
+		TxTokenData TxTokenData `json:"TxPrivacyTokenData"`
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {

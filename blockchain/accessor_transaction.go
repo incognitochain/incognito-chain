@@ -125,21 +125,19 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 		}
 	}
-	fmt.Println("Request Table", withdrawReqTable)
+	fmt.Println("Validate withdraw Request Table", withdrawReqTable)
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			//check valid info with tx request
 			metaResponse := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
 			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), metaResponse.TokenID.String())
-			fmt.Println("Map Key", mapKey)
 			rewardPaymentAddress, ok := withdrawReqTable[mapKey]
 			if !ok {
 				return errors.Errorf("[Mint Withdraw Reward] This response dont match with any request in this block - Reward Address: %v", mapKey)
 			} else {
 				delete(withdrawReqTable, mapKey)
 			}
-			fmt.Println("Check corresponding request and response")
 			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 			//check tx mint
 			if err != nil || !isMinted {
@@ -149,7 +147,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			if cmp, err := metaResponse.TokenID.Cmp(coinID); err != nil || cmp != 0 {
 				return errors.Errorf("[Mint Withdraw Reward] Token dont match: %v and %v", metaResponse.TokenID.String(), coinID.String())
 			}
-			fmt.Println("Check Valid mint tx")
+
 			//check amount & receiver
 			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
 				base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), *coinID)
@@ -159,7 +157,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			if ok := mintCoin.CheckCoinValid(rewardPaymentAddress, metaResponse.SharedRandom, rewardAmount); !ok {
 				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
 			}
-			fmt.Println("Check Valid Amount and Receiver OK")
 		}
 	}
 
@@ -224,7 +221,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 			}
 		}
 	}
-	fmt.Println("Request Table: ", withdrawReqTable)
+	fmt.Println("Build Request Table: ", withdrawReqTable)
 	txsResponse := []metadata.Transaction{}
 	for _, txRequest := range withdrawReqTable {
 		txResponse, err := blockchain.buildWithDrawTransactionResponse(view, &txRequest, blkProducerPrivateKey, shardID)
