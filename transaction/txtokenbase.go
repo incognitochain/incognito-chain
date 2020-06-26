@@ -34,9 +34,9 @@ func NewTransactionTokenFromParams(params *TxPrivacyTokenInitParams) (TxTokenInt
 		return nil, errors.New("Cannot create transaction from txprivacyinitparams, have both coin version 1 and 2")
 	}
 	if !check[1] && !check[2] {
-		return new(TxTokenVersion2), nil
-		//return nil, errors.New("Cannot create transaction from txprivacyinitparams, does not have both coin version 1 and 2")
+		return nil, errors.New("Cannot create transaction from txprivacyinitparams, does not have both coin version 1 and 2")
 	}
+
 	if check[1] {
 		return new(TxTokenVersion1), nil
 	}

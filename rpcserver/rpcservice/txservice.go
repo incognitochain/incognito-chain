@@ -217,9 +217,8 @@ func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, 
 		return nil, nil, 0, NewRPCError(RejectInvalidTxFeeTooLargeError, err)
 	}
 	paymentInfos[0].Amount -= realFee
-	return plainCoins, paymentInfos, realFee, nil
 
-	// From privacy team: I don't really understand this so comment it
+	// TODO From privacy team: I don't really understand this so comment it
 	//if realFee == 0 {
 	//	if metadataParam != nil {
 	//		metadataType := metadataParam.GetType()
@@ -236,6 +235,8 @@ func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, 
 	//		return nil, nil, 0, nil
 	//	}
 	//}
+
+	return plainCoins, paymentInfos, realFee, nil
 }
 
 // chooseOutsCoinByKeyset returns list of input coins native token to spent
