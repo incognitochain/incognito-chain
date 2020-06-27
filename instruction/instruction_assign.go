@@ -16,6 +16,10 @@ type AssignInstruction struct {
 	ShardCandidates []string
 }
 
+func NewAssignInstructionWithValue(chainID int, shardCandidates []string) *AssignInstruction {
+	return &AssignInstruction{ChainID: chainID, ShardCandidates: shardCandidates}
+}
+
 func NewAssignInstruction() *AssignInstruction {
 	return &AssignInstruction{}
 }
