@@ -5,6 +5,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Instruction interface {
+	GetType() string
+	ToString() []string
+}
+
 type ViewEnvironment struct {
 	beaconCommittee                        []incognitokey.CommitteePublicKey
 	beaconSubstitute                       []incognitokey.CommitteePublicKey

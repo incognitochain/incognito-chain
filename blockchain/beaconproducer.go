@@ -645,7 +645,6 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 			blockHeight    int
 			chainTimestamp int64
 			nonce          int64
-			strs           []string
 			err            error
 		)
 		startTime := time.Now()
@@ -662,20 +661,20 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 			}
 			time.Sleep(time.Millisecond * 500)
 		}
-		strs = append(strs, "random")
-		strs = append(strs, strconv.Itoa(int(nonce)))
-		strs = append(strs, strconv.Itoa(blockHeight))
-		strs = append(strs, strconv.Itoa(int(timestamp)))
-		strs = append(strs, strconv.Itoa(int(chainTimestamp)))
-		return strs, int64(nonce), nil
+		randomInstruction := instruction.NewRandomInstruction().
+			SetBtcBlockHeight(blockHeight).
+			SetCheckPointTime(timestamp).
+			SetNonce(nonce).
+			SetBtcBlockTime(chainTimestamp)
+		return randomInstruction.ToString(), nonce, nil
 	} else {
 		ran := rand.New(rand.NewSource(timestamp))
-		randInt := ran.Int()
-		var strs []string
-		reses := []string{strconv.Itoa(randInt), strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
-		strs = append(strs, instruction.RANDOM_ACTION)
-		strs = append(strs, reses...)
-		strs = append(strs, strconv.Itoa(int(timestamp)))
-		return strs, int64(randInt), nil
+		randInt := ran.Uint64()
+		randomInstruction := instruction.NewRandomInstruction().
+			SetBtcBlockHeight(int(timestamp)).
+			SetCheckPointTime(timestamp).
+			SetBtcBlockTime(timestamp + 1).
+			SetNonce(int64(randInt))
+		return randomInstruction.ToString(), int64(randInt), nil
 	}
 }
