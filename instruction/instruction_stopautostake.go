@@ -9,6 +9,10 @@ type StopAutoStakeInstruction struct {
 	PublicKeys []string
 }
 
+func NewStopAutoStakeInstructionWithValue(publicKeys []string) *StopAutoStakeInstruction {
+	return &StopAutoStakeInstruction{PublicKeys: publicKeys}
+}
+
 func NewStopAutoStakeInstruction() *StopAutoStakeInstruction {
 	return &StopAutoStakeInstruction{}
 }
@@ -23,19 +27,16 @@ func (s *StopAutoStakeInstruction) ToString() []string {
 	return stopAutoStakeInstructionStr
 }
 
-func importStopAutoStakeInstructionFromString(instruction []string) (*StopAutoStakeInstruction, error) {
-	if err := validateStopAutoStakeInstructionSanity(instruction); err != nil {
-		return nil, err
-	}
+func ImportStopAutoStakeInstructionFromString(instruction []string) *StopAutoStakeInstruction {
 	stopAutoStakeInstruction := NewStopAutoStakeInstruction()
 	if len(instruction[1]) > 0 {
 		publicKeys := strings.Split(instruction[1], SPLITTER)
 		stopAutoStakeInstruction.PublicKeys = publicKeys
 	}
-	return stopAutoStakeInstruction, nil
+	return stopAutoStakeInstruction
 }
 
-func validateStopAutoStakeInstructionSanity(instruction []string) error {
+func ValidateStopAutoStakeInstructionSanity(instruction []string) error {
 	if len(instruction) != 2 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}

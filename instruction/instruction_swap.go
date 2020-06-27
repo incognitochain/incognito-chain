@@ -11,9 +11,13 @@ type SwapInstruction struct {
 	OutPublicKeys []string
 	ChainID       int
 	// old slashing, never used
-	PunishedPublicKeys []string
+	PunishedPublicKeys string
 	// this field is only for replace committee
 	NewRewardReceivers []string
+}
+
+func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int, punishedPublicKeys string, newRewardReceivers []string) *SwapInstruction {
+	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: punishedPublicKeys, NewRewardReceivers: newRewardReceivers}
 }
 
 func NewSwapInstruction() *SwapInstruction {
@@ -37,7 +41,7 @@ func (s *SwapInstruction) ToString() []string {
 		swapInstructionStr = append(swapInstructionStr, SHARD_INST)
 		swapInstructionStr = append(swapInstructionStr, fmt.Sprintf("%v", s.ChainID))
 	}
-	swapInstructionStr = append(swapInstructionStr, strings.Join(s.PunishedPublicKeys, SPLITTER))
+	swapInstructionStr = append(swapInstructionStr, s.PunishedPublicKeys)
 	if len(s.NewRewardReceivers) > 0 {
 		swapInstructionStr = append(swapInstructionStr, strings.Join(s.NewRewardReceivers, SPLITTER))
 	}
@@ -59,7 +63,7 @@ func (s *SwapInstruction) SetChainID(chainID int) *SwapInstruction {
 	return s
 }
 
-func (s *SwapInstruction) SetPunishedPublicKeys(punishedPublicKeys []string) *SwapInstruction {
+func (s *SwapInstruction) SetPunishedPublicKeys(punishedPublicKeys string) *SwapInstruction {
 	s.PunishedPublicKeys = punishedPublicKeys
 	return s
 }
@@ -69,10 +73,7 @@ func (s *SwapInstruction) SetNewRewardReceivers(newRewardReceivers []string) *Sw
 	return s
 }
 
-func importSwapInstructionFromString(instruction []string, chainID int) (*SwapInstruction, error) {
-	if err := validateSwapInstructionSanity(instruction, chainID); err != nil {
-		return nil, err
-	}
+func ImportSwapInstructionFromString(instruction []string, chainID int) *SwapInstruction {
 	swapInstruction := NewSwapInstruction()
 	if len(instruction[1]) > 0 {
 		swapInstruction.InPublicKeys = strings.Split(instruction[1], SPLITTER)
@@ -88,20 +89,20 @@ func importSwapInstructionFromString(instruction []string, chainID int) (*SwapIn
 	swapInstruction.ChainID = chainID
 	if chainID == BEACON_CHAIN_ID {
 		if len(instruction[4]) > 0 {
-			swapInstruction.PunishedPublicKeys = strings.Split(instruction[4], SPLITTER)
+			swapInstruction.PunishedPublicKeys = instruction[4]
 		}
 	} else {
 		if len(instruction[5]) > 0 {
-			swapInstruction.PunishedPublicKeys = strings.Split(instruction[5], SPLITTER)
+			swapInstruction.PunishedPublicKeys = instruction[5]
 		}
 	}
-	return swapInstruction, nil
+	return swapInstruction
 }
 
 // validate swap instruction sanity
 // new reward receiver only present in replace committee
 // beaconproducer.go: 356 - 367
-func validateSwapInstructionSanity(instruction []string, chainID int) error {
+func ValidateSwapInstructionSanity(instruction []string, chainID int) error {
 	if len(instruction) != 5 || len(instruction) != 6 || len(instruction) != 7 {
 		return fmt.Errorf("invalid instruction length, %+v, %+v", len(instruction), instruction)
 	}

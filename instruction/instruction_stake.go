@@ -68,10 +68,7 @@ func (s *StakeInstruction) ToString() []string {
 	return stakeInstructionStr
 }
 
-func importStakeInstructionFromString(instruction []string) (*StakeInstruction, error) {
-	if err := validateStakeInstructionSanityData(instruction); err != nil {
-		return nil, err
-	}
+func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 	stakeInstruction := NewStakeInstruction()
 	stakeInstruction.PublicKeys = strings.Split(instruction[1], SPLITTER)
 	stakeInstruction.TxStakes = strings.Split(instruction[3], SPLITTER)
@@ -87,13 +84,13 @@ func importStakeInstructionFromString(instruction []string) (*StakeInstruction, 
 	}
 	stakeInstruction.AutoStakingFlag = autoStakeFlags
 	stakeInstruction.Chain = instruction[2]
-	return stakeInstruction, nil
+	return stakeInstruction
 }
 
 // validate stake instruction sanity
 // beaconprocess.go: 1122 - 1165
 // beaconproducer.go: 386
-func validateStakeInstructionSanityData(instruction []string) error {
+func ValidateStakeInstructionSanityData(instruction []string) error {
 	if len(instruction) != 6 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}

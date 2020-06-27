@@ -2,7 +2,6 @@ package instruction
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/pkg/errors"
 )
 
 type Instruction interface {
@@ -26,42 +25,6 @@ type InstructionManager struct {
 	stakeInstructions         []*StakeInstruction
 	assignInstructions        []*AssignInstruction
 	stopAutoStakeInstructions []*StopAutoStakeInstruction
-}
-
-func ImportInstructionFromStringArray(instructions [][]string, chainID int) (*InstructionManager, error) {
-	instructionManager := new(InstructionManager)
-	for _, instruction := range instructions {
-		if len(instruction) < 1 {
-			continue
-		}
-		switch instruction[0] {
-		case SWAP_ACTION:
-			swapInstruction, err := importSwapInstructionFromString(instruction, chainID)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
-			}
-			instructionManager.swapInstructions = append(instructionManager.swapInstructions, swapInstruction)
-		case ASSIGN_ACTION:
-			assignInstruction, err := importAssignInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
-			}
-			instructionManager.assignInstructions = append(instructionManager.assignInstructions, assignInstruction)
-		case STAKE_ACTION:
-			stakeInstruction, err := importStakeInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
-			}
-			instructionManager.stakeInstructions = append(instructionManager.stakeInstructions, stakeInstruction)
-		case STOP_AUTO_STAKE_ACTION:
-			stopAutoStakeInstruction, err := importStopAutoStakeInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
-			}
-			instructionManager.stopAutoStakeInstructions = append(instructionManager.stopAutoStakeInstructions, stopAutoStakeInstruction)
-		}
-	}
-	return instructionManager, nil
 }
 
 // the order of instruction must always be maintain
