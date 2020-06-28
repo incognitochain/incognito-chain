@@ -1,6 +1,7 @@
 package instruction
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -10,6 +11,10 @@ type RandomInstruction struct {
 	BtcBlockHeight int
 	CheckPointTime int64
 	BtcBlockTime   int64
+}
+
+func NewRandomInstructionWithValue(btcNonce int64, btcBlockHeight int, checkPointTime int64, btcBlockTime int64) *RandomInstruction {
+	return &RandomInstruction{BtcNonce: btcNonce, BtcBlockHeight: btcBlockHeight, CheckPointTime: checkPointTime, BtcBlockTime: btcBlockTime}
 }
 
 func NewRandomInstruction() *RandomInstruction {
@@ -44,9 +49,48 @@ func (s *RandomInstruction) SetCheckPointTime(n int64) *RandomInstruction {
 func (s *RandomInstruction) ToString() []string {
 	strs := []string{}
 	strs = append(strs, RANDOM_ACTION)
-	strs = append(strs, strconv.Itoa(int(s.BtcNonce)))
-	strs = append(strs, strconv.Itoa(int(s.BtcBlockHeight)))
-	strs = append(strs, strconv.Itoa(int(s.CheckPointTime)))
-	strs = append(strs, strconv.Itoa(int(s.BtcBlockTime)))
+	strs = append(strs, strconv.FormatInt(s.BtcNonce, 10))
+	strs = append(strs, strconv.Itoa(s.BtcBlockHeight))
+	strs = append(strs, strconv.FormatInt(s.CheckPointTime, 10))
+	strs = append(strs, strconv.FormatInt(s.BtcBlockTime, 10))
 	return strs
+}
+
+func ValidateAndImportRandomInstructionFromString(instruction []string) (*RandomInstruction, error) {
+	if err := ValidateRandomInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportRandomInstructionFromString(instruction), nil
+}
+
+// ImportRandomInstructionFromString is unsafe method
+func ImportRandomInstructionFromString(instruction []string) *RandomInstruction {
+	btcNonce, _ := strconv.ParseInt(instruction[1], 10, 64)
+	btcBlockHeight, _ := strconv.ParseInt(instruction[2], 10, 64)
+	checkPointTime, _ := strconv.ParseInt(instruction[3], 10, 64)
+	btcTimeStamp, _ := strconv.ParseInt(instruction[4], 10, 64)
+	r := NewRandomInstructionWithValue(btcNonce, int(btcBlockHeight), checkPointTime, btcTimeStamp)
+	return r
+}
+
+func ValidateRandomInstructionSanity(instruction []string) error {
+	if len(instruction) != 5 {
+		return fmt.Errorf("invalid length, %+v", instruction)
+	}
+	if instruction[0] != RANDOM_ACTION {
+		return fmt.Errorf("invalid random action, %+v", instruction)
+	}
+	if _, err := strconv.ParseInt(instruction[1], 10, 64); err != nil {
+		return fmt.Errorf("invalid btc nonce value", err)
+	}
+	if _, err := strconv.ParseInt(instruction[2], 10, 64); err != nil {
+		return fmt.Errorf("invalid btc block height value", err)
+	}
+	if _, err := strconv.ParseInt(instruction[3], 10, 64); err != nil {
+		return fmt.Errorf("invalid check point time stamp value", err)
+	}
+	if _, err := strconv.ParseInt(instruction[4], 10, 64); err != nil {
+		return fmt.Errorf("invalid btc time stamp value", err)
+	}
+	return nil
 }

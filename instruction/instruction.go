@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 type Instruction interface {
@@ -20,15 +21,51 @@ type ViewEnvironment struct {
 	shardSubstitute                        map[byte][]incognitokey.CommitteePublicKey
 }
 
-type InstructionManager struct {
+type CommitteeStateInstruction struct {
 	swapInstructions          []*SwapInstruction
 	stakeInstructions         []*StakeInstruction
 	assignInstructions        []*AssignInstruction
 	stopAutoStakeInstructions []*StopAutoStakeInstruction
 }
 
+func ImportInstructionFromStringArray(instructions [][]string, chainID int) (*CommitteeStateInstruction, error) {
+	instructionManager := new(CommitteeStateInstruction)
+	for _, instruction := range instructions {
+		if len(instruction) < 1 {
+			continue
+		}
+		switch instruction[0] {
+		case SWAP_ACTION:
+			swapInstruction, err := ValidateAndImportSwapInstructionFromString(instruction, chainID)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.swapInstructions = append(instructionManager.swapInstructions, swapInstruction)
+		case ASSIGN_ACTION:
+			assignInstruction, err := ValidateAndImportAssignInstructionFromString(instruction)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.assignInstructions = append(instructionManager.assignInstructions, assignInstruction)
+		case STAKE_ACTION:
+			stakeInstruction, err := ValidateAndImportStakeInstructionFromString(instruction)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.stakeInstructions = append(instructionManager.stakeInstructions, stakeInstruction)
+		case STOP_AUTO_STAKE_ACTION:
+			stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(instruction)
+			if err != nil {
+				Logger.Log.Error(errors.Wrap(err, ""))
+			}
+			instructionManager.stopAutoStakeInstructions = append(instructionManager.stopAutoStakeInstructions, stopAutoStakeInstruction)
+		}
+	}
+	return instructionManager, nil
+}
+
 // the order of instruction must always be maintain
-func (i *InstructionManager) ToString(action string) [][]string {
+func (i *CommitteeStateInstruction) ToString(action string) [][]string {
 	instructions := [][]string{}
 	switch action {
 	case ASSIGN_ACTION:
@@ -53,6 +90,6 @@ func (i *InstructionManager) ToString(action string) [][]string {
 
 // FilterInstructions filter duplicate instruction
 // duplicate instruction is result from delay of shard and beacon
-func (i *InstructionManager) ValidateAndFilterStakeInstructionsV1(v *ViewEnvironment) {
+func (i *CommitteeStateInstruction) ValidateAndFilterStakeInstructionsV1(v *ViewEnvironment) {
 	panic("implement me")
 }

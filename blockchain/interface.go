@@ -79,8 +79,8 @@ type Syncker interface {
 }
 
 type BeaconCommitteeState interface {
-	GenerateBeaconCommitteeInstruction(env *committeestate.BeaconCommitteeStateEnvironment)
-	GenerateCommitteeRootHashes(beaconInstruction [][]string) ([]common.Hash, error)
+	//GenerateBeaconCommitteeInstruction(env *committeestate.BeaconCommitteeStateEnvironment)
+	GenerateCommitteeRootHashes() ([]common.Hash, error)
 	UpdateCommitteeState(newBeaconHeight uint64, newBeaconHash common.Hash, beaconInstructions [][]string) (*incognitokey.CommitteeChange, error)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetBeaconHeight() uint64

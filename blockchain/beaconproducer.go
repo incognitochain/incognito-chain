@@ -358,7 +358,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	for _, inst := range instructions {
 		if len(inst) > 0 {
 			if inst[0] == instruction.STAKE_ACTION {
-				if err := instruction.ValidateStakeInstructionSanityData(inst); err != nil {
+				if err := instruction.ValidateStakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Stake Instruction Error", err)
 					continue
 				}
@@ -480,11 +480,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 }
 
 //  GenerateInstruction generate instruction for new beacon block
-//  Instruction Type:
-//  - random instruction format
-//    + ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-//  - assign instruction fomart
-//    + ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
 func (beaconBestState *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
 	stakeInstructions []*instruction.StakeInstruction,

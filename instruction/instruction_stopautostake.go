@@ -27,6 +27,13 @@ func (s *StopAutoStakeInstruction) ToString() []string {
 	return stopAutoStakeInstructionStr
 }
 
+func ValidateAndImportStopAutoStakeInstructionFromString(instruction []string) (*StopAutoStakeInstruction, error) {
+	if err := ValidateStopAutoStakeInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportStopAutoStakeInstructionFromString(instruction), nil
+}
+
 func ImportStopAutoStakeInstructionFromString(instruction []string) *StopAutoStakeInstruction {
 	stopAutoStakeInstruction := NewStopAutoStakeInstruction()
 	if len(instruction[1]) > 0 {

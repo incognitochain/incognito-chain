@@ -73,6 +73,13 @@ func (s *SwapInstruction) SetNewRewardReceivers(newRewardReceivers []string) *Sw
 	return s
 }
 
+func ValidateAndImportSwapInstructionFromString(instruction []string, chainID int) (*SwapInstruction, error) {
+	if err := ValidateSwapInstructionSanity(instruction, chainID); err != nil {
+		return nil, err
+	}
+	return ImportSwapInstructionFromString(instruction, chainID), nil
+}
+
 func ImportSwapInstructionFromString(instruction []string, chainID int) *SwapInstruction {
 	swapInstruction := NewSwapInstruction()
 	if len(instruction[1]) > 0 {

@@ -933,11 +933,11 @@ func (beaconBestState *BeaconBestState) processInstruction(inst []string, blockc
 	}
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 	if inst[0] == instruction.RANDOM_ACTION {
-		temp, err := strconv.Atoi(inst[1])
-		if err != nil {
+		if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
 			return NewBlockChainError(ProcessRandomInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 		}
-		beaconBestState.CurrentRandomNumber = int64(temp)
+		randomInstruction := instruction.ImportRandomInstructionFromString(inst)
+		beaconBestState.CurrentRandomNumber = randomInstruction.BtcNonce
 		Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		return nil, true, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}

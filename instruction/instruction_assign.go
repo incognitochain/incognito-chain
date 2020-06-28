@@ -46,24 +46,24 @@ func (a *AssignInstruction) SetShardCandidates(shardCandidates []string) *Assign
 	return a
 }
 
-func importAssignInstructionFromString(instruction []string) (*AssignInstruction, error) {
-	if err := validateAssignInstructionSanity(instruction); err != nil {
+func ValidateAndImportAssignInstructionFromString(instruction []string) (*AssignInstruction, error) {
+	if err := ValidateAssignInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
-	assignIntruction := NewAssignInstruction()
-	tempShardID := instruction[2]
-	chainID, err := strconv.Atoi(tempShardID)
-	assignIntruction.ChainID = chainID
-	if err != nil {
-		return nil, err
-	}
-	if len(instruction[3]) > 0 {
-		assignIntruction.ShardCandidates = strings.Split(instruction[3], SPLITTER)
-	}
-	return assignIntruction, nil
+	return ImportAssignInstructionFromString(instruction), nil
 }
 
-func validateAssignInstructionSanity(instruction []string) error {
+// ImportAssignInstructionFromString is unsafe method
+func ImportAssignInstructionFromString(instruction []string) *AssignInstruction {
+	assignIntruction := NewAssignInstruction()
+	tempShardID := instruction[3]
+	chainID, _ := strconv.Atoi(tempShardID)
+	assignIntruction.SetChainID(chainID)
+	assignIntruction.SetShardCandidates(strings.Split(instruction[1], SPLITTER))
+	return assignIntruction
+}
+
+func ValidateAssignInstructionSanity(instruction []string) error {
 	if len(instruction) != 4 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrAssignInstruction, instruction)
 	}
@@ -72,6 +72,9 @@ func validateAssignInstructionSanity(instruction []string) error {
 	}
 	if instruction[2] != SHARD_INST {
 		return fmt.Errorf("%+v: invalid assign chain ID, %+v", ErrAssignInstruction, instruction)
+	}
+	if _, err := strconv.Atoi(instruction[3]); err != nil {
+		return fmt.Errorf("%+v: invalid assign shard ID, err %+v, %+v", ErrAssignInstruction, err, instruction)
 	}
 	return nil
 }
