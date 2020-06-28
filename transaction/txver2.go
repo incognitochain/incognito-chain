@@ -549,9 +549,7 @@ func (tx *TxVersion2) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.Pri
 		tx.LockTime = time.Now().Unix()
 	}
 
-	tempOutputCoin := make([]coin.Coin, 1)
-	tempOutputCoin[0] = otaCoin
-
+	tempOutputCoin := []coin.Coin{otaCoin}
 	proof := new(privacy.ProofV2)
 	proof.Init()
 	proof.SetOutputCoins(tempOutputCoin)

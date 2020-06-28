@@ -288,6 +288,33 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
 }
 
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]coin.PlainCoin, error) {
+	var outCoinsInBytes [][]byte
+	var err error
+	if keyset == nil {
+		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+	}
+	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, startHeight)
+	if err != nil {
+		return nil, err
+	}
+	// loop on all outputcoin to decrypt data
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
+	results := make([]coin.PlainCoin, 0)
+	for _, item := range outCoinsInBytes {
+		outCoin, err := coin.NewCoinFromByte(item)
+		if err != nil {
+			Logger.log.Errorf("Cannot create coin from byte %v", err)
+			return nil, err
+		}
+		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+		if decryptedOut != nil {
+			results = append(results, decryptedOut)
+		}
+	}
+	return results, nil
+}
+
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {
 	var outCoinsInBytes [][]byte
 	var err error

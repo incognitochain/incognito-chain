@@ -29,7 +29,7 @@ package transaction
 //		msgCipherText, _ := hybridencryption.HybridEncrypt([]byte(msg), receiverTK)
 //
 //		initAmount := uint64(10000)
-//		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, Message: msgCipherText.Bytes()}}
+//		tokenPayments := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, Message: msgCipherText.Bytes()}}
 //
 //		inputCoinsPRV := []coin.PlainCoin{}
 //		paymentInfoPRV := []*privacy.PaymentInfo{}
@@ -41,7 +41,7 @@ package transaction
 //			PropertySymbol: "Token 1",
 //			Amount:         initAmount,
 //			TokenTxType:    CustomTokenInit,
-//			Receiver:       paymentInfo,
+//			Receiver:       tokenPayments,
 //			TokenInput:     []*coin.PlainCoinV1{},
 //			Mintable:       false,
 //			Fee:            0,

@@ -27,6 +27,7 @@ const (
 	CanNotSignError
 	GetOutputCoinError
 	GetOutputCoinsVer1Error
+	GetOutputCoinsVer2Error
 	CreateTxDataError
 	SendTxDataError
 	Base58ChedkDataOfTxInvalid
@@ -146,7 +147,8 @@ var ErrCodeMessage = map[int]struct {
 	GetKeySetFromPrivateKeyError:          {-1019, "Get KeySet From Private Key Error"},
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
-	GetOutputCoinsVer1Error:               {-1022, "Get output coins of ver 1 Error"},
+	GetOutputCoinsVer1Error:               {-1022, "Get output coins of ver 1 in database error"},
+	GetOutputCoinsVer2Error:			   {-1023, "Get output coins of ver 2 in database error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},

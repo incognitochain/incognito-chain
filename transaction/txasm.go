@@ -75,7 +75,7 @@ func initializeTxAndParamsASM(tx *TxBase, params *TxPrivacyInitParamsForASM) err
 
 type TxPrivacyTokenInitParamsForASM struct {
 	//senderKey       *privacy.PrivateKey
-	//paymentInfo     []*privacy.PaymentInfo
+	//tokenPayments     []*privacy.PaymentInfo
 	//inputCoin       []*coin.PlainCoinV1
 	//feeNativeCoin   uint64
 	//tokenParams     *CustomTokenPrivacyParamTx
@@ -172,7 +172,7 @@ func (txToken *TxTokenBase) InitForASM(params *TxPrivacyTokenInitParamsForASM, s
 	//var err error
 	//initTokenParamsASM := NewTxPrivacyInitParamsForASM(
 	//	params.txParam.senderKey,
-	//	params.txParam.paymentInfo,
+	//	params.txParam.tokenPayments,
 	//	params.txParam.inputCoin,
 	//	params.txParam.feeNativeCoin,
 	//	params.txParam.hasPrivacyCoin,

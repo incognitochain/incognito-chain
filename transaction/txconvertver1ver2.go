@@ -179,13 +179,33 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
 	}
-	txConversion := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
-	valid, err := txConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
+	proofConversion := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
+	valid, err := proofConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
 	if !valid {
 		if err != nil {
 			Logger.Log.Error(err)
 		}
 		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+	}
+	outputCoins := tx.GetProof().GetOutputCoins()
+	for i := 0; i < len(outputCoins); i++ {
+		if ok, err := txDatabaseWrapper.hasOnetimeAddress(statedb, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
+			if err != nil {
+				errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
+				return false, errors.New(errStr)
+			}
+			return false, errors.New("TxConversion found existing onetimeaddress in database error")
+		}
+	}
+	inputCoins := tx.GetProof().GetInputCoins()
+	for i := 0; i < len(inputCoins); i++ {
+		if ok, err := txDatabaseWrapper.hasSerialNumber(statedb, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
+			if err != nil {
+				errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)
+				return false, errors.New(errStr)
+			}
+			return false, errors.New("TxConversion found existing serialNumber in database error")
+		}
 	}
 	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 	return true, nil
@@ -194,28 +214,28 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 // ================ TX TOKEN CONVERSION =================
 
 type CustomTokenConversionParams struct {
-	tokenID        *common.Hash
-	paymentInfo    []*privacy.PaymentInfo
-	tokenInputs     []coin.PlainCoin
+	tokenID       *common.Hash
+	tokenInputs   []coin.PlainCoin
+	tokenPayments []*privacy.PaymentInfo
 }
 
 type TxTokenConvertVer1ToVer2InitParams struct {
-	senderSK    	*privacy.PrivateKey
-	feePayment 		[]*privacy.PaymentInfo
-	feeInputs  		[]coin.PlainCoin
-	fee         	uint64
-	tokenParams 	*CustomTokenConversionParams
-	stateDB     	*statedb.StateDB
-	bridgeStateDB 	*statedb.StateDB
-	metaData    	metadata.Metadata
-	info        	[]byte // 512 bytes
+	senderSK      *privacy.PrivateKey
+	feeInputs     []coin.PlainCoin
+	feePayments   []*privacy.PaymentInfo
+	fee           uint64
+	tokenParams   *CustomTokenConversionParams
+	stateDB       *statedb.StateDB
+	bridgeStateDB *statedb.StateDB
+	metaData      metadata.Metadata
+	info          []byte // 512 bytes
 }
 
 func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
-	feePayment []*privacy.PaymentInfo,
-	paymentInfo []*privacy.PaymentInfo,
-	tokenInputs []coin.PlainCoin,
 	feeInputs []coin.PlainCoin,
+	feePayments []*privacy.PaymentInfo,
+	tokenInputs []coin.PlainCoin,
+	tokenPayments []*privacy.PaymentInfo,
 	fee uint64,
 	stateDB *statedb.StateDB,
 	bridgeStateDB *statedb.StateDB,
@@ -224,17 +244,18 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	info []byte) *TxTokenConvertVer1ToVer2InitParams {
 
 	tokenParams := &CustomTokenConversionParams{
-		tokenID:     tokenID,
-		paymentInfo: paymentInfo,
-		tokenInputs:  tokenInputs,
+		tokenID:       tokenID,
+		tokenPayments: tokenPayments,
+		tokenInputs:   tokenInputs,
 	}
 	return  &TxTokenConvertVer1ToVer2InitParams{
 		stateDB:     stateDB,
-		feeInputs:  feeInputs,
+		feeInputs:   feeInputs,
 		fee:         fee,
 		tokenParams: tokenParams,
+		bridgeStateDB: bridgeStateDB,
 		metaData:    metaData,
-		feePayment:  feePayment,
+		feePayments: feePayments,
 		senderSK:    senderSK,
 		info:        info,
 	}
@@ -242,52 +263,40 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 
 func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2InitParams) error {
 	if len(params.feeInputs) > 255 {
-		return NewTransactionErr(InputCoinIsVeryLargeError, nil, "feeInputs length = " + strconv.Itoa(len(params.feeInputs)))
+		return errors.New("FeeInput is too large, feeInputs length = " + strconv.Itoa(len(params.feeInputs)))
 	}
-	if len(params.feePayment) > 255 {
-		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil,  "feePayment length = " + strconv.Itoa(len(params.feePayment)))
+	if len(params.feePayments) > 255 {
+		return errors.New("FeePayment is too large, feePayments length = " + strconv.Itoa(len(params.feePayments)))
 	}
-	if len(params.tokenParams.paymentInfo) > 255 {
-		return NewTransactionErr(InputCoinIsVeryLargeError, nil,  "paymentInfo length = " + strconv.Itoa(len(params.tokenParams.paymentInfo)))
+	if len(params.tokenParams.tokenPayments) > 255 {
+		return errors.New("tokenPayments is too large, tokenPayments length = " + strconv.Itoa(len(params.tokenParams.tokenPayments)))
 	}
-	if len(params.tokenParams.tokenInputs) > 254 {
-		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil,  "tokenInputs length = " + strconv.Itoa(len(params.tokenParams.tokenInputs)))
+	if len(params.tokenParams.tokenInputs) > 255 {
+		return errors.New("tokenInputs length = " + strconv.Itoa(len(params.tokenParams.tokenInputs)))
 	}
 
 	limitFee := uint64(0)
-	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.feeInputs), len(params.feePayment),
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.feeInputs), len(params.feePayments),
 		false, nil, nil, limitFee)
 	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
 		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
-	sumInput, sumOutput := uint64(0), uint64(0)
-
 	for _, c := range params.feeInputs {
-		sumInput += c.GetValue()
-		if c.GetVersion() != 1 {
-			err := errors.New("TxConversion should only have inputCoins version 1")
-			return NewTransactionErr(InvalidInputCoinVersionErr, err)
+		if c.GetVersion() != TxVersion2Number {
+			return errors.New("TxConversion should only have fee input coins version 2")
 		}
 	}
-	for _, c := range params.feePayment {
-		sumOutput += c.Amount
-	}
-	if sumInput != sumOutput + params.fee {
-		err := errors.New("TxTokenConversion's sum input coin and output coin (with fee) is not the same")
-		return NewTransactionErr(SumInputCoinsAndOutputCoinsError, err)
-	}
-
 	tokenParams := params.tokenParams
 	if tokenParams.tokenID == nil {
 		return NewTransactionErr(TokenIDInvalidError, errors.New("TxTokenConversion should have its tokenID not null"))
 	}
-	sumInput = uint64(0)
+	sumInput := uint64(0)
 	for _, c := range tokenParams.tokenInputs {
 		sumInput += c.GetValue()
 	}
-	if sumInput != tokenParams.paymentInfo[0].Amount {
-		return NewTransactionErr(SumInputCoinsAndOutputCoinsError, errors.New("TxTokenConversion should have its tokenID not null"))
+	if sumInput != tokenParams.tokenPayments[0].Amount {
+		return NewTransactionErr(SumInputCoinsAndOutputCoinsError, errors.New("sumInput and sum TokenPayment amount is not equal"))
 	}
 	return nil
 }
@@ -306,15 +315,18 @@ func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1To
 		}
 	}
 
-	txParams := NewTxPrivacyInitParams(
+	txConvertParams := NewTxConvertVer1ToVer2InitParams(
 		params.senderSK,
-		params.tokenParams.paymentInfo,
+		params.tokenParams.tokenPayments,
 		params.tokenParams.tokenInputs,
-		0, false, params.stateDB,
-		params.tokenParams.tokenID, nil, nil,
+		0,
+		params.stateDB,
+		params.tokenParams.tokenID,
+		nil,
+		params.info,
 	)
 	txNormal := new(TxVersion2)
-	if err := txNormal.Init(txParams); err != nil {
+	if err := InitConversion(txNormal, txConvertParams); err != nil {
 		return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 	}
 	txToken.TxTokenData.TxNormal = txNormal
@@ -344,7 +356,7 @@ func InitTokenConversion(txToken *TxTokenVersion2, params *TxTokenConvertVer1ToV
 	}
 
 	txPrivacyParams := NewTxPrivacyInitParams(
-		params.senderSK, params.feePayment, params.feeInputs, params.fee,
+		params.senderSK, params.feePayments, params.feeInputs, params.fee,
 		false, params.stateDB, nil, params.metaData, params.info,
 	)
 	if err := validateTxParams(txPrivacyParams); err != nil {

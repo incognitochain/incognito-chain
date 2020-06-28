@@ -177,8 +177,8 @@ func (txService TxService) filterMemPoolOutcoinsToSpent(outCoins []coin.PlainCoi
 	return remainOutputCoins, nil
 }
 
-func (txService TxService) chooseCoinsTokenVer1ByKeySet(keySet *incognitokey.KeySet, tokenID *common.Hash, unitFeeNativeToken int64,
-	numBlock uint64, shardIDSender byte, metadataParam metadata.Metadata) ([]coin.PlainCoin, []*key.PaymentInfo, uint64, *RPCError) {
+func (txService TxService) chooseCoinsTokenVer1ByKeySet(keySet *incognitokey.KeySet, tokenID *common.Hash,
+	numBlock uint64, shardIDSender byte) ([]coin.PlainCoin, []*key.PaymentInfo, *RPCError) {
 	// estimate fee according to 8 recent block
 	if numBlock == 0 {
 		numBlock = 1000
@@ -186,35 +186,108 @@ func (txService TxService) chooseCoinsTokenVer1ByKeySet(keySet *incognitokey.Key
 	// get list outputcoins tx
 	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsVer1ByKeyset(keySet, shardIDSender, tokenID)
 	if err != nil {
-		return nil, nil, 0, NewRPCError(GetOutputCoinsVer1Error, err)
+		return nil, nil, NewRPCError(GetOutputCoinsVer1Error, err)
 	}
 	// remove out coin in mem pool
 	plainCoins, err = txService.filterMemPoolOutcoinsToSpent(plainCoins)
 	if err != nil {
-		return nil, nil, 0, NewRPCError(GetOutputCoinsVer1Error, err)
+		return nil, nil, NewRPCError(GetOutputCoinsVer1Error, err)
 	}
 	if len(plainCoins) == 0 {
-		return nil, nil, 0, NewRPCError(GetOutputCoinsVer1Error, errors.New("Have switched all coins ver 1, there is no coins ver 1 left"))
+		return nil, nil, NewRPCError(GetOutputCoinsVer1Error, errors.New("Have switched all token ver 1, there is no token ver 1 left"))
+	}
+	paymentInfos := coin.CreatePaymentInfosFromPlainCoinsAndAddress(plainCoins, keySet.PaymentAddress, []byte{})
+	return plainCoins, paymentInfos, nil
+}
+
+// chooseOutsCoinByKeyset returns list of input coins native token to spent
+func (txService TxService) chooseOutsCoinVer2ByKeyset(
+	paymentInfos []*privacy.PaymentInfo,
+	unitFeeNativeToken int64, numBlock uint64, keySet *incognitokey.KeySet, shardIDSender byte,
+	hasPrivacy bool,
+	metadataParam metadata.Metadata,
+	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
+) ([]coin.PlainCoin, uint64, *RPCError) {
+	// estimate fee according to 8 recent block
+	if numBlock == 0 {
+		numBlock = 1000
+	}
+	// calculate total amount to send
+	totalAmmount := uint64(0)
+	for _, receiver := range paymentInfos {
+		totalAmmount += receiver.Amount
+	}
+	// get list outputcoins tx
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsVer2ByKeyset(keySet, shardIDSender, prvCoinID, uint64(0))
+	if err != nil {
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	// remove out coin in mem pool
+	plainCoins, err = txService.filterMemPoolOutcoinsToSpent(plainCoins)
+	if err != nil {
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	if len(plainCoins) == 0 && totalAmmount > 0 {
+		return nil, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
+	}
+
+	// Use Knapsack to get candiate output coin
+	candidatePlainCoins, outCoins, candidateOutputCoinAmount, err := txService.chooseBestOutCoinsToSpent(plainCoins, totalAmmount)
+	if err != nil {
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	// refund out put for sender
+	overBalanceAmount := candidateOutputCoinAmount - totalAmmount
+	if overBalanceAmount > 0 {
+		// add more into output for estimate fee
+		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
+			PaymentAddress: keySet.PaymentAddress,
+			Amount:         overBalanceAmount,
+		})
 	}
 	// check real fee(nano PRV) per tx
 	beaconState, err := txService.BlockChain.GetClonedBeaconBestState()
 	if err != nil {
-		return nil, nil, 0, NewRPCError(GetOutputCoinError, err)
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	beaconHeight := beaconState.BeaconHeight
-	paymentInfos := coin.CreatePaymentInfosFromPlainCoinsAndAddress(plainCoins, keySet.PaymentAddress, []byte{})
-	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, plainCoins,
-		paymentInfos, shardIDSender, numBlock, false,
+	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidatePlainCoins,
+		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
-		nil, int64(beaconHeight))
+		privacyCustomTokenParams, int64(beaconHeight))
 	if err != nil {
-		return nil, nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
+		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
-	if paymentInfos[0].Amount < realFee {
-		return nil, nil, 0, NewRPCError(RejectInvalidTxFeeTooLargeError, err)
+	if totalAmmount == 0 && realFee == 0 {
+		if metadataParam != nil {
+			metadataType := metadataParam.GetType()
+			switch metadataType {
+			case metadata.WithDrawRewardRequestMeta:
+				{
+					return nil, realFee, nil
+				}
+			}
+			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee))
+		}
+		if privacyCustomTokenParams != nil {
+			// for privacy token
+			return nil, 0, nil
+		}
 	}
-	paymentInfos[0].Amount -= realFee
-	return plainCoins, paymentInfos, realFee, nil
+	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
+	// if not enough to pay fee
+	if needToPayFee > 0 {
+		if len(outCoins) > 0 {
+			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
+			if err != nil {
+				return nil, 0, NewRPCError(GetOutputCoinError, err1)
+			}
+			candidatePlainCoins = append(candidatePlainCoins, candidateOutputCoinsForFee...)
+		}
+	}
+	return candidatePlainCoins, realFee, nil
 }
 
 func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, unitFeeNativeToken int64,
@@ -888,29 +961,48 @@ func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[str
 }
 
 func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRawTxTokenSwitchVer1ToVer2Param) (*common.Hash, []byte, byte, *RPCError) {
-	var err error
 	Logger.log.Infof("Convert V1 to V2 Transaction Token Params: \n %+v", params)
 
 	// get token coins to convert
-	inputTokenCoins, paymentInfos, _, err1 := txService.chooseCoinsTokenVer1ByKeySet(
-		params.SenderKeySet, params.TokenID, params.EstimateFeeCoinPerKb, 0, params.ShardIDSender, nil)
+	inputTokenCoins, paymentInfos, err1 := txService.chooseCoinsTokenVer1ByKeySet(
+		params.SenderKeySet, params.TokenID, 0, params.ShardIDSender)
 	if err1 != nil {
 		return nil, nil, 0, err1
 	}
 
 	/******* choose output native coins(PRV) for fee *****/
-	var paymentFeeInfo []*privacy.PaymentInfo
-	inputCoins, realFeePRV, errOutCoins := txService.chooseOutsCoinByKeyset(paymentFeeInfo,
+	// TODO: Remember this start height 0
+	paymentFeeInfo := []*privacy.PaymentInfo{}
+	inputCoins, realFeePRV, errFeeCoins := txService.chooseOutsCoinVer2ByKeyset(paymentFeeInfo,
 		params.EstimateFeeCoinPerKb, 0, params.SenderKeySet,
 		params.ShardIDSender, false, nil, nil)
-	if errOutCoins != nil {
-		return nil, nil, 0, errOutCoins
+	if errFeeCoins != nil {
+		return nil, nil, 0, errFeeCoins
 	}
 
 	fmt.Println("BuildRawConvertVer1ToVer2Token")
-	fmt.Println("Coins:", inputCoins)
 	fmt.Println("Real fee", realFeePRV)
+	fmt.Println("Coins:", inputCoins)
+	for i := 0; i < len(inputCoins); i += 1 {
+		fmt.Println("Coin[", i, "] ver:", inputCoins[i].GetVersion())
+		fmt.Println("Coin[", i, "] value:", inputCoins[i].GetValue())
+	}
 	fmt.Println("FeePaymentInfos", paymentFeeInfo)
+	for i := 0; i < len(paymentFeeInfo); i += 1 {
+		fmt.Println("paymentFeeInfo[", i, "] ver:", paymentFeeInfo[i].Amount)
+	}
+	fmt.Println("Token:")
+	fmt.Println("inputTokenCoins: length =", len(inputTokenCoins))
+	for i := 0; i < len(inputTokenCoins); i += 1 {
+		fmt.Println("TokenCoin[", i, "] ver:", inputTokenCoins[i].GetVersion())
+		fmt.Println("TokenCoin[", i, "] value:", inputTokenCoins[i].GetValue())
+	}
+	fmt.Println("paymentInfos: length =", len(paymentInfos))
+	for i := 0; i < len(paymentInfos); i += 1 {
+		fmt.Println("paymentInfos[", i, "] ver:", paymentInfos[i].Amount)
+	}
+
+	fmt.Println("Done logging=============")
 
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 	beaconView := txService.BlockChain.BeaconChain.GetFinalViewState()
@@ -918,10 +1010,10 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 	// init tx
 	txTokenConvertParams := transaction.NewTxTokenConvertVer1ToVer2InitParams(
 		&params.SenderKeySet.PrivateKey,
-		paymentFeeInfo,
-		paymentInfos,
-		inputTokenCoins,
 		inputCoins,
+		paymentFeeInfo,
+		inputTokenCoins,
+		paymentInfos,
 		realFeePRV,
 		txService.BlockChain.GetBestStateShard(params.ShardIDSender).GetCopiedTransactionStateDB(),
 		beaconView.GetBeaconFeatureStateDB(),
@@ -965,11 +1057,6 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 	inputCoins, realFeePRV, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
 		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
 		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams)
-
-	fmt.Println("CustomTokenTransaction")
-	fmt.Println("Coins:", inputCoins)
-	fmt.Println("Real fee", realFeePRV)
-	fmt.Println("PaymentInfos", txParam.PaymentInfos)
 
 	if err != nil {
 		return nil, err

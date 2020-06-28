@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"fmt"
 	"encoding/json"
 	"errors"
 	"math"
@@ -424,7 +423,7 @@ type txJsonDataVersion struct {
 
 // Return normal transaction from bytes
 func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
-	fmt.Println(string(data))
+	//fmt.Println(string(data))
 	txJsonVersion := new(txJsonDataVersion)
 	if err := json.Unmarshal(data, txJsonVersion); err != nil {
 		return nil, err
