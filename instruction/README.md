@@ -7,13 +7,13 @@
 
 ## Swap
   - Normal case:
-    ``` ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "{shardID}" "punishedPubkey1,..."] ```
+    ```["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "{shardID}" "punishedPubkey1,..."] ```
     
-    ``` ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon" "punishedPubkey1,..."] ```
+    ```["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon" "punishedPubkey1,..."] ```
   - Replace case:
-    ``` ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon" "" "punishedPubkey1,..." "newRewardReceiver1,..."] ```
+    ```["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon" "" "punishedPubkey1,..." "newRewardReceiver1,..."] ```
     
-    ``` ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "{shardID}" "punishedPubkey1,..." "newRewardReceiver1,..."] ```
+    ```["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "{shardID}" "punishedPubkey1,..." "newRewardReceiver1,..."] ```
 
 ## Assign
   ```["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]```

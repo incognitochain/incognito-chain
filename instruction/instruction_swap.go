@@ -2,14 +2,17 @@ package instruction
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strconv"
 	"strings"
 )
 
 type SwapInstruction struct {
-	InPublicKeys  []string
-	OutPublicKeys []string
-	ChainID       int
+	InPublicKeys        []string
+	InPublicKeyStructs  []incognitokey.CommitteePublicKey
+	OutPublicKeys       []string
+	OutPublicKeyStructs []incognitokey.CommitteePublicKey
+	ChainID             int
 	// old slashing, never used
 	PunishedPublicKeys string
 	// this field is only for replace committee
@@ -49,14 +52,24 @@ func (s *SwapInstruction) ToString() []string {
 	return swapInstructionStr
 }
 
-func (s *SwapInstruction) SetInPublicKeys(inPublicKeys []string) *SwapInstruction {
+func (s *SwapInstruction) SetInPublicKeys(inPublicKeys []string) (*SwapInstruction, error) {
 	s.InPublicKeys = inPublicKeys
-	return s
+	inPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(inPublicKeys)
+	if err != nil {
+		return nil, err
+	}
+	s.InPublicKeyStructs = inPublicKeyStructs
+	return s, nil
 }
 
-func (s *SwapInstruction) SetOutPublicKeys(outPublicKeys []string) *SwapInstruction {
+func (s *SwapInstruction) SetOutPublicKeys(outPublicKeys []string) (*SwapInstruction, error) {
 	s.OutPublicKeys = outPublicKeys
-	return s
+	outPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
+	if err != nil {
+		return nil, err
+	}
+	s.OutPublicKeyStructs = outPublicKeyStructs
+	return s, nil
 }
 
 func (s *SwapInstruction) SetChainID(chainID int) *SwapInstruction {
@@ -89,10 +102,10 @@ func ValidateAndImportSwapInstructionFromString(instruction []string) (*SwapInst
 func ImportSwapInstructionFromString(instruction []string) *SwapInstruction {
 	swapInstruction := NewSwapInstruction()
 	if len(instruction[1]) > 0 {
-		swapInstruction.SetInPublicKeys(strings.Split(instruction[1], SPLITTER))
+		swapInstruction, _ = swapInstruction.SetInPublicKeys(strings.Split(instruction[1], SPLITTER))
 	}
 	if len(instruction[2]) > 0 {
-		swapInstruction.SetOutPublicKeys(strings.Split(instruction[2], SPLITTER))
+		swapInstruction, _ = swapInstruction.SetOutPublicKeys(strings.Split(instruction[2], SPLITTER))
 	}
 	if len(instruction) == 7 {
 		swapInstruction.SetIsReplace(true)
@@ -141,6 +154,14 @@ func ValidateSwapInstructionSanity(instruction []string) error {
 				return fmt.Errorf("invalid swap shard id, %+v, %+v", err, instruction)
 			}
 		}
+	}
+	_, err1 := incognitokey.CommitteeBase58KeyListToStruct(strings.Split(instruction[1], ","))
+	if err1 != nil {
+		return fmt.Errorf("invalid swap in public key type, %+v, %+v", err1, instruction)
+	}
+	_, err2 := incognitokey.CommitteeBase58KeyListToStruct(strings.Split(instruction[2], ","))
+	if err2 != nil {
+		return fmt.Errorf("invalid swap out public key type, %+v, %+v", err1, instruction)
 	}
 	return nil
 }

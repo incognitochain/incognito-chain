@@ -2,15 +2,17 @@ package instruction
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strings"
 )
 
 type StakeInstruction struct {
-	PublicKeys      []string
-	Chain           string
-	TxStakes        []string
-	RewardReceivers []string
-	AutoStakingFlag []bool
+	PublicKeys       []string
+	PublicKeyStructs []incognitokey.CommitteePublicKey
+	Chain            string
+	TxStakes         []string
+	RewardReceivers  []string
+	AutoStakingFlag  []bool
 }
 
 func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []string, rewardReceivers []string, autoStakingFlag []bool) *StakeInstruction {
@@ -25,9 +27,14 @@ func (s *StakeInstruction) GetType() string {
 	return STAKE_ACTION
 }
 
-func (s *StakeInstruction) SetPublicKeys(publicKeys []string) *StakeInstruction {
+func (s *StakeInstruction) SetPublicKeys(publicKeys []string) (*StakeInstruction, error) {
 	s.PublicKeys = publicKeys
-	return s
+	publicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return nil, err
+	}
+	s.PublicKeyStructs = publicKeyStructs
+	return s, nil
 }
 
 func (s *StakeInstruction) SetChain(chain string) *StakeInstruction {
@@ -78,20 +85,20 @@ func ValidateAndImportStakeInstructionFromString(instruction []string) (*StakeIn
 // ImportStakeInstructionFromString is unsafe method
 func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 	stakeInstruction := NewStakeInstruction()
-	stakeInstruction.PublicKeys = strings.Split(instruction[1], SPLITTER)
-	stakeInstruction.TxStakes = strings.Split(instruction[3], SPLITTER)
-	stakeInstruction.RewardReceivers = strings.Split(instruction[4], SPLITTER)
-	tempAutoStakings := strings.Split(instruction[5], SPLITTER)
+	stakeInstruction, _ = stakeInstruction.SetPublicKeys(strings.Split(instruction[1], SPLITTER))
+	stakeInstruction.SetTxStakes(strings.Split(instruction[3], SPLITTER))
+	stakeInstruction.SetRewardReceivers(strings.Split(instruction[4], SPLITTER))
+	tempAutoStakes := strings.Split(instruction[5], SPLITTER)
 	autoStakeFlags := []bool{}
-	for _, v := range tempAutoStakings {
+	for _, v := range tempAutoStakes {
 		if v == TRUE {
 			autoStakeFlags = append(autoStakeFlags, true)
 		} else {
 			autoStakeFlags = append(autoStakeFlags, false)
 		}
 	}
-	stakeInstruction.AutoStakingFlag = autoStakeFlags
-	stakeInstruction.Chain = instruction[2]
+	stakeInstruction.SetAutoStakingFlag(autoStakeFlags)
+	stakeInstruction.SetChain(instruction[2])
 	return stakeInstruction
 }
 
@@ -112,6 +119,10 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	txStakes := strings.Split(instruction[3], SPLITTER)
 	rewardReceivers := strings.Split(instruction[4], SPLITTER)
 	autoStakings := strings.Split(instruction[5], SPLITTER)
+	_, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return fmt.Errorf("invalid public key type,err %+v, %+v", err, instruction)
+	}
 	if len(publicKeys) != len(txStakes) {
 		return fmt.Errorf("invalid public key & tx stake length, %+v", instruction)
 	}
