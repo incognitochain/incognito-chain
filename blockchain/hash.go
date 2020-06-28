@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-
 // BuildKeccak256MerkleTree creates a merkle tree using Keccak256 hash func.
 // This merkle tree is used for storing all beacon (and bridge) data to relay them to Ethereum.
 func BuildKeccak256MerkleTree(data [][]byte) [][]byte {
@@ -86,7 +85,6 @@ func keccak256MerkleBranches(left []byte, right []byte) []byte {
 	newHash := common.Keccak256(hash)
 	return newHash[:]
 }
-
 
 type Merkle struct {
 }
@@ -325,6 +323,7 @@ func generateZeroValueHash() (common.Hash, error) {
 	hash.SetBytes(make([]byte, 32))
 	return hash, nil
 }
+
 func generateHashFromHashArray(hashes []common.Hash) (common.Hash, error) {
 	// if input is empty list
 	// return hash value of bytes zero
@@ -456,6 +455,7 @@ func generateLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint6
 	}
 	return common.HashH([]byte(res))
 }
+
 func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) (common.Hash, bool) {
 	strs := []string{}
 	for _, value := range hashes {

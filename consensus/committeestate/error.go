@@ -10,6 +10,7 @@ const (
 	ErrStakeInstructionSanity
 	ErrStopAutoStakeInstructionSanity
 	ErrAssignInstructionSanity
+	ErrEmptyUncommittedBeaconCommitteeState
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -20,6 +21,8 @@ var ErrCodeMessage = map[int]struct {
 	ErrStakeInstructionSanity:         {-1001, "stake instruction sanity error"},
 	ErrStopAutoStakeInstructionSanity: {-1002, "stop auto stake sanity error"},
 	ErrAssignInstructionSanity:        {-1003, "assign sanity error"},
+
+	ErrEmptyUncommittedBeaconCommitteeState: {-2000, "empty uncommitted beacon committee state"},
 }
 
 type CommitteeStateError struct {
