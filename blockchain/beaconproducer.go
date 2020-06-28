@@ -368,11 +368,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 			if inst[0] == instruction.SWAP_ACTION {
 				// validate swap instruction
 				// only allow shard to swap committee for it self
-				if err := instruction.ValidateSwapInstructionSanity(inst, int(shardID)); err != nil {
+				if err := instruction.ValidateSwapInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Swap Instruction Error", err)
 					continue
 				}
-				tempSwapInstruction := instruction.ImportSwapInstructionFromString(inst, int(shardID))
+				tempSwapInstruction := instruction.ImportSwapInstructionFromString(inst)
 				swapInstructions[shardID] = append(swapInstructions[shardID], tempSwapInstruction)
 			}
 			if inst[0] == instruction.STOP_AUTO_STAKE_ACTION {

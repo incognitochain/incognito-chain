@@ -22,10 +22,10 @@ type ViewEnvironment struct {
 }
 
 type CommitteeStateInstruction struct {
-	swapInstructions          []*SwapInstruction
-	stakeInstructions         []*StakeInstruction
-	assignInstructions        []*AssignInstruction
-	stopAutoStakeInstructions []*StopAutoStakeInstruction
+	SwapInstructions          []*SwapInstruction
+	StakeInstructions         []*StakeInstruction
+	AssignInstructions        []*AssignInstruction
+	StopAutoStakeInstructions []*StopAutoStakeInstruction
 }
 
 // ImportCommitteeStateInstruction skip all invalid instructions
@@ -42,28 +42,28 @@ func ImportCommitteeStateInstruction(instructions [][]string) *CommitteeStateIns
 				Logger.Log.Error(errors.Wrap(err, "Skip Swap Instruction"))
 				continue
 			}
-			instructionManager.swapInstructions = append(instructionManager.swapInstructions, swapInstruction)
+			instructionManager.SwapInstructions = append(instructionManager.SwapInstructions, swapInstruction)
 		case ASSIGN_ACTION:
 			assignInstruction, err := ValidateAndImportAssignInstructionFromString(instruction)
 			if err != nil {
 				Logger.Log.Error(errors.Wrap(err, "Skip Assign Instruction"))
 				continue
 			}
-			instructionManager.assignInstructions = append(instructionManager.assignInstructions, assignInstruction)
+			instructionManager.AssignInstructions = append(instructionManager.AssignInstructions, assignInstruction)
 		case STAKE_ACTION:
 			stakeInstruction, err := ValidateAndImportStakeInstructionFromString(instruction)
 			if err != nil {
 				Logger.Log.Error(errors.Wrap(err, "Skip Stake Instruction"))
 				continue
 			}
-			instructionManager.stakeInstructions = append(instructionManager.stakeInstructions, stakeInstruction)
+			instructionManager.StakeInstructions = append(instructionManager.StakeInstructions, stakeInstruction)
 		case STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(instruction)
 			if err != nil {
 				Logger.Log.Error(errors.Wrap(err, "Skip Stop Auto Stake Instruction"))
 				continue
 			}
-			instructionManager.stopAutoStakeInstructions = append(instructionManager.stopAutoStakeInstructions, stopAutoStakeInstruction)
+			instructionManager.StopAutoStakeInstructions = append(instructionManager.StopAutoStakeInstructions, stopAutoStakeInstruction)
 		}
 	}
 	return instructionManager
@@ -74,19 +74,19 @@ func (i *CommitteeStateInstruction) ToString(action string) [][]string {
 	instructions := [][]string{}
 	switch action {
 	case ASSIGN_ACTION:
-		for _, assignInstruction := range i.assignInstructions {
+		for _, assignInstruction := range i.AssignInstructions {
 			instructions = append(instructions, assignInstruction.ToString())
 		}
 	case SWAP_ACTION:
-		for _, swapInstruction := range i.swapInstructions {
+		for _, swapInstruction := range i.SwapInstructions {
 			instructions = append(instructions, swapInstruction.ToString())
 		}
 	case STAKE_ACTION:
-		for _, stakeInstruction := range i.stakeInstructions {
+		for _, stakeInstruction := range i.StakeInstructions {
 			instructions = append(instructions, stakeInstruction.ToString())
 		}
 	case STOP_AUTO_STAKE_ACTION:
-		for _, stopAutoStakeInstruction := range i.stopAutoStakeInstructions {
+		for _, stopAutoStakeInstruction := range i.StopAutoStakeInstructions {
 			instructions = append(instructions, stopAutoStakeInstruction.ToString())
 		}
 	}
