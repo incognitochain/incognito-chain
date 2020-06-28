@@ -28,7 +28,8 @@ type CommitteeStateInstruction struct {
 	stopAutoStakeInstructions []*StopAutoStakeInstruction
 }
 
-func ImportInstructionFromStringArray(instructions [][]string, chainID int) (*CommitteeStateInstruction, error) {
+// ImportCommitteeStateInstruction skip all invalid instructions
+func ImportCommitteeStateInstruction(instructions [][]string) *CommitteeStateInstruction {
 	instructionManager := new(CommitteeStateInstruction)
 	for _, instruction := range instructions {
 		if len(instruction) < 1 {
@@ -36,32 +37,36 @@ func ImportInstructionFromStringArray(instructions [][]string, chainID int) (*Co
 		}
 		switch instruction[0] {
 		case SWAP_ACTION:
-			swapInstruction, err := ValidateAndImportSwapInstructionFromString(instruction, chainID)
+			swapInstruction, err := ValidateAndImportSwapInstructionFromString(instruction)
 			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
+				Logger.Log.Error(errors.Wrap(err, "Skip Swap Instruction"))
+				continue
 			}
 			instructionManager.swapInstructions = append(instructionManager.swapInstructions, swapInstruction)
 		case ASSIGN_ACTION:
 			assignInstruction, err := ValidateAndImportAssignInstructionFromString(instruction)
 			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
+				Logger.Log.Error(errors.Wrap(err, "Skip Assign Instruction"))
+				continue
 			}
 			instructionManager.assignInstructions = append(instructionManager.assignInstructions, assignInstruction)
 		case STAKE_ACTION:
 			stakeInstruction, err := ValidateAndImportStakeInstructionFromString(instruction)
 			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
+				Logger.Log.Error(errors.Wrap(err, "Skip Stake Instruction"))
+				continue
 			}
 			instructionManager.stakeInstructions = append(instructionManager.stakeInstructions, stakeInstruction)
 		case STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(instruction)
 			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, ""))
+				Logger.Log.Error(errors.Wrap(err, "Skip Stop Auto Stake Instruction"))
+				continue
 			}
 			instructionManager.stopAutoStakeInstructions = append(instructionManager.stopAutoStakeInstructions, stopAutoStakeInstruction)
 		}
 	}
-	return instructionManager, nil
+	return instructionManager
 }
 
 // the order of instruction must always be maintain

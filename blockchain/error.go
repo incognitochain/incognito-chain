@@ -307,7 +307,7 @@ var ErrCodeMessage = map[int]struct {
 	CommitteeHashError:                                {-1124, "Committee Root Hash Error"},
 	StakingTxHashError:                                {-1124, "Staking Tx Root Hash Error"},
 	StopAutoStakingRequestHashError:                   {-1125, "Stop Auto Staking Request Root Hash Error"},
-	StopAutoStakingMetadataError:                      {-1126, "StopAutoStaking Metadata Error"},
+	StopAutoStakingMetadataError:                      {-1126, "StopAutoStake Metadata Error"},
 	AutoStakingRootHashError:                          {-1127, "Auto Re Staking Root Hash Error"},
 	FetchAllCommitteeValidatorCandidateError:          {-1128, "Fetch All Committee Validator Candidate Error"},
 	BackupFromTxViewPointError:                        {-1129, "Create Backup From TxViewPoint Error"},

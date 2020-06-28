@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/instruction"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -67,6 +68,7 @@ var (
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
 	instructionLogger      = backendLog.Logger("Instruction log ", false)
+	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -111,6 +113,7 @@ func init() {
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
 	instruction.Logger.Init(instructionLogger)
+	committeestate.Logger.Init(committeeStateLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -141,6 +144,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
 	"INST":              instructionLogger,
+	"COMS":              committeeStateLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

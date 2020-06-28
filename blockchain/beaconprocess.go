@@ -955,7 +955,7 @@ func (beaconBestState *BeaconBestState) processInstruction(inst []string, blockc
 				// if found in committee list then turn off auto staking
 				if _, ok := beaconBestState.AutoStaking[committeePublicKey]; ok {
 					beaconBestState.AutoStaking[committeePublicKey] = false
-					committeeChange.StopAutoStaking = append(committeeChange.StopAutoStaking, committeePublicKey)
+					committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, committeePublicKey)
 				}
 			}
 		}
@@ -1222,7 +1222,7 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(inst 
 }
 
 func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange *incognitokey.CommitteeChange) error {
-	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStaking)
+	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
 	if err != nil {
 		return err
 	}
