@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"math/rand"
 	"sort"
 	"time"
@@ -103,9 +102,10 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, rewardForCustodianByEpoch, portalParams)
 
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
+	currentShardCandidate := beaconBestState.GetCandidateShardWaitingForCurrentRandom()
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
-		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
+		currentShardCandidate, bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
 		blockchain.config.ChainParams.RandomTime, blockchain,
 	)
 	if err != nil {
@@ -125,76 +125,12 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============End Build Body================
 	//============Update Beacon Best State================
 	// Process new block with beststate
-	newBeaconBeststate, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain, committeestate.NewCommitteeChange())
+	_, hashes, _, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return nil, err
 	}
 	//============Build Header Hash=============
 	// calculate hash
-	// BeaconValidator root: beacon committee + beacon pending committee
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(newBeaconBeststate.BeaconCommittee)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	validatorArr := append([]string{}, beaconCommitteeStr...)
-
-	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(newBeaconBeststate.BeaconPendingValidator)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	validatorArr = append(validatorArr, beaconPendingValidatorStr...)
-	tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(validatorArr)
-	if err != nil {
-		return nil, NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
-	}
-	// BeaconCandidate root: beacon current candidate + beacon next candidate
-	beaconCandidateArr := append(newBeaconBeststate.CandidateBeaconWaitingForCurrentRandom, newBeaconBeststate.CandidateBeaconWaitingForNextRandom...)
-
-	beaconCandidateArrStr, err := incognitokey.CommitteeKeyListToString(beaconCandidateArr)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	tempBeaconCandidateRoot, err := generateHashFromStringArray(beaconCandidateArrStr)
-	if err != nil {
-		return nil, NewBlockChainError(GenerateBeaconCandidateRootError, err)
-	}
-	// Shard candidate root: shard current candidate + shard next candidate
-	shardCandidateArr := append(newBeaconBeststate.CandidateShardWaitingForCurrentRandom, newBeaconBeststate.CandidateShardWaitingForNextRandom...)
-
-	shardCandidateArrStr, err := incognitokey.CommitteeKeyListToString(shardCandidateArr)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	tempShardCandidateRoot, err := generateHashFromStringArray(shardCandidateArrStr)
-	if err != nil {
-		return nil, NewBlockChainError(GenerateShardCandidateRootError, err)
-	}
-	// Shard Validator root
-	shardPendingValidator := make(map[byte][]string)
-	for shardID, keys := range newBeaconBeststate.ShardPendingValidator {
-		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
-		if err != nil {
-			return nil, NewBlockChainError(UnExpectedError, err)
-		}
-		shardPendingValidator[shardID] = keysStr
-	}
-	shardCommittee := make(map[byte][]string)
-	for shardID, keys := range newBeaconBeststate.ShardCommittee {
-		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
-		if err != nil {
-			return nil, NewBlockChainError(UnExpectedError, err)
-		}
-		shardCommittee[shardID] = keysStr
-	}
-	tempShardCommitteeAndValidatorRoot, err := generateHashFromMapByteString(shardPendingValidator, shardCommittee)
-	if err != nil {
-		return nil, NewBlockChainError(GenerateShardCommitteeAndValidatorRootError, err)
-	}
-
-	tempAutoStakingRoot, err := generateHashFromMapStringBool(newBeaconBeststate.AutoStaking)
-	if err != nil {
-		return nil, NewBlockChainError(AutoStakingRootHashError, err)
-	}
 	// Shard state hash
 	tempShardStateHash, err := generateHashFromShardState(tempShardState)
 	if err != nil {
@@ -217,13 +153,13 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
 	// add hash to header
-	beaconBlock.Header.BeaconCommitteeAndValidatorRoot = tempBeaconCommitteeAndValidatorRoot
-	beaconBlock.Header.BeaconCandidateRoot = tempBeaconCandidateRoot
-	beaconBlock.Header.ShardCandidateRoot = tempShardCandidateRoot
-	beaconBlock.Header.ShardCommitteeAndValidatorRoot = tempShardCommitteeAndValidatorRoot
+	beaconBlock.Header.BeaconCommitteeAndValidatorRoot = hashes.BeaconCommitteeAndValidatorHash
+	beaconBlock.Header.BeaconCandidateRoot = hashes.BeaconCandidateHash
+	beaconBlock.Header.ShardCandidateRoot = hashes.ShardCandidateHash
+	beaconBlock.Header.ShardCommitteeAndValidatorRoot = hashes.ShardCommitteeAndValidatorHash
 	beaconBlock.Header.ShardStateHash = tempShardStateHash
 	beaconBlock.Header.InstructionHash = tempInstructionHash
-	beaconBlock.Header.AutoStakingRoot = tempAutoStakingRoot
+	beaconBlock.Header.AutoStakingRoot = hashes.AutoStakeHash
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
 	beaconBlock.Header.Timestamp = startTime
 	//============END Build Header Hash=========
@@ -510,11 +446,13 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	}
 	// Beacon normal swap
 	if newBeaconHeight%chainParamEpoch == 0 {
-		beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+		BeaconPendingValidator := beaconBestState.GetBeaconPendingValidator()
+		beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(BeaconPendingValidator)
 		if err != nil {
 			return [][]string{}, err
 		}
-		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+		BeaconCommittee := beaconBestState.GetBeaconCommittee()
+		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
 		if err != nil {
 			return [][]string{}, err
 		}
@@ -594,8 +532,9 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		//==================================
 		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			numberOfPendingValidator := make(map[byte]int)
+			shardPendingValidator := beaconBestState.GetShardPendingValidator()
 			for i := 0; i < beaconBestState.ActiveShards; i++ {
-				if pendingValidators, ok := beaconBestState.ShardPendingValidator[byte(i)]; ok {
+				if pendingValidators, ok := shardPendingValidator[byte(i)]; ok {
 					numberOfPendingValidator[byte(i)] = len(pendingValidators)
 				} else {
 					numberOfPendingValidator[byte(i)] = 0

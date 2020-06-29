@@ -175,6 +175,7 @@ const (
 	InsertShardBlockError
 	GetShardBlockHeightByHashError
 	GetShardBlockByHashError
+	UpdateBeaconCommitteeStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -340,6 +341,7 @@ var ErrCodeMessage = map[int]struct {
 	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
+	UpdateBeaconCommitteeStateError:                   {-4000, "Update Beacon Committee State Error"},
 }
 
 type BlockChainError struct {
