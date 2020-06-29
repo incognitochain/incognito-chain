@@ -179,16 +179,15 @@ func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
 
 	// If somehow no version is checked???
 	if !check[1] && !check[2] {
+		fmt.Println("[BUG BUG BUG BUG BUG BUG BUG] Check ver = 0:", check[0])
 		return 0, errors.New("Cannot get tx version, something is wrong with coins.version, it should be 1 or 2 only")
 	}
 
-	var res int8
 	if check[1] {
-		res = 1
+		return 1, nil
 	} else {
-		res = 2
+		return 2, nil
 	}
-	return res, nil
 }
 
 // return bool indicates whether we should continue "Init" function or not
