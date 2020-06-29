@@ -83,6 +83,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
+
 	//==========Fetch Beacon Blocks============
 	// // startStep = time.Now()
 	BLogger.log.Infof("Producing block: %d", curView.ShardHeight+1)
@@ -392,13 +393,17 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:
-				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemRequestRejectedByLiquidationChainStatus) {
+				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
 			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
-				if len(l) >= 4 && l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
-					newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+				if len(l) >= 4 {
+					if l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+					} else if l[2] == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+					}
 				}
 			case metadata.PortalLiquidateCustodianMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
@@ -412,6 +417,15 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			case metadata.PortalLiquidationCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalLiquidationCustodianDepositMetaV2:
+				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
+				}
+			//
+			case metadata.PortalTopUpWaitingPortingRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
+					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(l[3], producerPrivateKey, shardID)
 				}
 			default:
 				continue
@@ -525,8 +539,11 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		swapInstruction       = []string{}
 		// err                   error
 	)
+	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
-		// if len(shardPendingValidator) > 0 {
+		backupShardCommittee := shardCommittee
+		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
+		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
@@ -545,17 +562,31 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
 
-		maxShardCommitteeSize := view.MaxShardCommitteeSize
-		minShardCommitteeSize := view.MinShardCommitteeSize
-		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
-		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
-		if err != nil {
-			Logger.log.Error(err)
-			return instructions, shardPendingValidator, shardCommittee, err
+		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedBlockValidators
+		var minShardCommitteeSize int
+		if view.MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+			minShardCommitteeSize = 0
+		} else {
+			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedBlockValidators
 		}
+
+		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
+		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
+			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
+			swapInstruction, shardPendingValidator, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, shardPendingValidator, backupShardCommittee, NumberOfFixedBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
+		} else {
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
+			if err != nil {
+				Logger.log.Error(err)
+				return instructions, shardPendingValidator, shardCommittee, err
+			}
+			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
+		}
+		// NOTE: shardCommittee must be finalized before building Bridge instruction here
+		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
-		if shardID == bridgeID {
+		if shardID == bridgeID && committeeChanged(swapInstruction) {
 			blockHeight := view.ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
@@ -564,7 +595,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 			}
 			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 		}
-		// }
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
@@ -726,4 +756,16 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 	seed := make([]byte, 16)
 	rand.Read(seed)
 	return privacy.GeneratePrivateKey(seed)
+}
+
+// committeeChanged checks if swap instructions really changed the committee list
+// (not just empty swap instruction)
+func committeeChanged(swap []string) bool {
+	if len(swap) < 3 {
+		return false
+	}
+
+	in := swap[1]
+	out := swap[2]
+	return len(in) > 0 || len(out) > 0
 }

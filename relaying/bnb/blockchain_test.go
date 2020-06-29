@@ -40,7 +40,7 @@ func getBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (*types.Block
 	return blockHeader, nil
 }
 
-func TestProcessNewBlock(t *testing.T){
+func TestProcessNewBlock(t *testing.T) {
 	// set up bnb chain state with genesis block
 	state := new(BNBChainState)
 	state.LatestBlock = getGenesisBNBBlockTestnet()
@@ -62,7 +62,7 @@ func TestProcessNewBlock(t *testing.T){
 		fmt.Printf("state.OrphanBlocks: %v\n", state.OrphanBlocks)
 		fmt.Printf("====================================================================\n")
 
-		nextBlockHeight+=2
+		nextBlockHeight += 2
 	}
 
 	for i := 0; i < 10; i++ {

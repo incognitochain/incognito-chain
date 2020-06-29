@@ -90,14 +90,14 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	return crossIDs
 }
 
-/*
-	Create Swap Action
-	Return param:
-	#1: swap instruction
-	#2: new pending validator list after swapped
-	#3: new committees after swapped
-	#4: error
-*/
+//CreateSwapAction
+//Return param:
+//#1: swap instruction
+// ["newCommittee1,newCommittee2,..." "swapCommittee1,swapCommittee2,..." "shard" "{shardID}" "punishedCommittee1,punishedCommittee2"
+// ["newCommittee1,newCommittee2,..." "swapCommittee1,swapCommittee2,..." "beacon" "punishedCommittee1,punishedCommittee2"
+//#2: new pending validator list after swapped
+//#3: new committees after swapped
+//#4: error
 func CreateSwapAction(
 	pendingValidator []string,
 	commitees []string,
@@ -119,6 +119,21 @@ func CreateSwapAction(
 	}
 	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID)), string(badProducersWithPunishmentBytes)}
 	return swapInstruction, newPendingValidator, newShardCommittees, nil
+}
+
+func CreateShardSwapActionForKeyListV2(
+	genesisParam *GenesisParams,
+	pendingValidator []string,
+	shardCommittees []string,
+	minCommitteeSize int,
+	activeShard int,
+	shardID byte,
+	epoch uint64,
+) ([]string, []string, []string) {
+	newPendingValidator := pendingValidator
+	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
+	remainShardCommittees := shardCommittees[minCommitteeSize:]
+	return swapInstruction[shardID], newPendingValidator, append(newShardCommittees[shardID], remainShardCommittees...)
 }
 
 /*
@@ -620,3 +635,48 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 }
 
 //=======================================END CROSS SHARD UTIL
+
+////getChangeCommittees ...
+//func getChangeCommittees(oldArr, newArr []incognitokey.CommitteePublicKey) (addedCommittees []incognitokey.CommitteePublicKey, removedCommittees[]incognitokey.CommitteePublicKey, err error) {
+//
+//	if oldArr == nil || len(oldArr) == 0 {
+//		return newArr, removedCommittees, nil
+//	}
+//
+//	if newArr == nil || len(newArr) == 0 {
+//		return addedCommittees, oldArr, nil
+//	}
+//
+//	mapOldArr := make(map[string]bool)
+//	mapNewArr := make(map[string]bool)
+//
+//	for _, v := range oldArr{
+//		key, err := v.ToBase58()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//		mapOldArr[key] = true
+//	}
+//
+//	for _, v := range newArr{
+//		key, err := v.ToBase58()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//		mapNewArr[key] = true
+//	}
+//
+//	for hash, _ := range mapOldArr {
+//		if mapNewArr[hash] {
+//
+//		}
+//	}
+//
+//	//for hash, v := range mapNewArr {
+//	//
+//	//}
+//
+//
+//
+//	return addedCommittees, removedCommittees, nil
+//}

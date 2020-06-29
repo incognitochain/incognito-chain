@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-func TestCalculatePortingFees(t *testing.T)  {
+func TestCalculatePortingFees(t *testing.T) {
 	result := CalculatePortingFees(3106511852580)
 	assert.Equal(t, result, uint64(310651185))
 }
 
-func  TestCurrentPortalStateStruct(t *testing.T)  {
+func TestCurrentPortalStateStruct(t *testing.T) {
 	currentPortalState := &CurrentPortalState{}
 
 	assert.NotEqual(t, currentPortalState, nil)
@@ -26,7 +26,7 @@ func  TestCurrentPortalStateStruct(t *testing.T)  {
 	_, ok := currentPortalState.CustodianPoolState["abc"]
 	assert.Equal(t, ok, false)
 
-	for _, v := range  currentPortalState.CustodianPoolState {
+	for _, v := range currentPortalState.CustodianPoolState {
 		assert.Equal(t, 1, 0)
 		assert.NotNil(t, v)
 	}

@@ -93,7 +93,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalRedeemRequest response instruction
+		if len(inst) < 4 { // this is not PortalRedeemLiquidateExchangeRatesMeta response instruction
 			continue
 		}
 		instMetaType := inst[0]
@@ -102,9 +102,13 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			continue
 		}
 		instReqStatus := inst[2]
-		if instReqStatus != iRes.RequestStatus ||
-			(instReqStatus != common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus) {
-			Logger.log.Error("WARNING - VALIDATION: status is not exactly, status  %v", instReqStatus)
+		if instReqStatus != iRes.RequestStatus {
+			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
+			continue
+		}
+		if (instReqStatus != common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus) &&
+			(instReqStatus != common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus) {
+			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
 			continue
 		}
 
@@ -156,11 +160,17 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			continue
 		}
 
-		PRVIDStr := common.PRVCoinID.String()
+		mintedTokenID := common.PRVCoinID.String()
+		mintedAmount := totalPTokenReceived
+		if instReqStatus == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+			mintedTokenID = redeemReqContent.TokenID
+			mintedAmount = redeemAmountFromInst
+		}
+
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			totalPTokenReceived != paidAmount ||
-			PRVIDStr != assetID.String() {
+			mintedAmount != paidAmount ||
+			mintedTokenID != assetID.String() {
 			continue
 		}
 		idx = i

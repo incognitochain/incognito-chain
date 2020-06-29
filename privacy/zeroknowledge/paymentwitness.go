@@ -199,8 +199,6 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		// ---------------------------------------------------
 	}
 
-
-
 	randOutputValue := make([]*privacy.Scalar, numOutputCoin)
 	randOutputSND := make([]*privacy.Scalar, numOutputCoin)
 	cmOutputValue := make([]*privacy.Point, numOutputCoin)

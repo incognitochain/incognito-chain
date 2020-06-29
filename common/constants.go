@@ -141,10 +141,11 @@ const (
 	PortalPortingReqExpiredStatus    = 3
 	PortalPortingReqLiquidatedStatus = 4
 
-	PortalRedeemReqSuccessStatus               = 1
-	PortalRedeemReqWaitingStatus               = 2
-	PortalRedeemReqLiquidatedStatus            = 3
-	PortalRedeemReqRejectedByLiquidationStatus = 4
+	PortalRedeemReqSuccessStatus                = 1
+	PortalRedeemReqWaitingStatus                = 2
+	PortalRedeemReqMatchedStatus                = 3
+	PortalRedeemReqLiquidatedStatus             = 4
+	PortalRedeemReqCancelledByLiquidationStatus = 5
 
 	PortalRedeemRequestTxAcceptedStatus = 1
 	PortalRedeemRequestTxRejectedStatus = 2
@@ -175,6 +176,12 @@ const (
 
 	PortalExchangeRatesAcceptedStatus = 1
 	PortalExchangeRatesRejectedStatus = 2
+
+	PortalReqMatchingRedeemAcceptedStatus = 1
+	PortalReqMatchingRedeemRejectedStatus = 2
+
+	PortalTopUpWaitingPortingSuccessStatus  = 1
+	PortalTopUpWaitingPortingRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -205,9 +212,9 @@ const (
 	PortalExchangeRatesAcceptedChainStatus = "accepted"
 	PortalExchangeRatesRejectedChainStatus = "rejected"
 
-	PortalRedeemRequestAcceptedChainStatus              = "accepted"
-	PortalRedeemRequestRejectedChainStatus              = "rejected"
-	PortalRedeemRequestRejectedByLiquidationChainStatus = "rejectedByLiquidation"
+	PortalRedeemRequestAcceptedChainStatus           = "accepted"
+	PortalRedeemRequestRejectedChainStatus           = "rejected"
+	PortalRedeemReqCancelledByLiquidationChainStatus = "cancelled"
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
@@ -232,6 +239,15 @@ const (
 
 	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
 	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
+
+	PortalReqMatchingRedeemAcceptedChainStatus = "accepted"
+	PortalReqMatchingRedeemRejectedChainStatus = "rejected"
+
+	PortalPickMoreCustodianRedeemSuccessChainStatus = "success"
+	PortalPickMoreCustodianRedeemFailedChainStatus  = "failed"
+
+	PortalTopUpWaitingPortingSuccessChainStatus  = "success"
+	PortalTopUpWaitingPortingRejectedChainStatus = "rejected"
 )
 
 // Relaying header
@@ -240,20 +256,20 @@ const (
 	RelayingHeaderConsideringChainStatus = "considering"
 )
 
-const PortalBTCIDStr = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
-const PortalBNBIDStr = "b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b"
+const PortalBTCIDStr = "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b"
+const PortalBNBIDStr = "6abd698ea7ddd1f98b1ecaaddab5db0453b8363ff092f0d8d7d4c6b1155fb693"
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 
 var PortalSupportedIncTokenIDs = []string{
-	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696", // pBTC
-	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", // pBNB
+	PortalBTCIDStr, // pBTC
+	PortalBNBIDStr, // pBNB
 }
 
 // set MinAmountPortalPToken to avoid attacking with amount is less than smallest unit of cryptocurrency
 // such as satoshi in BTC
 var MinAmountPortalPToken = map[string]uint64{
-	"b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696": 10,
-	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b": 10,
+	PortalBTCIDStr: 10,
+	PortalBNBIDStr: 10,
 }
 
 const (

@@ -101,9 +101,6 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(cha
 	}
 
 	// validate amount deposit
-	if custodianDeposit.DepositedAmount == 0 {
-		return false, false, errors.New("deposit amount should be larger than 0")
-	}
 	if custodianDeposit.DepositedAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}

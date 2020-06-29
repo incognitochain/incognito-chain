@@ -17,7 +17,6 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProof params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMeta, httpServer)
 }
 
@@ -26,7 +25,6 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Infof("handleGetBurnProofForDepositToSC params: %+v", params)
 	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMeta, httpServer)
 }
 
@@ -70,21 +68,23 @@ func getBurnProofByHeight(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-
 	// Get proof of instruction on bridge
 	bridgeInstProof, err := getBurnProofOnBridge(burningMetaType, txID, bridgeBlock, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-
+	fmt.Println("bridgeInstProof", bridgeInstProof)
 	// Get proof of instruction on beacon
 	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-
+	fmt.Println("beaconInstProof", beaconInstProof)
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst, bridgeHeight, beaconHeight := splitAndDecodeInst(bridgeInstProof.inst, beaconInstProof.inst)
+	fmt.Println("decodedInst", decodedInst)
+	fmt.Println("bridgeHeight", bridgeHeight)
+	fmt.Println("beaconHeight", beaconHeight)
 	//decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
 
 	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, beaconHeight, bridgeHeight), nil

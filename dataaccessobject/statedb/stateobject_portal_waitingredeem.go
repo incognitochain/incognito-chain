@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-type WaitingRedeemRequest struct {
+type RedeemRequest struct {
 	uniqueRedeemID        string
 	tokenID               string
 	redeemerAddress       string
@@ -25,79 +25,79 @@ type MatchingRedeemCustodianDetail struct {
 	amount        uint64
 }
 
-func (wrq WaitingRedeemRequest) GetUniqueRedeemID() string {
-	return wrq.uniqueRedeemID
+func (rq RedeemRequest) GetUniqueRedeemID() string {
+	return rq.uniqueRedeemID
 }
 
-func (wrq *WaitingRedeemRequest) SetUniqueRedeemID(uniqueRedeemID string) {
-	wrq.uniqueRedeemID = uniqueRedeemID
+func (rq *RedeemRequest) SetUniqueRedeemID(uniqueRedeemID string) {
+	rq.uniqueRedeemID = uniqueRedeemID
 }
 
-func (wrq WaitingRedeemRequest) GetTokenID() string {
-	return wrq.tokenID
+func (rq RedeemRequest) GetTokenID() string {
+	return rq.tokenID
 }
 
-func (wrq *WaitingRedeemRequest) SetTokenID(tokenID string) {
-	wrq.tokenID = tokenID
+func (rq *RedeemRequest) SetTokenID(tokenID string) {
+	rq.tokenID = tokenID
 }
 
-func (wrq WaitingRedeemRequest) GetRedeemerAddress() string {
-	return wrq.redeemerAddress
+func (rq RedeemRequest) GetRedeemerAddress() string {
+	return rq.redeemerAddress
 }
 
-func (wrq *WaitingRedeemRequest) SetRedeemerAddress(redeemerAddress string) {
-	wrq.redeemerAddress = redeemerAddress
+func (rq *RedeemRequest) SetRedeemerAddress(redeemerAddress string) {
+	rq.redeemerAddress = redeemerAddress
 }
 
-func (wrq WaitingRedeemRequest) GetRedeemerRemoteAddress() string {
-	return wrq.redeemerRemoteAddress
+func (rq RedeemRequest) GetRedeemerRemoteAddress() string {
+	return rq.redeemerRemoteAddress
 }
 
-func (wrq *WaitingRedeemRequest) SetRedeemerRemoteAddress(redeemerRemoteAddress string) {
-	wrq.redeemerRemoteAddress = redeemerRemoteAddress
+func (rq *RedeemRequest) SetRedeemerRemoteAddress(redeemerRemoteAddress string) {
+	rq.redeemerRemoteAddress = redeemerRemoteAddress
 }
 
-func (wrq WaitingRedeemRequest) GetRedeemAmount() uint64 {
-	return wrq.redeemAmount
+func (rq RedeemRequest) GetRedeemAmount() uint64 {
+	return rq.redeemAmount
 }
 
-func (wrq *WaitingRedeemRequest) SetRedeemAmount(redeemAmount uint64) {
-	wrq.redeemAmount = redeemAmount
+func (rq *RedeemRequest) SetRedeemAmount(redeemAmount uint64) {
+	rq.redeemAmount = redeemAmount
 }
 
-func (wrq WaitingRedeemRequest) GetCustodians() []*MatchingRedeemCustodianDetail {
-	return wrq.custodians
+func (rq RedeemRequest) GetCustodians() []*MatchingRedeemCustodianDetail {
+	return rq.custodians
 }
 
-func (wrq *WaitingRedeemRequest) SetCustodians(custodians []*MatchingRedeemCustodianDetail) {
-	wrq.custodians = custodians
+func (rq *RedeemRequest) SetCustodians(custodians []*MatchingRedeemCustodianDetail) {
+	rq.custodians = custodians
 }
 
-func (wrq WaitingRedeemRequest) GetRedeemFee() uint64 {
-	return wrq.redeemFee
+func (rq RedeemRequest) GetRedeemFee() uint64 {
+	return rq.redeemFee
 }
 
-func (wrq *WaitingRedeemRequest) SetRedeemFee(redeemFee uint64) {
-	wrq.redeemFee = redeemFee
+func (rq *RedeemRequest) SetRedeemFee(redeemFee uint64) {
+	rq.redeemFee = redeemFee
 }
 
-func (wrq WaitingRedeemRequest) GetBeaconHeight() uint64 {
-	return wrq.beaconHeight
+func (rq RedeemRequest) GetBeaconHeight() uint64 {
+	return rq.beaconHeight
 }
 
-func (wrq *WaitingRedeemRequest) SetBeaconHeight(beaconHeight uint64) {
-	wrq.beaconHeight = beaconHeight
+func (rq *RedeemRequest) SetBeaconHeight(beaconHeight uint64) {
+	rq.beaconHeight = beaconHeight
 }
 
-func (wrq WaitingRedeemRequest) GetTxReqID() common.Hash {
-	return wrq.txReqID
+func (rq RedeemRequest) GetTxReqID() common.Hash {
+	return rq.txReqID
 }
 
-func (wrq *WaitingRedeemRequest) SetTxReqID(txReqID common.Hash) {
-	wrq.txReqID = txReqID
+func (rq *RedeemRequest) SetTxReqID(txReqID common.Hash) {
+	rq.txReqID = txReqID
 }
 
-func (wrq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
+func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueRedeemID        string
 		TokenID               string
@@ -109,15 +109,15 @@ func (wrq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
 		BeaconHeight          uint64
 		TxReqID               common.Hash
 	}{
-		UniqueRedeemID:        wrq.uniqueRedeemID,
-		TokenID:               wrq.tokenID,
-		RedeemerAddress:       wrq.redeemerAddress,
-		RedeemerRemoteAddress: wrq.redeemerRemoteAddress,
-		RedeemAmount:          wrq.redeemAmount,
-		Custodians:            wrq.custodians,
-		RedeemFee:             wrq.redeemFee,
-		BeaconHeight:          wrq.beaconHeight,
-		TxReqID:               wrq.txReqID,
+		UniqueRedeemID:        rq.uniqueRedeemID,
+		TokenID:               rq.tokenID,
+		RedeemerAddress:       rq.redeemerAddress,
+		RedeemerRemoteAddress: rq.redeemerRemoteAddress,
+		RedeemAmount:          rq.redeemAmount,
+		Custodians:            rq.custodians,
+		RedeemFee:             rq.redeemFee,
+		BeaconHeight:          rq.beaconHeight,
+		TxReqID:               rq.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -125,7 +125,7 @@ func (wrq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (wrq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
+func (rq *RedeemRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniqueRedeemID        string
 		TokenID               string
@@ -141,15 +141,15 @@ func (wrq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	wrq.uniqueRedeemID = temp.UniqueRedeemID
-	wrq.tokenID = temp.TokenID
-	wrq.redeemerAddress = temp.RedeemerAddress
-	wrq.redeemerRemoteAddress = temp.RedeemerRemoteAddress
-	wrq.redeemAmount = temp.RedeemAmount
-	wrq.custodians = temp.Custodians
-	wrq.redeemFee = temp.RedeemFee
-	wrq.beaconHeight = temp.BeaconHeight
-	wrq.txReqID = temp.TxReqID
+	rq.uniqueRedeemID = temp.UniqueRedeemID
+	rq.tokenID = temp.TokenID
+	rq.redeemerAddress = temp.RedeemerAddress
+	rq.redeemerRemoteAddress = temp.RedeemerRemoteAddress
+	rq.redeemAmount = temp.RedeemAmount
+	rq.custodians = temp.Custodians
+	rq.redeemFee = temp.RedeemFee
+	rq.beaconHeight = temp.BeaconHeight
+	rq.txReqID = temp.TxReqID
 	return nil
 }
 
@@ -221,11 +221,11 @@ func NewMatchingRedeemCustodianDetailWithValue(
 	}
 }
 
-func NewWaitingRedeemRequest() *WaitingRedeemRequest {
-	return &WaitingRedeemRequest{}
+func NewRedeemRequest() *RedeemRequest {
+	return &RedeemRequest{}
 }
 
-func NewWaitingRedeemRequestWithValue(
+func NewRedeemRequestWithValue(
 	uniqueRedeemID string,
 	tokenID string,
 	redeemerAddress string,
@@ -234,9 +234,9 @@ func NewWaitingRedeemRequestWithValue(
 	custodians []*MatchingRedeemCustodianDetail,
 	redeemFee uint64,
 	beaconHeight uint64,
-	txReqID common.Hash) *WaitingRedeemRequest {
+	txReqID common.Hash) *RedeemRequest {
 
-	return &WaitingRedeemRequest{
+	return &RedeemRequest{
 		uniqueRedeemID:        uniqueRedeemID,
 		tokenID:               tokenID,
 		redeemerAddress:       redeemerAddress,
@@ -249,14 +249,14 @@ func NewWaitingRedeemRequestWithValue(
 	}
 }
 
-type WaitingRedeemRequestObject struct {
+type RedeemRequestObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version                  int
 	waitingRedeemRequestHash common.Hash
-	waitingRedeemRequest     *WaitingRedeemRequest
+	waitingRedeemRequest     *RedeemRequest
 	objectType               int
 	deleted                  bool
 
@@ -268,19 +268,19 @@ type WaitingRedeemRequestObject struct {
 	dbErr error
 }
 
-func newWaitingRedeemRequestObject(db *StateDB, hash common.Hash) *WaitingRedeemRequestObject {
-	return &WaitingRedeemRequestObject{
+func newRedeemRequestObject(db *StateDB, hash common.Hash) *RedeemRequestObject {
+	return &RedeemRequestObject{
 		version:                  defaultVersion,
 		db:                       db,
 		waitingRedeemRequestHash: hash,
-		waitingRedeemRequest:     NewWaitingRedeemRequest(),
+		waitingRedeemRequest:     NewRedeemRequest(),
 		objectType:               WaitingRedeemRequestObjectType,
 		deleted:                  false,
 	}
 }
 
-func newWaitingRedeemRequestObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*WaitingRedeemRequestObject, error) {
-	var redeemRequest = NewWaitingRedeemRequest()
+func newRedeemRequestObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*RedeemRequestObject, error) {
+	var redeemRequest = NewRedeemRequest()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
@@ -289,17 +289,17 @@ func newWaitingRedeemRequestObjectWithValue(db *StateDB, key common.Hash, data i
 			return nil, err
 		}
 	} else {
-		redeemRequest, ok = data.(*WaitingRedeemRequest)
+		redeemRequest, ok = data.(*RedeemRequest)
 		if !ok {
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidPortalWaitingRedeemRequestType, reflect.TypeOf(data))
 		}
 	}
-	return &WaitingRedeemRequestObject{
+	return &RedeemRequestObject{
 		version:                  defaultVersion,
 		waitingRedeemRequestHash: key,
 		waitingRedeemRequest:     redeemRequest,
 		db:                       db,
-		objectType:               CustodianStateObjectType,
+		objectType:               WaitingRedeemRequestObjectType,
 		deleted:                  false,
 	}, nil
 }
@@ -310,23 +310,29 @@ func GenerateWaitingRedeemRequestObjectKey(redeemID string) common.Hash {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (t WaitingRedeemRequestObject) GetVersion() int {
+func GenerateMatchedRedeemRequestObjectKey(redeemID string) common.Hash {
+	prefixHash := GetMatchedRedeemRequestPrefix()
+	valueHash := common.HashH([]byte(redeemID))
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+}
+
+func (t RedeemRequestObject) GetVersion() int {
 	return t.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (t *WaitingRedeemRequestObject) SetError(err error) {
+func (t *RedeemRequestObject) SetError(err error) {
 	if t.dbErr == nil {
 		t.dbErr = err
 	}
 }
 
-func (t WaitingRedeemRequestObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (t RedeemRequestObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return t.trie
 }
 
-func (t *WaitingRedeemRequestObject) SetValue(data interface{}) error {
-	redeemRequest, ok := data.(*WaitingRedeemRequest)
+func (t *RedeemRequestObject) SetValue(data interface{}) error {
+	redeemRequest, ok := data.(*RedeemRequest)
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidPortalWaitingRedeemRequestType, reflect.TypeOf(data))
 	}
@@ -334,12 +340,12 @@ func (t *WaitingRedeemRequestObject) SetValue(data interface{}) error {
 	return nil
 }
 
-func (t WaitingRedeemRequestObject) GetValue() interface{} {
+func (t RedeemRequestObject) GetValue() interface{} {
 	return t.waitingRedeemRequest
 }
 
-func (t WaitingRedeemRequestObject) GetValueBytes() []byte {
-	redeemRequest, ok := t.GetValue().(*WaitingRedeemRequest)
+func (t RedeemRequestObject) GetValueBytes() []byte {
+	redeemRequest, ok := t.GetValue().(*RedeemRequest)
 	if !ok {
 		panic("wrong expected value type")
 	}
@@ -350,31 +356,31 @@ func (t WaitingRedeemRequestObject) GetValueBytes() []byte {
 	return value
 }
 
-func (t WaitingRedeemRequestObject) GetHash() common.Hash {
+func (t RedeemRequestObject) GetHash() common.Hash {
 	return t.waitingRedeemRequestHash
 }
 
-func (t WaitingRedeemRequestObject) GetType() int {
+func (t RedeemRequestObject) GetType() int {
 	return t.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (t *WaitingRedeemRequestObject) MarkDelete() {
+func (t *RedeemRequestObject) MarkDelete() {
 	t.deleted = true
 }
 
 // reset all shard committee value into default value
-func (t *WaitingRedeemRequestObject) Reset() bool {
-	t.waitingRedeemRequest = NewWaitingRedeemRequest()
+func (t *RedeemRequestObject) Reset() bool {
+	t.waitingRedeemRequest = NewRedeemRequest()
 	return true
 }
 
-func (t WaitingRedeemRequestObject) IsDeleted() bool {
+func (t RedeemRequestObject) IsDeleted() bool {
 	return t.deleted
 }
 
 // value is either default or nil
-func (t WaitingRedeemRequestObject) IsEmpty() bool {
+func (t RedeemRequestObject) IsEmpty() bool {
 	temp := NewCustodianState()
 	return reflect.DeepEqual(temp, t.waitingRedeemRequest) || t.waitingRedeemRequest == nil
 }

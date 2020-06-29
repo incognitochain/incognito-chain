@@ -55,9 +55,9 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
-	height := uint64(heightParam)
+	beaconHeigh := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
@@ -68,7 +68,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 	inst := hex.EncodeToString(decodedInst)
 	bridgeInstProof := &swapProof{}
-	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
+	return buildProofResult(inst, beaconInstProof, bridgeInstProof, strconv.FormatUint(beaconHeigh, 10), ""), nil
 }
 
 // getSwapProofOnBeacon finds in a given beacon block a committee swap instruction and returns its proof;
@@ -132,6 +132,7 @@ func getShardAndBeaconBlocks(
 	if err != nil {
 		return nil, nil, err
 	}
+	fmt.Println("Bridge Instruction", bridgeInsts)
 	bridgeBlock.Body.Instructions = bridgeInsts
 	return bridgeBlock, beaconBlocks, nil
 }

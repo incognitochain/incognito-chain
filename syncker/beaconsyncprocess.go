@@ -302,6 +302,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	}
 
 	//stream
+	// ch, err := s.server.RequestBeaconBlocksViaStream(ctx, peerID, s.chain.GetBestViewHeight()+1, toHeight)
 	ch, err := s.server.RequestBeaconBlocksViaStream(ctx, "", s.chain.GetBestViewHeight()+1, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
@@ -331,6 +332,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 					} else {
 						insertBlkCnt += successBlk
 						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						fmt.Printf("[monitor-db-time] Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk >= len(blockBuffer) {
 							break
 						}

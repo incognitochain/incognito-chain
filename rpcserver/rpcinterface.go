@@ -105,6 +105,7 @@ var HttpHandler = map[string]httpHandler{
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
 	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
 	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
+	getPrivacyCustomToken:                      (*HttpServer).handleGetPrivacyCustomToken,
 	listPrivacyCustomTokenByShard:              (*HttpServer).handleListPrivacyCustomTokenByShard,
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
@@ -191,14 +192,20 @@ var HttpHandler = map[string]httpHandler{
 	getCustodianWithdrawByTxId:                    (*HttpServer).handleGetCustodianWithdrawByTxId,
 	getCustodianLiquidationStatus:                 (*HttpServer).handleGetCustodianLiquidationStatus,
 	createAndSendTxWithReqWithdrawRewardPortal:    (*HttpServer).handleCreateAndSendTxWithReqWithdrawRewardPortal,
-	getLiquidationTpExchangeRatesByTokenId:        (*HttpServer).handleGetLiquidationTpExchangeRatesByTokenId,
 	getLiquidationExchangeRatesPool:               (*HttpServer).handleGetLiquidationExchangeRatesPool,
 	createAndSendRedeemLiquidationExchangeRates:   (*HttpServer).handleCreateAndSendRedeemLiquidationExchangeRates,
 	createAndSendLiquidationCustodianDeposit:      (*HttpServer).handleCreateAndSendLiquidationCustodianDeposit,
+	createAndSendTopUpWaitingPorting:              (*HttpServer).handleCreateAndSendTopUpWaitingPorting,
 	getAmountNeededForCustodianDepositLiquidation: (*HttpServer).handleGetAmountNeededForCustodianDepositLiquidation,
-	getLiquidationTpExchangeRates:                 (*HttpServer).handleGetLiquidationTpExchangeRates,
 	getPortalReward:                               (*HttpServer).handleGetPortalReward,
 	getRequestWithdrawPortalRewardStatus:          (*HttpServer).handleGetRequestWithdrawPortalRewardStatus,
+	createAndSendTxWithReqMatchingRedeem:          (*HttpServer).handleCreateAndSendTxWithReqMatchingRedeem,
+	getReqMatchingRedeemStatus:                    (*HttpServer).handleGetReqMatchingRedeemByTxIDStatus,
+	getPortalCustodianTopupStatus:                 (*HttpServer).handleGetPortalCustodianTopupStatus,
+	getPortalCustodianTopupWaitingPortingStatus:   (*HttpServer).handleGetPortalCustodianTopupWaitingPortingStatus,
+	getAmountTopUpWaitingPorting:                  (*HttpServer).handleGetAmountTopUpWaitingPorting,
+	getPortalReqRedeemByTxIDStatus:                (*HttpServer).handleGetPortalReqRedeemByTxIDStatus,
+	getReqRedeemFromLiquidationPoolByTxIDStatus:   (*HttpServer).handleGetReqRedeemFromLiquidationPoolByTxIDStatus,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
@@ -223,6 +230,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
+
+	// get committeeByHeight
 }
 
 // Commands that are available to a limited user

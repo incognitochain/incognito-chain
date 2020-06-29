@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 // Interface for all types of metadata in tx
@@ -58,6 +60,10 @@ type ChainRetriever interface {
 	GetBurningAddress(blockHeight uint64) string
 	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
+	GetBNBChainID() string
+	GetBTCChainID() string
+	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetPortalFeederAddress() string
 }
 
 type BeaconViewRetriever interface {
@@ -232,4 +238,31 @@ func ConvertPrivacyTokenToNativeToken(
 		beaconHeight,
 		stateDB,
 	)
+}
+
+func IsValidRemoteAddress(
+	bcr ChainRetriever,
+	remoteAddress string,
+	tokenID string,
+	chainID string,
+) bool {
+	if tokenID == common.PortalBNBIDStr {
+		return bnb.IsValidBNBAddress(remoteAddress, chainID)
+	} else if tokenID == common.PortalBTCIDStr {
+		btcHeaderChain := bcr.GetBTCHeaderChain()
+		if btcHeaderChain == nil {
+			return false
+		}
+		return btcHeaderChain.IsBTCAddressValid(remoteAddress)
+	}
+	return false
+}
+
+func GetChainIDByTokenID(tokenID string, chainRetriever ChainRetriever) string {
+	if tokenID == common.PortalBNBIDStr {
+		return chainRetriever.GetBNBChainID()
+	} else if tokenID == common.PortalBTCIDStr {
+		return chainRetriever.GetBTCChainID()
+	}
+	return ""
 }

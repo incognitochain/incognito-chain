@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -37,15 +38,15 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
-	height := uint64(heightParam)
+	beaconHeigh := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
+	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, httpServer.GetBlockchain(), httpServer.config.ConsensusEngine)
+	bridgeInstProof, bridgeShardBlockHeight, err := getBridgeSwapProofOnBridge(beaconBlock, httpServer.GetBlockchain(), httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -57,7 +58,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	}
 	inst := hex.EncodeToString(decodedInst)
 
-	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
+	return buildProofResult(inst, beaconInstProof, bridgeInstProof, strconv.FormatUint(beaconBlock.Header.Height, 10), strconv.FormatUint(bridgeShardBlockHeight, 10)), nil
 }
 
 // getBridgeSwapProofOnBridge finds a bridge committee swap instruction in a bridge block and returns its proof; the bridge block must be included in a given beaconBlock
@@ -65,15 +66,16 @@ func getBridgeSwapProofOnBridge(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 	ce ConsensusEngine,
-) (*swapProof, error) {
+) (*swapProof, uint64, error) {
 	// Get bridge block and check if it contains bridge swap instruction
-	b, instID, err := findBridgeBlockWithInst(beaconBlock, bc)
+	bridgeShardBlock, instID, err := findBridgeBlockWithInst(beaconBlock, bc)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	insts := b.Body.Instructions
-	block := &shardBlock{ShardBlock: b}
-	return buildProofForBlock(block, insts, instID, ce)
+	insts := bridgeShardBlock.Body.Instructions
+	block := &shardBlock{ShardBlock: bridgeShardBlock}
+	swapProof, err := buildProofForBlock(block, insts, instID, ce)
+	return swapProof, bridgeShardBlock.Header.Height, err
 }
 
 // findBridgeBlockWithInst traverses all shard blocks included in a beacon block and returns the one containing a bridge swap instruction

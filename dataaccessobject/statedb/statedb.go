@@ -1388,8 +1388,8 @@ func (stateDB *StateDB) getFinalExchangeRatesState() (*FinalExchangeRatesState, 
 }
 
 //B
-func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
-	waitingRedeemRequests := make(map[string]*WaitingRedeemRequest)
+func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*RedeemRequest {
+	waitingRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -1398,7 +1398,7 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRe
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		wr := NewWaitingRedeemRequest()
+		wr := NewRedeemRequest()
 		err := json.Unmarshal(newValue, wr)
 		if err != nil {
 			panic("wrong expect type")
@@ -1406,6 +1406,26 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRe
 		waitingRedeemRequests[keyHash.String()] = wr
 	}
 	return waitingRedeemRequests
+}
+
+func (stateDB *StateDB) getAllMatchedRedeemRequest() map[string]*RedeemRequest {
+	matchedRedeemRequests := make(map[string]*RedeemRequest)
+	temp := stateDB.trie.NodeIterator(GetMatchedRedeemRequestPrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewRedeemRequest()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		matchedRedeemRequests[keyHash.String()] = wr
+	}
+	return matchedRedeemRequests
 }
 
 func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {

@@ -56,7 +56,7 @@ require (
 	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa // indirect
 	github.com/stathat/consistent v1.0.0

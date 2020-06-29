@@ -74,7 +74,7 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 	case PortalRewardInfoObjectType:
 		return newPortalRewardInfoObjectWithValue(db, hash, value)
 	case WaitingRedeemRequestObjectType:
-		return newWaitingRedeemRequestObjectWithValue(db, hash, value)
+		return newRedeemRequestObjectWithValue(db, hash, value)
 	case CustodianStateObjectType:
 		return newCustodianStateObjectWithValue(db, hash, value)
 	case LockedCollateralStateObjectType:
@@ -139,7 +139,7 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 	case PortalRewardInfoObjectType:
 		return newPortalRewardInfoObject(db, hash)
 	case WaitingRedeemRequestObjectType:
-		return newWaitingRedeemRequestObject(db, hash)
+		return newRedeemRequestObject(db, hash)
 	case CustodianStateObjectType:
 		return newCustodianStateObject(db, hash)
 	case LockedCollateralStateObjectType:

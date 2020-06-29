@@ -166,7 +166,7 @@ func GetValidStakeStructCommitteePublicKey(committees []CommitteePublicKey, stak
 	return validStaker
 }
 
-func CommitteeKeyListToMapString(keyList []CommitteePublicKey) []CommitteeKeyString {
+func CommitteeKeyListToStringList(keyList []CommitteePublicKey) []CommitteeKeyString {
 	result := []CommitteeKeyString{}
 	for _, key := range keyList {
 		var keyMap CommitteeKeyString
