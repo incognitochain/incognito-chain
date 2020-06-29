@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/instruction"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"

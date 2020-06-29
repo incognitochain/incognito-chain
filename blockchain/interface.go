@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/consensus/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -78,11 +78,7 @@ type Syncker interface {
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }
 
-type BeaconCommitteeState interface {
-	Commit(*committeestate.BeaconCommitteeStateHash) error
-	Abort()
-	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, error)
-	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
+type BeaconCommitteeEngine interface {
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
@@ -91,13 +87,19 @@ type BeaconCommitteeState interface {
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
-	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
-	GetShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
+	GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardCommittee() map[byte][]incognitokey.CommitteePublicKey
+	GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 	GetAutoStaking() map[string]bool
 	GetRewardReceiver() map[string]string
+	Commit(*committeestate.BeaconCommitteeStateHash) error
+	AbortUncommittedBeaconState()
+	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, error)
+	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 }
 
-type ShardCommitteeState interface {
+type ShardCommitteeEngine interface {
 	GenerateShardCommitteeInstruction(env *committeestate.ShardCommitteeStateEnvironment)
 	GenerateCommitteeRootHashes(shardID byte, instruction []string) ([]common.Hash, error)
 	UpdateCommitteeState(shardID byte, instruction []string) (*committeestate.CommitteeChange, error)

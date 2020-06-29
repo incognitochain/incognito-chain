@@ -3,7 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"math/rand"
 	"sort"
 	"time"
