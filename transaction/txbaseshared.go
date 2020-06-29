@@ -92,13 +92,12 @@ func validateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionSta
 }
 
 func validateTransaction(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	if tx.GetType() == common.TxRewardType {
+	switch tx.GetType() {
+	case common.TxRewardType:
 		return tx.ValidateTxSalary(transactionStateDB)
-	}
-	if tx.GetType() == common.TxReturnStakingType {
+	case common.TxReturnStakingType:
 		return tx.ValidateTxReturnStaking(transactionStateDB), nil
-	}
-	if tx.GetVersion() == TxConversionVersion12Number {
+	case common.TxConversionType:
 		return validateConversionVer1ToVer2(tx, transactionStateDB, shardID, tokenID)
 	}
 	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
@@ -147,7 +146,7 @@ func checkSanityMetadataVersionSizeProofTypeInfo(tx metadata.Transaction, chainR
 
 	// check Type is normal or salary tx
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxTokenConversionType, common.TxReturnStakingType, common.TxConversionType: //is valid
 	default:
 		return false, NewTransactionErr(RejectTxType, fmt.Errorf("wrong tx type with %s", tx.GetType()))
 	}

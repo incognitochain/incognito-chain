@@ -30,7 +30,7 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 		FeePerKB:      txDesc.Desc.FeePerKB,
 	}
 
-	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType {
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 		valueTx, err := json.Marshal(tx)
 		if err != nil {
 			return err
@@ -143,7 +143,7 @@ func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 				return nil, err
 			}
 		}
-	case common.TxCustomTokenPrivacyType:
+	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
 			txDesc.Desc.Tx, err = transaction.NewTransactionTokenFromJsonBytes(valueTx)
 			if err != nil {

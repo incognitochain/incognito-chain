@@ -80,6 +80,13 @@ func ConvertCoinVersion(tool *debugtool.DebugTool, privKey string) {
 	fmt.Println("END CONVERT COIN")
 }
 
+func ConvertTokenCoinVersion(tool *debugtool.DebugTool, privKey string, tokenID string) {
+	fmt.Println("CONVERT TOKEN COIN")
+	b, _ := tool.SwitchTokenCoinVersion(privKey, tokenID)
+	fmt.Println(string(b))
+	fmt.Println("END CONVERT TOKEN COIN")
+}
+
 func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== GET PRV OUTPUT COIN ==========")
 	b, _ := tool.GetListOutputCoins(privkey)
@@ -173,16 +180,17 @@ func main() {
 	//	"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9",
 	//	"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
 
-	tool := new(debugtool.DebugTool).InitLocal("9338")
+	tool := new(debugtool.DebugTool).InitLocal("9334")
 
 	//InitToken(tool, privateKeys[0], "something")
 
-	//a := ListTokens(tool)
-	//tokenID := a.Result.ListCustomToken[0].ID
+	a := ListTokens(tool)
+	tokenID := a.Result.ListCustomToken[0].ID
+	//ConvertTokenCoinVersion(tool, privateKeys[0], tokenID)
 
 	//TransferToken(tool, privateKeys[0], privateKeys[1], tokenID,"1000")
 
-	//GetBalanceToken(tool, privateKeys[1], tokenID)
+	GetBalanceToken(tool, privateKeys[0], tokenID)
 
 	if len(os.Args) <= 1 {
 		return

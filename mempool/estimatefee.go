@@ -189,7 +189,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 		size := t.Desc.Tx.GetTxActualSize()
 
 		feeRateForToken := make(map[common.Hash]CoinPerKilobyte)
-		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
+		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType || t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
 			tokenID := t.Desc.Tx.GetTokenID()
 			tokenFee := t.Desc.FeeToken
 			feeRateForToken[*tokenID] = NewCoinPerKilobyte(tokenFee, size)

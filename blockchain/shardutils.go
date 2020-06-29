@@ -71,7 +71,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 			}
 		}
 		switch tx.GetType() {
-		case common.TxCustomTokenPrivacyType:
+		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				customTokenTx := tx.(transaction.TxTokenInterface)
 				proof := customTokenTx.GetTxPrivacyTokenData().TxNormal.GetProof()
@@ -413,7 +413,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 					}
 				}
 			}
-		case common.TxCustomTokenPrivacyType:
+		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				//==================Proof Process
 				txProof := tx.GetProof()
@@ -481,7 +481,7 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]coin.Coin
 				}
 			}
 		}
-		if tx.GetType() == common.TxCustomTokenPrivacyType {
+		if tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 			customTokenPrivacyTx := tx.(transaction.TxTokenInterface)
 			txTokenData := customTokenPrivacyTx.GetTxPrivacyTokenData()
 			txTokenProof := txTokenData.TxNormal.GetProof()

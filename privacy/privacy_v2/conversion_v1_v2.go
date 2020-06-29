@@ -41,10 +41,9 @@ func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-
-	err = proof.SetBytes(temp)
-	if err.(*errhandler.PrivacyError) != nil {
-		return err
+	errSetBytes := proof.SetBytes(temp)
+	if errSetBytes != nil {
+		return errSetBytes
 	}
 	return nil
 }
@@ -139,10 +138,10 @@ func (proof ConversionProofVer1ToVer2) Bytes() []byte {
 
 func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.PrivacyError {
 	if len(proofBytes) == 0 {
-		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
+		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, errors.New("Proof bytes = 0"))
 	}
 	if proofBytes[0] != proof.GetVersion() {
-		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, nil)
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Proof bytes version is not correct"))
 	}
 	if proof == nil {
 		proof = new(ConversionProofVer1ToVer2)

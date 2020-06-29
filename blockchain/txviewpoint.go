@@ -200,7 +200,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 					}
 				}
 			}
-		case common.TxCustomTokenPrivacyType:
+		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				tx := tx.(transaction.TxTokenInterface)
 				tokenData := tx.GetTxPrivacyTokenData()

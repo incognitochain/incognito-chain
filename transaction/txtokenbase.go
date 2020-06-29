@@ -54,7 +54,7 @@ type TxTokenBase struct {
 }
 
 func GetTxTokenDataFromTransaction(tx metadata.Transaction) *TxTokenData {
-	if tx.GetType() != common.TxCustomTokenPrivacyType {
+	if tx.GetType() != common.TxCustomTokenPrivacyType && tx.GetType() != common.TxTokenConversionType {
 		return nil
 	}
 	if tx.GetVersion() == TxVersion1Number {
@@ -147,28 +147,28 @@ func (txToken *TxTokenBase) CheckAuthorizedSender([]byte) (bool, error) {
 
 // =================== PARSING JSON FUNCTIONS ===================
 
-func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {
-	type TemporaryTxToken struct {
-		TxBase
-		TxPrivacyTokenData TxTokenData `json:"TxTokenPrivacyData"`
-	}
-	tempTx := TemporaryTxToken{}
-	tempTx.TxPrivacyTokenData = txToken.GetTxPrivacyTokenData()
-	tx := txToken.GetTxBase()
-	tempTx.TxBase.SetVersion(tx.GetVersion())
-	tempTx.TxBase.SetType(tx.GetType())
-	tempTx.TxBase.SetLockTime(tx.GetLockTime())
-	tempTx.TxBase.SetTxFee(tx.GetTxFee())
-	tempTx.TxBase.SetInfo(tx.GetInfo())
-	tempTx.TxBase.SetSigPubKey(tx.GetSigPubKey())
-	tempTx.TxBase.SetSig(tx.GetSig())
-	tempTx.TxBase.SetProof(tx.GetProof())
-	tempTx.TxBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-	tempTx.TxBase.SetMetadata(tx.GetMetadata())
-	tempTx.TxBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
-
-	return json.Marshal(tempTx)
-}
+//func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {
+//	type TemporaryTxToken struct {
+//		TxBase
+//		TxPrivacyTokenData TxTokenData `json:"TxTokenPrivacyData"`
+//	}
+//	tempTx := TemporaryTxToken{}
+//	tempTx.TxPrivacyTokenData = txToken.GetTxPrivacyTokenData()
+//	tx := txToken.GetTxBase()
+//	tempTx.TxBase.SetVersion(tx.GetVersion())
+//	tempTx.TxBase.SetType(tx.GetType())
+//	tempTx.TxBase.SetLockTime(tx.GetLockTime())
+//	tempTx.TxBase.SetTxFee(tx.GetTxFee())
+//	tempTx.TxBase.SetInfo(tx.GetInfo())
+//	tempTx.TxBase.SetSigPubKey(tx.GetSigPubKey())
+//	tempTx.TxBase.SetSig(tx.GetSig())
+//	tempTx.TxBase.SetProof(tx.GetProof())
+//	tempTx.TxBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
+//	tempTx.TxBase.SetMetadata(tx.GetMetadata())
+//	tempTx.TxBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
+//
+//	return json.Marshal(tempTx)
+//}
 
 func (txToken *TxTokenBase) UnmarshalJSON(data []byte) error {
 	var err error
@@ -379,11 +379,9 @@ func estimateTxSizeOfInitTokenSalary(publicKey []byte, amount uint64, coinName s
 			Tk: []byte{},
 		},
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], coinID[:])
-	propID := common.Hash(propertyID)
+	propString := common.TokenHashToString(coinID)
 	tokenParams := &CustomTokenPrivacyParamTx{
-		PropertyID:     propID.String(),
+		PropertyID:     propString,
 		PropertyName:   coinName,
 		PropertySymbol: coinName,
 		Amount:         amount,

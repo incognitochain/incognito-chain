@@ -15,7 +15,7 @@ func (logger *PaymentV2Logger) Init(inst common.Logger) {
 }
 
 const (
-	ConversionProofVersion			  = 255
+	ConversionProofVersion = 255
 )
 
 // Global instant to use

@@ -221,7 +221,7 @@ func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 
 // =================== PARSING JSON FUNCTIONS ===================
 
-func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
+func parseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 	// If transaction is nonPrivacyNonInput then we do not have proof, so parse it as nil
 	if p == nil {
 		return nil, nil
@@ -232,18 +232,25 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 	}
 
 	var res privacy.Proof
-	switch ver {
-	case TxVersion1Number, TxVersion0Number:
-		res = &zkp.PaymentProof{}
-	case TxVersion2Number:
-		res = &privacy_v2.PaymentProofV2{}
-	case TxConversionVersion12Number:
-		res = &privacy_v2.ConversionProofVer1ToVer2{}
-	default:
-		return nil, errors.New("ParseProof: Tx.Version is not 1 or 2 or -1")
+	if txType == common.TxConversionType {
+		if ver == TxConversionVersion12Number {
+			res = new(privacy_v2.ConversionProofVer1ToVer2)
+			res.Init()
+		} else {
+			return nil, errors.New("ParseProof: TxConversion version is incorrect")
+		}
+	} else {
+		switch ver {
+		case TxVersion1Number, TxVersion0Number:
+			res = new(zkp.PaymentProof)
+		case TxVersion2Number:
+			res = new(privacy_v2.PaymentProofV2)
+			res.Init()
+		default:
+			return nil, errors.New("ParseProof: Tx.Version is incorrect")
+		}
 	}
 
-	res.Init()
 	err = json.Unmarshal(proofInBytes, res)
 	if err != nil {
 		return nil, err
@@ -254,7 +261,6 @@ func parseProof(p interface{}, ver int8) (privacy.Proof, error) {
 func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	// For rolling version
 	type Alias TxBase
-	//fmt.Println(string(data))
 	temp := &struct {
 		Metadata *json.RawMessage
 		Proof    *json.RawMessage
@@ -282,7 +288,7 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	if temp.Proof == nil {
 		tx.SetProof(nil)
 	} else {
-		proof, proofErr := parseProof(temp.Proof, tx.Version)
+		proof, proofErr := parseProof(temp.Proof, tx.Version, tx.Type)
 		if proofErr != nil {
 			Logger.Log.Error(proofErr)
 			return proofErr

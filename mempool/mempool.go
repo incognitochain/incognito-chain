@@ -350,7 +350,7 @@ func (tp *TxPool) checkFees(
 ) bool {
 	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
-	if txType == common.TxCustomTokenPrivacyType {
+	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
 		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
 
 		// check transaction fee for meta data
@@ -670,7 +670,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
-		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType {
+		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 			shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
 				temp.ObserveTransaction(txD)

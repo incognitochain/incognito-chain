@@ -112,8 +112,6 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 }
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
-	fmt.Println("Validate response tx for withdraw reward requests")
-	fmt.Println("Validate response tx for withdraw reward requests")
 	// filter double withdraw request
 	withdrawReqTable := make(map[string]privacy.PaymentAddress)
 	for _, tx := range shardBlock.Body.Transactions {
@@ -125,7 +123,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 		}
 	}
-	fmt.Println("Validate withdraw Request Table", withdrawReqTable)
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
@@ -208,9 +205,6 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 // @Notice: change from body.Transaction -> transactions
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
-	fmt.Println("Build response tx for withdraw reward requests")
-	fmt.Println("Build response tx for withdraw reward requests")
-
 	withdrawReqTable := make(map[string]metadata.Transaction)
 	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
@@ -221,7 +215,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 			}
 		}
 	}
-	fmt.Println("Build Request Table: ", withdrawReqTable)
 	txsResponse := []metadata.Transaction{}
 	for _, txRequest := range withdrawReqTable {
 		txResponse, err := blockchain.buildWithDrawTransactionResponse(view, &txRequest, blkProducerPrivateKey, shardID)
@@ -293,6 +286,33 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 	}
 
 	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
+}
+
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]coin.PlainCoin, error) {
+	var outCoinsInBytes [][]byte
+	var err error
+	if keyset == nil {
+		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+	}
+	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, startHeight)
+	if err != nil {
+		return nil, err
+	}
+	// loop on all outputcoin to decrypt data
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
+	results := make([]coin.PlainCoin, 0)
+	for _, item := range outCoinsInBytes {
+		outCoin, err := coin.NewCoinFromByte(item)
+		if err != nil {
+			Logger.log.Errorf("Cannot create coin from byte %v", err)
+			return nil, err
+		}
+		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+		if decryptedOut != nil {
+			results = append(results, decryptedOut)
+		}
+	}
+	return results, nil
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {

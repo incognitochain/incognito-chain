@@ -58,6 +58,7 @@ const (
 	createAndSendCustomTokenTransaction        = "createandsendcustomtokentransaction"
 	sendRawCustomTokenTransaction              = "sendrawcustomtokentransaction"
 	createRawCustomTokenTransaction            = "createrawcustomtokentransaction"
+	createConvertCoinVer1ToVer2TxToken         = "createconvertcoinver1tover2txtoken"
 	createRawPrivacyCustomTokenTransaction     = "createrawprivacycustomtokentransaction"
 	sendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"

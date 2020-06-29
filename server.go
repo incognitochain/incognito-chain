@@ -789,7 +789,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 						}
 					}
-				case common.TxCustomTokenPrivacyType:
+				case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 						if err != nil {
