@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -139,7 +140,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	// build txs with metadata
 	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
-	shardPendingValidator, _, _ = blockchain.processInstructionFromBeacon(curView, beaconBlocks, shardID, incognitokey.NewCommitteeChange())
+	shardPendingValidator, _, _ = blockchain.processInstructionFromBeacon(curView, beaconBlocks, shardID, committeestate.NewCommitteeChange())
 	// Create Instruction
 	instructions, _, _, err = blockchain.generateInstruction(curView, shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
 	if err != nil {
@@ -179,7 +180,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, incognitokey.NewCommitteeChange())
+	newShardBestState, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, committeestate.NewCommitteeChange())
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +461,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 //	- stake instruction format
 //	 + ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 //	 + ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
-func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestState, beaconBlocks []*BeaconBlock, shardID byte, committeeChange *incognitokey.CommitteeChange) ([]string, []string, map[string]string) {
+func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestState, beaconBlocks []*BeaconBlock, shardID byte, committeeChange *committeestate.CommitteeChange) ([]string, []string, map[string]string) {
 	newShardPendingValidator := []string{}
 	shardPendingValidator := []string{}
 	if curView != nil {

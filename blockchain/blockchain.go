@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/committeestate"
 	"io"
 	"sort"
 
@@ -164,7 +165,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return err
 	}
-	committeeChange := incognitokey.NewCommitteeChange()
+	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
 	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
 	if err != nil {
