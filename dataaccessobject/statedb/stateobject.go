@@ -83,6 +83,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newRewardFeatureStateObjectWithValue(db, hash, value)
 	case BlockHashObjectType:
 		return newBlockHashStateObjectWithValue(db, hash, value)
+	case StakerObjectType:
+		return newStakerObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -146,6 +148,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newRewardFeatureStateObject(db, hash)
 	case BlockHashObjectType:
 		return newBlockHashStateObject(db, hash)
+	case StakerObjectType:
+		return newStakerObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

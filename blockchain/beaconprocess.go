@@ -82,9 +82,26 @@ CONTINUE_VERIFY:
 	return nil
 }
 
+// var bcTmp time.Duration
+// var bcStart time.Time
+// var bcAllTime time.Duration
+
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Hash()
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	// if beaconBlock.GetHeight() == 2 {
+	// 	bcTmp = 0
+	// 	bcStart = time.Now()
+	// 	bcAllTime = time.Since(bcStart)
+	// }
+	// defer func(h uint64) {
+	// 	bcAllTime = time.Since(bcStart)
+	// 	if h%1000 == 0 {
+	// 		bcTmp = bcAllTime - bcTmp
+	// 		Logger.log.Infof("[BenchmarkBeacon] Time for insert from 2->%v: %v, Avg: %v", h, bcAllTime, bcAllTime.Seconds()/float64(h-2+1))
+	// 		Logger.log.Infof("[BenchmarkBeacon] Time for insert 1000 blks [%v-%v]: %v; Avg: %v", h-1000+1, h, bcTmp, bcTmp.Seconds()/1000)
+	// 	}
+	// }(beaconBlock.GetHeight())
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
@@ -1101,8 +1118,18 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 		}
 		shardRewardReceivers := strings.Split(instruction[4], ",")
 		shardAutoReStaking := strings.Split(instruction[5], ",")
-		if len(shardCandidates) != len(shardRewardReceivers) && len(shardRewardReceivers) != len(shardAutoReStaking) {
-			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (length %+v) and Beacon Reward Receiver (length %+v) and Shard Auto ReStaking (length %+v) have equal length", len(shardCandidates), len(shardRewardReceivers), len(shardAutoReStaking))), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+		shardStakingTx := strings.Split(instruction[3], ",")
+		if (len(shardCandidates) != len(shardRewardReceivers)) || (len(shardRewardReceivers) != len(shardAutoReStaking)) {
+			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Shard Candidate (length %+v) and Shard Reward Receiver (length %+v) and Shard Auto ReStaking (length %+v) have equal length", len(shardCandidates), len(shardRewardReceivers), len(shardAutoReStaking))), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+		}
+		if len(shardRewardReceivers) != len(shardStakingTx) {
+			//How to check fixed node staking?
+			if len(shardStakingTx) > 1 {
+				err := fmt.Errorf("Expect Shard Candidate (length %+v) and Shard Reward Receiver (length %+v) and Shard Auto ReStaking (lenght %+v) and Shard Staking Tx (lenght %+v) have equal length", len(shardCandidates), len(shardRewardReceivers), len(shardAutoReStaking), len(shardStakingTx))
+				return NewBlockChainError(StakeInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+			} else {
+				shardStakingTx = []string{}
+			}
 		}
 		for index, candidate := range shardCandidatesStructs {
 			wl, err := wallet.Base58CheckDeserialize(shardRewardReceivers[index])
@@ -1115,6 +1142,16 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 			} else {
 				beaconBestState.AutoStaking[shardCandidates[index]] = false
 			}
+			txHash := common.Hash{}
+			if len(shardStakingTx) == 0 {
+				txHash = common.HashH([]byte{0})
+			} else {
+				err = (&common.Hash{}).Decode(&txHash, shardStakingTx[index])
+				if err != nil {
+					return NewBlockChainError(DecodeHashError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+				}
+			}
+			beaconBestState.StakingTx[shardCandidates[index]] = txHash
 		}
 		newShardCandidates = append(newShardCandidates, shardCandidatesStructs...)
 		return nil, false, newBeaconCandidates, newShardCandidates
@@ -1331,7 +1368,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-
 	err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
 	if err != nil {
 		return err

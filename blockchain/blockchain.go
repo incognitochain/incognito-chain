@@ -193,10 +193,27 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
-	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
-	if err != nil {
+	if err := statedb.StoreStakerInfo(
+		initBeaconBestState.consensusStateDB,
+		initBeaconBestState.BeaconCommittee,
+		initBeaconBestState.RewardReceiver,
+		initBeaconBestState.AutoStaking,
+		initBeaconBestState.StakingTx,
+	); err != nil {
 		return err
 	}
+	for _, committee := range initBeaconBestState.ShardCommittee {
+		if err := statedb.StoreStakerInfo(
+			initBeaconBestState.consensusStateDB,
+			committee,
+			initBeaconBestState.RewardReceiver,
+			initBeaconBestState.AutoStaking,
+			initBeaconBestState.StakingTx,
+		); err != nil {
+			return err
+		}
+	}
+	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
 	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
 	if err != nil {
 		return err
@@ -486,6 +503,16 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
+		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconChainDatabase(), v.BeaconHeight)
+		if err != nil {
+			return NewBlockChainError(BeaconError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", v.BeaconHeight, err))
+		}
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		if err != nil {
+			return NewBlockChainError(BeaconError, err)
+		}
+		mapStakingTx := statedb.GetMapStakingTx(beaconConsensusStateDB, blockchain.GetShardChainDatabase(shardID), blockchain.GetShardIDs(), int(shardID))
+		v.StakingTx = mapStakingTx
 	}
 	return nil
 }

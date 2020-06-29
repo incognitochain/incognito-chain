@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -254,6 +256,29 @@ func GetAllCommitteeStakeInfo(stateDB *StateDB, shardIDs []int) map[int][]*Stake
 	return stateDB.getShardsCommitteeInfo(shardIDs)
 }
 
+func GetMapStakingTx(bcDB *StateDB, sdb incdb.Database, shardIDs []int, shardID int) map[string]string {
+	res, err := bcDB.getMapStakingTx(shardIDs)
+	if err != nil {
+		panic(err)
+	}
+	for k, v := range res {
+		var txHash = &common.Hash{}
+		err := (&common.Hash{}).Decode(txHash, v)
+		if err != nil {
+			incdb.Logger.Log.Error(err)
+			delete(res, k)
+			continue
+		}
+		_, _, err = rawdbv2.GetTransactionByHash(sdb, *txHash)
+		if err != nil {
+			incdb.Logger.Log.Warn(err)
+			delete(res, k)
+			continue
+		}
+	}
+	return res
+}
+
 func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, error) {
 	pubKey := incognitokey.NewCommitteePublicKey()
 	err := pubKey.FromString(stakerPubkey)
@@ -261,7 +286,8 @@ func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, er
 		return nil, false, err
 	}
 	pubKeyBytes, _ := pubKey.RawBytes()
-	return stateDB.getStakerInfo(GetStakerInfoKey(pubKeyBytes))
+	key := GetStakerInfoKey(pubKeyBytes)
+	return stateDB.getStakerInfo(key)
 }
 
 func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey) error {
@@ -362,10 +388,8 @@ func storeStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,
-	// funderAddress map[string]privacy.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
-	// amountStaking map[string]uint64,
 ) error {
 	for _, committee := range committees {
 		keyBytes, err := committee.RawBytes()
@@ -392,18 +416,10 @@ func storeStakerInfo(
 			if !ok {
 				return fmt.Errorf("reward receiver of %+v not found", committeeString)
 			}
-			// funderPaymentAddress, ok := funderAddress[committeeString]
-			// if !ok {
-			// 	return fmt.Errorf("funder address of %+v not found", committeeString)
-			// }
 			txStakingID, ok := stakingTx[committeeString]
 			if !ok {
 				return fmt.Errorf("txStakingID of %+v not found", committeeString)
 			}
-			// amount, ok := amountStaking[committeeString]
-			// if !ok {
-			// 	return fmt.Errorf("Amount staking of %+v not found", committeeString)
-			// }
 			value = NewStakerInfoWithValue(rewardReceiverPaymentAddress, autoStakingValue, txStakingID)
 		} else {
 			value.autoStaking = autoStakingValue
@@ -421,4 +437,14 @@ func storeStakerInfo(
 		}
 	}
 	return nil
+}
+
+func StoreStakerInfo(
+	stateDB *StateDB,
+	committees []incognitokey.CommitteePublicKey,
+	rewardReceiver map[string]privacy.PaymentAddress,
+	autoStaking map[string]bool,
+	stakingTx map[string]common.Hash,
+) error {
+	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx)
 }
