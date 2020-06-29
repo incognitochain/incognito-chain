@@ -343,6 +343,12 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	if reflect.DeepEqual(*shardBestState, ShardBestState{}) {
 		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
 	}
+	if shardBestState.StakingTx == nil {
+		shardBestState.StakingTx = map[string]string{}
+	}
+	for k, v := range target.StakingTx {
+		shardBestState.StakingTx[k] = v
+	}
 	shardBestState.consensusStateDB = target.consensusStateDB.Copy()
 	shardBestState.transactionStateDB = target.transactionStateDB.Copy()
 	shardBestState.featureStateDB = target.featureStateDB.Copy()

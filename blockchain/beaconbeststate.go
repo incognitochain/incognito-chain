@@ -599,6 +599,12 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 
 	// TODO: @tin: re-produce field that not marshal
+	if beaconBestState.AutoStaking == nil {
+		beaconBestState.AutoStaking = make(map[string]bool)
+	}
+	if beaconBestState.StakingTx == nil {
+		beaconBestState.StakingTx = make(map[string]common.Hash)
+	}
 	beaconBestState.BestBlock = target.BestBlock
 	if beaconBestState.RewardReceiver == nil {
 		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
