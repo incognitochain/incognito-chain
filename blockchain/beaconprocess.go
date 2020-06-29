@@ -920,7 +920,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	}
 	if instruction[0] == SwapAction {
 		if common.IndexOfUint64(beaconBestState.BeaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 || len(instruction) == 7 {
-			err := beaconBestState.processSwapInstructionForKeyListV2(instruction, committeeChange)
+			err := beaconBestState.processSwapInstructionForKeyListV2(instruction, blockchain, committeeChange)
 			if err != nil {
 				return err, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 			}
@@ -935,12 +935,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 			}
 			outPublickeys := strings.Split(instruction[2], ",")
 			Logger.log.Debug("Swap Instruction Out Public Keys", outPublickeys)
-			outPublickeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublickeys)
-			if err != nil {
-				if len(outPublickeys) != 0 {
-					return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
-				}
-			}
 
 			if instruction[3] == "shard" {
 				temp, err := strconv.Atoi(instruction[4])
@@ -1129,7 +1123,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 }
 
-func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, committeeChange *committeeChange) error {
+func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instruction []string, blockchain *BlockChain, committeeChange *committeeChange) error {
 	if instruction[0] == SwapAction {
 		if instruction[1] == "" && instruction[2] == "" {
 			return nil
@@ -1173,12 +1167,37 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 			remainedBeaconCommittees := beaconBestState.BeaconCommittee[removedCommittee:]
 			beaconBestState.BeaconCommittee = append(inPublicKeyStructs, remainedBeaconCommittees...)
 		}
+
 		for i := 0; i < removedCommittee; i++ {
 			delete(beaconBestState.AutoStaking, outPublicKeys[i])
 			delete(beaconBestState.RewardReceiver, outPublicKeyStructs[i].GetIncKeyBase58())
 			beaconBestState.AutoStaking[inPublicKeys[i]] = false
-			beaconBestState.RewardReceiver[inPublicKeyStructs[i].GetIncKeyBase58()] = inRewardReceiver[i]
+			wl, err := wallet.Base58CheckDeserialize(inRewardReceiver[i])
+			if err != nil {
+				return NewBlockChainError(StakeInstructionError, err)
+			}
+			beaconBestState.RewardReceiver[inPublicKeyStructs[i].GetIncKeyBase58()] = wl.KeySet.PaymentAddress
+			beaconBestState.StakingTx[inPublicKeys[i]] = common.HashH([]byte{0})
 		}
+		err = statedb.StoreStakerInfo(
+			beaconBestState.consensusStateDB,
+			inPublicKeyStructs,
+			beaconBestState.RewardReceiver,
+			beaconBestState.AutoStaking,
+			beaconBestState.StakingTx,
+		)
+		if err != nil {
+			return NewBlockChainError(ProcessSalaryInstructionsError, err)
+		}
+		consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
+		if err != nil {
+			return err
+		}
+		err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+		if err != nil {
+			return err
+		}
+		beaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	}
 	return nil
 }
@@ -1188,6 +1207,25 @@ func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange
 	if err != nil {
 		return err
 	}
+	err = statedb.StoreStakerInfo(
+		beaconBestState.consensusStateDB,
+		stopAutoStakingIncognitoKey,
+		beaconBestState.RewardReceiver,
+		beaconBestState.AutoStaking,
+		beaconBestState.StakingTx,
+	)
+	if err != nil {
+		return NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+	if err != nil {
+		return err
+	}
+	beaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	for _, committeePublicKey := range stopAutoStakingIncognitoKey {
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.nextEpochBeaconCandidateAdded) > -1 {
 			continue
