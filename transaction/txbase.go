@@ -43,24 +43,17 @@ type TxBase struct {
 
 func NewTransactionFromParams(params *TxPrivacyInitParams) (metadata.Transaction, error) {
 	inputCoins := params.inputCoins
-	check := [3]bool{false, false, false}
-	for i := 0; i < len(inputCoins); i += 1 {
-		check[inputCoins[i].GetVersion()] = true
+	ver, err := getTxVersionFromCoins(inputCoins)
+	if err != nil {
+		return nil, err
 	}
-	if check[1] && check[2] {
-		return nil, errors.New("Cannot create transaction from txprivacyinitparams, have both coin version 1 and 2")
-	}
-	if !check[1] && !check[2] {
-		return new(TxVersion2), nil
-		//return nil, errors.New("Cannot create transaction from txprivacyinitparams, does not have both coin version 1 and 2")
-	}
-	if check[1] {
+
+	if ver == 1 {
 		return new(TxVersion1), nil
-	}
-	if check[2] {
+	} else if ver == 2 {
 		return new(TxVersion2), nil
 	}
-	return nil, errors.New("Something is wrong when NewTransactionFromParams")
+	return nil, errors.New("Cannot create new transaction from params, ver is wrong")
 }
 
 func NewEmptyTx() metadata.Transaction {
@@ -167,7 +160,7 @@ func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
 	if len(inputCoins) == 0 {
 		return currentTxVersion, nil
 	}
-	check := [3]bool{}
+	check := [3]bool{false, false, false}
 	for i := 0; i < len(inputCoins); i += 1 {
 		check[inputCoins[i].GetVersion()] = true
 	}
