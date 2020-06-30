@@ -412,8 +412,5 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 	tmpPubKey := new(operation.Point).Add(HrKG, paymentAdd.GetPublicSpend())
 	fmt.Println("OTA ", tmpPubKey)
 	fmt.Println("OTA ", c.publicKey)
-	if !bytes.Equal(tmpPubKey.ToBytesS(), c.publicKey.ToBytesS()) {
-		return false
-	}
-	return true
+	return bytes.Equal(tmpPubKey.ToBytesS(), c.publicKey.ToBytesS())
 }
