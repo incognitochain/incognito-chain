@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"math"
 	"sort"
 	"strconv"
@@ -138,11 +139,11 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
 }
 
 func parseLastByteSender(senderSK *privacy.PrivateKey) (byte, error) {
-	senderFullKey, err := parseSenderFullKey(senderSK)
-	if err != nil {
-		return 0, err
+	if senderSK == nil || len(*senderSK) != common.PrivateKeySize {
+		return 0, errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", senderSK))
 	}
-	return senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1], nil
+	pubKey := key.GeneratePublicKey(*senderSK)
+	return pubKey[len(pubKey)-1], nil
 }
 
 func parseSenderFullKey(senderSK *privacy.PrivateKey) (*incognitokey.KeySet, error) {
