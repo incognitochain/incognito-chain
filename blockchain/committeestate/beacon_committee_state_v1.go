@@ -379,7 +379,6 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	engine.uncommittedBeaconCommitteeStateV1 = newB
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)

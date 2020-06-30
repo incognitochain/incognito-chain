@@ -598,13 +598,12 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 			SetBtcBlockTime(chainTimestamp)
 		return randomInstruction.ToString(), nonce, nil
 	} else {
-		ran := rand.New(rand.NewSource(timestamp))
-		randInt := ran.Uint64()
+		randInt := rand.Int63()
 		randomInstruction := instruction.NewRandomInstruction().
 			SetBtcBlockHeight(int(timestamp)).
 			SetCheckPointTime(timestamp).
 			SetBtcBlockTime(timestamp + 1).
-			SetNonce(int64(randInt))
-		return randomInstruction.ToString(), int64(randInt), nil
+			SetNonce(randInt)
+		return randomInstruction.ToString(), randInt, nil
 	}
 }
