@@ -4,12 +4,11 @@ func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
 	return blockchain.config.ChainParams.StakingAmountShard
 }
 
-func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress() string {
+func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight uint64) string {
 	if blockchain.config.ChainParams.Net == Testnet {
 		return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
 	}
 	if blockchain.config.ChainParams.Net == Mainnet {
-		beaconHeight := blockchain.BeaconChain.GetFinalViewHeight()
 		if beaconHeight >= 243500 {
 			// use new address
 			return "12S6jZ6sjJaqsuMJKS6jG7gvE9eHUXGWa2B2dNC7PwyEYJkL6cE53Uzk926HrQMEv2i2oBvKP2GDTC6tzU9dYSVH5X3w9P58VWqux4F"
