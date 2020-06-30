@@ -35,10 +35,10 @@ type BeaconCommitteeStateHash struct {
 type BeaconCommitteeStateV1 struct {
 	beaconCommittee             []incognitokey.CommitteePublicKey
 	beaconSubstitute            []incognitokey.CommitteePublicKey
-	currentEpochShardCandidate  []incognitokey.CommitteePublicKey
-	currentEpochBeaconCandidate []incognitokey.CommitteePublicKey
 	nextEpochShardCandidate     []incognitokey.CommitteePublicKey
+	currentEpochShardCandidate  []incognitokey.CommitteePublicKey
 	nextEpochBeaconCandidate    []incognitokey.CommitteePublicKey
+	currentEpochBeaconCandidate []incognitokey.CommitteePublicKey
 	shardCommittee              map[byte][]incognitokey.CommitteePublicKey
 	shardSubstitute             map[byte][]incognitokey.CommitteePublicKey
 	autoStake                   map[string]bool
@@ -63,17 +63,28 @@ func NewBeaconCommitteeEngine(beaconHeight uint64, beaconHash common.Hash, beaco
 	}
 }
 
-func NewBeaconCommitteeStateV1WithValue(beaconCommittee []incognitokey.CommitteePublicKey, beaconSubstitute []incognitokey.CommitteePublicKey, currentEpochShardCandidate []incognitokey.CommitteePublicKey, currentEpochBeaconCandidate []incognitokey.CommitteePublicKey, nextEpochShardCandidate []incognitokey.CommitteePublicKey, nextEpochBeaconCandidate []incognitokey.CommitteePublicKey, shardCommittee map[byte][]incognitokey.CommitteePublicKey, shardSubstitute map[byte][]incognitokey.CommitteePublicKey, autoStaking map[string]bool, rewardReceiver map[string]string) *BeaconCommitteeStateV1 {
+func NewBeaconCommitteeStateV1WithValue(
+	beaconCommittee []incognitokey.CommitteePublicKey,
+	beaconSubstitute []incognitokey.CommitteePublicKey,
+	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
+	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
+	nextEpochBeaconCandidate []incognitokey.CommitteePublicKey,
+	currentEpochBeaconCandidate []incognitokey.CommitteePublicKey,
+	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
+	autoStake map[string]bool,
+	rewardReceiver map[string]string,
+) *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		beaconCommittee:             beaconCommittee,
 		beaconSubstitute:            beaconSubstitute,
-		currentEpochShardCandidate:  currentEpochShardCandidate,
-		currentEpochBeaconCandidate: currentEpochBeaconCandidate,
 		nextEpochShardCandidate:     nextEpochShardCandidate,
+		currentEpochShardCandidate:  currentEpochShardCandidate,
 		nextEpochBeaconCandidate:    nextEpochBeaconCandidate,
+		currentEpochBeaconCandidate: currentEpochBeaconCandidate,
 		shardCommittee:              shardCommittee,
 		shardSubstitute:             shardSubstitute,
-		autoStake:                   autoStaking,
+		autoStake:                   autoStake,
 		rewardReceiver:              rewardReceiver,
 		mu:                          new(sync.RWMutex),
 	}

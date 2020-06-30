@@ -692,6 +692,29 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
+func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
+	shardIDs := []int{statedb.BeaconShardID}
+	for i := 0; i < activeShards; i++ {
+		shardIDs = append(shardIDs, i)
+	}
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+	beaconCurrentValidator := currentValidator[statedb.BeaconShardID]
+	beaconSubstituteValidator := substituteValidator[statedb.BeaconShardID]
+	delete(currentValidator, statedb.BeaconShardID)
+	delete(substituteValidator, statedb.BeaconShardID)
+	shardCurrentValidator := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range currentValidator {
+		shardCurrentValidator[byte(k)] = v
+	}
+	shardSubstituteValidator := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range substituteValidator {
+		shardSubstituteValidator[byte(k)] = v
+	}
+	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers)
+	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngine(beaconHeight, beaconHash, beaconCommitteeState)
+	return beaconCommitteeEngine
+}
+
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(db incdb.Database, height uint64) (common.Hash, error) {
 	return rawdbv2.GetBeaconConsensusStateRootHash(db, height)
 }

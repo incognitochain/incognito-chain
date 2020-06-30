@@ -428,6 +428,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err != nil {
 			panic(err)
 		}
+		beaconCommitteeEngine := InitBeaconCommitteeEngineV1(v.ActiveShards, v.consensusStateDB, v.BeaconHeight, v.BestBlockHash)
+		v.beaconCommitteeEngine = beaconCommitteeEngine
 		currentPDEState, err := InitCurrentPDEStateFromDB(v.featureStateDB, v.BeaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
