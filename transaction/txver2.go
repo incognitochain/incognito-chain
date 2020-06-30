@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -464,9 +463,7 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String()))
 	}
-	if tx.Proof == nil {
-		return true, nil
-	}
+
 	if valid, err := tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil); !valid {
 		if err != nil {
 			Logger.Log.Error(err)
@@ -651,9 +648,6 @@ func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, 
 	check, err := checkSanityMetadataVersionSizeProofTypeInfo(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check {
 		if err != nil {
-			fmt.Println("[BUGLOG] Tx Detail Hash", tx.Hash().String())
-			tmp, _ := json.Marshal(tx)
-			fmt.Println("[BUGLOG] Tx Detail Detail", string(tmp))
 			Logger.Log.Errorf("Cannot check sanity of metadata, version, size, proof, type and info: err %v", err)
 		}
 		return false, err

@@ -21,26 +21,14 @@ import (
 
 func NewTransactionTokenFromParams(params *TxPrivacyTokenInitParams) (TxTokenInterface, error) {
 	inputCoins := params.inputCoin
-	check := [3]bool{false, false, false}
-	for i := 0; i < len(inputCoins); i += 1 {
-		check[inputCoins[i].GetVersion()] = true
-	}
-	inputCoins = params.tokenParams.TokenInput
-	for i := 0; i < len(inputCoins); i += 1 {
-		check[inputCoins[i].GetVersion()] = true
+	ver, err := getTxVersionFromCoins(inputCoins)
+	if err != nil {
+		return nil, err
 	}
 
-	if check[1] && check[2] {
-		return nil, errors.New("Cannot create transaction from txprivacyinitparams, have both coin version 1 and 2")
-	}
-	if !check[1] && !check[2] {
-		return nil, errors.New("Cannot create transaction from txprivacyinitparams, does not have both coin version 1 and 2")
-	}
-
-	if check[1] {
+	if ver == 1 {
 		return new(TxTokenVersion1), nil
-	}
-	if check[2] {
+	} else if ver == 2 {
 		return new(TxTokenVersion2), nil
 	}
 	return nil, errors.New("Something is wrong when NewTransactionFromParams")
@@ -65,10 +53,6 @@ func GetTxTokenDataFromTransaction(tx metadata.Transaction) *TxTokenData {
 		return &txTemp.TxTokenData
 	}
 	return nil
-}
-
-func NewEmptyTxToken() metadata.Transaction {
-	return new(TxTokenVersion2)
 }
 
 type TxPrivacyTokenInitParams struct {

@@ -56,10 +56,6 @@ func NewTransactionFromParams(params *TxPrivacyInitParams) (metadata.Transaction
 	return nil, errors.New("Cannot create new transaction from params, ver is wrong")
 }
 
-func NewEmptyTx() metadata.Transaction {
-	return new(TxVersion2)
-}
-
 // Function that choose which version to create metadata Transaction
 
 type TxPrivacyInitParams struct {

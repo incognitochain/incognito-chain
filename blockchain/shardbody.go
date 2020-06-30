@@ -62,23 +62,21 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 			{
 				tx, parseErr = transaction.NewTransactionFromJsonBytes(txTempJson)
 				if tx.GetMetadata() != nil {
-					fmt.Println("[BUGLOG] [METADATA]", tx.Hash().String())
+					fmt.Println("[BUGLOG METADATA]", tx.Hash().String())
 				}
-				fmt.Println("[BUGLOG]", txType)
-				fmt.Println("[BUGLOG]", tx.Hash().String())
+				fmt.Println("[BUGLOG] TxHash & Type", tx.Hash().String(), txType)
 			}
 		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				tx, parseErr = transaction.NewTransactionTokenFromJsonBytes(txTempJson)
 				if tx.GetMetadata() != nil {
-					fmt.Println("[BUGLOG] [METADATA]", tx.Hash().String())
+					fmt.Println("[BUGLOG METADATA]", tx.Hash().String())
 				}
-				fmt.Println("[BUGLOG]", txType)
-				fmt.Println("[BUGLOG]", tx.Hash().String())
+				fmt.Println("[BUGLOG TxTokenHash & Type]", tx.Hash().String(), txType)
 			}
 		default:
 			{
-				return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("can not parse a wrong tx"))
+				return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("Cannot parse a wrong tx "))
 			}
 		}
 		if parseErr != nil {

@@ -446,8 +446,7 @@ func (tx *TxVersion1) verifySig() (bool, error) {
 		Logger.Log.Error(err)
 		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
-	txByte, _ := json.Marshal(tx)
-	fmt.Println(string(txByte))
+
 	res := verifyKey.Verify(signature, tx.Hash()[:])
 	return res, nil
 }
