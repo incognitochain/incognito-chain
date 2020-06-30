@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -646,9 +647,13 @@ func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, 
 	if tx.Proof == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have proof")
 	}
+
 	check, err := checkSanityMetadataVersionSizeProofTypeInfo(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check {
 		if err != nil {
+			fmt.Println("[BUGLOG] Tx Detail Hash", tx.Hash().String())
+			tmp, _ := json.Marshal(tx)
+			fmt.Println("[BUGLOG] Tx Detail Detail", string(tmp))
 			Logger.Log.Errorf("Cannot check sanity of metadata, version, size, proof, type and info: err %v", err)
 		}
 		return false, err

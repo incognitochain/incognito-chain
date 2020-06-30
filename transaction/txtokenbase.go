@@ -170,6 +170,29 @@ func (txToken *TxTokenBase) CheckAuthorizedSender([]byte) (bool, error) {
 //	return json.Marshal(tempTx)
 //}
 
+func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {
+	type TemporaryTxToken struct {
+		TxBase
+		TxPrivacyTokenData TxTokenData `json:"TxTokenPrivacyData"`
+	}
+	tempTx := TemporaryTxToken{}
+	tempTx.TxPrivacyTokenData = txToken.GetTxPrivacyTokenData()
+	tx := txToken.GetTxBase()
+	tempTx.TxBase.SetVersion(tx.GetVersion())
+	tempTx.TxBase.SetType(tx.GetType())
+	tempTx.TxBase.SetLockTime(tx.GetLockTime())
+	tempTx.TxBase.SetTxFee(tx.GetTxFee())
+	tempTx.TxBase.SetInfo(tx.GetInfo())
+	tempTx.TxBase.SetSigPubKey(tx.GetSigPubKey())
+	tempTx.TxBase.SetSig(tx.GetSig())
+	tempTx.TxBase.SetProof(tx.GetProof())
+	tempTx.TxBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
+	tempTx.TxBase.SetMetadata(tx.GetMetadata())
+	tempTx.TxBase.SetGetSenderAddrLastByte(tx.GetSenderAddrLastByte())
+
+	return json.Marshal(tempTx)
+}
+
 func (txToken *TxTokenBase) UnmarshalJSON(data []byte) error {
 	var err error
 	if txToken.Tx, err = NewTransactionFromJsonBytes(data); err != nil {
