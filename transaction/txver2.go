@@ -206,7 +206,11 @@ func (tx *TxVersion2) signOnMessage(inp []coin.PlainCoin, out []*coin.CoinV2, pa
 	}
 
 	// Generate Ring
-	var pi int = common.RandIntInterval(0, ringSize-1)
+	piBig,piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
+	if piErr!=nil{
+		return piErr
+	}
+	var pi int = int(piBig.Int64())
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
 	ring, indexes, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID, ringSize)
 	if err != nil {

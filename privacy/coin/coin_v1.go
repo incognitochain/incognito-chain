@@ -53,66 +53,66 @@ func ArrayCoinToCoinV1(inputCoins []Coin) []*CoinV1 {
 }
 
 // Init (Coin) initializes a coin
-func (c *PlainCoinV1) Init() *PlainCoinV1 {
-	if c == nil {
-		c = new(PlainCoinV1)
+func (pc *PlainCoinV1) Init() *PlainCoinV1 {
+	if pc == nil {
+		pc = new(PlainCoinV1)
 	}
-	c.value = 0
-	c.randomness = new(operation.Scalar)
-	c.publicKey = new(operation.Point).Identity()
-	c.serialNumber = new(operation.Point).Identity()
-	c.snDerivator = new(operation.Scalar).FromUint64(0)
-	c.commitment = nil
-	return c
+	pc.value = 0
+	pc.randomness = new(operation.Scalar)
+	pc.publicKey = new(operation.Point).Identity()
+	pc.serialNumber = new(operation.Point).Identity()
+	pc.snDerivator = new(operation.Scalar).FromUint64(0)
+	pc.commitment = nil
+	return pc
 }
 
 func (*PlainCoinV1) GetVersion() uint8 { return 1 }
-func (c *PlainCoinV1) GetShardID() (uint8, error) {
-	if c.publicKey == nil {
+func (pc *PlainCoinV1) GetShardID() (uint8, error) {
+	if pc.publicKey == nil {
 		return 255, errors.New("Cannot get ShardID because PublicKey of PlainCoin is concealed")
 	}
-	pubKeyBytes := c.publicKey.ToBytes()
+	pubKeyBytes := pc.publicKey.ToBytes()
 	lastByte := pubKeyBytes[operation.Ed25519KeySize-1]
 	shardID := common.GetShardIDFromLastByte(lastByte)
 	return shardID, nil
 }
 
 // ver1 does not need to care for index
-func (c PlainCoinV1) GetIndex() uint32                  { return 0 }
-func (c PlainCoinV1) GetCommitment() *operation.Point   { return c.commitment }
-func (c PlainCoinV1) GetPublicKey() *operation.Point    { return c.publicKey }
-func (c PlainCoinV1) GetSNDerivator() *operation.Scalar { return c.snDerivator }
-func (c PlainCoinV1) GetKeyImage() *operation.Point     { return c.serialNumber }
-func (c PlainCoinV1) GetRandomness() *operation.Scalar  { return c.randomness }
-func (c PlainCoinV1) GetValue() uint64                  { return c.value }
-func (c PlainCoinV1) GetInfo() []byte                   { return c.info }
-func (c PlainCoinV1) IsEncrypted() bool                 { return false }
+func (pc PlainCoinV1) GetIndex() uint32                  { return 0 }
+func (pc PlainCoinV1) GetCommitment() *operation.Point   { return pc.commitment }
+func (pc PlainCoinV1) GetPublicKey() *operation.Point    { return pc.publicKey }
+func (pc PlainCoinV1) GetSNDerivator() *operation.Scalar { return pc.snDerivator }
+func (pc PlainCoinV1) GetKeyImage() *operation.Point     { return pc.serialNumber }
+func (pc PlainCoinV1) GetRandomness() *operation.Scalar  { return pc.randomness }
+func (pc PlainCoinV1) GetValue() uint64                  { return pc.value }
+func (pc PlainCoinV1) GetInfo() []byte                   { return pc.info }
+func (pc PlainCoinV1) IsEncrypted() bool                 { return false }
 
-func (c *PlainCoinV1) SetPublicKey(v *operation.Point)    { c.publicKey = v }
-func (c *PlainCoinV1) SetCommitment(v *operation.Point)   { c.commitment = v }
-func (c *PlainCoinV1) SetSNDerivator(v *operation.Scalar) { c.snDerivator = v }
-func (c *PlainCoinV1) SetKeyImage(v *operation.Point)     { c.serialNumber = v }
-func (c *PlainCoinV1) SetRandomness(v *operation.Scalar)  { c.randomness = v }
-func (c *PlainCoinV1) SetValue(v uint64)                  { c.value = v }
-func (c *PlainCoinV1) SetInfo(v []byte) {
-	c.info = make([]byte, len(v))
-	copy(c.info, v)
+func (pc *PlainCoinV1) SetPublicKey(v *operation.Point)    { pc.publicKey = v }
+func (pc *PlainCoinV1) SetCommitment(v *operation.Point)   { pc.commitment = v }
+func (pc *PlainCoinV1) SetSNDerivator(v *operation.Scalar) { pc.snDerivator = v }
+func (pc *PlainCoinV1) SetKeyImage(v *operation.Point)     { pc.serialNumber = v }
+func (pc *PlainCoinV1) SetRandomness(v *operation.Scalar)  { pc.randomness = v }
+func (pc *PlainCoinV1) SetValue(v uint64)                  { pc.value = v }
+func (pc *PlainCoinV1) SetInfo(v []byte) {
+	pc.info = make([]byte, len(v))
+	copy(pc.info, v)
 }
 
 // Conceal data leaving serialnumber
-func (c *PlainCoinV1) ConcealData(additionalData interface{}) {
-	c.SetCommitment(nil)
-	c.SetValue(0)
-	c.SetSNDerivator(nil)
-	c.SetPublicKey(nil)
-	c.SetRandomness(nil)
+func (pc *PlainCoinV1) ConcealData(additionalData interface{}) {
+	pc.SetCommitment(nil)
+	pc.SetValue(0)
+	pc.SetSNDerivator(nil)
+	pc.SetPublicKey(nil)
+	pc.SetRandomness(nil)
 }
 
 //MarshalJSON (CoinV1) converts coin to bytes array,
 //base58 check encode that bytes array into string
 //json.Marshal the string
-func (c PlainCoinV1) MarshalJSON() ([]byte, error) {
-	data := c.Bytes()
+func (pc PlainCoinV1) MarshalJSON() ([]byte, error) {
+	data := pc.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
@@ -121,14 +121,14 @@ func (c PlainCoinV1) MarshalJSON() ([]byte, error) {
 // json.Unmarshal the bytes array to string
 // base58 check decode that string to bytes array
 // and set bytes array to coin
-func (c *PlainCoinV1) UnmarshalJSON(data []byte) error {
+func (pc *PlainCoinV1) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	if err != nil {
 		return err
 	}
-	err = c.SetBytes(temp)
+	err = pc.SetBytes(temp)
 	if err != nil {
 		return err
 	}
@@ -136,89 +136,89 @@ func (c *PlainCoinV1) UnmarshalJSON(data []byte) error {
 }
 
 // HashH returns the SHA3-256 hashing of coin bytes array
-func (c *PlainCoinV1) HashH() *common.Hash {
-	hash := common.HashH(c.Bytes())
+func (pc *PlainCoinV1) HashH() *common.Hash {
+	hash := common.HashH(pc.Bytes())
 	return &hash
 }
 
 //CommitAll commits a coin with 5 attributes include:
 // public key, value, serial number derivator, shardID form last byte public key, randomness
-func (c *PlainCoinV1) CommitAll() error {
-	shardID, err := c.GetShardID()
+func (pc *PlainCoinV1) CommitAll() error {
+	shardID, err := pc.GetShardID()
 	if err != nil {
 		return err
 	}
 	values := []*operation.Scalar{
 		new(operation.Scalar).FromUint64(0),
-		new(operation.Scalar).FromUint64(c.value),
-		c.snDerivator,
+		new(operation.Scalar).FromUint64(pc.value),
+		pc.snDerivator,
 		new(operation.Scalar).FromUint64(uint64(shardID)),
-		c.randomness,
+		pc.randomness,
 	}
-	c.commitment, err = operation.PedCom.CommitAll(values)
+	pc.commitment, err = operation.PedCom.CommitAll(values)
 	if err != nil {
 		return err
 	}
-	c.commitment.Add(c.commitment, c.publicKey)
+	pc.commitment.Add(pc.commitment, pc.publicKey)
 
 	return nil
 }
 
 // Bytes converts a coin's details to a bytes array
 // Each fields in coin is saved in len - body format
-func (c *PlainCoinV1) Bytes() []byte {
+func (pc *PlainCoinV1) Bytes() []byte {
 	var coinBytes []byte
 
-	if c.publicKey != nil {
-		publicKey := c.publicKey.ToBytesS()
+	if pc.publicKey != nil {
+		publicKey := pc.publicKey.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if c.commitment != nil {
-		commitment := c.commitment.ToBytesS()
+	if pc.commitment != nil {
+		commitment := pc.commitment.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, commitment...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if c.snDerivator != nil {
+	if pc.snDerivator != nil {
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
-		coinBytes = append(coinBytes, c.snDerivator.ToBytesS()...)
+		coinBytes = append(coinBytes, pc.snDerivator.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if c.serialNumber != nil {
-		serialNumber := c.serialNumber.ToBytesS()
+	if pc.serialNumber != nil {
+		serialNumber := pc.serialNumber.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if c.randomness != nil {
+	if pc.randomness != nil {
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
-		coinBytes = append(coinBytes, c.randomness.ToBytesS()...)
+		coinBytes = append(coinBytes, pc.randomness.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if c.value > 0 {
-		value := new(big.Int).SetUint64(c.value).Bytes()
+	if pc.value > 0 {
+		value := new(big.Int).SetUint64(pc.value).Bytes()
 		coinBytes = append(coinBytes, byte(len(value)))
 		coinBytes = append(coinBytes, value...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if len(c.info) > 0 {
-		byteLengthInfo := byte(getMin(len(c.info), MaxSizeInfoCoin))
+	if len(pc.info) > 0 {
+		byteLengthInfo := byte(getMin(len(pc.info), MaxSizeInfoCoin))
 		coinBytes = append(coinBytes, byteLengthInfo)
-		infoBytes := c.info[0:byteLengthInfo]
+		infoBytes := pc.info[0:byteLengthInfo]
 		coinBytes = append(coinBytes, infoBytes...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -229,30 +229,30 @@ func (c *PlainCoinV1) Bytes() []byte {
 
 // SetBytes receives a coinBytes (in bytes array), and
 // reverts coinBytes to a Coin object
-func (c *PlainCoinV1) SetBytes(coinBytes []byte) error {
+func (pc *PlainCoinV1) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
 		return errors.New("coinBytes is empty")
 	}
 	var err error
 
 	offset := 0
-	c.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
+	pc.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 publicKey error: " + err.Error())
 	}
-	c.commitment, err = parsePointForSetBytes(&coinBytes, &offset)
+	pc.commitment, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 commitment error: " + err.Error())
 	}
-	c.snDerivator, err = parseScalarForSetBytes(&coinBytes, &offset)
+	pc.snDerivator, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 snDerivator error: " + err.Error())
 	}
-	c.serialNumber, err = parsePointForSetBytes(&coinBytes, &offset)
+	pc.serialNumber, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 serialNumber error: " + err.Error())
 	}
-	c.randomness, err = parseScalarForSetBytes(&coinBytes, &offset)
+	pc.randomness, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 serialNumber error: " + err.Error())
 	}
@@ -267,11 +267,11 @@ func (c *PlainCoinV1) SetBytes(coinBytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse PublicKey")
 		}
-		c.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
+		pc.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 
-	c.info, err = parseInfoForSetBytes(&coinBytes, &offset)
+	pc.info, err = parseInfoForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV1 info error: " + err.Error())
 	}
@@ -406,13 +406,13 @@ func (c *CoinV1) Init() *CoinV1 {
 }
 
 // For ver1, privateKey of coin is privateKey of user
-func (c PlainCoinV1) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
+func (pc PlainCoinV1) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
 	return new(operation.Scalar).FromBytesS(privKey), nil
 }
 
-func (c PlainCoinV1) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
-	k, _ := c.ParsePrivateKeyOfCoin(privKey)
-	Hp := operation.HashToPoint(c.GetPublicKey().ToBytesS())
+func (pc PlainCoinV1) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
+	k, _ := pc.ParsePrivateKeyOfCoin(privKey)
+	Hp := operation.HashToPoint(pc.GetPublicKey().ToBytesS())
 	return new(operation.Point).ScalarMult(Hp, k), nil
 }
 
@@ -578,7 +578,7 @@ func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 }
 
 func (c *CoinV1) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []byte, amount uint64) bool {
-	if !bytes.Equal(c.GetPublicKey().ToBytesS(), paymentAdd.GetPublicSpend().ToBytesS()) &&
+	if !bytes.Equal(c.GetPublicKey().ToBytesS(), paymentAdd.GetPublicSpend().ToBytesS()) ||
 		amount != c.GetValue() {
 		return false
 	}

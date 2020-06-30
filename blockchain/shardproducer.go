@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -758,10 +757,11 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
-	b := make([]byte, common.HashSize)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic("Cannot create random keyset")
-	}
+	// b := make([]byte, common.HashSize)
+	// _, err := rand.Read(b)
+	// if err != nil {
+	// 	panic("Cannot create random keyset")
+	// }
+	b := common.RandBytes(common.HashSize)
 	return privacy.GeneratePrivateKey(b)
 }

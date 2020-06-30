@@ -144,7 +144,7 @@ func TestInnerProductProveVerify(t *testing.T) {
 		proof2.SetBytes(bytes)
 		res3 := proof2.Verify(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
 		assert.Equal(t, true, res3)
-		res3prime := proof2.Verify(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
+		res3prime := proof.Verify(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
 		assert.Equal(t, true, res3prime)
 	}
 }
@@ -189,6 +189,145 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		res, err = proof2.VerifyFaster()
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
+	}
+}
+
+func TestAggregatedRangeProveVerifyTampered(t *testing.T) {
+	count := 10
+	for i := 0; i < count; i++ {
+		//prepare witness for Aggregated range protocol
+		wit := new(AggregatedRangeWitness)
+		numValue := rand.Intn(privacy_util.MaxOutputCoin)
+		values := make([]uint64, numValue)
+		rands := make([]*operation.Scalar, numValue)
+
+		for i := range values {
+			values[i] = uint64(rand.Uint64())
+			rands[i] = operation.RandomScalar()
+		}
+		wit.Set(values, rands)
+
+		// proving
+		proof, err := wit.Prove()
+		assert.Equal(t, nil, err)
+
+		testAggregatedRangeProofTampered(proof,t)
+	}
+}
+
+func testAggregatedRangeProofTampered(proof *AggregatedRangeProof, t *testing.T){
+	saved := proof.a
+	// tamper with one field
+	proof.a = operation.RandomPoint()
+	// verify using the fast variant
+	res, err := proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.a = saved
+
+	saved = proof.s
+	// tamper with one field
+	proof.s = operation.RandomPoint()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.s = saved
+
+	saved = proof.t1
+	// tamper with one field
+	proof.t1 = operation.RandomPoint()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.t1 = saved
+
+	saved = proof.t2
+	// tamper with one field
+	proof.t2 = operation.RandomPoint()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.t2 = saved
+
+	savedScalar := proof.tauX
+	// tamper with one field
+	proof.tauX = operation.RandomScalar()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.tauX = savedScalar
+
+	savedScalar = proof.tHat
+	// tamper with one field
+	proof.tHat = operation.RandomScalar()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.tHat = savedScalar
+
+	savedScalar = proof.innerProductProof.a
+	// tamper with one field
+	proof.innerProductProof.a = operation.RandomScalar()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.innerProductProof.a = savedScalar
+
+	savedScalar = proof.innerProductProof.b
+	// tamper with one field
+	proof.innerProductProof.b = operation.RandomScalar()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.innerProductProof.b = savedScalar
+
+	saved = proof.innerProductProof.p
+	// tamper with one field
+	proof.innerProductProof.p = operation.RandomPoint()
+	// verify using the fast variant
+	res, err = proof.VerifyFaster()
+	assert.Equal(t, false, res)
+	assert.NotEqual(t, nil, err)
+	proof.innerProductProof.p = saved
+
+	for i:=0;i<len(proof.cmsValue);i++{
+		saved := proof.cmsValue[i]
+		// tamper with one field
+		proof.cmsValue[i] = operation.RandomPoint()
+		// verify using the fast variant
+		res, err = proof.VerifyFaster()
+		assert.Equal(t, false, res)
+		assert.NotEqual(t, nil, err)
+		proof.cmsValue[i] = saved
+	}
+
+	for i:=0;i<len(proof.innerProductProof.l);i++{
+		saved := proof.innerProductProof.l[i]
+		// tamper with one field
+		proof.innerProductProof.l[i] = operation.RandomPoint()
+		// verify using the fast variant
+		res, err = proof.VerifyFaster()
+		assert.Equal(t, false, res)
+		assert.NotEqual(t, nil, err)
+		proof.innerProductProof.l[i] = saved
+	}
+
+	for i:=0;i<len(proof.innerProductProof.r);i++{
+		saved := proof.innerProductProof.r[i]
+		// tamper with one field
+		proof.innerProductProof.r[i] = operation.RandomPoint()
+		// verify using the fast variant
+		res, err = proof.VerifyFaster()
+		assert.Equal(t, false, res)
+		assert.NotEqual(t, nil, err)
+		proof.innerProductProof.r[i] = saved
 	}
 }
 

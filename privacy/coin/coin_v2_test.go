@@ -2,15 +2,14 @@ package coin
 
 import (
 	"testing"
-
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
-
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
 )
+
 
 func getRandomCoinV2() *CoinV2 {
 	c := new(CoinV2)
@@ -67,12 +66,32 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 		assert.Equal(t, true, c.GetSharedRandom() == nil)
 		assert.NotEqual(t, val, c.GetValue())
 
+		// ensure tampered coins fail to decrypt
+		testCoinV2ConcealedTampered(c,keyset,t)
+
 		var pc PlainCoin
 		pc, err = c.Decrypt(keyset)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, false, pc.IsEncrypted())
 		assert.Equal(t, val, c.GetValue())
 	}
+}
+
+func testCoinV2ConcealedTampered(c *CoinV2, ks *incognitokey.KeySet, t *testing.T){
+	saved := c.GetAmount()
+	c.SetAmount(operation.RandomScalar())
+	_, err := c.Decrypt(ks)
+	assert.NotEqual(t, nil, err)
+	
+	// fmt.Println(err)
+	c.SetAmount(saved)
+
+	saved = c.GetRandomness()
+	c.SetRandomness(operation.RandomScalar())
+	_, err = c.Decrypt(ks)
+	assert.NotEqual(t, nil, err)
+	// fmt.Println(err)
+	c.SetRandomness(saved)
 }
 
 func TestTxRandomGroup(t *testing.T) {

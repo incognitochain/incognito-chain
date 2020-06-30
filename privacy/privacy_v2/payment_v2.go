@@ -342,7 +342,8 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 	}
 
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.inputCoins[i].ConcealData(paymentInfo[i].PaymentAddress.GetPublicView())
+		proof.inputCoins[i].SetValue(0)
+		proof.inputCoins[i].SetRandomness(nil)
 	}
 
 	return proof, nil

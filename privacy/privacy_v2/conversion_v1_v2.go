@@ -352,7 +352,7 @@ func (proof ConversionProofVer1ToVer2) Verify(hasPrivacy bool, pubKey key.Public
 		return false, errors.New("ConversionProof input should be equal to fee + sum output")
 	}
 	if len(proof.inputCoins) != len(proof.serialNumberNoPrivacyProof) {
-		return false, errors.New("ConversionProof input should be equal to fee + sum output")
+		return false, errors.New("The number of input coins should be equal to the number of proofs")
 	}
 
 	for i := 0; i < len(proof.inputCoins); i += 1 {
