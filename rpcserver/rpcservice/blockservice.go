@@ -76,24 +76,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 		Logger.log.Debugf("handleGetBeaconBestState result: %+v", nil)
 		return nil, errors.New("Best State beacon not existed")
 	}
-	var beacon *blockchain.BeaconBestState
-	cachedKey := memcache.GetBeaconBestStateCachedKey()
-	cacheValue, err := blockService.MemCache.Get(cachedKey)
-	if err == nil && len(cacheValue) > 0 {
-		err1 := json.Unmarshal(cacheValue, &beacon)
-		if err1 != nil {
-			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
-		}
-	} else {
-		beacon, err = blockService.BlockChain.GetClonedBeaconBestState()
-		cacheValue, err := json.Marshal(beacon)
-		if err == nil {
-			err1 := blockService.MemCache.PutExpired(cachedKey, cacheValue, 10000)
-			if err1 != nil {
-				Logger.log.Error("Cache data of beacon best state error", err1)
-			}
-		}
-	}
+	beacon, err := blockService.BlockChain.GetClonedBeaconBestState()
 	return beacon, err
 }
 
