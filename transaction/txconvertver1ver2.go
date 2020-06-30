@@ -160,7 +160,7 @@ func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) erro
 	}
 	tx.sigPrivKey = []byte{}
 	randSK := big.NewInt(0)
-	tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
+	tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...) //CHECK THIS! Why setting tx.sigPrivKey?
 
 	// sign tx
 	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
@@ -179,7 +179,13 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
 	}
-	proofConversion := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
+	proofConversion, ok := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
+	if !ok {
+		Logger.Log.Error("Error casting ConversionProofVer1ToVer2")
+		return false, errors.New("Error casting ConversionProofVer1ToVer2")
+	}
+
+	//Verify the conversion proof
 	valid, err := proofConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
 	if !valid {
 		if err != nil {
@@ -187,6 +193,8 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 		}
 		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 	}
+
+	//Verify that output coins' one-time-address has not been obtained
 	outputCoins := tx.GetProof().GetOutputCoins()
 	for i := 0; i < len(outputCoins); i++ {
 		if ok, err := txDatabaseWrapper.hasOnetimeAddress(statedb, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
@@ -197,6 +205,8 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 			return false, errors.New("TxConversion found existing onetimeaddress in database error")
 		}
 	}
+
+	//Verify that input coins have not been spent
 	inputCoins := tx.GetProof().GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
 		if ok, err := txDatabaseWrapper.hasSerialNumber(statedb, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
@@ -207,7 +217,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 			return false, errors.New("TxConversion found existing serialNumber in database error")
 		}
 	}
-	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF")
 	return true, nil
 }
 
