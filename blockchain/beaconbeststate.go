@@ -451,7 +451,7 @@ func (beaconBestState *BeaconBestState) GetBeaconCandidate() []incognitokey.Comm
 func (beaconBestState *BeaconBestState) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
 
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, beaconBestState.GetBeaconCommittee()...)
+	return append(result, beaconBestState.beaconCommitteeEngine.GetBeaconCommittee()...)
 }
 
 func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteePublicKey {

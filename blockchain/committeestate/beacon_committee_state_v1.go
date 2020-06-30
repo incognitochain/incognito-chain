@@ -260,11 +260,7 @@ func (engine *BeaconCommitteeEngine) InitCommitteeState(env *BeaconCommitteeStat
 			continue
 		}
 		if inst[0] == instruction.STAKE_ACTION {
-			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-				continue
-			}
+			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
 			tempNewBeaconCandidates, tempNewShardCandidates := b.processStakeInstruction(stakeInstruction, env)
 			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
 			newShardCandidates = append(newShardCandidates, tempNewShardCandidates...)

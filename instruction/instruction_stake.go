@@ -134,3 +134,23 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	}
 	return nil
 }
+
+// ImportStakeInstructionFromString is unsafe method
+func ImportInitStakeInstructionFromString(instruction []string) *StakeInstruction {
+	stakeInstruction := NewStakeInstruction()
+	stakeInstruction, _ = stakeInstruction.SetPublicKeys(strings.Split(instruction[1], SPLITTER))
+	stakeInstruction.SetTxStakes(strings.Split(instruction[3], SPLITTER))
+	stakeInstruction.SetRewardReceivers(strings.Split(instruction[4], SPLITTER))
+	tempAutoStakes := strings.Split(instruction[5], SPLITTER)
+	autoStakeFlags := []bool{}
+	for _, v := range tempAutoStakes {
+		if v == TRUE {
+			autoStakeFlags = append(autoStakeFlags, true)
+		} else {
+			autoStakeFlags = append(autoStakeFlags, false)
+		}
+	}
+	stakeInstruction.SetAutoStakingFlag(autoStakeFlags)
+	stakeInstruction.SetChain(instruction[2])
+	return stakeInstruction
+}
