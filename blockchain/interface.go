@@ -93,9 +93,11 @@ type BeaconCommitteeEngine interface {
 	GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 	GetAutoStaking() map[string]bool
 	GetRewardReceiver() map[string]string
+	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()
 	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, error)
+	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 }
 

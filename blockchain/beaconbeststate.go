@@ -559,58 +559,7 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlatten
 }
 
 func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
-	res := []string{}
-	for _, committee := range beaconBestState.beaconCommitteeEngine.GetShardCommittee() {
-		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
-		if err != nil {
-			panic(err)
-		}
-		res = append(res, committeeStr...)
-	}
-	for _, substitute := range beaconBestState.beaconCommitteeEngine.GetShardSubstitute() {
-		substituteStr, err := incognitokey.CommitteeKeyListToString(substitute)
-		if err != nil {
-			panic(err)
-		}
-		res = append(res, substituteStr...)
-	}
-	beaconCommittee := beaconBestState.beaconCommitteeEngine.GetBeaconCommittee()
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconCommittee)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, beaconCommitteeStr...)
-	beaconSubstitute := beaconBestState.beaconCommitteeEngine.GetBeaconSubstitute()
-	beaconSubstituteStr, err := incognitokey.CommitteeKeyListToString(beaconSubstitute)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, beaconSubstituteStr...)
-	candidateBeaconWaitingForCurrentRandom := beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForCurrentRandom()
-	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForCurrentRandom)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, candidateBeaconWaitingForCurrentRandomStr...)
-	candidateBeaconWaitingForNextRandom := beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForNextRandom()
-	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForNextRandom)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, candidateBeaconWaitingForNextRandomStr...)
-	candidateShardWaitingForCurrentRandom := beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForCurrentRandom()
-	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForCurrentRandom)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, candidateShardWaitingForCurrentRandomStr...)
-	candidateShardWaitingForNextRandom := beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
-	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForNextRandom)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, candidateShardWaitingForNextRandomStr...)
-	return res
+	return beaconBestState.beaconCommitteeEngine.GetAllCandidateSubstituteCommittee()
 }
 
 func (beaconBestState *BeaconBestState) GetHash() *common.Hash {
@@ -702,58 +651,7 @@ func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []stri
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
-	res := []string{}
-	for _, committee := range beaconBestState.GetShardCommittee() {
-		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, committeeStr...)
-	}
-	for _, substitute := range beaconBestState.GetShardPendingValidator() {
-		substituteStr, err := incognitokey.CommitteeKeyListToString(substitute)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, substituteStr...)
-	}
-	beaconCommittee := beaconBestState.beaconCommitteeEngine.GetBeaconCommittee()
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconCommittee)
-	if err != nil {
-		return nil, err
-	}
-	res = append(res, beaconCommitteeStr...)
-	beaconSubstitute := beaconBestState.beaconCommitteeEngine.GetBeaconSubstitute()
-	beaconSubstituteStr, err := incognitokey.CommitteeKeyListToString(beaconSubstitute)
-	if err != nil {
-		return nil, err
-	}
-	res = append(res, beaconSubstituteStr...)
-	candidateBeaconWaitingForCurrentRandom := beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForCurrentRandom()
-	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForCurrentRandom)
-	if err != nil {
-		return nil, err
-	}
-	res = append(res, candidateBeaconWaitingForCurrentRandomStr...)
-	candidateBeaconWaitingForNextRandom := beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForNextRandom()
-	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForNextRandom)
-	if err != nil {
-		return nil, err
-	}
-	res = append(res, candidateBeaconWaitingForNextRandomStr...)
-	candidateShardWaitingForCurrentRandom := beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForCurrentRandom()
-	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForCurrentRandom)
-	if err != nil {
-		return nil, err
-	}
-	res = append(res, candidateShardWaitingForCurrentRandomStr...)
-	candidateShardWaitingForNextRandom := beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
-	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForNextRandom)
-	if err != nil {
-		return nil, err
-	}
-	res = append(res, candidateShardWaitingForNextRandomStr...)
-	return res, nil
+	return beaconBestState.beaconCommitteeEngine.GetAllCandidateSubstituteCommittee(), nil
 }
 
 func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, error) {
@@ -790,7 +688,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		RandomNumber:              beaconBestState.CurrentRandomNumber,
 		IsFoundRandomNumber:       isFoundRandomInstruction,
 		IsBeaconRandomTime:        isBeaconRandomTime,
-		ActiveShard:               beaconBestState.ActiveShards,
+		ActiveShards:              beaconBestState.ActiveShards,
+		MinShardCommitteeSize:     beaconBestState.MinShardCommitteeSize,
 	}
 }
 

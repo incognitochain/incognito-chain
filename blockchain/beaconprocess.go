@@ -653,12 +653,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 	return beaconBestState, hashes, committeeChange, nil
 }
 
-//TODO: how to init committee state
 func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *BeaconBlock, blockchain *BlockChain, db incdb.Database) error {
-	//var (
-	//	newBeaconCandidate = []incognitokey.CommitteePublicKey{}
-	//	newShardCandidate  = []incognitokey.CommitteePublicKey{}
-	//)
 	Logger.log.Info("Process Update Beacon Best State With Beacon Genesis Block")
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *genesisBeaconBlock.Hash()
@@ -678,25 +673,12 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
 	// update param
-	snapshotAutoStaking := make(map[string]bool)
-	for k, v := range beaconBestState.AutoStaking {
-		snapshotAutoStaking[k] = v
-	}
-	for _, inst := range genesisBeaconBlock.Body.Instructions {
-		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(inst, blockchain, committeestate.NewCommitteeChange(), snapshotAutoStaking)
-		if err != nil {
-			return err
-		}
-		newBeaconCandidate = append(newBeaconCandidate, tempNewBeaconCandidate...)
-		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
-	}
-	beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, newBeaconCandidate...)
 	beaconBestState.ConsensusAlgorithm = common.BlsConsensus
 	beaconBestState.ShardConsensusAlgorithm = make(map[byte]string)
 	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
-		beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
 		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
 	}
+	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams, genesisBeaconBlock.Body.Instructions, false, false))
 	beaconBestState.Epoch = 1
 	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
 	//statedb===========================START
