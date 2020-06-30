@@ -217,8 +217,8 @@ func (engine *BeaconCommitteeEngine) Commit(hashes *BeaconCommitteeStateHash) er
 	}
 	engine.uncommittedBeaconCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()
-	engine.beaconCommitteeStateV1.mu.Lock()
-	defer engine.beaconCommitteeStateV1.mu.Unlock()
+	engine.beaconCommitteeStateV1.mu.RLock()
+	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
