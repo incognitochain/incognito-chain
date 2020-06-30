@@ -51,6 +51,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPDEPoolPairObjectWithValue(db, hash, value)
 	case PDEShareObjectType:
 		return newPDEShareObjectWithValue(db, hash, value)
+	case PDETradingFeeObjectType:
+		return newPDETradingFeeObjectWithValue(db, hash, value)
 	case PDEStatusObjectType:
 		return newPDEStatusObjectWithValue(db, hash, value)
 	case BridgeEthTxObjectType:
@@ -114,6 +116,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPDEPoolPairObject(db, hash)
 	case PDEShareObjectType:
 		return newPDEShareObject(db, hash)
+	case PDETradingFeeObjectType:
+		return newPDETradingFeeObject(db, hash)
 	case PDEStatusObjectType:
 		return newPDEStatusObject(db, hash)
 	case BridgeEthTxObjectType:

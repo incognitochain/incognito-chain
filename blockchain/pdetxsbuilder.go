@@ -29,6 +29,19 @@ func parseTradeRefundContent(
 	return &pdeTradeRequestAction, nil
 }
 
+func parseCrossPoolTradeRefundContent(
+	contentStr string,
+) (*metadata.PDERefundCrossPoolTrade, error) {
+	contentBytes := []byte(contentStr)
+	var pdeRefundCrossPoolTrade metadata.PDERefundCrossPoolTrade
+	err := json.Unmarshal(contentBytes, &pdeRefundCrossPoolTrade)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde cross pool trade refund content: %+v", err)
+		return nil, err
+	}
+	return &pdeRefundCrossPoolTrade, nil
+}
+
 func parseTradeAcceptedContent(
 	contentStr string,
 ) (*metadata.PDETradeAcceptedContent, error) {
@@ -42,22 +55,29 @@ func parseTradeAcceptedContent(
 	return &pdeTradeAcceptedContent, nil
 }
 
+func parseCrossPoolTradeAcceptedContent(
+	contentStr string,
+) ([]metadata.PDECrossPoolTradeAcceptedContent, error) {
+	contentBytes := []byte(contentStr)
+	var pdeCrossPoolTradeAcceptedContent []metadata.PDECrossPoolTradeAcceptedContent
+	err := json.Unmarshal(contentBytes, &pdeCrossPoolTradeAcceptedContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde cross pool trade accepted content: %+v", err)
+		return nil, err
+	}
+	return pdeCrossPoolTradeAcceptedContent, nil
+}
+
 func buildTradeResTx(
-	instStatus string,
 	receiverAddressStr string,
 	receiveAmt uint64,
 	tokenIDStr string,
-	requestedTxID common.Hash,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	bridgeStateDB *statedb.StateDB,
+	stateDB *statedb.StateDB,
+	meta metadata.Metadata,
 ) (metadata.Transaction, error) {
-	meta := metadata.NewPDETradeResponse(
-		instStatus,
-		requestedTxID,
-		metadata.PDETradeResponseMeta,
-	)
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
@@ -116,13 +136,51 @@ func buildTradeResTx(
 			false,
 			shardID,
 			nil,
-			bridgeStateDB,
+			stateDB,
 		),
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", initErr)
 		return nil, initErr
 	}
+	return resTx, nil
+}
+
+func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
+	instStatus string,
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
+) (metadata.Transaction, error) {
+	crossPoolTradeRefundContent, err := parseCrossPoolTradeRefundContent(contentStr)
+	if err != nil {
+		return nil, nil
+	}
+	if shardID != crossPoolTradeRefundContent.ShardID {
+		return nil, nil
+	}
+	meta := metadata.NewPDECrossPoolTradeResponse(
+		instStatus,
+		crossPoolTradeRefundContent.TxReqID,
+		metadata.PDECrossPoolTradeResponseMeta,
+	)
+	resTx, err := buildTradeResTx(
+		crossPoolTradeRefundContent.TraderAddressStr,
+		crossPoolTradeRefundContent.Amount,
+		crossPoolTradeRefundContent.TokenIDStr,
+		producerPrivateKey,
+		shardID,
+		shardView.GetCopiedTransactionStateDB(),
+		beaconView.GetBeaconFeatureStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
+		return nil, nil
+	}
+	Logger.log.Info("[PDE Cross Pool Trade] Create refunded tx ok.")
 	return resTx, nil
 }
 
@@ -141,22 +199,70 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	if shardID != pdeTradeRequestAction.ShardID {
 		return nil, nil
 	}
-	resTx, err := buildTradeResTx(
+	meta := metadata.NewPDETradeResponse(
 		instStatus,
+		pdeTradeRequestAction.TxReqID,
+		metadata.PDETradeResponseMeta,
+	)
+	resTx, err := buildTradeResTx(
 		pdeTradeRequestAction.Meta.TraderAddressStr,
 		pdeTradeRequestAction.Meta.SellAmount+pdeTradeRequestAction.Meta.TradingFee,
 		pdeTradeRequestAction.Meta.TokenIDToSellStr,
-		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
 		shardID,
 		shardView.GetCopiedTransactionStateDB(),
 		beaconView.GetBeaconFeatureStateDB(),
+		meta,
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
 		return nil, nil
 	}
 	Logger.log.Info("[PDE Trade] Create refunded tx ok.")
+	return resTx, nil
+}
+
+func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeAcceptedTx(
+	instStatus string,
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
+) (metadata.Transaction, error) {
+	crossPoolTradeAcceptedContents, err := parseCrossPoolTradeAcceptedContent(contentStr)
+	if err != nil {
+		return nil, nil
+	}
+	len := len(crossPoolTradeAcceptedContents)
+	if len == 0 {
+		Logger.log.Warn("WARNING: cross pool trade contents is empty.")
+		return nil, nil
+	}
+	finalCrossPoolTradeAcceptedContent := crossPoolTradeAcceptedContents[len - 1]
+	if shardID != finalCrossPoolTradeAcceptedContent.ShardID {
+		return nil, nil
+	}
+	meta := metadata.NewPDECrossPoolTradeResponse(
+		instStatus,
+		finalCrossPoolTradeAcceptedContent.RequestedTxID,
+		metadata.PDECrossPoolTradeResponseMeta,
+	)
+	resTx, err := buildTradeResTx(
+		finalCrossPoolTradeAcceptedContent.TraderAddressStr,
+		finalCrossPoolTradeAcceptedContent.ReceiveAmount,
+		finalCrossPoolTradeAcceptedContent.TokenIDToBuyStr,
+		producerPrivateKey,
+		shardID,
+		shardView.GetCopiedTransactionStateDB(),
+		beaconView.GetBeaconFeatureStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted cross pool trading response tx: %+v", err)
+		return nil, nil
+	}
+	Logger.log.Info("[PDE Cross Pool Trade] Create accepted tx ok.")
 	return resTx, nil
 }
 
@@ -175,16 +281,20 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	if shardID != pdeTradeAcceptedContent.ShardID {
 		return nil, nil
 	}
-	resTx, err := buildTradeResTx(
+	meta := metadata.NewPDETradeResponse(
 		instStatus,
+		pdeTradeAcceptedContent.RequestedTxID,
+		metadata.PDETradeResponseMeta,
+	)
+	resTx, err := buildTradeResTx(
 		pdeTradeAcceptedContent.TraderAddressStr,
 		pdeTradeAcceptedContent.ReceiveAmount,
 		pdeTradeAcceptedContent.TokenIDToBuyStr,
-		pdeTradeAcceptedContent.RequestedTxID,
 		producerPrivateKey,
 		shardID,
 		shardView.GetCopiedTransactionStateDB(),
 		beaconView.GetBeaconFeatureStateDB(),
+		meta,
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
@@ -214,6 +324,35 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 		)
 	}
 	return blockGenerator.buildPDETradeAcceptedTx(
+		instStatus,
+		contentStr,
+		producerPrivateKey,
+		shardID,
+		shardView,
+		beaconView,
+	)
+}
+
+func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeIssuanceTx(
+	instStatus string,
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[PDE Cross Pool Trade] Starting...")
+	if instStatus == common.PDETradeRefundChainStatus {
+		return blockGenerator.buildPDECrossPoolTradeRefundTx(
+			instStatus,
+			contentStr,
+			producerPrivateKey,
+			shardID,
+			shardView,
+			beaconView,
+		)
+	}
+	return blockGenerator.buildPDECrossPoolTradeAcceptedTx(
 		instStatus,
 		contentStr,
 		producerPrivateKey,
@@ -511,6 +650,104 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing matched and returned contribution response (privacy custom token) tx: %+v", initErr)
+		return nil, nil
+	}
+	return resTx, nil
+}
+
+func (blockGenerator *BlockGenerator) buildPDEWithdrawalWithPRVFeeTx(
+	status string,
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[PDE Withdrawal With PRV Fee] Starting...")
+	contentBytes := []byte(contentStr)
+	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
+	err := json.Unmarshal(contentBytes, &wdAcceptedContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal with prv fee content: %+v", err)
+		return nil, nil
+	}
+	if wdAcceptedContent.ShardID != shardID {
+		return nil, nil
+	}
+
+	withdrawalTokenIDStr := wdAcceptedContent.WithdrawalTokenIDStr
+	meta := metadata.NewPDEWithdrawalWithPRVFeeResponse(
+		status,
+		withdrawalTokenIDStr,
+		wdAcceptedContent.TxReqID,
+		metadata.PDEWithdrawalWithPRVFeeResponseMeta,
+	)
+	tokenID, err := common.Hash{}.NewHashFromStr(withdrawalTokenIDStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
+		return nil, nil
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(wdAcceptedContent.WithdrawerAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing withdrawer address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	// the returned currency is PRV
+	if withdrawalTokenIDStr == common.PRVCoinID.String() {
+		resTx := new(transaction.Tx)
+		err = resTx.InitTxSalary(
+			wdAcceptedContent.DeductingPoolValue,
+			&receiverAddr,
+			producerPrivateKey,
+			shardView.GetCopiedTransactionStateDB(),
+			meta,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing withdrawal with prv fee (normal) tx: %+v", err)
+			return nil, nil
+		}
+		//modify the type of the salary transaction
+		// resTx.Type = common.TxBlockProducerCreatedType
+		return resTx, nil
+	}
+	// in case the returned currency is privacy custom token
+	receiver := &privacy.PaymentInfo{
+		Amount:         wdAcceptedContent.DeductingPoolValue,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID: propID.String(),
+		// PropertyName:   tokeName,
+		// PropertySymbol: tokenSymbol,
+		Amount:      wdAcceptedContent.DeductingPoolValue,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{receiver},
+		TokenInput:  []*privacy.InputCoin{},
+		Mintable:    true,
+	}
+	resTx := &transaction.TxCustomTokenPrivacy{}
+	initErr := resTx.Init(
+		transaction.NewTxPrivacyTokenInitParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			shardView.GetCopiedTransactionStateDB(),
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+			beaconView.GetBeaconFeatureStateDB(),
+		),
+	)
+	if initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing withdrawal with prv fee response (privacy custom token) tx: %+v", initErr)
 		return nil, nil
 	}
 	return resTx, nil

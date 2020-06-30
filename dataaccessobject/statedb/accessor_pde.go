@@ -81,6 +81,21 @@ func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]
 	return nil
 }
 
+func StorePDETradingFees(stateDB *StateDB, beaconHeight uint64, pdeTradingFees map[string]uint64) error {
+	for tempKey, feeAmount := range pdeTradingFees {
+		strs := strings.Split(tempKey, "-")
+		token1ID := strs[2]
+		token2ID := strs[3]
+		key := GeneratePDETradingFeeObjectKey(token1ID, token2ID)
+		value := NewPDETradingFeeStateWithValue(token1ID, token2ID, feeAmount)
+		err := stateDB.SetStateObject(PDETradingFeeObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StorePDETradingFeeError, err)
+		}
+	}
+	return nil
+}
+
 func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, error) {
 	pdeShares := make(map[string]uint64)
 	pdeShareStates := stateDB.getAllPDEShareState()
@@ -156,4 +171,15 @@ func GetPDEContributionStatus(stateDB *StateDB, statusType []byte, statusSuffix 
 		return []byte{}, NewStatedbError(GetPDEStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
 	return s.statusContent, nil
+}
+
+func GetPDETradingFees(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, error) {
+	pdeTradingFees := make(map[string]uint64)
+	pdeTradingFeeStates := stateDB.getAllPDETradingFeeState()
+	for _, tfState := range pdeTradingFeeStates {
+		key := string(GetPDETradingFeeKey(beaconHeight, tfState.Token1ID(), tfState.Token2ID()))
+		value := tfState.Amount()
+		pdeTradingFees[key] = value
+	}
+	return pdeTradingFees, nil
 }

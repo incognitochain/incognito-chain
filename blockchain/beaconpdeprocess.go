@@ -39,10 +39,16 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 		switch inst[0] {
 		case strconv.Itoa(metadata.PDEContributionMeta):
 			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDETradeRequestMeta):
 			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
 			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDEWithdrawalWithPRVFeeRequestMeta):
+			err = blockchain.processPDEWithdrawalWithPRVFee(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
 			Logger.log.Error(err)
@@ -74,6 +80,15 @@ func hasPDEInstruction(instructions [][]string) bool {
 			hasPDEXInstruction = true
 			break
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+			hasPDEXInstruction = true
+			break
+		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
+			hasPDEXInstruction = true
+			break
+		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+			hasPDEXInstruction = true
+			break
+		case strconv.Itoa(metadata.PDEWithdrawalWithPRVFeeRequestMeta):
 			hasPDEXInstruction = true
 			break
 		}
@@ -345,6 +360,79 @@ func (blockchain *BlockChain) processPDETrade(pdexStateDB *statedb.StateDB, beac
 	return nil
 }
 
+func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
+	if len(instruction) != 4 {
+		return nil // skip the instruction
+	}
+	if instruction[2] == common.PDECrossPoolTradeFeeRefundChainStatus ||
+		instruction[2] == common.PDECrossPoolTradeSellingTokenRefundChainStatus {
+		contentBytes := []byte(instruction[3])
+		var pdeRefundCrossPoolTrade metadata.PDERefundCrossPoolTrade
+		err := json.Unmarshal(contentBytes, &pdeRefundCrossPoolTrade)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde refund cross pool trade instruction: %+v", err)
+			return nil
+		}
+		err = statedb.TrackPDEStatus(
+			pdexStateDB,
+			rawdbv2.PDETradeStatusPrefix,
+			pdeRefundCrossPoolTrade.TxReqID[:],
+			byte(common.PDECrossPoolTradeRefundStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde refund trade status: %+v", err)
+		}
+		return nil
+	}
+	// trade accepted
+	var pdeTradeAcceptedContents []metadata.PDECrossPoolTradeAcceptedContent
+	err := json.Unmarshal([]byte(instruction[3]), &pdeTradeAcceptedContents)
+	if err != nil {
+		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDETradeAcceptedContents: %+v", err)
+		return nil
+	}
+
+	if len(pdeTradeAcceptedContents) == 0 {
+		Logger.log.Error("WARNING: There is no pde cross pool trade accepted content.")
+		return nil
+	}
+
+	for _, pdeTradeAcceptedContent := range pdeTradeAcceptedContents {
+		pdePoolForPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr))
+		pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
+		if !found || pdePoolForPair == nil {
+			Logger.log.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr)
+			return nil
+		}
+
+		if pdeTradeAcceptedContent.Token1PoolValueOperation.Operator == "+" {
+			pdePoolForPair.Token1PoolValue += pdeTradeAcceptedContent.Token1PoolValueOperation.Value
+			pdePoolForPair.Token2PoolValue -= pdeTradeAcceptedContent.Token2PoolValueOperation.Value
+		} else {
+			pdePoolForPair.Token1PoolValue -= pdeTradeAcceptedContent.Token1PoolValueOperation.Value
+			pdePoolForPair.Token2PoolValue += pdeTradeAcceptedContent.Token2PoolValueOperation.Value
+		}
+		// accumulate trading fee for the pair
+		tradingFeeForPairKey := string(rawdbv2.BuildPDETradingFeeKey(beaconHeight, pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr))
+		_, found = currentPDEState.PDETradingFees[tradingFeeForPairKey]
+		if !found {
+			currentPDEState.PDETradingFees[tradingFeeForPairKey] = pdeTradeAcceptedContent.AddingFee
+			continue
+		}
+		currentPDEState.PDETradingFees[tradingFeeForPairKey] += pdeTradeAcceptedContent.AddingFee
+	}
+	err = statedb.TrackPDEStatus(
+		pdexStateDB,
+		rawdbv2.PDETradeStatusPrefix,
+		pdeTradeAcceptedContents[0].RequestedTxID[:],
+		byte(common.PDECrossPoolTradeAcceptedStatus),
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted trade status: %+v", err)
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) processPDEWithdrawal(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
@@ -450,4 +538,99 @@ func deductSharesForWithdrawal(
 		adjustingAmt = currentAmt - amt
 	}
 	currentPDEState.PDEShares[pdeShareKey] = adjustingAmt
+}
+
+func (blockchain *BlockChain) processPDEWithdrawalWithPRVFee(
+	pdexStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instruction []string,
+	currentPDEState *CurrentPDEState,
+) error {
+	if len(instruction) != 4 {
+		return nil // skip the instruction
+	}
+	if instruction[2] == common.PDEWithdrawalWithPRVFeeRejectedChainStatus {
+		contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+			return nil
+		}
+		var pdeWithdrawalRequestAction metadata.PDEWithdrawalRequestAction
+		err = json.Unmarshal(contentBytes, &pdeWithdrawalRequestAction)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
+			return nil
+		}
+		err = statedb.TrackPDEStatus(
+			pdexStateDB,
+			rawdbv2.PDEWithdrawalStatusPrefix,
+			pdeWithdrawalRequestAction.TxReqID[:],
+			byte(common.PDEWithdrawalRejectedStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
+		}
+		return nil
+	}
+
+	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
+	err := json.Unmarshal([]byte(instruction[3]), &wdAcceptedContent)
+	if err != nil {
+		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDEWithdrawalAcceptedContent: %+v", err)
+		return nil
+	}
+
+	if instruction[2] == common.PDEWithdrawalOnPoolPairAcceptedChainStatus {
+		// update pde pool pair
+		pdePoolForPairKey := string(rawdbv2.BuildPDEPoolForPairKey(
+			beaconHeight,
+			wdAcceptedContent.PairToken1IDStr,
+			wdAcceptedContent.PairToken2IDStr,
+		))
+		pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
+		if !found || pdePoolForPair == nil {
+			Logger.log.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr)
+			return nil
+		}
+		if pdePoolForPair.Token1IDStr == wdAcceptedContent.WithdrawalTokenIDStr {
+			pdePoolForPair.Token1PoolValue -= wdAcceptedContent.DeductingPoolValue
+		} else {
+			pdePoolForPair.Token2PoolValue -= wdAcceptedContent.DeductingPoolValue
+		}
+	}
+
+	if instruction[2] == common.PDEWithdrawalOnFeeAcceptedChainStatus {
+		// update trading fees
+		tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
+			beaconHeight,
+			wdAcceptedContent.PairToken1IDStr,
+			wdAcceptedContent.PairToken2IDStr,
+		))
+		_, found := currentPDEState.PDETradingFees[tradingFeeKey]
+		if !found {
+			Logger.log.Errorf("WARNING: could not find out PDETradingFee with token ids: %s & %s", wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr)
+			return nil
+		}
+		currentPDEState.PDETradingFees[tradingFeeKey] -= wdAcceptedContent.DeductingPoolValue
+	}
+
+	// update pde shares
+	deductSharesForWithdrawal(
+		beaconHeight,
+		wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr,
+		wdAcceptedContent.WithdrawerAddressStr,
+		wdAcceptedContent.DeductingShares,
+		currentPDEState,
+	)
+
+	err = statedb.TrackPDEStatus(
+		pdexStateDB,
+		rawdbv2.PDEWithdrawalStatusPrefix,
+		wdAcceptedContent.TxReqID[:],
+		byte(common.PDEWithdrawalAcceptedStatus),
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted withdrawal status: %+v", err)
+	}
+	return nil
 }
