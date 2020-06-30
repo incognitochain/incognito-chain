@@ -472,42 +472,42 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if v.RewardReceiver == nil {
 			v.RewardReceiver = make(map[string]privacy.PaymentAddress)
 		}
-		err = v.restoreBeaconCommittee()
+		err = v.RestoreBeaconCommittee()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreShardCommittee()
+		err = v.RestoreShardCommittee()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreBeaconPendingValidator()
+		err = v.RestoreBeaconPendingValidator()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreShardPendingValidator()
+		err = v.RestoreShardPendingValidator()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreCandidateBeaconWaitingForCurrentRandom()
+		err = v.RestoreCandidateBeaconWaitingForCurrentRandom()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreCandidateBeaconWaitingForNextRandom()
+		err = v.RestoreCandidateBeaconWaitingForNextRandom()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreCandidateShardWaitingForCurrentRandom()
+		err = v.RestoreCandidateShardWaitingForCurrentRandom()
 		if err != nil {
 			panic(err)
 		}
 
-		err = v.restoreCandidateShardWaitingForNextRandom()
+		err = v.RestoreCandidateShardWaitingForNextRandom()
 		if err != nil {
 			panic(err)
 		}
@@ -562,7 +562,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		err = v.restoreCommittee(shardID, blockchain)
+		err = v.RestoreCommittee(shardID, blockchain)
 		if err != nil {
 			panic(err)
 		}
@@ -577,7 +577,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		mapStakingTx := statedb.GetMapStakingTx(beaconConsensusStateDB, blockchain.GetShardChainDatabase(shardID), blockchain.GetShardIDs(), int(shardID))
 		v.StakingTx = mapStakingTx
 
-		err = v.restorePendingValidators(shardID, blockchain)
+		err = v.RestorePendingValidators(shardID, blockchain)
 		if err != nil {
 			panic(err)
 		}

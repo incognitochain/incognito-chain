@@ -6,8 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-//restoreBeaconCommittee ...
-func (beaconBestState *BeaconBestState) restoreBeaconCommittee() error {
+//RestoreBeaconCommittee ...
+func (beaconBestState *BeaconBestState) RestoreBeaconCommittee() error {
 
 	committeePublicKey := statedb.GetBeaconCommittee(beaconBestState.consensusStateDB)
 	beaconBestState.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
@@ -18,8 +18,8 @@ func (beaconBestState *BeaconBestState) restoreBeaconCommittee() error {
 	return nil
 }
 
-//restoreShardCommittee ...
-func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
+//RestoreShardCommittee ...
+func (beaconBestState *BeaconBestState) RestoreShardCommittee() error {
 
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -37,8 +37,8 @@ func (beaconBestState *BeaconBestState) restoreShardCommittee() error {
 	return nil
 }
 
-//restoreBeaconPendingValidator ...
-func (beaconBestState *BeaconBestState) restoreBeaconPendingValidator() error {
+//RestoreBeaconPendingValidator ...
+func (beaconBestState *BeaconBestState) RestoreBeaconPendingValidator() error {
 
 	committeePublicKey := statedb.GetBeaconSubstituteValidator(beaconBestState.consensusStateDB)
 	beaconBestState.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
@@ -48,8 +48,8 @@ func (beaconBestState *BeaconBestState) restoreBeaconPendingValidator() error {
 	return nil
 }
 
-//restoreShardPendingValidator ...
-func (beaconBestState *BeaconBestState) restoreShardPendingValidator() error {
+//RestoreShardPendingValidator ...
+func (beaconBestState *BeaconBestState) RestoreShardPendingValidator() error {
 
 	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	for i := 0; i < beaconBestState.ActiveShards; i++{
@@ -62,8 +62,8 @@ func (beaconBestState *BeaconBestState) restoreShardPendingValidator() error {
 	return nil
 }
 
-//restoreCandidateShardWaitingForCurrentRandom ...
-func (beaconBestState *BeaconBestState) restoreCandidateShardWaitingForCurrentRandom() error {
+//RestoreCandidateShardWaitingForCurrentRandom ...
+func (beaconBestState *BeaconBestState) RestoreCandidateShardWaitingForCurrentRandom() error {
 
 	//GetCurrentEpochCandidate
 	committeePublicKey := statedb.GetCurrentEpochCandidate(beaconBestState.consensusStateDB)
@@ -74,8 +74,8 @@ func (beaconBestState *BeaconBestState) restoreCandidateShardWaitingForCurrentRa
 	return nil
 }
 
-//restoreCandidateBeaconWaitingForCurrentRandom ...
-func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForCurrentRandom() error {
+//RestoreCandidateBeaconWaitingForCurrentRandom ...
+func (beaconBestState *BeaconBestState) RestoreCandidateBeaconWaitingForCurrentRandom() error {
 
 	//TODO: @tin
 	// For further development, when beacon is round robin for community -> change here
@@ -84,8 +84,8 @@ func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForCurrentR
 	return nil
 }
 
-//restoreCandidateShardWaitingForNextRandom ...
-func (beaconBestState *BeaconBestState) restoreCandidateShardWaitingForNextRandom() error {
+//RestoreCandidateShardWaitingForNextRandom ...
+func (beaconBestState *BeaconBestState) RestoreCandidateShardWaitingForNextRandom() error {
 	//GetNextEpochCandidate
 	committeePublicKey := statedb.GetNextEpochCandidate(beaconBestState.consensusStateDB)
 	beaconBestState.CandidateShardWaitingForNextRandom = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
@@ -95,8 +95,8 @@ func (beaconBestState *BeaconBestState) restoreCandidateShardWaitingForNextRando
 	return nil
 }
 
-//restoreCandidateBeaconWaitingForNextRandom ...
-func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForNextRandom() error {
+//RestoreCandidateBeaconWaitingForNextRandom ...
+func (beaconBestState *BeaconBestState) RestoreCandidateBeaconWaitingForNextRandom() error {
 
 	//TODO: @tin
 	// For further development, when beacon is round robin for community -> change here
@@ -106,7 +106,7 @@ func (beaconBestState *BeaconBestState) restoreCandidateBeaconWaitingForNextRand
 }
 
 //RecoverCommittee ...
-func (shardBestState *ShardBestState) restoreCommittee(shardID byte, chain *BlockChain) error {
+func (shardBestState *ShardBestState) RestoreCommittee(shardID byte, chain *BlockChain) error {
 
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
 
@@ -124,8 +124,8 @@ func (shardBestState *ShardBestState) restoreCommittee(shardID byte, chain *Bloc
 	return nil
 }
 
-//restorePendingValidators ...
-func (shardBestState *ShardBestState) restorePendingValidators(shardID byte, bc *BlockChain) error {
+//RestorePendingValidators ...
+func (shardBestState *ShardBestState) RestorePendingValidators(shardID byte, bc *BlockChain) error {
 
 	committeePublicKey := statedb.GetOneShardSubstituteValidator(shardBestState.consensusStateDB, shardID)
 	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))

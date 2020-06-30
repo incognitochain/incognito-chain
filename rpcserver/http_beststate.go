@@ -2,6 +2,9 @@ package rpcserver
 
 import (
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -16,6 +19,64 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+
+	err = beaconBestState.InitStateRootHash(httpServer.config.BlockChain)
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO: re-produce field that not marshal
+	//best block
+	block, _, err := httpServer.config.BlockChain.GetBeaconBlockByHash(beaconBestState.BestBlockHash)
+	if err != nil || block == nil {
+		fmt.Println("block ", block)
+		panic(err)
+	}
+	beaconBestState.BestBlock = *block
+	//@tin beacon committee
+	//@tin shard committee
+	if beaconBestState.RewardReceiver == nil {
+		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
+	}
+	err = beaconBestState.RestoreBeaconCommittee()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreShardCommittee()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreBeaconPendingValidator()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreShardPendingValidator()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateBeaconWaitingForCurrentRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateBeaconWaitingForNextRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateShardWaitingForCurrentRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateShardWaitingForNextRandom()
+	if err != nil {
+		panic(err)
 	}
 
 	result := jsonresult.NewGetBeaconBestState(beaconBestState)
@@ -39,6 +100,40 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	shardBestState, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
+	}
+
+	block, _, err := httpServer.config.BlockChain.GetShardBlockByHash(shardBestState.BestBlockHash)
+	if err != nil || block == nil {
+		fmt.Println("block ", block)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+	shardBestState.BestBlock = block
+
+	err = shardBestState.InitStateRootHash(httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	err = shardBestState.RestoreCommittee(shardID, httpServer.config.BlockChain)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	beaconConsensusRootHash, err := httpServer.config.BlockChain.GetBeaconConsensusRootHash(httpServer.config.BlockChain.GetBeaconChainDatabase(), shardBestState.BeaconHeight)
+	if err != nil {
+
+	}
+	
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+	mapStakingTx := statedb.GetMapStakingTx(beaconConsensusStateDB, httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain.GetShardIDs(), int(shardID))
+	shardBestState.StakingTx = mapStakingTx
+
+	err = shardBestState.RestorePendingValidators(shardID, httpServer.config.BlockChain)
+	if err != nil {
+		panic(err)
 	}
 
 	result := jsonresult.NewGetShardBestState(shardBestState)
