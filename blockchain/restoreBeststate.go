@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -110,11 +109,11 @@ func (shardBestState *ShardBestState) RestoreCommittee(shardID byte, chain *Bloc
 
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
 
-	fmt.Println("[optimize-beststate] len(committeePublicKey):", len(committeePublicKey))
-	for _, v := range committeePublicKey {
-		key, _ := v.ToBase58()
-		fmt.Println("[optimize-beststate] key:", key)
-	}
+	//fmt.Println("[optimize-beststate] len(committeePublicKey):", len(committeePublicKey))
+	//for _, v := range committeePublicKey {
+	//	key, _ := v.ToBase58()
+	//	fmt.Println("[optimize-beststate] key:", key)
+	//}
 
 	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 	for i, v := range committeePublicKey {

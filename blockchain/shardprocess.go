@@ -1184,43 +1184,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	}
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
-
-	// get map shard committee
-
-	mapByte, err := json.Marshal(newShardState.ShardCommittee)
-	if err != nil {
-		panic(err)
-	}
-
-	committeePublicKey := statedb.GetOneShardCommittee(newShardState.consensusStateDB, shardID)
-	databaseByte, err := json.Marshal(committeePublicKey)
-	if err != nil {
-		panic(err)
-	}
-
-	if !bytes.Equal(mapByte, databaseByte) {
-
-		fmt.Println("[optimize-beststate-debug] newShardState.ShardHeight:", newShardState.ShardHeight)
-
-		fmt.Println("[optimize-beststate-debug] len(newShardState.ShardCommittee):", len(newShardState.ShardCommittee))
-
-		for _, v := range newShardState.ShardCommittee {
-			key, _ := v.ToBase58()
-			fmt.Println("[optimize-beststate] key in newShardState.ShardCommittee:", key)
-		}
-
-		fmt.Println("[optimize-beststate-debug] len(committeePublicKey):", len(committeePublicKey))
-
-		for _, v := range committeePublicKey {
-			key, _ := v.ToBase58()
-			fmt.Println("[optimize-beststate] key in committeePublicKey:", key)
-		}
-
-		panic("mapByte and databaseByte of shard best state is not similar")
-	}
-
-	// get shard committee database
-
 	return nil
 }
 
