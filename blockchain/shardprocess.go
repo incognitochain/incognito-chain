@@ -160,12 +160,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		Logger.log.Debugf("SHARD %+v | SKIP Verify Best State With Shard Block, Shard Block Height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
 
-	Logger.log.Debugf("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	oldCommittee, err := incognitokey.CommitteeKeyListToString(curView.ShardCommittee)
-	if err != nil {
-		return err
-	}
-
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	newBestState, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committeeChange)
 	if err != nil {
@@ -176,13 +170,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	// update number of blocks produced by producers to shard best state
 	newBestState.updateNumOfBlocksByProducers(shardBlock)
 
-	newCommittee, err := incognitokey.CommitteeKeyListToString(newBestState.ShardCommittee)
-	if err != nil {
-		return err
-	}
-	if !common.CompareStringArray(oldCommittee, newCommittee) {
-		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
-	}
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 	Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
