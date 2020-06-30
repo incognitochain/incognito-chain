@@ -909,7 +909,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 			// } else {
 			// 	// if found in committee list then turn off auto staking
 			// 	if _, ok := beaconBestState.AutoStaking[committeePublicKey]; ok {
-			// 		beaconBestState.AutoStaking[committeePublicKey] = false
+			beaconBestState.AutoStaking[committeePublicKey] = false
 
 			// stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, committeePublicKey)
 

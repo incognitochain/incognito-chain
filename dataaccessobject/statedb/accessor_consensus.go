@@ -408,10 +408,10 @@ func storeStakerInfo(
 			return err
 		}
 		autoStakingValue, ok := autoStaking[committeeString]
-		if !ok {
-			return fmt.Errorf("auto staking of %+v not found", committeeString)
-		}
 		if !has {
+			if !ok {
+				return fmt.Errorf("auto staking of %+v not found", committeeString)
+			}
 			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
 			if !ok {
 				return fmt.Errorf("reward receiver of %+v not found", committeeString)
@@ -422,6 +422,10 @@ func storeStakerInfo(
 			}
 			value = NewStakerInfoWithValue(rewardReceiverPaymentAddress, autoStakingValue, txStakingID)
 		} else {
+			if !ok {
+				// In this case, this committee is already storage in db, it just swap out of committee and rejoin waiting candidate without change autostaking param
+				continue
+			}
 			value.autoStaking = autoStakingValue
 		}
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
