@@ -97,6 +97,7 @@ func (s *Engine) WatchCommitteeChange() {
 	}
 
 	var miningProcess ConsensusInterface = nil
+	//TODO: optimize - if in pending start to listen propose block, but not vote
 	if role == "committee" {
 		chainName := "beacon"
 
@@ -104,14 +105,25 @@ func (s *Engine) WatchCommitteeChange() {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
 
+		s.updateVersion(chainID)
 		if _, ok := s.BFTProcess[chainID]; !ok {
 			if len(s.config.Blockchain.ShardChain)-1 < chainID {
 				panic("Chain " + chainName + " not available")
 			}
 			s.initProcess(chainID, chainName)
-		} else if s.updateVersion(chainID) { // within 3s, we change consensus version -> enough for 10s block
-			s.BFTProcess[chainID].Stop()
-			s.initProcess(chainID, chainName)
+		} else { //if not run correct version => stop and init
+			if s.version == 1 {
+				if _, ok := s.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
+					s.BFTProcess[chainID].Stop()
+					s.initProcess(chainID, chainName)
+				}
+			}
+			if s.version == 2 {
+				if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
+					s.BFTProcess[chainID].Stop()
+					s.initProcess(chainID, chainName)
+				}
+			}
 		}
 
 		s.BFTProcess[chainID].Start()
@@ -135,7 +147,6 @@ func NewConsensusEngine() *Engine {
 		version:              1,
 		lock:                 new(sync.Mutex),
 	}
-
 	return engine
 }
 
@@ -155,7 +166,7 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 	}
 }
 
-func (engine *Engine) updateVersion(chainID int) bool {
+func (engine *Engine) updateVersion(chainID int) {
 	chainEpoch := uint64(1)
 	if chainID == -1 {
 		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
@@ -163,12 +174,9 @@ func (engine *Engine) updateVersion(chainID int) bool {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch && engine.version <= 1 {
+	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
 		engine.version = 2
-		return true
 	}
-
-	return false
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
