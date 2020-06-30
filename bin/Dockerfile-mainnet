@@ -9,6 +9,7 @@ RUN chmod 0644 /etc/cron.d/removeoldlog
 RUN crontab /etc/cron.d/removeoldlog
 
 COPY ./keylist.json /
+COPY ./keylist-v2.json /
 COPY ./sample-config.conf /
 
 COPY ./run_incognito.sh /

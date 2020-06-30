@@ -43,22 +43,38 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
 		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
-
 		var tx metadata.Transaction
 		var parseErr error
 		txType := ""
-		err = json.Unmarshal(*txTemp["Type"], &txType)
-		if err != nil {
+
+		if txTemp["Type"] != nil {
+			if err = json.Unmarshal(*txTemp["Type"], &txType); err != nil {
+				panic(fmt.Sprintf("Cannot parse Tx Type from Shard Body: %v", txTemp))
+				return NewBlockChainError(UnmashallJsonShardBlockError, err)
+			}
+		} else {
+			panic(fmt.Sprintf("Cannot parse Shard Body from data : %v", txTemp))
 			return NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
+
 		switch txType {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 			{
 				tx, parseErr = transaction.NewTransactionFromJsonBytes(txTempJson)
+				if tx.GetMetadata() != nil {
+					fmt.Println("[BUGLOG] [METADATA]", tx.Hash().String())
+				}
+				fmt.Println("[BUGLOG]", txType)
+				fmt.Println("[BUGLOG]", tx.Hash().String())
 			}
 		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				tx, parseErr = transaction.NewTransactionTokenFromJsonBytes(txTempJson)
+				if tx.GetMetadata() != nil {
+					fmt.Println("[BUGLOG] [METADATA]", tx.Hash().String())
+				}
+				fmt.Println("[BUGLOG]", txType)
+				fmt.Println("[BUGLOG]", tx.Hash().String())
 			}
 		default:
 			{
