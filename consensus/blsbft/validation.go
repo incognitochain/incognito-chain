@@ -88,17 +88,6 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
 	}
 
-	//if block.GetHeight() == 276939 {
-	//	for _, v := range committee {
-	//		str, _ := v.ToBase58()
-	//		fmt.Println("[optimize-beststate] committee key:", str)
-	//	}
-	//
-	//	//fmt.Println("[optimize-beststate] len(committee):", len(committee))
-	//	//fmt.Println("[optimize-beststate] valData.AggSig:", valData.AggSig)
-	//	//fmt.Println("[optimize-beststate] string(valData.AggSig):", string(valData.AggSig))
-	//}
-
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}

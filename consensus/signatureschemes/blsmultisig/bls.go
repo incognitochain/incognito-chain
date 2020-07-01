@@ -46,8 +46,6 @@ func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, err
 // Verify verify BLS sig on given data and list public key
 func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, error) {
 
-	//fmt.Println("[optimize-beststate] {blsbft.Verify} len(committee):", len(committee))
-
 	for _, idx := range signersIdx {
 		if (idx < 0) || (idx >= len(committee)) {
 			return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
