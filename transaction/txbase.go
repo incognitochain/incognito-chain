@@ -38,6 +38,7 @@ type TxBase struct {
 	Metadata metadata.Metadata
 	// private field, not use for json parser, only use as temp variable
 	sigPrivKey       []byte  // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	cachedHash       *common.Hash // cached hash data of tx
 	cachedActualSize *uint64 // cached actualsize data for tx
 }
 
@@ -435,8 +436,12 @@ func (tx TxBase) String() string {
 }
 
 func (tx TxBase) Hash() *common.Hash {
+	if tx.cachedHash != nil {
+		return tx.cachedHash
+	}
 	inBytes := []byte(tx.String())
 	hash := common.HashH(inBytes)
+	tx.cachedHash = &hash
 	return &hash
 }
 

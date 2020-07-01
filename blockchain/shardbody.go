@@ -61,18 +61,12 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 			{
 				tx, parseErr = transaction.NewTransactionFromJsonBytes(txTempJson)
-				if tx.GetMetadata() != nil {
-					fmt.Println("[BUGLOG METADATA]", tx.Hash().String())
-				}
-				fmt.Println("[BUGLOG] TxHash & Type", tx.Hash().String(), txType)
+				fmt.Println("[BUGLOG] Tx Hash & Type:", tx.Hash().String(), tx.GetType())
 			}
 		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				tx, parseErr = transaction.NewTransactionTokenFromJsonBytes(txTempJson)
-				if tx.GetMetadata() != nil {
-					fmt.Println("[BUGLOG METADATA]", tx.Hash().String())
-				}
-				fmt.Println("[BUGLOG TxTokenHash & Type]", tx.Hash().String(), txType)
+				fmt.Println("[BUGLOG] Tx Token Hash & Type:", tx.Hash().String(), tx.GetType())
 			}
 		default:
 			{

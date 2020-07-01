@@ -39,6 +39,7 @@ type Tx = metadata.Transaction
 type TxTokenBase struct {
 	Tx
 	TxTokenData TxTokenData `json:"TxTokenPrivacyData"`
+	cachedHash *common.Hash
 }
 
 func GetTxTokenDataFromTransaction(tx metadata.Transaction) *TxTokenData {
@@ -237,7 +238,12 @@ func (txToken TxTokenBase) JSONString() string {
 
 // Hash returns the hash of all fields of the transaction
 func (txToken *TxTokenBase) Hash() *common.Hash {
+	if txToken.cachedHash != nil {
+		return txToken.cachedHash
+	}
+	// final hash
 	hash := common.HashH([]byte(txToken.String()))
+	txToken.cachedHash = &hash
 	return &hash
 }
 

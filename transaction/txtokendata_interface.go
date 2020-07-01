@@ -96,7 +96,9 @@ func (txData TxTokenData) String() string {
 				publicKeyBytes = in.GetPublicKey().ToBytesS()
 			}
 			record += string(publicKeyBytes)
-			record += strconv.FormatUint(in.GetValue(), 10)
+			if in.GetValue() > 0 {
+				record += strconv.FormatUint(in.GetValue(), 10)
+			}
 		}
 	}
 	return record

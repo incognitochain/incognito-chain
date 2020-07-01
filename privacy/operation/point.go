@@ -254,7 +254,6 @@ func (p *Point) Sub(pa, pb *Point) *Point {
 func IsPointEqual(pa *Point, pb *Point) bool {
 	tmpa := pa.ToBytesS()
 	tmpb := pb.ToBytesS()
-
 	return subtle.ConstantTimeCompare(tmpa, tmpb) == 1
 }
 
