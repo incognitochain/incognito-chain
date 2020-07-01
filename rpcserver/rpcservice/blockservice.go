@@ -947,15 +947,15 @@ func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte
 	return statedb.GetPDEStatus(pdexStateDB, pdePrefix, pdeSuffix)
 }
 
-//============================= Slash ===============================
-func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
-	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetBeaconChainDatabase(), beaconHeight)
-	if err != nil {
-		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
-	}
-	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetBeaconChainDatabase()))
-	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
-}
+////============================= Slash ===============================
+//func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
+//	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
+//	if err != nil {
+//		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
+//	}
+//	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetBeaconChainDatabase()))
+//	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
+//}
 
 //============================= Portal ===============================
 func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (*metadata.PortalCustodianDepositStatus, error) {

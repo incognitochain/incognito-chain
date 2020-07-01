@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	blockHashByIndexPrefix             = []byte("block-hash-by-index-")
 	committeePrefix                    = []byte("shard-com-")
 	substitutePrefix                   = []byte("shard-sub-")
 	nextShardCandidatePrefix           = []byte("next-sha-cand-")

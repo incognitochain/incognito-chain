@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -27,6 +26,13 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
+
+type BeaconRootHash struct {
+	ConsensusStateDBRootHash common.Hash
+	FeatureStateDBRootHash   common.Hash
+	RewardStateDBRootHash    common.Hash
+	SlashStateDBRootHash     common.Hash
+}
 
 type BeaconBestState struct {
 	BestBlockHash                          common.Hash                                `json:"BestBlockHash"`         // The hash of the block.
@@ -140,7 +146,7 @@ func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockChain) error {
 	db := bc.GetBeaconChainDatabase()
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-	if rootHash, err := bc.GetBeaconConsensusRootHash(db, beaconBestState.BeaconHeight); err == nil {
+	if rootHash, err := bc.GetBeaconConsensusRootHash(beaconBestState.consensusStateDB, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -148,7 +154,7 @@ func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockC
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetBeaconFeatureRootHash(db, beaconBestState.BeaconHeight); err == nil {
+	if rootHash, err := bc.GetBeaconFeatureRootHash(beaconBestState.featureStateDB, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -156,7 +162,7 @@ func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockC
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetBeaconRewardRootHash(db, beaconBestState.BeaconHeight); err == nil {
+	if rootHash, err := bc.GetBeaconRewardRootHash(beaconBestState.rewardStateDB, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -164,14 +170,14 @@ func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockC
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetBeaconSlashRootHash(db, beaconBestState.BeaconHeight); err == nil {
-		beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
-		if err != nil {
-			return err
-		}
-	} else {
-		return err
-	}
+	//if rootHash, err := bc.GetBeaconSlashRootHash(beaconBestState.slashStateDB, beaconBestState.BeaconHeight); err == nil {
+	//	beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+	//	if err != nil {
+	//		return err
+	//	}
+	//} else {
+	//	return err
+	//}
 	return nil
 }
 
@@ -869,18 +875,48 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 	return bridgeTokenIDs, nil
 }
 
-func (blockchain *BlockChain) GetBeaconConsensusRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetBeaconConsensusStateRootHash(db, height)
+func (blockchain *BlockChain) GetBeaconConsensusRootHash(stateDB *statedb.StateDB, height uint64) (common.Hash, error) {
+	bRH, e := blockchain.GetBeaconRootsHash(stateDB, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return bRH.ConsensusStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetBeaconRewardRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetBeaconRewardStateRootHash(db, height)
+func (blockchain *BlockChain) GetBeaconRewardRootHash(stateDB *statedb.StateDB, height uint64) (common.Hash, error) {
+	bRH, e := blockchain.GetBeaconRootsHash(stateDB, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return bRH.RewardStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetBeaconFeatureRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetBeaconFeatureStateRootHash(db, height)
+func (blockchain *BlockChain) GetBeaconFeatureRootHash(stateDB *statedb.StateDB, height uint64) (common.Hash, error) {
+	bRH, e := blockchain.GetBeaconRootsHash(stateDB, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return bRH.FeatureStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetBeaconSlashRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetBeaconSlashStateRootHash(db, height)
+func (blockchain *BlockChain) GetBeaconSlashRootHash(stateDB *statedb.StateDB, height uint64) (common.Hash, error) {
+	bRH, e := blockchain.GetBeaconRootsHash(stateDB, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return bRH.SlashStateDBRootHash, nil
+}
+
+func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, height uint64) (*BeaconRootHash, error) {
+	h, e := statedb.GetBeaconBlockHashByIndex(stateDB, height)
+	if e != nil {
+		return nil, e
+	}
+	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), h)
+	if e != nil {
+		return nil, e
+	}
+	bRH := &BeaconRootHash{}
+	err := json.Unmarshal(data, bRH)
+	return bRH, err
 }

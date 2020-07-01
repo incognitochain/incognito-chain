@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := int(arrayParams[0].(float64))
-	beaconConsensusStateRootHash, err := httpServer.blockService.BlockChain.GetBeaconConsensusRootHash(httpServer.blockService.BlockChain.GetBeaconChainDatabase(), uint64(height))
+	beaconConsensusStateRootHash, err := httpServer.blockService.BlockChain.GetBeaconConsensusRootHash(httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconConsensusStateDB(), uint64(height))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

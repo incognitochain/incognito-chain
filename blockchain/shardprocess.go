@@ -172,11 +172,11 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
-	Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
-		fmt.Println("Instructions", shardBlock.Body.Instructions)
-		return err
-	}
+		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+			fmt.Println("Instructions", shardBlock.Body.Instructions)
+			return err
+		}
 	} else {
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	}
@@ -956,7 +956,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
 func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *ShardBlock, committeeChange *committeeChange, beaconBlock *BeaconBlock) error {
-	startTimeProcessStoreShardBlock := time.Now()
+
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
@@ -1121,19 +1121,15 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	newShardState.slashStateDB.ClearObjects()
 
 	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
-	if err := rawdbv2.StoreShardConsensusRootHash(batchData, shardID, blockHeight, consensusRootHash); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+	sRH := ShardRootHash{
+		ConsensusStateDBRootHash:   consensusRootHash,
+		FeatureStateDBRootHash:     featureRootHash,
+		RewardStateDBRootHash:      rewardRootHash,
+		SlashStateDBRootHash:       slashRootHash,
+		TransactionStateDBRootHash: transactionRootHash,
 	}
-	if err := rawdbv2.StoreShardTransactionRootHash(batchData, shardID, blockHeight, transactionRootHash); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	if err := rawdbv2.StoreShardFeatureRootHash(batchData, shardID, blockHeight, featureRootHash); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	if err := rawdbv2.StoreShardCommitteeRewardRootHash(batchData, shardID, blockHeight, rewardRootHash); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	if err := rawdbv2.StoreShardSlashRootHash(batchData, shardID, blockHeight, slashRootHash); err != nil {
+
+	if err := rawdbv2.StoreShardRootsHash(batchData, shardID, blockHash, sRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
@@ -1142,28 +1138,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	//finalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
-	//newFinalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
-	//if finalView != nil && newFinalView.GetHash().String() != finalView.GetHash().String() {
-	//	startView := newFinalView
-	//	for {
-	//		blks, _ := blockchain.GetShardBlockHashByHeight(startView.GetHeight(), shardID)
-	//		for _, hash := range blks {
-	//			if hash.String() != startView.GetHash().String() {
-	//				err := rawdbv2.DeleteShardBlock(blockchain.GetShardChainDatabase(shardID), shardID, startView.GetHeight(), hash)
-	//				if err != nil {
-	//					//must not have error
-	//					panic(err)
-	//				}
-	//			}
-	//		}
-	//		startView = blockchain.ShardChain[shardBlock.Header.ShardID].GetViewByHash(*startView.GetPreviousHash())
-	//		if startView == nil || startView.GetHeight() == finalView.GetHeight() {
-	//			break
-	//		}
-	//	}
-	//}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
@@ -1173,7 +1148,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err := batchData.Write(); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
+
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil
 }

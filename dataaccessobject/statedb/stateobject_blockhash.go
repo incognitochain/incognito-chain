@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+	"strconv"
 )
+
+func GenerateBlockHashByIndexKey(chainName string, index uint64) common.Hash {
+	h1 := common.HashH(append(blockHashByIndexPrefix, []byte(chainName)...))
+	h2 := common.HashH([]byte(strconv.Itoa(int(index))))
+	return common.BytesToHash(append(h1[:][:prefixHashKeyLength], h2[:][:prefixKeyLength]...))
+}
 
 func newBlockHashStateObject(db *StateDB, hash common.Hash) *BlockHashObject {
 	return &BlockHashObject{

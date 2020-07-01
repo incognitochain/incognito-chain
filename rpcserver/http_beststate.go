@@ -119,11 +119,11 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
 
-	beaconConsensusRootHash, err := httpServer.config.BlockChain.GetBeaconConsensusRootHash(httpServer.config.BlockChain.GetBeaconChainDatabase(), shardBestState.BeaconHeight)
+	beaconConsensusRootHash, err := httpServer.config.BlockChain.GetBeaconConsensusRootHash(httpServer.config.BlockChain.GetBeaconBestState().GetBeaconConsensusStateDB(), shardBestState.BeaconHeight)
 	if err != nil {
-
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
-	
+
 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)

@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -612,15 +610,16 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if err != nil {
 			return [][]string{}, err
 		}
-		beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), newBeaconHeight-1)
-		if err != nil {
-			return [][]string{}, err
-		}
-		beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
-		if err != nil {
-			Logger.log.Error(err)
-		}
+		//beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(beaconBestState, newBeaconHeight-1)
+		//if err != nil {
+		//	return [][]string{}, err
+		//}
+		//beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		//producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//}
+		producersBlackList := make(map[string]uint8)
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(true, -1, beaconCommitteeStr)
 		badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
 		if err != nil {

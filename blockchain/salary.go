@@ -190,7 +190,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					epoch = shardRewardInfo.Epoch
 					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
 					var beaconConsensusRootHash common.Hash
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconChainDatabase(), height)
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState().consensusStateDB, height)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
 					}

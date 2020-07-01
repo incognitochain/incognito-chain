@@ -548,19 +548,17 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
-		beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), beaconHeight)
-		if err != nil {
-			return instructions, shardPendingValidator, shardCommittee, err
-		}
-		beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		if err != nil {
-			return instructions, shardPendingValidator, shardCommittee, err
-		}
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, false, int(shardID), shardCommittee, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			return instructions, shardPendingValidator, shardCommittee, err
-		}
+
+		//beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), beaconHeight)
+		//if err != nil {
+		//	return instructions, shardPendingValidator, shardCommittee, err
+		//}
+		//beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		//if err != nil {
+		//	return instructions, shardPendingValidator, shardCommittee, err
+		//}
+		var err error
+		producersBlackList := make(map[string]uint8)
 
 		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedBlockValidators
 		var minShardCommitteeSize int

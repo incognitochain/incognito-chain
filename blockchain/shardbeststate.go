@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -26,6 +25,14 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
+
+type ShardRootHash struct {
+	ConsensusStateDBRootHash   common.Hash
+	TransactionStateDBRootHash common.Hash
+	FeatureStateDBRootHash     common.Hash
+	RewardStateDBRootHash      common.Hash
+	SlashStateDBRootHash       common.Hash
+}
 
 type ShardBestState struct {
 	BestBlockHash          common.Hash                       `json:"BestBlockHash"` // hash of block.
@@ -64,7 +71,6 @@ type ShardBestState struct {
 	RewardStateDBRootHash      common.Hash
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
-	lock                       sync.RWMutex
 }
 
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
@@ -163,7 +169,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *B
 
 func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Database, bc *BlockChain) error {
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-	if rootHash, err := bc.GetShardConsensusRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
+	if rootHash, err := bc.GetShardConsensusRootHash(shardBestState.consensusStateDB, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -171,7 +177,7 @@ func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Dat
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetShardTransactionRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
+	if rootHash, err := bc.GetShardTransactionRootHash(shardBestState.transactionStateDB, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -179,7 +185,7 @@ func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Dat
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetShardFeatureRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
+	if rootHash, err := bc.GetShardFeatureRootHash(shardBestState.featureStateDB, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -187,7 +193,7 @@ func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Dat
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetShardCommitteeRewardRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
+	if rootHash, err := bc.GetShardCommitteeRewardRootHash(shardBestState.rewardStateDB, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -195,7 +201,7 @@ func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Dat
 	} else {
 		return err
 	}
-	if rootHash, err := bc.GetShardSlashRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
+	if rootHash, err := bc.GetShardSlashRootHash(shardBestState.slashStateDB, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -398,14 +404,10 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 }
 
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
 	return shardBestState.ShardCommittee
 }
 
 func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.CommitteePublicKey {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
 	return shardBestState.ShardPendingValidator
 }
 
@@ -418,22 +420,56 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 	return tokenIDs
 }
 
-func (blockchain *BlockChain) GetShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardConsensusRootHash(db, shardID, height)
+func (blockchain *BlockChain) GetShardConsensusRootHash(stateDB *statedb.StateDB, shardID byte, height uint64) (common.Hash, error) {
+	sRH, e := blockchain.GetShardRootsHash(stateDB, shardID, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return sRH.ConsensusStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetShardCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardCommitteeRewardRootHash(db, shardID, height)
+func (blockchain *BlockChain) GetShardCommitteeRewardRootHash(stateDB *statedb.StateDB, shardID byte, height uint64) (common.Hash, error) {
+	sRH, e := blockchain.GetShardRootsHash(stateDB, shardID, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return sRH.RewardStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetShardTransactionRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardTransactionRootHash(db, shardID, height)
+func (blockchain *BlockChain) GetShardTransactionRootHash(stateDB *statedb.StateDB, shardID byte, height uint64) (common.Hash, error) {
+	sRH, e := blockchain.GetShardRootsHash(stateDB, shardID, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return sRH.TransactionStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetShardFeatureRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardFeatureRootHash(db, shardID, height)
+func (blockchain *BlockChain) GetShardFeatureRootHash(stateDB *statedb.StateDB, shardID byte, height uint64) (common.Hash, error) {
+	sRH, e := blockchain.GetShardRootsHash(stateDB, shardID, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return sRH.FeatureStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetShardSlashRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardSlashRootHash(db, shardID, height)
+func (blockchain *BlockChain) GetShardSlashRootHash(stateDB *statedb.StateDB, shardID byte, height uint64) (common.Hash, error) {
+	sRH, e := blockchain.GetShardRootsHash(stateDB, shardID, height)
+	if e != nil {
+		return common.Hash{}, e
+	}
+	return sRH.SlashStateDBRootHash, nil
+}
+
+func (blockchain *BlockChain) GetShardRootsHash(stateDB *statedb.StateDB, shardID byte, height uint64) (*ShardRootHash, error) {
+	h, e := statedb.GetShardBlockHashByIndex(stateDB, shardID, height)
+	if e != nil {
+		return nil, e
+	}
+	data, e := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, h)
+	if e != nil {
+		return nil, e
+	}
+	sRH := &ShardRootHash{}
+	err := json.Unmarshal(data, sRH)
+	return sRH, err
 }

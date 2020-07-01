@@ -6,7 +6,7 @@ import (
 )
 
 func StoreBeaconBlockHashByIndex(stateDB *StateDB, height uint64, hash common.Hash) error {
-	key := common.HashH([]byte(fmt.Sprintf("beaconblockindex-%v", height)))
+	key := GenerateBlockHashByIndexKey("beacon", height)
 	err := stateDB.SetStateObject(BlockHashObjectType, key, &hash)
 	if err != nil {
 		return NewStatedbError(StoreBlockHashError, err)
@@ -15,7 +15,7 @@ func StoreBeaconBlockHashByIndex(stateDB *StateDB, height uint64, hash common.Ha
 }
 
 func GetBeaconBlockHashByIndex(stateDB *StateDB, height uint64) (common.Hash, error) {
-	key := common.HashH([]byte(fmt.Sprintf("beaconblockindex-%v", height)))
+	key := GenerateBlockHashByIndexKey("beacon", height)
 	stateObj, err := stateDB.getStateObject(BlockHashObjectType, key)
 	if err != nil {
 		return common.Hash{}, NewStatedbError(GetBlockHashError, err)
@@ -27,7 +27,7 @@ func GetBeaconBlockHashByIndex(stateDB *StateDB, height uint64) (common.Hash, er
 }
 
 func StoreShardBlockHashByIndex(stateDB *StateDB, shardID byte, height uint64, hash common.Hash) error {
-	key := common.HashH([]byte(fmt.Sprintf("shardblockindex-%v-%v", shardID, height)))
+	key := GenerateBlockHashByIndexKey(fmt.Sprintf("shard-%v", shardID), height)
 	err := stateDB.SetStateObject(BlockHashObjectType, key, &hash)
 	if err != nil {
 		return NewStatedbError(StoreBlockHashError, err)
@@ -36,7 +36,7 @@ func StoreShardBlockHashByIndex(stateDB *StateDB, shardID byte, height uint64, h
 }
 
 func GetShardBlockHashByIndex(stateDB *StateDB, shardID byte, height uint64) (common.Hash, error) {
-	key := common.HashH([]byte(fmt.Sprintf("shardblockindex-%v-%v", shardID, height)))
+	key := GenerateBlockHashByIndexKey(fmt.Sprintf("shard-%v", shardID), height)
 	stateObj, err := stateDB.getStateObject(BlockHashObjectType, key)
 	if err != nil {
 		return common.Hash{}, NewStatedbError(GetBlockHashError, err)

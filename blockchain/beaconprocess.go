@@ -1475,20 +1475,15 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	batch := blockchain.GetBeaconChainDatabase().NewBatch()
 	//State Root Hash
-	if err := rawdbv2.StoreBeaconConsensusStateRootHash(batch, blockHeight, consensusRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
+	bRH := BeaconRootHash{
+		ConsensusStateDBRootHash: consensusRootHash,
+		FeatureStateDBRootHash:   featureRootHash,
+		RewardStateDBRootHash:    rewardRootHash,
+		SlashStateDBRootHash:     slashRootHash,
 	}
 
-	if err := rawdbv2.StoreBeaconRewardStateRootHash(batch, blockHeight, rewardRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	if err := rawdbv2.StoreBeaconFeatureStateRootHash(batch, blockHeight, featureRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	if err := rawdbv2.StoreBeaconSlashStateRootHash(batch, blockHeight, slashRootHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
+	if err := rawdbv2.StoreBeaconRootsHash(batch, blockHash, bRH); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	if err := rawdbv2.StoreBeaconBlock(batch, blockHeight, blockHash, beaconBlock); err != nil {
