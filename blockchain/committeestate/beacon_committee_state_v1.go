@@ -176,7 +176,7 @@ func (engine BeaconCommitteeEngine) GetOneShardCommittee(shardID byte) []incogni
 
 func (engine BeaconCommitteeEngine) GetShardCommittee() map[byte][]incognitokey.CommitteePublicKey {
 	engine.beaconCommitteeStateV1.mu.RLock()
-	defer engine.beaconCommitteeStateV1.mu.RLock()
+	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range engine.beaconCommitteeStateV1.shardCommittee {
 		shardCommittee[k] = v
@@ -190,7 +190,7 @@ func (engine BeaconCommitteeEngine) GetOneShardSubstitute(shardID byte) []incogn
 
 func (engine BeaconCommitteeEngine) GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey {
 	engine.beaconCommitteeStateV1.mu.RLock()
-	defer engine.beaconCommitteeStateV1.mu.RLock()
+	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range engine.beaconCommitteeStateV1.shardSubstitute {
 		shardSubstitute[k] = v
@@ -200,7 +200,7 @@ func (engine BeaconCommitteeEngine) GetShardSubstitute() map[byte][]incognitokey
 
 func (engine BeaconCommitteeEngine) GetAutoStaking() map[string]bool {
 	engine.beaconCommitteeStateV1.mu.RLock()
-	defer engine.beaconCommitteeStateV1.mu.RLock()
+	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	autoStake := make(map[string]bool)
 	for k, v := range engine.beaconCommitteeStateV1.autoStake {
 		autoStake[k] = v
@@ -210,7 +210,7 @@ func (engine BeaconCommitteeEngine) GetAutoStaking() map[string]bool {
 
 func (engine BeaconCommitteeEngine) GetRewardReceiver() map[string]string {
 	engine.beaconCommitteeStateV1.mu.RLock()
-	defer engine.beaconCommitteeStateV1.mu.RLock()
+	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	rewardReceiver := make(map[string]string)
 	for k, v := range engine.beaconCommitteeStateV1.rewardReceiver {
 		rewardReceiver[k] = v
