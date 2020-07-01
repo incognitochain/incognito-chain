@@ -474,15 +474,26 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 ) [][]string {
 	untradableInsts := [][]string{}
 	for _, tradeAction := range untradableActions {
-		actionContentBytes, _ := json.Marshal(tradeAction)
-		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-		newInst := []string{
-			strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta),
-			strconv.Itoa(int(tradeAction.ShardID)),
-			common.PDETradeRefundChainStatus,
-			actionContentBase64Str,
-		}
-		untradableInsts = append(untradableInsts, newInst)
+		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+			tradeAction.Meta.TraderAddressStr,
+			common.PRVCoinID.String(),
+			tradeAction.Meta.TradingFee,
+			metadata.PDECrossPoolTradeRequestMeta,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
+			tradeAction.ShardID,
+			tradeAction.TxReqID,
+		)
+		untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TokenIDToSellStr,
+			tradeAction.Meta.SellAmount,
+			metadata.PDECrossPoolTradeRequestMeta,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
+			tradeAction.ShardID,
+			tradeAction.TxReqID,
+		)
+		untradableInsts = append(untradableInsts, refundSellingTokenInst)
 	}
 	return untradableInsts
 }
@@ -623,19 +634,10 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 			}
 		}
 
-		// accumulate trading fee for the pair
 		addingFee := proportionalFee
 		if idx == len(sequentialTrades)-1 {
 			addingFee = tradingFee - uint64(len(sequentialTrades)-1)*proportionalFee
 		}
-		tradingFeeForPairKey := string(rawdbv2.BuildPDETradingFeeKey(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr))
-		_, found := currentPDEState.PDETradingFees[tradingFeeForPairKey]
-		if !found {
-			currentPDEState.PDETradingFees[tradingFeeForPairKey] = addingFee
-		} else {
-			currentPDEState.PDETradingFees[tradingFeeForPairKey] += addingFee
-		}
-
 		pdeTradeAcceptedContent.AddingFee = addingFee
 		tradeAcceptedContents = append(tradeAcceptedContents, pdeTradeAcceptedContent)
 	}
