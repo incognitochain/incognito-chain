@@ -511,7 +511,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
-		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(v.consensusStateDB, v.BeaconHeight)
+		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.BeaconChain.GetFinalView().(*BeaconBestState), v.BeaconHeight)
 		if err != nil {
 			return NewBlockChainError(BeaconError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", v.BeaconHeight, err))
 		}
@@ -595,8 +595,26 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	if ok {
 		return v.(*BeaconBestState), nil
 	}
-	beaconView := &BeaconBestState{BestBlockHash: blockHash}
-	err := beaconView.RestoreBeaconViewStateFromHash(blockchain)
+
+	rootHash, err := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), blockHash)
+	if err != nil {
+		return nil, err
+	}
+	bRH := &BeaconRootHash{}
+	err = json.Unmarshal(rootHash, bRH)
+	if err != nil {
+		return nil, err
+	}
+
+	beaconView := &BeaconBestState{
+		BestBlockHash:            blockHash,
+		ConsensusStateDBRootHash: bRH.ConsensusStateDBRootHash,
+		FeatureStateDBRootHash:   bRH.FeatureStateDBRootHash,
+		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
+		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
+	}
+
+	err = beaconView.RestoreBeaconViewStateFromHash(blockchain)
 	if err != nil {
 		Logger.log.Error(err)
 	}
