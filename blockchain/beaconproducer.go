@@ -297,7 +297,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		if len(inst) > 0 {
 			if inst[0] == instruction.STAKE_ACTION {
 				if err := instruction.ValidateStakeInstructionSanity(inst); err != nil {
-					Logger.log.Errorf("SKIP Stake Instruction Error", err)
+					Logger.log.Errorf("SKIP Stake Instruction Error %+v", err)
 					continue
 				}
 				tempStakeInstruction := instruction.ImportStakeInstructionFromString(inst)
@@ -307,7 +307,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 				// validate swap instruction
 				// only allow shard to swap committee for it self
 				if err := instruction.ValidateSwapInstructionSanity(inst); err != nil {
-					Logger.log.Errorf("SKIP Swap Instruction Error", err)
+					Logger.log.Errorf("SKIP Swap Instruction Error %+v", err)
 					continue
 				}
 				tempSwapInstruction := instruction.ImportSwapInstructionFromString(inst)
@@ -315,7 +315,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 			}
 			if inst[0] == instruction.STOP_AUTO_STAKE_ACTION {
 				if err := instruction.ValidateStopAutoStakeInstructionSanity(inst); err != nil {
-					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error", err)
+					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
 					continue
 				}
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
