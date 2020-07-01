@@ -3,6 +3,7 @@ package transaction
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"math/big"
@@ -93,18 +94,24 @@ func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) e
 
 func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
 	var err error
-	// Tx: initialize some values
-	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+	// Get Keyset from param
+	senderKeySet :=  incognitokey.KeySet{}
+	if err:= senderKeySet.InitFromPrivateKey(params.senderSK); err != nil {
+		Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
+		return NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
+
+	// Tx: initialize some values
 	tx.Fee = params.fee
 	tx.Version = TxConversionVersion12Number
 	tx.Type = common.TxConversionType
 	tx.Metadata = params.metaData
-	if tx.Info, err = getTxInfo(params.info); err != nil {
-		return err
+	tx.PubKeyLastByteSender = senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+
+	if tx.LockTime == 0 {
+		tx.LockTime = time.Now().Unix()
 	}
-	if tx.PubKeyLastByteSender, err = parseLastByteSender(params.senderSK); err != nil {
+	if tx.Info, err = getTxInfo(params.info); err != nil {
 		return err
 	}
 	return nil

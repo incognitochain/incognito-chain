@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"math"
 	"sort"
 	"strconv"
@@ -102,7 +101,7 @@ func getTxInfo(paramInfo []byte) ([]byte, error) {
 	return paramInfo, nil
 }
 
-func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
+func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress ) error {
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
 	for _, p := range params.paymentInfo {
@@ -114,42 +113,22 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
 	for _, coin := range params.inputCoins {
 		sumInputValue += coin.GetValue()
 	}
-	Logger.Log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return NewTransactionErr(WrongInputError, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
+		return NewTransactionErr(WrongInputError, errors.New(fmt.Sprintf("Sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
 	}
 	// Create a new payment to sender's pk where amount is overBalance if > 0
 	if overBalance > 0 {
 		// Should not check error because have checked before
-		senderFullKey, _ := parseSenderFullKey(params.senderSK)
 		changePaymentInfo := new(privacy.PaymentInfo)
 		changePaymentInfo.Amount = uint64(overBalance)
-		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
+		changePaymentInfo.PaymentAddress = senderPaymentAddree
 		params.paymentInfo = append(params.paymentInfo, changePaymentInfo)
 	}
 
 	return nil
-}
-
-func parseLastByteSender(senderSK *privacy.PrivateKey) (byte, error) {
-	if senderSK == nil || len(*senderSK) != common.PrivateKeySize {
-		return 0, errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", senderSK))
-	}
-	pubKey := key.GeneratePublicKey(*senderSK)
-	return pubKey[len(pubKey)-1], nil
-}
-
-func parseSenderFullKey(senderSK *privacy.PrivateKey) (*incognitokey.KeySet, error) {
-	senderFullKey := incognitokey.KeySet{}
-	err := senderFullKey.InitFromPrivateKey(senderSK)
-	if err != nil {
-		Logger.Log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", senderSK)))
-		return nil, NewTransactionErr(PrivateKeySenderInvalidError, err)
-	}
-	return &senderFullKey, nil
 }
 
 func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
@@ -169,21 +148,25 @@ func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
 
 	// If somehow no version is checked???
 	if !check[1] && !check[2] {
-		fmt.Println("[BUG BUG BUG BUG BUG BUG BUG] Check ver = 0:", check[0])
 		return 0, errors.New("Cannot get tx version, something is wrong with coins.version, it should be 1 or 2 only")
 	}
 
-	if check[1] {
-		return 1, nil
-	} else {
+	if check[2] {
 		return 2, nil
+	} else {
+		return 1, nil
 	}
 }
 
 // return bool indicates whether we should continue "Init" function or not
 func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 	var err error
-
+	// Get Keyset from param
+	senderKeySet :=  incognitokey.KeySet{}
+	if err:= senderKeySet.InitFromPrivateKey(params.senderSK); err != nil {
+		Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
+		return NewTransactionErr(PrivateKeySenderInvalidError, err)
+	}
 	// Tx: initialize some values
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
@@ -191,6 +174,7 @@ func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 	tx.Fee = params.fee
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.metaData
+	tx.PubKeyLastByteSender = senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 
 	if tx.Version, err = getTxVersionFromCoins(params.inputCoins); err != nil {
 		return err
@@ -198,11 +182,9 @@ func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 	if tx.Info, err = getTxInfo(params.info); err != nil {
 		return err
 	}
-	if tx.PubKeyLastByteSender, err = parseLastByteSender(params.senderSK); err != nil {
-		return err
-	}
+
 	// Params: update balance if overbalance
-	if err = updateParamsWhenOverBalance(params); err != nil {
+	if err = updateParamsWhenOverBalance(params, senderKeySet.PaymentAddress); err != nil {
 		return err
 	}
 	return nil
