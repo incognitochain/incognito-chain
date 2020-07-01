@@ -246,7 +246,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		RewardStateDBRootHash:    common.EmptyRoot,
 		SlashStateDBRootHash:     common.EmptyRoot,
 	}
-
+	initBeaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	if err := rawdbv2.StoreBeaconRootsHash(blockchain.GetBeaconChainDatabase(), initBlockHash, bRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
