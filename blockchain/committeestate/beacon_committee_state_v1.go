@@ -101,6 +101,7 @@ func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 }
 
 func (b BeaconCommitteeStateV1) clone(newB *BeaconCommitteeStateV1) {
+	newB.reset()
 	newB.beaconCommittee = b.beaconCommittee
 	newB.beaconSubstitute = b.beaconSubstitute
 	newB.currentEpochShardCandidate = b.currentEpochShardCandidate
@@ -228,8 +229,8 @@ func (engine *BeaconCommitteeEngine) Commit(hashes *BeaconCommitteeStateHash) er
 	}
 	engine.uncommittedBeaconCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()
-	engine.beaconCommitteeStateV1.mu.RLock()
-	defer engine.beaconCommitteeStateV1.mu.RUnlock()
+	engine.beaconCommitteeStateV1.mu.Lock()
+	defer engine.beaconCommitteeStateV1.mu.Unlock()
 	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)

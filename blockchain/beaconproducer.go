@@ -126,6 +126,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============Update Beacon Best State================
 	// Process new block with beststate
 	_, hashes, _, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
 	if err != nil {
 		return nil, err
 	}
