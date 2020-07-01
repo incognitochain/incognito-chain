@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -15,10 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -321,10 +322,12 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 		}
 	}
 	var err error
-	_, allBridgeTokens, err := blockchain.GetAllBridgeTokens()
-	if err != nil {
-		return err
-	}
+	bridgeStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// Call for get DB here
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
 	err = view.fetchTxViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
@@ -340,11 +343,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 	for _, indexTx := range indices {
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
-		isBridgeToken := false
-		for _, tempBridgeToken := range allBridgeTokens {
-			if tempBridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], tempBridgeToken.TokenID[:]) {
-				isBridgeToken = true
-			}
+		isBridgeToken, err := statedb.IsBridgeToken(bridgeStateDB, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
+		if err != nil {
+			return err
 		}
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
