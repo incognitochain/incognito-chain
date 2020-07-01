@@ -126,7 +126,7 @@ func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKe
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
-	return len(chain.multiView.GetBestView().(*BeaconBestState).BeaconCommittee)
+	return len(chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee())
 }
 
 func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
@@ -235,19 +235,19 @@ func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitoke
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
 	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
-	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).BeaconCommittee...)
+	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()...)
 	for shardID, consensusType := range chain.multiView.GetBestView().(*BeaconBestState).GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).ShardCommittee[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetAShardCommittee(shardID)...)
 	}
 	return result
 }
 
 func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).BeaconPendingValidator...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()...)
 	return result
 }
 
@@ -258,22 +258,22 @@ func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incogni
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).ShardPendingValidator[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetAShardPendingValidator(shardID)...)
 	}
 	return result
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateShardWaitingForNextRandom...)
-	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateShardWaitingForCurrentRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).GetCandidateShardWaitingForNextRandom()...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).GetCandidateShardWaitingForCurrentRandom()...)
 	return result
 }
 
 func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateBeaconWaitingForNextRandom...)
-	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateBeaconWaitingForCurrentRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).GetCandidateBeaconWaitingForNextRandom()...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).GetCandidateBeaconWaitingForCurrentRandom()...)
 	return result
 }
 

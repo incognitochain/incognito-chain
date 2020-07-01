@@ -358,31 +358,6 @@ func generateHashFromStringArray(strs []string) (common.Hash, error) {
 	return hash, nil
 }
 
-func generateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
-	var keys1 []int
-	for k := range maps1 {
-		keys1 = append(keys1, int(k))
-	}
-	sort.Ints(keys1)
-	shardPendingValidator := []string{}
-	// To perform the opertion you want
-	for _, k := range keys1 {
-		shardPendingValidator = append(shardPendingValidator, maps1[byte(k)]...)
-	}
-
-	var keys2 []int
-	for k := range maps2 {
-		keys2 = append(keys2, int(k))
-	}
-	sort.Ints(keys2)
-	shardValidator := []string{}
-	// To perform the opertion you want
-	for _, k := range keys2 {
-		shardValidator = append(shardValidator, maps2[byte(k)]...)
-	}
-	return generateHashFromStringArray(append(shardPendingValidator, shardValidator...))
-}
-
 func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, error) {
 	var keys []string
 	var res []string
@@ -471,6 +446,31 @@ func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bo
 		return common.Hash{}, false
 	}
 	return res, bytes.Equal(res.GetBytes(), hash.GetBytes())
+}
+
+func generateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
+	var keys1 []int
+	for k := range maps1 {
+		keys1 = append(keys1, int(k))
+	}
+	sort.Ints(keys1)
+	shardPendingValidator := []string{}
+	// To perform the opertion you want
+	for _, k := range keys1 {
+		shardPendingValidator = append(shardPendingValidator, maps1[byte(k)]...)
+	}
+
+	var keys2 []int
+	for k := range maps2 {
+		keys2 = append(keys2, int(k))
+	}
+	sort.Ints(keys2)
+	shardValidator := []string{}
+	// To perform the opertion you want
+	for _, k := range keys2 {
+		shardValidator = append(shardValidator, maps2[byte(k)]...)
+	}
+	return generateHashFromStringArray(append(shardPendingValidator, shardValidator...))
 }
 
 func verifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {

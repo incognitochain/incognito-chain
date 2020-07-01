@@ -53,10 +53,10 @@ func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 	}
 
-	CSWFCR := beacon.CandidateShardWaitingForCurrentRandom
-	CSWFNR := beacon.CandidateShardWaitingForNextRandom
-	CBWFCR := beacon.CandidateBeaconWaitingForCurrentRandom
-	CBWFNR := beacon.CandidateBeaconWaitingForNextRandom
+	CSWFCR := beacon.GetCandidateShardWaitingForCurrentRandom()
+	CSWFNR := beacon.GetCandidateShardWaitingForNextRandom()
+	CBWFCR := beacon.GetCandidateBeaconWaitingForCurrentRandom()
+	CBWFNR := beacon.GetCandidateBeaconWaitingForNextRandom()
 	epoch := beacon.Epoch
 	result := jsonresult.CandidateListsResult{
 		Epoch:                                  epoch,
@@ -75,10 +75,10 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 	}
 
-	beaconCommittee := clonedBeaconBestState.BeaconCommittee
-	beaconPendingValidator := clonedBeaconBestState.BeaconPendingValidator
-	shardCommittee := clonedBeaconBestState.ShardCommittee
-	shardPendingValidator := clonedBeaconBestState.ShardPendingValidator
+	beaconCommittee := clonedBeaconBestState.GetBeaconCommittee()
+	beaconPendingValidator := clonedBeaconBestState.GetBeaconPendingValidator()
+	shardCommittee := clonedBeaconBestState.GetShardCommittee()
+	shardPendingValidator := clonedBeaconBestState.GetShardPendingValidator()
 	epoch := clonedBeaconBestState.Epoch
 	result := jsonresult.NewCommitteeListsResult(epoch, shardCommittee, shardPendingValidator, beaconCommittee, beaconPendingValidator)
 	return result, nil

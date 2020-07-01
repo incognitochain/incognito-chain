@@ -10,7 +10,9 @@ const (
 	ErrStakeInstructionSanity
 	ErrStopAutoStakeInstructionSanity
 	ErrAssignInstructionSanity
-	ErrEmptyUncommittedBeaconCommitteeState
+	ErrCommitBeaconCommitteeState
+	ErrUpdateCommitteeState
+	ErrGenerateBeaconCommitteeStateHash
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -22,7 +24,9 @@ var ErrCodeMessage = map[int]struct {
 	ErrStopAutoStakeInstructionSanity: {-1002, "stop auto stake sanity error"},
 	ErrAssignInstructionSanity:        {-1003, "assign sanity error"},
 
-	ErrEmptyUncommittedBeaconCommitteeState: {-2000, "empty uncommitted beacon committee state"},
+	ErrCommitBeaconCommitteeState:       {-2000, "commit beacon committee state error"},
+	ErrUpdateCommitteeState:             {-2001, "update committee state error"},
+	ErrGenerateBeaconCommitteeStateHash: {-2002, "generate beacon committee state root hash"},
 }
 
 type CommitteeStateError struct {

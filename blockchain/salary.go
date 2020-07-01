@@ -295,9 +295,9 @@ func (view *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(len(view.BeaconCommittee))
+		baseRewards[key] = value / uint64(len(view.GetBeaconCommittee()))
 	}
-	for _, beaconpublickey := range view.BeaconCommittee {
+	for _, beaconpublickey := range view.GetBeaconCommittee() {
 		// indicate reward pubkey
 		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, beaconpublickey.GetNormalKey())
 		if err != nil {

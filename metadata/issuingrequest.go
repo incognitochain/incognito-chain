@@ -104,7 +104,8 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 }
 
 func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress())
+	shardBlockBeaconHeight := shardViewRetriever.GetBeaconHeight()
+	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress(shardBlockBeaconHeight))
 	if err != nil || !bytes.Equal(tx.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}

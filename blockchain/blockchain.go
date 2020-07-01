@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"io"
 	"sort"
 
@@ -68,8 +69,6 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.IsTest = isTest
 	bc.cQuitSync = make(chan struct{})
 	bc.GetBeaconBestState().Params = make(map[string]string)
-	bc.GetBeaconBestState().ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
-	bc.GetBeaconBestState().ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	return bc
 }
 
@@ -164,7 +163,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return err
 	}
-	committeeChange := incognitokey.NewCommitteeChange()
+	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
 	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
 	if err != nil {
@@ -174,8 +173,8 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 }
 
 func (blockchain *BlockChain) initBeaconState() error {
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
+	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeestate.NewBeaconCommitteeEngine(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -183,10 +182,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlockHash := initBeaconBestState.BestBlock.Header.Hash()
 	initBlockHeight := initBeaconBestState.BestBlock.Header.Height
 	// Insert new block into beacon chain
-	if err := statedb.StoreAllShardCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.ShardCommittee, initBeaconBestState.RewardReceiver, initBeaconBestState.AutoStaking); err != nil {
+	if err := statedb.StoreAllShardCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetShardCommittee(), initBeaconBestState.GetRewardReceiver(), initBeaconBestState.GetAutoStaking()); err != nil {
 		return err
 	}
-	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.BeaconCommittee, initBeaconBestState.RewardReceiver, initBeaconBestState.AutoStaking); err != nil {
+	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetBeaconCommittee(), initBeaconBestState.GetRewardReceiver(), initBeaconBestState.GetAutoStaking()); err != nil {
 		return err
 	}
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
@@ -234,6 +233,7 @@ func (blockchain *BlockChain) GetClonedBeaconBestState() (*BeaconBestState, erro
 	if err != nil {
 		return nil, err
 	}
+	result.beaconCommitteeEngine = blockchain.GetBeaconBestState().beaconCommitteeEngine
 	return result, nil
 }
 
@@ -429,6 +429,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err != nil {
 			panic(err)
 		}
+		beaconCommitteeEngine := InitBeaconCommitteeEngineV1(v.ActiveShards, v.consensusStateDB, v.BeaconHeight, v.BestBlockHash)
+		v.beaconCommitteeEngine = beaconCommitteeEngine
 		currentPDEState, err := InitCurrentPDEStateFromDB(v.featureStateDB, v.BeaconHeight)
 		if err != nil {
 			Logger.log.Error(err)

@@ -27,17 +27,16 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 				}
 
 				var f ConsensusInterface
-				if engine.version == 1 {
-					f = &blsbft.BLSBFT{}
-					if engine.currentMiningProcess != nil {
-						f = engine.currentMiningProcess.(*blsbft.BLSBFT)
+				if engine.currentMiningProcess == nil {
+					if engine.version == 1 {
+						f = &blsbft.BLSBFT{}
+					} else {
+						f = &blsbftv2.BLSBFT_V2{}
 					}
 				} else {
-					f = &blsbftv2.BLSBFT_V2{}
-					if engine.currentMiningProcess != nil {
-						f = engine.currentMiningProcess.(*blsbftv2.BLSBFT_V2)
-					}
+					f = engine.currentMiningProcess
 				}
+
 				err := f.LoadUserKey(keyConsensus)
 				if err != nil {
 					return errors.New("Key for this consensus can not load - " + keyConsensus)
