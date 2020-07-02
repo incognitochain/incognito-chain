@@ -39,7 +39,7 @@ type Tx = metadata.Transaction
 type TxTokenBase struct {
 	Tx
 	TxTokenData TxTokenData `json:"TxTokenPrivacyData"`
-	cachedHash *common.Hash
+	cachedHash  *common.Hash
 }
 
 func GetTxTokenDataFromTransaction(tx metadata.Transaction) *TxTokenData {
@@ -462,10 +462,13 @@ func (txToken TxTokenBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetri
 		for _, tx := range txsInMem {
 			// try parse to TxTokenBase
 			var privacyTokenTx, ok = tx.Tx.(TxTokenInterface)
-			if ok && privacyTokenTx.GetTxPrivacyTokenData().Type == CustomTokenInit && privacyTokenTx.GetMetadata() == nil {
-				// check > 1 tx init token by the same token ID
-				if privacyTokenTx.GetTxPrivacyTokenData().PropertyID.IsEqual(&initTokenID) {
-					return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", txTokenData.PropertyID.String()), txTokenData.PropertyID.String())
+			if ok {
+				txTokenData := privacyTokenTx.GetTxPrivacyTokenData()
+				if privacyTokenTx.GetTxPrivacyTokenData().Type == CustomTokenInit && privacyTokenTx.GetMetadata() == nil {
+					// check > 1 tx init token by the same token ID
+					if txTokenData.PropertyID.IsEqual(&initTokenID) {
+						return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", txTokenData.PropertyID.String()), txTokenData.PropertyID.String())
+					}
 				}
 			}
 		}
