@@ -159,6 +159,7 @@ var HttpHandler = map[string]httpHandler{
 	getPDEState:                                (*HttpServer).handleGetPDEState,
 	createAndSendTxWithWithdrawalReq:           (*HttpServer).handleCreateAndSendTxWithWithdrawalReq,
 	createAndSendTxWithWithdrawalReqV2:         (*HttpServer).handleCreateAndSendTxWithWithdrawalReqV2,
+	createAndSendTxWithPDEFeeWithdrawalReq:     (*HttpServer).handleCreateAndSendTxWithPDEFeeWithdrawalReq,
 	createAndSendTxWithPTokenTradeReq:          (*HttpServer).handleCreateAndSendTxWithPTokenTradeReq,
 	createAndSendTxWithPTokenCrossPoolTradeReq: (*HttpServer).handleCreateAndSendTxWithPTokenCrossPoolTradeReq,
 	createAndSendTxWithPRVTradeReq:             (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
@@ -171,6 +172,7 @@ var HttpHandler = map[string]httpHandler{
 	getPDEContributionStatusV2:                 (*HttpServer).handleGetPDEContributionStatusV2,
 	getPDETradeStatus:                          (*HttpServer).handleGetPDETradeStatus,
 	getPDEWithdrawalStatus:                     (*HttpServer).handleGetPDEWithdrawalStatus,
+	getPDEFeeWithdrawalStatus:                  (*HttpServer).handleGetPDEFeeWithdrawalStatus,
 	convertPDEPrices:                           (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 

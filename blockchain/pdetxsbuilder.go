@@ -654,3 +654,54 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	}
 	return resTx, nil
 }
+
+func (blockGenerator *BlockGenerator) buildPDEFeeWithdrawalTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[PDE Fee Withdrawal] Starting...")
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+		return nil, nil
+	}
+	var pdeFeeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
+	err = json.Unmarshal(contentBytes, &pdeFeeWithdrawalRequestAction)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
+		return nil, nil
+	}
+
+	if pdeFeeWithdrawalRequestAction.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPDEFeeWithdrawalResponse(
+		pdeFeeWithdrawalRequestAction.TxReqID,
+		metadata.PDEFeeWithdrawalResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(pdeFeeWithdrawalRequestAction.Meta.WithdrawerAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing withdrawer address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		pdeFeeWithdrawalRequestAction.Meta.WithdrawalFeeAmt,
+		&receiverAddr,
+		producerPrivateKey,
+		shardView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing trading fee withdrawal (normal) tx: %+v", err)
+		return nil, nil
+	}
+	return resTx, nil
+}

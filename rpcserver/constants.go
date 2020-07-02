@@ -176,6 +176,7 @@ const (
 	getPDEState                                = "getpdestate"
 	createAndSendTxWithWithdrawalReq           = "createandsendtxwithwithdrawalreq"
 	createAndSendTxWithWithdrawalReqV2         = "createandsendtxwithwithdrawalreqv2"
+	createAndSendTxWithPDEFeeWithdrawalReq     = "createandsendtxwithpdefeewithdrawalreq"
 	createAndSendTxWithPTokenTradeReq          = "createandsendtxwithptokentradereq"
 	createAndSendTxWithPTokenCrossPoolTradeReq = "createandsendtxwithptokencrosspooltradereq"
 	createAndSendTxWithPRVTradeReq             = "createandsendtxwithprvtradereq"
@@ -190,6 +191,7 @@ const (
 	getPDEContributionStatusV2                 = "getpdecontributionstatusv2"
 	getPDETradeStatus                          = "getpdetradestatus"
 	getPDEWithdrawalStatus                     = "getpdewithdrawalstatus"
+	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
 

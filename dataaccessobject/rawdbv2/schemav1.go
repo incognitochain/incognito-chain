@@ -18,6 +18,7 @@ var (
 	PDEContributionStatusPrefix  = []byte("pdecontributionstatus-")
 	PDETradeStatusPrefix         = []byte("pdetradestatus-")
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
+	PDEFeeWithdrawalStatusPrefix = []byte("pdefeewithdrawalstatus-")
 )
 
 // TODO - change json to CamelCase

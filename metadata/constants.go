@@ -43,6 +43,8 @@ const (
 	PDEPRVRequiredContributionRequestMeta = 204
 	PDECrossPoolTradeRequestMeta          = 205
 	PDECrossPoolTradeResponseMeta         = 206
+	PDEFeeWithdrawalRequestMeta           = 207
+	PDEFeeWithdrawalResponseMeta          = 208
 	PDETradingFeesDistributionMeta        = 209
 
 	// portal
@@ -100,6 +102,7 @@ var minerCreatedMetaTypes = []int{
 	PDETradeResponseMeta,
 	PDECrossPoolTradeResponseMeta,
 	PDEWithdrawalResponseMeta,
+	PDEFeeWithdrawalResponseMeta,
 	PDEContributionResponseMeta,
 	PortalUserRequestPTokenResponseMeta,
 	PortalCustodianDepositResponseMeta,

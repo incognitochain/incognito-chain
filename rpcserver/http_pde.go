@@ -654,6 +654,24 @@ func (httpServer *HttpServer) handleGetPDEWithdrawalStatus(params interface{}, c
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetPDEFeeWithdrawalStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	txRequestIDStr, ok := data["TxRequestIDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	txIDHash, err := common.Hash{}.NewHashFromStr(txRequestIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	status, err := httpServer.blockService.GetPDEStatus(rawdbv2.PDEFeeWithdrawalStatusPrefix, txIDHash[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return status, nil
+}
+
 func parsePDEContributionInst(inst []string, beaconHeight uint64) (*PDEContribution, error) {
 	status := inst[2]
 	shardID, err := strconv.Atoi(inst[1])
@@ -1360,6 +1378,84 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReqV2(params interf
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithWithdrawalReqV2(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+
+	withdrawerAddressStr, ok := data["WithdrawerAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+
+	withdrawalToken1IDStr, ok := data["WithdrawalToken1IDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+
+	withdrawalToken2IDStr, ok := data["WithdrawalToken2IDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+
+	withdrawalFeeAmt, err := common.AssertAndConvertStrToNumber(data["WithdrawalFeeAmt"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	meta, _ := metadata.NewPDEFeeWithdrawalRequest(
+		withdrawerAddressStr,
+		withdrawalToken1IDStr,
+		withdrawalToken2IDStr,
+		withdrawalFeeAmt,
+		metadata.PDEFeeWithdrawalRequestMeta,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithPDEFeeWithdrawalReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithPDEFeeWithdrawalReq(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
