@@ -98,12 +98,13 @@ func BuildPDETradingFeeKey(
 	beaconHeight uint64,
 	token1IDStr string,
 	token2IDStr string,
+	contributorAddressStr string,
 ) []byte {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	pdeTradingFeeByBCHeightPrefix := append(PDETradingFeePrefix, beaconHeightBytes...)
 	tokenIDStrs := []string{token1IDStr, token2IDStr}
 	sort.Strings(tokenIDStrs)
-	return append(pdeTradingFeeByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1])...)
+	return append(pdeTradingFeeByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributorAddressStr)...)
 }
 
 func BuildPDETradeFeesKey(

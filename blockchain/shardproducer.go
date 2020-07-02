@@ -374,10 +374,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDEWithdrawalWithPRVFeeRequestMeta:
-				if len(l) >= 4 {
-					newTx, err = blockGenerator.buildPDEWithdrawalWithPRVFeeTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
-				}
 			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
 				if len(l) >= 4 {
 					if l[2] == common.PDEContributionRefundChainStatus {

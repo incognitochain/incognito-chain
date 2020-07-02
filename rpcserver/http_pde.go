@@ -1297,7 +1297,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenCrossPoolTradeReq(p
 	return sendResult, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalWithPRVFeeReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -1331,7 +1331,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalWithPRVFeeReq(param
 		withdrawalToken1IDStr,
 		withdrawalToken2IDStr,
 		withdrawalShareAmt,
-		metadata.PDEWithdrawalWithPRVFeeRequestMeta,
+		metadata.PDEWithdrawalRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -1358,8 +1358,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalWithPRVFeeReq(param
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalWithPRVFeeReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithWithdrawalWithPRVFeeReq(params, closeChan)
+func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithWithdrawalReqV2(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

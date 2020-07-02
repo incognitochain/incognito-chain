@@ -40,7 +40,6 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PDEWithdrawalRequestMeta,
 			metadata.PDEPRVRequiredContributionRequestMeta,
 			metadata.PDECrossPoolTradeRequestMeta,
-			metadata.PDEWithdrawalWithPRVFeeRequestMeta,
 			metadata.PortalCustodianDepositMeta,
 			metadata.PortalUserRegisterMeta,
 			metadata.PortalUserRequestPTokenMeta,
@@ -115,7 +114,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pdeTradeActionsByShardID := map[byte][][]string{}
 	pdeCrossPoolTradeActionsByShardID := map[byte][][]string{}
 	pdeWithdrawalActionsByShardID := map[byte][][]string{}
-	pdeWithdrawalWithPRVFeeActionsByShardID := map[byte][][]string{}
 
 	// portal instructions
 	portalCustodianDepositActionsByShardID := map[byte][][]string{}
@@ -180,12 +178,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PDEWithdrawalRequestMeta:
 				pdeWithdrawalActionsByShardID = groupPDEActionsByShardID(
 					pdeWithdrawalActionsByShardID,
-					action,
-					shardID,
-				)
-			case metadata.PDEWithdrawalWithPRVFeeRequestMeta:
-				pdeWithdrawalWithPRVFeeActionsByShardID = groupPDEActionsByShardID(
-					pdeWithdrawalWithPRVFeeActionsByShardID,
 					action,
 					shardID,
 				)
@@ -289,7 +281,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		pdeTradeActionsByShardID,
 		pdeCrossPoolTradeActionsByShardID,
 		pdeWithdrawalActionsByShardID,
-		pdeWithdrawalWithPRVFeeActionsByShardID,
 	)
 
 	if err != nil {
@@ -558,7 +549,6 @@ func (blockchain *BlockChain) handlePDEInsts(
 	pdeTradeActionsByShardID map[byte][][]string,
 	pdeCrossPoolTradeActionsByShardID map[byte][][]string,
 	pdeWithdrawalActionsByShardID map[byte][][]string,
-	pdeWithdrawalWithPRVFeeActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	// handle trade
@@ -586,10 +576,14 @@ func (blockchain *BlockChain) handlePDEInsts(
 		currentPDEState,
 		pdeCrossPoolTradeActionsByShardID,
 	)
-	tradableInsts := blockchain.buildInstsForSortedTradableActions(currentPDEState, beaconHeight, sortedTradableActions)
+	tradableInsts, tradingFeeByPair := blockchain.buildInstsForSortedTradableActions(currentPDEState, beaconHeight, sortedTradableActions)
 	untradableInsts := blockchain.buildInstsForUntradableActions(untradableActions)
 	instructions = append(instructions, tradableInsts...)
 	instructions = append(instructions, untradableInsts...)
+
+	// calculate and build instruction for trading fees distribution
+	tradingFeesDistInst := blockchain.buildInstForTradingFeesDist(currentPDEState, beaconHeight, tradingFeeByPair)
+	instructions = append(instructions, tradingFeesDistInst)
 
 	// handle withdrawal
 	var wrKeys []int
@@ -603,28 +597,6 @@ func (blockchain *BlockChain) handlePDEInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metadata.PDEWithdrawalRequestMeta, currentPDEState, beaconHeight)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle withdrawal with prv fee
-	var wrWithPRVFeeKeys []int
-	for k := range pdeWithdrawalWithPRVFeeActionsByShardID {
-		wrWithPRVFeeKeys = append(wrWithPRVFeeKeys, int(k))
-	}
-	sort.Ints(wrWithPRVFeeKeys)
-	for _, value := range wrWithPRVFeeKeys {
-		shardID := byte(value)
-		actions := pdeWithdrawalWithPRVFeeActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEWithdrawalWithPRVFee(contentStr, shardID, metadata.PDEWithdrawalWithPRVFeeRequestMeta, currentPDEState, beaconHeight)
 			if err != nil {
 				Logger.log.Error(err)
 				continue

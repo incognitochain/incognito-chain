@@ -175,7 +175,7 @@ const (
 	// pde
 	getPDEState                                = "getpdestate"
 	createAndSendTxWithWithdrawalReq           = "createandsendtxwithwithdrawalreq"
-	createAndSendTxWithWithdrawalWithPRVFeeReq = "createandsendtxwithwithdrawalwithprvfeereq"
+	createAndSendTxWithWithdrawalReqV2         = "createandsendtxwithwithdrawalreqv2"
 	createAndSendTxWithPTokenTradeReq          = "createandsendtxwithptokentradereq"
 	createAndSendTxWithPTokenCrossPoolTradeReq = "createandsendtxwithptokencrosspooltradereq"
 	createAndSendTxWithPRVTradeReq             = "createandsendtxwithprvtradereq"

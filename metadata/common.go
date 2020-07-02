@@ -73,10 +73,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PDEWithdrawalRequest{}
 	case PDEWithdrawalResponseMeta:
 		md = &PDEWithdrawalResponse{}
-	case PDEWithdrawalWithPRVFeeRequestMeta:
-		md = &PDEWithdrawalRequest{}
-	case PDEWithdrawalWithPRVFeeResponseMeta:
-		md = &PDEWithdrawalWithPRVFeeResponse{}
 	case PDEContributionResponseMeta:
 		md = &PDEContributionResponse{}
 	case PortalCustodianDepositMeta:

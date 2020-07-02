@@ -90,7 +90,7 @@ func (pc PDEWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever,
 }
 
 func (pc PDEWithdrawalRequest) ValidateMetadataByItself() bool {
-	return pc.Type == PDEWithdrawalRequestMeta || pc.Type == PDEWithdrawalWithPRVFeeRequestMeta
+	return pc.Type == PDEWithdrawalRequestMeta
 }
 
 func (pc PDEWithdrawalRequest) Hash() *common.Hash {

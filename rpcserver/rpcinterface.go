@@ -158,7 +158,7 @@ var HttpHandler = map[string]httpHandler{
 	// pde
 	getPDEState:                                (*HttpServer).handleGetPDEState,
 	createAndSendTxWithWithdrawalReq:           (*HttpServer).handleCreateAndSendTxWithWithdrawalReq,
-	createAndSendTxWithWithdrawalWithPRVFeeReq: (*HttpServer).handleCreateAndSendTxWithWithdrawalWithPRVFeeReq,
+	createAndSendTxWithWithdrawalReqV2:         (*HttpServer).handleCreateAndSendTxWithWithdrawalReqV2,
 	createAndSendTxWithPTokenTradeReq:          (*HttpServer).handleCreateAndSendTxWithPTokenTradeReq,
 	createAndSendTxWithPTokenCrossPoolTradeReq: (*HttpServer).handleCreateAndSendTxWithPTokenCrossPoolTradeReq,
 	createAndSendTxWithPRVTradeReq:             (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
