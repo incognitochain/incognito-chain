@@ -694,12 +694,12 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
 	// processing instruction
-	snapshotAutoStaking := make(map[string]bool)
-	for k, v := range beaconBestState.AutoStaking {
-		snapshotAutoStaking[k] = v
-	}
+	// snapshotAutoStaking := make(map[string]bool)
+	// for k, v := range beaconBestState.AutoStaking {
+	// 	snapshotAutoStaking[k] = v
+	// }
 	for _, instruction := range beaconBlock.Body.Instructions {
-		err, tempRandomFlag, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, committeeChange, snapshotAutoStaking)
+		err, tempRandomFlag, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, committeeChange)
 		if err != nil {
 			return nil, err
 		}
@@ -812,12 +812,12 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
 	// update param
-	snapshotAutoStaking := make(map[string]bool)
-	for k, v := range beaconBestState.AutoStaking {
-		snapshotAutoStaking[k] = v
-	}
+	// snapshotAutoStaking := make(map[string]bool)
+	// for k, v := range beaconBestState.AutoStaking {
+	// 	snapshotAutoStaking[k] = v
+	// }
 	for _, instruction := range genesisBeaconBlock.Body.Instructions {
-		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, newCommitteeChange(), snapshotAutoStaking)
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, newCommitteeChange())
 		if err != nil {
 			return err
 		}
@@ -882,7 +882,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //  #3 new beacon candidate
 //  #4 new shard candidate
 
-func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange, autoStaking map[string]bool) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	if len(instruction) < 1 {

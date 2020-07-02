@@ -432,7 +432,7 @@ func storeStakerInfo(
 		if err != nil {
 			return err
 		}
-		delete(autoStaking, committeeString)
+		// delete(autoStaking, committeeString)
 		if _, ok := stakingTx[committeeString]; ok {
 			delete(stakingTx, committeeString)
 		}

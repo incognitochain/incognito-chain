@@ -576,6 +576,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	if beaconBestState.AutoStaking == nil {
 		beaconBestState.AutoStaking = make(map[string]bool)
 	}
+	for k, v := range target.AutoStaking {
+		beaconBestState.AutoStaking[k] = v
+	}
 	if beaconBestState.StakingTx == nil {
 		beaconBestState.StakingTx = make(map[string]common.Hash)
 	}
