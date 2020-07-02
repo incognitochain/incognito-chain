@@ -184,13 +184,13 @@ func main() {
 
 	//InitToken(tool, privateKeys[0], "something")
 
-	a := ListTokens(tool)
-	tokenID := a.Result.ListCustomToken[0].ID
+	//a := ListTokens(tool)
+	//tokenID := a.Result.ListCustomToken[0].ID
 	//ConvertTokenCoinVersion(tool, privateKeys[0], tokenID)
 
 	//TransferToken(tool, privateKeys[0], privateKeys[1], tokenID,"1000")
 
-	GetBalanceToken(tool, privateKeys[0], tokenID)
+	//GetBalanceToken(tool, privateKeys[0], tokenID)
 
 	if len(os.Args) <= 1 {
 		return

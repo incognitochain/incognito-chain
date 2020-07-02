@@ -460,6 +460,10 @@ func (txToken TxTokenBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetri
 		initTokenID := txToken.TxTokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()
 		for _, tx := range txsInMem {
+			if tx.Tx == nil {
+				Logger.Log.Errorf("Tx in GetTxsInMem is nil")
+				return errors.New("Tx in GetTxInMem is nil")
+			}
 			// try parse to TxTokenBase
 			var privacyTokenTx, ok = tx.Tx.(TxTokenInterface)
 			txTokenData := privacyTokenTx.GetTxPrivacyTokenData()

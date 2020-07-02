@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -276,7 +275,6 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	duplicatePublicKeys := make(map[string]bool)
 	outputCoins := proof.GetOutputCoins()
 	for i := 0; i < len(outputCoins); i++ {
-		fmt.Print(outputCoins[i].GetPublicKey().ToBytesS())
 		if !outputCoins[i].GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
 		}
