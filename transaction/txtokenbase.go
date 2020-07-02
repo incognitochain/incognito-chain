@@ -460,16 +460,11 @@ func (txToken TxTokenBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetri
 		initTokenID := txToken.TxTokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()
 		for _, tx := range txsInMem {
-			if tx.Tx == nil {
-				Logger.Log.Errorf("Tx in GetTxsInMem is nil")
-				return errors.New("Tx in GetTxInMem is nil")
-			}
 			// try parse to TxTokenBase
 			var privacyTokenTx, ok = tx.Tx.(TxTokenInterface)
-			txTokenData := privacyTokenTx.GetTxPrivacyTokenData()
-			if ok && txTokenData.Type == CustomTokenInit && privacyTokenTx.GetMetadata() == nil {
+			if ok && privacyTokenTx.GetTxPrivacyTokenData().Type == CustomTokenInit && privacyTokenTx.GetMetadata() == nil {
 				// check > 1 tx init token by the same token ID
-				if txTokenData.PropertyID.IsEqual(&initTokenID) {
+				if privacyTokenTx.GetTxPrivacyTokenData().PropertyID.IsEqual(&initTokenID) {
 					return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", txTokenData.PropertyID.String()), txTokenData.PropertyID.String())
 				}
 			}
