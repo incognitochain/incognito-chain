@@ -37,9 +37,9 @@ type TxBase struct {
 	// Metadata, optional
 	Metadata metadata.Metadata
 	// private field, not use for json parser, only use as temp variable
-	sigPrivKey       []byte  // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 	cachedHash       *common.Hash // cached hash data of tx
-	cachedActualSize *uint64 // cached actualsize data for tx
+	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
 func NewTransactionFromParams(params *TxPrivacyInitParams) (metadata.Transaction, error) {
@@ -102,7 +102,7 @@ func getTxInfo(paramInfo []byte) ([]byte, error) {
 	return paramInfo, nil
 }
 
-func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress ) error {
+func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress) error {
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
 	for _, p := range params.paymentInfo {
@@ -163,8 +163,8 @@ func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
 func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 	var err error
 	// Get Keyset from param
-	senderKeySet :=  incognitokey.KeySet{}
-	if err:= senderKeySet.InitFromPrivateKey(params.senderSK); err != nil {
+	senderKeySet := incognitokey.KeySet{}
+	if err := senderKeySet.InitFromPrivateKey(params.senderSK); err != nil {
 		Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
 		return NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
@@ -431,7 +431,10 @@ func (tx TxBase) String() string {
 		record += metadataHash.String()
 		//Logger.log.Debugf("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
 	}
-	record += string(tx.Info)
+
+	// TODO: To be uncomment
+	// record += string(tx.Info)
+
 	return record
 }
 
