@@ -825,9 +825,10 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 }
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	if tx.GetType() == common.TxRewardType {
+	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
+
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
@@ -839,10 +840,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 			return nil
 		}
 	}
-	//no need to check double spend
-	if tx.GetType() == common.TxReturnStakingType {
-		return nil
-	}
+
 	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 

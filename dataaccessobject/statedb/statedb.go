@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/metrics"
@@ -129,9 +128,7 @@ func (stateDB *StateDB) ClearObjects() {
 func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
 	for addr := range stateDB.stateObjectsPending {
-		fmt.Println(addr.String())
 		obj := stateDB.stateObjects[addr]
-		fmt.Println(addr.String(), obj)
 		if obj.IsDeleted() {
 			stateDB.deleteStateObject(obj)
 		} else {
@@ -158,13 +155,13 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 // Commit writes the state to the underlying in-memory trie database.
 func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	// Finalize any pending changes and merge everything into the tries
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) {
-			elapsed := time.Since(start)
-			stateDB.StateObjectCommits += elapsed
-			dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
-		}(time.Now())
-	}
+	//if metrics.EnabledExpensive {
+	//	defer func(start time.Time) {
+	//		elapsed := time.Since(start)
+	//		stateDB.StateObjectCommits += elapsed
+	//		dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
+	//	}(time.Now())
+	//}
 	stateDB.IntermediateRoot(deleteEmptyObjects)
 
 	if len(stateDB.stateObjectsDirty) > 0 {
@@ -331,7 +328,6 @@ func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common
 	}
 	if stateObject == nil {
 		stateObject, _, err = stateDB.createStateObjectWithValue(objectType, hash, value)
-		fmt.Println("DEBUG", objectType, hash, value, err)
 		if err != nil {
 			return nil, err
 		}

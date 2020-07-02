@@ -423,7 +423,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	if len(invalidTxs) > 0 {
 		return NewBlockChainError(TransactionCreatedByMinerError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
-	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(shardBlock)
+	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(shardBlock, curView)
 	if err != nil {
 		return NewBlockChainError(ResponsedTransactionWithMetadataError, err)
 	}

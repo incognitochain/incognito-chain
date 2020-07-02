@@ -91,6 +91,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
+	blockchain.beaconViewCache, _ = lru.New(100)
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -455,14 +456,17 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	if err != nil {
 		return err
 	}
-	sIDs := blockchain.GetShardIDs()
+	sID := []int{}
+	for i, _ := range blockchain.ShardChain {
+		sID = append(sID, i)
+	}
 	for _, v := range allViews {
 		v.RestoreBeaconViewStateFromHash(blockchain)
 		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
 		if err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
-		v.AutoStaking = statedb.GetMapAutoStaking(beaconConsensusStateDB, sIDs)
+		v.AutoStaking = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")

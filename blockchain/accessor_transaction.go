@@ -124,7 +124,7 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	return result, nil
 }
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock, shardView *ShardBestState) error {
 	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
 	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
 		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
@@ -167,6 +167,9 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 		case metadata.ReturnStakingMeta:
 			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
 			if _, ok := txReturnTable[returnMeta.TxID]; !ok {
+				if _, ok := shardView.StakingTx[returnMeta.StakerAddress.String()]; !ok {
+					return errors.New("No staking tx in beststate")
+				}
 				txReturnTable[returnMeta.TxID] = true
 			} else {
 				return errors.New("Double spent transaction return staking for a candidate.")
