@@ -113,7 +113,7 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 	if !isBurned {
 		return false, false, errors.New("Error This is not Tx Burn")
 	}
-	if pc.SellAmount != burnCoin.GetValue() {
+	if (pc.SellAmount + pc.TradingFee) != burnCoin.GetValue() {
 		return false, false, errors.New("Error Selling amount should be equal to the burned amount")
 	}
 
