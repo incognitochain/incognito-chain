@@ -5,13 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PDETradeRequest - privacy dex trade
@@ -22,7 +22,7 @@ type PDETradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
-	TxRandomStr 		string
+	TxRandomStr         string
 	MetadataBase
 }
 
@@ -39,7 +39,7 @@ type TokenPoolValueOperation struct {
 
 type PDETradeAcceptedContent struct {
 	TraderAddressStr         string
-	TxRandomStr				 string
+	TxRandomStr              string
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -70,7 +70,7 @@ func NewPDETradeRequest(
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
 		TraderAddressStr:    traderAddressStr,
-		TxRandomStr:		 txRandomStr,
+		TxRandomStr:         txRandomStr,
 	}
 	pdeTradeRequest.MetadataBase = metadataBase
 	return pdeTradeRequest, nil
@@ -95,13 +95,15 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 	if len(traderAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's trader address")
 	}
-	txRandomB, err := base58.Decode(pc.TxRandomStr)
-	if err != nil {
-		return false, false, errors.New("Wrong request info's txRandom - Cannot decode base58 string")
-	}
-	txRandom := new(coin.TxRandom)
-	if err := txRandom.SetBytes(txRandomB); err != nil {
-		return false, false, errors.New("Wrong request info's txRandom - Cannot set txRandom from bytes")
+	if len(pc.TxRandomStr) > 0 {
+		txRandomB, err := base58.Decode(pc.TxRandomStr)
+		if err != nil {
+			return false, false, errors.New("Wrong request info's txRandom - Cannot decode base58 string")
+		}
+		txRandom := new(coin.TxRandom)
+		if err := txRandom.SetBytes(txRandomB); err != nil {
+			return false, false, errors.New("Wrong request info's txRandom - Cannot set txRandom from bytes")
+		}
 	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
