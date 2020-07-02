@@ -446,7 +446,8 @@ Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
 	allViews := []*BeaconBestState{}
-	b, err := rawdbv2.GetBeaconViews(blockchain.GetBeaconChainDatabase())
+	bcDB := blockchain.GetBeaconChainDatabase()
+	b, err := rawdbv2.GetBeaconViews(bcDB)
 	if err != nil {
 		return err
 	}
@@ -454,9 +455,14 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	if err != nil {
 		return err
 	}
-
+	sIDs := blockchain.GetShardIDs()
 	for _, v := range allViews {
 		v.RestoreBeaconViewStateFromHash(blockchain)
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+		if err != nil {
+			return NewBlockChainError(BeaconError, err)
+		}
+		v.AutoStaking = statedb.GetMapAutoStaking(beaconConsensusStateDB, sIDs)
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")

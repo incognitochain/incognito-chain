@@ -279,6 +279,14 @@ func GetMapStakingTx(bcDB *StateDB, sdb incdb.Database, shardIDs []int, shardID 
 	return res
 }
 
+func GetMapAutoStaking(bcDB *StateDB, shardIDs []int) map[string]bool {
+	res, err := bcDB.getMapAutoStaking(shardIDs)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
 func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, error) {
 	pubKey := incognitokey.NewCommitteePublicKey()
 	err := pubKey.FromString(stakerPubkey)
