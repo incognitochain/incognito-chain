@@ -88,7 +88,7 @@ CONTINUE_VERIFY:
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Hash()
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	// if beaconBlock.GetHeight() == 2 {
 	// 	bcTmp = 0
 	// 	bcStart = time.Now()
@@ -612,6 +612,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	if !ok {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot))
 	}
+	//TODO: get autostaking from statedb and validate
 	if hash, ok := verifyHashFromMapStringBool(beaconBestState.AutoStaking, beaconBlock.Header.AutoStakingRoot); !ok {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hash))
 	}
@@ -966,23 +967,50 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 				// Check auto stake in out public keys list
 				// if auto staking not found or flag auto stake is false then do not re-stake for this out public key
 				// if auto staking flag is true then system will automatically add this out public key to current candidate list
-				for _, outPublicKey := range outPublickeys {
-					if len(outPublicKey) == 0 {
-						continue
-					}
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+				if len(instruction[2]) > 0 {
+					//for _, value := range outPublickeyStructs {
+					//	delete(beaconBestState.RewardReceiver, value.GetIncKeyBase58())
+					//}
+					outPublickeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublickeys)
 					if err != nil {
-						panic(err)
-					}
-					if !has {
-						panic(errors.Errorf("Can not found info of this public key %v", outPublicKey))
-					}
-					if stakerInfo.AutoStaking() {
-						shardCandidate, err := incognitokey.CommitteeBase58KeyListToStruct([]string{outPublicKey})
-						if err != nil {
+						if len(outPublickeys) != 0 {
 							return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 						}
-						newShardCandidates = append(newShardCandidates, shardCandidate...)
+					}
+
+					shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.ShardCommittee[shardID])
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+					}
+					tempShardCommittees, err := RemoveValidator(shardCommitteeStr, outPublickeys)
+					if err != nil {
+						return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+					}
+					// remove old public key in shard committee update shard committee
+					committeeChange.shardCommitteeRemoved[shardID] = append(committeeChange.shardCommitteeRemoved[shardID], outPublickeyStructs...)
+					beaconBestState.ShardCommittee[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(tempShardCommittees)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+					}
+
+					for _, outPublicKey := range outPublickeys {
+						if len(outPublicKey) == 0 {
+							continue
+						}
+						stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+						if err != nil {
+							panic(err)
+						}
+						if !has {
+							panic(errors.Errorf("Can not found info of this public key %v", outPublicKey))
+						}
+						if stakerInfo.AutoStaking() {
+							shardCandidate, err := incognitokey.CommitteeBase58KeyListToStruct([]string{outPublicKey})
+							if err != nil {
+								return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+							}
+							newShardCandidates = append(newShardCandidates, shardCandidate...)
+						}
 					}
 				}
 			} else if instruction[3] == "beacon" {
