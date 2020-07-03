@@ -27,7 +27,7 @@ var (
 
 	maxInputs = 7
 	minInputs = 1
-	numOfLoops = 10
+	numOfLoops = 1
 )
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
@@ -284,13 +284,13 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			[]byte{},
 		)
 // creating the TX object
-		tx := NewEmptyTx()
+		tx := &TxVersion2{}
 // actually making the TX
 // `Init` function will also create all necessary proofs and attach them to the TX
 		err = tx.Init(initializingParams)
 		// jsonBytes,err := json.Marshal(tx)
 
-		// thatTx := NewEmptyTx()
+		// thatTx := &TxVersion2{}
 		// json.Unmarshal(jsonBytes,thatTx)
 		// thatJsonBytes, err := json.Marshal(thatTx)
 
@@ -302,9 +302,23 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 // 			shardID byte (we're testing with only 1 shard), 
 //			tokenID *common.Hash (set to nil, meaning we use PRV),
 //			isBatch bool, isNewTransaction bool
-		isValid,err := tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
+		isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
+		isValid,err = tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
+		assert.Equal(t,nil,err)
+		assert.Equal(t,true,isValid)
+
+// first, try setting the proof to nil, then verify
+// it should not go through
+		tx_specific := tx
+		savedProof := tx_specific.Proof
+		tx_specific.Proof = nil
+		isValid,err = tx.ValidateSanityData(nil,nil,nil,0)
+		// fmt.Printf("Nullified the proof, see what happens\n%v\n%v",isValid,err)
+		assert.NotEqual(t,nil,err)
+		assert.Equal(t,false,isValid)
+		tx_specific.Proof = savedProof
 
 		// tx_specific,ok := tx.(*TxVersion2)
 		// assert.Equal(t,true,ok)
@@ -326,7 +340,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			nil,
 			[]byte{},
 		)
-		malTx := NewEmptyTx()
+		malTx := &TxVersion2{}
 		errMalInit := malTx.Init(malFeeParams)
 		assert.NotEqual(t,nil,errMalInit)
 		isValid,errMalVerify := malTx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
@@ -346,7 +360,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			nil,
 			[]byte{},
 		)
-		malTx = NewEmptyTx()
+		malTx = &TxVersion2{}
 		err = malTx.Init(malInputParams)
 		assert.Equal(t,nil,err)
 		malTx.SetProof(tx.GetProof())
@@ -367,7 +381,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			nil,
 			[]byte{},
 		)
-		malTx = NewEmptyTx()
+		malTx = &TxVersion2{}
 		err = malTx.Init(malInputParams)
 		assert.Equal(t,nil,err)
 		malTx.SetProof(tx.GetProof())
