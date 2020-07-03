@@ -213,7 +213,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		initBeaconBestState.consensusStateDB,
 		initBeaconBestState.BeaconCommittee,
 		initBeaconBestState.RewardReceiver,
-		initBeaconBestState.AutoStaking,
+		initBeaconBestState.AutoStaking.data,
 		initBeaconBestState.StakingTx,
 	); err != nil {
 		return err
@@ -223,7 +223,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 			initBeaconBestState.consensusStateDB,
 			committee,
 			initBeaconBestState.RewardReceiver,
-			initBeaconBestState.AutoStaking,
+			initBeaconBestState.AutoStaking.data,
 			initBeaconBestState.StakingTx,
 		); err != nil {
 			return err
@@ -466,7 +466,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
-		v.AutoStaking = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
+		v.AutoStaking = NewMapStringBool()
+		v.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")

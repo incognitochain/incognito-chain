@@ -126,7 +126,7 @@ func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBes
 		}
 	}
 
-	for k, v := range data.AutoStaking {
+	for k, v := range data.AutoStaking.GetMap() {
 		var keySet incognitokey.CommitteePublicKey
 		keySet.FromString(k)
 

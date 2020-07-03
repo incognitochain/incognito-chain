@@ -192,7 +192,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, NewBlockChainError(GenerateShardCommitteeAndValidatorRootError, err)
 	}
 
-	tempAutoStakingRoot, err := generateHashFromMapStringBool(newBeaconBeststate.AutoStaking)
+	tempAutoStakingRoot, err := newBeaconBeststate.AutoStaking.GenerateHash()
 	if err != nil {
 		return nil, NewBlockChainError(AutoStakingRootHashError, err)
 	}

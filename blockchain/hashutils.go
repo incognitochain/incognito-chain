@@ -199,8 +199,9 @@ func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Ha
 	}
 	return hash, hash.IsEqual(&targetHash)
 }
-func verifyHashFromMapStringBool(maps1 map[string]bool, targetHash common.Hash) (common.Hash, bool) {
-	hash, err := generateHashFromMapStringBool(maps1)
+
+func verifyHashFromMapStringBool(maps1 *MapStringBool, targetHash common.Hash) (common.Hash, bool) {
+	hash, err := maps1.GenerateHash()
 	if err != nil {
 		return hash, false
 	}
