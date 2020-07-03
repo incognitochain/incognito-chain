@@ -1010,6 +1010,8 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 								return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 							}
 							newShardCandidates = append(newShardCandidates, shardCandidate...)
+						} else {
+							delete(beaconBestState.AutoStaking, outPublicKey)
 						}
 					}
 				}
@@ -1047,6 +1049,8 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 							return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 						}
 						newBeaconCandidates = append(newBeaconCandidates, beaconCandidate...)
+					} else {
+						delete(beaconBestState.AutoStaking, outPublicKey)
 					}
 				}
 			}
