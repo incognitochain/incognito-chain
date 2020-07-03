@@ -26,10 +26,32 @@ func getRandomCoinV2() *CoinV2 {
 
 func TestCoinV2BytesAndSetBytes(t *testing.T) {
 	for i := 0; i < 5; i += 1 {
+// test byte-marshalling of random plain coins
 		coin := getRandomCoinV2()
 		b := coin.Bytes()
 		coinByBytes := new(CoinV2).Init()
 		err := coinByBytes.SetBytes(b)
+		assert.Equal(t, nil, err, "Set Bytes should not have any error")
+		assert.Equal(t, coin.GetVersion(), coinByBytes.GetVersion(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetRandomness().ToBytesS(), coinByBytes.GetRandomness().ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.amount.ToBytesS(), coinByBytes.amount.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetTxRandomPoint().ToBytesS(), coinByBytes.GetTxRandomPoint().ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.publicKey.ToBytesS(), coinByBytes.publicKey.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.commitment.ToBytesS(), coinByBytes.commitment.ToBytesS(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.GetIndex(), coinByBytes.GetIndex(), "FromBytes then SetBytes should be equal")
+		assert.Equal(t, coin.info, coinByBytes.info, "FromBytes then SetBytes should be equal")
+
+// test byte-marshalling of concealed coins
+		privateKey := key.GeneratePrivateKey([]byte{byte(i)})
+		keyset := new(incognitokey.KeySet)
+		err = keyset.InitFromPrivateKey(&privateKey)
+		assert.Equal(t, nil, err)
+		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, 3000, []byte{})
+		coin,err = NewCoinFromPaymentInfo(paymentInfo)
+		coin.ConcealData(keyset.PaymentAddress.GetPublicView())
+		b = coin.Bytes()
+		coinByBytes = new(CoinV2).Init()
+		err = coinByBytes.SetBytes(b)
 		assert.Equal(t, nil, err, "Set Bytes should not have any error")
 		assert.Equal(t, coin.GetVersion(), coinByBytes.GetVersion(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.GetRandomness().ToBytesS(), coinByBytes.GetRandomness().ToBytesS(), "FromBytes then SetBytes should be equal")
@@ -44,7 +66,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 
 func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 	for i := 0; i < 20; i += 1 {
-		privateKey := key.GeneratePrivateKey([]byte{1})
+		privateKey := key.GeneratePrivateKey([]byte{byte(i)})
 		keyset := new(incognitokey.KeySet)
 		err := keyset.InitFromPrivateKey(&privateKey)
 		assert.Equal(t, nil, err)

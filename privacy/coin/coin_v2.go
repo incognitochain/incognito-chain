@@ -195,6 +195,9 @@ func (c *CoinV2) Init() *CoinV2 {
 func (c CoinV2) GetSNDerivator() *operation.Scalar { return nil }
 
 func (c CoinV2) IsEncrypted() bool {
+	if c.mask==nil{
+		return true
+	}
 	commitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
 	return !operation.IsPointEqual(commitment, c.commitment)
 }
