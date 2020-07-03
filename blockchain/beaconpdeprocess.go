@@ -557,11 +557,11 @@ func (blockchain *BlockChain) processPDETradingFeesDistribution(
 	for _, item := range feesForContributorsByPair {
 		tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
 			beaconHeight,
-			item.token1IDStr,
-			item.token2IDStr,
-			item.contributorAddressStr,
+			item.Token1IDStr,
+			item.Token2IDStr,
+			item.ContributorAddressStr,
 		))
-		pdeTradingFees[tradingFeeKey] += item.feeAmt
+		pdeTradingFees[tradingFeeKey] += item.FeeAmt
 	}
 	return nil
 }

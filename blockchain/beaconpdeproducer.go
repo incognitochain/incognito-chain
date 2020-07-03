@@ -643,7 +643,8 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 			addingFee = tradingFee - uint64(len(sequentialTrades)-1)*proportionalFee
 		}
 		pdeTradeAcceptedContent.AddingFee = addingFee
-		tradingFeeByPair[pairKey] += addingFee
+		sKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, ""))
+		tradingFeeByPair[sKey] += addingFee
 		tradeAcceptedContents = append(tradeAcceptedContents, pdeTradeAcceptedContent)
 	}
 
@@ -973,10 +974,10 @@ type shareInfo struct {
 }
 
 type tradingFeeForContributorByPair struct {
-	contributorAddressStr string
-	feeAmt                uint64
-	token1IDStr           string
-	token2IDStr           string
+	ContributorAddressStr string
+	FeeAmt                uint64
+	Token1IDStr           string
+	Token2IDStr           string
 }
 
 func (blockchain *BlockChain) buildInstForTradingFeesDist(
@@ -992,21 +993,24 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	for _, pairKey := range keys {
-		feeAmt := tradingFeeByPair[pairKey]
+	for _, sKey := range keys {
+		feeAmt := tradingFeeByPair[sKey]
 		allSharesByPair := []shareInfo{}
 		totalSharesOfPair := big.NewInt(0)
+
 		for shareKey, shareAmt := range pdeShares {
-			if strings.Contains(shareKey, pairKey) {
+			if strings.Contains(shareKey, sKey) {
 				allSharesByPair = append(allSharesByPair, shareInfo{shareKey: shareKey, shareAmt: shareAmt})
 				totalSharesOfPair.Add(totalSharesOfPair, big.NewInt(int64(shareAmt)))
 			}
 		}
+
 		for _, sInfo := range allSharesByPair {
 			feeForContributor := big.NewInt(0)
 			feeForContributor.Mul(big.NewInt(int64(feeAmt)), big.NewInt(int64(sInfo.shareAmt)))
 			feeForContributor.Div(feeForContributor, totalSharesOfPair)
 			parts := strings.Split(sInfo.shareKey, "-")
+
 			partsLen := len(parts)
 			if partsLen < 5 {
 				continue
@@ -1014,10 +1018,10 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 			feesForContributorsByPair = append(
 				feesForContributorsByPair,
 				&tradingFeeForContributorByPair{
-					contributorAddressStr: parts[partsLen-1],
-					feeAmt:                feeForContributor.Uint64(),
-					token1IDStr:           parts[partsLen-2],
-					token2IDStr:           parts[partsLen-3],
+					ContributorAddressStr: parts[partsLen-1],
+					FeeAmt:                feeForContributor.Uint64(),
+					Token1IDStr:           parts[partsLen-2],
+					Token2IDStr:           parts[partsLen-3],
 				},
 			)
 		}

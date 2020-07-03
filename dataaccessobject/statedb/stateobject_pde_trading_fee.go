@@ -3,13 +3,15 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type PDETradingFeeState struct {
 	token1ID           string
 	token2ID           string
+	contributorAddress string
 	amount             uint64
 }
 
@@ -37,15 +39,21 @@ func (s *PDETradingFeeState) SetAmount(amount uint64) {
 	s.amount = amount
 }
 
+func (s *PDETradingFeeState) ContributorAddress() string {
+	return s.contributorAddress
+}
+
 func (s PDETradingFeeState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Token1ID           string
 		Token2ID           string
 		Amount             uint64
+		ContributorAddress string
 	}{
 		Token1ID:           s.token1ID,
 		Token2ID:           s.token2ID,
 		Amount:             s.amount,
+		ContributorAddress: s.contributorAddress,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -58,6 +66,7 @@ func (s *PDETradingFeeState) UnmarshalJSON(data []byte) error {
 		Token1ID           string
 		Token2ID           string
 		Amount             uint64
+		ContributorAddress string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -66,6 +75,7 @@ func (s *PDETradingFeeState) UnmarshalJSON(data []byte) error {
 	s.token1ID = temp.Token1ID
 	s.token2ID = temp.Token2ID
 	s.amount = temp.Amount
+	s.contributorAddress = temp.ContributorAddress
 	return nil
 }
 
@@ -73,8 +83,8 @@ func NewPDETradingFeeState() *PDETradingFeeState {
 	return &PDETradingFeeState{}
 }
 
-func NewPDETradingFeeStateWithValue(token1ID string, token2ID string, amount uint64) *PDETradingFeeState {
-	return &PDETradingFeeState{token1ID: token1ID, token2ID: token2ID, amount: amount}
+func NewPDETradingFeeStateWithValue(token1ID string, token2ID string, contributorAddress string, amount uint64) *PDETradingFeeState {
+	return &PDETradingFeeState{token1ID: token1ID, token2ID: token2ID, amount: amount, contributorAddress: contributorAddress}
 }
 
 type PDETradingFeeObject struct {
@@ -82,11 +92,11 @@ type PDETradingFeeObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version       int
+	version            int
 	pdeTradingFeeHash  common.Hash
 	pdeTradingFeeState *PDETradingFeeState
-	objectType    int
-	deleted       bool
+	objectType         int
+	deleted            bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -98,12 +108,12 @@ type PDETradingFeeObject struct {
 
 func newPDETradingFeeObject(db *StateDB, hash common.Hash) *PDETradingFeeObject {
 	return &PDETradingFeeObject{
-		version:       defaultVersion,
-		db:            db,
+		version:            defaultVersion,
+		db:                 db,
 		pdeTradingFeeHash:  hash,
 		pdeTradingFeeState: NewPDETradingFeeState(),
-		objectType:    PDETradingFeeObjectType,
-		deleted:       false,
+		objectType:         PDETradingFeeObjectType,
+		deleted:            false,
 	}
 }
 
@@ -123,18 +133,18 @@ func newPDETradingFeeObjectWithValue(db *StateDB, key common.Hash, data interfac
 		}
 	}
 	return &PDETradingFeeObject{
-		version:       defaultVersion,
+		version:            defaultVersion,
 		pdeTradingFeeHash:  key,
 		pdeTradingFeeState: newPDETradingFeeState,
-		db:            db,
-		objectType:    PDETradingFeeObjectType,
-		deleted:       false,
+		db:                 db,
+		objectType:         PDETradingFeeObjectType,
+		deleted:            false,
 	}, nil
 }
 
-func GeneratePDETradingFeeObjectKey(token1ID, token2ID string) common.Hash {
+func GeneratePDETradingFeeObjectKey(token1ID, token2ID, contributorAddress string) common.Hash {
 	prefixHash := GetPDETradingFeePrefix()
-	valueHash := common.HashH([]byte(token1ID + token2ID))
+	valueHash := common.HashH([]byte(token1ID + token2ID + contributorAddress))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

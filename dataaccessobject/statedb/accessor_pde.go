@@ -3,9 +3,10 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"sort"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
 func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waitingPDEContributions map[string]*rawdbv2.PDEContribution) error {
@@ -86,8 +87,9 @@ func StorePDETradingFees(stateDB *StateDB, beaconHeight uint64, pdeTradingFees m
 		strs := strings.Split(tempKey, "-")
 		token1ID := strs[2]
 		token2ID := strs[3]
-		key := GeneratePDETradingFeeObjectKey(token1ID, token2ID)
-		value := NewPDETradingFeeStateWithValue(token1ID, token2ID, feeAmount)
+		contributorAddress := strs[4]
+		key := GeneratePDETradingFeeObjectKey(token1ID, token2ID, contributorAddress)
+		value := NewPDETradingFeeStateWithValue(token1ID, token2ID, contributorAddress, feeAmount)
 		err := stateDB.SetStateObject(PDETradingFeeObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StorePDETradingFeeError, err)
@@ -177,7 +179,7 @@ func GetPDETradingFees(stateDB *StateDB, beaconHeight uint64) (map[string]uint64
 	pdeTradingFees := make(map[string]uint64)
 	pdeTradingFeeStates := stateDB.getAllPDETradingFeeState()
 	for _, tfState := range pdeTradingFeeStates {
-		key := string(GetPDETradingFeeKey(beaconHeight, tfState.Token1ID(), tfState.Token2ID()))
+		key := string(GetPDETradingFeeKey(beaconHeight, tfState.Token1ID(), tfState.Token2ID(), tfState.ContributorAddress()))
 		value := tfState.Amount()
 		pdeTradingFees[key] = value
 	}

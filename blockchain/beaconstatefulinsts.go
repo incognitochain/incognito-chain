@@ -616,7 +616,9 @@ func (blockchain *BlockChain) handlePDEInsts(
 
 	// calculate and build instruction for trading fees distribution
 	tradingFeesDistInst := blockchain.buildInstForTradingFeesDist(currentPDEState, beaconHeight, tradingFeeByPair)
-	instructions = append(instructions, tradingFeesDistInst)
+	if len(tradingFeesDistInst) > 0 {
+		instructions = append(instructions, tradingFeesDistInst)
+	}
 
 	// handle withdrawal
 	var wrKeys []int

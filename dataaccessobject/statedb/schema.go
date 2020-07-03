@@ -262,11 +262,11 @@ func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contr
 }
 
 // GetPDETradingFeeKey: PDETradingFeePrefix + beacon height + token1ID + token2ID
-func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string) []byte {
+func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
 	prefix := append(pdeTradingFeePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
-	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1])...)
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
 }
 
 func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
