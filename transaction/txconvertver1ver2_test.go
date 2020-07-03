@@ -18,10 +18,9 @@ import (
 )
 
 var (
-	// num of private keys
-	numInputs  = 10
+	numInputs = 10
 	numOutputs = 5
-	numTests   = 100
+	numTests = 100
 )
 
 var _ = func() (_ struct{}) {
@@ -61,8 +60,8 @@ func createSampleInputCoin(privkey privacy.PrivateKey, pubKey *operation.Point, 
 	return c, nil
 }
 
-func createConversionParams(numInputs, numOutputs int) (*incognitokey.KeySet,
-	[]*privacy.PaymentInfo, *TxConvertVer1ToVer2InitParams, error) {
+func createConversionParams(numInputs, numOutputs int)(*incognitokey.KeySet,
+	[]*privacy.PaymentInfo, *TxConvertVer1ToVer2InitParams, error){
 	var senderSK privacy.PrivateKey
 	var keySet *incognitokey.KeySet
 
@@ -98,7 +97,7 @@ func createConversionParams(numInputs, numOutputs int) (*incognitokey.KeySet,
 		return nil, nil, nil, err
 	}
 
-	for i := 0; i < numInputs; i++ {
+	for i := 0; i< numInputs; i++ {
 		amount := uint64(common.RandIntInterval(0, 1000))
 		inputCoins[i], err = createSampleInputCoin(senderSK, pubKey, amount, nil)
 		if err != nil {
@@ -111,7 +110,7 @@ func createConversionParams(numInputs, numOutputs int) (*incognitokey.KeySet,
 
 	paymentInfo := make([]*key.PaymentInfo, numOutputs)
 
-	for i := 0; i < numOutputs; i++ {
+	for i :=0;i< numOutputs;i++{
 		amount := uint64(common.RandIntInterval(0, int(sumInput-sumOutput)))
 		paymentInfo[i] = key.InitPaymentInfo(keySet.PaymentAddress, amount, nil)
 		sumOutput += amount
@@ -121,7 +120,7 @@ func createConversionParams(numInputs, numOutputs int) (*incognitokey.KeySet,
 	fee := sumInput - sumOutput
 
 	//create conversion params
-	txConversionParams := NewTxConvertVer1ToVer2InitParams(
+	txConvertParams := NewTxConvertVer1ToVer2InitParams(
 		&keySet.PrivateKey,
 		paymentInfo,
 		inputCoins,
@@ -132,31 +131,7 @@ func createConversionParams(numInputs, numOutputs int) (*incognitokey.KeySet,
 		nil,
 	)
 
-	return keySet, paymentInfo, txConversionParams, nil
-}
-
-func TestValidateConversionParams(t *testing.T) {
-	for i := 0; i < numTests; i++ {
-		_, _, txConversionParams, err := createConversionParams(numInputs, numOutputs)
-		assert.Equal(t, nil, err, "createConversionParams returns an error: %v", err)
-
-		m := common.RandInt()
-		switch m % 3 {
-		case 0: //tamper with fee
-			txConversionParams.fee = uint64(common.RandInt())
-			err = validateTxConvertVer1ToVer2Params(txConversionParams)
-			assert.Equal(t, true, err != nil, "validateTxConvertVer1ToVer2Params should returns an error")
-		case 1: //conceal input coins
-			r := common.RandInt() % numInputs
-			txConversionParams.inputCoins[r].ConcealData(nil)
-			err = validateTxConvertVer1ToVer2Params(txConversionParams)
-			assert.Equal(t, true, err != nil, "validateTxConvertVer1ToVer2Params should returns an error")
-		default: //do nothing
-			//Test validateTxConvertVer1ToVer2Params
-			err = validateTxConvertVer1ToVer2Params(txConversionParams)
-			assert.Equal(t, nil, err, "validateTxConvertVer1ToVer2Params returns an error: %v", err)
-		}
-	}
+	return keySet, paymentInfo, txConvertParams, nil
 }
 
 func TestInitializeTxConversion(t *testing.T) {
@@ -172,7 +147,7 @@ func TestInitializeTxConversion(t *testing.T) {
 	}
 }
 
-func TestProveVerifyTxNormalConversionTampered(t *testing.T){
+func TestProveVerifyTxNormalConversion(t *testing.T){
 	for i:=0; i< numTests; i++ {
 		txConvertOutput := new(TxVersion2)
 
@@ -190,8 +165,8 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T){
 	}
 }
 
-func TestProveVerifyTxNormalConversion(t *testing.T) {
-	for i := 0; i < 1; i++ {
+func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
+	for i := 0; i < numTests; i++ {
 		txConversionOutput := new(TxVersion2)
 		_, _, txConversionParams, err := createConversionParams(numInputs, numOutputs)
 		assert.Equal(t, nil, err, "createConversionParams returns an error: %v", err)
@@ -214,7 +189,7 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 			txConversionOutput.Sig, txConversionOutput.SigPubKey, err = signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
 			assert.Equal(t, nil, err)
 
-		case 1: //tamper with randomness
+		case 1: //tamper with randomness => current code will fail this test
 			fmt.Println("------------------Tampering with randomness-------------------")
 			inputCoins := txConversionOutput.Proof.GetInputCoins()
 			for j := 0; j < numInputs; j++ {
@@ -247,7 +222,7 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 			err := statedb.StoreOTACoinsAndOnetimeAddresses(testDB, *txConversionParams.tokenID, 0, outputCoinToBeStored, otaToBeStored, 0)
 			assert.Equal(t, true, err == nil)
 
-		case 4: //tamper with commitment of output
+		case 4: //tamper with commitment of output => current code will fail this test
 			fmt.Println("------------------Tampering with commitment-------------------")
 			//fmt.Println("Tx hash before altered", txConversionOutput.Hash().String())
 			newOutputCoins := []coin.Coin{}
@@ -283,4 +258,3 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 		assert.Equal(t, false, res)
 	}
 }
-
