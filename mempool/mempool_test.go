@@ -505,7 +505,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 		fmt.Println("Can't create transaction", err)
 		return nil
 	}
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
 		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
@@ -531,7 +531,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 	}
 	tx := &transaction.TxTokenBase{}
 	err1 := tx.Init(
-		transaction.NewTxPrivacyTokenInitParams(&senderKeySet.KeySet.PrivateKey,
+		transaction.NewTxTokenParams(&senderKeySet.KeySet.PrivateKey,
 			nil,
 			candidatePlainCoins,
 			realFee,

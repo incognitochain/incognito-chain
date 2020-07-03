@@ -3,6 +3,7 @@ package wallet
 import (
 	"bytes"
 	"crypto/sha256"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 )
@@ -83,5 +84,11 @@ func IsPublicKeyBurningAddress(publicKey []byte) bool {
 	if bytes.Equal(publicKey, keyWalletBurningAdd2.KeySet.PaymentAddress.Pk) {
 		return true
 	}
+	fmt.Println("[BUGLOG] Burn Address PK")
+	fmt.Println("[BUGLOG] ", keyWalletBurningAdd1.KeySet.PaymentAddress.Pk)
+	fmt.Println("[BUGLOG] ", keyWalletBurningAdd2.KeySet.PaymentAddress.Pk)
+	fmt.Println("[BUGLOG] ", publicKey)
+
+
 	return false
 }

@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"fmt"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -117,33 +118,44 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 	if len(contributorAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's contributed address")
 	}
-	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("Must send coin to burning address")
+	t, _ := json.Marshal(tx)
+	fmt.Println("[BUGLOG] Tx Detail", string(t))
+
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	fmt.Println("[BUGLOG] ---------")
+	if err != nil {
+		return false, false, err
 	}
-	if pc.ContributedAmount == 0 {
-		return false, false, errors.New("Contributed Amount should be larger than 0")
+	if !isBurned {
+		fmt.Println("[BUGLOG] This is not tx burn", isBurned, burnCoin, burnedTokenID, err)
+		panic("OK")
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
-	if pc.ContributedAmount != tx.CalculateTxValue() {
-		return false, false, errors.New("Contributed Amount should be equal to the tx value")
+	if pc.ContributedAmount == 0 && pc.ContributedAmount != burnCoin.GetValue() {
+		return false, false, errors.New("Contributed Amount is not valid ")
 	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], contributorAddr.Pk[:]) {
-		return false, false, errors.New("ContributorAddress incorrect")
-	}
+
+	// No need to check this condition ...
+	//if !bytes.Equal(tx.GetSigPubKey()[:], contributorAddr.Pk[:]) {
+	//	return false, false, errors.New("ContributorAddress incorrect")
+	//}
 
 	tokenID, err := common.Hash{}.NewHashFromStr(pc.TokenIDStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDStr incorrect"))
 	}
-
-	if !bytes.Equal(tx.GetTokenID()[:], tokenID[:]) {
+	if !bytes.Equal(burnedTokenID[:], tokenID[:]) {
+		panic("OK")
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
 
 	if tx.GetType() == common.TxNormalType && pc.TokenIDStr != common.PRVCoinID.String() {
+		panic("OK")
 		return false, false, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token.")
 	}
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType && pc.TokenIDStr == common.PRVCoinID.String() {
+		panic("OK")
 		return false, false, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token.")
 	}
 

@@ -354,11 +354,13 @@ func (tx *TxVersion1) proveASM(params *TxPrivacyInitParamsForASM) error {
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
 func (tx TxVersion1) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	check, err := checkSanityMetadataVersionSizeProofTypeInfo(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
-	if !check {
-		if err != nil {
-			Logger.Log.Errorf("Cannot check sanity of metadata, version, size, proof, type and info: err %v", err)
-		}
+	if check, err := validateSanityTxWithoutMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
+		Logger.Log.Errorf("Cannot check sanity of version, size, proof, type and info: err %v", err)
+		return false, err
+	}
+
+	if check, err := validateSanityMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
+		Logger.Log.Errorf("Cannot check sanity of metadata: err %v", err)
 		return false, err
 	}
 	// Ver1 also validate size of sigpubkey
@@ -672,7 +674,7 @@ func (tx TxVersion1) ValidateTxSalary(
 
 // =========== SHARED FUNCTIONS ==========
 
-func (tx TxVersion1) GetTxMintData() (bool, coin.Coin, *common.Hash, error) { return getTxMintData(&tx) }
+func (tx TxVersion1) GetTxMintData() (bool, coin.Coin, *common.Hash, error) { return getTxMintData(&tx, &common.PRVCoinID) }
 
 func (tx TxVersion1) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) { return getTxBurnData(&tx) }
 

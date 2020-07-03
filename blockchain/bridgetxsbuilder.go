@@ -235,7 +235,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], issuingAcceptedInst.IncTokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID:     propID.String(),
 		PropertyName:   issuingAcceptedInst.IncTokenName,
 		PropertySymbol: issuingAcceptedInst.IncTokenName,
@@ -245,7 +245,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		TokenInput:     []coin.PlainCoin{},
 		Mintable:       true,
 	}
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
+	txTokenParams := transaction.NewTxTokenParams(producerPrivateKey,
 		[]*privacy.PaymentInfo{}, nil, 0,
 		tokenParams, shardView.GetCopiedTransactionStateDB(), issuingRes,
 		false, false, shardID, nil, beaconView.GetBeaconFeatureStateDB())
@@ -293,7 +293,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], issuingETHAcceptedInst.IncTokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID: propID.String(),
 		// PropertyName:   common.PETHTokenName,
 		// PropertySymbol: common.PETHTokenName,
@@ -310,7 +310,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		issuingETHAcceptedInst.ExternalTokenID,
 		metadata.IssuingETHResponseMeta,
 	)
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
+	txTokenParams := transaction.NewTxTokenParams(producerPrivateKey,
 		[]*privacy.PaymentInfo{}, nil, 0,
 		tokenParams, shardView.GetCopiedTransactionStateDB(),
 		issuingETHRes, false, false,

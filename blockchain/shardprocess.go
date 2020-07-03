@@ -110,7 +110,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
-	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
+	defer     blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 	//startTimeInsertShardBlock := time.Now()
 	committeeChange := newCommitteeChange()
 
@@ -141,6 +141,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	previousBeaconHeight := curView.BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetBeaconChainDatabase(), previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
+
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
 	if shouldValidate {

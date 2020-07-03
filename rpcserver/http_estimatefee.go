@@ -72,7 +72,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		}
 
 		// Check custom token param
-		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+		var customPrivacyTokenParam *transaction.TokenParam
 		isGetPTokenFee := false
 		if len(arrayParams) > 4 {
 			// param #5: token params

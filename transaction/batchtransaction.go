@@ -87,5 +87,6 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %d", i)
 		return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 2 PAYMENT PROOF %d", i)), -1
 	}
+	fmt.Println("[BUGLOG] Number of tx in batch", len(bulletProofListVer1), len(bulletProofListVer2))
 	return true, nil, -1
 }

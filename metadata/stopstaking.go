@@ -100,7 +100,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 		if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
 			fmt.Println("Tx Meatadata Sig", tx.GetMetadata().GetSig())
 			fmt.Println("Check authorized sender:", ok, err)
-			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSigPubKey(), tx.GetSigPubKey()))
+			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 		}
 		//if !bytes.Equal(stakingTx.GetSender(), txr.GetSender()) {
 		//}

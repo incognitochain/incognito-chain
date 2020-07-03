@@ -19,7 +19,7 @@ type TxTokenVersion1 struct {
 }
 
 func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
-	params, ok := paramsInterface.(*TxPrivacyTokenInitParams)
+	params, ok := paramsInterface.(*TxTokenParams)
 	if !ok {
 		return errors.New("Cannot init TxTokenBase because params is not correct")
 	}

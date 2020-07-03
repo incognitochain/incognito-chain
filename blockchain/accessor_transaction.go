@@ -429,7 +429,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 	for _, indexTx := range indices {
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
-		tokenData := privacyCustomTokenTx.GetTxPrivacyTokenData()
+		tokenData := privacyCustomTokenTx.GetTxTokenData()
 		isBridgeToken := false
 		for _, tempBridgeToken := range allBridgeTokens {
 			if tempBridgeToken.TokenID != nil && bytes.Equal(tokenData.PropertyID[:], tempBridgeToken.TokenID[:]) {
