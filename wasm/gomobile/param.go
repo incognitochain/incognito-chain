@@ -558,7 +558,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	println("sndOutputsForPToken: ", sndOutputsForPToken)
 
 	// get privacy token param
-	privacyTokenParam := new(transaction.CustomTokenPrivacyParamTx)
+	privacyTokenParam := new(transaction.TokenParam)
 	pTokenParam, ok := paramMaps["privacyTokenParam"].(map[string]interface{})
 	if !ok {
 		println("Invalid privacy token param")

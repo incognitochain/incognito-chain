@@ -243,7 +243,6 @@ func (proof *ConversionProofVer1ToVer2) IsPrivacy() bool {
 
 func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, serialnumberWitness []*serialnumbernoprivacy.SNNoPrivacyWitness) (*ConversionProofVer1ToVer2, error) {
 	var err error
-
 	proof := new(ConversionProofVer1ToVer2)
 	proof.SetVersion(ConversionProofVersion)
 	if err = proof.SetInputCoins(inputCoins); err != nil {

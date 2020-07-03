@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -128,7 +127,6 @@ type Transaction interface {
 	GetTxMintData() (bool, coin.Coin, *common.Hash, error)
 	GetTxBurnData() (bool, coin.Coin, *common.Hash, error)
 
-	GetMetadataFromVinsTx(ChainRetriever, ShardViewRetriever, BeaconViewRetriever) (Metadata, error)
 	ListSerialNumbersHashH() []common.Hash
 	String() string
 	Hash() *common.Hash

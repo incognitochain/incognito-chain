@@ -397,12 +397,6 @@ func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	return true, pubkeys[0], amounts[0], &common.PRVCoinID
 }
 
-// implement this func if needed
-func (tx TxBase) GetMetadataFromVinsTx(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (metadata.Metadata, error) {
-	// implement this func if needed
-	return nil, nil
-}
-
 func (tx TxBase) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
 	if tx.Proof != nil {

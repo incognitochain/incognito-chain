@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"time"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,9 +9,10 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"time"
 )
 
-func getTxMintData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, error) {
+func getTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, coin.Coin, *common.Hash, error) {
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
 		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
@@ -24,10 +25,13 @@ func getTxMintData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, erro
 	if inputCoins := tx.GetProof().GetInputCoins(); len(inputCoins) > 0 {
 		return false, nil, nil, errors.New("Error this is not Tx mint")
 	}
-	return true, outputCoins[0], &common.PRVCoinID, nil
+	return true, outputCoins[0], tokenID, nil
 }
 
 func getTxBurnData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, error) {
+	fmt.Println("[BUGLOC] Burn Data PRV xxxx")
+	t, _ := json.Marshal(tx)
+	fmt.Println("[BUGLOG]", string(t))
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
 		Logger.Log.Errorf("Cannot get receiver data, error %v", err)
@@ -37,12 +41,10 @@ func getTxBurnData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, erro
 		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
 		return false, nil, nil, err
 	}
-
 	for _, coin := range outputCoins {
 		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
 			return true, coin, &common.PRVCoinID, nil
 		}
-
 	}
 	return false, nil, nil, nil
 }
@@ -103,24 +105,24 @@ func validateTransaction(tx metadata.Transaction, hasPrivacy bool, transactionSt
 	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
-func checkSanityMetadataVersionSizeProofTypeInfo(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func validateSanityMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) ( bool, error) {
 	meta := tx.GetMetadata()
-	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", meta)
 	if meta != nil {
-		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx)
-		Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
-		if err != nil || !ok || !isContinued {
+		isValid, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx )
+		if err != nil || !ok || !isValid {
 			return ok, err
 		}
 	}
-	Logger.Log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
+	return true, nil
+}
+
+func validateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	//check version
 	if tx.GetVersion() > TxVersion2Number {
 		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), currentTxVersion))
 	}
 	// check LockTime before now
-	if int64(tx.GetLockTime()) > time.Now().Unix() {
+	if tx.GetLockTime() > time.Now().Unix() {
 		return false, NewTransactionErr(RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.GetLockTime()))
 	}
 
@@ -153,7 +155,7 @@ func checkSanityMetadataVersionSizeProofTypeInfo(tx metadata.Transaction, chainR
 
 	// check info field
 	info := tx.GetInfo()
-	if len(info) > 512 {
+	if len(info) > MaxSizeInfo {
 		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(info), 512))
 	}
 	return true, nil

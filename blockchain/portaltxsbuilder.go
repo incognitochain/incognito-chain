@@ -270,7 +270,7 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID: propID.String(),
 		PropertyName:   "",
 		PropertySymbol: "",
@@ -280,7 +280,7 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+	txTokenParams := transaction.NewTxTokenParams(
 		producerPrivateKey,
 		[]*privacy.PaymentInfo{},
 		nil,
@@ -468,7 +468,7 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID:  propID.String(),
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
@@ -476,7 +476,7 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+	txTokenParams := transaction.NewTxTokenParams(
 		producerPrivateKey,
 		[]*privacy.PaymentInfo{},
 		nil,
@@ -623,7 +623,7 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 		var propertyID [common.HashSize]byte
 		copy(propertyID[:], withdrawRewardContent.TokenID[:])
 		propID := common.Hash(propertyID)
-		tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		tokenParams := &transaction.TokenParam{
 			PropertyID: propID.String(),
 			// PropertyName:   issuingAcceptedInst.IncTokenName,
 			// PropertySymbol: issuingAcceptedInst.IncTokenName,
@@ -633,7 +633,7 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 			TokenInput:  []coin.PlainCoin{},
 			Mintable:    true,
 		}
-		txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+		txTokenParams := transaction.NewTxTokenParams(
 			producerPrivateKey,
 			[]*privacy.PaymentInfo{},
 			nil,
@@ -760,7 +760,7 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID:  propID.String(),
 		Amount:      receiveAmt,
 		TokenTxType: transaction.CustomTokenInit,
@@ -768,7 +768,7 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+	txTokenParams := transaction.NewTxTokenParams(
 		producerPrivateKey,
 		[]*privacy.PaymentInfo{},
 		nil,

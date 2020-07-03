@@ -78,7 +78,7 @@ type TxPrivacyTokenInitParamsForASM struct {
 	//tokenPayments     []*privacy.PaymentInfo
 	//inputCoin       []*coin.PlainCoinV1
 	//feeNativeCoin   uint64
-	//tokenParams     *CustomTokenPrivacyParamTx
+	//tokenParams     *TokenParam
 	//transactionStateDB              database.DatabaseInterface
 	//metaData        metadata.Metadata
 	//hasPrivacyCoin  bool
@@ -86,7 +86,7 @@ type TxPrivacyTokenInitParamsForASM struct {
 	//shardID         byte
 	//info            []byte
 
-	txParam                           TxPrivacyTokenInitParams
+	txParam                           TxTokenParams
 	commitmentIndicesForNativeToken   []uint64
 	commitmentBytesForNativeToken     [][]byte
 	myCommitmentIndicesForNativeToken []uint64
@@ -107,7 +107,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []coin.PlainCoin,
 	feeNativeCoin uint64,
-	tokenParams *CustomTokenPrivacyParamTx,
+	tokenParams *TokenParam,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
@@ -123,7 +123,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 	myCommitmentIndicesForPToken []uint64,
 	sndOutputsForPToken []*privacy.Scalar) *TxPrivacyTokenInitParamsForASM {
 
-	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, nil)
+	txParam := NewTxTokenParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, nil)
 	params := &TxPrivacyTokenInitParamsForASM{
 		txParam:                           *txParam,
 		commitmentIndicesForNativeToken:   commitmentIndicesForNativeToken,

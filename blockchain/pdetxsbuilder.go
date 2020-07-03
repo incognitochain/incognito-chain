@@ -377,7 +377,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID: propID.String(),
 		// PropertyName:   issuingAcceptedInst.IncTokenName,
 		// PropertySymbol: issuingAcceptedInst.IncTokenName,
@@ -387,7 +387,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+	txTokenParams := transaction.NewTxTokenParams(
 		producerPrivateKey, []*privacy.PaymentInfo{},
 		nil, 0, tokenParams,
 		shardView.GetCopiedTransactionStateDB(), meta,
@@ -476,7 +476,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+	tokenParams := &transaction.TokenParam{
 		PropertyID: propID.String(),
 		// PropertyName:   issuingAcceptedInst.IncTokenName,
 		// PropertySymbol: issuingAcceptedInst.IncTokenName,
@@ -486,7 +486,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		TokenInput:  []coin.PlainCoin{},
 		Mintable:    true,
 	}
-	txTokenParams := transaction.NewTxPrivacyTokenInitParams(
+	txTokenParams := transaction.NewTxTokenParams(
 		producerPrivateKey, []*privacy.PaymentInfo{},
 		nil, 0, tokenParams,
 		shardView.GetCopiedTransactionStateDB(), meta,

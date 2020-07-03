@@ -125,13 +125,13 @@ type EstimateTxSizeParam struct {
 	numPayments              int
 	hasPrivacy               bool
 	metadata                 metadata.Metadata
-	privacyCustomTokenParams *CustomTokenPrivacyParamTx
+	privacyCustomTokenParams *TokenParam
 	limitFee                 uint64
 }
 
 func NewEstimateTxSizeParam(numInputCoins, numPayments int,
 	hasPrivacy bool, metadata metadata.Metadata,
-	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
+	privacyCustomTokenParams *TokenParam,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
 		numInputCoins:            numInputCoins,
@@ -459,7 +459,7 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 }
 
 // Return token transaction from bytes
-func NewTransactionTokenFromJsonBytes(data []byte) (TxTokenInterface, error) {
+func NewTransactionTokenFromJsonBytes(data []byte) (TransactionToken, error) {
 	txJsonVersion := new(txJsonDataVersion)
 	if err := json.Unmarshal(data, txJsonVersion); err != nil {
 		return nil, err

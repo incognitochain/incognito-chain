@@ -26,6 +26,10 @@ type TxSigPubKeyVer2 struct {
 	indexes [][]*big.Int
 }
 
+type TxVersion2 struct {
+	TxBase
+}
+
 func (sigPub TxSigPubKeyVer2) Bytes() ([]byte, error) {
 	n := len(sigPub.indexes)
 	if n == 0 {
@@ -91,10 +95,6 @@ func (sigPub *TxSigPubKeyVer2) SetBytes(b []byte) error {
 	}
 	sigPub.indexes = indexes
 	return nil
-}
-
-type TxVersion2 struct {
-	TxBase
 }
 
 // ========== GET FUNCTION ===========
@@ -649,19 +649,22 @@ func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, 
 		return false, errors.New("Tx Privacy Ver 2 must have proof")
 	}
 
-	check, err := checkSanityMetadataVersionSizeProofTypeInfo(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
-	if !check {
-		if err != nil {
-			Logger.Log.Errorf("Cannot check sanity of metadata, version, size, proof, type and info: err %v", err)
-		}
+	if check, err := validateSanityTxWithoutMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
+		Logger.Log.Errorf("Cannot check sanity of version, size, proof, type and info: err %v", err)
 		return false, err
 	}
+
+	if check, err := validateSanityMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
+		Logger.Log.Errorf("Cannot check sanity of metadata: err %v", err)
+		return false, err
+	}
+
 	return true, nil
 }
 
 // ========== SHARED FUNCTIONS ============
 
-func (tx TxVersion2) GetTxMintData() (bool, coin.Coin, *common.Hash, error) { return getTxMintData(&tx) }
+func (tx TxVersion2) GetTxMintData() (bool, coin.Coin, *common.Hash, error) { return getTxMintData(&tx, &common.PRVCoinID) }
 
 func (tx TxVersion2) GetTxBurnData() (bool, coin.Coin, *common.Hash, error) { return getTxBurnData(&tx) }
 

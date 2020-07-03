@@ -46,7 +46,7 @@ func checkIsBridgeTokenID(bridgeStateDB *statedb.StateDB, tokenID *common.Hash) 
 	return nil
 }
 
-func (txToken *TxTokenVersion2) initToken(params *TxPrivacyTokenInitParams) error {
+func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 	txToken.TxTokenData.SetType(params.tokenParams.TokenTxType)
 	txToken.TxTokenData.SetPropertyName(params.tokenParams.PropertyName)
 	txToken.TxTokenData.SetPropertySymbol(params.tokenParams.PropertySymbol)
@@ -207,7 +207,7 @@ func (txToken *TxTokenVersion2) initPRVFee(feeTx * TxVersion2, params *TxPrivacy
 }
 
 func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
-	params, ok := paramsInterface.(*TxPrivacyTokenInitParams)
+	params, ok := paramsInterface.(*TxTokenParams)
 	if !ok {
 		return errors.New("Cannot init TxCustomTokenPrivacy because params is not correct")
 	}

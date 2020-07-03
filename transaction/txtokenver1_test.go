@@ -35,7 +35,7 @@ package transaction
 //		paymentInfoPRV := []*privacy.PaymentInfo{}
 //
 //		// token param for init new token
-//		tokenParam := &CustomTokenPrivacyParamTx{
+//		tokenParam := &TokenParam{
 //			PropertyID:     "",
 //			PropertyName:   "Token 1",
 //			PropertySymbol: "Token 1",
@@ -50,7 +50,7 @@ package transaction
 //		hasPrivacyForPRV := false
 //		hasPrivacyForToken := false
 //
-//		paramToCreateTx := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
+//		paramToCreateTx := NewTxTokenParams(&senderKey.KeySet.PrivateKey,
 //			paymentInfoPRV, inputCoinsPRV, 0, tokenParam, db, nil,
 //			hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{})
 //
@@ -162,7 +162,7 @@ package transaction
 //		paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: transferAmount, Message: msgCipherText.Bytes()}}
 //
 //		// token param for transfer token
-//		tokenParam2 := &CustomTokenPrivacyParamTx{
+//		tokenParam2 := &TokenParam{
 //			PropertyID:     tx.GetTokenID().String(),
 //			PropertyName:   "Token 1",
 //			PropertySymbol: "Token 1",
@@ -174,7 +174,7 @@ package transaction
 //			Fee:            0,
 //		}
 //
-//		paramToCreateTx2 := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
+//		paramToCreateTx2 := NewTxTokenParams(&senderKey.KeySet.PrivateKey,
 //			paymentInfoPRV, inputCoinsPRV, 0, tokenParam2, db, nil,
 //			hasPrivacyForPRV, true, shardID, []byte{})
 //
