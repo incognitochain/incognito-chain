@@ -34,7 +34,7 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
-		return errors.New("aaaaa")
+		return errors.New("can not parse data for PortalCustodianDeposit")
 	}
 
 	remoteAddreses, ok := temp.RemoteAddresses.(map[string]string)
@@ -46,7 +46,7 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 		}
 		tmpRemoteAddress, ok := temp.RemoteAddresses.([]RemoteAddress)
 		if !ok {
-			return errors.New("Adadadad")
+			return errors.New("can not parse data for PortalCustodianDeposit")
 		} else {
 			remoteAddreses = make(map[string]string)
 			for _, v := range tmpRemoteAddress {
