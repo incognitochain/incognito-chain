@@ -33,7 +33,7 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		Logger.log.Error("UnmarshalJSON tx", string(data))
+		Logger.log.Error("UnmarshalJSON PortalCustodianDeposit", string(data))
 		return errors.New("can not parse data for PortalCustodianDeposit")
 	}
 
@@ -41,16 +41,20 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 	if !ok {
 		// int testnet, exception:
 		type RemoteAddress struct {
-			pTokenID string `json:"PTokenID"`
-			address  string `json:"Address"`
+			PTokenID string
+			Address  string
 		}
-		tmpRemoteAddress, ok := temp.RemoteAddresses.([]RemoteAddress)
-		if !ok {
-			return errors.New("can not parse data for PortalCustodianDeposit")
+
+		tmpRemoteAddress := make([]RemoteAddress, 0)
+		tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
+		err1 := json.Unmarshal(tempJson, &tmpRemoteAddress)
+		if err1 != nil {
+			Logger.log.Error("Parse []RemoteAddress fail %+v err %+v", temp.RemoteAddresses, err)
+			return errors.New("can not parse data for PortalCustodianDeposit RemoteAddress")
 		} else {
 			remoteAddreses = make(map[string]string)
 			for _, v := range tmpRemoteAddress {
-				remoteAddreses[v.pTokenID] = v.address
+				remoteAddreses[v.PTokenID] = v.Address
 			}
 		}
 	}
