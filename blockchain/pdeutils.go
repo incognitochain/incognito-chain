@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"math/big"
 	"sort"
 	"strings"
@@ -189,4 +194,37 @@ func updateWaitingContributionPairToPoolV2(
 		pdePoolForPair.Token2PoolValue+waitingContributions[1].Amount,
 		currentPDEState,
 	)
+}
+
+func BuildInitTxSalaryTx(otaCoin *coin.CoinV2,
+	privateKey *privacy.PrivateKey,
+	stateDB *statedb.StateDB,
+	metaData metadata.Metadata) (*transaction.TxVersion2, error) {
+
+	res := new(transaction.TxVersion2)
+	err := res.InitTxSalary(otaCoin, privateKey, stateDB, metaData)
+	if err != nil {
+		Logger.log.Errorf("Cannot build Tx Salary. Err: %v", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func BuildInitTxTokenSalaryTx(otaCoin *coin.CoinV2,
+	privateKey *privacy.PrivateKey,
+	stateDB *statedb.StateDB,
+	metaData metadata.Metadata,
+	tokenID *common.Hash) (*transaction.TxTokenVersion2, error) {
+
+	res := new(transaction.TxTokenVersion2)
+	//var propertyID [common.HashSize]byte
+	//copy(propertyID[:], tokenID[:])
+	//propID := common.Hash(propertyID)
+
+	err := res.InitTxTokenSalary(otaCoin, privateKey, stateDB, metaData, tokenID, "")
+	if err != nil {
+		Logger.log.Errorf("Cannot build Tx Token Salary. Err: %v", err)
+		return nil, err
+	}
+	return res, nil
 }

@@ -58,7 +58,9 @@ func (sbsRes ReturnStakingMetadata) ValidateMetadataByItself() bool {
 func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 	record := sbsRes.StakerAddress.String()
 	record += sbsRes.TxID
-
+	if sbsRes.SharedRandom != nil && len(sbsRes.SharedRandom) > 0 {
+		record += string(sbsRes.SharedRandom)
+	}
 	// final hash
 	record += sbsRes.MetadataBase.Hash().String()
 	hash := common.HashH([]byte(record))

@@ -15,6 +15,7 @@ type PDEWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
 	TokenIDStr    string
+	SharedRandom       []byte
 }
 
 func NewPDEWithdrawalResponse(
@@ -55,7 +56,9 @@ func (iRes PDEWithdrawalResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += iRes.TokenIDStr
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -67,14 +70,12 @@ func (iRes *PDEWithdrawalResponse) CalculateSize() uint64 {
 
 func (iRes PDEWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	insts := mintData.Insts
-	instUsed := mintData.InstsUsed
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDEWithdrawalRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PDEWithdrawalRequestMeta) {
 			continue
 		}
@@ -96,19 +97,24 @@ func (iRes PDEWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintD
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing withdrawer address string: ", err)
 			continue
 		}
-
-		_, pk, amount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			withdrawalAcceptedContent.DeductingPoolValue != amount ||
-			withdrawalAcceptedContent.WithdrawalTokenIDStr != assetID.String() {
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != withdrawalAcceptedContent.WithdrawalTokenIDStr {
 			continue
 		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, withdrawalAcceptedContent.DeductingPoolValue); !ok {
+			continue
+		}
+
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.Errorf("no PDEWithdrawalRequest tx found for the PDEWithdrawalResponse tx %s", tx.Hash().String())
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PDEWithdrawalResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

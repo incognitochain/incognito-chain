@@ -16,6 +16,7 @@ type PDEContributionResponse struct {
 	ContributionStatus string
 	RequestedTxID      common.Hash
 	TokenIDStr         string
+	SharedRandom       []byte
 }
 
 func NewPDEContributionResponse(
@@ -59,7 +60,9 @@ func (iRes PDEContributionResponse) Hash() *common.Hash {
 	record += iRes.TokenIDStr
 	record += iRes.ContributionStatus
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -124,17 +127,21 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			shardID != shardIDFromInst {
 			continue
 		}
+
 		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
 		if err != nil {
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			receivingAmtFromInst != paidAmount ||
-			receivingTokenIDStr != assetID.String() {
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != receivingTokenIDStr {
 			continue
 		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, receivingAmtFromInst); !ok {
+			continue
+		}
+
 		idx = i
 		break
 	}
@@ -143,4 +150,8 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PDEContributionResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }
