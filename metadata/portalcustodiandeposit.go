@@ -37,8 +37,10 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 		return errors.New("can not parse data for PortalCustodianDeposit")
 	}
 
-	remoteAddreses, ok := temp.RemoteAddresses.(map[string]string)
-	if !ok {
+	remoteAddreses := make(map[string]string)
+	tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
+	err2 := json.Unmarshal(tempJson, &remoteAddreses)
+	if err2 != nil {
 		// int testnet, exception:
 		type RemoteAddress struct {
 			PTokenID string
