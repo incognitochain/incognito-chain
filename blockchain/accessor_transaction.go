@@ -167,9 +167,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 		case metadata.ReturnStakingMeta:
 			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
 			if _, ok := txReturnTable[returnMeta.TxID]; !ok {
-				if _, ok := shardView.StakingTx[returnMeta.StakerAddress.String()]; !ok {
-					return errors.New("No staking tx in beststate")
-				}
+				//TODO: check we swap out committee address in beacon confirmed blocks of this shard block
+				//	-> we must prebuild all outCommittee, then check if exist in stakingtx map, and get stakingtx
+				//  -> check all outCommittee is repay (any missing)
+				//TODO: from stakingtx, check receiver = staker (funder address)
+				//TODO: from stakingtx, check amount is equal
 				txReturnTable[returnMeta.TxID] = true
 			} else {
 				return errors.New("Double spent transaction return staking for a candidate.")
