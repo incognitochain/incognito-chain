@@ -102,10 +102,11 @@ type BeaconCommitteeEngine interface {
 }
 
 type ShardCommitteeEngine interface {
-	GenerateShardCommitteeInstruction(env *committeestate.ShardCommitteeStateEnvironment)
-	GenerateCommitteeRootHashes(shardID byte, instruction []string) ([]common.Hash, error)
-	UpdateCommitteeState(shardID byte, instruction []string) (*committeestate.CommitteeChange, error)
-	ValidateCommitteeRootHashes(shardID byte, rootHashes []common.Hash) (bool, error)
+	Commit(env *committeestate.ShardCommitteeStateEnvironment) error
+	AbortUncommittedBeaconState()
+	UpdateCommitteeState(env *committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateEnvironment, *committeestate.CommitteeChange, error)
+	InitCommitteeState(env *committeestate.ShardCommitteeStateEnvironment)
+	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey
 }
