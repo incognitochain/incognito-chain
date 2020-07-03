@@ -783,12 +783,22 @@ func (stateDB *StateDB) getMapStakingTx(ids []int) (map[string]string, error) {
 func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, error) {
 	allStaker := []*CommitteeState{}
 	mapAutoStaking := map[string]bool{}
+
+	// Current Beacon Validator
+	prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, -1)
+	resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
+	allStaker = append(allStaker, resCurrentValidator...)
+	// Substitute Beacon Validator
+	prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, -1)
+	resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
+	allStaker = append(allStaker, resSubstituteValidator...)
+
 	for _, shardID := range ids {
-		// Current Validator
+		// Current Shard Validator
 		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
 		resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
 		allStaker = append(allStaker, resCurrentValidator...)
-		// Substitute Validator
+		// Substitute Shard sValidator
 		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
 		resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
 		allStaker = append(allStaker, resSubstituteValidator...)
@@ -826,6 +836,8 @@ func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, error) {
 		}
 		if stakerInfo.txStakingID.String() != common.HashH([]byte{0}).String() {
 			mapAutoStaking[pKey] = stakerInfo.autoStaking
+		} else {
+			mapAutoStaking[pKey] = false
 		}
 	}
 	return mapAutoStaking, nil

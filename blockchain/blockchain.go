@@ -457,7 +457,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		return err
 	}
 	sID := []int{}
-	for i, _ := range blockchain.ShardChain {
+	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
 		sID = append(sID, i)
 	}
 	for _, v := range allViews {
