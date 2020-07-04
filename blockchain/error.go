@@ -180,6 +180,7 @@ const (
 	InsertShardBlockError
 	GetShardBlockHeightByHashError
 	GetShardBlockByHashError
+	ResponsedTransactionFromBeaconInstructionsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -345,6 +346,7 @@ var ErrCodeMessage = map[int]struct {
 	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
+	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},
 }
 
 type BlockChainError struct {
