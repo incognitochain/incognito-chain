@@ -998,7 +998,13 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 		allSharesByPair := []shareInfo{}
 		totalSharesOfPair := big.NewInt(0)
 
-		for shareKey, shareAmt := range pdeShares {
+		var shareKeys []string
+		for shareKey := range pdeShares {
+			shareKeys = append(shareKeys, shareKey)
+		}
+		sort.Strings(shareKeys)
+		for _, shareKey := range shareKeys {
+			shareAmt := pdeShares[shareKey]
 			if strings.Contains(shareKey, sKey) {
 				allSharesByPair = append(allSharesByPair, shareInfo{shareKey: shareKey, shareAmt: shareAmt})
 				totalSharesOfPair.Add(totalSharesOfPair, big.NewInt(int64(shareAmt)))
