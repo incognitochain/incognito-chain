@@ -155,21 +155,20 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 ) {
 	res := map[common.Hash]returnStakingInfo{}
 	beaconConsensusStateDB := &statedb.StateDB{}
-	beaconConsensusRootHash := &common.Hash{}
+	beaconConsensusRootHash := common.Hash{}
 	errorInstructions := [][]string{}
 	beaconView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	var err error
 	for _, beaconBlock := range beaconBlocks {
-		beaconConsensusRootHash = nil
 		beaconConsensusStateDB = nil
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
-				if beaconConsensusRootHash == nil {
-					*beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
+				if beaconConsensusStateDB == nil {
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
 					}
-					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(*beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 				}
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
 					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKeys)
