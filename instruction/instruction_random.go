@@ -81,16 +81,16 @@ func ValidateRandomInstructionSanity(instruction []string) error {
 		return fmt.Errorf("invalid random action, %+v", instruction)
 	}
 	if _, err := strconv.ParseInt(instruction[1], 10, 64); err != nil {
-		return fmt.Errorf("invalid btc nonce value", err)
+		return fmt.Errorf("invalid btc nonce value, %s", err)
 	}
 	if _, err := strconv.ParseInt(instruction[2], 10, 64); err != nil {
-		return fmt.Errorf("invalid btc block height value", err)
+		return fmt.Errorf("invalid btc block height value, %s", err)
 	}
 	if _, err := strconv.ParseInt(instruction[3], 10, 64); err != nil {
-		return fmt.Errorf("invalid check point time stamp value", err)
+		return fmt.Errorf("invalid check point time stamp value, %s", err)
 	}
 	if _, err := strconv.ParseInt(instruction[4], 10, 64); err != nil {
-		return fmt.Errorf("invalid btc time stamp value", err)
+		return fmt.Errorf("invalid btc time stamp value, %s", err)
 	}
 	return nil
 }

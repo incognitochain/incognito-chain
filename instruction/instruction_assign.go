@@ -63,6 +63,7 @@ func ImportAssignInstructionFromString(instruction []string) *AssignInstruction 
 	return assignIntruction
 }
 
+//ValidateAssignInstructionSanity ...
 func ValidateAssignInstructionSanity(instruction []string) error {
 	if len(instruction) != 4 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrAssignInstruction, instruction)
