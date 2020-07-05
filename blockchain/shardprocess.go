@@ -427,6 +427,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	if err != nil {
 		return NewBlockChainError(ResponsedTransactionWithMetadataError, err)
 	}
+	err = blockchain.ValidateResponseTransactionFromBeaconInstructions(curView, shardBlock, beaconBlocks, shardID)
+	if err != nil {
+		return NewBlockChainError(ResponsedTransactionWithMetadataError, err)
+	}
 	shardVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingShardBlock)
 	// Get cross shard shardBlock from pool
 	if isPreSign {

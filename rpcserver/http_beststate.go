@@ -127,7 +127,11 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
-	mapStakingTx := statedb.GetMapStakingTx(beaconConsensusStateDB, httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain.GetShardIDs(), int(shardID))
+
+	mapStakingTx, err := blockchain.GetMapAllStaker(beaconConsensusStateDB, httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain.GetShardIDs(), int(shardID))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
 
 	shardBestState.StakingTx = blockchain.NewMapStringString()
 

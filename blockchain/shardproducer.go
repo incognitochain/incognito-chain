@@ -10,7 +10,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -300,44 +299,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
-	// tempAutoStakingM := make(map[uint64]map[string]bool)
 	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
+	//TODO: Please check this logic again, why PDE, Bridge build from old beacon block but get info from beacon final view
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == SwapAction {
-				for _, outPublicKeys := range strings.Split(l[2], ",") {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconView.consensusStateDB, outPublicKeys)
-					if err != nil {
-						Logger.log.Error(err)
-						continue
-					}
-					if !has || stakerInfo == nil {
-						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", outPublicKeys))
-						continue
-					}
-					if stakerInfo.AutoStaking() {
-						continue
-					}
-					// Logger.log.Infof("Return Staking Amount %v for public key %+v, staking transaction hash %+v, shardID %+v", stakerInfo.StakingAmount(), outPublicKeys, stakerInfo.TxStakingID(), shardID)
-					tx, err := blockGenerator.buildReturnStakingAmountTx(curView, outPublicKeys, stakerInfo.TxStakingID(), producerPrivateKey, shardID)
-					if err != nil {
-						if strings.Index(err.Error(), "No staking tx in best state") == -1 {
-							Logger.log.Error(err)
-						}
-						continue
-					}
-					txHash := *tx.Hash()
-					if ok, _ := common.SliceExists(responsedHashTxs, txHash); ok {
-						data, _ := json.Marshal(tx)
-						Logger.log.Error("Double tx from instruction", l, string(data))
-						errorInstructions = append(errorInstructions, l)
-						continue
-					}
-					responsedTxs = append(responsedTxs, tx)
-					responsedHashTxs = append(responsedHashTxs, txHash)
-				}
-
-			}
 			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
 				continue
 			}
@@ -446,6 +411,17 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			}
 		}
 	}
+	returnStakingTxs, errIns, err := blockGenerator.chain.buildReturnStakingTxFromBeaconInstructions(
+		curView,
+		beaconBlocks,
+		producerPrivateKey,
+		shardID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	responsedTxs = append(responsedTxs, returnStakingTxs...)
+	errorInstructions = append(errorInstructions, errIns...)
 	return responsedTxs, errorInstructions, nil
 }
 
