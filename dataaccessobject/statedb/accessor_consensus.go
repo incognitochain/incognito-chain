@@ -410,6 +410,16 @@ func storeStakerInfo(
 				continue
 			}
 			value.autoStaking = autoStakingValue
+			//Just for temporary fix
+			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
+			if ok {
+				//If ok, it mean old data will be rewrite
+				value.rewardReceiver = rewardReceiverPaymentAddress
+			}
+			txStakingID, ok := stakingTx[committeeString]
+			if ok {
+				value.txStakingID = txStakingID
+			}
 		}
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
