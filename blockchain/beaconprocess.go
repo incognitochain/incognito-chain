@@ -613,7 +613,6 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot))
 	}
 
-	beaconBestState.AutoStaking.GenerateHash()
 	if hash, ok := verifyHashFromMapStringBool(beaconBestState.AutoStaking, beaconBlock.Header.AutoStakingRoot); !ok {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect AutoStakingRoot to be %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hash))
 	}
