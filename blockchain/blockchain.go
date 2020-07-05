@@ -522,16 +522,20 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
+
 		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.BeaconChain.GetFinalView().(*BeaconBestState), v.BeaconHeight)
 		if err != nil {
 			return NewBlockChainError(BeaconError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", v.BeaconHeight, err))
 		}
+
 		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 		if err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+
 		mapStakingTx := statedb.GetMapStakingTx(beaconConsensusStateDB, blockchain.GetShardChainDatabase(shardID), blockchain.GetShardIDs(), int(shardID))
-		v.StakingTx = mapStakingTx
+		v.StakingTx = NewMapStringString()
+		v.StakingTx.data = mapStakingTx
 
 		err = v.RestorePendingValidators(shardID, blockchain)
 		if err != nil {

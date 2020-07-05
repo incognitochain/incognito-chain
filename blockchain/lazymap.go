@@ -1,9 +1,96 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
+
+//MapStringString ...
+type MapStringString struct {
+	data    map[string]string
+	hash    *common.Hash
+	updated bool
+}
+
+//NewMapStringString ...
+func NewMapStringString() *MapStringString {
+	return &MapStringString{
+		data:    make(map[string]string),
+		hash:    nil,
+		updated: false,
+	}
+}
+
+//LazyCopy ...
+func (s *MapStringString) LazyCopy() *MapStringString {
+	newCopy := *s
+	s.updated = false
+	return &newCopy
+}
+
+//copy ...
+func (s *MapStringString) copy() {
+	prev := s.data
+	s.data = make(map[string]string)
+	for k, v := range prev {
+		s.data[k] = v
+	}
+	s.updated = false
+}
+
+//Remove ...
+func (s *MapStringString) Remove(k string) {
+	if !s.updated {
+		s.copy()
+	}
+	delete(s.data, k)
+	s.updated = true
+	s.hash = nil
+}
+
+//Set ...
+func (s *MapStringString) Set(k string, v string) {
+	if !s.updated {
+		s.copy()
+	}
+	s.data[k] = v
+	s.updated = true
+	s.hash = nil
+}
+
+//GetMap ...
+func (s *MapStringString) GetMap() map[string]string {
+	return s.data
+}
+
+//Get ...
+func (s *MapStringString) Get(k string) (string, bool) {
+	r, ok := s.data[k]
+	return r, ok
+}
+
+//GenerateHash ...
+func (s *MapStringString) GenerateHash() (common.Hash, error) {
+	if s.hash != nil {
+		return *s.hash, nil
+	}
+	var keys []string
+	var res []string
+	for k := range s.data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		res = append(res, key)
+		if s.data[key] != "" {
+			res = append(res, "true")
+		} else {
+			res = append(res, "false")
+		}
+	}
+	return generateHashFromStringArray(res)
+}
 
 type MapStringBool struct {
 	data    map[string]bool

@@ -126,6 +126,12 @@ func (shardBestState *ShardBestState) RestorePendingValidators(shardID byte, bc 
 	return nil
 }
 
+// //
+// func (shardBestState *ShardBestState) restoreViewFromHash(blockchain *BlockChain) error {
+// 	return nil
+// }
+
+//RestoreBeaconViewStateFromHash ...
 func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
 	if err != nil {

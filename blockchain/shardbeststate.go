@@ -48,7 +48,7 @@ type ShardBestState struct {
 	ShardCommittee         []incognitokey.CommitteePublicKey `json:"-"`
 	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"-"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
-	StakingTx              map[string]string                 `json:"-"`
+	StakingTx              *MapStringString                  `json:"-"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
@@ -126,7 +126,7 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
-	bestStateShard.StakingTx = make(map[string]string)
+	bestStateShard.StakingTx = NewMapStringString()
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
@@ -218,12 +218,13 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 		res = append(res, valueBytes...)
 	}
 	keystr := []string{}
-	for _, k := range shardBestState.StakingTx {
+
+	for _, k := range shardBestState.StakingTx.data {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
 	for _, key := range keystr {
-		value := shardBestState.StakingTx[key]
+		value := shardBestState.StakingTx.data[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
@@ -304,12 +305,9 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	if reflect.DeepEqual(*shardBestState, ShardBestState{}) {
 		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
 	}
-	if shardBestState.StakingTx == nil {
-		shardBestState.StakingTx = map[string]string{}
-	}
-	for k, v := range target.StakingTx {
-		shardBestState.StakingTx[k] = v
-	}
+
+	shardBestState.StakingTx = target.StakingTx.LazyCopy()
+
 	shardBestState.consensusStateDB = target.consensusStateDB.Copy()
 	shardBestState.transactionStateDB = target.transactionStateDB.Copy()
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
@@ -333,7 +331,7 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 
 func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	m := make(map[string]string)
-	for k, v := range shardBestState.StakingTx {
+	for k, v := range shardBestState.StakingTx.data {
 		m[k] = v
 	}
 	return m

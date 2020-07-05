@@ -3,6 +3,8 @@ package rpcserver
 import (
 	"errors"
 	"fmt"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 
@@ -26,7 +28,6 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 		panic(err)
 	}
 
-	// TODO: re-produce field that not marshal
 	//best block
 	block, _, err := httpServer.config.BlockChain.GetBeaconBlockByHash(beaconBestState.BestBlockHash)
 	if err != nil || block == nil {
@@ -34,8 +35,6 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 		panic(err)
 	}
 	beaconBestState.BestBlock = *block
-	//@tin beacon committee
-	//@tin shard committee
 	if beaconBestState.RewardReceiver == nil {
 		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
 	}
@@ -129,7 +128,12 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
 	mapStakingTx := statedb.GetMapStakingTx(beaconConsensusStateDB, httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain.GetShardIDs(), int(shardID))
-	shardBestState.StakingTx = mapStakingTx
+
+	shardBestState.StakingTx = blockchain.NewMapStringString()
+
+	for i, v := range mapStakingTx {
+		shardBestState.StakingTx.Set(i, v)
+	}
 
 	err = shardBestState.RestorePendingValidators(shardID, httpServer.config.BlockChain)
 	if err != nil {
