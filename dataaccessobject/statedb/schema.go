@@ -114,12 +114,18 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 }
 
 func GetStakerInfoPrefix() []byte {
-	return stakerInfoPrefix
+	h := common.HashH(stakerInfoPrefix)
+	return h[:][:prefixHashKeyLength]
 }
 
 func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
-	temp := append(stakerInfoPrefix, stakerPublicKey...)
-	return common.HashH(temp)
+	h := common.HashH(stakerInfoPrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
 }
 
 func GetCommitteeRewardPrefix() []byte {

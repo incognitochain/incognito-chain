@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -254,29 +252,6 @@ func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*Committee
 
 func GetAllCommitteeStakeInfo(stateDB *StateDB, shardIDs []int) map[int][]*StakerInfo {
 	return stateDB.getShardsCommitteeInfo(shardIDs)
-}
-
-func GetMapStakingTx(bcDB *StateDB, sdb incdb.Database, shardIDs []int, shardID int) map[string]string {
-	res, err := bcDB.getMapStakingTx(shardIDs)
-	if err != nil {
-		panic(err)
-	}
-	for k, v := range res {
-		var txHash = &common.Hash{}
-		err := (&common.Hash{}).Decode(txHash, v)
-		if err != nil {
-			incdb.Logger.Log.Error(err)
-			delete(res, k)
-			continue
-		}
-		_, _, err = rawdbv2.GetTransactionByHash(sdb, *txHash)
-		if err != nil {
-			incdb.Logger.Log.Warn(err)
-			delete(res, k)
-			continue
-		}
-	}
-	return res
 }
 
 func GetMapAutoStaking(bcDB *StateDB, shardIDs []int) map[string]bool {
