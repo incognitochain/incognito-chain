@@ -83,13 +83,14 @@ func (s *MapStringString) GenerateHash() (common.Hash, error) {
 	sort.Strings(keys)
 	for _, key := range keys {
 		res = append(res, key)
-		if s.data[key] != "" {
-			res = append(res, "true")
-		} else {
-			res = append(res, "false")
-		}
+		res = append(res, s.data[key])
 	}
-	return generateHashFromStringArray(res)
+	h, err := generateHashFromStringArray(res)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	s.hash = &h
+	return h, nil
 }
 
 type MapStringBool struct {
@@ -166,5 +167,10 @@ func (s *MapStringBool) GenerateHash() (common.Hash, error) {
 			res = append(res, "false")
 		}
 	}
-	return generateHashFromStringArray(res)
+	h, err := generateHashFromStringArray(res)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	s.hash = &h
+	return h, nil
 }

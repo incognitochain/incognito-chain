@@ -225,7 +225,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, NewBlockChainError(PendingValidatorRootError, err)
 	}
-	stakingTxRoot, err := generateHashFromMapStringString(newShardBestState.StakingTx.data)
+	stakingTxRoot, err := newShardBestState.StakingTx.GenerateHash()
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
