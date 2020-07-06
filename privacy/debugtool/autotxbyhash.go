@@ -6,7 +6,7 @@ type AutoTxByHash struct {
 		BlockHash   string `json:"BlockHash"`
 		BlockHeight int    `json:"BlockHeight"`
 		TxSize      int    `json:"TxSize"`
-		Index       int    `json:"Index"`
+		Index       int    `json:"GetIndex"`
 		ShardID     int    `json:"ShardID"`
 		Hash        string `json:"Hash"`
 		Version     int    `json:"Version"`

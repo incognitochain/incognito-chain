@@ -357,7 +357,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo
 	}
 
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.inputCoins[i].ConcealData(nil)
+		proof.inputCoins[i].ConcealOutputCoin(nil)
 	}
 	return proof, nil
 }

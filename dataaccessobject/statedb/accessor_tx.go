@@ -121,7 +121,7 @@ func HasCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex u
 		return false, NewStatedbError(GetCommitmentIndexError, err)
 	}
 	//fmt.PRintln(c)
-	//fmt.Println("CIndex =", c.Index().Uint64())
+	//fmt.Println("CIndex =", c.GetIndex().Uint64())
 	//fmt.Println("commitmentIndex =", commitmentIndex)
 
 	if has && c.Index().Uint64() != commitmentIndex {
@@ -164,7 +164,7 @@ func GetCommitmentByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex
 	}
 	//fmt.Println("CommitmentIndex =", commitmentIndex)
 	//fmt.Println("Cindex =", c.index)
-	//if c.Index().Uint64() != commitmentIndex {
+	//if c.GetIndex().Uint64() != commitmentIndex {
 	//	panic("same key wrong value")
 	//	return []byte{}, nil
 	//}

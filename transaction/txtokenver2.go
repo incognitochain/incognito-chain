@@ -87,7 +87,7 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 			if temp.PubKeyLastByteSender, err = params.inputCoin[0].GetShardID(); err != nil {
 				return NewTransactionErr(GetShardIDByPublicKeyError, err)
 			}
-			temp.sigPrivKey = *params.senderKey
+			//temp.sigPrivKey = *params.senderKey
 
 			temp.Sig, _, err = signNoPrivacy(params.senderKey, temp.Hash()[:])
 			if err != nil {
@@ -304,7 +304,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	temp.Proof = proof
 	temp.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes)-1]
 	// signOnMessage Tx
-	temp.sigPrivKey = *privKey
+	//temp.sigPrivKey = *privKey
 	if temp.Sig, temp.SigPubKey, err = signNoPrivacy(privKey, temp.Hash()[:]); err != nil {
 		Logger.Log.Error(errors.New("can't signOnMessage this tx"))
 		return NewTransactionErr(SignTxError, err)
@@ -318,7 +318,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 		return err
 	}
 	tx.SetType(common.TxCustomTokenPrivacyType)
-	tx.sigPrivKey = *txPrivacyParams.senderSK
+	//tx.sigPrivKey = *txPrivacyParams.senderSK
 
 	hashedTokenMessage := txToken.TxTokenData.TxNormal.Hash()
 	message := common.HashH(append(txToken.GetTxBase().Hash()[:], hashedTokenMessage[:]...))
@@ -444,4 +444,27 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 		}
 	}
 	return false, err
+}
+
+func (txToken TxTokenVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	if txToken.GetTxBase().GetProof() == nil || txToken.TxTokenData.TxNormal.GetProof() == nil {
+		panic("OK")
+		return false, errors.New("Tx Privacy Ver 2 must have proofs")
+	}
+	// validate metadata
+	check, err := validateSanityMetadata(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	if !check || err != nil {
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
+	}
+	// validate sanity for tx pToken + metadata
+	check, err = validateSanityTxWithoutMetadata(txToken.TxTokenData.TxNormal, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	if !check || err != nil {
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
+	}
+	// validate sanity for tx pToken + without metadata
+	check1, err1 := validateSanityTxWithoutMetadata(txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	if !check1 || err1 != nil {
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err1)
+	}
+	return true, nil
 }

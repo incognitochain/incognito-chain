@@ -221,18 +221,22 @@ func initTx(amount string, privateKey string, db incdb.Database) []metadata.Tran
 	for _, val := range testUserkeyList {
 		testUserKey, _ := wallet.Base58CheckDeserialize(val)
 		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
-		testSalaryTX := transaction.Tx{}
-		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
-			db,
-			nil,
-		)
-		initTxs = append(initTxs, &testSalaryTX)
+		otaCoin, err := coin.NewCoinFromAmountAndReceiver(uint64(initAmount), testUserKey.KeySet.PaymentAddress)
+		if err != nil {
+			Logger.log.Errorf("Cannot get new coin from amount and payment address")
+			return nil
+		}
+		testSalaryTX := new(transaction.TxVersion2)
+		testSalaryTX.InitTxSalary(otaCoin, &testUserKey.KeySet.PrivateKey, nil, nil)
+		initTxs = append(initTxs, testSalaryTX)
 	}
 	return initTxs
 }
 
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
-func chooseBestOutCoinsToSpent(outCoins []coin.PlainCoin, amount uint64) (resultOutputCoins []coin.PlainCoin, remainOutputCoins []coin.PlainCoin, totalResultOutputCoinAmount uint64, err error) {
+func chooseBestOutCoinsToSpent(outCoins []coin.PlainCoin, amount uint64) (resultOutputCoins []coin.PlainCoin,
+																		remainOutputCoins []coin.PlainCoin,
+																		totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]coin.PlainCoin, 0)
 	remainOutputCoins = make([]coin.PlainCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
@@ -281,6 +285,7 @@ func chooseBestOutCoinsToSpent(outCoins []coin.PlainCoin, amount uint64) (result
 		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 	}
 }
+
 func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacyCoin bool, amount int) metadata.Transaction {
 	// get sender key set from private key
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)

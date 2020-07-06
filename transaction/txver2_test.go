@@ -128,7 +128,7 @@ func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
 		}
 
 		txSig := new(TxSigPubKeyVer2)
-		txSig.indexes = indexes
+		txSig.Indexes = indexes
 
 		b, err := txSig.Bytes()
 		assert.Equal(t, nil, err, "Should not have any bug when txSig.ToBytes")
@@ -141,17 +141,17 @@ func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
 		assert.Equal(t, nil, err, "Should not have any bug when txSig2.ToBytes")
 		assert.Equal(t, true, bytes.Equal(b, b2))
 
-		n1 := len(txSig.indexes)
-		m1 := len(txSig.indexes[0])
-		n2 := len(txSig2.indexes)
-		m2 := len(txSig2.indexes[0])
+		n1 := len(txSig.Indexes)
+		m1 := len(txSig.Indexes[0])
+		n2 := len(txSig2.Indexes)
+		m2 := len(txSig2.Indexes[0])
 
-		assert.Equal(t, n1, n2, "Two indexes length should be equal")
-		assert.Equal(t, m1, m2, "Two indexes length should be equal")
+		assert.Equal(t, n1, n2, "Two Indexes length should be equal")
+		assert.Equal(t, m1, m2, "Two Indexes length should be equal")
 		for i := 0; i < n; i += 1 {
 			for j := 0; j < m; j += 1 {
-				b1 := txSig.indexes[i][j].Bytes()
-				b2 := txSig2.indexes[i][j].Bytes()
+				b1 := txSig.Indexes[i][j].Bytes()
+				b2 := txSig2.Indexes[i][j].Bytes()
 				assert.Equal(t, true, bytes.Equal(b1, b2), "Indexes[i][j] should be equal for every i j")
 			}
 		}
@@ -184,7 +184,7 @@ func TestTxV2Salary(t *testing.T){
 			}
 			assert.Equal(t, nil, err)
 			assert.Equal(t, false, tempCoin.IsEncrypted())
-			tempCoin.ConcealData(keySets[i].PaymentAddress.GetPublicView())
+			tempCoin.ConcealOutputCoin(keySets[i].PaymentAddress.GetPublicView())
 			assert.Equal(t, true, tempCoin.IsEncrypted())
 			assert.Equal(t, true, tempCoin.GetSharedRandom() == nil)
 			_, err = tempCoin.Decrypt(keySets[i])
@@ -226,7 +226,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			assert.Equal(t, false, tempCoin.IsEncrypted())
 
 // to obtain a PlainCoin to feed into input of TX, we need to conceal & decrypt it (it makes sure all fields are right, as opposed to just casting the type to PlainCoin)
-			tempCoin.ConcealData(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
+			tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
 			assert.Equal(t, true, tempCoin.IsEncrypted())
 			assert.Equal(t, true, tempCoin.GetSharedRandom() == nil)
 			pastCoins[i] = tempCoin

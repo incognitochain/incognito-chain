@@ -146,7 +146,7 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 			return fmt.Errorf("Cannot base58 a committee")
 		}
 		if strings.Compare(tempProducer, blk.GetProducer()) != 0 {
-			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, blk.GetProducer())
+			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From GetIndex, %+v From Header", tempProducer, blk.GetProducer())
 		}
 	} else {
 		//validate producer
@@ -156,7 +156,7 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
-			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producer)
+			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From GetIndex, %+v From Header", b58Str, producer)
 		}
 
 		//validate proposer
@@ -166,7 +166,7 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, proposer) != 0 {
-			return fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, proposer)
+			return fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From GetIndex, %+v From Header", b58Str, proposer)
 		}
 	}
 

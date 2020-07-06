@@ -21,9 +21,9 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
 
-// TxSigPubKey of ver2 is array of indexes in database
+// TxSigPubKey of ver2 is array of Indexes in database
 type TxSigPubKeyVer2 struct {
-	indexes [][]*big.Int
+	Indexes [][]*big.Int
 }
 
 type TxVersion2 struct {
@@ -31,19 +31,19 @@ type TxVersion2 struct {
 }
 
 func (sigPub TxSigPubKeyVer2) Bytes() ([]byte, error) {
-	n := len(sigPub.indexes)
+	n := len(sigPub.Indexes)
 	if n == 0 {
 		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is empty")
 	}
 	if n > MaxSizeByte {
 		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is too large, too many rows")
 	}
-	m := len(sigPub.indexes[0])
+	m := len(sigPub.Indexes[0])
 	if m > MaxSizeByte {
 		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is too large, too many columns")
 	}
 	for i := 1; i < n; i += 1 {
-		if len(sigPub.indexes[i]) != m {
+		if len(sigPub.Indexes[i]) != m {
 			return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is not a rectangle array")
 		}
 	}
@@ -53,7 +53,7 @@ func (sigPub TxSigPubKeyVer2) Bytes() ([]byte, error) {
 	b = append(b, byte(m))
 	for i := 0; i < n; i += 1 {
 		for j := 0; j < m; j += 1 {
-			currentByte := sigPub.indexes[i][j].Bytes()
+			currentByte := sigPub.Indexes[i][j].Bytes()
 			lengthByte := len(currentByte)
 			if lengthByte > MaxSizeByte {
 				return nil, errors.New("TxSigPublicKeyVer2.ToBytes: IndexesByte is too large")
@@ -67,7 +67,7 @@ func (sigPub TxSigPubKeyVer2) Bytes() ([]byte, error) {
 
 func (sigPub *TxSigPubKeyVer2) SetBytes(b []byte) error {
 	if len(b) < 2 {
-		return errors.New("txSigPubKeyFromBytes: cannot parse length of indexes, length of input byte is too small")
+		return errors.New("txSigPubKeyFromBytes: cannot parse length of Indexes, length of input byte is too small")
 	}
 	n := int(b[0])
 	m := int(b[1])
@@ -93,7 +93,7 @@ func (sigPub *TxSigPubKeyVer2) SetBytes(b []byte) error {
 	if sigPub == nil {
 		sigPub = new(TxSigPubKeyVer2)
 	}
-	sigPub.indexes = indexes
+	sigPub.Indexes = indexes
 	return nil
 }
 
@@ -220,7 +220,7 @@ func (tx *TxVersion2) signOnMessage(inp []coin.PlainCoin, out []*coin.CoinV2, pa
 
 	// Set SigPubKey
 	txSigPubKey := new(TxSigPubKeyVer2)
-	txSigPubKey.indexes = indexes
+	txSigPubKey.Indexes = indexes
 	tx.SigPubKey, err = txSigPubKey.Bytes()
 	if err != nil {
 		Logger.Log.Errorf("tx.SigPubKey cannot parse from Bytes, error %v ", err)
@@ -315,12 +315,11 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
 		return nil, NewTransactionErr(UnexpectedError, errors.New(errStr))
 	}
-	indexes := txSigPubKey.indexes
-
+	indexes := txSigPubKey.Indexes
 	n := len(indexes)
 	m := len(indexes[0])
 	if n == 0 {
-		return nil, errors.New("Cannot get ring from indexes: Indexes is empty")
+		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
 	}
 
 	ring := make([][]*operation.Point, n)

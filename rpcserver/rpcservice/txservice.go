@@ -36,6 +36,7 @@ type TxService struct {
 	TxMemPool    *mempool.TxPool
 }
 
+
 func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
 	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	return statedb.ListSerialNumber(transactionStateDB, tokenID, shardID)
@@ -167,9 +168,9 @@ func (txService TxService) chooseBestOutCoinsToSpent(outCoins []coin.PlainCoin, 
 	}
 }
 
-func (txService TxService) filterMemPoolOutcoinsToSpent(outCoins []coin.PlainCoin) ([]coin.PlainCoin, error) {
+func (txService TxService) filterMemPoolOutcoinsToSpent(coins []coin.PlainCoin) ([]coin.PlainCoin, error) {
 	remainOutputCoins := make([]coin.PlainCoin, 0)
-	for _, outCoin := range outCoins {
+	for _, outCoin := range coins {
 		if txService.TxMemPool.ValidateSerialNumberHashH(outCoin.GetKeyImage().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}

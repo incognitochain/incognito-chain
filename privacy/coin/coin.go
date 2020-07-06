@@ -12,15 +12,14 @@ import (
 
 type Coin interface {
 	GetVersion() uint8
-	GetShardID() (uint8, error)
 	GetCommitment() *operation.Point
 	GetInfo() []byte
 	GetPublicKey() *operation.Point
 	GetKeyImage() *operation.Point
-	GetSNDerivator() *operation.Scalar
 	GetValue() uint64
 	GetRandomness() *operation.Scalar
-	GetIndex() uint32
+	GetShardID() (uint8, error)
+	GetSNDerivator() *operation.Scalar
 	IsEncrypted() bool
 
 	// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -42,15 +41,15 @@ type PlainCoin interface {
 	UnmarshalJSON(data []byte) error
 
 	GetVersion() uint8
-	GetShardID() (uint8, error)
-	GetIndex() uint32
 	GetCommitment() *operation.Point
 	GetInfo() []byte
 	GetPublicKey() *operation.Point
 	GetValue() uint64
 	GetKeyImage() *operation.Point
 	GetRandomness() *operation.Scalar
+	GetShardID() (uint8, error)
 	GetSNDerivator() *operation.Scalar
+	IsEncrypted() bool
 
 	SetKeyImage(*operation.Point)
 	SetPublicKey(*operation.Point)
@@ -63,8 +62,7 @@ type PlainCoin interface {
 	ParseKeyImageWithPrivateKey(key.PrivateKey) (*operation.Point, error)
 	ParsePrivateKeyOfCoin(key.PrivateKey) (*operation.Scalar, error)
 
-	IsEncrypted() bool
-	ConcealData(additionalData interface{})
+	ConcealOutputCoin(additionalData interface{}) error
 
 	Bytes() []byte
 	SetBytes([]byte) error
@@ -117,10 +115,14 @@ func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
 		if err == false {
 			return false
 		}
-		rK := new(operation.Point).ScalarMult(c.GetTxRandomPoint(), viewKey.GetPrivateView())
+		txRandomPoint, index, err1 :=  c.GetTxRandomDetail()
+		if err1 != nil {
+			return false
+		}
+		rK := new(operation.Point).ScalarMult(txRandomPoint, viewKey.GetPrivateView())
 
 		hashed := operation.HashToScalar(
-			append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...),
+			append(rK.ToBytesS(), common.Uint32ToBytes(index)...),
 		)
 		HnG := new(operation.Point).ScalarMultBase(hashed)
 		KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)

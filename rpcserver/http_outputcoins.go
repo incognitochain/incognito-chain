@@ -22,8 +22,8 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
 
-	var min int
-	var max int
+	var min, max int
+
 	if paramsArray[0] != nil {
 		minParam, ok := paramsArray[0].(float64)
 		if !ok {

@@ -18,7 +18,7 @@ type TransactionDetail struct {
 	BlockHash   string `json:"BlockHash"`
 	BlockHeight uint64 `json:"BlockHeight"`
 	TxSize      uint64 `json:"TxSize"`
-	Index       uint64 `json:"Index"`
+	Index       uint64 `json:"GetIndex"`
 	ShardID     byte   `json:"ShardID"`
 	Hash        string `json:"Hash"`
 	Version     int8   `json:"Version"`
@@ -59,6 +59,23 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 		{
+			var sigPubKeyStr string
+			txVersion := tx.GetVersion()
+			if txVersion == 1 {
+				sigPubKeyStr = base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0)
+			} else {
+				sigPubKey := new(transaction.TxSigPubKeyVer2)
+				if err := sigPubKey.SetBytes(tx.GetSigPubKey()); err != nil {
+					sigPubKeyStr = "[]"
+				} else {
+					if temp, err := json.Marshal(sigPubKey); err != nil {
+						sigPubKeyStr = "[]"
+					} else {
+						sigPubKeyStr = string(temp)
+					}
+				}
+			}
+
 			result = &TransactionDetail{
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
@@ -72,7 +89,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Fee:         tx.GetTxFee(),
 				IsPrivacy:   tx.IsPrivacy(),
 				Proof:       tx.GetProof(),
-				SigPubKey:   base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0),
+				SigPubKey:   sigPubKeyStr,
 				Sig:         base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
 				Info:        string(tx.GetInfo()),
 			}
@@ -189,10 +206,12 @@ func EncodeBase58Check(b []byte) string {
 }
 
 func OperationPointPtrToBase58(point *operation.Point) string {
-	if point != nil {
+	if point == nil || point.IsIdentity()  {
+		return ""
+	} else {
 		return EncodeBase58Check(point.ToBytesS())
 	}
-	return ""
+
 }
 
 func OperationScalarPtrToScalar(scalar *operation.Scalar) operation.Scalar {
@@ -239,18 +258,21 @@ func (c *CoinRPCV2) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
 	return c.SetOutputCoin(inputCoin.(coin.Coin))
 }
 
-func (c *CoinRPCV2) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
-	coinv2 := inputCoin.(*coin.CoinV2)
+func (c *CoinRPCV2) SetOutputCoin(outputCoin coin.Coin) CoinRPC {
+	coinv2 := outputCoin.(*coin.CoinV2)
 
 	c.Version = coinv2.GetVersion()
-	c.Index = coinv2.GetIndex()
 	c.Info = EncodeBase58Check(coinv2.GetInfo())
 	c.PublicKey = OperationPointPtrToBase58(coinv2.GetPublicKey())
 	c.Commitment = OperationPointPtrToBase58(coinv2.GetCommitment())
 	c.KeyImage = OperationPointPtrToBase58(coinv2.GetKeyImage())
-	c.TxRandom = OperationPointPtrToBase58(coinv2.GetTxRandomPoint())
-	c.Amount = OperationScalarPtrToScalar(coinv2.GetAmount())
+	c.TxRandom = EncodeBase58Check(coinv2.GetTxRandom().Bytes())
+	c.Value = OperationScalarPtrToScalar(coinv2.GetAmount())
 	c.Randomness = OperationScalarPtrToScalar(coinv2.GetRandomness())
+	txRandomPoint, index, _ := coinv2.GetTxRandomDetail()
+	c.TxRandom = OperationPointPtrToBase58(txRandomPoint)
+	c.Index = index
+
 	return c
 }
 
@@ -275,6 +297,6 @@ type CoinRPCV2 struct {
 	KeyImage   string
 	TxRandom   string
 
-	Amount 		 operation.Scalar
+	Value 		 operation.Scalar
 	Randomness   operation.Scalar
 }

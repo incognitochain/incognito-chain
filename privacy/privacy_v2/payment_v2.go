@@ -333,15 +333,17 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 
 	// After Prove, we should hide all information in coin details.
 	for i := 0; i < len(outputCoins); i++ {
-		proof.outputCoins[i].ConcealData(paymentInfo[i].PaymentAddress.GetPublicView())
-		// OutputCoin.KeyImage should be nil even though we do not have it
+		if err = proof.outputCoins[i].ConcealOutputCoin(paymentInfo[i].PaymentAddress.GetPublicView()); err != nil {
+			return nil, err
+		}
+
+		// OutputCoin.GetKeyImage should be nil even though we do not have it
 		// Because otherwise the RPC server will return the Bytes of [1 0 0 0 0 ...] (the default byte)
 		proof.outputCoins[i].SetKeyImage(nil)
 	}
 
 	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.inputCoins[i].SetValue(0)
-		proof.inputCoins[i].SetRandomness(nil)
+		proof.inputCoins[i].(*coin.CoinV2).ConcealInputCoin()
 	}
 
 	return proof, nil

@@ -454,24 +454,7 @@ func (txToken TxTokenBase) ValidateTxWithBlockChain(chainRetriever metadata.Chai
 }
 
 // ValidateSanityData - validate sanity data of PRV and pToken
-func (txToken TxTokenBase) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	// validate metadata
-	check, err := validateSanityMetadata(txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
-	if !check || err != nil {
-		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
-	}
-	// validate sanity for tx pToken + metadata
-	check, err = validateSanityTxWithoutMetadata(txToken.TxTokenData.TxNormal, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
-	if !check || err != nil {
-		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
-	}
-	// validate sanity for tx pToken + without metadata
-	check1, err1 := validateSanityTxWithoutMetadata(txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
-	if !check1 || err1 != nil {
-		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err1)
-	}
-	return true, nil
-}
+
 
 // VerifyMinerCreatedTxBeforeGettingInBlock
 func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
@@ -487,8 +470,4 @@ func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *me
 		return false, nil
 	}
 	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, &txToken, bcr, accumulatedValues, retriever, viewRetriever)
-}
-
-func Check() {
-
 }

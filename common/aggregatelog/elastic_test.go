@@ -61,7 +61,7 @@ func ElasticTest() {
 			log.Println("ack")
 		}
 	} else {
-		log.Println("Index Exists")
+		log.Println("GetIndex Exists")
 	}
 
 	message1 := MessageDataTest{Time: time.Now(), Message: "Take Five", LogLevel: "WARN"}

@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -108,33 +107,11 @@ func buildTradeResTx(
 			return nil, err
 		}
 	}
-
-	// the returned currency is PRV
 	if tokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.TxVersion2)
-		err = resTx.InitTxSalary(
-			otaCoin,
-			producerPrivateKey,
-			transactionStateDB,
-			meta,
-		)
-		if err != nil {
-			return nil, NewBlockChainError(InitPDETradeResponseTransactionError, err)
-		}
-		return resTx, nil
+		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, transactionStateDB, meta)
+	} else {
+		return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, transactionStateDB, meta, tokenID)
 	}
-	// in case the returned currency is privacy custom token
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-
-	resTx := &transaction.TxTokenVersion2{}
-	err = resTx.InitTxTokenSalary(otaCoin, producerPrivateKey, transactionStateDB, meta, &propID, "")
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", err)
-		return nil, err
-	}
-	return resTx, nil
 }
 
 func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(

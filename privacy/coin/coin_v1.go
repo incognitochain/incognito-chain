@@ -78,15 +78,14 @@ func (pc *PlainCoinV1) GetShardID() (uint8, error) {
 }
 
 // ver1 does not need to care for index
-func (pc PlainCoinV1) GetIndex() uint32                  { return 0 }
 func (pc PlainCoinV1) GetCommitment() *operation.Point   { return pc.commitment }
 func (pc PlainCoinV1) GetPublicKey() *operation.Point    { return pc.publicKey }
 func (pc PlainCoinV1) GetSNDerivator() *operation.Scalar { return pc.snDerivator }
-func (pc PlainCoinV1) GetKeyImage() *operation.Point     { return pc.serialNumber }
-func (pc PlainCoinV1) GetRandomness() *operation.Scalar  { return pc.randomness }
-func (pc PlainCoinV1) GetValue() uint64                  { return pc.value }
-func (pc PlainCoinV1) GetInfo() []byte                   { return pc.info }
-func (pc PlainCoinV1) IsEncrypted() bool                 { return false }
+func (pc PlainCoinV1) GetKeyImage() *operation.Point    { return pc.serialNumber }
+func (pc PlainCoinV1) GetRandomness() *operation.Scalar { return pc.randomness }
+func (pc PlainCoinV1) GetValue() uint64  { return pc.value }
+func (pc PlainCoinV1) GetInfo() []byte   { return pc.info }
+func (pc PlainCoinV1) IsEncrypted() bool { return false }
 
 func (pc *PlainCoinV1) SetPublicKey(v *operation.Point)    { pc.publicKey = v }
 func (pc *PlainCoinV1) SetCommitment(v *operation.Point)   { pc.commitment = v }
@@ -100,12 +99,13 @@ func (pc *PlainCoinV1) SetInfo(v []byte) {
 }
 
 // Conceal data leaving serialnumber
-func (pc *PlainCoinV1) ConcealData(additionalData interface{}) {
+func (pc *PlainCoinV1) ConcealOutputCoin(additionalData interface{}) error {
 	pc.SetCommitment(nil)
 	pc.SetValue(0)
 	pc.SetSNDerivator(nil)
 	pc.SetPublicKey(nil)
 	pc.SetRandomness(nil)
+	return nil
 }
 
 //MarshalJSON (CoinV1) converts coin to bytes array,
@@ -386,17 +386,16 @@ type CoinV1 struct {
 }
 
 // CoinV1 does not have index so return 0
-func (c CoinV1) GetIndex() uint32                  { return 0 }
-func (c CoinV1) GetVersion() uint8                 { return 1 }
-func (c CoinV1) GetPublicKey() *operation.Point    { return c.CoinDetails.GetPublicKey() }
-func (c CoinV1) GetCommitment() *operation.Point   { return c.CoinDetails.GetCommitment() }
+func (c CoinV1) GetVersion() uint8              { return 1 }
+func (c CoinV1) GetPublicKey() *operation.Point  { return c.CoinDetails.GetPublicKey() }
+func (c CoinV1) GetCommitment() *operation.Point { return c.CoinDetails.GetCommitment() }
 func (c CoinV1) GetKeyImage() *operation.Point     { return c.CoinDetails.GetKeyImage() }
 func (c CoinV1) GetRandomness() *operation.Scalar  { return c.CoinDetails.GetRandomness() }
 func (c CoinV1) GetSNDerivator() *operation.Scalar { return c.CoinDetails.GetSNDerivator() }
-func (c CoinV1) GetShardID() (uint8, error)        { return c.CoinDetails.GetShardID() }
-func (c CoinV1) GetValue() uint64                  { return c.CoinDetails.GetValue() }
-func (c CoinV1) GetInfo() []byte                   { return c.CoinDetails.GetInfo() }
-func (c CoinV1) IsEncrypted() bool                 { return c.CoinDetailsEncrypted != nil }
+func (c CoinV1) GetShardID() (uint8, error) { return c.CoinDetails.GetShardID() }
+func (c CoinV1) GetValue() uint64  { return c.CoinDetails.GetValue() }
+func (c CoinV1) GetInfo() []byte   { return c.CoinDetails.GetInfo() }
+func (c CoinV1) IsEncrypted() bool { return c.CoinDetailsEncrypted != nil }
 
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {

@@ -50,7 +50,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 			assert.Equal(t, false, tempCoin.IsEncrypted())
 
 // to obtain a PlainCoin to feed into input of TX, we need to conceal & decrypt it (it makes sure all fields are right, as opposed to just casting the type to PlainCoin)
-			tempCoin.ConcealData(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
+			tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
 			assert.Equal(t, true, tempCoin.IsEncrypted())
 			assert.Equal(t, true, tempCoin.GetSharedRandom() == nil)
 			pastCoins[i] = tempCoin

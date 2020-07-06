@@ -273,7 +273,7 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) {
-		return nil, errors.New("Index is zero must be Index in list of commitments")
+		return nil, errors.New("GetIndex is zero must be GetIndex in list of commitments")
 	}
 
 	// represent indexIsZero in binary

@@ -180,7 +180,7 @@ func main() {
 	//	"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9",
 	//	"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
 
-	tool := new(debugtool.DebugTool).InitDevNet()
+	tool := new(debugtool.DebugTool).InitLocal("9334")
 
 	//InitToken(tool, privateKeys[0], "something")
 

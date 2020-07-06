@@ -25,14 +25,12 @@ func NewTxRandom() *TxRandom {
 	return res
 }
 
-func (t TxRandom) GetTxRandomPoint() *operation.Point {
-	txRandom, _ := new(operation.Point).FromBytesS(t[:operation.Ed25519KeySize])
-	return txRandom
+func (t TxRandom) GetTxRandomPoint() (*operation.Point, error) {
+	return new(operation.Point).FromBytesS(t[:operation.Ed25519KeySize])
 }
 
-func (t TxRandom) GetIndex() uint32 {
-	index, _ := common.BytesToUint32(t[operation.Ed25519KeySize:])
-	return index
+func (t TxRandom) GetIndex() (uint32, error) {
+	return common.BytesToUint32(t[operation.Ed25519KeySize:])
 }
 
 func (t *TxRandom) SetTxRandomPoint(txRandom *operation.Point) {
@@ -50,8 +48,8 @@ func (t TxRandom) Bytes() []byte {
 }
 
 func (t *TxRandom) SetBytes(b []byte) error {
-	if len(b) != TxRandomGroupSize {
-		return errors.New("Cannot TxRandomGroupSize.SetBytes because b is too short < TxRandomGroupSize")
+	if b == nil || len(b) != TxRandomGroupSize {
+		return errors.New("Cannnot SetByte to TxRandom. Input is invalid")
 	}
 	_, err := new(operation.Point).FromBytesS(b[:operation.Ed25519KeySize])
 	if err != nil {
@@ -86,13 +84,16 @@ type CoinV2 struct {
 
 func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
 	keySet := new(incognitokey.KeySet)
-	err := keySet.InitFromPrivateKey(&privKey)
-	if err != nil {
+	if err := keySet.InitFromPrivateKey(&privKey); err != nil {
 		err := errors.New("Cannot init keyset from privateKey")
 		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, err)
 	}
-	rK := new(operation.Point).ScalarMult(c.GetTxRandomPoint(), keySet.ReadonlyKey.GetPrivateView()) //rG * k = rK
-	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))        // Hash(rK, index)
+	txRandomPoint, index, err := c.GetTxRandomDetail()
+	if err != nil {
+		return nil, err
+	}
+	rK := new(operation.Point).ScalarMult(txRandomPoint, keySet.ReadonlyKey.GetPrivateView()) //rG * k = rK
+	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))        // Hash(rK, index)
 
 	k := new(operation.Scalar).FromBytesS(privKey)
 	return new(operation.Scalar).Add(H, k), nil // Hash(rK, index) + privSpend
@@ -109,15 +110,19 @@ func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.
 }
 
 // AdditionalData of concealData should be publicView of the receiver
-func (c *CoinV2) ConcealData(additionalData interface{}) {
+func (c *CoinV2) ConcealOutputCoin(additionalData interface{}) error {
 	// If this coin is already encrypted or it is created by other person then cannot conceal
 	if c.IsEncrypted() || c.GetSharedRandom() == nil {
-		return
+		return nil
 	}
 	publicView := additionalData.(*operation.Point)
 
 	rK := new(operation.Point).ScalarMult(publicView, c.GetSharedRandom())
-	hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
+	_, index, err := c.GetTxRandomDetail()
+	if err  != nil {
+		return err
+	}
+	hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
 	hash = operation.HashToScalar(hash.ToBytesS())
 	mask := new(operation.Scalar).Add(c.GetRandomness(), hash)
 
@@ -126,6 +131,15 @@ func (c *CoinV2) ConcealData(additionalData interface{}) {
 	c.SetRandomness(mask)
 	c.SetAmount(amount)
 	c.SetSharedRandom(nil)
+	return nil
+}
+
+func (c *CoinV2) ConcealInputCoin() {
+	c.SetValue(0)
+	c.SetRandomness(nil)
+	c.SetPublicKey(nil)
+	c.SetCommitment(nil)
+	c.SetTxRandomDetail(new(operation.Point).Identity(), 0)
 }
 
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
@@ -152,10 +166,14 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	}
 
 	if len(viewKey.Rk) > 0 {
-		rK := new(operation.Point).ScalarMult(c.GetTxRandomPoint(), viewKey.GetPrivateView())
+		txRandomPoint, index, err := c.GetTxRandomDetail()
+		if err != nil {
+			return nil, err
+		}
+		rK := new(operation.Point).ScalarMult(txRandomPoint, viewKey.GetPrivateView())
 
 		// Hash multiple times
-		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
+		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
 		hash = operation.HashToScalar(hash.ToBytesS())
 		randomness := c.GetRandomness().Sub(c.GetRandomness(), hash)
 
@@ -195,17 +213,39 @@ func (c *CoinV2) Init() *CoinV2 {
 func (c CoinV2) GetSNDerivator() *operation.Scalar { return nil }
 
 func (c CoinV2) IsEncrypted() bool {
-	if c.mask==nil{
+	if c.mask == nil {
 		return true
 	}
-	commitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
-	return !operation.IsPointEqual(commitment, c.commitment)
+	tempCommitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
+	return !operation.IsPointEqual(tempCommitment, c.commitment)
 }
 
-func (c CoinV2) GetVersion() uint8 { return 2 }
+func (c CoinV2) GetVersion() uint8                { return 2 }
+func (c CoinV2) GetRandomness() *operation.Scalar { return c.mask }
+func (c CoinV2) GetAmount() *operation.Scalar       { return c.amount }
+func (c CoinV2) GetSharedRandom() *operation.Scalar { return c.sharedRandom }
+func (c CoinV2) GetPublicKey() *operation.Point  { return c.publicKey }
+func (c CoinV2) GetCommitment() *operation.Point { return c.commitment }
+func (c CoinV2) GetKeyImage() *operation.Point { return c.keyImage }
+func (c CoinV2) GetInfo() []byte               { return c.info }
+func (c CoinV2) GetValue() uint64 {
+	if c.IsEncrypted() {
+		return 0
+	}
+	return c.amount.ToUint64Little()
+}
+func (c CoinV2) GetTxRandom() *TxRandom {return c.txRandom}
+func (c CoinV2) GetTxRandomDetail() (*operation.Point, uint32, error) {
+	txRandomPoint, err1 := c.txRandom.GetTxRandomPoint()
+	index, err2 := c.txRandom.GetIndex()
+	if err1 != nil || err2 != nil{
+		return nil, 0, errors.New("Cannot Get TxRandom: point or index is wrong")
+	}
+	return txRandomPoint, index, nil
+}
 func (c CoinV2) GetShardID() (uint8, error) {
 	if c.publicKey == nil {
-		return 255, errors.New("Cannot get ShardID because PublicKey of PlainCoin is concealed")
+		return 255, errors.New("Cannot get GetShardID because GetPublicKey of PlainCoin is concealed")
 	}
 	pubKeyBytes := c.publicKey.ToBytes()
 	lastByte := pubKeyBytes[operation.Ed25519KeySize-1]
@@ -213,44 +253,33 @@ func (c CoinV2) GetShardID() (uint8, error) {
 	return shardID, nil
 }
 
-func (c CoinV2) GetRandomness() *operation.Scalar   { return c.mask }
-func (c CoinV2) GetAmount() *operation.Scalar       { return c.amount }
-func (c CoinV2) GetSharedRandom() *operation.Scalar { return c.sharedRandom }
-func (c CoinV2) GetTxRandom() *TxRandom             { return c.txRandom }
-func (c CoinV2) GetTxRandomPoint() *operation.Point { return c.txRandom.GetTxRandomPoint() }
-func (c CoinV2) GetPublicKey() *operation.Point     { return c.publicKey }
-func (c CoinV2) GetCommitment() *operation.Point    { return c.commitment }
-func (c CoinV2) GetKeyImage() *operation.Point      { return c.keyImage }
-func (c CoinV2) GetIndex() uint32                   { return c.txRandom.GetIndex() }
-func (c CoinV2) GetInfo() []byte                    { return c.info }
-func (c CoinV2) GetValue() uint64 {
-	if c.IsEncrypted() {
-		return 0
-	}
-	return c.amount.ToUint64Little()
-}
-
 func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)           { c.mask = mask }
 func (c *CoinV2) SetAmount(amount *operation.Scalar)             { c.amount = amount }
 func (c *CoinV2) SetSharedRandom(sharedRandom *operation.Scalar) { c.sharedRandom = sharedRandom }
 func (c *CoinV2) SetTxRandom(txRandom *TxRandom) {
-	c.txRandom = NewTxRandom()
-	c.txRandom.SetBytes(txRandom.Bytes())
+	if txRandom == nil {
+		c.txRandom = nil
+	} else {
+		c.txRandom = NewTxRandom()
+		c.txRandom.SetBytes(txRandom.Bytes())
+	}
 }
-func (c *CoinV2) SetTxRandomPoint(txRandomPoint *operation.Point) {
-	c.txRandom.SetTxRandomPoint(txRandomPoint)
+func (c *CoinV2) SetTxRandomDetail(txRandomPoint *operation.Point, index uint32) {
+	res := new(TxRandom)
+	res.SetTxRandomPoint(txRandomPoint)
+	res.SetIndex(index)
+	c.txRandom = res
 }
+
 func (c *CoinV2) SetPublicKey(publicKey *operation.Point)   { c.publicKey = publicKey }
 func (c *CoinV2) SetCommitment(commitment *operation.Point) { c.commitment = commitment }
 func (c *CoinV2) SetKeyImage(keyImage *operation.Point)     { c.keyImage = keyImage }
-func (c *CoinV2) SetIndex(index uint32)                     { c.txRandom.SetIndex(index) }
 func (c *CoinV2) SetValue(value uint64)                     { c.amount = new(operation.Scalar).FromUint64(value) }
 func (c *CoinV2) SetInfo(b []byte) {
 	c.info = make([]byte, len(b))
 	copy(c.info, b)
 }
-
 func (c CoinV2) Bytes() []byte {
 	coinBytes := []byte{c.GetVersion()}
 	info := c.GetInfo()
@@ -410,10 +439,12 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 		return false
 	}
 	rK := new(operation.Point).ScalarMult(paymentAdd.GetPublicView(), r)
-	hash :=  operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(c.GetIndex())...))
+	_, index, err := c.GetTxRandomDetail()
+	if err  != nil {
+		return false
+	}
+	hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
 	HrKG := new(operation.Point).ScalarMultBase(hash)
 	tmpPubKey := new(operation.Point).Add(HrKG, paymentAdd.GetPublicSpend())
-	fmt.Println("OTA ", tmpPubKey)
-	fmt.Println("OTA ", c.publicKey)
 	return bytes.Equal(tmpPubKey.ToBytesS(), c.publicKey.ToBytesS())
 }
