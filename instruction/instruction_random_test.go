@@ -73,6 +73,9 @@ func TestValidateRandomInstructionSanity(t *testing.T) {
 	}
 }
 
+//Random instruction fomart:
+//["random-action", btc_none, btc_height, btc_check_point_time, btc_block_time]
+
 func TestValidateAndImportRandomInstructionFromString(t *testing.T) {
 	type args struct {
 		instruction []string
@@ -148,6 +151,37 @@ func TestValidateAndImportRandomInstructionFromString(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ValidateAndImportRandomInstructionFromString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestImportRandomInstructionFromString(t *testing.T) {
+	type args struct {
+		instruction []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *RandomInstruction
+	}{
+		{
+			name: "Valid Input",
+			args: args{
+				instruction: []string{RANDOM_ACTION, "3157440766", "637918", "3157440766", "3157440766"},
+			},
+			want: &RandomInstruction{
+				BtcNonce:       3157440766,
+				BtcBlockHeight: 637918,
+				CheckPointTime: 3157440766,
+				BtcBlockTime:   3157440766,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ImportRandomInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ImportRandomInstructionFromString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -73,6 +73,9 @@ func TestValidateAndImportAssignInstructionFromString(t *testing.T) {
 	}
 }
 
+//Assign instruction format:
+//["assign action", publickeys, shard or beacon chain, shard_id]
+
 func TestValidateAssignInstructionSanity(t *testing.T) {
 	type args struct {
 		instruction []string
@@ -122,6 +125,35 @@ func TestValidateAssignInstructionSanity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := ValidateAssignInstructionSanity(tt.args.instruction); (err != nil) != tt.wantErr {
 				t.Errorf("ValidateAssignInstructionSanity() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestImportAssignInstructionFromString(t *testing.T) {
+	type args struct {
+		instruction []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *AssignInstruction
+	}{
+		{
+			name: "Valid Input",
+			args: args{
+				instruction: []string{ASSIGN_ACTION, strings.Join([]string{key1, key2, key3, key4}, SPLITTER), SHARD_INST, "0"},
+			},
+			want: &AssignInstruction{
+				ChainID:         0,
+				ShardCandidates: []string{key1, key2, key3, key4},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ImportAssignInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ImportAssignInstructionFromString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
