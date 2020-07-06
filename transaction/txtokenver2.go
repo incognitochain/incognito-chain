@@ -321,12 +321,13 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	//tx.sigPrivKey = *txPrivacyParams.senderSK
 
 	hashedTokenMessage := txToken.TxTokenData.TxNormal.Hash()
+	txToken.SetTxBase(tx)
 	message := common.HashH(append(txToken.GetTxBase().Hash()[:], hashedTokenMessage[:]...))
 	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(privKey, message[:]); err != nil {
 		Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
 		return NewTransactionErr(SignTxError, err)
 	}
-	txToken.SetTxBase(tx)
+	
 
 	return nil
 }
