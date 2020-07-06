@@ -75,28 +75,26 @@ func (proof ConversionProofVer1ToVer2) GetOutputCoins() []coin.Coin {
 
 // InputCoins should be all ver1, else it would crash
 func (proof *ConversionProofVer1ToVer2) SetInputCoins(v []coin.PlainCoin) error {
-	var err error
 	proof.inputCoins = make([]*coin.PlainCoinV1, len(v))
 	for i := 0; i < len(v); i += 1 {
-		b := v[i].Bytes()
-		proof.inputCoins[i] = new(coin.PlainCoinV1)
-		if err = proof.inputCoins[i].SetBytes(b); err != nil {
-			return err
+		coin, ok := v[i].(*coin.PlainCoinV1)
+		if !ok {
+			return errors.New("Input coins should all be PlainCoinV1")
 		}
+		proof.inputCoins[i] = coin
 	}
 	return nil
 }
 
 // v should be all coinv2 or else it would crash
 func (proof *ConversionProofVer1ToVer2) SetOutputCoins(v []coin.Coin) error {
-	var err error
 	proof.outputCoins = make([]*coin.CoinV2, len(v))
 	for i := 0; i < len(v); i += 1 {
-		b := v[i].Bytes()
-		proof.outputCoins[i] = new(coin.CoinV2)
-		if err = proof.outputCoins[i].SetBytes(b); err != nil {
-			return err
+		coin, ok := v[i].(*coin.CoinV2)
+		if !ok {
+			return errors.New("Output coins should all be CoinV2")
 		}
+		proof.outputCoins[i] = coin
 	}
 	return nil
 }
