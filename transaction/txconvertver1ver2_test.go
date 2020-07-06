@@ -60,6 +60,7 @@ func createSampleInputCoin(privkey privacy.PrivateKey, pubKey *operation.Point, 
 	return c, nil
 }
 
+
 func createConversionParams(numInputs, numOutputs int)(*incognitokey.KeySet,
 	[]*privacy.PaymentInfo, *TxConvertVer1ToVer2InitParams, error){
 	var senderSK privacy.PrivateKey
@@ -180,8 +181,10 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 
 		m := common.RandInt()
 
-		switch m % 5{
-		case 0: //tamper with fee
+		switch m % 1 + 1{//Change this if you want to test a specific case
+
+		//tamper with fee
+		case 0:
 			fmt.Println("------------------Tampering with fee-------------------")
 			txConversionOutput.Fee = uint64(common.RandIntInterval(0, 1000))
 
@@ -189,7 +192,8 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 			txConversionOutput.Sig, txConversionOutput.SigPubKey, err = signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
 			assert.Equal(t, nil, err)
 
-		case 1: //tamper with randomness => current code will fail this test
+		//tamper with randomness
+		case 1:
 			fmt.Println("------------------Tampering with randomness-------------------")
 			inputCoins := txConversionOutput.Proof.GetInputCoins()
 			for j := 0; j < numInputs; j++ {
@@ -200,7 +204,8 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 			txConversionOutput.Sig, txConversionOutput.SigPubKey, err = signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
 			assert.Equal(t, nil, err)
 
-		case 2: //attempt to convert used coins (used serial numbers)
+		//attempt to convert used coins (used serial numbers)
+		case 2:
 			fmt.Println("------------------Tampering with serial numbers-------------------")
 			serialToBeStored := [][]byte{}
 			for _, inputCoin := range txConversionParams.inputCoins {
@@ -210,7 +215,8 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 			err := statedb.StoreSerialNumbers(testDB, *txConversionParams.tokenID, serialToBeStored, 0)
 			assert.Equal(t, true, err == nil)
 
-		case 3: //tamper with OTAs
+		//tamper with OTAs
+		case 3:
 			fmt.Println("------------------Tampering with OTAs-------------------")
 			otaToBeStored := [][]byte{}
 			outputCoinToBeStored := [][]byte{}
@@ -222,7 +228,8 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 			err := statedb.StoreOTACoinsAndOnetimeAddresses(testDB, *txConversionParams.tokenID, 0, outputCoinToBeStored, otaToBeStored, 0)
 			assert.Equal(t, true, err == nil)
 
-		case 4: //tamper with commitment of output => current code will fail this test
+		//tamper with commitment of output => current code will fail this test
+		case 4:
 			fmt.Println("------------------Tampering with commitment-------------------")
 			//fmt.Println("Tx hash before altered", txConversionOutput.Hash().String())
 			newOutputCoins := []coin.Coin{}
@@ -250,11 +257,13 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 		default:
 
 		}
-		//Attemp to verify
+		//Attempt to verify
 		res, err := validateConversionVer1ToVer2(txConversionOutput, testDB, 0, &common.PRVCoinID)
 		//This validation should return an error
 		assert.Equal(t, true, err != nil)
+		fmt.Println(err)
 		//Result should be false
 		assert.Equal(t, false, res)
 	}
 }
+

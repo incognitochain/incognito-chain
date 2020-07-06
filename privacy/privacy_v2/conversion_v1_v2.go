@@ -55,8 +55,8 @@ func (proof ConversionProofVer1ToVer2) Init() {
 	proof.serialNumberNoPrivacyProof = []*serialnumbernoprivacy.SNNoPrivacyProof{}
 }
 
-func (proof ConversionProofVer1ToVer2) GetVersion() uint8 { return 255 }
-func (proof *ConversionProofVer1ToVer2) SetVersion(uint8) { proof.Version = 255 }
+func (proof ConversionProofVer1ToVer2) GetVersion() uint8 { return ConversionProofVersion }
+func (proof *ConversionProofVer1ToVer2) SetVersion(uint8) { proof.Version = ConversionProofVersion }
 
 func (proof ConversionProofVer1ToVer2) GetInputCoins() []coin.PlainCoin {
 	res := make([]coin.PlainCoin, len(proof.inputCoins))
@@ -75,28 +75,26 @@ func (proof ConversionProofVer1ToVer2) GetOutputCoins() []coin.Coin {
 
 // InputCoins should be all ver1, else it would crash
 func (proof *ConversionProofVer1ToVer2) SetInputCoins(v []coin.PlainCoin) error {
-	var err error
 	proof.inputCoins = make([]*coin.PlainCoinV1, len(v))
 	for i := 0; i < len(v); i += 1 {
-		b := v[i].Bytes()
-		proof.inputCoins[i] = new(coin.PlainCoinV1)
-		if err = proof.inputCoins[i].SetBytes(b); err != nil {
-			return err
+		coin, ok := v[i].(*coin.PlainCoinV1)
+		if !ok {
+			return errors.New("Input coins should all be PlainCoinV1")
 		}
+		proof.inputCoins[i] = coin
 	}
 	return nil
 }
 
 // v should be all coinv2 or else it would crash
 func (proof *ConversionProofVer1ToVer2) SetOutputCoins(v []coin.Coin) error {
-	var err error
 	proof.outputCoins = make([]*coin.CoinV2, len(v))
 	for i := 0; i < len(v); i += 1 {
-		b := v[i].Bytes()
-		proof.outputCoins[i] = new(coin.CoinV2)
-		if err = proof.outputCoins[i].SetBytes(b); err != nil {
-			return err
+		coin, ok := v[i].(*coin.CoinV2)
+		if !ok {
+			return errors.New("Output coins should all be CoinV2")
 		}
+		proof.outputCoins[i] = coin
 	}
 	return nil
 }
@@ -257,6 +255,7 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 		Logger.Log.Errorf("Cannot set output coins in payment_v2 proof: err %v", err)
 		return nil, err
 	}
+
 	// Proving that serial number is derived from the committed derivator
 	for i := 0; i < len(inputCoins); i++ {
 		snNoPrivacyProof, err := serialnumberWitness[i].Prove(nil)
@@ -309,6 +308,7 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
 		}
 	}
 
+
 	// check output coins without privacy
 	for i := 0; i < len(proof.outputCoins); i++ {
 		if !proof.outputCoins[i].GetCommitment().PointValid() {
@@ -328,6 +328,11 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
 }
 
 func (proof ConversionProofVer1ToVer2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+	//Step to verify ConversionProofVer1ToVer2
+	//	- verify sumInput = sumOutput + fee
+	//	- verify if serial number of each input coin has been derived correctly
+	//	- verify input coins' randomness
+	//	- verify if output coins' commitment has been calculated correctly
 	if hasPrivacy {
 		return false, errors.New("ConversionProof does not have privacy, something is wrong")
 	}
@@ -338,6 +343,12 @@ func (proof ConversionProofVer1ToVer2) Verify(hasPrivacy bool, pubKey key.Public
 		}
 		if !bytes.Equal(pubKey, proof.inputCoins[i].GetPublicKey().ToBytesS()) {
 			return false, errors.New("ConversionProof inputCoins.publicKey should equal to pubkey")
+		}
+		//Check the consistency of input coins' commitment
+		commitment := proof.inputCoins[i].GetCommitment()
+		proof.inputCoins[i].CommitAll()
+		if !bytes.Equal(commitment.ToBytesS(), proof.inputCoins[i].GetCommitment().ToBytesS()){
+			return false, errors.New("ConversionProof inputCoins.commitment is not correct")
 		}
 		sumInput += proof.inputCoins[i].GetValue()
 	}
