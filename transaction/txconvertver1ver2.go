@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -184,12 +185,6 @@ func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) erro
 }
 
 func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
-	//Step to validate a ConversionVer1ToVer2 proof:
-	//	- verify signature no privacy
-	//	- verify if input coins have been spent (serial number already existed in database)
-	//	- verify if output coins' OTA has been obtained
-	//	- verify proofConversion
-
 	if valid, err := verifySigNoPrivacy(tx.GetSig(), tx.GetSigPubKey(), tx.Hash()[:]); !valid {
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v \n", tx.Hash().String(), err)
@@ -216,16 +211,23 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 		}
 	}
 
-	//Verify that output coins' one-time-address has not been obtained
+	//Verify that output coins' one-time-address has not been obtained + not duplicate OTAs
 	outputCoins := proofConversion.GetOutputCoins()
+	mapOutputCoins := make(map[string]int)
 	for i := 0; i < len(outputCoins); i++ {
 		if ok, err := txDatabaseWrapper.hasOnetimeAddress(statedb, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
 				return false, errors.New(errStr)
 			}
-			return false, errors.New("TxConversion found existing onetimeaddress in database error")
+			return false, errors.New("TxConversion found existing one-time-address in database error")
 		}
+		dst := make([]byte, hex.EncodedLen(len(outputCoins[i].GetPublicKey().ToBytesS())))
+		hex.Encode(dst, outputCoins[i].GetPublicKey().ToBytesS())
+		mapOutputCoins[string(dst)] = i
+	}
+	if len(mapOutputCoins) != len(outputCoins) {
+		return false, errors.New("TxConversion found duplicate one-time-address error")
 	}
 
 	//Verify the conversion proof
@@ -237,7 +239,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 	}
 
-	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF")
+	Logger.Log.Debugf("SUCCEEDED VERIFICATION PAYMENT PROOF")
 	return true, nil
 }
 
