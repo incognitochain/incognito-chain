@@ -94,6 +94,13 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
 }
 
+func GetOutputToken(tool *debugtool.DebugTool, privkey, tokenID string){
+	fmt.Println("========== GET OUTPUT TOKEN ==========")
+	b, _ := tool.GetListOutputCoins(privkey)
+	fmt.Println(string(b))
+	fmt.Println("========== END GET OUTPUT TOKEN ==========")
+}
+
 func GetPRVBalance(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== GET PRV BALANCE ==========")
 	b, _ := tool.GetBalanceByPrivatekey(privkey)
@@ -271,9 +278,57 @@ func main() {
 	if args[0] == "payment" {
 		fmt.Println("Payment Address", privateKeyToPaymentAddress(args[1]))
 	}
-
 	if args[0] == "public" {
 		fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
+	}
+
+	//TOKEN RPC
+	if args[0] == "inittoken" {
+		if len(args) < 3 {
+			panic("Not enough params for initToken")
+		}
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("[BUGLOG2] privKey =", privateKeys[index])
+		InitToken(tool, privateKeys[index], args[2])
+	}
+	if args[0] == "listtoken" {
+		ListTokens(tool)
+	}
+	if args[0] == "converttoken"{
+		if len(args) < 3 {
+			panic("Not enough params for converttoken")
+		}
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		tokenID := args[2]
+		ConvertTokenCoinVersion(tool, privateKeys[index], tokenID)
+	}
+	if args[0] == "transfertoken"{
+		if len(args) < 5 {
+			panic("Not enough params for transfertoken")
+		}
+		indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		indexTo, err := strconv.ParseInt(args[2], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		TransferToken(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
+
+	}
+	if args[0] == "balancetoken" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		GetBalanceToken(tool, privateKeys[index], args[2])
 	}
 
 }
