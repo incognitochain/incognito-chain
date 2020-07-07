@@ -82,7 +82,8 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			if _, ok := mReturnStakingInfoGot[*txHash]; ok {
 				return errors.Errorf("Double tx return staking from instruction for tx staking %v", returnMeta.TxID)
 			}
-			mReturnStakingInfoGot[*txHash] = returnStakingInfo{
+			h, _ := common.Hash{}.NewHashFromStr(returnMeta.TxID)
+			mReturnStakingInfoGot[*h] = returnStakingInfo{
 				FunderAddress: returnMeta.StakerAddress,
 			}
 		}
