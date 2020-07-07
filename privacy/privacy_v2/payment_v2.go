@@ -388,6 +388,16 @@ func (proof PaymentProofV2) verifyHasNoPrivacy(fee uint64) (bool, error) {
 }
 
 func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+	inputCoins := proof.GetInputCoins()
+	dupMap := make(map[string]bool)
+	for _,coin := range inputCoins{
+		identifier := base64.StdEncoding.EncodeToString(coin.GetKeyImage().ToBytesS())
+		_, exists := dupMap[identifier]
+		if exists{
+			return false, errors.New("Duplicate input coin in PaymentProofV2")
+		}
+		dupMap[identifier] = true
+	}
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyHasNoPrivacy(fee)

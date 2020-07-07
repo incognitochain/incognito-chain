@@ -282,11 +282,13 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
-		isValid,err = tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
+		// isValid,err = tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
+		isValid,err = tx.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
 
 		testTxV2DeletedProof(tx, t)
+		testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
 		testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
 		testTxV2OneFakeInput(tx, dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
 		testTxV2OneFakeOutput(tx, dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
@@ -303,6 +305,31 @@ func testTxV2DeletedProof(txv2 *TxVersion2, t *testing.T){
 	assert.NotEqual(t,nil,err)
 	assert.Equal(t,false,isValid)
 	txv2.Proof = savedProof
+}
+
+func testTxV2DuplicateInput(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymentInfoOut []*key.PaymentInfo, t *testing.T){
+	dup := &coin.CoinV2{}
+	dup.SetBytes(inputCoins[0].Bytes())
+	// used the same coin twice in inputs
+	malInputCoins := append(inputCoins,dup)
+	malFeeParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
+		paymentInfoOut,malInputCoins,
+		10,true,
+		db,
+		nil,
+		nil,
+		[]byte{},
+	)
+	malTx := &TxVersion2{}
+	errMalInit := malTx.Init(malFeeParams)
+	assert.Equal(t,nil,errMalInit)
+	// sanity should be fine
+	isValid,err := malTx.ValidateSanityData(nil,nil,nil,0)
+	assert.Equal(t,nil,err)
+	assert.Equal(t,true,isValid)
+	// validate should reject due to Verify() in PaymentProofV2
+	isValid,_ = malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	assert.Equal(t,false,isValid)
 }
 
 func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymentInfoOut []*key.PaymentInfo, t *testing.T){
@@ -323,7 +350,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 	malTx := &TxVersion2{}
 	errMalInit := malTx.Init(malFeeParams)
 	assert.NotEqual(t,nil,errMalInit)
-	isValid,errMalVerify := malTx.ValidateTransaction(true,db,nil,0,nil,false,true)
+	isValid,errMalVerify := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
 	assert.NotEqual(t,nil,errMalVerify)
 	assert.Equal(t,false,isValid)
 }
@@ -348,7 +375,7 @@ func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, inputCoins []co
 	err := malTx.Init(malInputParams)
 	assert.Equal(t,nil,err)
 	malTx.SetProof(txv2.GetProof())
-	isValid,err := malTx.ValidateTransaction(true,db,nil,0,nil,false,true)
+	isValid,err := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
 	// verify must fail
 	assert.NotEqual(t,nil,err)
 	assert.Equal(t,false,isValid)
@@ -372,7 +399,7 @@ func testTxV2OneFakeOutput(txv2 *TxVersion2, db *statedb.StateDB, inputCoins []c
 		err := malTx.Init(malInputParams)
 		assert.Equal(t,nil,err)
 		malTx.SetProof(txv2.GetProof())
-		isValid,err := malTx.ValidateTransaction(true,db,nil,0,nil,false,true)
+		isValid,err := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
 		// verify must fail
 		assert.NotEqual(t,nil,err)
 		assert.Equal(t,false,isValid)
@@ -395,7 +422,7 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 		assert.Equal(t,nil,err)
 		otaBytes := malTx.GetProof().GetInputCoins()[changed].GetKeyImage().ToBytesS()
 		statedb.StoreSerialNumbers(db, common.PRVCoinID, [][]byte{otaBytes}, 0)
-		isValid,err := malTx.ValidateTransaction(true,db,nil,0,nil,false,true)
+		isValid,err := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
 		// verify by itself passes
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
