@@ -45,6 +45,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.1.1
 	github.com/libp2p/go-libp2p-swarm v0.2.1
 	github.com/libp2p/go-openssl v0.0.3 // indirect
+	github.com/magiconair/properties v1.8.0
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect
@@ -54,12 +55,12 @@ require (
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect
-	github.com/opentracing/opentracing-go v1.0.2
+	github.com/opentracing/opentracing-go v1.0.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa // indirect
-	github.com/stathat/consistent v1.0.0
+	github.com/stathat/consistent v1.0.0 // indirect
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.5.1
@@ -72,6 +73,7 @@ require (
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.27.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
+	gopkg.in/yaml.v2 v2.2.4
 	stathat.com/c/consistent v1.0.0
 
 )
