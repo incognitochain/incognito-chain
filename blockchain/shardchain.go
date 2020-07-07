@@ -170,7 +170,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterfa
 // 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 // 	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
 // 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From GetIndex, %+v From Header", tempProducer, producerPublicKey))
+// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 // 	}
 // 	if err := chain.ValidateBlockSignatures(block, shardBestState.ShardCommittee); err != nil {
 // 		return err

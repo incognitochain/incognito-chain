@@ -279,10 +279,10 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 	}
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
-	if needToPayFee > 0 {
+	if needToPayFee > 0  {
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
-			if err != nil {
+			if err1 != nil {
 				return nil, 0, NewRPCError(GetOutputCoinError, err1)
 			}
 			candidatePlainCoins = append(candidatePlainCoins, candidateOutputCoinsForFee...)
@@ -1096,7 +1096,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 }
 
 // BuildRawCustomTokenTransactionV2 ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interface{}, metaData metadata.Metadata) (*transaction.TxTokenBase, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParamV2(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -1146,7 +1146,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interf
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
-	return tx.(*transaction.TxTokenBase), nil
+	return tx.(transaction.TransactionToken), nil
 }
 
 func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam string) (map[byte][]common.Hash, error) {
@@ -1831,7 +1831,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 					}
 				case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 					{
-						privacyTokenTx := txDetail.(transaction.TxTokenBase)
+						privacyTokenTx := txDetail.(transaction.TransactionToken)
 						item.Version = privacyTokenTx.GetVersion()
 						item.IsPrivacy = privacyTokenTx.IsPrivacy()
 						tokenData := privacyTokenTx.GetTxTokenData()
@@ -1969,7 +1969,7 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 				}
 			}
 
-			tempTx := tx.(transaction.TxTokenBase)
+			tempTx := tx.(transaction.TransactionToken)
 			tokenData := tempTx.GetTxTokenData()
 			results[tokenData.PropertyID.String()] = 0
 			outputOfTokens := tx.GetProof().GetOutputCoins()

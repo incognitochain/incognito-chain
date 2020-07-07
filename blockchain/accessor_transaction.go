@@ -256,14 +256,13 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *inco
 				Logger.log.Error("Get outcoins ver 2 bytes by keyset Parse Coin From Bytes", err)
 				return nil, err
 			}
-			//fmt.Println("Found a coin")
-			//fmt.Println("Version = ", c.GetVersion())
-			//fmt.Println("GetIndex = ", c.GetIndex())
-			//fmt.Println("Commitment = ", c.GetCommitment())
-			//fmt.Println("PublicKey = ", c.GetPublicKey())
-			//fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
-			//fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
-			//fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
+			fmt.Println("Found a coin")
+			fmt.Println("Version = ", c.GetVersion())
+			fmt.Println("Commitment = ", c.GetCommitment())
+			fmt.Println("PublicKey = ", c.GetPublicKey())
+			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
+			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
+			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
 			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
 				outCoinsBytes = append(outCoinsBytes, c.Bytes())
 			}
@@ -580,7 +579,6 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				//fmt.Println("Coin Version =", outputCoin.GetVersion())
 				//fmt.Println("Coin ShardID =", shardIDcoin)
 				//fmt.Println("Coin ShardID =", shardIDcoin)
-				//fmt.Println("Coin GetIndex =", outputCoin.GetIndex())
 				//fmt.Println("Coin Value =", outputCoin.GetValue())
 				//fmt.Println("Coin Info =", outputCoin.GetInfo())
 				//fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())

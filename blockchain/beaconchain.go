@@ -1,4 +1,4 @@
-package blockchain
+  package blockchain
 
 import (
 	"encoding/json"
@@ -203,7 +203,7 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 // 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
 // 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
 // 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From GetIndex, %+v From Header", tempProducer, producerPublicKey))
+// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 // 	}
 // 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
 // 		return err

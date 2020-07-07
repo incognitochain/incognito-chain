@@ -199,6 +199,7 @@ func (tx *TxVersion1) Init(paramsInterface interface{}) error {
 	if err := tx.prove(params); err != nil {
 		return err
 	}
+	fmt.Println("[BUGLOG] Private key", tx.sigPrivKey)
 	return nil
 }
 
@@ -323,6 +324,7 @@ func (tx *TxVersion1) sign() error {
 	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
+	fmt.Println("[BUGLOG] Private Key", tx.sigPrivKey, len(tx.sigPrivKey))
 	sk := new(operation.Scalar).FromBytesS(tx.sigPrivKey[:common.BigIntSize])
 	r := new(operation.Scalar).FromBytesS(tx.sigPrivKey[common.BigIntSize:])
 	sigKey := new(schnorr.SchnorrPrivateKey)

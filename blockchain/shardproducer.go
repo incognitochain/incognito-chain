@@ -157,6 +157,10 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 			totalTxsFee[*tx.GetTokenID()] = tx.GetTxFeeToken()
 		}
 	}
+	crossShardBitmap, err := CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID)
+	if err != nil {
+		return nil, err
+	}
 	newShardBlock.Header = ShardHeader{
 		Producer:          producerKey, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr: producerPubKeyStr,
@@ -166,7 +170,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		Height:            shardBestState.ShardHeight + 1,
 		Round:             round,
 		Epoch:             epoch,
-		CrossShardBitMap:  CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		CrossShardBitMap:  crossShardBitmap,
 		BeaconHeight:      beaconHeight,
 		BeaconHash:        beaconHash,
 		TotalTxsFee:       totalTxsFee,

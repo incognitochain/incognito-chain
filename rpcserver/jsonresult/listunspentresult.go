@@ -16,7 +16,7 @@ type ListOutputCoins struct {
 
 type OutCoin struct {
 	Version 			 string `json:"Version"`
-	Index 				 string `json:"GetIndex"`
+	Index 				 string `json:"Index"`
 	PublicKey            string `json:"PublicKey"`
 	Commitment       	 string `json:"Commitment"`
 	SNDerivator          string `json:"SNDerivator"`
@@ -72,7 +72,7 @@ func NewOutCoin(outCoin coin.PlainCoin) OutCoin {
 		Version: 		strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
 		PublicKey:      publicKey,
 		Value:          strconv.FormatUint(outCoin.GetValue(), 10),
-		Info:           base58.Base58Check{}.Encode(outCoin.GetInfo()[:], common.ZeroByte),
+		Info:           EncodeBase58Check(outCoin.GetInfo()),
 		Commitment: 	commitment,
 		SNDerivator:    snd,
 		KeyImage:   	keyImage,

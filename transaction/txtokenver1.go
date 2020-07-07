@@ -97,7 +97,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 
 			// signOnMessage Tx
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
-			//temp.sigPrivKey = *params.senderKey
+			temp.sigPrivKey = *params.senderKey
 			err = temp.sign()
 			if err != nil {
 				Logger.Log.Error(errors.New("can't signOnMessage this tx"))

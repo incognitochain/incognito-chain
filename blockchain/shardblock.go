@@ -373,7 +373,10 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 
 func (shardBlock ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
-	crossOutputCoin, crossCustomTokenPrivacyData := getCrossShardData(shardBlock.Body.Transactions, shardID)
+	crossOutputCoin, crossCustomTokenPrivacyData, err := getCrossShardData(shardBlock.Body.Transactions, shardID)
+	if err != nil {
+		return nil, err
+	}
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		return nil, NewBlockChainError(CreateCrossShardBlockError, errors.New("No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy"))
