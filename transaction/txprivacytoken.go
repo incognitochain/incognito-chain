@@ -464,9 +464,9 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriev
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// no need to check for tx init token
-	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
-	}
+	//if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+	//	return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
+	//}
 	// check for proof, signature ...
 	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
 		return false, err
