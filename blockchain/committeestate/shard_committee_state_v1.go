@@ -147,6 +147,14 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(env *ShardCommitteeStat
 func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateEnvironment) {
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
+
+	committeeState := engine.shardCommitteeStateV1
+
+	newCommittees := []incognitokey.CommitteePublicKey{}
+	newPendingValidators := []incognitokey.CommitteePublicKey{}
+
+	committeeState.shardCommittee = append(committeeState.shardCommittee, newCommittees...)
+	committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, newPendingValidators...)
 }
 
 //GetShardCommittee : Get shard committees
