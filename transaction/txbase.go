@@ -168,7 +168,7 @@ func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 		Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
 		return NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
-	//tx.sigPrivKey = *params.senderSK
+	tx.sigPrivKey = *params.senderSK
 	// Tx: initialize some values
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()

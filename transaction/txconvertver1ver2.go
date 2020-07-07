@@ -171,9 +171,6 @@ func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) erro
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
 	}
-	//tx.sigPrivKey = []byte{}
-	//randSK := big.NewInt(0)
-	//tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...) //CHECK THIS! Why setting tx.sigPrivKey?
 
 	// sign tx
 	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
