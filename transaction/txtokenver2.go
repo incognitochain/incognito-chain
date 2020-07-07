@@ -318,7 +318,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 		return err
 	}
 	tx.SetType(common.TxCustomTokenPrivacyType)
-	//tx.sigPrivKey = *txPrivacyParams.senderSK
+	tx.sigPrivKey = *txPrivacyParams.senderSK
 
 	hashedTokenMessage := txToken.TxTokenData.TxNormal.Hash()
 	txToken.SetTxBase(tx)
@@ -327,8 +327,6 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 		Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
 		return NewTransactionErr(SignTxError, err)
 	}
-	
-
 	return nil
 }
 
@@ -448,9 +446,8 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 }
 
 func (txToken TxTokenVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if txToken.GetTxBase().GetProof() == nil || txToken.TxTokenData.TxNormal.GetProof() == nil {
-		panic("OK")
-		return false, errors.New("Tx Privacy Ver 2 must have proofs")
+	if txToken.GetTxBase().GetProof() == nil && txToken.TxTokenData.TxNormal.GetProof() == nil {
+		return false, errors.New("Tx Privacy Ver 2 must have a proof")
 	}
 	// validate metadata
 	check, err := validateSanityMetadata(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)

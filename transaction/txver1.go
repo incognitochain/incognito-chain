@@ -199,7 +199,6 @@ func (tx *TxVersion1) Init(paramsInterface interface{}) error {
 	if err := tx.prove(params); err != nil {
 		return err
 	}
-	fmt.Println("[BUGLOG] Private key", tx.sigPrivKey)
 	return nil
 }
 
@@ -324,7 +323,6 @@ func (tx *TxVersion1) sign() error {
 	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
-	fmt.Println("[BUGLOG] Private Key", tx.sigPrivKey, len(tx.sigPrivKey))
 	sk := new(operation.Scalar).FromBytesS(tx.sigPrivKey[:common.BigIntSize])
 	r := new(operation.Scalar).FromBytesS(tx.sigPrivKey[common.BigIntSize:])
 	sigKey := new(schnorr.SchnorrPrivateKey)
@@ -540,36 +538,12 @@ func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	return true, nil
 }
 
-func (tx TxVersion1) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	if tx.IsPrivacy() {
-		return true, nil
-	}
-	proof := tx.GetProof()
-	meta := tx.GetMetadata()
-
-	inputCoins := make([]coin.PlainCoin, 0)
-	outputCoins := make([]coin.Coin, 0)
-	if tx.GetProof() != nil {
-		inputCoins = tx.GetProof().GetInputCoins()
-		outputCoins = tx.GetProof().GetOutputCoins()
-	}
-	if proof != nil && len(inputCoins) == 0 && len(outputCoins) > 0 { // coinbase tx
-		if meta == nil {
-			return false, nil
-		}
-		if !meta.IsMinerCreatedMetaType() {
-			return false, nil
-		}
-	}
-	if meta != nil {
-		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, &tx, bcr, accumulatedValues, retriever, viewRetriever)
-		if err != nil {
-			Logger.Log.Error(err)
-			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
-		}
-		return ok, nil
-	}
-	return true, nil
+func (tx TxVersion1) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData,
+		shardID byte, bcr metadata.ChainRetriever,
+		accumulatedValues *metadata.AccumulatedValues,
+		retriever metadata.ShardViewRetriever,
+		viewRetriever metadata.BeaconViewRetriever) (bool, error) {
+	return verifyTxCreatedByMiner(&tx, mintdata, shardID, bcr, accumulatedValues, retriever, viewRetriever)
 }
 
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
