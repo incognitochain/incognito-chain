@@ -113,6 +113,9 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		tokenOutputs := tx.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()
 		feeOutputs := tx.GetTxBase().GetProof().GetOutputCoins()
 		forceSaveCoins(dummyDB, feeOutputs, 0, common.PRVCoinID, t)
+
+		feeOutputBytesHacked := feeOutputs[0].Bytes()
+		tokenOutputBytesHacked := tokenOutputs[0].Bytes()
 		
 		// tx token transfer
 		paramToCreateTx2, tokenParam2 := getParamForTxTokenTransfer(tx, dummyDB, t)
@@ -156,14 +159,12 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		
 		testTxTokenV2InvalidFee(dummyDB, paramToCreateTx2, t)
 		testTxTokenV2OneFakeOutput(tx2, dummyDB, paramToCreateTx2, t)
-		testTxTokenV2OneDoubleSpentInput(tx2, dummyDB, t)
+		testTxTokenV2OneDoubleSpentInput(tx2, dummyDB, feeOutputBytesHacked, tokenOutputBytesHacked, t)
 
 		testTxTokenV2Salary(tx.GetTokenID(), dummyDB, t)
 	}
 }
 
-// TODO: explore the case where proofs in txnormal or txbase are nulled out, where the tx then still passes sanity check
-// and then panic inside Verify function
 func testTxTokenV2DeletedProof(txv2 *TxTokenVersion2, t *testing.T){
 	// try setting the proof to nil, then verify
 	// it should not go through
@@ -211,24 +212,75 @@ func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, para
 		params.tokenParams.Receiver = savedPay
 }
 
-func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.StateDB, t *testing.T){
-		otaBytes := tokenTx.GetTxTokenData().TxNormal.GetProof().GetInputCoins()[0].GetKeyImage().ToBytesS()
-		statedb.StoreSerialNumbers(db, *tokenTx.GetTokenID(), [][]byte{otaBytes}, 0)
-		isValid,err := tokenTx.ValidateTransaction(true,db,nil,0,nil,false,true)
-		// verify by itself passes
-		assert.Equal(t,nil,err)
-		assert.Equal(t,true,isValid)
+// happens after txTransfer in test
+// we create a second transfer, then try to reuse fee input / token input
+func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.StateDB, feeOutputBytesHacked, tokenOutputBytesHacked []byte, t *testing.T){
+	// save both fee&token outputs from previous tx
+	otaBytes := [][]byte{tokenTx.GetTxTokenData().TxNormal.GetProof().GetInputCoins()[0].GetKeyImage().ToBytesS()}
+	statedb.StoreSerialNumbers(db, *tokenTx.GetTokenID(), otaBytes, 0)
+	otaBytes = [][]byte{tokenTx.GetTxBase().GetProof().GetInputCoins()[0].GetKeyImage().ToBytesS()}
+	statedb.StoreSerialNumbers(db, common.PRVCoinID, otaBytes, 0)
 
-		// verify with blockchain fails
-		err = tokenTx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
-		assert.NotEqual(t,nil,err)
-		
+	tokenOutputs := tokenTx.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()
+	feeOutputs := tokenTx.GetTxBase().GetProof().GetOutputCoins()
+	forceSaveCoins(db, feeOutputs, 0, common.PRVCoinID, t)
+	forceSaveCoins(db, tokenOutputs, 0, *tokenTx.GetTokenID(), t)
+
+	// firstly, using the output coins to create new tx should be successful
+	pr,_ := getParamForTxTokenTransfer(tokenTx, db, t)
+	tx := &TxTokenVersion2{}
+	err := tx.Init(pr)
+	assert.Equal(t,nil,err)
+	isValidSanity, err := tx.ValidateSanityData(nil, nil, nil, 0)
+	assert.Equal(t, true, isValidSanity)
+	assert.Equal(t, nil, err)
+	isValidTxItself, err := tx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	assert.Equal(t, true, isValidTxItself)
+	assert.Equal(t, nil, err)
+	err = tx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
+	assert.Equal(t,nil,err)
+	
+	// now we try to swap in a used input for txfee
+	doubleSpendingFeeInput := &coin.CoinV2{}
+	doubleSpendingFeeInput.SetBytes(feeOutputBytesHacked)
+	pc,_ := doubleSpendingFeeInput.Decrypt(keySets[0])
+	pr.inputCoin = []coin.PlainCoin{pc}
+	tx = &TxTokenVersion2{}
+	err = tx.Init(pr)
+	assert.Equal(t,nil,err)
+	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
+	assert.Equal(t, true, isValidSanity)
+	assert.Equal(t, nil, err)
+	isValidTxItself, err = tx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	assert.Equal(t, true, isValidTxItself)
+	assert.Equal(t, nil, err)
+	err = tx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
+	// fmt.Println(err)
+	assert.NotEqual(t,nil,err)
+
+	// now we try to swap in a used token input
+	doubleSpendingTokenInput := &coin.CoinV2{}
+	doubleSpendingTokenInput.SetBytes(tokenOutputBytesHacked)
+	pc,_ = doubleSpendingTokenInput.Decrypt(keySets[0])
+	pr.tokenParams.TokenInput = []coin.PlainCoin{pc}
+	tx = &TxTokenVersion2{}
+	err = tx.Init(pr)
+	assert.Equal(t,nil,err)
+	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
+	assert.Equal(t, true, isValidSanity)
+	assert.Equal(t, nil, err)
+	isValidTxItself, err = tx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	assert.Equal(t, true, isValidTxItself)
+	assert.Equal(t, nil, err)
+	err = tx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
+	// fmt.Println(err)
+	assert.NotEqual(t,nil,err)
 }
 
 func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, t *testing.T) (*TxTokenParams,*TokenParam){
 	transferAmount := uint64(69)
 	msgCipherText := []byte("doing a transfer")
-	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: keySets[1].PaymentAddress, Amount: transferAmount, Message: msgCipherText}}
+	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: transferAmount, Message: msgCipherText}}
 
 	feeOutputs := txTokenInit.GetTxBase().GetProof().GetOutputCoins()
 	prvCoinsToPayTransfer := make([]coin.PlainCoin,0)
@@ -330,30 +382,11 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 		txsal := TxTokenVersion2{}
 		// actually making the salary TX
 		err = txsal.InitTxTokenSalary(theCoins[0], dummyPrivateKeys[0], db, nil, tokenID, "Token 1")
-		isValidSanity, err := txsal.ValidateSanityData(nil, nil, nil, 0)
-		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
+		// isValidSanity, err := txsal.ValidateSanityData(nil, nil, nil, 0)
+		// assert.Equal(t, true, isValidSanity)
+		// assert.Equal(t, nil, err)
 
-		// simulate bridgeDB already having this token in it
-		txDatabaseWrapper.isBridgeTokenExistedByType = func(stateDB *statedb.StateDB, incTokenID common.Hash, isCentralized bool) (bool,error){
-			return true, nil
-		}
-
-		isValidTxItself, err := txsal.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		assert.Equal(t, true, isValidTxItself)
-		assert.Equal(t, nil, err)
-
-		// this other coin is already in db so it must be rejected by double spend check
-		txsal = TxTokenVersion2{}
-		err = txsal.InitTxTokenSalary(theCoins[1], dummyPrivateKeys[0], db, nil, tokenID, "Token 1")
-		assert.Equal(t,nil,err)
-		isValidSanity, err = txsal.ValidateSanityData(nil, nil, nil, 0)
-		assert.Equal(t, true, isValidSanity)
-		assert.Equal(t, nil, err)
-		isValidTxItself, err = txsal.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		assert.Equal(t, true, isValidTxItself)
-		assert.Equal(t, nil, err)
-
-		// TODO: add an integrated double spend check in txtokenver2
+		// verify function for txTokenV2Salary is out of scope, so we exit here
 	}
 }
