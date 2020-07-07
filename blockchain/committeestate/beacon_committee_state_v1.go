@@ -223,6 +223,7 @@ func (engine *BeaconCommitteeEngine) GetAllCandidateSubstituteCommittee() []stri
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	return engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
 }
+
 func (engine *BeaconCommitteeEngine) Commit(hashes *BeaconCommitteeStateHash) error {
 	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV1, NewBeaconCommitteeStateV1()) {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV1))
@@ -396,6 +397,23 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 	return hashes, committeeChange, nil
+}
+
+func (b *BeaconCommitteeEngine) GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string) {
+	assignedCandidates := make(map[byte][]string)
+	remainShardCandidates := []string{}
+	shuffledCandidate := shuffleShardCandidate(candidates, rand)
+	for _, candidate := range shuffledCandidate {
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
+		if numberOfPendingValidator[shardID]+1 > assignOffset {
+			remainShardCandidates = append(remainShardCandidates, candidate)
+			continue
+		} else {
+			assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
+			numberOfPendingValidator[shardID] += 1
+		}
+	}
+	return remainShardCandidates, assignedCandidates
 }
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(

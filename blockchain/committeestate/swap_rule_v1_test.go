@@ -1,8 +1,7 @@
-package blockchain
+package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -97,7 +96,7 @@ func TestUtils(t *testing.T) {
 func TestShuffleShardCandidate(t *testing.T) {
 	shuffledCandiates := shuffleShardCandidate(candidates, randomNumber)
 	if !reflect.DeepEqual(shuffledCandiates, expectedShuffledCandidates) {
-		log.Fatalf("Expect shuffled candidates to be %+v \n but get %+v", priorityKeys, shuffledCandiates)
+		t.Fatalf("Expect shuffled candidates to be %+v \n but get %+v", priorityKeys, shuffledCandiates)
 	}
 }
 func TestAssignShardCandidate(t *testing.T) {
