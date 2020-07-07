@@ -307,81 +307,79 @@ func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 	}
 }
 
-func TestImportSwapInstructionFromString(t *testing.T) {
-
+func TestSwapInstruction_ToString(t *testing.T) {
 	initPublicKey()
-
 	type args struct {
-		instruction []string
+		instruction *SwapInstruction
 	}
 	tests := []struct {
 		name string
 		args args
-		want *SwapInstruction
+		want []string
 	}{
 		{
 			name: "Valid Input_beacon",
 			args: args{
-				instruction: []string{
-					SWAP_ACTION,
-					strings.Join([]string{key1, key2}, SPLITTER),
-					strings.Join([]string{key3, key4}, SPLITTER),
-					BEACON_INST,
-					"",
-					"",
-					strings.Join([]string{key3, key4}, SPLITTER)},
-			},
-			want: &SwapInstruction{
-				InPublicKeys:  []string{key1, key2},
-				OutPublicKeys: []string{key3, key4},
-				InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey1,
-					*incKey2,
+				instruction: &SwapInstruction{
+					InPublicKeys:  []string{key1, key2},
+					OutPublicKeys: []string{key3, key4},
+					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey1,
+						*incKey2,
+					},
+					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey3,
+						*incKey4,
+					},
+					ChainID:            -1,
+					PunishedPublicKeys: "",
+					NewRewardReceivers: []string{key3, key4},
+					IsReplace:          true,
 				},
-				OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey3,
-					*incKey4,
-				},
-				ChainID:            -1,
-				PunishedPublicKeys: "",
-				NewRewardReceivers: []string{key3, key4},
-				IsReplace:          true,
 			},
+			want: []string{
+				SWAP_ACTION,
+				strings.Join([]string{key1, key2}, SPLITTER),
+				strings.Join([]string{key3, key4}, SPLITTER),
+				BEACON_INST,
+				"",
+				"",
+				strings.Join([]string{key3, key4}, SPLITTER)},
 		},
 		{
 			name: "Valid Input_shard",
 			args: args{
-				instruction: []string{
-					SWAP_ACTION,
-					strings.Join([]string{key1, key2}, SPLITTER),
-					strings.Join([]string{key3, key4}, SPLITTER),
-					SHARD_INST,
-					"0",
-					"",
-					strings.Join([]string{key3, key4}, SPLITTER)},
-			},
-			want: &SwapInstruction{
-				InPublicKeys:  []string{key1, key2},
-				OutPublicKeys: []string{key3, key4},
-				InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey1,
-					*incKey2,
+				instruction: &SwapInstruction{
+					InPublicKeys:  []string{key1, key2},
+					OutPublicKeys: []string{key3, key4},
+					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey1,
+						*incKey2,
+					},
+					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey3,
+						*incKey4,
+					},
+					ChainID:            0,
+					PunishedPublicKeys: "",
+					NewRewardReceivers: []string{key3, key4},
+					IsReplace:          true,
 				},
-				OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey3,
-					*incKey4,
-				},
-				ChainID:            0,
-				PunishedPublicKeys: "",
-				NewRewardReceivers: []string{key3, key4},
-				IsReplace:          true,
 			},
+			want: []string{
+				SWAP_ACTION,
+				strings.Join([]string{key1, key2}, SPLITTER),
+				strings.Join([]string{key3, key4}, SPLITTER),
+				SHARD_INST,
+				"0",
+				"",
+				strings.Join([]string{key3, key4}, SPLITTER)},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ImportSwapInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ImportSwapInstructionFromString() = %v, want %v", got, tt.want)
+			if got := tt.args.instruction.ToString(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

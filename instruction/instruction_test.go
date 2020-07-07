@@ -13,7 +13,6 @@ var incKey1, incKey2, incKey3, incKey4 *incognitokey.CommitteePublicKey
 
 //initPublicKey init incognito public key for testing by base 58 string
 func initPublicKey() {
-
 	incKey1 = new(incognitokey.CommitteePublicKey)
 	incKey2 = new(incognitokey.CommitteePublicKey)
 	incKey3 = new(incognitokey.CommitteePublicKey)
@@ -39,54 +38,3 @@ func initPublicKey() {
 		panic(err)
 	}
 }
-
-//func TestCommitteeStateInstruction_ValidateAndFilterStakeInstructionsV1(t *testing.T) {
-//	type fields struct {
-//		SwapInstructions          []*SwapInstruction
-//		StakeInstructions         []*StakeInstruction
-//		AssignInstructions        []*AssignInstruction
-//		StopAutoStakeInstructions []*StopAutoStakeInstruction
-//	}
-//	type args struct {
-//		v *ViewEnvironment
-//	}
-//	tests := []struct {
-//		name   string
-//		fields fields
-//		args   args
-//	}{
-//		// TODO: Add test cases.
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			i := &CommitteeStateInstruction{
-//				SwapInstructions:          tt.fields.SwapInstructions,
-//				StakeInstructions:         tt.fields.StakeInstructions,
-//				AssignInstructions:        tt.fields.AssignInstructions,
-//				StopAutoStakeInstructions: tt.fields.StopAutoStakeInstructions,
-//			}
-//		})
-//	}
-//}
-
-// func TestImportCommitteeStateInstruction(t *testing.T) {
-// 	type args struct {
-// 		instructions [][]string
-// 	}
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 		want *CommitteeStateInstruction
-// 	}{
-// 		{},
-// 		{},
-// 		{},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if got := ImportCommitteeStateInstruction(tt.args.instructions); !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("ImportCommitteeStateInstruction() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }

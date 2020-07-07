@@ -334,9 +334,7 @@ func TestValidateStakeInstructionSanity(t *testing.T) {
 }
 
 func TestImportStakeInstructionFromString(t *testing.T) {
-
 	initPublicKey()
-
 	type args struct {
 		instruction []string
 	}
@@ -374,6 +372,50 @@ func TestImportStakeInstructionFromString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ImportStakeInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ImportStakeInstructionFromString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStakeInstruction_ToString(t *testing.T) {
+	initPublicKey()
+	type args struct {
+		instruction *StakeInstruction
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Valid Input",
+			args: args{
+				instruction: &StakeInstruction{
+					PublicKeys: []string{key1, key2, key3, key4},
+					PublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey1,
+						*incKey2,
+						*incKey3,
+						*incKey4,
+					},
+					Chain:           SHARD_INST,
+					TxStakes:        []string{"tx1", "tx2", "tx3", "tx4"},
+					RewardReceivers: []string{"reward-addr1", "reward-addr2", "reward-addr3", "reward-addr4"},
+					AutoStakingFlag: []bool{true, true, true, true},
+				},
+			},
+			want: []string{STAKE_ACTION,
+				strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
+				SHARD_INST,
+				strings.Join([]string{"tx1", "tx2", "tx3", "tx4"}, SPLITTER),
+				strings.Join([]string{"reward-addr1", "reward-addr2", "reward-addr3", "reward-addr4"}, SPLITTER),
+				strings.Join([]string{"true", "true", "true", "true"}, SPLITTER)},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.args.instruction.ToString(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

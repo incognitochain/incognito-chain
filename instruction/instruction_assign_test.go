@@ -158,3 +158,32 @@ func TestImportAssignInstructionFromString(t *testing.T) {
 		})
 	}
 }
+
+func TestAssignInstruction_ToString(t *testing.T) {
+	type args struct {
+		instruction *AssignInstruction
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Valid Input",
+			args: args{
+				instruction: &AssignInstruction{
+					ChainID:         0,
+					ShardCandidates: []string{key1, key2, key3, key4},
+				},
+			},
+			want: []string{ASSIGN_ACTION, strings.Join([]string{key1, key2, key3, key4}, SPLITTER), SHARD_INST, "0"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.args.instruction.ToString(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
