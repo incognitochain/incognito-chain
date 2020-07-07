@@ -18,6 +18,7 @@ type returnStakingInfo struct {
 	SwapoutPubKey string
 	FunderAddress privacy.PaymentAddress
 	StakingTx     metadata.Transaction
+	StakingAmount uint64
 }
 
 func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
@@ -72,6 +73,7 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	shardID byte,
 ) error {
 	mReturnStakingInfoGot := map[common.Hash]returnStakingInfo{}
+	returnStakingTxs := map[common.Hash]struct{}{}
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.ReturnStakingMeta {
 			txHash := tx.Hash()
@@ -79,12 +81,15 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			if !ok {
 				return errors.Errorf("Can not parse metadata of tx %v to ReturnStaking Metadata", tx.Hash().String())
 			}
-			if _, ok := mReturnStakingInfoGot[*txHash]; ok {
+			if _, ok := returnStakingTxs[*txHash]; ok {
 				return errors.Errorf("Double tx return staking from instruction for tx staking %v", returnMeta.TxID)
 			}
+			returnStakingTxs[*txHash] = struct{}{}
+			_, _, returnAmount := tx.GetUniqueReceiver()
 			h, _ := common.Hash{}.NewHashFromStr(returnMeta.TxID)
 			mReturnStakingInfoGot[*h] = returnStakingInfo{
 				FunderAddress: returnMeta.StakerAddress,
+				StakingAmount: returnAmount,
 			}
 		}
 	}
@@ -101,8 +106,11 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	}
 	for txStakingHash, returnInfoWanted := range mReturnStakingInfoWanted {
 		if returnInfoGot, ok := mReturnStakingInfoGot[txStakingHash]; ok {
-			if returnInfoGot.FunderAddress.String() != returnInfoWanted.FunderAddress.String() {
-				return errors.Errorf("Validator want to return for funder %v using tx staking %v but producer return for %v", returnInfoWanted.FunderAddress.String(), returnInfoWanted.StakingTx.Hash().String(), returnInfoGot.FunderAddress.String())
+			if (returnInfoGot.FunderAddress.String() != returnInfoWanted.FunderAddress.String()) || (returnInfoGot.StakingAmount != returnInfoWanted.StakingAmount) {
+				keyWL := wallet.KeyWallet{}
+				keyWL.KeySet.PaymentAddress = returnInfoGot.FunderAddress
+				payment := keyWL.Base58CheckSerialize(wallet.PaymentAddressType)
+				return errors.Errorf("Validator want to return for funder %v using tx staking %v with amount %v but producer return for %v with amount %v", payment, returnInfoWanted.StakingTx.Hash().String(), returnInfoWanted.StakingAmount, returnInfoGot.FunderAddress.String(), returnInfoGot.StakingAmount)
 			}
 			continue
 		}
@@ -199,13 +207,19 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						continue
 					}
 					txData := shardBlock.Body.Transactions[index]
-					keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress)
-					if err != nil {
-						Logger.log.Error("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), shardID)
+					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
+					if !ok {
+						Logger.log.Error("Can not parse meta data of this tx %v", txData.Hash().String())
 						errorInstructions = append(errorInstructions, l)
 						continue
 					}
-					Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress, shardID)
+					keyWallet, err := wallet.Base58CheckDeserialize(txMeta.FunderPaymentAddress)
+					if err != nil {
+						Logger.log.Error("SA: cannot get payment address", txMeta, shardID)
+						errorInstructions = append(errorInstructions, l)
+						continue
+					}
+					Logger.log.Info("SA: build salary tx", txMeta.FunderPaymentAddress, shardID)
 					paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 					if paymentShardID != shardID {
 						err = NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, shardID))
@@ -217,6 +231,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						SwapoutPubKey: outPublicKeys,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
+						StakingAmount: txMeta.StakingAmountShard,
 					}
 				}
 			}
