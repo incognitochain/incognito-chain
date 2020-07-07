@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
@@ -78,6 +79,7 @@ type Syncker interface {
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }
 
+//BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
@@ -101,6 +103,7 @@ type BeaconCommitteeEngine interface {
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 }
 
+//ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
 	Commit(env *committeestate.ShardCommitteeStateEnvironment) error
 	AbortUncommittedBeaconState()

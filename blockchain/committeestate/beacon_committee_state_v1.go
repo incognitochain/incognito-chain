@@ -2,11 +2,12 @@ package committeestate
 
 import (
 	"fmt"
+	"reflect"
+	"sync"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"reflect"
-	"sync"
 )
 
 type BeaconCommitteeStateEnvironment struct {
@@ -135,45 +136,57 @@ func (b *BeaconCommitteeStateV1) reset() {
 	b.rewardReceiver = make(map[string]string)
 }
 
+//ValidateCommitteeRootHashes :
 func (engine BeaconCommitteeEngine) ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error) {
 	panic("implement me")
 }
 
+//GetBeaconHeight :
 func (engine BeaconCommitteeEngine) GetBeaconHeight() uint64 {
 	return engine.beaconHeight
 }
+
+//GetBeaconHash :
 func (engine BeaconCommitteeEngine) GetBeaconHash() common.Hash {
 	return engine.beaconHash
 }
 
+//GetBeaconCommittee :
 func (engine BeaconCommitteeEngine) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.beaconCommittee
 }
 
+//GetBeaconSubstitute :
 func (engine BeaconCommitteeEngine) GetBeaconSubstitute() []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.beaconSubstitute
 }
 
+//GetCandidateShardWaitingForCurrentRandom :
 func (engine BeaconCommitteeEngine) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.currentEpochShardCandidate
 }
 
+//GetCandidateBeaconWaitingForCurrentRandom :
 func (engine BeaconCommitteeEngine) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.currentEpochBeaconCandidate
 }
 
+//GetCandidateShardWaitingForNextRandom :
 func (engine BeaconCommitteeEngine) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.nextEpochShardCandidate
 }
 
+//GetCandidateBeaconWaitingForNextRandom :
 func (engine BeaconCommitteeEngine) GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.nextEpochBeaconCandidate
 }
 
+//GetOneShardCommittee :
 func (engine BeaconCommitteeEngine) GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.shardCommittee[shardID]
 }
 
+//GetShardCommittee :
 func (engine BeaconCommitteeEngine) GetShardCommittee() map[byte][]incognitokey.CommitteePublicKey {
 	engine.beaconCommitteeStateV1.mu.RLock()
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
@@ -184,10 +197,12 @@ func (engine BeaconCommitteeEngine) GetShardCommittee() map[byte][]incognitokey.
 	return shardCommittee
 }
 
+//GetOneShardSubstitute :
 func (engine BeaconCommitteeEngine) GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.shardSubstitute[shardID]
 }
 
+//GetShardSubstitute :
 func (engine BeaconCommitteeEngine) GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey {
 	engine.beaconCommitteeStateV1.mu.RLock()
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
@@ -198,6 +213,7 @@ func (engine BeaconCommitteeEngine) GetShardSubstitute() map[byte][]incognitokey
 	return shardSubstitute
 }
 
+//GetAutoStaking :
 func (engine BeaconCommitteeEngine) GetAutoStaking() map[string]bool {
 	engine.beaconCommitteeStateV1.mu.RLock()
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
@@ -208,6 +224,7 @@ func (engine BeaconCommitteeEngine) GetAutoStaking() map[string]bool {
 	return autoStake
 }
 
+//GetRewardReceiver :
 func (engine BeaconCommitteeEngine) GetRewardReceiver() map[string]string {
 	engine.beaconCommitteeStateV1.mu.RLock()
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
@@ -218,11 +235,14 @@ func (engine BeaconCommitteeEngine) GetRewardReceiver() map[string]string {
 	return rewardReceiver
 }
 
+// GetAllCandidateSubstituteCommittee :
 func (engine *BeaconCommitteeEngine) GetAllCandidateSubstituteCommittee() []string {
 	engine.beaconCommitteeStateV1.mu.RLock()
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	return engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
 }
+
+//Commit :
 func (engine *BeaconCommitteeEngine) Commit(hashes *BeaconCommitteeStateHash) error {
 	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV1, NewBeaconCommitteeStateV1()) {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV1))
@@ -255,12 +275,14 @@ func (engine *BeaconCommitteeEngine) Commit(hashes *BeaconCommitteeStateHash) er
 	return nil
 }
 
+//AbortUncommittedBeaconState :
 func (engine *BeaconCommitteeEngine) AbortUncommittedBeaconState() {
 	engine.uncommittedBeaconCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()
 	engine.uncommittedBeaconCommitteeStateV1.reset()
 }
 
+//InitCommitteeState :
 func (engine *BeaconCommitteeEngine) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
 	engine.beaconCommitteeStateV1.mu.Lock()
 	defer engine.beaconCommitteeStateV1.mu.Unlock()
@@ -283,6 +305,8 @@ func (engine *BeaconCommitteeEngine) InitCommitteeState(env *BeaconCommitteeStat
 		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
 	}
 }
+
+//UpdateCommitteeState :
 func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (*BeaconCommitteeStateHash, *CommitteeChange, error) {
 	engine.uncommittedBeaconCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()

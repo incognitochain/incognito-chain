@@ -64,6 +64,9 @@ type ShardBestState struct {
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
 	lock                       sync.RWMutex
+
+	//shardCommitteeEngine : interacting with committees in shard
+	shardCommitteeEngine ShardCommitteeEngine
 }
 
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
