@@ -693,7 +693,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
-func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
+func InitBeaconCommitteeEngineV1(activeShards int,
+	consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
 	shardIDs := []int{statedb.BeaconShardID}
 	for i := 0; i < activeShards; i++ {
 		shardIDs = append(shardIDs, i)

@@ -5,6 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -16,11 +22,6 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
-	"reflect"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
@@ -691,6 +692,15 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	}
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
+
+	shardBestState.shardCommitteeEngine.InitCommitteeState(
+		shardBestState.NewShardCommitteeStateEnvironment(
+			genesisShardBlock.Body.Transactions,
+			genesisBeaconBlock.Body.Instructions,
+			shardBestState.BeaconHeight,
+			shardBestState.Epoch,
+			blockchain.config.ChainParams.EpochBreakPointSwapNewKey))
+
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)

@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"io"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 	"github.com/incognitochain/incognito-chain/multiview"
 
@@ -137,7 +138,6 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := ShardBlock{}
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
@@ -153,6 +153,11 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		}
 		newShardCandidateStructs = append(newShardCandidateStructs, key)
 	}
+
+	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams,
+		committeestate.NewShardCommitteeEngine(
+			1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1()))
+
 	initShardState.ShardCommittee = append(initShardState.ShardCommittee, newShardCandidateStructs[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	genesisBeaconBlock := beaconBlocks[0]
@@ -174,7 +179,8 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeestate.NewBeaconCommitteeEngine(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
+	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams,
+		committeestate.NewBeaconCommitteeEngine(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -477,6 +483,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
+		shardCommitteeEngine := InitShardCommitteeEngine(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+		v.shardCommitteeEngine = shardCommitteeEngine
 	}
 	return nil
 }

@@ -9,11 +9,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // BestState houses information about the current best block and other info
@@ -105,7 +107,7 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState {
+func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeEngine ShardCommitteeEngine) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -127,6 +129,7 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
 	bestStateShard.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	bestStateShard.shardCommitteeEngine = shardCommitteeEngine
 	return bestStateShard
 }
 
@@ -419,4 +422,42 @@ func (blockchain *BlockChain) GetShardFeatureRootHash(db incdb.Database, shardID
 
 func (blockchain *BlockChain) GetShardSlashRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
 	return rawdbv2.GetShardSlashRootHash(db, shardID, height)
+}
+
+//NewShardCommitteeStateEnvironment : init shard committee state environment
+//Preconditions: NULL
+//Input: list transactions, matrix of beaconInstr
+//Output: [Struct] NewShardCommitteeStateEnvironment
+func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironment(
+	txs []metadata.Transaction,
+	beaconInstructions [][]string,
+	newBeaconHeight, chainParamEpoch uint64,
+	epochBreakPointSwapNewKey []uint64) *committeestate.ShardCommitteeStateEnvironment {
+	return committeestate.NewShardCommitteeStateEnvironment(
+		txs,
+		beaconInstructions,
+		newBeaconHeight,
+		chainParamEpoch,
+		epochBreakPointSwapNewKey)
+}
+
+//InitShardCommitteeEngine : Init shard committee engine for every time restore process
+//Pre-conditions: Already blocks, best view have been initialized before
+//Input:
+// + consensusStateDB: instance of statedb -> query shard committees and shard pending validators
+// + shardHeight, shardID, shardHash: Basic data for shard committee engine
+//Output: [Interface] ShardCommitteeEngine
+func InitShardCommitteeEngine(
+	consensusStateDB *statedb.StateDB,
+	shardHeight uint64,
+	shardID byte,
+	shardHash common.Hash) ShardCommitteeEngine {
+
+	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
+
+	shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
+	shardCommitteeEngine := committeestate.NewShardCommitteeEngine(shardHeight, shardHash, shardID, shardCommitteeState)
+
+	return shardCommitteeEngine
 }

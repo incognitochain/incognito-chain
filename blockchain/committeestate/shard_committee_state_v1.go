@@ -23,6 +23,21 @@ type ShardCommitteeStateEnvironment struct {
 	epochBreakPointSwapNewKey []uint64
 }
 
+//NewShardCommitteeStateEnvironment : Default constructor of ShardCommitteeStateEnvironment
+//Output: pointer of ShardCommitteeStateEnvironment
+func NewShardCommitteeStateEnvironment(txs []metadata.Transaction,
+	beaconInstructions [][]string,
+	newBeaconHeight uint64,
+	chainParamEpoch uint64,
+	epochBreakPointSwapNewKey []uint64) *ShardCommitteeStateEnvironment {
+	return &ShardCommitteeStateEnvironment{
+		txs:                       txs,
+		newBeaconHeight:           newBeaconHeight,
+		chainParamEpoch:           chainParamEpoch,
+		epochBreakPointSwapNewKey: epochBreakPointSwapNewKey,
+	}
+}
+
 //ShardCommitteeStateV1 :
 type ShardCommitteeStateV1 struct {
 	shardCommittee        []incognitokey.CommitteePublicKey
@@ -112,7 +127,9 @@ func (engine *ShardCommitteeEngine) Commit(env *ShardCommitteeStateEnvironment) 
 //Input: NULL
 //Output: error
 func (engine *ShardCommitteeEngine) AbortUncommittedBeaconState() {
-	panic("implement me")
+	engine.uncommittedShardCommitteeStateV1.mu.Lock()
+	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
+	engine.uncommittedShardCommitteeStateV1.reset()
 }
 
 //UpdateCommitteeState : Update committeState from valid data before
@@ -128,7 +145,8 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(env *ShardCommitteeStat
 //Input: env variables ShardCommitteeStateEnvironment
 //Output: NULL
 func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateEnvironment) {
-	panic("implement me")
+	engine.uncommittedShardCommitteeStateV1.mu.Lock()
+	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 }
 
 //GetShardCommittee : Get shard committees
