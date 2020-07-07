@@ -342,7 +342,7 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeIssuanceTx(
 	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Cross Pool Trade] Starting...")
-	if instStatus == common.PDETradeRefundChainStatus {
+	if instStatus == common.PDECrossPoolTradeFeeRefundChainStatus {
 		return blockGenerator.buildPDECrossPoolTradeRefundTx(
 			instStatus,
 			contentStr,
