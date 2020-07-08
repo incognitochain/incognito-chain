@@ -1011,12 +1011,18 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 			}
 		}
 
-		for _, sInfo := range allSharesByPair {
+		accumFees := big.NewInt(0)
+		totalFees := big.NewInt(int64(feeAmt))
+		for idx, sInfo := range allSharesByPair {
 			feeForContributor := big.NewInt(0)
-			feeForContributor.Mul(big.NewInt(int64(feeAmt)), big.NewInt(int64(sInfo.shareAmt)))
-			feeForContributor.Div(feeForContributor, totalSharesOfPair)
-			parts := strings.Split(sInfo.shareKey, "-")
+			if idx == len(allSharesByPair)-1 {
+				feeForContributor.Sub(totalFees, accumFees)
+			} else {
+				feeForContributor.Mul(totalFees, big.NewInt(int64(sInfo.shareAmt)))
+				feeForContributor.Div(feeForContributor, totalSharesOfPair)
+			}
 
+			parts := strings.Split(sInfo.shareKey, "-")
 			partsLen := len(parts)
 			if partsLen < 5 {
 				continue
@@ -1030,6 +1036,7 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 					Token2IDStr:           parts[partsLen-3],
 				},
 			)
+			accumFees.Add(accumFees, feeForContributor)
 		}
 	}
 	if len(feesForContributorsByPair) == 0 {
