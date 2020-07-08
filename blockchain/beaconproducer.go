@@ -551,7 +551,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			if err != nil {
 				panic(err)
 			}
-			_, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand, blockchain.config.ChainParams.AssignOffset, beaconBestState.ActiveShards)
+			_, assignedCandidates := beaconBestState.beaconCommitteeEngine.GenerateAssignInstruction(shardCandidatesStr, numberOfPendingValidator, rand, blockchain.config.ChainParams.AssignOffset, beaconBestState.ActiveShards)
 			var keys []int
 			for k := range assignedCandidates {
 				keys = append(keys, int(k))

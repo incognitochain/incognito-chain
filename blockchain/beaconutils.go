@@ -2,15 +2,8 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"reflect"
-	"sort"
-	"strconv"
 	"strings"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
@@ -30,64 +23,6 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 	}
 
 	return beacon, shard
-}
-
-// assignShardCandidate Assign Candidates Into Shard Pending Validator List
-// Each Shard Pending Validator List has a limit
-// If a candidate is assigned into shard which Pending Validator List has reach its limit then candidate will get back into candidate list
-// Otherwise, candidate will be converted to shard pending validator
-// - return param #1: remain shard candidate (not assign yet)
-// - return param #2: assigned candidate
-func assignShardCandidate(candidates []string, numberOfPendingValidator map[byte]int, rand int64, testnetAssignOffset int, activeShards int) ([]string, map[byte][]string) {
-	assignedCandidates := make(map[byte][]string)
-	remainShardCandidates := []string{}
-	shuffledCandidate := shuffleShardCandidate(candidates, rand)
-	for _, candidate := range shuffledCandidate {
-		shardID := calculateCandidateShardID(candidate, rand, activeShards)
-		if numberOfPendingValidator[shardID]+1 > testnetAssignOffset {
-			remainShardCandidates = append(remainShardCandidates, candidate)
-			continue
-		} else {
-			assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
-			numberOfPendingValidator[shardID] += 1
-		}
-	}
-	return remainShardCandidates, assignedCandidates
-}
-
-// shuffleShardCandidate Shuffle Position Of Shard Candidates in List with Random Number
-func shuffleShardCandidate(candidates []string, rand int64) []string {
-	m := make(map[string]string)
-	temp := []string{}
-	shuffledCandidates := []string{}
-	for _, candidate := range candidates {
-		seed := strconv.Itoa(int(rand)) + candidate
-		hash := common.HashH([]byte(seed)).String()
-		m[hash] = candidate
-		temp = append(temp, hash)
-	}
-	if len(m) != len(temp) {
-		fmt.Println(candidates)
-		panic("Failed To Shuffle Shard Candidate Before Assign to Shard")
-	}
-	sort.Strings(temp)
-	for _, key := range temp {
-		shuffledCandidates = append(shuffledCandidates, m[key])
-	}
-	if len(shuffledCandidates) != len(candidates) {
-		panic("Failed To Shuffle Shard Candidate Before Assign to Shard")
-	}
-	return shuffledCandidates
-}
-
-// Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
-// Last byte of hash(candidatePubKey+randomNumber)
-func calculateCandidateShardID(candidate string, rand int64, activeShards int) (shardID byte) {
-	seed := candidate + strconv.Itoa(int(rand))
-	hash := common.HashB([]byte(seed))
-	shardID = byte(int(hash[len(hash)-1]) % activeShards)
-	Logger.log.Critical("calculateCandidateShardID/shardID", shardID)
-	return shardID
 }
 
 func filterValidators(
@@ -222,101 +157,4 @@ func SwapValidator(
 	}
 	newProducers := append(remainingProducers, goodPendingValidators...)
 	return badPendingValidators, newProducers, swappedProducers, goodPendingValidators, nil
-}
-
-// RemoveValidator remove validator and return removed list
-// return: #param1: validator list after remove
-// in parameter: #param1: list of full validator
-// in parameter: #param2: list of removed validator
-// removed validators list must be a subset of full validator list and it must be first in the list
-func RemoveValidator(validators []string, removedValidators []string) ([]string, error) {
-	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
-	if len(removedValidators) > len(validators) {
-		return validators, errors.New("trying to remove too many validators")
-	}
-	remainingValidators := []string{}
-	for _, validator := range validators {
-		isRemoved := false
-		for _, removedValidator := range removedValidators {
-			if strings.Compare(validator, removedValidator) == 0 {
-				isRemoved = true
-			}
-		}
-		if !isRemoved {
-			remainingValidators = append(remainingValidators, validator)
-		}
-	}
-	return remainingValidators, nil
-}
-
-// Shuffle Candidate: suffer candidates with random number and return suffered list
-// Candidate Value Concatenate with Random Number
-// then Hash and Obtain Hash Value
-// Sort Hash Value Then Re-arrange Candidate corresponding to Hash Value
-func ShuffleCandidate(candidates []incognitokey.CommitteePublicKey, rand int64) ([]incognitokey.CommitteePublicKey, error) {
-	Logger.log.Debug("Beacon Process/Shuffle Candidate: Candidate Before Sort ", candidates)
-	hashes := []string{}
-	m := make(map[string]incognitokey.CommitteePublicKey)
-	sortedCandidate := []incognitokey.CommitteePublicKey{}
-	for _, candidate := range candidates {
-		candidateStr, _ := candidate.ToBase58()
-		seed := candidateStr + strconv.Itoa(int(rand))
-		hash := common.HashB([]byte(seed))
-		hashes = append(hashes, string(hash[:32]))
-		m[string(hash[:32])] = candidate
-	}
-	sort.Strings(hashes)
-	for _, hash := range hashes {
-		sortedCandidate = append(sortedCandidate, m[hash])
-	}
-	Logger.log.Debug("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
-	return sortedCandidate, nil
-}
-
-func getStakeValidatorArrayString(v []string) ([]string, []string) {
-	beacon := []string{}
-	shard := []string{}
-	if len(v) > 0 {
-		if v[0] == instruction.STAKE_ACTION && v[2] == "beacon" {
-			beacon = strings.Split(v[1], ",")
-		}
-		if v[0] == instruction.STAKE_ACTION && v[2] == "shard" {
-			shard = strings.Split(v[1], ",")
-		}
-	}
-	return beacon, shard
-}
-
-func snapshotCommittee(beaconCommittee []incognitokey.CommitteePublicKey, allShardCommittee map[byte][]incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, error) {
-	snapshotBeaconCommittee := []incognitokey.CommitteePublicKey{}
-	snapshotAllShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	for _, committee := range beaconCommittee {
-		snapshotBeaconCommittee = append(snapshotBeaconCommittee, committee)
-	}
-	for shardID, shardCommittee := range allShardCommittee {
-		clonedShardCommittee := []incognitokey.CommitteePublicKey{}
-		snapshotAllShardCommittee[shardID] = []incognitokey.CommitteePublicKey{}
-		for _, committee := range shardCommittee {
-			clonedShardCommittee = append(clonedShardCommittee, committee)
-		}
-		snapshotAllShardCommittee[shardID] = clonedShardCommittee
-	}
-	if !reflect.DeepEqual(beaconCommittee, snapshotBeaconCommittee) {
-		return []incognitokey.CommitteePublicKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", beaconCommittee, snapshotBeaconCommittee)
-	}
-	if !reflect.DeepEqual(allShardCommittee, snapshotAllShardCommittee) {
-		return []incognitokey.CommitteePublicKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", allShardCommittee, snapshotAllShardCommittee)
-	}
-	return snapshotBeaconCommittee, snapshotAllShardCommittee, nil
-}
-
-func snapshotRewardReceiver(rewardReceiver map[string]string) (map[string]string, error) {
-	snapshotRewardReceiver := make(map[string]string)
-	for k, v := range rewardReceiver {
-		snapshotRewardReceiver[k] = v
-	}
-	if !reflect.DeepEqual(snapshotRewardReceiver, rewardReceiver) {
-		return snapshotRewardReceiver, fmt.Errorf("Failed to Clone Reward Rewards, expect %+v but get %+v", rewardReceiver, snapshotRewardReceiver)
-	}
-	return snapshotRewardReceiver, nil
 }
