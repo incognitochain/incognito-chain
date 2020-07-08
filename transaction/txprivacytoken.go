@@ -480,9 +480,9 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 	isNewTransaction bool,
 ) (bool, error) {
 	// no need to check for tx init token
-	//if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-	//	return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
-	//}
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
+	}
 	// check for proof, signature ...
 	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
 		return false, err
@@ -505,7 +505,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
-		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+		if txCustomTokenPrivacy.Type == common.TxRewardType && txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
 			if txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
 				isBridgeCentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
 				isBridgeDecentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
