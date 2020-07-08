@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"strconv"
 
@@ -73,9 +74,14 @@ func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(tx
 			continue
 		}
 
-		contentBytes := []byte(inst[3])
+		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+		if err != nil {
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			continue
+		}
+
 		var feeWithdrawalRequestAction PDEFeeWithdrawalRequestAction
-		err := json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
+		err = json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
 		if err != nil {
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue

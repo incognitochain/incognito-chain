@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -91,8 +90,8 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		instTradeStatus := inst[2]
 		if instTradeStatus != iRes.TradeStatus ||
 			(instTradeStatus != common.PDECrossPoolTradeFeeRefundChainStatus &&
-			instTradeStatus != common.PDECrossPoolTradeSellingTokenRefundChainStatus &&
-			instTradeStatus != common.PDECrossPoolTradeAcceptedChainStatus) {
+				instTradeStatus != common.PDECrossPoolTradeSellingTokenRefundChainStatus &&
+				instTradeStatus != common.PDECrossPoolTradeAcceptedChainStatus) {
 			continue
 		}
 
@@ -103,13 +102,9 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var receivingTokenIDStr string
 		if instTradeStatus == common.PDECrossPoolTradeFeeRefundChainStatus ||
 			instTradeStatus == common.PDECrossPoolTradeSellingTokenRefundChainStatus {
-			contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
-			if err != nil {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				continue
-			}
+			contentBytes := []byte(inst[3])
 			var pdeRefundCrossPoolTrade PDERefundCrossPoolTrade
-			err = json.Unmarshal(contentBytes, &pdeRefundCrossPoolTrade)
+			err := json.Unmarshal(contentBytes, &pdeRefundCrossPoolTrade)
 			if err != nil {
 				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing pde refund cross pool trade content: ", err)
 				continue

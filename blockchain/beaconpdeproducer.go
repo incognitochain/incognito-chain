@@ -492,7 +492,7 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 			tradeAction.Meta.TokenIDToSellStr,
 			tradeAction.Meta.SellAmount,
 			metadata.PDECrossPoolTradeRequestMeta,
-			common.PDECrossPoolTradeFeeRefundChainStatus,
+			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
 			tradeAction.ShardID,
 			tradeAction.TxReqID,
 		)
