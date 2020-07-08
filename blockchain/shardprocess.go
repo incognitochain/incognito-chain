@@ -92,7 +92,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	newBeststate, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committeestate.NewCommitteeChange())
+	newBeststate, _, _, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	if err != nil {
 		return err
 	}
@@ -164,10 +164,17 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	}
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	newBestState, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committeestate.NewCommitteeChange())
+	newBestState, hashes, _, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	if err != nil {
+		curView.shardCommitteeEngine.AbortUncommittedBeaconState()
 		return err
 	}
+	var err2 error
+	defer func() {
+		if err2 != nil {
+			newBestState.shardCommitteeEngine.AbortUncommittedBeaconState()
+		}
+	}()
 
 	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	// update number of blocks produced by producers to shard best state
@@ -207,9 +214,15 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		}
 		confirmBeaconBlock = confirmBeaconBlocks[0]
 	}
+
+	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
+		newBestState.ShardID, shardBlock.Header.Height, blockHash)
+	if err2 := newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
+		return err2
+	}
+
 	err = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, confirmBeaconBlock)
 	if err != nil {
-
 		return err
 	}
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
@@ -593,12 +606,15 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 //	- Execute stake instruction, store staking transaction (if exist)
 //	- Execute assign instruction, add new pending validator (if exist)
 //	- Execute swap instruction, swap pending validator and committee (if exist)
-func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain, shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, committeeChange *committeestate.CommitteeChange) (*ShardBestState, error) {
+func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
+	shardBlock *ShardBlock,
+	beaconBlocks []*BeaconBlock) (
+	*ShardBestState, *committeestate.ShardCommitteeStateHash, *committeestate.CommitteeChange, error) {
 	startTimeUpdateShardBestState := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	shardBestState := NewShardBestState()
 	if err := shardBestState.cloneShardBestStateFrom(oldBestState); err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	var (
 		err     error
@@ -625,15 +641,18 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 
+	committeeChange := committeestate.NewCommitteeChange()
+
 	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
 	shardPendingValidator, newShardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(oldBestState, beaconBlocks, shardBlock.Header.ShardID, committeeChange)
 	shardBestState.ShardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
+
 	committeeChange.ShardSubstituteAdded[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(newShardPendingValidator)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx[stakePublicKey] = txHash
@@ -644,7 +663,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		err = shardBestState.processShardBlockInstruction(blockchain, shardBlock, committeeChange)
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	//updateShardBestState best cross shard
 	for shardID, crossShardBlock := range shardBlock.Body.CrossTransactions {
@@ -659,10 +678,22 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
+
+	env := shardBestState.NewShardCommitteeStateEnvironment(
+		shardBlock.Body.Transactions,
+		shardBlock.Body.Instructions,
+		shardBestState.BeaconHeight,
+		shardBestState.Epoch,
+		blockchain.config.ChainParams.EpochBreakPointSwapNewKey)
+
+	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
+	if err != nil {
+		return nil, nil, nil, NewBlockChainError(UpdateShardCommitteeStateError, err)
+	}
 	//======END
 	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-	return shardBestState, nil
+	return shardBestState, hashes, committeeChange, nil
 }
 
 func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain, db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {

@@ -98,16 +98,19 @@ type BeaconCommitteeEngine interface {
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()
-	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, error)
+	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash,
+		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
+	GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string)
 }
 
 //ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
-	Commit(env *committeestate.ShardCommitteeStateEnvironment) error
+	Commit(*committeestate.ShardCommitteeStateHash) error
 	AbortUncommittedBeaconState()
-	UpdateCommitteeState(env *committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateEnvironment, *committeestate.CommitteeChange, error)
+	UpdateCommitteeState(env *committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateHash,
+		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.ShardCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey

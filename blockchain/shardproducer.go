@@ -3,14 +3,15 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -180,7 +181,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, committeestate.NewCommitteeChange())
+	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks)
 	if err != nil {
 		return nil, err
 	}
@@ -210,22 +211,24 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
-	tempShardCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newShardBestState.ShardCommittee)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	committeeRoot, err := generateHashFromStringArray(tempShardCommitteePubKeys)
-	if err != nil {
-		return nil, NewBlockChainError(CommitteeHashError, err)
-	}
-	tempShardPendintValidator, err := incognitokey.CommitteeKeyListToString(newShardBestState.ShardPendingValidator)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	pendingValidatorRoot, err := generateHashFromStringArray(tempShardPendintValidator)
-	if err != nil {
-		return nil, NewBlockChainError(PendingValidatorRootError, err)
-	}
+
+	// tempShardCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newShardBestState.ShardCommittee)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(UnExpectedError, err)
+	// }
+	// committeeRoot, err := generateHashFromStringArray(tempShardCommitteePubKeys)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(CommitteeHashError, err)
+	// }
+	// tempShardPendintValidator, err := incognitokey.CommitteeKeyListToString(newShardBestState.ShardPendingValidator)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(UnExpectedError, err)
+	// }
+	// pendingValidatorRoot, err := generateHashFromStringArray(tempShardPendintValidator)
+	// if err != nil {
+	// 	return nil, NewBlockChainError(PendingValidatorRootError, err)
+	// }
+
 	stakingTxRoot, err := generateHashFromMapStringString(newShardBestState.StakingTx)
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
@@ -248,8 +251,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
 	newShardBlock.Header.CrossTransactionRoot = *crossTransactionRoot
 	newShardBlock.Header.InstructionsRoot = instructionsHash
-	newShardBlock.Header.CommitteeRoot = committeeRoot
-	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
+	newShardBlock.Header.CommitteeRoot = hashes.ShardCommitteeHash
+	newShardBlock.Header.PendingValidatorRoot = hashes.ShardSubstituteHash
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
 	newShardBlock.Header.Timestamp = start.Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)

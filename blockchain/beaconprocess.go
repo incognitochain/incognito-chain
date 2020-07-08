@@ -651,11 +651,14 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 			isBeginRandom = true
 		}
 	}
-	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams, beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
+
+	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 	hashes, committeeChange, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
 		return nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
+
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 	return beaconBestState, hashes, committeeChange, nil

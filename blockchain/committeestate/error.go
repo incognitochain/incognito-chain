@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -13,6 +14,9 @@ const (
 	ErrCommitBeaconCommitteeState
 	ErrUpdateCommitteeState
 	ErrGenerateBeaconCommitteeStateHash
+	ErrCommitShardCommitteeState
+	ErrUpdateShardCommitteeState
+	ErrGenerateShardCommitteeStateHash
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -27,6 +31,10 @@ var ErrCodeMessage = map[int]struct {
 	ErrCommitBeaconCommitteeState:       {-2000, "commit beacon committee state error"},
 	ErrUpdateCommitteeState:             {-2001, "update committee state error"},
 	ErrGenerateBeaconCommitteeStateHash: {-2002, "generate beacon committee state root hash"},
+
+	ErrCommitShardCommitteeState:       {-3000, "commit shard committee state"},
+	ErrUpdateShardCommitteeState:       {-3001, " update shard committee state error"},
+	ErrGenerateShardCommitteeStateHash: {-3002, " generate shard committee state root hash"},
 }
 
 type CommitteeStateError struct {

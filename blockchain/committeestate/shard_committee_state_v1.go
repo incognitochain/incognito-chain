@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -111,15 +113,39 @@ func (committeeState *ShardCommitteeStateV1) reset() {
 //Input: list rootHashes need checking
 //Output: result(boolean) and error
 func (engine *ShardCommitteeEngine) ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error) {
-	panic("implement me")
+	panic("Not implemented yet")
 }
 
 //Commit : Commit commitee state change in uncommittedShardCommitteeStateV1 struct
 //Pre-conditions: uncommittedShardCommitteeStateV1 has been inited
-//Input: ShardCommitteeStateEnvironment for enviroment config
+//Input: Shard Committee hash
 //Output: error
-func (engine *ShardCommitteeEngine) Commit(env *ShardCommitteeStateEnvironment) error {
-	panic("implement me")
+func (engine *ShardCommitteeEngine) Commit(hashes *ShardCommitteeStateHash) error {
+	if reflect.DeepEqual(engine.uncommittedShardCommitteeStateV1, NewShardCommitteeStateV1()) {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("%+v", engine.uncommittedShardCommitteeStateV1))
+	}
+	engine.uncommittedShardCommitteeStateV1.mu.Lock()
+	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
+	engine.shardCommitteeStateV1.mu.Lock()
+	defer engine.shardCommitteeStateV1.mu.Unlock()
+	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
+	if err != nil {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, err)
+	}
+
+	if comparedHashes.ShardCommitteeHash.IsEqual(&hashes.ShardCommitteeHash) {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeHash want value %+v but have %+v",
+			comparedHashes.ShardCommitteeHash, hashes.ShardCommitteeHash))
+	}
+
+	if comparedHashes.ShardSubstituteHash.IsEqual(&hashes.ShardSubstituteHash) {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardSubstituteHash want value %+v but have %+v",
+			comparedHashes.ShardSubstituteHash, hashes.ShardSubstituteHash))
+	}
+
+	engine.uncommittedShardCommitteeStateV1.clone(engine.shardCommitteeStateV1)
+	engine.uncommittedShardCommitteeStateV1.reset()
+	return nil
 }
 
 //AbortUncommittedBeaconState : Reset data in uncommittedShardCommitteeStateV1 struct
@@ -136,8 +162,21 @@ func (engine *ShardCommitteeEngine) AbortUncommittedBeaconState() {
 //Pre-conditions: Validate committee state
 //Input: env variables ShardCommitteeStateEnvironment
 //Output: New ShardCommitteeEngineV1 and committee changes, error
-func (engine *ShardCommitteeEngine) UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateEnvironment, *CommitteeChange, error) {
-	panic("implement me")
+func (engine *ShardCommitteeEngine) UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	engine.uncommittedShardCommitteeStateV1.mu.Lock()
+	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
+	engine.shardCommitteeStateV1.mu.RLock()
+	engine.shardCommitteeStateV1.clone(engine.uncommittedShardCommitteeStateV1)
+	// env.allCandidateSubstituteCommittee = engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
+	engine.shardCommitteeStateV1.mu.RUnlock()
+	// newCommitteeState := engine.uncommittedShardCommitteeStateV1
+	committeeChange := NewCommitteeChange()
+	// newShardCandidates := []incognitokey.CommitteePublicKey{}
+	hashes, err := engine.generateUncommittedCommitteeHashes()
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+	return hashes, committeeChange, nil
 }
 
 //InitCommitteeState : Init committee state at genesis block or anytime restore program
@@ -173,4 +212,38 @@ func (engine *ShardCommitteeEngine) GetShardPendingValidator(shardID byte) []inc
 	engine.shardCommitteeStateV1.mu.RLock()
 	defer engine.shardCommitteeStateV1.mu.Unlock()
 	return engine.shardCommitteeStateV1.shardPendingValidator
+}
+
+//generateUncommittedCommitteeHashes : generate hashes relate to uncommitted committees of struct ShardCommitteeEngine
+func (engine ShardCommitteeEngine) generateUncommittedCommitteeHashes() (*ShardCommitteeStateHash, error) {
+	if reflect.DeepEqual(engine.uncommittedShardCommitteeStateV1, NewBeaconCommitteeStateV1()) {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
+	}
+
+	newCommitteeState := engine.uncommittedShardCommitteeStateV1
+
+	committeesStr, err := incognitokey.CommitteeKeyListToString(newCommitteeState.shardCommittee)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	committeeHash, err := common.GenerateHashFromStringArray(committeesStr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	pendingValidatorsStr, err := incognitokey.CommitteeKeyListToString(newCommitteeState.shardPendingValidator)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	pendingValidatorHash, err := common.GenerateHashFromStringArray(pendingValidatorsStr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	return &ShardCommitteeStateHash{
+		ShardCommitteeHash:  committeeHash,
+		ShardSubstituteHash: pendingValidatorHash,
+	}, nil
 }

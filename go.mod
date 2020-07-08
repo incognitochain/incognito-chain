@@ -45,6 +45,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.1.1
 	github.com/libp2p/go-libp2p-swarm v0.2.1
 	github.com/libp2p/go-openssl v0.0.3 // indirect
+	github.com/magiconair/properties v1.8.0
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect
