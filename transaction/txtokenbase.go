@@ -147,6 +147,9 @@ func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {
 	tempTx := TemporaryTxToken{}
 	tempTx.TxTokenData = txToken.GetTxTokenData()
 	tx := txToken.GetTxBase()
+	if tx == nil {
+		return nil, errors.New("Cannot unmarshal transaction: txfee cannot be nil")
+	}
 	tempTx.TxBase.SetVersion(tx.GetVersion())
 	tempTx.TxBase.SetType(tx.GetType())
 	tempTx.TxBase.SetLockTime(tx.GetLockTime())
