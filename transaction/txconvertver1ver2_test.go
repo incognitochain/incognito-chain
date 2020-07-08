@@ -469,23 +469,4 @@ func TestValidateTxTokenConversion(t *testing.T) {
 	}
 }
 
-func TestInitializeTxTokenConversion(t *testing.T) {
-	for i := 0; i < numTests; i++ {
-		r := common.RandBytes(1)[0]
-		tokenID := &common.Hash{r}
 
-		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
-		_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
-		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
-
-		testDB := txTokenConversionParams.stateDB
-		bridgeDB := txTokenConversionParams.bridgeStateDB
-
-		txToken := new(TxTokenVersion2)
-		InitTokenConversion(txToken, txTokenConversionParams)
-		assert.Equal(t, nil, err, "initTokenConversion returns an error: %v", err)
-
-		res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, tokenID, false, false)
-		assert.Equal(t, true, res, "ValidateTransaction return an error: %v", err)
-	}
-}
