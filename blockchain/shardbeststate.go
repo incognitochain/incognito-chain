@@ -73,6 +73,10 @@ type ShardBestState struct {
 	SlashStateDBRootHash       common.Hash
 }
 
+func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
+	return shardBestState.consensusStateDB.Copy()
+}
+
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
 	return shardBestState.transactionStateDB.Copy()
 }

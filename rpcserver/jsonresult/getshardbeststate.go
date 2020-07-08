@@ -60,10 +60,6 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 	}
 	copy(result.ShardPendingValidator, shardPendingValidatorStr)
 
-	result.BestCrossShard = make(map[byte]uint64)
-	for k, v := range data.BestCrossShard {
-		result.BestCrossShard[k] = v
-	}
 	result.StakingTx = make(map[string]string)
 	for k, v := range data.StakingTx.GetMap() {
 		result.StakingTx[k] = v
