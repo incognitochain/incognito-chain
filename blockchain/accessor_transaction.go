@@ -353,12 +353,11 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
 
-	if len(outCoinsInBytes) == 0 {
-		outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
-		if err != nil {
-			return nil, err
-		}
+	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
+	if err != nil {
+		return nil, err
 	}
+
 	// loop on all outputcoin to decrypt data
 	results := make([]coin.PlainCoin, 0)
 	for _, item := range outCoinsInBytes {
