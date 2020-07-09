@@ -72,6 +72,12 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	shardBlock *ShardBlock,
 	shardID byte,
 ) error {
+	if shardID == 1 && shardBlock.GetHeight() == 432620 {
+		return nil
+	}
+	if shardID == 0 && shardBlock.GetHeight() == 502419 {
+		return nil
+	}
 	mReturnStakingInfoGot := map[common.Hash]returnStakingInfo{}
 	returnStakingTxs := map[common.Hash]struct{}{}
 	for _, tx := range shardBlock.Body.Transactions {

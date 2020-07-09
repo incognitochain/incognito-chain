@@ -29,26 +29,7 @@ type BlockService struct {
 }
 
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
-	shards := make(map[byte]*blockchain.ShardBestState)
-	cacheKey := memcache.GetShardBestStateCachedKey()
-	cacheValue, err := blockService.MemCache.Get(cacheKey)
-	if err == nil && len(cacheValue) > 0 {
-		err1 := json.Unmarshal(cacheValue, &shards)
-		if err1 != nil {
-			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
-		}
-	}
-	if len(shards) == 0 {
-		shards = blockService.BlockChain.GetClonedAllShardBestState()
-		cacheValue, err := json.Marshal(shards)
-		if err == nil {
-			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
-			if err1 != nil {
-				Logger.log.Error("Cache data of shard best state error", err1)
-			}
-		}
-	}
-	return shards
+	return blockService.BlockChain.GetClonedAllShardBestState()
 }
 
 func (blockService BlockService) GetShardBestStateByShardID(shardID byte) (*blockchain.ShardBestState, error) {
@@ -73,25 +54,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 		Logger.log.Debugf("handleGetBeaconBestState result: %+v", nil)
 		return nil, errors.New("Best State beacon not existed")
 	}
-	var beacon *blockchain.BeaconBestState
-	cachedKey := memcache.GetBeaconBestStateCachedKey()
-	cacheValue, err := blockService.MemCache.Get(cachedKey)
-	if err == nil && len(cacheValue) > 0 {
-		err1 := json.Unmarshal(cacheValue, &beacon)
-		if err1 != nil {
-			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
-		}
-	} else {
-		beacon, err = blockService.BlockChain.GetClonedBeaconBestState()
-		cacheValue, err := json.Marshal(beacon)
-		if err == nil {
-			err1 := blockService.MemCache.PutExpired(cachedKey, cacheValue, 10000)
-			if err1 != nil {
-				Logger.log.Error("Cache data of beacon best state error", err1)
-			}
-		}
-	}
-	return beacon, err
+	return blockService.BlockChain.GetClonedBeaconBestState()
 }
 
 func (blockService BlockService) GetBeaconBestBlockHash() (*common.Hash, error) {
