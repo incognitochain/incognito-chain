@@ -871,7 +871,7 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	}
 	Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
 
-	shardID, blockHash, index, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
+	shardID, blockHash, blockHeight, index, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
 	if err != nil {
 		// maybe tx is still in tx mempool -> check mempool
 		tx, errM := txService.TxMemPool.GetTx(txHash)
@@ -886,10 +886,7 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 		result.IsInMempool = true
 		return result, nil
 	}
-	blockHeight, _, err := txService.BlockChain.GetShardBlockHeightByHash(blockHash)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+
 	result, err := jsonresult.NewTransactionDetail(tx, &blockHash, blockHeight, index, shardID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -1480,7 +1477,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 				ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
-				_, blockHash, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+				_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
 				item.LockTime = time.Unix(txDetail.GetLockTime(), 0).Format(common.DateOutputFormat)
 				item.Info = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
 				item.BlockHash = blockHash.String()
@@ -1624,7 +1621,7 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	}
 
 	isInMempool := false
-	_, _, _, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
+	_, _, _, _, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
 	if err != nil {
 		// maybe tx is still in tx mempool -> check mempool
 		var errM error

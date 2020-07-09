@@ -76,7 +76,7 @@ func storePRV(transactionStateRoot *statedb.StateDB) error {
 	return nil
 }
 
-func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
+func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, uint64, int, metadata.Transaction, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
@@ -88,9 +88,9 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 		if err != nil {
 			continue
 		}
-		return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
+		return shardBlock.Header.ShardID, blockHash, shardBlock.GetHeight(), index, shardBlock.Body.Transactions[index], nil
 	}
-	return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
+	return byte(255), common.Hash{}, 0, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
 }
 
 func (blockchain *BlockChain) GetTransactionByHashWithShardID(txHash common.Hash, shardID byte) (common.Hash, int, metadata.Transaction, error) {

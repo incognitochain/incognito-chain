@@ -1,8 +1,6 @@
 package rawdbv2
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -48,23 +46,6 @@ func GetShardBlockByHash(db incdb.KeyValueReader, hash common.Hash) ([]byte, err
 	ret := make([]byte, len(block))
 	copy(ret, block)
 	return ret, nil
-}
-
-func GetIndexOfBlock(db incdb.KeyValueReader, hash common.Hash) (uint64, byte, error) {
-	var index uint64
-	var shardID byte
-	key := GetShardBlockHashToIndexKey(hash)
-	value, err := db.Get(key)
-	if err != nil {
-		return index, shardID, NewRawdbError(GetIndexOfBlockError, err)
-	}
-	if err := binary.Read(bytes.NewReader(value[:8]), binary.LittleEndian, &index); err != nil {
-		return 0, 0, NewRawdbError(GetIndexOfBlockError, err)
-	}
-	if err = binary.Read(bytes.NewReader(value[8:]), binary.LittleEndian, &shardID); err != nil {
-		return 0, 0, NewRawdbError(GetIndexOfBlockError, err)
-	}
-	return index, shardID, nil
 }
 
 func StoreShardBestState(db incdb.KeyValueWriter, shardID byte, v interface{}) error {
