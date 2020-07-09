@@ -139,3 +139,60 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 	}
 	return result, nil
 }
+
+func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
+	result := &jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
+	}
+	for _, keyParam := range listKeyParams {
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Params %+v", keyParam))
+		}
+		// get keyset only contain private key by deserializing
+		privateKeyStr, ok := keys["PrivateKey"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("private key is invalid"))
+		}
+		keyWallet, err := wallet.Base58CheckDeserialize(privateKeyStr)
+		if err != nil || keyWallet.KeySet.PrivateKey == nil {
+			Logger.log.Error("Check Deserialize err", err)
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Private key is invalid, error %+v", err))
+		}
+		keySetTmp, shardID, err := GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+		if err != nil {
+			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
+		}
+		keyWallet.KeySet = *keySetTmp
+
+		// get shard height
+		shardHeightTemp, ok := keys["StartHeight"].(float64)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid height param"))
+		}
+		shardHeight := uint64(shardHeightTemp)
+
+		//get token ID
+		tokenIDParam, ok := keys["tokenID"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid tokenID param"))
+		}
+		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDParam)
+		if err != nil {
+			return nil, NewRPCError(RPCInvalidParamsError, err)
+		}
+
+		outCoins, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID, shardHeight)
+		if err != nil {
+			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
+		}
+		item := make([]jsonresult.OutCoin, 0)
+		for _, outCoin := range outCoins {
+			if outCoin.GetValue() != 0 {
+				item = append(item, jsonresult.NewOutCoin(outCoin))
+			}
+		}
+		result.Outputs[privateKeyStr] = item
+	}
+	return result, nil
+}

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	//"os"
 	//"strconv"
@@ -41,6 +43,20 @@ func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 	fmt.Println("========== END LIST ALL TOKEN ==========")
 	return nil
 }
+
+func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
+	fmt.Println("========== GET OUTPUT TOKEN ==========")
+	b, _ := tool.GetListOutputTokens(privKey, tokenID)
+	fmt.Println(string(b))
+	fmt.Println("========== END OUTPUT TOKEN ==========")
+}
+func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
+	fmt.Println("========== GET UNSPENT OUTPUT TOKEN ==========")
+	b, _ := tool.GetListUnspentOutputTokens(privKey, tokenID)
+	fmt.Println(string(b))
+	fmt.Println("========== END UNSPENT OUTPUT TOKEN ==========")
+}
+
 
 func TransferToken(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID, amount string) {
 	fmt.Println("========== TRANSFER TOKEN ==========")
@@ -88,13 +104,6 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string) {
 	b, _ := tool.GetListOutputCoins(privkey)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
-}
-
-func GetOutputToken(tool *debugtool.DebugTool, privkey, tokenID string){
-	fmt.Println("========== GET OUTPUT TOKEN ==========")
-	b, _ := tool.GetListOutputCoins(privkey)
-	fmt.Println(string(b))
-	fmt.Println("========== END GET OUTPUT TOKEN ==========")
 }
 
 func GetPRVBalance(tool *debugtool.DebugTool, privkey string) {
@@ -207,153 +216,179 @@ func main() {
 	//TransferToken(tool, privateKeys[0], privateKeys[1], tokenID,"1000")
 
 	//GetBalanceToken(tool, privateKeys[0], tokenID)
+	reader := bufio.NewReader(os.Stdin)
 
-	if len(os.Args) <= 1 {
-		return
+	for {
+		fmt.Print("Enter your choice (arguments separated by ONLY ONE space) and hit ENTER: ")
+		text, _ := reader.ReadString('\n')
+		args := strings.Split(text[:len(text)-1], " ")
+		if len(args) < 1 {
+			return
+		}
+		if args[0] == "port" {
+			tool = SwitchPort(args[1])
+		}
+		if args[0] == "convert" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			ConvertCoinVersion(tool, privateKeys[index])
+		}
+		if args[0] == "send" {
+			sendTx(tool)
+		}
+		if args[0] == "outcoin" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			GetPRVOutPutCoin(tool, privateKeys[index])
+		}
+		if args[0] == "balance" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
+			GetPRVBalance(tool, privateKeys[index])
+		}
+		if args[0] == "mempool" {
+			GetRawMempool(tool)
+		}
+		if args[0] == "txhash" {
+			GetTxByHash(tool, args[1])
+		}
+		if args[0] == "staking" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			Staking(tool, privateKeys[index], privateSeeds[index])
+		}
+		if args[0] == "unstaking" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			UnStaking(tool, privateKeys[index], privateSeeds[index])
+		}
+
+		if args[0] == "reward" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			tokenID := "0000000000000000000000000000000000000000000000000000000000000004"
+			if args[2] != "" && len(args[2]) > 0 {
+				tokenID = args[2]
+			}
+			WithdrawReward(tool, privateKeys[index], tokenID)
+		}
+		if args[0] == "transfer" {
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			TransferPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
+		}
+
+		if args[0] == "payment" {
+			fmt.Println("Payment Address", privateKeyToPaymentAddress(args[1]))
+		}
+		if args[0] == "public" {
+			fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
+		}
+
+		//TOKEN RPC
+		if args[0] == "inittoken" {
+			if len(args) < 3 {
+				panic("Not enough params for initToken")
+			}
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("[BUGLOG2] privKey =", privateKeys[index])
+			InitToken(tool, privateKeys[index], args[2])
+		}
+		if args[0] == "listtoken" {
+			ListTokens(tool)
+		}
+		if args[0] == "converttoken"{
+			if len(args) < 3 {
+				panic("Not enough params for converttoken")
+			}
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			tokenID := args[2]
+			ConvertTokenCoinVersion(tool, privateKeys[index], tokenID)
+		}
+		if args[0] == "transfertoken"{
+			if len(args) < 5 {
+				panic("Not enough params for transfertoken")
+			}
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			TransferToken(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
+
+		}
+		if args[0] == "balancetoken" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			GetBalanceToken(tool, privateKeys[index], args[2])
+		}
+		if args[0] == "outtoken" {
+			if len(args) < 3 {
+				panic("Not enough param for outtoken")
+			}
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			GetOutputToken(tool, privateKeys[index], args[2])
+		}
+		if args[0] == "unspentouttoken" {
+			if len(args) < 3 {
+				panic("Not enough param for unspentouttoken")
+			}
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			GetUnspentOutputToken(tool, privateKeys[index], args[2])
+		}
+		// PDE
+		if args[0] == "pdecontributeprv" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			PDEContributePRV(tool, privateKeys[index], args[2])
+		}
+		if args[0] == "pdecontributetoken" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			PDEContributeToken(tool, privateKeys[index], args[2], args[3])
+		}
 	}
 
-	args := os.Args[1:]
-	if args[0] == "port" {
-		tool = SwitchPort(args[1])
-	}
-	if args[0] == "convert" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		ConvertCoinVersion(tool, privateKeys[index])
-	}
-	if args[0] == "send" {
-		sendTx(tool)
-	}
-	if args[0] == "outcoin" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		GetPRVOutPutCoin(tool, privateKeys[index])
-	}
-	if args[0] == "balance" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		GetPRVBalance(tool, privateKeys[index])
-	}
-	if args[0] == "mempool" {
-		GetRawMempool(tool)
-	}
-	if args[0] == "txhash" {
-		GetTxByHash(tool, args[1])
-	}
-	if args[0] == "staking" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		Staking(tool, privateKeys[index], privateSeeds[index])
-	}
-	if args[0] == "unstaking" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		UnStaking(tool, privateKeys[index], privateSeeds[index])
-	}
 
-	if args[0] == "reward" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		tokenID := "0000000000000000000000000000000000000000000000000000000000000004"
-		if args[2] != "" && len(args[2]) > 0 {
-			tokenID = args[2]
-		}
-		WithdrawReward(tool, privateKeys[index], tokenID)
-	}
-	if args[0] == "transfer" {
-		indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		TransferPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
-	}
-
-	if args[0] == "payment" {
-		fmt.Println("Payment Address", privateKeyToPaymentAddress(args[1]))
-	}
-	if args[0] == "public" {
-		fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
-	}
-
-	//TOKEN RPC
-	if args[0] == "inittoken" {
-		if len(args) < 3 {
-			panic("Not enough params for initToken")
-		}
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("[BUGLOG2] privKey =", privateKeys[index])
-		InitToken(tool, privateKeys[index], args[2])
-	}
-	if args[0] == "listtoken" {
-		ListTokens(tool)
-	}
-	if args[0] == "converttoken"{
-		if len(args) < 3 {
-			panic("Not enough params for converttoken")
-		}
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		tokenID := args[2]
-		ConvertTokenCoinVersion(tool, privateKeys[index], tokenID)
-	}
-	if args[0] == "transfertoken"{
-		if len(args) < 5 {
-			panic("Not enough params for transfertoken")
-		}
-		indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		TransferToken(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
-
-	}
-	if args[0] == "balancetoken" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		GetBalanceToken(tool, privateKeys[index], args[2])
-	}
-
-	// PDE
-	if args[0] == "pdecontributeprv" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		PDEContributePRV(tool, privateKeys[index], args[2])
-	}
-	if args[0] == "pdecontributetoken" {
-		index, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		PDEContributeToken(tool, privateKeys[index], args[2], args[3])
-	}
 
 }
