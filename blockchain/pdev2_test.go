@@ -76,6 +76,12 @@ func buildPDEPRVRequiredContributionAction(
 	return [][]string{action}
 }
 
+func getMatchedNReturnedContributionInst(contentInst string) metadata.PDEMatchedNReturnedContribution {
+	var data metadata.PDEMatchedNReturnedContribution
+	_ = json.Unmarshal([]byte(contentInst), &data)
+	return data
+}
+
 // All methods that begin with "Test" are run as tests within a
 // suite.
 // test contribution
@@ -156,7 +162,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1001() {
 		var err error
 		switch metaType {
 		case metadata.PDEPRVRequiredContributionRequestMeta:
-			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight, true)
+			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight - 1, true)
 		//case metadata.PDETradeRequestMeta:
 		//	newInst, err = bc.buildInstructionsForPDETrade(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
 		//case metadata.PDEWithdrawalRequestMeta:
@@ -172,10 +178,31 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1001() {
 
 	// check result of functions
 	// case 1:
-	s.Equal(newInsts[0][2], "waiting")
-	s.Equal(newInsts[1][2], "matched")
+	s.Equal("waiting", newInsts[0][2])
+	s.Equal("matched", newInsts[1][2])
 
-	// case 2: to be continued ...
+	// case 2:
+	s.Equal("waiting", newInsts[2][2])
+	s.Equal("refund", newInsts[3][2])
+	s.Equal("refund", newInsts[4][2])
+
+	// case 3:
+	s.Equal("waiting", newInsts[5][2])
+	s.Equal("matchedNReturned", newInsts[6][2])
+	s.Equal("matchedNReturned", newInsts[7][2])
+
+	incomingContrib := getMatchedNReturnedContributionInst(newInsts[6][3])
+	s.Equal(incomingContrib.ActualWaitingContribAmount, uint64(500000000000))
+
+	//waitingContrib := getMatchedNReturnedContributionInst(newInsts[7][3])
+	//s.Equal(uint64(1000000000000), waitingContrib.ActualWaitingContribAmount)
+
+
+	// at the end
+	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight-1, "token-id-1", common.PRVIDStr))
+	fmt.Printf("s.currentPDEStateForProducer.PDEPoolPairs: %v\n", s.currentPDEStateForProducer.PDEPoolPairs)
+	s.Equal(s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey].Token1PoolValue, uint64(5000000000000))
+	s.Equal(s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey].Token2PoolValue, uint64(2500000000000))
 }
 
 func TestPDETestSuiteV2(t *testing.T) {
