@@ -35,6 +35,7 @@ type ShardCommitteeStateEnvironment struct {
 	SwapOffset                int
 	ProducersBlackList        map[string]uint8
 	StakingTx                 map[string]string
+	IsNullView                bool
 }
 
 //NewShardCommitteeStateEnvironment : Default constructor of ShardCommitteeStateEnvironment
@@ -47,7 +48,8 @@ func NewShardCommitteeStateEnvironment(txs []metadata.Transaction,
 	shardID byte,
 	maxShardCommitteeSize, minShardCommitteeSize, offset, swapOffset int,
 	producersBlackList map[string]uint8,
-	stakingTx map[string]string) *ShardCommitteeStateEnvironment {
+	stakingTx map[string]string,
+	isNullView bool) *ShardCommitteeStateEnvironment {
 	return &ShardCommitteeStateEnvironment{
 		Txs:                       txs,
 		NewBeaconHeight:           newBeaconHeight,
@@ -60,6 +62,7 @@ func NewShardCommitteeStateEnvironment(txs []metadata.Transaction,
 		Offset:                    offset,
 		SwapOffset:                swapOffset,
 		ShardID:                   shardID,
+		IsNullView:                isNullView,
 	}
 }
 
@@ -185,60 +188,32 @@ func (engine *ShardCommitteeEngine) AbortUncommittedBeaconState() {
 //Pre-conditions: Validate committee state
 //Input: env variables ShardCommitteeStateEnvironment
 //Output: New ShardCommitteeEngineV1 and committee changes, error
-func (engine *ShardCommitteeEngine) UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+func (engine *ShardCommitteeEngine) UpdateCommitteeState(
+	env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	var err error
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.shardCommitteeStateV1.mu.RLock()
 	engine.shardCommitteeStateV1.clone(engine.uncommittedShardCommitteeStateV1)
-	// env.allCandidateSubstituteCommittee = engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
 	engine.shardCommitteeStateV1.mu.RUnlock()
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
-	// newCommittes := []incognitokey.CommitteePublicKey{}
-	// newPendingValidators := []incognitokey.CommitteePublicKey{}
 
-	// if common.IndexOfUint64(shardBlock.Header.BeaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-	// 	err = newCommitteeState.processShardBlockInstructionForKeyListV2(blockchain, shardBlock, committeeChange)
-	// } else {
-	// 	err = shardBestState.processShardBlockInstruction(blockchain, shardBlock, committeeChange)
-	// }
+	err = newCommitteeState.processInstructionFromBeacon(env.IsNullView,
+		env.NewBeaconInstructions, env.ShardID, committeeChange)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	// shardPendingValidator, newShardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(oldBestState,
-	// 	beaconBlocks, shardBlock.Header.ShardID, committeeChange)
+	if common.IndexOfUint64(env.NewBeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
+		err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
+	} else {
+		err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
+	}
 
-	// shardPendingValidator, newShardPendingValidator, stakingTx := newCommitteeState.processInstructionFromBeacon()
-
-	// newCommitteeState.shardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
-
-	// committeeChange.ShardSubstituteAdded[shardID], err = incognitokey.
-	// 	CommitteeBase58KeyListToStruct(newShardPendingValidator)
-
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
-
-	// for stakePublicKey, txHash := range stakingTx {
-	// 	shardBestState.StakingTx[stakePublicKey] = txHash
-	// }
-
-	// if common.IndexOfUint64(shardBlock.Header.BeaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-	// 	err = shardBestState.processShardBlockInstructionForKeyListV2(blockchain, shardBlock, committeeChange)
-	// } else {
-	// 	err = shardBestState.processShardBlockInstruction(blockchain, shardBlock, producersBlackList, committeeChange)
-
-	// }
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
-
-	// //updateShardBestState best cross shard
-	// for shardID, crossShardBlock := range shardBlock.Body.CrossTransactions {
-	// 	shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
-	// }
+	if err != nil {
+		return nil, nil, err
+	}
 
 	err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
 	if err != nil {
@@ -262,26 +237,15 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateE
 
 	committeeState := engine.shardCommitteeStateV1
 
-	newCommittees := []incognitokey.CommitteePublicKey{}
-	newPendingValidators := []incognitokey.CommitteePublicKey{}
+	committeeChange := NewCommitteeChange()
 
-	committeeState.shardCommittee = append(committeeState.shardCommittee, newCommittees...)
-	committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, newPendingValidators...)
+	err := committeeState.processInstructionFromBeacon(env.IsNullView,
+		env.NewBeaconInstructions, env.ShardID, committeeChange)
+	if err != nil {
+		panic(err)
+	}
 
-	// shardPendingValidator, _, stakingTx := committeeState.processInstructionFromBeacon(nil, nil,
-	// 	env.ShardID, NewCommitteeChange())
-
-	// shardPendingValidatorStr, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, shardPendingValidatorStr...)
-	// for stakePublicKey, txHash := range stakingTx {
-	// 	shardBestState.StakingTx[stakePublicKey] = txHash
-	// }
-
-	err := committeeState.processShardBlockInstruction(env, NewCommitteeChange())
+	err = committeeState.processShardBlockInstruction(env, committeeChange)
 	if err != nil {
 		panic(err)
 	}
@@ -345,90 +309,48 @@ func (engine ShardCommitteeEngine) generateUncommittedCommitteeHashes() (*ShardC
 // Output:
 // Post-conditions:
 // Process Instruction From Beacon Blocks:
-//	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
-//	 + ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
-//	- stake instruction format
-//	 + ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
-//	 + ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
-func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(shardPendingValidators []incognitokey.CommitteePublicKey) (
-	[]string, []string, map[string]string) {
+func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
+	isNullView bool,
+	listInstructions [][]string,
+	shardID byte,
+	committeeChange *CommitteeChange) error {
 
-	var err error
-	newShardPendingValidator := []string{}
 	shardPendingValidator := []string{}
 
-	if len(shardPendingValidators) != 0 {
-		shardPendingValidator, err = incognitokey.CommitteeKeyListToString(shardPendingValidators)
+	if !isNullView {
+		var err error
+		shardPendingValidator, err = incognitokey.
+			CommitteeKeyListToString(committeeState.shardPendingValidator)
 		if err != nil {
-			return nil, nil, nil
+			return err
 		}
 	}
 
+	newShardPendingValidator := []string{}
 	assignInstructions := [][]string{}
-	stakingTx := make(map[string]string)
-	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			// Process Assign Instruction
-			if l[0] == instruction.ASSIGN_ACTION && l[2] == "shard" {
-				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
-					tempNewShardPendingValidator := strings.Split(l[1], ",")
-					shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
-					newShardPendingValidator = append(newShardPendingValidator, tempNewShardPendingValidator...)
-					assignInstructions = append(assignInstructions, l)
-				}
-			}
-			// Get Staking Tx
-			// assume that stake instruction already been validated by beacon committee
-			if l[0] == instruction.STAKE_ACTION && l[2] == "beacon" {
-				beacon := strings.Split(l[1], ",")
-				newBeaconCandidates := []string{}
-				newBeaconCandidates = append(newBeaconCandidates, beacon...)
-				if len(l) == 6 {
-					for i, v := range strings.Split(l[3], ",") {
-						txHash, err := common.Hash{}.NewHashFromStr(v)
-						if err != nil {
-							continue
-						}
-						_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
-						if err != nil {
-							continue
-						}
-						// if transaction belong to this shard then add to shard beststate
-						stakingTx[newBeaconCandidates[i]] = v
-					}
-				}
-			}
-			if l[0] == instruction.STAKE_ACTION && l[2] == "shard" {
-				shard := strings.Split(l[1], ",")
-				newShardCandidates := []string{}
-				newShardCandidates = append(newShardCandidates, shard...)
-				if len(l) == 6 {
-					for i, v := range strings.Split(l[3], ",") {
-						txHash, err := common.Hash{}.NewHashFromStr(v)
-						if err != nil {
-							continue
-						}
-						_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
-						if err != nil {
-							continue
-						}
-						// if transaction belong to this shard then add to shard beststate
-						stakingTx[newShardCandidates[i]] = v
-					}
-				}
+
+	for _, instructions := range listInstructions {
+		if instructions[0] == instruction.ASSIGN_ACTION && instructions[2] == "shard" {
+			if strings.Compare(instructions[3], strconv.Itoa(int(shardID))) == 0 {
+				tempNewShardPendingValidator := strings.Split(instructions[1], ",")
+				shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
+				newShardPendingValidator = append(newShardPendingValidator, tempNewShardPendingValidator...)
+				assignInstructions = append(assignInstructions, instructions)
 			}
 		}
 	}
-	return shardPendingValidator, newShardPendingValidator, stakingTx
-}
 
-//processShardBlockInstructionForKeyListV2 :
-// Pre-conditions:
-// Input:
-// Output:
-// Post-conditions:
-func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
-	env *ShardCommitteeStateEnvironment) error {
+	shardPendingValidatorStr, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
+	if err != nil {
+		return err
+	}
+
+	committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, shardPendingValidatorStr...)
+
+	committeeChange.ShardSubstituteAdded[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(newShardPendingValidator)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -456,7 +378,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(env.NewBeaconInstructions) != 0 {
-		Logger.log.Debugf("Shard Process/updateShardBestState: Shard Instruction %+v", env.NewBeaconInstructions)
+		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.NewBeaconInstructions)
 	}
 
 	// Swap committee
@@ -543,6 +465,51 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	committeeState.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+//processShardBlockInstructionForKeyListV2 :
+// Pre-conditions:
+// Input:
+// Output:
+// Post-conditions:
+func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
+	env *ShardCommitteeStateEnvironment,
+	committeeChange *CommitteeChange) error {
+	shardID := env.ShardID
+	for _, ins := range env.NewBeaconInstructions {
+		if ins[0] == instruction.SWAP_ACTION {
+			shardPendingValidatorStruct := committeeState.shardPendingValidator
+			inPublicKeys := strings.Split(ins[1], ",")
+			inPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(inPublicKeys)
+			if err != nil {
+				return err
+			}
+			outPublicKeys := strings.Split(ins[2], ",")
+			outPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
+			if err != nil {
+				return err
+			}
+			inRewardReceiver := strings.Split(ins[6], ",")
+			if len(inPublicKeys) != len(outPublicKeys) {
+				return fmt.Errorf("length new committee %+v, length out committee %+v", len(inPublicKeys), len(outPublicKeys))
+			}
+			if len(inPublicKeys) != len(inRewardReceiver) {
+				return fmt.Errorf("length new committee %+v, new reward receiver %+v", len(inPublicKeys), len(inRewardReceiver))
+			}
+			removedCommitteeSize := len(inPublicKeys)
+			remainedShardCommittees := committeeState.shardCommittee[removedCommitteeSize:]
+			tempShardSwappedCommittees := committeeState.shardCommittee[:env.MinShardCommitteeSize]
+			if !reflect.DeepEqual(outPublicKeyStructs, tempShardSwappedCommittees) {
+				return fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, outPublicKeyStructs)
+			}
+			shardCommitteesStruct := append(inPublicKeyStructs, remainedShardCommittees...)
+			committeeState.shardPendingValidator = shardPendingValidatorStruct
+			committeeState.shardCommittee = shardCommitteesStruct
+			committeeChange.ShardCommitteeAdded[shardID] = inPublicKeyStructs
+			committeeChange.ShardCommitteeRemoved[shardID] = outPublicKeyStructs
+		}
 	}
 	return nil
 }

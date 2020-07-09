@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -642,56 +641,27 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 
-	//Part add for transfering
-	listCommittees, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
-	if err != nil {
-		return nil, nil, nil, err
+	isNullCurView := false
+	if shardBestState == nil {
+		isNullCurView = true
 	}
-	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
-		false, int(shardBestState.ShardID), listCommittees, shardBestState.BeaconHeight)
-	if err != nil {
-		return nil, nil, nil, err
+
+	// //Part add for transfering
+	// listCommittees, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
+	// if err != nil {
+	// 	return nil, nil, nil, err
+	// }
+	// producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
+	// 	false, int(shardBestState.ShardID), listCommittees, shardBestState.BeaconHeight)
+	// if err != nil {
+	// 	return nil, nil, nil, err
+	// }
+
+	//updateShardBestState best cross shard
+	for shardID, crossShardBlock := range shardBlock.Body.CrossTransactions {
+		shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
 	}
-	///
-
-	// committeeChange := committeestate.NewCommitteeChange()
-
-	// // //TODO: @tin
-	// // // Remove this part
-	// //shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
-	// shardPendingValidator, newShardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(oldBestState,
-	// 	beaconBlocks, shardBlock.Header.ShardID, committeeChange)
-
-	// shardBestState.ShardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	// if err != nil {
-	// 	return nil, nil, nil, err
-	// }
-
-	// committeeChange.ShardSubstituteAdded[shardID], err = incognitokey.
-	// 	CommitteeBase58KeyListToStruct(newShardPendingValidator)
-
-	// if err != nil {
-	// 	return nil, nil, nil, err
-	// }
-
-	// for stakePublicKey, txHash := range stakingTx {
-	// 	shardBestState.StakingTx[stakePublicKey] = txHash
-	// }
-
-	// if common.IndexOfUint64(shardBlock.Header.BeaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-	// 	err = shardBestState.processShardBlockInstructionForKeyListV2(blockchain, shardBlock, committeeChange)
-	// } else {
-	// 	err = shardBestState.processShardBlockInstruction(blockchain, shardBlock, producersBlackList, committeeChange)
-
-	// }
-	// if err != nil {
-	// 	return nil, nil, nil, err
-	// }
-
-	// //updateShardBestState best cross shard
-	// for shardID, crossShardBlock := range shardBlock.Body.CrossTransactions {
-	// 	shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
-	// }
+	////
 
 	///======BEGIN For testing and benchmark
 	temp := 0
@@ -715,8 +685,9 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		shardBestState.MinShardCommitteeSize,
 		blockchain.config.ChainParams.Offset,
 		blockchain.config.ChainParams.SwapOffset,
-		producersBlackList,
-		make(map[string]string))
+		nil,
+		make(map[string]string),
+		isNullCurView)
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -729,6 +700,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 }
 
 func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain, db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
+
 	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	shardBestState.BestBlock = genesisShardBlock
 	shardBestState.BestBlockHash = *genesisShardBlock.Hash()
@@ -738,46 +710,45 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.TotalTxns += uint64(len(genesisShardBlock.Body.Transactions))
 	shardBestState.NumTxns = uint64(len(genesisShardBlock.Body.Transactions))
 	shardBestState.ShardProposerIdx = 0
-	//shardBestState.processBeaconBlocks(genesisShardBlock, []*BeaconBlock{genesisBeaconBlock})
 
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
 
+	isNullCurView := false
+	if shardBestState == nil {
+		isNullCurView = true
+	}
+
 	//Part add for transfering
-	listCommittees, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
-	if err != nil {
-		return err
-	}
-	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
-		false, int(shardBestState.ShardID), listCommittees, shardBestState.BeaconHeight)
-	if err != nil {
-		return err
-	}
-	///
-
-	shardPending
-
-	if shardBestState != nil {
-
-	}
-
-	// shardPendingValidator := []incognitokey.CommitteePublicKey{}
-
-	// if shardBestState != nil {
-	// 	var err error
-	// 	shardPendingValidator, err = incognitokey.CommitteeKeyListToString(curView.ShardPendingValidator)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
+	// listCommittees, err := incognitokey.
+	// 	CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID))
+	// if err != nil {
+	// 	return err
 	// }
 
-	//@TODO: @tin
-	// Need to transfer this part
+	// producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
+	// 	false, int(shardBestState.ShardID), listCommittees, shardBestState.BeaconHeight)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// Get all instructions from beacon here
+	//
+
+	instructions, stakingTx, err := blockchain.
+		preProcessInstructionFromBeacon([]*BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
+	if err != nil {
+		return err
+	}
+
+	for stakePublicKey, txHash := range stakingTx {
+		shardBestState.StakingTx[stakePublicKey] = txHash
+	}
 
 	shardBestState.shardCommitteeEngine.InitCommitteeState(
 		committeestate.NewShardCommitteeStateEnvironment(
 			genesisShardBlock.Body.Transactions,
-			genesisBeaconBlock.Body.Instructions,
+			instructions,
 			shardBestState.BeaconHeight,
 			shardBestState.Epoch,
 			blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
@@ -786,8 +757,9 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 			shardBestState.MinShardCommitteeSize,
 			blockchain.config.ChainParams.Offset,
 			blockchain.config.ChainParams.SwapOffset,
-			producersBlackList,
-			make(map[string]string)))
+			nil,
+			make(map[string]string),
+			isNullCurView))
 
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
@@ -817,44 +789,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.FeatureStateDBRootHash = common.EmptyRoot
 	shardBestState.TransactionStateDBRootHash = common.EmptyRoot
 	//statedb===========================END
-	return nil
-}
-
-func (shardBestState *ShardBestState) processShardBlockInstructionForKeyListV2(blockchain *BlockChain, shardBlock *ShardBlock, committeeChange *committeestate.CommitteeChange) error {
-	shardID := shardBlock.Header.ShardID
-	for _, instruction := range shardBlock.Body.Instructions {
-		if instruction[0] == instruction2.SWAP_ACTION {
-			shardPendingValidatorStruct := shardBestState.ShardPendingValidator
-			inPublicKeys := strings.Split(instruction[1], ",")
-			inPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(inPublicKeys)
-			if err != nil {
-				return err
-			}
-			outPublicKeys := strings.Split(instruction[2], ",")
-			outPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
-			if err != nil {
-				return err
-			}
-			inRewardReceiver := strings.Split(instruction[6], ",")
-			if len(inPublicKeys) != len(outPublicKeys) {
-				return NewBlockChainError(ProcessSwapInstructionError, fmt.Errorf("length new committee %+v, length out committee %+v", len(inPublicKeys), len(outPublicKeys)))
-			}
-			if len(inPublicKeys) != len(inRewardReceiver) {
-				return NewBlockChainError(ProcessSwapInstructionError, fmt.Errorf("length new committee %+v, new reward receiver %+v", len(inPublicKeys), len(inRewardReceiver)))
-			}
-			removedCommitteeSize := len(inPublicKeys)
-			remainedShardCommittees := shardBestState.ShardCommittee[removedCommitteeSize:]
-			tempShardSwappedCommittees := shardBestState.ShardCommittee[:shardBestState.MinShardCommitteeSize]
-			if !reflect.DeepEqual(outPublicKeyStructs, tempShardSwappedCommittees) {
-				return NewBlockChainError(SwapValidatorError, fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, outPublicKeyStructs))
-			}
-			shardCommitteesStruct := append(inPublicKeyStructs, remainedShardCommittees...)
-			shardBestState.ShardPendingValidator = shardPendingValidatorStruct
-			shardBestState.ShardCommittee = shardCommitteesStruct
-			committeeChange.ShardCommitteeAdded[shardID] = inPublicKeyStructs
-			committeeChange.ShardCommitteeRemoved[shardID] = outPublicKeyStructs
-		}
-	}
 	return nil
 }
 

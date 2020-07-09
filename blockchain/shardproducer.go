@@ -761,3 +761,70 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 	rand.Read(seed)
 	return privacy.GeneratePrivateKey(seed)
 }
+
+//preProcessInstructionFromBeacon : preprcess for beacon instructions before move to handle it in committee state
+// Store stakingtx address and return it back to outside
+// Only process for instruction not stake instruction
+//Pre-conditions: NULL
+//Input: List Beaconblock in this height, shardID
+//Output: list instructions after filter, map staking tx address, error
+//Post-conditions: NULL
+func (blockchain *BlockChain) preProcessInstructionFromBeacon(
+	beaconBlocks []*BeaconBlock,
+	shardID byte) ([][]string, map[string]string, error) {
+
+	instructions := [][]string{}
+	stakingTx := make(map[string]string)
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			// Get Staking Tx
+			// assume that stake instruction already been validated by beacon committee
+
+			if l[0] != instruction.STAKE_ACTION {
+				instructions = append(instructions, l)
+				continue
+			}
+
+			if l[0] == instruction.STAKE_ACTION && l[2] == "beacon" {
+				beacon := strings.Split(l[1], ",")
+				newBeaconCandidates := []string{}
+				newBeaconCandidates = append(newBeaconCandidates, beacon...)
+				if len(l) == 6 {
+					for i, v := range strings.Split(l[3], ",") {
+						txHash, err := common.Hash{}.NewHashFromStr(v)
+						if err != nil {
+							continue
+						}
+						_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
+						if err != nil {
+							continue
+						}
+						// if transaction belong to this shard then add to shard beststate
+						stakingTx[newBeaconCandidates[i]] = v
+					}
+				}
+			}
+			if l[0] == instruction.STAKE_ACTION && l[2] == "shard" {
+				shard := strings.Split(l[1], ",")
+				newShardCandidates := []string{}
+				newShardCandidates = append(newShardCandidates, shard...)
+				if len(l) == 6 {
+					for i, v := range strings.Split(l[3], ",") {
+						txHash, err := common.Hash{}.NewHashFromStr(v)
+						if err != nil {
+							continue
+						}
+						_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
+						if err != nil {
+							continue
+						}
+						// if transaction belong to this shard then add to shard beststate
+						stakingTx[newShardCandidates[i]] = v
+					}
+				}
+			}
+		}
+	}
+
+	return instructions, stakingTx, nil
+}
