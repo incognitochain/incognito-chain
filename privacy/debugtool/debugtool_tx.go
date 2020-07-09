@@ -174,6 +174,70 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
+func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "listoutputtokens",
+		"params": [
+			0,
+			999999,
+			[
+				{
+			  "PaymentAddress": "%s",
+			  "ReadonlyKey": "%s",
+			  "StartHeight": 0
+				}
+			],
+			"%s"
+		  ],
+		"id": 1
+	}`, paymentAddStr, viewingKeyStr, tokenID)
+
+	//fmt.Println("==============")
+
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) GetListUnspentOutputTokens(privKeyStr, tokenID string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+
+	query := fmt.Sprintf(`{  
+	   "jsonrpc":"1.0",
+	   "method":"listunspentoutputtokens",
+	   "params":[  
+		  0,
+		  999999,
+		  [  
+			 {  
+				"PrivateKey":"%s",
+				"StartHeight": 0,
+				"tokenID" : "%s"
+			 }
+			 
+		  ]
+	   ],
+	   "id":1
+	}`, privKeyStr, tokenID)
+
+	//fmt.Println("==============")
+
+	return this.SendPostRequestWithQuery(query)
+}
+
 func (this *DebugTool) ListUnspentOutputCoins(privKeyStr string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")

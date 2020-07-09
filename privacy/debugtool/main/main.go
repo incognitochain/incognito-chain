@@ -42,6 +42,20 @@ func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 	return nil
 }
 
+func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
+	fmt.Println("========== GET OUTPUT TOKEN ==========")
+	b, _ := tool.GetListOutputTokens(privKey, tokenID)
+	fmt.Println(string(b))
+	fmt.Println("========== END OUTPUT TOKEN ==========")
+}
+func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
+	fmt.Println("========== GET UNSPENT OUTPUT TOKEN ==========")
+	b, _ := tool.GetListUnspentOutputTokens(privKey, tokenID)
+	fmt.Println(string(b))
+	fmt.Println("========== END UNSPENT OUTPUT TOKEN ==========")
+}
+
+
 func TransferToken(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID, amount string) {
 	fmt.Println("========== TRANSFER TOKEN ==========")
 	b, _ := tool.TransferPrivacyCustomToken(fromPrivKey, toPrivKey, tokenID, amount)
@@ -92,13 +106,6 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string) {
 	b, _ := tool.GetListOutputCoins(privkey)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
-}
-
-func GetOutputToken(tool *debugtool.DebugTool, privkey, tokenID string){
-	fmt.Println("========== GET OUTPUT TOKEN ==========")
-	b, _ := tool.GetListOutputCoins(privkey)
-	fmt.Println(string(b))
-	fmt.Println("========== END GET OUTPUT TOKEN ==========")
 }
 
 func GetPRVBalance(tool *debugtool.DebugTool, privkey string) {
@@ -328,6 +335,26 @@ func main() {
 			panic(err)
 		}
 		GetBalanceToken(tool, privateKeys[index], args[2])
+	}
+	if args[0] == "outtoken" {
+		if len(args) < 3 {
+			panic("Not enough param for outtoken")
+		}
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		GetOutputToken(tool, privateKeys[index], args[2])
+	}
+	if args[0] == "unspentouttoken" {
+		if len(args) < 3 {
+			panic("Not enough param for outtoken")
+		}
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		GetUnspentOutputToken(tool, privateKeys[index], args[2])
 	}
 
 }

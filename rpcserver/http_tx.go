@@ -242,6 +242,48 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 	return totalValue, nil
 }
 
+func (httpServer *HttpServer) handleListUnspentOutputTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
+	}
+
+	var min, max int
+
+	if paramsArray[0] != nil {
+		minParam, ok := paramsArray[0].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
+		}
+		min = int(minParam)
+	}
+
+	if paramsArray[1] != nil {
+		maxParam, ok := paramsArray[1].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
+		}
+		max = int(maxParam)
+	}
+	_ = min
+	_ = max
+
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	if listKeyParams == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("list key is invalid"))
+	}
+
+	result, err := httpServer.outputCoinService.ListUnspentOutputTokensByKey(listKeyParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+
 // handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
 func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
