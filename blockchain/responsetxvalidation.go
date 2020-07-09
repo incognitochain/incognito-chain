@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -30,7 +29,6 @@ func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	mintData.WithdrawReward = make(map[string]bool)
 
 	for _, tx := range txs {
-		fmt.Println("Mint Data", mintData.WithdrawReward)
 		shardViewRetriever := blockchain.GetBestStateShard(shardID)
 		beaconViewRetriever := blockchain.GetBeaconBestState()
 		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, blockchain, accumulatedValues, shardViewRetriever, beaconViewRetriever)

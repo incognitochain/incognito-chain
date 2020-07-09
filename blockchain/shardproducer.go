@@ -135,6 +135,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
 	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
+
 	// process instruction from beacon block
 	shardPendingValidator, _, _ = blockchain.processInstructionFromBeacon(curView, beaconBlocks, shardID, newCommitteeChange())
 	// Create Instruction
@@ -637,10 +638,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 //	   + Cross output coin
 //	   + Cross Normal Token
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]CrossTransaction {
-	fmt.Println("Check cross shard data ")
-	fmt.Println("Check cross shard data ")
-	fmt.Println("Check cross shard data ")
-
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
 	var allCrossShardBlock = make([][]*CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
@@ -649,9 +646,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
-	fmt.Println("Check cross shard data - len of all cross shard blocks", len(allCrossShardBlock))
-	fmt.Println("Check cross shard data - len of all cross shard blocks", len(allCrossShardBlock))
-	fmt.Println("Check cross shard data - len of all cross shard blocks", len(allCrossShardBlock))
 
 	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {

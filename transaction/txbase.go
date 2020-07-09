@@ -502,15 +502,13 @@ func (tx TxBase) ShouldSignMetaData() bool {
 }
 
 func (tx TxBase) IsSalaryTx() bool {
-	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxRewardType {
 		return false
 	}
-	// Check serialNumber in every Descs
-	if len(tx.Proof.GetInputCoins()) == 0 {
-		return true
+	if len(tx.Proof.GetInputCoins()) > 0 {
+		return false
 	}
-	return false
+	return true
 }
 
 func (tx TxBase) IsPrivacy() bool {

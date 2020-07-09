@@ -137,6 +137,21 @@ func (txToken TxTokenBase) CheckAuthorizedSender([]byte) (bool, error) {
 	return false, errors.New("TxTokenBase does not has CheckAuthorizedSender")
 }
 
+func (txToken TxTokenBase) IsSalaryTx() bool {
+	fmt.Println("[BUGLOG] Is Salary Tx Token Check .... ")
+	if txToken.GetType() != common.TxRewardType {
+		return false
+	}
+	if txToken.GetProof() != nil {
+		return false
+	}
+	if len(txToken.TxTokenData.TxNormal.GetProof().GetInputCoins()) > 0 {
+		return false
+	}
+	fmt.Println("[BUGLOG] Is Salary Tx Token Check .... TRUE")
+	return true
+}
+
 // ==========  PARSING JSON FUNCTIONS ==========
 
 func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {

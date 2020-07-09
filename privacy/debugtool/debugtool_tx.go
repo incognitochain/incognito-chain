@@ -411,6 +411,100 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 			}`, privKeyStr, tokenID, amount, amount, paymentAddStr, amount, tokenID)
 	return this.SendPostRequestWithQuery(query)
 }
+func (this *DebugTool) PDEWithdrawContribution(privKeyStr, tokenID1, tokenID2, amountShare string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+			"id": 1,
+			"jsonrpc": "1.0",
+			"method": "createandsendtxwithwithdrawalreq",
+		   "params": [
+				"%s",
+				{
+					"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 0
+				},
+				5,
+				-1,
+				{
+					"WithdrawalShareAmt": %s,
+					"WithdrawalToken1IDStr": "%s",
+					"WithdrawalToken2IDStr": "%s",
+					"WithdrawerAddressStr": "%s"
+				}
+			]
+		}`, privKeyStr, amountShare, tokenID1, tokenID2, paymentAddStr)
+	return this.SendPostRequestWithQuery(query)
+}
+
+
+func (this *DebugTool) PDETradePRV(privKeyStr, receiverToken, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+			"id": 1,
+			"jsonrpc": "1.0",
+			"method": "createandsendtxwithprvtradereq",
+			"params": [
+				"%s",
+				{
+					"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+				},
+				-1,
+				-1,
+				{
+					"TokenIDToBuyStr": "%s",
+					"TokenIDToSellStr": "0000000000000000000000000000000000000000000000000000000000000004",
+					"SellAmount": %s,
+					"MinAcceptableAmount": 0,
+					"TradingFee": 0,
+					"TraderAddressStr": "%s"
+				}
+			]
+		}`, privKeyStr, amount, receiverToken, amount, paymentAddStr)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+			"id": 1,
+			"jsonrpc": "1.0",
+			"method": "createandsendtxwithptokentradereq",
+			"params": [
+				"%s",
+				{},
+				-1,
+				0,
+				{
+					"Privacy": true,
+					"TokenID": "%s",
+					"TokenTxType": 1,
+					"TokenName": "",
+					"TokenSymbol": "",
+					"TokenAmount": %s,
+					"TokenReceivers": {
+						"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+					},
+					"TokenFee": 0,
+					"TokenIDToBuyStr": "0000000000000000000000000000000000000000000000000000000000000004",
+					"TokenIDToSellStr": "%s",
+					"SellAmount": %s,
+					"MinAcceptableAmount":0,
+					"TradingFee":0,
+					"TraderAddressStr": "%s"
+				},
+				"",
+				0
+			]
+		}`, privKeyStr, sellToken, amount, amount, sellToken, amount, paymentAddStr)
+	return this.SendPostRequestWithQuery(query)
+}
+
+
 
 func (this *DebugTool) GetBalancePrivacyCustomToken(privKeyStr string, tokenID string) ([]byte, error) {
 	query := fmt.Sprintf(`{

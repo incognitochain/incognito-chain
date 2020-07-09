@@ -317,16 +317,18 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	if err := tx.initializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
-	tx.SetType(common.TxRewardType)
+	tx.SetType(common.TxCustomTokenPrivacyType)
 	tx.sigPrivKey = *txPrivacyParams.senderSK
 
 	hashedTokenMessage := txToken.TxTokenData.TxNormal.Hash()
-	txToken.SetTxBase(tx)
-	message := common.HashH(append(txToken.GetTxBase().Hash()[:], hashedTokenMessage[:]...))
+
+	message := common.HashH(append(tx.Hash()[:], hashedTokenMessage[:]...))
 	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(privKey, message[:]); err != nil {
 		Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
 		return NewTransactionErr(SignTxError, err)
 	}
+
+	txToken.SetTxBase(tx)
 	return nil
 }
 
@@ -418,13 +420,8 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 		tokenID := txToken.TxTokenData.PropertyID
 		switch txToken.TxTokenData.Type {
 		case CustomTokenInit:
-			if txToken.GetType() == common.TxRewardType && txToken.TxTokenData.Mintable {
-				isBridgeCentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
-				isBridgeDecentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
-				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
-					return true, nil
-				}
-				return false, errors.New("Cannot validate Tx Init Token. It is the tx mint from Shard")
+			if txToken.TxTokenData.Mintable {
+				return true, nil
 			} else {
 				// check exist token
 				if txDatabaseWrapper.privacyTokenIDExisted(transactionStateDB, tokenID) {

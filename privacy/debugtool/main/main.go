@@ -174,6 +174,28 @@ func PDEContributeToken(tool *debugtool.DebugTool, privKey, tokenID, amount stri
 	fmt.Println("========== END PDE CONTRIBUTE TOKEN  ==========")
 }
 
+func PDEWithdrawContribution(tool *debugtool.DebugTool, privKey, tokenID1, tokenID2, amountShare string) {
+	fmt.Println("========== PDE WITHDRAW   ==========")
+	b, _ := tool.PDEWithdrawContribution(privKey, tokenID1, tokenID2, amountShare)
+	fmt.Println(string(b))
+	fmt.Println("========== END PDE WITHDRAW  ==========")
+}
+
+
+func PDETradePRV(tool *debugtool.DebugTool, privKey, token, amount string) {
+	fmt.Println("========== PDE TRADE PRV   ==========")
+	b, _ := tool.PDETradePRV(privKey, token, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRADE PRV  ==========")
+}
+
+func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
+	fmt.Println("========== PDE TRADE TOKEN   ==========")
+	b, _ := tool.PDETradeToken(privKey, token, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END PDE TRADE TOKEN  ==========")
+}
+
 func main() {
 	privateKeys := []string{
 		"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
@@ -387,6 +409,32 @@ func main() {
 			}
 			PDEContributeToken(tool, privateKeys[index], args[2], args[3])
 		}
+		if args[0] == "pdewithdraw" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			PDEWithdrawContribution(tool, privateKeys[index], args[2], args[3], args[4])
+		}
+
+		if args[0] == "pdetradeprv" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			PDETradePRV(tool, privateKeys[index], args[2], args[3])
+		}
+
+		if args[0] == "pdetradetoken" {
+			index, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			PDETradeToken(tool, privateKeys[index], args[2], args[3])
+		}
+
+
+
 	}
 
 
