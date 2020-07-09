@@ -493,6 +493,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 
 	pdeTradeAcceptedContent := metadata.PDETradeAcceptedContent{
 		TraderAddressStr: pdeTradeReqAction.Meta.TraderAddressStr,
+		TxRandomStr: pdeTradeReqAction.Meta.TxRandomStr,
 		TokenIDToBuyStr:  pdeTradeReqAction.Meta.TokenIDToBuyStr,
 		ReceiveAmount:    receiveAmt,
 		Token1IDStr:      pdePoolPair.Token1IDStr,

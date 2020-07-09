@@ -266,7 +266,7 @@ func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStr
 		"method": "createandsendprivacycustomtokentransaction",
 		"params": [
 			"%s",
-			{},
+			"null",
 			10,
 			1,
 			{
@@ -283,6 +283,68 @@ func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStr
 			}
 			]
 	}`, privKeyStrA, tokenID, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) PDEContributePRV(privKeyStr string, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+				"id": 1,
+				"jsonrpc": "1.0",
+				"method": "createandsendtxwithprvcontribution",
+				"params": [
+					"%s",
+					{
+						"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+					},
+					-1,
+					0,
+					{
+						"PDEContributionPairID": "newpair",
+						"ContributorAddressStr": "%s",
+						"ContributedAmount": %s,
+						"TokenIDStr": "0000000000000000000000000000000000000000000000000000000000000004"
+					}
+				]
+			}`, privKeyStr, amount, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	query := fmt.Sprintf(`{
+				"id": 1,
+				"jsonrpc": "1.0",
+				"method": "createandsendtxwithptokencontribution",
+				"params": [
+					"%s",
+					{},
+					-1,
+					0,
+					{
+						"Privacy": true,
+						"TokenID": "%s",
+						"TokenTxType": 1,
+						"TokenName": "",
+						"TokenSymbol": "",
+						"TokenAmount": %s,
+						"TokenReceivers": {
+							"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+						},
+						"TokenFee": 0,
+						"PDEContributionPairID": "newpair",
+						"ContributorAddressStr": "%s",
+						"ContributedAmount": %s,
+						"TokenIDStr": "%s"
+					},
+					"",
+					0
+				]
+			}`, privKeyStr, tokenID, amount, amount, paymentAddStr, amount, tokenID)
 	return this.SendPostRequestWithQuery(query)
 }
 

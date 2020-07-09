@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -60,9 +59,6 @@ func getTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, coin.Co
 }
 
 func getTxBurnData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, error) {
-	fmt.Println("[BUGLOC] Burn Data PRV xxxx")
-	t, _ := json.Marshal(tx)
-	fmt.Println("[BUGLOG]", string(t))
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
 		Logger.Log.Errorf("Cannot get receiver data, error %v", err)

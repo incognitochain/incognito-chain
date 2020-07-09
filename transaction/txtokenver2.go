@@ -317,7 +317,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *coin.CoinV2, privKey 
 	if err := tx.initializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
-	tx.SetType(common.TxCustomTokenPrivacyType)
+	tx.SetType(common.TxRewardType)
 	tx.sigPrivKey = *txPrivacyParams.senderSK
 
 	hashedTokenMessage := txToken.TxTokenData.TxNormal.Hash()
@@ -424,11 +424,11 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
 					return true, nil
 				}
-				return false, nil
+				return false, errors.New("Cannot validate Tx Init Token. It is the tx mint from Shard")
 			} else {
 				// check exist token
 				if txDatabaseWrapper.privacyTokenIDExisted(transactionStateDB, tokenID) {
-					return false, nil
+					return false, errors.New("Cannot validate Tx Init Token. It is tx mint from User")
 				}
 				return true, nil
 			}

@@ -56,10 +56,6 @@ func GetBalanceToken(tool *debugtool.DebugTool, privkey, tokenID string) {
 	fmt.Println("========== END GET TOKEN BALANCE ==========")
 }
 
-//TokenID of coin = [191 233 71 70 219 216 161 134 234 186 130 184 9 0 113 206 223 234 207 61 3 200 250 114 247 71 54 72 233 45 223 116]
-
-//With tokenID = [191 233 71 70 219 216 161 134 234 186 130 184 9 0 113 206 223 234 207 61 3 200 250 114 247 71 54 72 233 45 223 116]
-
 func privateKeyToPaymentAddress(privkey string) string {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privkey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
@@ -153,6 +149,20 @@ func TransferPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount strin
 	b, _ := tool.CreateAndSendTransactionFromAToB(fromPrivKey, toPrivKey, amount)
 	fmt.Println(string(b))
 	fmt.Println("========== END TRANSFER PRV  ==========")
+}
+
+// PDE
+func PDEContributePRV(tool *debugtool.DebugTool, privKey, amount string) {
+	fmt.Println("========== PDE CONTRIBUTE PRV  ==========")
+	b, _ := tool.PDEContributePRV(privKey, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END PDE CONTRIBUTE PRV  ==========")
+}
+func PDEContributeToken(tool *debugtool.DebugTool, privKey, tokenID, amount string) {
+	fmt.Println("========== PDE CONTRIBUTE TOKEN  ==========")
+	b, _ := tool.PDEContributeToken(privKey, tokenID, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END PDE CONTRIBUTE TOKEN  ==========")
 }
 
 func main() {
@@ -328,6 +338,22 @@ func main() {
 			panic(err)
 		}
 		GetBalanceToken(tool, privateKeys[index], args[2])
+	}
+
+	// PDE
+	if args[0] == "pdecontributeprv" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		PDEContributePRV(tool, privateKeys[index], args[2])
+	}
+	if args[0] == "pdecontributetoken" {
+		index, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		PDEContributeToken(tool, privateKeys[index], args[2], args[3])
 	}
 
 }

@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -118,19 +117,12 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 	if len(contributorAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's contributed address")
 	}
-	t, _ := json.Marshal(tx)
-	fmt.Println("[BUGLOG] Tx Detail", string(t))
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
-	fmt.Println("[BUGLOG] ---------")
-	if err != nil {
-		return false, false, err
-	}
-	if !isBurned {
-		fmt.Println("[BUGLOG] This is not tx burn", isBurned, burnCoin, burnedTokenID, err)
-		panic("OK")
+	if err != nil || !isBurned {
 		return false, false, errors.New("Error This is not Tx Burn")
 	}
+
 	if pc.ContributedAmount == 0 && pc.ContributedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("Contributed Amount is not valid ")
 	}
