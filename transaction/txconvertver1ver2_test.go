@@ -22,6 +22,9 @@ var (
 	numOutputs         = 5
 	numTests           = 10
 	unitFeeNativeToken = 100
+	//create a sample test DB
+	testDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	bridgeDB  = testDB.Copy()
 )
 
 var _ = func() (_ struct{}) {
@@ -135,6 +138,63 @@ func createConversionParams(numInputs, numOutputs int, tokenID *common.Hash) (*i
 	return keySet, paymentInfo, txConversionParams, nil
 }
 
+func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognitokey.KeySet, testDB *statedb.StateDB) ([]*coin.CoinV2, error) {
+	var err error
+	coinsToBeSaved := make([]*coin.CoinV2, numCoins)
+	for _, keySet := range keySets {
+		for i, _ := range coinsToBeSaved {
+			amount := uint64(common.RandIntInterval(0, 1000))
+			paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Dummy token"))
+
+			tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+			if err != nil {
+				return nil, err
+			}
+
+			tempCoin.ConcealOutputCoin(keySet.PaymentAddress.GetPublicView())
+			coinsToBeSaved[i] = tempCoin
+		}
+	}
+
+	coinsBytesToBeSaved := make([][]byte, 0)
+	otasToBeSaved := make([][]byte, 0)
+	for _, c := range coinsToBeSaved {
+		coinsBytesToBeSaved = append(coinsBytesToBeSaved, c.Bytes())
+		otasToBeSaved = append(otasToBeSaved, c.GetPublicKey().ToBytesS())
+	}
+	err = statedb.StoreOTACoinsAndOnetimeAddresses(testDB, tokenID, 0, coinsBytesToBeSaved, otasToBeSaved, 0)
+	if err != nil {
+		return nil, err
+	}
+	return coinsToBeSaved, nil
+}
+
+func prepareKeySets(numKeySets int) ([]*incognitokey.KeySet, error) {
+	keySets := make([]*incognitokey.KeySet, numKeySets)
+	//generate keysets: we want the public key to be in Shard 0
+	for i := 0; i < numKeySets; i++ {
+		for {
+			//generate a private key
+			privateKey := key.GeneratePrivateKey(common.RandBytes(32))
+
+			//make keySets from privateKey
+			keySet := new(incognitokey.KeySet)
+			err := keySet.InitFromPrivateKey(&privateKey)
+
+			if err != nil {
+				return nil, err
+			}
+
+			//we want the public key to belong to Shard 0
+			if keySet.PaymentAddress.Pk[31] == 0 {
+				keySets[i] = keySet
+				break
+			}
+		}
+	}
+	return keySets, nil
+}
+
 func createSampleCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *operation.Point, totalAmount uint64, numFeeInputs, version int) ([]coin.PlainCoin, error) {
 	coinList := []coin.PlainCoin{}
 	if version == coin.CoinVersion1 {
@@ -179,36 +239,16 @@ func createSampleCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *opera
 }
 
 func createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, feeInputVersion int, tokenID *common.Hash) (*incognitokey.KeySet, *TxTokenConvertVer1ToVer2InitParams, error) {
-	var senderSK privacy.PrivateKey
-	var keySet *incognitokey.KeySet
-
-	//create a sample test DB
-	testDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	bridgeDB := testDB.Copy()
-
-	//generate keyset: we want the public key to be in Shard 0
-	for {
-		//generate a private key
-		senderSK = key.GeneratePrivateKey(common.RandBytes(32))
-
-		//make keySets from privateKey
-		keySet = new(incognitokey.KeySet)
-		err := keySet.InitFromPrivateKey(&senderSK)
-
-		if err != nil {
-			return nil, nil, err
-		}
-
-		//we want the public key to belong to Shard 0
-		if keySet.PaymentAddress.Pk[31] == 0 {
-			break
-		}
+	keySets, err := prepareKeySets(1)
+	if err != nil {
+		return nil, nil, err
 	}
+	keySet := keySets[0]
+	senderSK := keySet.PrivateKey
 
 	//create input tokens
 	inputTokens := make([]coin.PlainCoin, numTokenInputs)
 	sumInput := uint64(0)
-	var err error
 
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	if err != nil {
@@ -233,8 +273,18 @@ func createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, f
 	//we want the sum of these PRV coins to be large than the real fee
 	overBalance := uint64(common.RandIntInterval(0, 1000))
 
-	//create PRV fee input coins of version 2 (bigger than realFee => over balance)
+	//create PRV fee input coins of version 2 (bigger than realFee => over balance) and store onto the database
 	feeInputs, err := createSampleCoinsFromTotalAmount(senderSK, pubKey, realFee+overBalance, numFeeInputs, feeInputVersion)
+	feeInputBytes := [][]byte{}
+	otas := [][]byte{}
+	for _, feeInput := range feeInputs {
+		feeInputBytes = append(feeInputBytes, feeInput.Bytes())
+		otas = append(otas, feeInput.GetPublicKey().ToBytesS())
+	}
+	err = statedb.StoreOTACoinsAndOnetimeAddresses(testDB, common.PRVCoinID, 0, feeInputBytes, otas, 0)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	if err != nil {
 		return nil, nil, err
@@ -267,6 +317,37 @@ func createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, f
 		nil)
 
 	return keySet, txTokenConversionParams, nil
+}
+
+func createInitTokenParams(theInputCoin coin.Coin, db *statedb.StateDB, tokenID, tokenName string, keySet *incognitokey.KeySet) (*TxTokenParams, *TokenParam, error) {
+	msgCipherText := []byte("Testing Init Token")
+	initAmount := uint64(1000000000)
+	tokenPayments := []*privacy.PaymentInfo{{PaymentAddress: keySet.PaymentAddress, Amount: initAmount, Message: msgCipherText}}
+
+	myOnlyInputCoin, err := theInputCoin.Decrypt(keySet)
+	if err != nil {
+		return nil, nil, err
+	}
+	inputCoinsPRV := []coin.PlainCoin{myOnlyInputCoin}
+	paymentInfoPRV := []*privacy.PaymentInfo{key.InitPaymentInfo(keySet.PaymentAddress, uint64(100), []byte("test out"))}
+
+	// token param for init new token
+	tokenParam := &TokenParam{
+		PropertyID:     tokenID,
+		PropertyName:   tokenName,
+		PropertySymbol: "DEFAULT",
+		Amount:         initAmount,
+		TokenTxType:    CustomTokenInit,
+		Receiver:       tokenPayments,
+		TokenInput:     []coin.PlainCoin{},
+		Mintable:       false,
+		Fee:            0,
+	}
+
+	paramToCreateTx := NewTxTokenParams(&keySet.PrivateKey,
+		paymentInfoPRV, inputCoinsPRV, 10, tokenParam, db, nil,
+		hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{}, db)
+	return paramToCreateTx, tokenParam, nil
 }
 
 func TestInitializeTxConversion(t *testing.T) {
@@ -407,7 +488,7 @@ func TestValidateTxTokenConversion(t *testing.T) {
 		tokenID := &common.Hash{r}
 
 		m := common.RandInt()
-		switch m%6 {
+		switch m % 6 {
 		//attempt to use a large number of input tokens
 		case 0:
 			numTokenInputs, numFeeInputs, numFeePayments := 256, 5, 10
@@ -457,7 +538,7 @@ func TestValidateTxTokenConversion(t *testing.T) {
 			fmt.Println(err)
 		//testing as usual
 		default:
-			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
+			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 100), common.RandIntInterval(0, 100), common.RandIntInterval(0, 100)
 			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 			assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
 
@@ -469,4 +550,66 @@ func TestValidateTxTokenConversion(t *testing.T) {
 	}
 }
 
+func TestInitializeTxTokenConversion(t *testing.T) {
+	//prepare some fake keysets and fake tokens to save on database
+	fmt.Println("====== INIT TEST =====")
+	numKeySets := 1
+	numTokens := 1
+	numCoinsPerKeySet := 10
 
+	//generate sample keysets
+	keySets, err := prepareKeySets(numKeySets)
+	assert.Equal(t, nil, err, "prepareKeySets returns an errors: %v", err)
+
+	//create and save some PRV coins
+	coins, err := createAndSaveTokens(numCoinsPerKeySet, common.PRVCoinID, keySets, testDB)
+	assert.Equal(t, nil, err, "createAndSaveTokens returns an error: %v", err)
+
+	//init some token
+	tokenIDs := make([]*common.Hash, numTokens)
+	for i := 0; i < numTokens; i++ {
+		tokenID := &common.Hash{common.RandBytes(1)[0]}
+		tokenName := "Token" + string(i)
+		paramToCreateTx, tokenParam, err := createInitTokenParams(coins[i], testDB, tokenID.String(), tokenName, keySets[0])
+		tx := &TxTokenVersion2{}
+
+		err = tx.Init(paramToCreateTx)
+		if err != nil {
+			fmt.Printf("Init returns an error: %v\n", err)
+			return
+		}
+
+		tokenOutputs := tx.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()
+		feeOutputs := tx.GetTxBase().GetProof().GetOutputCoins()
+		forceSaveCoins(testDB, feeOutputs, 0, common.PRVCoinID, t)
+		statedb.StorePrivacyToken(testDB, *tx.GetTokenID(), tokenParam.PropertyName, tokenParam.PropertySymbol, statedb.InitToken, tokenParam.Mintable, tokenParam.Amount, []byte{}, *tx.Hash())
+
+		fmt.Println(tx.GetTokenID())
+		tokenExisted := statedb.PrivacyTokenIDExisted(testDB, *tx.GetTokenID())
+		assert.Equal(t, true, tokenExisted)
+
+		statedb.StoreCommitments(testDB, *tx.GetTokenID(), [][]byte{tokenOutputs[0].GetCommitment().ToBytesS()}, shardID)
+		tokenIDs[i] = tx.GetTokenID()
+	}
+
+	fmt.Println("====== INIT TEST FINISHED =====")
+	tokenID := tokenIDs[0]
+	fmt.Println("BUGLOG tokenID in test", tokenID.String())
+	assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
+
+	for i := 0; i < 1; i++ {
+		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 100), common.RandIntInterval(0, 100), common.RandIntInterval(0, 100)
+		_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
+
+		txToken := new(TxTokenVersion2)
+		err = InitTokenConversion(txToken, txTokenConversionParams)
+		assert.Equal(t, nil, err, "initTokenConversion returns an error: %v", err)
+		if err != nil {
+			return
+		}
+
+		res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, tokenID, false, true)
+		assert.Equal(t, true, res, "ValidateTransaction returns an error: %v", err)
+	}
+}
