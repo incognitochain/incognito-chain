@@ -5,6 +5,7 @@ package mlsag
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
@@ -306,6 +307,7 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
+	fmt.Println("BUGLOG in verifyRing", R)
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			message,
