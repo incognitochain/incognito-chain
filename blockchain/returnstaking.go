@@ -185,14 +185,17 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 				}
-				for _, outPublicKeys := range strings.Split(l[2], ",") {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKeys)
+				for _, outPublicKey := range strings.Split(l[2], ",") {
+					if len(outPublicKey) == 0 {
+						continue
+					}
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
 					}
 					if !has || stakerInfo == nil {
-						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", outPublicKeys))
+						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", outPublicKey))
 						continue
 					}
 					// If autostaking or staker who not has tx staking, do nothing
@@ -234,7 +237,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						continue
 					}
 					res[stakerInfo.TxStakingID()] = returnStakingInfo{
-						SwapoutPubKey: outPublicKeys,
+						SwapoutPubKey: outPublicKey,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
 						StakingAmount: txMeta.StakingAmountShard,

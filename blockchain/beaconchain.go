@@ -6,6 +6,8 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -123,6 +125,16 @@ func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
 }
 
+func (chain *BeaconChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
+	bcStateRootHash := chain.GetBestView().(*BeaconBestState).ConsensusStateDBRootHash
+	bcDB := chain.Blockchain.GetBeaconChainDatabase()
+	bcStateDB, err := statedb.NewWithPrefixTrie(bcStateRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+	if err != nil {
+		return nil, err
+	}
+	return statedb.GetBeaconCommittee(bcStateDB), nil
+}
+
 func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	return chain.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()
 }
@@ -173,6 +185,12 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate 
 		return err
 	}
 	return nil
+}
+
+func (chain *BeaconChain) CheckExistedBlk(block common.BlockInterface) bool {
+	blkHash := block.Hash()
+	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
+	return err == nil
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {

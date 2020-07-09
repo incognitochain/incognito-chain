@@ -44,6 +44,19 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 	}
 
 	if len(sameCommitteeBlock) > 0 {
+		for i, blk := range sameCommitteeBlock {
+			if blk.GetHeight()-1 != chain.CurrentHeight() {
+				sameCommitteeBlock = sameCommitteeBlock[i:]
+				break
+			} else {
+				if !chain.CheckExistedBlk(blk) {
+					err := chain.InsertBlk(blk, false)
+					if err != nil {
+						return 0, err
+					}
+				}
+			}
+		}
 		if sameCommitteeBlock[0].GetHeight()-1 != chain.CurrentHeight() {
 			return 0, errors.New(fmt.Sprintf("Not expected height: %d %d", sameCommitteeBlock[0].GetHeight()-1, chain.CurrentHeight()))
 		}
