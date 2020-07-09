@@ -15,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // BestState houses information about the current best block and other info
@@ -353,6 +352,7 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
+	shardBestState.shardCommitteeEngine = target.shardCommitteeEngine
 	return nil
 }
 
@@ -424,22 +424,24 @@ func (blockchain *BlockChain) GetShardSlashRootHash(db incdb.Database, shardID b
 	return rawdbv2.GetShardSlashRootHash(db, shardID, height)
 }
 
-//NewShardCommitteeStateEnvironment : init shard committee state environment
-//Preconditions: NULL
-//Input: list transactions, matrix of beaconInstr
-//Output: [Struct] NewShardCommitteeStateEnvironment
-func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironment(
-	txs []metadata.Transaction,
-	beaconInstructions [][]string,
-	newBeaconHeight, chainParamEpoch uint64,
-	epochBreakPointSwapNewKey []uint64) *committeestate.ShardCommitteeStateEnvironment {
-	return committeestate.NewShardCommitteeStateEnvironment(
-		txs,
-		beaconInstructions,
-		newBeaconHeight,
-		chainParamEpoch,
-		epochBreakPointSwapNewKey)
-}
+// //NewShardCommitteeStateEnvironment : init shard committee state environment
+// //Preconditions: NULL
+// //Input: list transactions, matrix of beaconInstr
+// //Output: [Struct] NewShardCommitteeStateEnvironment
+// func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironment(
+// 	txs []metadata.Transaction,
+// 	beaconInstructions [][]string,
+// 	newBeaconHeight, chainParamEpoch uint64,
+// 	epochBreakPointSwapNewKey []uint64,
+// 	sharID byte,
+// 	) *committeestate.ShardCommitteeStateEnvironment {
+// 	return committeestate.NewShardCommitteeStateEnvironment(
+// 		txs,
+// 		beaconInstructions,
+// 		newBeaconHeight,
+// 		chainParamEpoch,
+// 		epochBreakPointSwapNewKey)
+// }
 
 //InitShardCommitteeEngine : Init shard committee engine for every time restore process
 //Pre-conditions: Already blocks, best view have been initialized before
