@@ -158,7 +158,39 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		committeestate.NewShardCommitteeEngine(
 			1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1()))
 
-	initShardState.ShardCommittee = append(initShardState.ShardCommittee, newShardCandidateStructs[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
+	addCommittees := []incognitokey.CommitteePublicKey{}
+	addCommittees = append(addCommittees, newShardCandidateStructs[int(shardID)*blockchain.
+		config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.
+		config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
+
+	addCommitteesStr := []string{}
+	for _, v := range addCommittees {
+		str, err := v.ToBase58()
+		if err != nil {
+			return err
+		}
+		addCommitteesStr = append(addCommitteesStr, str)
+	}
+
+	env := committeestate.NewShardCommitteeStateEnvironment(
+		addCommitteesStr,
+		nil,
+		nil,
+		initShardState.BeaconHeight,
+		initShardState.Epoch,
+		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
+		initShardState.ShardID,
+		initShardState.MaxShardCommitteeSize,
+		initShardState.MinShardCommitteeSize,
+		blockchain.config.ChainParams.Offset,
+		blockchain.config.ChainParams.SwapOffset,
+		nil,
+		make(map[string]string),
+		initShardState == nil,
+		false, false, false, true)
+
+	initShardState.shardCommitteeEngine.UpdateCommitteeState(env)
+
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	genesisBeaconBlock := beaconBlocks[0]
 	if err != nil {

@@ -43,6 +43,7 @@ const (
 	ShardStateError
 	TransactionFromNewBlockError
 	GenerateInstructionError
+	ProcessInstructionFromBeaconError
 	SwapError
 	DuplicateShardBlockError
 	CommitteeOrValidatorError
@@ -340,6 +341,7 @@ var ErrCodeMessage = map[int]struct {
 	InsertShardBlockError:                             {-1154, "Insert Shard Block Error"},
 	GetShardBlockHeightByHashError:                    {-1155, "Get Shard Block Height By Hash Error"},
 	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
+	ProcessInstructionFromBeaconError:                 {-1157, "Process Instruction From Beacon Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	UpdateBeaconCommitteeStateError:                   {-4000, "Update Beacon Committee State Error"},

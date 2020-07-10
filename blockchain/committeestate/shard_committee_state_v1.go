@@ -21,26 +21,33 @@ type ShardCommitteeStateHash struct {
 
 //ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment struct {
-	ShardHeight               uint64
-	ShardBlockHash            uint64
-	Txs                       []metadata.Transaction
-	NewBeaconInstructions     [][]string
-	NewBeaconHeight           uint64
-	ChainParamEpoch           uint64
-	EpochBreakPointSwapNewKey []uint64
-	ShardID                   byte
-	MaxShardCommitteeSize     int
-	MinShardCommitteeSize     int
-	Offset                    int
-	SwapOffset                int
-	ProducersBlackList        map[string]uint8
-	StakingTx                 map[string]string
-	IsNullView                bool
+	AddedCommittees                            []string
+	ShardHeight                                uint64
+	ShardBlockHash                             uint64
+	Txs                                        []metadata.Transaction
+	NewBeaconInstructions                      [][]string
+	NewBeaconHeight                            uint64
+	ChainParamEpoch                            uint64
+	EpochBreakPointSwapNewKey                  []uint64
+	ShardID                                    byte
+	MaxShardCommitteeSize                      int
+	MinShardCommitteeSize                      int
+	Offset                                     int
+	SwapOffset                                 int
+	ProducersBlackList                         map[string]uint8
+	StakingTx                                  map[string]string
+	IsNullView                                 bool
+	IsProcessInstructionFromBeacon             bool
+	IsProcessShardBlockInstruction             bool
+	IsProcessShardBlockInstructionForKeyListV2 bool
+	IsInitShardView                            bool
 }
 
 //NewShardCommitteeStateEnvironment : Default constructor of ShardCommitteeStateEnvironment
 //Output: pointer of ShardCommitteeStateEnvironment
-func NewShardCommitteeStateEnvironment(txs []metadata.Transaction,
+func NewShardCommitteeStateEnvironment(
+	addedCommittees []string,
+	txs []metadata.Transaction,
 	beaconInstructions [][]string,
 	newBeaconHeight uint64,
 	chainParamEpoch uint64,
@@ -49,8 +56,13 @@ func NewShardCommitteeStateEnvironment(txs []metadata.Transaction,
 	maxShardCommitteeSize, minShardCommitteeSize, offset, swapOffset int,
 	producersBlackList map[string]uint8,
 	stakingTx map[string]string,
-	isNullView bool) *ShardCommitteeStateEnvironment {
+	isNullView bool,
+	isProcessInstructionFromBeacon bool,
+	isProcessShardBlockInstruction bool,
+	isProcessShardBlockInstructionForKeyListV2 bool,
+	isInitShardView bool) *ShardCommitteeStateEnvironment {
 	return &ShardCommitteeStateEnvironment{
+		AddedCommittees:           addedCommittees,
 		Txs:                       txs,
 		NewBeaconHeight:           newBeaconHeight,
 		ChainParamEpoch:           chainParamEpoch,
@@ -63,6 +75,7 @@ func NewShardCommitteeStateEnvironment(txs []metadata.Transaction,
 		SwapOffset:                swapOffset,
 		ShardID:                   shardID,
 		IsNullView:                isNullView,
+		IsInitShardView:           isInitShardView,
 	}
 }
 
@@ -199,25 +212,34 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
 
-	err = newCommitteeState.processInstructionFromBeacon(env.IsNullView,
-		env.NewBeaconInstructions, env.ShardID, committeeChange)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if common.IndexOfUint64(env.NewBeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
-		err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
+	if env.IsInitShardView {
+		addedCommittees, err := incognitokey.CommitteeBase58KeyListToStruct(env.AddedCommittees)
+		if err != nil {
+			return nil, nil, err
+		}
+		newCommitteeState.shardCommittee = append(newCommitteeState.shardCommittee, addedCommittees...)
 	} else {
-		err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
-	}
+		if env.IsProcessInstructionFromBeacon {
+			err = newCommitteeState.processInstructionFromBeacon(env.IsNullView,
+				env.NewBeaconInstructions, env.ShardID, committeeChange)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
 
-	if err != nil {
-		return nil, nil, err
-	}
+		if common.IndexOfUint64(env.NewBeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
+			if env.IsProcessShardBlockInstructionForKeyListV2 {
+				err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
+			}
+		} else {
+			if env.IsProcessShardBlockInstruction {
+				err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
+			}
+		}
 
-	err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		if err != nil {
+			return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		}
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -256,7 +278,7 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateE
 //Output: list array of incognito public keys
 func (engine *ShardCommitteeEngine) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
 	engine.shardCommitteeStateV1.mu.RLock()
-	defer engine.shardCommitteeStateV1.mu.Unlock()
+	defer engine.shardCommitteeStateV1.mu.RUnlock()
 	return engine.shardCommitteeStateV1.shardCommittee
 }
 
@@ -265,7 +287,7 @@ func (engine *ShardCommitteeEngine) GetShardCommittee(shardID byte) []incognitok
 //Output: list array of incognito public keys
 func (engine *ShardCommitteeEngine) GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
 	engine.shardCommitteeStateV1.mu.RLock()
-	defer engine.shardCommitteeStateV1.mu.Unlock()
+	defer engine.shardCommitteeStateV1.mu.RUnlock()
 	return engine.shardCommitteeStateV1.shardPendingValidator
 }
 
