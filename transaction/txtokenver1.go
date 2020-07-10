@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -187,10 +188,6 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 }
 
 func (txToken TxTokenVersion1) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	// no need to check for tx init token
-	if txToken.TxTokenData.Type == CustomTokenInit {
-		return txToken.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
-	}
 	// check for proof, signature ...
 	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
 		return false, err
@@ -214,18 +211,15 @@ func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transact
 		// validate for pToken
 		tokenID := txToken.TxTokenData.PropertyID
 		if txToken.TxTokenData.Type == CustomTokenInit {
-			if txToken.Tx.GetType() == common.TxRewardType && txToken.TxTokenData.Mintable {
-				isBridgeCentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
-				isBridgeDecentralizedToken, _ := txDatabaseWrapper.isBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
-				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
-					return true, nil
-				}
-				return false, nil
+			if txToken.TxTokenData.Mintable {
+				// mintable type will be handled elsewhere, here we return true
+				return true, nil
 			} else {
 				// check exist token
 				if txDatabaseWrapper.privacyTokenIDExisted(transactionStateDB, tokenID) {
 					return false, nil
 				}
+
 				return true, nil
 			}
 		} else {

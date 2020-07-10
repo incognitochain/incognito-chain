@@ -534,10 +534,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	right1.Add(right1, new(operation.Point).MultiScalarMult(expVector, tmpcmsValue))
 
 	if !operation.IsPointEqual(left1, right1) {
-		//TODO Remove later ...
 		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
-		fmt.Println("[BUGLOG SKIP TX] Skip Fail Tx to Test")
-		return true, nil
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
