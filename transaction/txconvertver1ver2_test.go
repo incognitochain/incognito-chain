@@ -143,13 +143,18 @@ func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognito
 	coinsToBeSaved := make([]*coin.CoinV2, numCoins)
 	for _, keySet := range keySets {
 		for i, _ := range coinsToBeSaved {
-			amount := uint64(common.RandIntInterval(0, 1000))
+			amount := uint64(common.RandIntInterval(0, 100000000))
 			paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Dummy token"))
 
 			tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
 			if err != nil {
 				return nil, err
 			}
+			keyImage, err := tempCoin.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
+			if err != nil {
+				return nil, err
+			}
+			tempCoin.SetKeyImage(keyImage)
 
 			tempCoin.ConcealOutputCoin(keySet.PaymentAddress.GetPublicView())
 			coinsToBeSaved[i] = tempCoin
@@ -195,7 +200,7 @@ func prepareKeySets(numKeySets int) ([]*incognitokey.KeySet, error) {
 	return keySets, nil
 }
 
-func createSampleCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *operation.Point, totalAmount uint64, numFeeInputs, version int) ([]coin.PlainCoin, error) {
+func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *operation.Point, totalAmount uint64, numFeeInputs, version int) ([]coin.PlainCoin, error) {
 	coinList := []coin.PlainCoin{}
 	if version == coin.CoinVersion1 {
 		for i := 0; i < numFeeInputs-1; i++ {
@@ -274,7 +279,14 @@ func createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, f
 	overBalance := uint64(common.RandIntInterval(0, 1000))
 
 	//create PRV fee input coins of version 2 (bigger than realFee => over balance) and store onto the database
-	feeInputs, err := createSampleCoinsFromTotalAmount(senderSK, pubKey, realFee+overBalance, numFeeInputs, feeInputVersion)
+	feeInputs, err := createSamplePlainCoinsFromTotalAmount(senderSK, pubKey, realFee+overBalance, numFeeInputs, feeInputVersion)
+	for _, feeInput := range feeInputs {
+		keyImage, err := feeInput.ParseKeyImageWithPrivateKey(senderSK)
+		if err != nil {
+			return nil, nil, err
+		}
+		feeInput.SetKeyImage(keyImage)
+	}
 	feeInputBytes := [][]byte{}
 	otas := [][]byte{}
 	for _, feeInput := range feeInputs {
@@ -594,11 +606,10 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 
 	fmt.Println("====== INIT TEST FINISHED =====")
 	tokenID := tokenIDs[0]
-	fmt.Println("BUGLOG tokenID in test", tokenID.String())
 	assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
 
-	for i := 0; i < 1; i++ {
-		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 100), common.RandIntInterval(0, 100), common.RandIntInterval(0, 100)
+	for i := 0; i < numTests; i++ {
+		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 100), common.RandIntInterval(1, 100)
 		_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
 
@@ -609,7 +620,8 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 			return
 		}
 
-		res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, tokenID, false, true)
+		res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, &common.PRVCoinID, false, true)
 		assert.Equal(t, true, res, "ValidateTransaction returns an error: %v", err)
+
 	}
 }
