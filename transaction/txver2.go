@@ -330,7 +330,11 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
 			if ok, err := txDatabaseWrapper.hasOTACoinIndex(transactionStateDB, *tokenID, index.Uint64(), shardID); !ok || err != nil {
-				Logger.Log.Errorf("HasOTACoinIndex error %v ", err)
+				if !ok {
+					Logger.Log.Errorf("OTACoinIndex does not exist: %v", index.Uint64())
+					return nil, errors.New(fmt.Sprintf("OTACoinIndex does not exist: %v, %s", index.Uint64(), tokenID.String()))
+				}
+				Logger.Log.Errorf("HasOTACoinIndex error %v", err)
 				return nil, err
 			}
 			randomCoinBytes, err := txDatabaseWrapper.getOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
