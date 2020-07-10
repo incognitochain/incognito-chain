@@ -160,26 +160,32 @@ func (engine *ShardCommitteeEngine) ValidateCommitteeRootHashes(rootHashes []com
 //Input: Shard Committee hash
 //Output: error
 func (engine *ShardCommitteeEngine) Commit(hashes *ShardCommitteeStateHash) error {
-	// if reflect.DeepEqual(engine.uncommittedShardCommitteeStateV1, NewShardCommitteeStateV1()) {
-	// 	return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("%+v", engine.uncommittedShardCommitteeStateV1))
-	// }
+	if reflect.DeepEqual(engine.uncommittedShardCommitteeStateV1, NewShardCommitteeStateV1()) {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("%+v", engine.uncommittedShardCommitteeStateV1))
+	}
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.shardCommitteeStateV1.mu.Lock()
 	defer engine.shardCommitteeStateV1.mu.Unlock()
-	// comparedHashes, err := engine.generateUncommittedCommitteeHashes()
-	// if err != nil {
-	// 	return NewCommitteeStateError(ErrCommitShardCommitteeState, err)
-	// }
+	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
+	if err != nil {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, err)
+	}
 
-	// if comparedHashes.ShardCommitteeHash.IsEqual(&hashes.ShardCommitteeHash) {
-	// 	return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeHash want value %+v but have %+v",
-	// 		comparedHashes.ShardCommitteeHash, hashes.ShardCommitteeHash))
-	// }
+	fmt.Println(comparedHashes)
 
-	// if comparedHashes.ShardSubstituteHash.IsEqual(&hashes.ShardSubstituteHash) {
-	// 	return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardSubstituteHash want value %+v but have %+v",
-	// 		comparedHashes.ShardSubstituteHash, hashes.ShardSubstituteHash))
+	// if hashes != nil || comparedHashes != nil {
+
+	// 	if comparedHashes.ShardCommitteeHash.IsEqual(&hashes.ShardCommitteeHash) {
+	// 		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeHash want value %+v but have %+v",
+	// 			comparedHashes.ShardCommitteeHash, hashes.ShardCommitteeHash))
+	// 	}
+
+	// 	if comparedHashes.ShardSubstituteHash.IsEqual(&hashes.ShardSubstituteHash) {
+	// 		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardSubstituteHash want value %+v but have %+v",
+	// 			comparedHashes.ShardSubstituteHash, hashes.ShardSubstituteHash))
+	// 	}
+
 	// }
 
 	engine.uncommittedShardCommitteeStateV1.clone(engine.shardCommitteeStateV1)

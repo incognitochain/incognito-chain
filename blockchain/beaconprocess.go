@@ -540,7 +540,8 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 //  - Shard Candidate root: CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
 //  - Shard Validator root: ShardCommittee + ShardPendingValidator
 //  - Random number if have in instruction
-func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
+func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock,
+	randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
 	startTimeVerifyPostProcessingBeaconBlock := time.Now()
 	if !hashes.BeaconCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.BeaconCommitteeAndValidatorRoot) {
 		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))

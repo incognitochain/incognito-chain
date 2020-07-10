@@ -91,12 +91,12 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	newBeststate, _, _, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
+	newBeststate, hashes, _, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	if err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
-	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing", shardID, shardBlock.GetHeight(), shardBlock.Hash().String())
@@ -191,7 +191,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 			return err
 		}
 	} else {
@@ -820,6 +820,16 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 			isNullCurView,
 			true, true, false, false))
 
+	// _, _, err = shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err = shardBestState.shardCommitteeEngine.Commit(nil)
+	if err != nil {
+		return err
+	}
+
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
@@ -854,7 +864,19 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 // verifyPostProcessingShardBlock
 //	- commitee root
 //	- pending validator root
-func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock *ShardBlock, shardID byte) error {
+func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock *ShardBlock, shardID byte,
+	hashes *committeestate.ShardCommitteeStateHash) error {
+
+	if !hashes.ShardCommitteeHash.IsEqual(&shardBlock.Header.CommitteeRoot) {
+		// return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
+		return errors.New("Wrong hash")
+	}
+
+	if !hashes.ShardSubstituteHash.IsEqual(&shardBlock.Header.PendingValidatorRoot) {
+		// return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
+		return errors.New("Wrong hash")
+	}
+
 	startTimeVerifyPostProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 
