@@ -138,7 +138,6 @@ func (txToken TxTokenBase) CheckAuthorizedSender([]byte) (bool, error) {
 }
 
 func (txToken TxTokenBase) IsSalaryTx() bool {
-	fmt.Println("[BUGLOG] Is Salary Tx Token Check .... ")
 	if txToken.GetType() != common.TxRewardType {
 		return false
 	}
@@ -148,7 +147,6 @@ func (txToken TxTokenBase) IsSalaryTx() bool {
 	if len(txToken.TxTokenData.TxNormal.GetProof().GetInputCoins()) > 0 {
 		return false
 	}
-	fmt.Println("[BUGLOG] Is Salary Tx Token Check .... TRUE")
 	return true
 }
 

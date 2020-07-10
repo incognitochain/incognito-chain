@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy/key"
-
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -2007,4 +2006,18 @@ func (txService TxService) DecryptOutputCoinByKey(outCoins []coin.Coin, keyset *
 	}
 
 	return results, nil
+}
+
+func (TxService TxService) GenerateOTAFromPaymentAddress(paymentAddressStr string) (string, string, error) {
+	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
+	if err != nil {
+		Logger.log.Errorf("GenerateOTAFromPaymentAddress Cannot get keyset from payment address. Error: %+v", err)
+		return "", "", err
+	}
+	 publickey, txRandom, err := coin.NewOTAFromReceiver(keySet.PaymentAddress)
+	 if err != nil {
+		 Logger.log.Errorf("GenerateOTAFromPaymentAddress Cannot generate OTA Coin from keyset. Error: %+v", err)
+		 return "", "", err
+	 }
+	 return base58.Base58Check{}.Encode(publickey.ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte), nil
 }
