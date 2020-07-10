@@ -636,8 +636,8 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	if ok {
 		return v.(*BeaconBestState), nil
 	}
-
-	rootHash, err := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), blockHash)
+	bcDB := blockchain.GetBeaconChainDatabase()
+	rootHash, err := rawdbv2.GetBeaconRootsHash(bcDB, blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -659,6 +659,16 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	if err != nil {
 		Logger.log.Error(err)
 	}
+	sID := []int{}
+	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
+		sID = append(sID, i)
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconView.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	beaconView.AutoStaking = NewMapStringBool()
+	beaconView.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 	blockchain.beaconViewCache.Add(blockHash, beaconView)
 	return beaconView, err
 }
