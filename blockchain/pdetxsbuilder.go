@@ -3,9 +3,8 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
@@ -76,36 +75,17 @@ func buildTradeResTx(
 		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
 		return nil, err
 	}
-	keyWallet, err := wallet.Base58CheckDeserialize(receiverAddressStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while deserializing trader address string: %+v", err)
-		return nil, err
-	}
-	receiverAddr := keyWallet.KeySet.PaymentAddress
 
 	var otaCoin *privacy.CoinV2
 	if len(txRandomStr) > 0 {
-		txRandomB, err := base58.Decode(txRandomStr)
+		publickey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddressStr, txRandomStr)
 		if err != nil {
-			Logger.log.Errorf("Wrong request info's txRandom - Cannot decode base58 string: %+v", err)
 			return nil, err
 		}
-		txRandom := new(coin.TxRandom)
-		if err := txRandom.SetBytes(txRandomB); err != nil {
-			Logger.log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
-			return nil, err
-		}
-		otaCoin, err = coin.NewCoinFromAmountAndTxRandomBytes(receiveAmt,receiverAddr, txRandom, []byte{})
-		if err != nil {
-			Logger.log.Errorf("Cannot get new coin from amount and ota address")
-			return nil, err
-		}
+		otaCoin = coin.NewCoinFromAmountAndTxRandomBytes(receiveAmt, publickey, txRandom, []byte{})
+
 	} else {
-		otaCoin, err = coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
-		if err != nil {
-			Logger.log.Errorf("Cannot get new coin from amount and payment address")
-			return nil, err
-		}
+		return nil, errors.New("Cannnot create trade response without txRandom info")
 	}
 	if tokenIDStr == common.PRVCoinID.String() {
 		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, transactionStateDB, meta)

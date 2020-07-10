@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
@@ -70,14 +69,13 @@ func (iRes *PDETradeResponse) CalculateSize() uint64 {
 
 func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	insts := mintData.Insts
-	instUsed := mintData.InstsUsed
-	for i, inst := range insts {
+
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDETradeRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PDETradeRequestMeta) {
 			continue
 		}
@@ -130,11 +128,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 			shardID != shardIDFromInst {
 			continue
 		}
-		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
-		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
-			continue
-		}
+
 		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
 		if err != nil {
 			Logger.log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
@@ -145,26 +139,29 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 			continue
 		}
 		pk := mintCoin.GetPublicKey().ToBytesS()
+
 		paidAmount := mintCoin.GetValue()
 		if len(receiverTxRandomFromInst) > 0 {
-			txRandomBFromInst, err := base58.Decode(receiverTxRandomFromInst)
+			publicKey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddrStrFromInst, receiverTxRandomFromInst)
 			if err != nil {
-				Logger.log.Errorf("Wrong request info's txRandom - Cannot decode base58 string: %+v", err)
-				continue
-			}
-			txRandomFromInst := new(coin.TxRandom)
-			if err := txRandomFromInst.SetBytes(txRandomBFromInst); err != nil {
 				Logger.log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
 				continue
 			}
-			txRandom := mintCoin.(*coin.CoinV2).GetTxRandom()
-			if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+
+			txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+			if !bytes.Equal(publicKey.ToBytesS(), pk[:]) ||
 				receivingAmtFromInst != paidAmount ||
-				!bytes.Equal(txRandom[:],txRandomFromInst[:]) ||
+				!bytes.Equal(txR[:], txRandom[:]) ||
 				receivingTokenIDStr != assetID.String() {
 				continue
 			}
 		} else {
+			key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
+			if err != nil {
+				Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+				continue
+			}
+
 			if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
 				receivingAmtFromInst != paidAmount ||
 				receivingTokenIDStr != assetID.String() {
@@ -177,6 +174,6 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PDETradeRequest tx found for PDETradeResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
 }

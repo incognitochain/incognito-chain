@@ -432,11 +432,5 @@ func main() {
 			}
 			PDETradeToken(tool, privateKeys[index], args[2], args[3])
 		}
-
-
-
 	}
-
-
-
 }

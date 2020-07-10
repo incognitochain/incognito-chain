@@ -330,7 +330,7 @@ func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStr
 		"method": "createandsendprivacycustomtokentransaction",
 		"params": [
 			"%s",
-			"null",
+			null,
 			10,
 			1,
 			{

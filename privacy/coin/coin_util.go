@@ -2,11 +2,12 @@ package coin
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 const (
@@ -104,16 +105,11 @@ func CreatePaymentInfosFromPlainCoinsAndAddress(c []PlainCoin, paymentAddress ke
 }
 
 func NewCoinFromAmountAndReceiver(amount uint64, receiver key.PaymentAddress) (*CoinV2, error) {
-	fmt.Println("Creating coins where amount =", amount, "and publickey =", receiver.Pk)
 	paymentInfo := key.InitPaymentInfo(receiver, amount, []byte{})
 	return NewCoinFromPaymentInfo(paymentInfo)
 }
 
-func NewCoinFromAmountAndTxRandomBytes(amount uint64, receiver key.PaymentAddress, txRandom *TxRandom, info []byte) (*CoinV2, error) {
-	publicKey, err := new(operation.Point).FromBytesS(receiver.Pk)
-	if err != nil {
-		return nil, err
-	}
+func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point, txRandom *TxRandom, info []byte) *CoinV2 {
 	c := new(CoinV2).Init()
 	c.SetPublicKey(publicKey)
 	c.SetAmount(new(operation.Scalar).FromUint64(amount))
@@ -122,7 +118,7 @@ func NewCoinFromAmountAndTxRandomBytes(amount uint64, receiver key.PaymentAddres
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 	c.SetSharedRandom(nil)
 	c.SetInfo(info)
-	return c, nil
+	return c
 }
 
 func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
@@ -184,4 +180,38 @@ func CoinV2ArrayToCoinArray(coinArray []*CoinV2) []Coin {
 		res[i] = coinArray[i]
 	}
 	return res
+}
+
+func NewOTAFromReceiver( receiver key.PaymentAddress) (*operation.Point, *TxRandom, error) {
+	paymentInfo := key.InitPaymentInfo(receiver, 0, []byte{})
+	coin, err := NewCoinFromPaymentInfo(paymentInfo)
+	if err != nil {
+		return nil, nil, err
+	}
+	return coin.GetPublicKey(), coin.txRandom, nil
+}
+
+func ParseOTAInfoToString(pubKey *operation.Point, txRandom *TxRandom) (string, string) {
+	return base58.Base58Check{}.Encode(pubKey.ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte)
+}
+
+func ParseOTAInfoFromString (pubKeyStr, txRandomStr string) (*operation.Point, *TxRandom, error) {
+	publicKeyB, version, err := base58.Base58Check{}.Decode(pubKeyStr)
+	if err!= nil || version != common.ZeroByte {
+		return nil, nil, errors.New("ParseOTAInfoFromString Cannot decode base58check string")
+	}
+	pubKey, err :=  new(operation.Point).FromBytesS(publicKeyB)
+	if err != nil {
+		return nil, nil, errors.New("ParseOTAInfoFromString Cannot set Point from bytes")
+	}
+
+	txRandomB, version,  err := base58.Base58Check{}.Decode(txRandomStr)
+	if err != nil || version != common.ZeroByte{
+		return nil, nil, errors.New("ParseOTAInfoFromString Cannot decode base58check string")
+	}
+	txRandom := new(TxRandom)
+	if err := txRandom.SetBytes(txRandomB); err != nil {
+		return nil, nil, errors.New("ParseOTAInfoFromString Cannot set txRandom from bytes")
+	}
+	return pubKey, txRandom, nil
 }

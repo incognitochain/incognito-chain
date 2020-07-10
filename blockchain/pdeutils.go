@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -207,6 +208,9 @@ func BuildInitTxSalaryTx(otaCoin *coin.CoinV2,
 		Logger.log.Errorf("Cannot build Tx Salary. Err: %v", err)
 		return nil, err
 	}
+	fmt.Println("[BUGLOG] Tx Salary", res.Hash().String())
+	t, _ := json.Marshal(res)
+	fmt.Println("[BUGLOG] Tx Salary Detail", string(t))
 	return res, nil
 }
 
@@ -226,5 +230,8 @@ func BuildInitTxTokenSalaryTx(otaCoin *coin.CoinV2,
 		Logger.log.Errorf("Cannot build Tx Token Salary. Err: %v", err)
 		return nil, err
 	}
+	fmt.Println("[BUGLOG] Tx Token Salary", res.Hash().String())
+	t, _ := json.Marshal(res)
+	fmt.Println("[BUGLOG] Tx Token Salary Detail", string(t))
 	return res, nil
 }
