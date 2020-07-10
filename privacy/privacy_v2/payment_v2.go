@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -274,20 +275,35 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	// check output coins with privacy
 	duplicatePublicKeys := make(map[string]bool)
 	outputCoins := proof.GetOutputCoins()
-	for i := 0; i < len(outputCoins); i++ {
-		if !outputCoins[i].GetPublicKey().PointValid() {
+	cmsValues := proof.aggregatedRangeProof.GetCommitments()
+	for i, outputCoin := range outputCoins {
+		if !outputCoin.GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
 		}
 
-
-		pubkeyStr := string(outputCoins[i].GetPublicKey().ToBytesS())
+		//check duplicate output addresses
+		pubkeyStr := string(outputCoin.GetPublicKey().ToBytesS())
 		if _, ok := duplicatePublicKeys[pubkeyStr]; ok {
 			return false, errors.New("Cannot have duplicate publickey ")
 		}
 		duplicatePublicKeys[pubkeyStr] = true
 
-		if !proof.GetOutputCoins()[i].GetCommitment().PointValid() {
+		if !outputCoin.GetCommitment().PointValid() {
 			return false, errors.New("validate sanity Coin commitment of output coin failed")
+		}
+
+		//re-compute the commitment if the output coin's address is the burning address
+		if wallet.IsPublicKeyBurningAddress(outputCoins[i].GetPublicKey().ToBytesS()){
+			value := outputCoin.GetValue()
+			rand := outputCoin.GetRandomness()
+			commitment := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(value), rand, coin.PedersenValueIndex)
+			if !operation.IsPointEqual(commitment, outputCoin.GetCommitment()){
+				return false, errors.New("validate sanity Coin commitment of burned coin failed")
+			}
+		}
+		//check if output coins' commitment is the same as in the proof
+		if !operation.IsPointEqual(cmsValues[i], outputCoin.GetCommitment()){
+			return false, errors.New("validate sanity Coin commitment of aggregatedProof failed")
 		}
 	}
 	return true, nil
@@ -310,11 +326,6 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 		return nil, err
 	}
 
-	// If not have privacy then don't need to prove range
-	if !hasPrivacy {
-		return proof, nil
-	}
-
 	// Prepare range proofs
 	n := len(outputCoins)
 	outputValues := make([]uint64, n)
@@ -332,18 +343,25 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 	}
 
 	// After Prove, we should hide all information in coin details.
-	for i := 0; i < len(outputCoins); i++ {
-		if err = proof.outputCoins[i].ConcealOutputCoin(paymentInfo[i].PaymentAddress.GetPublicView()); err != nil {
-			return nil, err
+	for i, outputCoin := range proof.outputCoins {
+		if !wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			if err = outputCoin.ConcealOutputCoin(paymentInfo[i].PaymentAddress.GetPublicView()); err != nil {
+				return nil, err
+			}
+
+			// OutputCoin.GetKeyImage should be nil even though we do not have it
+			// Because otherwise the RPC server will return the Bytes of [1 0 0 0 0 ...] (the default byte)
+			proof.outputCoins[i].SetKeyImage(nil)
 		}
 
-		// OutputCoin.GetKeyImage should be nil even though we do not have it
-		// Because otherwise the RPC server will return the Bytes of [1 0 0 0 0 ...] (the default byte)
-		proof.outputCoins[i].SetKeyImage(nil)
 	}
 
-	for i := 0; i < len(proof.GetInputCoins()); i++ {
-		proof.inputCoins[i].(*coin.CoinV2).ConcealInputCoin()
+	for _, inputCoin := range proof.GetInputCoins(){
+		coin, ok := inputCoin.(*coin.CoinV2)
+		if !ok {
+			return nil, errors.New("Input coin of PaymentProofV2 must be CoinV2")
+		}
+		coin.ConcealInputCoin()
 	}
 
 	return proof, nil
