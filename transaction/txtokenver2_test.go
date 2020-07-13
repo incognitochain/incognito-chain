@@ -42,6 +42,7 @@ var (
 
 func TestInitTxPrivacyToken(t *testing.T) {
 	for loop := 0; loop < numOfLoops; loop++ {
+		fmt.Printf("\n------------------TxTokenVersion2 Main Test\n")
 		var err error
 		numOfPrivateKeys := 4
 		numOfInputs := 2
@@ -68,6 +69,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		// create tx for token init
 		tx := &TxTokenVersion2{}
 		
+		fmt.Println("Token Init")
 		err = tx.Init(paramToCreateTx)
 		assert.Equal(t, nil, err)
 
@@ -122,6 +124,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		_ = tokenParam2
 		tx2 := &TxTokenVersion2{}
 
+		fmt.Println("Token Transfer")
 		err = tx2.Init(paramToCreateTx2)
 		// should fail because db does not have this token yet
 		assert.NotEqual(t, nil, err)
@@ -349,6 +352,7 @@ func getParamsForTxTokenInit(theInputCoin coin.Coin, db *statedb.StateDB) (*TxTo
 func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T){
 	numOfPrivateKeys := 2
 	for loop := 0; loop < numOfLoops; loop++ {
+		fmt.Printf("\n------------------TxTokenVersion2 Salary Test\n")
 		var err error
 		preparePaymentKeys(numOfPrivateKeys,t)
 

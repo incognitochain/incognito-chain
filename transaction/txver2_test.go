@@ -87,26 +87,32 @@ func forceSaveCoins(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byt
 }
 
 func preparePaymentKeys(count int, t *testing.T){
+	// create many random private keys
+	// then use each privatekey to derive Incognito keyset (various keys for everything inside the protocol)
+	// we ensure they all belong in shard 0 for this test
+		
+	// PaymentInfo is like `intent` for making Coin.
+	// the paymentInfo slice here will be used to create pastCoins & inputCoins 
+	// we populate `value` fields with some arbitrary, big-enough constant (here, 4000*len)
+	// `message` field can be anything
 	dummyPrivateKeys = make([]*key.PrivateKey,count)
-	for i := 0; i < count; i += 1 {
-		privateKey := key.GeneratePrivateKey(common.RandBytes(32))
-		dummyPrivateKeys[i] = &privateKey
-	}
-
-// then use each privatekey to derive Incognito keyset (various keys for everything inside the protocol)
 	keySets = make([]*incognitokey.KeySet,len(dummyPrivateKeys))
-// PaymentInfo is like `intent` for making Coin.
-// the paymentInfo slice here will be used to create pastCoins & inputCoins 
-// we populate `value` fields with some arbitrary, big-enough constant (here, 4000*len)
-// `message` field can be anything
 	paymentInfo = make([]*key.PaymentInfo, len(dummyPrivateKeys))
-	for i,_ := range keySets{
-		keySets[i] = new(incognitokey.KeySet)
-		err := keySets[i].InitFromPrivateKey(dummyPrivateKeys[i])
-		assert.Equal(t, nil, err)
-
-		paymentInfo[i] = key.InitPaymentInfo(keySets[i].PaymentAddress, uint64(4000*len(dummyPrivateKeys)), []byte("test in"))
+	for i := 0; i < count; i += 1 {
+		for{
+			privateKey := key.GeneratePrivateKey(common.RandBytes(32))
+			dummyPrivateKeys[i] = &privateKey
+			keySets[i] = new(incognitokey.KeySet)
+			err := keySets[i].InitFromPrivateKey(dummyPrivateKeys[i])
+			assert.Equal(t, nil, err)
+			paymentInfo[i] = key.InitPaymentInfo(keySets[i].PaymentAddress, uint64(4000*len(dummyPrivateKeys)), []byte("test in"))
+			pkb := []byte(paymentInfo[i].PaymentAddress.Pk)
+			if common.GetShardIDFromLastByte(pkb[len(pkb)-1])==shardID{
+				break
+			}
+		}
 	}
+	// fmt.Println("Key & PaymentInfo generation finished")
 }
 
 func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
@@ -115,6 +121,7 @@ func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
 	n := common.RandInt() % (maxPrivateKeys - minInputs + 1) + minInputs
 	var err error
 	for i := 0; i < numOfLoops; i += 1 {
+		fmt.Printf("\n------------------TxTokenVersion2 SigPubKey Test\n")
 		maxLen := new(big.Int)
 		maxLen.SetString("1000000000000000000", 10)
 		indexes := make([][]*big.Int, n)
@@ -165,6 +172,7 @@ func TestTxV2Salary(t *testing.T){
 	numOfPrivateKeys := 2
 	dummyDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	for loop := 0; loop < numOfLoops; loop++ {
+		fmt.Printf("\n------------------TxVersion2 Salary Test\n")
 		var err error
 		preparePaymentKeys(numOfPrivateKeys,t)
 
@@ -214,40 +222,41 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 	numOfInputs := common.RandInt() % (maxInputs - minInputs + 1) + minInputs
 	dummyDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	for loop := 0; loop < numOfLoops; loop++ {
+		fmt.Printf("\n------------------TxVersion2 Main Test\n")
 		var err error
 		preparePaymentKeys(numOfPrivateKeys,t)
 
-// pastCoins are coins we forcefully write into the dummyDB to simulate the db having OTAs in the past
-// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
+		// pastCoins are coins we forcefully write into the dummyDB to simulate the db having OTAs in the past
+		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
 		pastCoins := make([]coin.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 		for i, _ := range pastCoins {
 			tempCoin,err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
 			assert.Equal(t, nil, err)
 			assert.Equal(t, false, tempCoin.IsEncrypted())
 
-// to obtain a PlainCoin to feed into input of TX, we need to conceal & decrypt it (it makes sure all fields are right, as opposed to just casting the type to PlainCoin)
+			// to obtain a PlainCoin to feed into input of TX, we need to conceal & decrypt it (it makes sure all fields are right, as opposed to just casting the type to PlainCoin)
 			tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
 			assert.Equal(t, true, tempCoin.IsEncrypted())
 			assert.Equal(t, true, tempCoin.GetSharedRandom() == nil)
 			pastCoins[i] = tempCoin
 		}
 
-// in this test, we randomize the length of inputCoins so we feel safe fixing the length of outputCoins to equal len(dummyPrivateKeys)
-// since the function `tx.Init` takes output's paymentinfo and creates outputCoins inside of it, we only create the paymentinfo here
+		// in this test, we randomize the length of inputCoins so we feel safe fixing the length of outputCoins to equal len(dummyPrivateKeys)
+		// since the function `tx.Init` takes output's paymentinfo and creates outputCoins inside of it, we only create the paymentinfo here
 		paymentInfoOut := make([]*key.PaymentInfo, len(dummyPrivateKeys))
 		for i, _ := range dummyPrivateKeys {
 			paymentInfoOut[i] = key.InitPaymentInfo(keySets[i].PaymentAddress,uint64(3000),[]byte("test out"))
 			// fmt.Println(paymentInfo[i])
 		}
 
-// use the db's interface to write our simulated pastCoins to the database
-// we do need to re-format the data into bytes first
-	forceSaveCoins(dummyDB, pastCoins, 0, common.PRVCoinID, t)
+		// use the db's interface to write our simulated pastCoins to the database
+		// we do need to re-format the data into bytes first
+		forceSaveCoins(dummyDB, pastCoins, 0, common.PRVCoinID, t)
 
 
-// now we take some of those stored coins to use as TX input
-// for the TX to be valid, these inputs must associate to one same private key
-// (it's guaranteed by our way of indexing the pastCoins array)
+		// now we take some of those stored coins to use as TX input
+		// for the TX to be valid, these inputs must associate to one same private key
+		// (it's guaranteed by our way of indexing the pastCoins array)
 		inputCoins := make([]coin.PlainCoin,numOfInputs)
 		for i,_ := range inputCoins{
 			var err error
@@ -255,7 +264,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			assert.Equal(t,nil,err)
 		}
 
-// now we calculate the fee = sum(Input) - sum(Output)
+		// now we calculate the fee = sum(Input) - sum(Output)
 		sumIn := uint64(4000*len(dummyPrivateKeys)*numOfInputs)
 		sumOut := uint64(3000*len(paymentInfoOut))
 		assert.Equal(t,true,sumIn > sumOut)
@@ -268,17 +277,18 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			nil,
 			[]byte{},
 		)
-// creating the TX object
+		// creating the TX object
 		tx := &TxVersion2{}
-// actually making the TX
-// `Init` function will also create all necessary proofs and attach them to the TX
+		// actually making the TX
+		// `Init` function will also create all necessary proofs and attach them to the TX
 		err = tx.Init(initializingParams)
+		assert.Equal(t,nil,err)
 
-// verify the TX
-// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, 
-// 			shardID byte (we're testing with only 1 shard), 
-//			tokenID *common.Hash (set to nil, meaning we use PRV),
-//			isBatch bool, isNewTransaction bool
+		// verify the TX
+		// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, 
+		// 			shardID byte (we're testing with only 1 shard), 
+		//			tokenID *common.Hash (set to nil, meaning we use PRV),
+		//			isBatch bool, isNewTransaction bool
 		isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
@@ -376,6 +386,14 @@ func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, inputCoins []co
 	assert.Equal(t,nil,err)
 	malTx.SetProof(txv2.GetProof())
 	isValid,err := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	// verify must fail
+	assert.NotEqual(t,nil,err)
+	assert.Equal(t,false,isValid)
+	inputCoins[changed] = saved
+
+	saved = inputCoins[changed]
+	inputCoins[changed] = nil
+	isValid,err = malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
 	// verify must fail
 	assert.NotEqual(t,nil,err)
 	assert.Equal(t,false,isValid)
