@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 //===================================Util for Beacon=============================
@@ -257,11 +258,17 @@ func SwapValidator(
 	currentGoodProducers := filterValidators(currentValidators, producersBlackList, false)
 	goodPendingValidatorsLen := len(goodPendingValidators)
 	currentGoodProducersLen := len(currentGoodProducers)
-
+	// number of good producer more than minimum needed producer to continue
 	if currentGoodProducersLen >= minCommittee {
+		// current number of good producer reach maximum committee size => swap
 		if currentGoodProducersLen == maxCommittee {
 			offset = swapOffset
 		}
+		// if not then number of good producer are less than maximum committee size
+		// push more pending validator into committee list
+
+		// if number of current good pending validators are less than maximum push offset
+		// then push all good pending validator into committee
 		if offset > goodPendingValidatorsLen {
 			offset = goodPendingValidatorsLen
 		}
@@ -408,16 +415,18 @@ func snapshotCommittee(beaconCommittee []incognitokey.CommitteePublicKey, allSha
 		}
 		snapshotAllShardCommittee[shardID] = clonedShardCommittee
 	}
+
 	if !reflect.DeepEqual(beaconCommittee, snapshotBeaconCommittee) {
 		return []incognitokey.CommitteePublicKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", beaconCommittee, snapshotBeaconCommittee)
 	}
 	if !reflect.DeepEqual(allShardCommittee, snapshotAllShardCommittee) {
 		return []incognitokey.CommitteePublicKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", allShardCommittee, snapshotAllShardCommittee)
 	}
+
 	return snapshotBeaconCommittee, snapshotAllShardCommittee, nil
 }
-func snapshotRewardReceiver(rewardReceiver map[string]string) (map[string]string, error) {
-	snapshotRewardReceiver := make(map[string]string)
+func snapshotRewardReceiver(rewardReceiver map[string]privacy.PaymentAddress) (map[string]privacy.PaymentAddress, error) {
+	snapshotRewardReceiver := make(map[string]privacy.PaymentAddress)
 	for k, v := range rewardReceiver {
 		snapshotRewardReceiver[k] = v
 	}

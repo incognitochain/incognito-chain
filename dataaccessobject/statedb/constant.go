@@ -47,6 +47,9 @@ const (
 
 	// PDEX v2
 	PDETradingFeeObjectType
+	
+	BlockHashObjectType
+	StakerObjectType
 )
 
 // Prefix length
