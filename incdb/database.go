@@ -55,4 +55,6 @@ type Database interface {
 	Stater
 	Compacter
 	io.Closer
+	Backup(backupFolder string)
+	ReOpen() error
 }

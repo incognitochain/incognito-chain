@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -33,15 +33,14 @@ func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 	return assignInstruction
 }
 
-func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		hashes, err := rawdbv2.GetBeaconBlockHashByIndex(db, i)
+		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), i)
 		if err != nil {
-			return beaconBlocks, err
+			return nil, err
 		}
-		hash := hashes[0]
-		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, hash)
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconHash)
 		if err != nil {
 			return beaconBlocks, err
 		}
@@ -636,3 +635,48 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 }
 
 //=======================================END CROSS SHARD UTIL
+
+////getChangeCommittees ...
+//func getChangeCommittees(oldArr, newArr []incognitokey.CommitteePublicKey) (addedCommittees []incognitokey.CommitteePublicKey, removedCommittees[]incognitokey.CommitteePublicKey, err error) {
+//
+//	if oldArr == nil || len(oldArr) == 0 {
+//		return newArr, removedCommittees, nil
+//	}
+//
+//	if newArr == nil || len(newArr) == 0 {
+//		return addedCommittees, oldArr, nil
+//	}
+//
+//	mapOldArr := make(map[string]bool)
+//	mapNewArr := make(map[string]bool)
+//
+//	for _, v := range oldArr{
+//		key, err := v.ToBase58()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//		mapOldArr[key] = true
+//	}
+//
+//	for _, v := range newArr{
+//		key, err := v.ToBase58()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//		mapNewArr[key] = true
+//	}
+//
+//	for hash, _ := range mapOldArr {
+//		if mapNewArr[hash] {
+//
+//		}
+//	}
+//
+//	//for hash, v := range mapNewArr {
+//	//
+//	//}
+//
+//
+//
+//	return addedCommittees, removedCommittees, nil
+//}

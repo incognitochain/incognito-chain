@@ -2,6 +2,9 @@ package rpcserver
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -16,6 +19,61 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+
+	err = beaconBestState.InitStateRootHash(httpServer.config.BlockChain)
+	if err != nil {
+		panic(err)
+	}
+
+	//best block
+	block, _, err := httpServer.config.BlockChain.GetBeaconBlockByHash(beaconBestState.BestBlockHash)
+	if err != nil || block == nil {
+		fmt.Println("block ", block)
+		panic(err)
+	}
+	beaconBestState.BestBlock = *block
+	if beaconBestState.RewardReceiver == nil {
+		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
+	}
+	err = beaconBestState.RestoreBeaconCommittee()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreShardCommittee()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreBeaconPendingValidator()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreShardPendingValidator()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateBeaconWaitingForCurrentRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateBeaconWaitingForNextRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateShardWaitingForCurrentRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	err = beaconBestState.RestoreCandidateShardWaitingForNextRandom()
+	if err != nil {
+		panic(err)
 	}
 
 	result := jsonresult.NewGetBeaconBestState(beaconBestState)

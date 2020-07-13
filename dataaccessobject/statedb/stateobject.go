@@ -81,6 +81,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newLockedCollateralStateObjectWithValue(db, hash, value)
 	case RewardFeatureStateObjectType:
 		return newRewardFeatureStateObjectWithValue(db, hash, value)
+	case BlockHashObjectType:
+		return newBlockHashStateObjectWithValue(db, hash, value)
+	case StakerObjectType:
+		return newStakerObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -142,6 +146,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newLockedCollateralStateObject(db, hash)
 	case RewardFeatureStateObjectType:
 		return newRewardFeatureStateObject(db, hash)
+	case BlockHashObjectType:
+		return newBlockHashStateObject(db, hash)
+	case StakerObjectType:
+		return newStakerObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

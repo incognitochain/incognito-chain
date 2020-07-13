@@ -61,6 +61,8 @@ type Chain interface {
 	GetCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
 	InsertBlk(block common.BlockInterface, shouldValidate bool) error
+	CheckExistedBlk(block common.BlockInterface) bool
+	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
 }
 
 const (

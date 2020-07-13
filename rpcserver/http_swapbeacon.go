@@ -57,7 +57,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 	beaconHeigh := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, _, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.GetBeaconChainDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
@@ -75,12 +75,12 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 // returns rpcservice.RPCError if proof not found
 func getSwapProofOnBeacon(
 	height uint64,
-	db incdb.Database,
+	bc *blockchain.BlockChain,
 	ce ConsensusEngine,
 	meta int,
 ) (*swapProof, *blockchain.BeaconBlock, *rpcservice.RPCError) {
 	// Get beacon block
-	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(db, height, height)
+	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(bc, height, height)
 	if len(beaconBlocks) == 0 {
 		err := fmt.Errorf("cannot find beacon block with height %d", height)
 		return nil, nil, rpcservice.NewRPCError(rpcservice.GetBeaconBlockByHeightError, err)
@@ -215,7 +215,7 @@ func getIncludedBeaconBlocks(
 		previousShardBlock = temp
 	}
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
-		bc.GetBeaconChainDatabase(),
+		bc,
 		previousShardBlock.Header.BeaconHeight+1,
 		beaconHeight,
 	)
