@@ -217,7 +217,8 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	engine.shardCommitteeStateV1.mu.RUnlock()
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
-
+	// TODO: separate function, each function should hold only one responsible
+	// Avoid using boolean condition to branch
 	if env.IsInitShardView {
 		addedCommittees, err := incognitokey.CommitteeBase58KeyListToStruct(env.AddedCommittees)
 		if err != nil {
@@ -356,7 +357,7 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 
 	newShardPendingValidator := []string{}
 	assignInstructions := [][]string{}
-
+	// TODO: convert assign instruction from string to struct before processing
 	for _, instructions := range listInstructions {
 		if instructions[0] == instruction.ASSIGN_ACTION && instructions[2] == "shard" {
 			if strings.Compare(instructions[3], strconv.Itoa(int(shardID))) == 0 {
@@ -367,7 +368,6 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 			}
 		}
 	}
-
 	shardPendingValidatorStr, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
 	if err != nil {
 		return err

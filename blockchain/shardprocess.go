@@ -702,6 +702,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 
 	// //Part add for transfering
+	// TODO: check nil shardbeststate before processing
 	listCommittees, err := incognitokey.CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID))
 	if err != nil {
 		return nil, nil, nil, err
