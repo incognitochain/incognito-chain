@@ -830,6 +830,17 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 		return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(proof.outputCoins)))
 	}
 
+	// check doubling a input coin in tx
+	serialNumbers := make(map[common.Hash]bool)
+	for i, inCoin := range proof.GetInputCoins() {
+		hashSN := common.HashH(inCoin.GetKeyImage().ToBytesS())
+		if serialNumbers[hashSN] {
+			Logger.Log.Errorf("Double input in proof - index %v", i)
+			return false, errors.New("double input in tx")
+		}
+		serialNumbers[hashSN] = true
+	}
+
 	isPrivacy := proof.IsPrivacy()
 
 	if isPrivacy {
@@ -843,6 +854,11 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 			}
 		}
 		for i := 0; i < len(proof.GetSerialNumberProof()); i++ {
+			// check cmSK of input coin is equal to comSK in serial number proof
+			if !operation.IsPointEqual(proof.GetCommitmentInputSecretKey(), proof.GetSerialNumberProof()[i].GetComSK()){
+				Logger.Log.Errorf("ComSK in SNproof is not equal to commitment of private key")
+				return false, errors.New("comSK of SNProof is not comSK of input coins")
+			}
 			if !proof.GetSerialNumberProof()[i].ValidateSanity() {
 				return false, errors.New("validate sanity Serial number proof failed")
 			}
@@ -913,6 +929,12 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 
 	if !isPrivacy {
 		for i := 0; i < len(proof.GetSerialNumberNoPrivacyProof()); i++ {
+			// check PK of input coin is equal to vKey in serial number proof
+			if !operation.IsPointEqual(proof.GetInputCoins()[i].GetPublicKey(), proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()){
+				Logger.Log.Errorf("VKey in SNProof is not equal public key of sender")
+				return false, errors.New("VKey of SNProof is not public key of sender")
+			}
+
 			if !proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
 				return false, errors.New("validate sanity Serial number no privacy proof failed")
 			}

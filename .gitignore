@@ -52,7 +52,9 @@ src/rpcserver
 
 priv.json
 bin/keylist.json
+bin/keylist-v2.json
 bin/incognito
+bin/incognito-test
 bin/bootnode
 bin/sample-config.conf
 incognito

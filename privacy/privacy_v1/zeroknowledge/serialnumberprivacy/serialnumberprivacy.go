@@ -118,6 +118,10 @@ func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
 	return proof
 }
 
+func (proof SNPrivacyProof) GetComSK() *privacy.Point {
+	return proof.stmt.comSK
+}
+
 // Set sets Statement
 func (stmt *SerialNumberPrivacyStatement) Set(
 	SN *operation.Point,
