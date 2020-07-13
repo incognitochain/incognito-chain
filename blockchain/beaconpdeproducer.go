@@ -1032,8 +1032,8 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 				&tradingFeeForContributorByPair{
 					ContributorAddressStr: parts[partsLen-1],
 					FeeAmt:                feeForContributor.Uint64(),
-					Token1IDStr:           parts[partsLen-2],
-					Token2IDStr:           parts[partsLen-3],
+					Token2IDStr:           parts[partsLen-2],
+					Token1IDStr:           parts[partsLen-3],
 				},
 			)
 			accumFees.Add(accumFees, feeForContributor)

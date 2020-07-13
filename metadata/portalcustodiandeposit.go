@@ -22,6 +22,49 @@ type PortalCustodianDeposit struct {
 	DepositedAmount uint64
 }
 
+func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
+	type Alias PortalCustodianDeposit
+	temp := &struct {
+		RemoteAddresses interface{}
+		*Alias
+	}{
+		Alias: (*Alias)(object),
+	}
+
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		Logger.log.Error("UnmarshalJSON PortalCustodianDeposit", string(data))
+		return errors.New("can not parse data for PortalCustodianDeposit")
+	}
+
+	remoteAddreses := make(map[string]string)
+	tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
+	err2 := json.Unmarshal(tempJson, &remoteAddreses)
+	if err2 != nil {
+		// int testnet, exception:
+		type RemoteAddress struct {
+			PTokenID string
+			Address  string
+		}
+
+		tmpRemoteAddress := make([]RemoteAddress, 0)
+		tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
+		err1 := json.Unmarshal(tempJson, &tmpRemoteAddress)
+		if err1 != nil {
+			Logger.log.Error("Parse []RemoteAddress fail %+v err %+v", temp.RemoteAddresses, err)
+			return errors.New("can not parse data for PortalCustodianDeposit RemoteAddress")
+		} else {
+			remoteAddreses = make(map[string]string)
+			for _, v := range tmpRemoteAddress {
+				remoteAddreses[v.PTokenID] = v.Address
+			}
+		}
+	}
+	object.RemoteAddresses = remoteAddreses
+	return nil
+
+}
+
 // PortalCustodianDepositAction - shard validator creates instruction that contain this action content
 // it will be append to ShardToBeaconBlock
 type PortalCustodianDepositAction struct {
