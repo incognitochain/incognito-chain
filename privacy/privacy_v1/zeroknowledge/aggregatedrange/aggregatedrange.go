@@ -535,6 +535,12 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	if !operation.IsPointEqual(left1, right1) {
 		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+
+		////TODO Remove later ...
+		//fmt.Println("[BUGLOG SKIP TX] Skip Fail Tx to Test")
+		//return true, nil
+		////END TODO
+
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 

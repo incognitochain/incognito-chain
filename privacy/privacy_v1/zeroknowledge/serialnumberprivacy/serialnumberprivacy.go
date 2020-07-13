@@ -118,7 +118,7 @@ func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
 	return proof
 }
 
-func (proof SNPrivacyProof) GetComSK() *privacy.Point {
+func (proof SNPrivacyProof) GetComSK() *operation.Point {
 	return proof.stmt.comSK
 }
 

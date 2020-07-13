@@ -2,7 +2,6 @@ package serialnumbernoprivacy
 
 import (
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 )
@@ -30,6 +29,11 @@ type SNNoPrivacyProof struct {
 
 	zSeed *operation.Scalar
 }
+
+func (proof SNNoPrivacyProof) GetVKey() *operation.Point {
+	return proof.stmt.vKey
+}
+
 
 func (proof SNNoPrivacyProof) ValidateSanity() bool {
 	if !proof.stmt.output.PointValid() {

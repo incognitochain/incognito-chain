@@ -144,7 +144,7 @@ func NewConsensusEngine() *Engine {
 		BFTProcess:           make(map[int]ConsensusInterface),
 		consensusName:        common.BlsConsensus,
 		userMiningPublicKeys: make(map[string]*incognitokey.CommitteePublicKey),
-		version:              2,
+		version:              1,
 		lock:                 new(sync.Mutex),
 	}
 	return engine
