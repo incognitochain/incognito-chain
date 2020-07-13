@@ -768,35 +768,35 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 
 	// new trade instruction 11 (for trade fee distribution)
 	// Note: order of tokenID in pair
-	//expectTradeFeeDistributionMeta := []*tradingFeeForContributorByPair{
-	//	{
-	//		ContributorAddressStr: "contributorAddress1",
-	//		FeeAmt:                27,
-	//		Token1IDStr:           common.PRVIDStr,
-	//		Token2IDStr:           "tokenID1",
-	//	},
-	//	{
-	//		ContributorAddressStr: "contributorAddress2",
-	//		FeeAmt:                28,
-	//		Token1IDStr:           common.PRVIDStr,
-	//		Token2IDStr:           "tokenID1",
-	//	},
-	//	{
-	//		ContributorAddressStr: "contributorAddress1",
-	//		FeeAmt:                22,
-	//		Token1IDStr:           common.PRVIDStr,
-	//		Token2IDStr:           "tokenID2",
-	//	},
-	//	{
-	//		ContributorAddressStr: "contributorAddress2",
-	//		FeeAmt:                52,
-	//		Token1IDStr:           common.PRVIDStr,
-	//		Token2IDStr:           "tokenID2",
-	//	},
-	//}
+	expectTradeFeeDistributionMeta := []*tradingFeeForContributorByPair{
+		{
+			ContributorAddressStr: "contributorAddress1",
+			FeeAmt:                27,
+			Token1IDStr:           common.PRVIDStr,
+			Token2IDStr:           "tokenID1",
+		},
+		{
+			ContributorAddressStr: "contributorAddress2",
+			FeeAmt:                28,
+			Token1IDStr:           common.PRVIDStr,
+			Token2IDStr:           "tokenID1",
+		},
+		{
+			ContributorAddressStr: "contributorAddress1",
+			FeeAmt:                22,
+			Token1IDStr:           common.PRVIDStr,
+			Token2IDStr:           "tokenID2",
+		},
+		{
+			ContributorAddressStr: "contributorAddress2",
+			FeeAmt:                52,
+			Token1IDStr:           common.PRVIDStr,
+			Token2IDStr:           "tokenID2",
+		},
+	}
 
-	//actualTradeFeeDistributionMeta := getPDETradeFeeDistributionFromInst(newTradeInsts[11][3])
-	//s.Equal(expectTradeFeeDistributionMeta, actualTradeFeeDistributionMeta)
+	actualTradeFeeDistributionMeta := getPDETradeFeeDistributionFromInst(newTradeInsts[11][3])
+	s.Equal(expectTradeFeeDistributionMeta, actualTradeFeeDistributionMeta)
 
 	// at the end
 	// check pool pair
