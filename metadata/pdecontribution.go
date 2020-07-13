@@ -123,7 +123,7 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return false, false, errors.New("Error This is not Tx Burn")
 	}
 
-	if pc.ContributedAmount == 0 && pc.ContributedAmount != burnCoin.GetValue() {
+	if pc.ContributedAmount == 0 || pc.ContributedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("Contributed Amount is not valid ")
 	}
 
@@ -137,7 +137,6 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDStr incorrect"))
 	}
 	if !bytes.Equal(burnedTokenID[:], tokenID[:]) {
-		panic("OK")
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
 

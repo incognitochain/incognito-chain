@@ -441,11 +441,16 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 	if !r.ScalarValid() {
 		return false
 	}
+
 	rK := new(operation.Point).ScalarMult(paymentAdd.GetPublicView(), r)
-	_, index, err := c.GetTxRandomDetail()
+	txRandomPoint, index, err := c.GetTxRandomDetail()
 	if err  != nil {
 		return false
 	}
+	if !operation.IsPointEqual(new(operation.Point).ScalarMultBase(r), txRandomPoint) {
+		return false
+	}
+
 	hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
 	HrKG := new(operation.Point).ScalarMultBase(hash)
 	tmpPubKey := new(operation.Point).Add(HrKG, paymentAdd.GetPublicSpend())

@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -49,7 +48,7 @@ type PortalReqMatchingRedeemStatus struct {
 
 func NewPortalReqMatchingRedeem(metaType int, custodianAddrStr string, redeemID string) (*PortalReqMatchingRedeem, error) {
 	metadataBase := MetadataBase{
-		Type: metaType,
+		Type: metaType, Sig: []byte{},
 	}
 	custodianDepositMeta := &PortalReqMatchingRedeem{
 		CustodianAddressStr: custodianAddrStr,
@@ -58,6 +57,8 @@ func NewPortalReqMatchingRedeem(metaType int, custodianAddrStr string, redeemID 
 	custodianDepositMeta.MetadataBase = metadataBase
 	return custodianDepositMeta, nil
 }
+
+func (*PortalReqMatchingRedeem) ShouldSignMetaData() bool { return true }
 
 func (req PortalReqMatchingRedeem) ValidateTxWithBlockChain(
 	txr Transaction,
@@ -83,8 +84,9 @@ func (req PortalReqMatchingRedeem) ValidateSanityData(chainRetriever ChainRetrie
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("custodian incognito address is not signer tx")
+
+	if ok, err := txr.CheckAuthorizedSender(incogAddr.Pk); err != nil || !ok {
+		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}
 
 	// check tx type
@@ -107,6 +109,19 @@ func (req PortalReqMatchingRedeem) Hash() *common.Hash {
 	record := req.MetadataBase.Hash().String()
 	record += req.CustodianAddressStr
 	record += req.RedeemID
+	if req.Sig != nil && len(req.Sig) != 0 {
+		record += string(req.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (req PortalReqMatchingRedeem) HashWithoutSig() *common.Hash {
+	record := req.MetadataBase.Hash().String()
+	record += req.CustodianAddressStr
+	record += req.RedeemID
+
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
