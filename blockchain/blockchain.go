@@ -172,25 +172,6 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		addCommitteesStr = append(addCommitteesStr, str)
 	}
 
-	env := committeestate.NewShardCommitteeStateEnvironment(
-		addCommitteesStr,
-		nil,
-		nil,
-		initShardState.BeaconHeight,
-		initShardState.Epoch,
-		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
-		initShardState.ShardID,
-		initShardState.MaxShardCommitteeSize,
-		initShardState.MinShardCommitteeSize,
-		blockchain.config.ChainParams.Offset,
-		blockchain.config.ChainParams.SwapOffset,
-		nil,
-		make(map[string]string),
-		initShardState == nil,
-		false, false, false, true)
-
-	initShardState.shardCommitteeEngine.UpdateCommitteeState(env)
-
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	genesisBeaconBlock := beaconBlocks[0]
 	if err != nil {

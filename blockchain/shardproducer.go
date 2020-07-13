@@ -149,14 +149,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
 
-	isNullCurView := false
-
-	if curView == nil {
-		isNullCurView = true
-	}
-
 	env := committeestate.NewShardCommitteeStateEnvironment(
-		nil,
 		transactionsForNewBlock,
 		[][]string{},
 		shardBestState.BeaconHeight,
@@ -169,7 +162,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		blockchain.config.ChainParams.SwapOffset,
 		nil,
 		make(map[string]string),
-		isNullCurView, true, false, false, false)
+		curView == nil, true, false)
 
 	_, committeeChange, err := curView.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {

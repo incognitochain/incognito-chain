@@ -3,7 +3,6 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -21,7 +20,6 @@ type ShardCommitteeStateHash struct {
 
 //ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment struct {
-	AddedCommittees                            []string
 	ShardHeight                                uint64
 	ShardBlockHash                             uint64
 	Txs                                        []metadata.Transaction
@@ -40,13 +38,11 @@ type ShardCommitteeStateEnvironment struct {
 	IsProcessInstructionFromBeacon             bool
 	IsProcessShardBlockInstruction             bool
 	IsProcessShardBlockInstructionForKeyListV2 bool
-	IsInitShardView                            bool
 }
 
 //NewShardCommitteeStateEnvironment : Default constructor of ShardCommitteeStateEnvironment
 //Output: pointer of ShardCommitteeStateEnvironment
 func NewShardCommitteeStateEnvironment(
-	addedCommittees []string,
 	txs []metadata.Transaction,
 	beaconInstructions [][]string,
 	newBeaconHeight uint64,
@@ -57,12 +53,9 @@ func NewShardCommitteeStateEnvironment(
 	producersBlackList map[string]uint8,
 	stakingTx map[string]string,
 	isNullView bool,
-	isProcessInstructionFromBeacon bool,
 	isProcessShardBlockInstruction bool,
-	isProcessShardBlockInstructionForKeyListV2 bool,
-	isInitShardView bool) *ShardCommitteeStateEnvironment {
+	isProcessShardBlockInstructionForKeyListV2 bool) *ShardCommitteeStateEnvironment {
 	return &ShardCommitteeStateEnvironment{
-		AddedCommittees:           addedCommittees,
 		Txs:                       txs,
 		NewBeaconHeight:           newBeaconHeight,
 		ChainParamEpoch:           chainParamEpoch,
@@ -75,7 +68,6 @@ func NewShardCommitteeStateEnvironment(
 		SwapOffset:                swapOffset,
 		ShardID:                   shardID,
 		IsNullView:                isNullView,
-		IsInitShardView:           isInitShardView,
 	}
 }
 
@@ -217,36 +209,29 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	engine.shardCommitteeStateV1.mu.RUnlock()
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
+
 	// TODO: separate function, each function should hold only one responsible
 	// Avoid using boolean condition to branch
-	if env.IsInitShardView {
-		addedCommittees, err := incognitokey.CommitteeBase58KeyListToStruct(env.AddedCommittees)
-		if err != nil {
-			return nil, nil, err
+	// @tin
+
+	err = newCommitteeState.processInstructionFromBeacon(env.IsNullView,
+		env.NewBeaconInstructions, env.ShardID, committeeChange)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if common.IndexOfUint64(env.NewBeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
+		if env.IsProcessShardBlockInstructionForKeyListV2 {
+			err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
 		}
-		newCommitteeState.shardCommittee = append(newCommitteeState.shardCommittee, addedCommittees...)
 	} else {
-		if env.IsProcessInstructionFromBeacon {
-			err = newCommitteeState.processInstructionFromBeacon(env.IsNullView,
-				env.NewBeaconInstructions, env.ShardID, committeeChange)
-			if err != nil {
-				return nil, nil, err
-			}
+		if env.IsProcessShardBlockInstruction {
+			err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
 		}
+	}
 
-		if common.IndexOfUint64(env.NewBeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
-			if env.IsProcessShardBlockInstructionForKeyListV2 {
-				err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
-			}
-		} else {
-			if env.IsProcessShardBlockInstruction {
-				err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
-			}
-		}
-
-		if err != nil {
-			return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-		}
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -261,8 +246,8 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 //Input: env variables ShardCommitteeStateEnvironment
 //Output: NULL
 func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateEnvironment) {
-	engine.uncommittedShardCommitteeStateV1.mu.Lock()
-	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
+	engine.shardCommitteeStateV1.mu.Lock()
+	defer engine.shardCommitteeStateV1.mu.Unlock()
 
 	committeeState := engine.shardCommitteeStateV1
 
@@ -278,14 +263,15 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateE
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 //GetShardCommittee : Get shard committees
 //Input: NULL
 //Output: list array of incognito public keys
 func (engine *ShardCommitteeEngine) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
-	engine.shardCommitteeStateV1.mu.RLock()
-	defer engine.shardCommitteeStateV1.mu.RUnlock()
+	// engine.shardCommitteeStateV1.mu.RLock()
+	// defer engine.shardCommitteeStateV1.mu.RUnlock()
 	return engine.shardCommitteeStateV1.shardCommittee
 }
 
@@ -293,8 +279,8 @@ func (engine *ShardCommitteeEngine) GetShardCommittee(shardID byte) []incognitok
 //Input: NULL
 //Output: list array of incognito public keys
 func (engine *ShardCommitteeEngine) GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
-	engine.shardCommitteeStateV1.mu.RLock()
-	defer engine.shardCommitteeStateV1.mu.RUnlock()
+	// engine.shardCommitteeStateV1.mu.RLock()
+	// defer engine.shardCommitteeStateV1.mu.RUnlock()
 	return engine.shardCommitteeStateV1.shardPendingValidator
 }
 
@@ -356,25 +342,24 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	}
 
 	newShardPendingValidator := []string{}
-	assignInstructions := [][]string{}
-	// TODO: convert assign instruction from string to struct before processing
-	for _, instructions := range listInstructions {
-		if instructions[0] == instruction.ASSIGN_ACTION && instructions[2] == "shard" {
-			if strings.Compare(instructions[3], strconv.Itoa(int(shardID))) == 0 {
-				tempNewShardPendingValidator := strings.Split(instructions[1], ",")
+
+	for _, ins := range listInstructions {
+		if ins[0] == instruction.ASSIGN_ACTION && ins[2] == "shard" {
+			assignInstruction, err := instruction.ImportAssignInstructionFromString(ins)
+			if err != nil {
+				return err
+			}
+
+			if assignInstruction.ChainID == int(shardID) {
+				tempNewShardPendingValidator := assignInstruction.ShardCandidates
 				shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
 				newShardPendingValidator = append(newShardPendingValidator, tempNewShardPendingValidator...)
-				assignInstructions = append(assignInstructions, instructions)
+				committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 			}
 		}
 	}
-	shardPendingValidatorStr, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	if err != nil {
-		return err
-	}
 
-	committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, shardPendingValidatorStr...)
-
+	var err error
 	committeeChange.ShardSubstituteAdded[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(newShardPendingValidator)
 	if err != nil {
 		return err

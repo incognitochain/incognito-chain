@@ -490,9 +490,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 
 	shardPendingValidator := curView.shardCommitteeEngine.GetShardPendingValidator(curView.ShardID)
 
-	//TODO: @tin
-	//Replace here
-
 	isNullCurView := false
 
 	if curView == nil {
@@ -500,7 +497,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	}
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
-		nil,
 		shardBlock.Body.Transactions,
 		shardBlock.Body.Instructions,
 		curView.BeaconHeight,
@@ -514,7 +510,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		nil,
 		make(map[string]string),
 		isNullCurView,
-		true, false, false, false)
+		false, false)
 
 	_, committeeChange, err := curView.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -696,13 +692,15 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 
+	///Here?
 	isNullCurView := false
 	if shardBestState == nil {
 		isNullCurView = true
 	}
 
 	// //Part add for transfering
-	// TODO: check nil shardbeststate before processing
+	// TODO: check nil shardbeststate before processing @tin
+
 	listCommittees, err := incognitokey.CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID))
 	if err != nil {
 		return nil, nil, nil, err
@@ -731,7 +729,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	///
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
-		nil,
+
 		shardBlock.Body.Transactions,
 		shardBlock.Body.Instructions,
 		shardBestState.BeaconHeight,
@@ -745,7 +743,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		producersBlackList,
 		make(map[string]string),
 		isNullCurView,
-		true, true, true, false)
+		true, true)
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -805,7 +803,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 
 	shardBestState.shardCommitteeEngine.InitCommitteeState(
 		committeestate.NewShardCommitteeStateEnvironment(
-			nil,
 			genesisShardBlock.Body.Transactions,
 			instructions,
 			shardBestState.BeaconHeight,
@@ -819,17 +816,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 			producersBlackList,
 			make(map[string]string),
 			isNullCurView,
-			true, true, false, false))
-
-	// _, _, err = shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
-	// if err != nil {
-	// 	return err
-	// }
-
-	err = shardBestState.shardCommitteeEngine.Commit(nil)
-	if err != nil {
-		return err
-	}
+			true, false))
 
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
