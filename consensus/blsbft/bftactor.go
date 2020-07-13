@@ -60,6 +60,10 @@ func (e *BLSBFT) IsOngoing() bool {
 	return e.isOngoing
 }
 
+func (e *BLSBFT) IsStarted() bool {
+	return e.isStarted
+}
+
 func (e *BLSBFT) GetConsensusName() string {
 	return consensusName
 }
@@ -74,7 +78,7 @@ func (e *BLSBFT) GetChainID() int {
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)
-		e.StopCh <- struct{}{}
+		close(e.StopCh)
 		e.isStarted = false
 		e.isOngoing = false
 		return nil

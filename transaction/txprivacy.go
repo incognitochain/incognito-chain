@@ -900,6 +900,17 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetOutputCoins())))
 		}
 
+		// check doubling a input coin in tx
+		serialNumbers := make(map[common.Hash]bool)
+		for i, inCoin := range txN.Proof.GetInputCoins() {
+			hashSN := common.HashH(inCoin.CoinDetails.GetSerialNumber().ToBytesS())
+			if serialNumbers[hashSN] {
+				Logger.log.Errorf("Double input in tx - txId %v - index %v", txN.Hash().String(), i)
+				return false, errors.New("double input in tx")
+			}
+			serialNumbers[hashSN] = true
+		}
+
 		isPrivacy := true
 		// check Privacy or not
 
@@ -917,7 +928,14 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 					return false, errors.New("validate sanity One out of many proof failed")
 				}
 			}
+
 			for i := 0; i < len(txN.Proof.GetSerialNumberProof()); i++ {
+				// check cmSK of input coin is equal to comSK in serial number proof
+				if !privacy.IsPointEqual(txN.Proof.GetCommitmentInputSecretKey(), txN.Proof.GetSerialNumberProof()[i].GetComSK()) {
+					Logger.log.Errorf("ComSK in SNproof is not equal to commitment of private key - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("comSK of SNProof %v is not comSK of input coins", i))
+				}
+
 				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number proof failed")
 				}
@@ -988,6 +1006,11 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 
 		if !isPrivacy {
 			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
+				// check PK of input coin is equal to vKey in serial number proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
+					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
+				}
 				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
@@ -1009,7 +1032,6 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
 					return false, errors.New("validate sanity SNDerivator of input coin failed")
 				}
-
 			}
 
 			// check output coins without privacy
