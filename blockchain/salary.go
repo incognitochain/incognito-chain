@@ -6,70 +6,13 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
-
-func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBestState, swapPublicKey string, blkProducerPrivateKey *privacy.PrivateKey, committeeShardID byte) (metadata.Transaction, error) {
-	//publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	//_, committeeShardID := blockGenerator.chain.GetBeaconBestState().GetPubkeyRole(publicKey, 0)
-
-	Logger.log.Infof("Return Staking Amount public key %+v, staking transaction hash %+v, shardID %+v", swapPublicKey, view.StakingTx, committeeShardID)
-	tx, ok := view.StakingTx[swapPublicKey]
-	if !ok {
-		return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
-	}
-	var txHash = &common.Hash{}
-	err := (&common.Hash{}).Decode(txHash, tx)
-	if err != nil {
-		return nil, NewBlockChainError(DecodeHashError, err)
-	}
-	blockHash, index, err := rawdbv2.GetTransactionByHash(blockGenerator.chain.GetShardChainDatabase(committeeShardID), *txHash)
-	if err != nil {
-		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
-	}
-	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHash(blockHash)
-	if err != nil || shardBlock == nil {
-		Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
-		return nil, NewBlockChainError(FetchShardBlockError, err)
-	}
-	txData := shardBlock.Body.Transactions[index]
-	keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress)
-	if err != nil {
-		Logger.log.Error("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
-		return nil, NewBlockChainError(WalletKeySerializedError, err)
-	}
-	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress, committeeShardID)
-	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-	if paymentShardID != committeeShardID {
-		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, committeeShardID))
-	}
-	returnStakingMeta := metadata.NewReturnStaking(
-		tx,
-		keyWallet.KeySet.PaymentAddress,
-		metadata.ReturnStakingMeta,
-	)
-	returnStakingTx := new(transaction.Tx)
-	err = returnStakingTx.InitTxSalary(
-		txData.CalculateTxValue(),
-		&keyWallet.KeySet.PaymentAddress,
-		blkProducerPrivateKey,
-		view.GetCopiedTransactionStateDB(),
-		returnStakingMeta,
-	)
-	//modify the type of the salary transaction
-	returnStakingTx.Type = common.TxReturnStakingType
-	if err != nil {
-		return nil, NewBlockChainError(InitSalaryTransactionError, err)
-	}
-	return returnStakingTx, nil
-}
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
@@ -124,8 +67,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *BeaconB
 }
 
 func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*BeaconBlock, shardID byte) error {
-	rewardReceivers := make(map[string]string)
-	committees := make(map[int][]incognitokey.CommitteePublicKey)
+	cInfos := make(map[int][]*statedb.StakerInfo)
 	isInit := false
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
@@ -188,8 +130,10 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
+					epoch = shardRewardInfo.Epoch
 					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
-					beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconChainDatabase(), height)
+					var beaconConsensusRootHash common.Hash
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
 					}
@@ -197,15 +141,39 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					committees, rewardReceivers = statedb.GetAllCommitteeStateWithRewardReceiver(beaconConsensusStateDB, blockchain.GetShardIDs())
+					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo, committees[int(shardToProcess)], rewardReceivers)
+				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, cInfos[int(shardToProcess)])
 				if err != nil {
 					return err
 				}
 				continue
 			}
 
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) addShardCommitteeRewardV2(
+	rewardStateDB *statedb.StateDB,
+	shardID byte,
+	rewardInfoShardToProcess *metadata.ShardBlockRewardInfo,
+	cStakeInfos []*statedb.StakerInfo,
+) (
+	err error,
+) {
+	committeeSize := len(cStakeInfos)
+	for _, candidate := range cStakeInfos {
+		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
+			for key, value := range rewardInfoShardToProcess.ShardReward {
+				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)
+				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
+				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
+				if err != nil {
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
+				}
+			}
 		}
 	}
 	return nil

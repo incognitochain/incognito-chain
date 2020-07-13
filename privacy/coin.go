@@ -330,7 +330,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse PublicKey")
 		}
-		coin.value = new(big.Int).SetBytes(coinBytes[offset:offset+int(lenField)]).Uint64()
+		coin.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 

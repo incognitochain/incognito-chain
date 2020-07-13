@@ -33,14 +33,14 @@ func newBulletproofParams(m int) *bulletproofParams {
 	csByteH := []byte{}
 	csByteG := []byte{}
 	for i := 0; i < capacity; i++ {
-		gen.g[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i), privacy.CStringBulletProof)
-		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i + maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
+		gen.g[i] = privacy.HashToPointFromIndex(int64(numCommitValue+i), privacy.CStringBulletProof)
+		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue+i+maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
 		csByteG = append(csByteG, gen.g[i].ToBytesS()...)
 		csByteH = append(csByteH, gen.h[i].ToBytesS()...)
 	}
 
 	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue + 2*maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
+	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue+2*maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
 
 	gen.cs = append(gen.cs, csByteG...)
 	gen.cs = append(gen.cs, csByteH...)

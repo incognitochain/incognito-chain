@@ -49,9 +49,9 @@ func (engine *Engine) IsOngoing(chainName string) bool {
 }
 
 //TODO: remove all places use this function
-func (engine *Engine) CommitteeChange(chainName string) {
-	return
-}
+// func (engine *Engine) CommitteeChange(chainName string) {
+// 	return
+// }
 
 func (s *Engine) WatchCommitteeChange() {
 

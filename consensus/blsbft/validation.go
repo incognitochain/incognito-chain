@@ -87,6 +87,7 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 	for _, member := range committee {
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
 	}
+
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}

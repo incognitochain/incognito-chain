@@ -110,6 +110,7 @@ func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
 	wg := sync.WaitGroup{}
 	wg.Add(len(idx))
 	for i := 0; i < len(idx); i++ {
+
 		committeeByte := committee[idx[i]]
 		go func(index int, committeeByte []byte, combinedCommittee []byte, wg *sync.WaitGroup) {
 			defer wg.Done()
