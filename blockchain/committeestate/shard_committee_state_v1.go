@@ -193,11 +193,11 @@ func (engine *ShardCommitteeEngine) Commit(hashes *ShardCommitteeStateHash) erro
 	return nil
 }
 
-//AbortUncommittedBeaconState : Reset data in uncommittedShardCommitteeStateV1 struct
+//AbortUncommittedShardState : Reset data in uncommittedShardCommitteeStateV1 struct
 //Pre-conditions: uncommittedShardCommitteeStateV1 has been inited
 //Input: NULL
 //Output: error
-func (engine *ShardCommitteeEngine) AbortUncommittedBeaconState() {
+func (engine *ShardCommitteeEngine) AbortUncommittedShardState() {
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.uncommittedShardCommitteeStateV1.reset()
