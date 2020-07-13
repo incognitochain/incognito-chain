@@ -108,7 +108,7 @@ type BeaconCommitteeEngine interface {
 //ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
 	Commit(*committeestate.ShardCommitteeStateHash) error
-	AbortUncommittedBeaconState()
+	AbortUncommittedShardState()
 	UpdateCommitteeState(env *committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateHash,
 		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.ShardCommitteeStateEnvironment)

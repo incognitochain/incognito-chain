@@ -11,6 +11,7 @@ var (
 	ErrAssignInstruction = errors.New("assign instruction error")
 )
 
+//TODO: add shard candidate committee public key struct
 type AssignInstruction struct {
 	ChainID         int
 	ShardCandidates []string
