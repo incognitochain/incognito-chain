@@ -275,7 +275,7 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	// check output coins with privacy
 	duplicatePublicKeys := make(map[string]bool)
 	outputCoins := proof.GetOutputCoins()
-	cmsValues := proof.aggregatedRangeProof.GetCommitments()
+	// cmsValues := proof.aggregatedRangeProof.GetCommitments()
 	for i, outputCoin := range outputCoins {
 		if !outputCoin.GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
@@ -300,10 +300,6 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 			if !operation.IsPointEqual(commitment, outputCoin.GetCommitment()){
 				return false, errors.New("validate sanity Coin commitment of burned coin failed")
 			}
-		}
-		//check if output coins' commitment is the same as in the proof
-		if !operation.IsPointEqual(cmsValues[i], outputCoin.GetCommitment()){
-			return false, errors.New("validate sanity Coin commitment of aggregatedProof failed")
 		}
 	}
 	return true, nil
@@ -369,10 +365,18 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 
 // TODO PRIVACY (recheck before devnet)
 func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
+	cmsValues := proof.aggregatedRangeProof.GetCommitments()
+	if len(proof.GetOutputCoins())!=len(cmsValues){
+		return false, errors.New("Commitment length mismatch")
+	}
 	// Verify the proof that output values and sum of them do not exceed v_max
 	for i := 0; i < len(proof.outputCoins); i += 1 {
 		if !proof.outputCoins[i].IsEncrypted() {
 			return false, errors.New("Verify has privacy should have every coin encrypted")
+		}
+		//check if output coins' commitment is the same as in the proof
+		if !operation.IsPointEqual(cmsValues[i], proof.outputCoins[i].GetCommitment()){
+			return false, errors.New("Coin & Proof Commitments mismatch")
 		}
 	}
 	if isBatch == false {
@@ -416,6 +420,7 @@ func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee ui
 		}
 		dupMap[identifier] = true
 	}
+
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyHasNoPrivacy(fee)
