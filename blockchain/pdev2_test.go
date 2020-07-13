@@ -93,6 +93,12 @@ func getPDETradeFeeDistributionFromInst(contentInst string) []*tradingFeeForCont
 	return data
 }
 
+func getPDEWithdrawAcceptedContentFromInst(contentInst string) metadata.PDEWithdrawalAcceptedContent {
+	var data metadata.PDEWithdrawalAcceptedContent
+	_ = json.Unmarshal([]byte(contentInst), &data)
+	return data
+}
+
 func buildPDECrossPoolTradeReqAction(
 	tokenIDToBuyStr string,
 	tokenIDToSellStr string,
@@ -105,12 +111,12 @@ func buildPDECrossPoolTradeReqAction(
 		Type: metadata.PDECrossPoolTradeRequestMeta,
 	}
 	pdeTradeRequest := metadata.PDECrossPoolTradeRequest{
-		TokenIDToBuyStr: tokenIDToBuyStr,
-		TokenIDToSellStr: tokenIDToSellStr,
-		SellAmount: sellAmount,
+		TokenIDToBuyStr:     tokenIDToBuyStr,
+		TokenIDToSellStr:    tokenIDToSellStr,
+		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
-		TradingFee: tradingFee,
-		TraderAddressStr: traderAddressStr,
+		TradingFee:          tradingFee,
+		TraderAddressStr:    traderAddressStr,
 	}
 	pdeTradeRequest.MetadataBase = metadataBase
 	actionContent := metadata.PDECrossPoolTradeRequestAction{
@@ -134,7 +140,7 @@ func buildPDEFeeWithdrawalRequestAction(
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 		WithdrawalFeeAmt:      withdrawalFeeAmt,
-		MetadataBase:          metadata.MetadataBase{
+		MetadataBase: metadata.MetadataBase{
 			Type: metadata.PDEFeeWithdrawalRequestMeta,
 		},
 	}
@@ -158,8 +164,8 @@ func buildPDEWithdrawalRequestAction(
 		WithdrawerAddressStr:  withdrawerAddressStr,
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
-		WithdrawalShareAmt:      withdrawalShareAmt,
-		MetadataBase:          metadata.MetadataBase{
+		WithdrawalShareAmt:    withdrawalShareAmt,
+		MetadataBase: metadata.MetadataBase{
 			Type: metadata.PDEWithdrawalRequestMeta,
 		},
 	}
@@ -268,7 +274,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1001() {
 		var err error
 		switch metaType {
 		case metadata.PDEPRVRequiredContributionRequestMeta:
-			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight - 1, true)
+			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight-1, true)
 		//case metadata.PDETradeRequestMeta:
 		//	newInst, err = bc.buildInstructionsForPDETrade(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
 		//case metadata.PDEWithdrawalRequestMeta:
@@ -329,7 +335,6 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1001() {
 	s.Equal(s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey].Token1PoolValue, uint64(2500000000000))
 	s.Equal(s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey].Token2PoolValue, uint64(5000000000000))
 }
-
 
 // test trading and withdrawing contribution
 func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
@@ -425,7 +430,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 		var err error
 		switch metaType {
 		case metadata.PDEPRVRequiredContributionRequestMeta:
-			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight - 1, true)
+			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight-1, true)
 		default:
 			continue
 		}
@@ -522,8 +527,8 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 		pdeTradeActionsByShardID,
 	)
 
-	s.Equal( 5, len(sortedTradableActions))
-	s.Equal( 2, len(untradableActions))
+	s.Equal(5, len(sortedTradableActions))
+	s.Equal(2, len(untradableActions))
 
 	// 7 => 6 => 8 => 3 => 1 => 11 => 5 => 2 => 4
 	s.Equal(getTradeMetaFromAction(tradeInst3[1]), sortedTradableActions[0].Meta)
@@ -532,9 +537,9 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	s.Equal(getTradeMetaFromAction(tradeInst1[1]), sortedTradableActions[3].Meta)
 	s.Equal(getTradeMetaFromAction(tradeInst7[1]), sortedTradableActions[4].Meta)
 
-	tradableInsts, tradingFeePair := bc.buildInstsForSortedTradableActions(&s.currentPDEStateForProducer, beaconHeight - 1, sortedTradableActions)
+	tradableInsts, tradingFeePair := bc.buildInstsForSortedTradableActions(&s.currentPDEStateForProducer, beaconHeight-1, sortedTradableActions)
 	untradableInsts := bc.buildInstsForUntradableActions(untradableActions)
-	tradingFeesDistInst := bc.buildInstForTradingFeesDist(&s.currentPDEStateForProducer, beaconHeight - 1, tradingFeePair)
+	tradingFeesDistInst := bc.buildInstForTradingFeesDist(&s.currentPDEStateForProducer, beaconHeight-1, tradingFeePair)
 	newTradeInsts := append(tradableInsts, untradableInsts...)
 	newTradeInsts = append(newTradeInsts, tradingFeesDistInst)
 
@@ -546,11 +551,11 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	s.Equal("xPoolTradeAccepted", newTradeInsts[0][2])
 	expectTradeContent0 := []metadata.PDECrossPoolTradeAcceptedContent{
 		{
-			TraderAddressStr:         "trader1",
-			TokenIDToBuyStr:          common.PRVIDStr,
-			ReceiveAmount:            666222518,
-			Token1IDStr:              common.PRVIDStr,
-			Token2IDStr:              "tokenID2",
+			TraderAddressStr: "trader1",
+			TokenIDToBuyStr:  common.PRVIDStr,
+			ReceiveAmount:    666222518,
+			Token1IDStr:      common.PRVIDStr,
+			Token2IDStr:      "tokenID2",
 			Token1PoolValueOperation: metadata.TokenPoolValueOperation{
 				Operator: "-",
 				Value:    666222518,
@@ -559,16 +564,16 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 				Operator: "+",
 				Value:    2000000000,
 			},
-			ShardID:                  shardID,
-			RequestedTxID:            common.Hash{},
-			AddingFee:                25,
+			ShardID:       shardID,
+			RequestedTxID: common.Hash{},
+			AddingFee:     25,
 		},
 		{
-			TraderAddressStr:         "trader1",
-			TokenIDToBuyStr:          "tokenID1",
-			ReceiveAmount:            1331557922,
-			Token1IDStr:              common.PRVIDStr,
-			Token2IDStr:              "tokenID1",
+			TraderAddressStr: "trader1",
+			TokenIDToBuyStr:  "tokenID1",
+			ReceiveAmount:    1331557922,
+			Token1IDStr:      common.PRVIDStr,
+			Token2IDStr:      "tokenID1",
 			Token1PoolValueOperation: metadata.TokenPoolValueOperation{
 				Operator: "+",
 				Value:    666222518,
@@ -577,9 +582,9 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 				Operator: "-",
 				Value:    1331557922,
 			},
-			ShardID:                  shardID,
-			RequestedTxID:            common.Hash{},
-			AddingFee:                25,
+			ShardID:       shardID,
+			RequestedTxID: common.Hash{},
+			AddingFee:     25,
 		},
 	}
 	tradeContent0 := getPDECrossPoolTradeAcceptedContentFromInst(newTradeInsts[0][3])
@@ -593,11 +598,11 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	s.Equal("xPoolTradeAccepted", newTradeInsts[1][2])
 	expectTradeContent1 := []metadata.PDECrossPoolTradeAcceptedContent{
 		{
-			TraderAddressStr:         "trader1",
-			TokenIDToBuyStr:          common.PRVIDStr,
-			ReceiveAmount:            665335404,
-			Token1IDStr:              common.PRVIDStr,
-			Token2IDStr:              "tokenID2",
+			TraderAddressStr: "trader1",
+			TokenIDToBuyStr:  common.PRVIDStr,
+			ReceiveAmount:    665335404,
+			Token1IDStr:      common.PRVIDStr,
+			Token2IDStr:      "tokenID2",
 			Token1PoolValueOperation: metadata.TokenPoolValueOperation{
 				Operator: "-",
 				Value:    665335404,
@@ -606,9 +611,9 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 				Operator: "+",
 				Value:    2000000000,
 			},
-			ShardID:                  shardID,
-			RequestedTxID:            common.Hash{},
-			AddingFee:                49,
+			ShardID:       shardID,
+			RequestedTxID: common.Hash{},
+			AddingFee:     49,
 		},
 	}
 	tradeContent1 := getPDECrossPoolTradeAcceptedContentFromInst(newTradeInsts[1][3])
@@ -650,11 +655,11 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	s.Equal("xPoolTradeAccepted", newTradeInsts[4][2])
 	expectTradeContent4 := []metadata.PDECrossPoolTradeAcceptedContent{
 		{
-			TraderAddressStr:         "trader1",
-			TokenIDToBuyStr:          "tokenID1",
-			ReceiveAmount:            1995343755,
-			Token1IDStr:              common.PRVIDStr,
-			Token2IDStr:              "tokenID1",
+			TraderAddressStr: "trader1",
+			TokenIDToBuyStr:  "tokenID1",
+			ReceiveAmount:    1995343755,
+			Token1IDStr:      common.PRVIDStr,
+			Token2IDStr:      "tokenID1",
 			Token1PoolValueOperation: metadata.TokenPoolValueOperation{
 				Operator: "+",
 				Value:    1000000000,
@@ -663,9 +668,9 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 				Operator: "-",
 				Value:    1995343755,
 			},
-			ShardID:                  shardID,
-			RequestedTxID:            common.Hash{},
-			AddingFee:                30,
+			ShardID:       shardID,
+			RequestedTxID: common.Hash{},
+			AddingFee:     30,
 		},
 	}
 	tradeContent4 := getPDECrossPoolTradeAcceptedContentFromInst(newTradeInsts[4][3])
@@ -759,7 +764,6 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	// PRV-ID1: 1001666222518 - 1996673098323
 	// PRV-ID2: 998668442078 - 3004000000000
 
-
 	fmt.Printf("s.currentPDEStateForProducer.PDEShares %v\n", s.currentPDEStateForProducer.PDEShares)
 
 	// new trade instruction 11 (for trade fee distribution)
@@ -803,15 +807,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	poolPairKey2 := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight-1, "tokenID2", common.PRVIDStr))
 	s.Equal(s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey2].Token1PoolValue, uint64(998668442078))
 	s.Equal(s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey2].Token2PoolValue, uint64(3004000000000))
-
-
-	// check PDETradingFee
-
-
-	// check PDEShare
-
 }
-
 
 func (s *PDETestSuiteV2) SetupTestWithdraw(beaconHeight uint64) {
 	s.currentPDEStateForProducer = CurrentPDEState{
@@ -822,24 +818,30 @@ func (s *PDETestSuiteV2) SetupTestWithdraw(beaconHeight uint64) {
 	}
 
 	//// set up pool pair
-	//poolPairKey1 := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, common.PRVIDStr, "tokenID1"))
-	//s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey1] = &rawdbv2.PDEPoolForPair{
-	//	Token1IDStr:     common.PRVIDStr,
-	//	Token1PoolValue: 1000000000000,
-	//	Token2IDStr:     "tokenID1",
-	//	Token2PoolValue: 2000000000000,
-	//}
+	poolPairKey1 := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, common.PRVIDStr, "tokenID1"))
+	poolPairKey2 := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, common.PRVIDStr, "tokenID2"))
+	s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey1] = &rawdbv2.PDEPoolForPair{
+		Token1IDStr:     common.PRVIDStr,
+		Token1PoolValue: 1000000000000,
+		Token2IDStr:     "tokenID1",
+		Token2PoolValue: 2000000000000,
+	}
+	s.currentPDEStateForProducer.PDEPoolPairs[poolPairKey2] = &rawdbv2.PDEPoolForPair{
+		Token1IDStr:     common.PRVIDStr,
+		Token1PoolValue: 1000000000000,
+		Token2IDStr:     "tokenID2",
+		Token2PoolValue: 3000000000000,
+	}
 
 	// set up PDEShares
 	shareKey1 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, common.PRVIDStr, "tokenID1", "contributorAddress1"))
 	shareKey2 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, common.PRVIDStr, "tokenID1", "contributorAddress2"))
 	shareKey3 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, common.PRVIDStr, "tokenID2", "contributorAddress1"))
 	shareKey4 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, common.PRVIDStr, "tokenID2", "contributorAddress2"))
-	s.currentPDEStateForProducer.PDEShares[shareKey1] = 500000000000  // 500 PRV
-	s.currentPDEStateForProducer.PDEShares[shareKey2] = 500000000000  // 500 PRV
-	s.currentPDEStateForProducer.PDEShares[shareKey3] = 300000000000  // 500 PRV
-	s.currentPDEStateForProducer.PDEShares[shareKey4] = 700000000000  // 500 PRV
-
+	s.currentPDEStateForProducer.PDEShares[shareKey1] = 500000000000 // 500 PRV
+	s.currentPDEStateForProducer.PDEShares[shareKey2] = 500000000000 // 500 PRV
+	s.currentPDEStateForProducer.PDEShares[shareKey3] = 300000000000 // 500 PRV
+	s.currentPDEStateForProducer.PDEShares[shareKey4] = 700000000000 // 500 PRV
 
 	// set up PDETradingFees
 	tradeFeeKey1 := string(rawdbv2.BuildPDETradingFeeKey(beaconHeight, common.PRVIDStr, "tokenID1", "contributorAddress1"))
@@ -858,7 +860,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1003() {
 	shardID := byte(1)
 	beaconHeight := uint64(1003)
 
-	s.SetupTestWithdraw(beaconHeight-1)
+	s.SetupTestWithdraw(beaconHeight - 1)
 
 	fmt.Printf("PDPDETradingFees before processing instructions : %v\n", s.currentPDEStateForProducer.PDETradingFees)
 
@@ -892,25 +894,111 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1003() {
 		10,
 	)
 
+	// share amount is greater than actual share
+	withdrawInst5 := buildPDEWithdrawalRequestAction(
+		"contributorAddress1",
+		"tokenID1",
+		common.PRVIDStr,
+		5000000000000,
+	)
+	// invalid contributor address
+	withdrawInst6 := buildPDEWithdrawalRequestAction(
+		"contributorAddress10",
+		"tokenID1",
+		common.PRVIDStr,
+		1000000000,
+	)
+	// invalid pool pair
+	withdrawInst7 := buildPDEWithdrawalRequestAction(
+		"contributorAddress1",
+		"tokenID3",
+		common.PRVIDStr,
+		5000000000000,
+	)
+	// valid
+	withdrawInst8 := buildPDEWithdrawalRequestAction(
+		"contributorAddress2",
+		"tokenID1",
+		common.PRVIDStr,
+		200000000000,
+	)
+
 	feeWithdrawInsts := [][]string{
 		feeWithdrawInst1, feeWithdrawInst2,
 		feeWithdrawInst3, feeWithdrawInst4,
+		withdrawInst5, withdrawInst6,
+		withdrawInst7, withdrawInst8,
 	}
 
-	newFeeWithdrawInsts := [][]string{}
+	fmt.Printf("PDEShare before testing: %v\n", s.currentPDEStateForProducer.PDEShares)
+
+	newWithdrawInsts := [][]string{}
 	for _, inst := range feeWithdrawInsts {
-		newInst, err := bc.buildInstructionsForPDEFeeWithdrawal(
-			inst[1], shardID, metadata.PDEFeeWithdrawalRequestMeta,
-			&s.currentPDEStateForProducer, beaconHeight-1)
+		metaType, _ := strconv.Atoi(inst[0])
+		newInst := [][]string{}
+		var err error
+		switch metaType {
+		case metadata.PDEFeeWithdrawalRequestMeta:
+			newInst, err = bc.buildInstructionsForPDEFeeWithdrawal(
+				inst[1], shardID, metadata.PDEFeeWithdrawalRequestMeta,
+				&s.currentPDEStateForProducer, beaconHeight-1)
+		case metadata.PDEWithdrawalRequestMeta:
+			newInst, err = bc.buildInstructionsForPDEWithdrawal(
+				inst[1], shardID, metadata.PDEWithdrawalRequestMeta,
+				&s.currentPDEStateForProducer, beaconHeight-1)
+		}
 		s.Equal(nil, err)
-		newFeeWithdrawInsts = append(newFeeWithdrawInsts, newInst...)
+		newWithdrawInsts = append(newWithdrawInsts, newInst...)
 	}
 
-	// check newFeeWithdrawInsts
-	s.Equal("rejected", newFeeWithdrawInsts[0][2])
-	s.Equal("rejected", newFeeWithdrawInsts[1][2])
-	s.Equal("accepted", newFeeWithdrawInsts[2][2])
-	s.Equal("accepted", newFeeWithdrawInsts[3][2])
+	// check newWithdrawInsts
+	s.Equal("rejected", newWithdrawInsts[0][2])
+	s.Equal("rejected", newWithdrawInsts[1][2])
+	s.Equal("accepted", newWithdrawInsts[2][2])
+	s.Equal("accepted", newWithdrawInsts[3][2])
+
+	s.Equal("accepted", newWithdrawInsts[4][2])
+	s.Equal("accepted", newWithdrawInsts[5][2])
+	s.Equal("rejected", newWithdrawInsts[6][2])
+	s.Equal("rejected", newWithdrawInsts[7][2])
+	s.Equal("accepted", newWithdrawInsts[8][2])
+	s.Equal("accepted", newWithdrawInsts[9][2])
+
+	expectWithdrawContent4 := metadata.PDEWithdrawalAcceptedContent{
+		WithdrawalTokenIDStr: common.PRVIDStr,
+		WithdrawerAddressStr: "contributorAddress1",
+		DeductingPoolValue:   500000000000,
+		DeductingShares:      500000000000,
+		PairToken1IDStr:      "tokenID1",
+		PairToken2IDStr:      common.PRVIDStr,
+		TxReqID:              common.Hash{},
+		ShardID:              shardID,
+	}
+	actualWithdrawContent4 := getPDEWithdrawAcceptedContentFromInst(newWithdrawInsts[4][3])
+	s.Equal(expectWithdrawContent4, actualWithdrawContent4)
+
+	expectWithdrawContent5 := metadata.PDEWithdrawalAcceptedContent{
+		WithdrawalTokenIDStr: "tokenID1",
+		WithdrawerAddressStr: "contributorAddress1",
+		DeductingPoolValue:   1000000000000,
+		DeductingShares:      0,
+		PairToken1IDStr:      "tokenID1",
+		PairToken2IDStr:      common.PRVIDStr,
+		TxReqID:              common.Hash{},
+		ShardID:              shardID,
+	}
+	actualWithdrawContent5 := getPDEWithdrawAcceptedContentFromInst(newWithdrawInsts[5][3])
+	s.Equal(expectWithdrawContent5, actualWithdrawContent5)
+
+	//check PDEShares
+	shareKey1 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight-1, common.PRVIDStr, "tokenID1", "contributorAddress1"))
+	shareKey2 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight-1, common.PRVIDStr, "tokenID1", "contributorAddress2"))
+	shareKey3 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight-1, common.PRVIDStr, "tokenID2", "contributorAddress1"))
+	shareKey4 := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight-1, common.PRVIDStr, "tokenID2", "contributorAddress2"))
+	s.Equal(uint64(0), s.currentPDEStateForProducer.PDEShares[shareKey1])
+	s.Equal(uint64(300000000000), s.currentPDEStateForProducer.PDEShares[shareKey2])
+	s.Equal(uint64(300000000000), s.currentPDEStateForProducer.PDEShares[shareKey3])
+	s.Equal(uint64(700000000000), s.currentPDEStateForProducer.PDEShares[shareKey4])
 }
 
 func TestPDETestSuiteV2(t *testing.T) {
