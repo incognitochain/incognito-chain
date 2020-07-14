@@ -150,7 +150,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	// process instruction from beacon block
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
-		nil,
+		[]string{},
+		shardPendingValidator,
 		transactionsForNewBlock,
 		shardBestState.BeaconHeight,
 		[][]string{},
@@ -163,7 +164,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		blockchain.config.ChainParams.SwapOffset,
 		nil,
 		make(map[string]string),
-		curView == nil, true, false)
+		false)
 
 	_, committeeChange, err := curView.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -826,8 +827,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 		for _, l := range beaconBlock.Body.Instructions {
 			// Get Staking Tx
 			// assume that stake instruction already been validated by beacon committee
-
-			// fmt.Println("[committee-state] l[0]:", l[0])
 
 			if l[0] != instruction.STAKE_ACTION {
 				instructions = append(instructions, l)
