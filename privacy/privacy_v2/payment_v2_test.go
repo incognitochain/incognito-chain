@@ -119,10 +119,10 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 				fmt.Println(err)
 			}
 		}
-	// prove and verify with privacy using bulletproof
-	// note that bulletproofs only assure each outcoin amount is in uint64 range
-	// while the equality suminput = suminput + sumfee must be checked using mlsag later
-	// here our mock scenario has out+fee<in but passes anyway
+		// prove and verify with privacy using bulletproof
+		// note that bulletproofs only assure each outcoin amount is in uint64 range
+		// while the equality suminput = suminput + sumfee must be checked using mlsag later
+		// here our mock scenario has out+fee>in but passes anyway
 		proof, err := Prove(inputCoins, outputCoins, true, paymentInfo)
 		assert.Equal(t, nil, err)
 		isSane, err := proof.ValidateSanity()
@@ -132,5 +132,58 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 		isValid,err := proof.Verify(true, nil, uint64(200*outCoinCount), byte(0), nil, false, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t,true,isValid)
+
+		pBytes := proof.Bytes()
+		// try `corrupting` one byte in the proof
+		for i:=0; i<10; i++{ 
+			b := make([]byte, len(pBytes))
+			copy(b, pBytes)
+			corruptedIndex := common.RandInt() % len(b)
+			// random in 1..255 (not zero)
+			diff := common.RandInt() % 255 + 1
+			b[corruptedIndex] = byte((int(b[corruptedIndex]) + diff) % 256)
+			reconstructedProof := new(PaymentProofV2)
+			// it's a corrupted proof so it must fail one of these 3 checks
+			err = reconstructedProof.SetBytes(b)
+			if err != nil{
+				continue
+			}
+			isSane, err = reconstructedProof.ValidateSanity()
+			if !isSane{
+				continue
+			}
+			isValid,err = reconstructedProof.Verify(true, nil, uint64(200*outCoinCount), byte(0), nil, false, nil)
+			if !isValid{
+				continue
+			}
+			fmt.Printf("Corrupted proof %v",reconstructedProof)
+			assert.Equal(t,false,isValid)
+		}
+		// try completely made up proof
+		for i:=0; i<10; i++{
+			// length from 0..299
+			randomLength := common.RandInt() % 300
+			// 10% of the time the stupid proof is very long
+			if i==0{
+				randomLength += 3000000
+			}
+			bs := common.RandBytes(randomLength)
+			reconstructedProof := new(PaymentProofV2)
+			err = reconstructedProof.SetBytes(bs)
+			// it's a bs proof so it must fail one of these 3 checks
+			if err != nil{
+				continue
+			}
+			isSane, err = reconstructedProof.ValidateSanity()
+			if !isSane{
+				continue
+			}
+			isValid,err = reconstructedProof.Verify(true, nil, uint64(200*outCoinCount), byte(0), nil, false, nil)
+			if !isValid{
+				continue
+			}
+			fmt.Printf("Forged proof %v",reconstructedProof)
+			assert.Equal(t,false,isValid)
+		}
 	}
 }
