@@ -45,6 +45,9 @@ const (
 	LockedCollateralStateObjectType
 	RewardFeatureStateObjectType
 
+	// PDEX v2
+	PDETradingFeeObjectType
+	
 	BlockHashObjectType
 	StakerObjectType
 )

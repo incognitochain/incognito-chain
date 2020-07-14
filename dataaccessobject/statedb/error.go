@@ -42,6 +42,7 @@ const (
 	ErrInvalidPortalRewardInfoStateType       = "invalid portal reward info state type"
 	ErrInvalidPortalLockedCollateralStateType = "invalid portal locked collateral state type"
 	ErrInvalidRewardFeatureStateType          = "invalid feature reward state type"
+	ErrInvalidPDETradingFeeStateType          = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                   = "invalid block hash type"
 )
 const (
@@ -205,6 +206,9 @@ const (
 	ResetAllFeatureRewardByTokenIDError
 	GetRewardFeatureAmountByTokenIDError
 
+	// PDEX v2
+	StorePDETradingFeeError
+	
 	InvalidStakerInfoTypeError
 )
 
