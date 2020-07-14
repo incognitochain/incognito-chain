@@ -110,6 +110,8 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 
+		testTxTokenV2DeletedProof(tx, dummyDB, t)
+
 		// save the fee outputs into the db
 		// get output coin token from tx
 		tokenOutputs := tx.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()
@@ -160,6 +162,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		err = tx2.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 		
+		testTxTokenV2DeletedProof(tx2, dummyDB, t)
 		testTxTokenV2InvalidFee(dummyDB, paramToCreateTx2, t)
 		testTxTokenV2OneFakeOutput(tx2, dummyDB, paramToCreateTx2, t)
 		testTxTokenV2OneDoubleSpentInput(tx2, dummyDB, feeOutputBytesHacked, tokenOutputBytesHacked, t)
@@ -168,19 +171,23 @@ func TestInitTxPrivacyToken(t *testing.T) {
 	}
 }
 
-func testTxTokenV2DeletedProof(txv2 *TxTokenVersion2, t *testing.T){
+func testTxTokenV2DeletedProof(txv2 *TxTokenVersion2, db *statedb.StateDB, t *testing.T){
 	// try setting the proof to nil, then verify
 	// it should not go through
 	savedProof := txv2.GetTxTokenData().TxNormal.GetProof()
 	txv2.GetTxTokenData().TxNormal.SetProof(nil)
 	isValid,_ := txv2.ValidateSanityData(nil,nil,nil,0)
-	assert.Equal(t,false,isValid)
+	assert.Equal(t,true,isValid)
+	isValidTxItself, _ := txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	assert.Equal(t,false,isValidTxItself)
 	txv2.GetTxTokenData().TxNormal.SetProof(savedProof)
 
 	savedProof = txv2.GetTxBase().GetProof()
 	txv2.GetTxBase().SetProof(nil)
 	isValid,_ = txv2.ValidateSanityData(nil,nil,nil,0)
-	assert.Equal(t,false,isValid)
+	assert.Equal(t,true,isValid)
+	isValidTxItself, _ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	assert.Equal(t,false,isValidTxItself)
 	txv2.GetTxBase().SetProof(savedProof)
 }
 
