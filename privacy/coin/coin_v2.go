@@ -375,6 +375,9 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
 	}
 
+	if offset >= len(coinBytes) {
+		return errors.New("Offset is larger than len(bytes), cannot parse txRandom")
+	}
 	if coinBytes[offset] != TxRandomGroupSize {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of TxRandomGroup is not correct")
 	}
