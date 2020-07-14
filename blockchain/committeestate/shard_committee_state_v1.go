@@ -23,8 +23,8 @@ type ShardCommitteeStateEnvironment struct {
 	ShardHeight                                uint64
 	ShardBlockHash                             uint64
 	Txs                                        []metadata.Transaction
-	NewBeaconInstructions                      [][]string
-	NewBeaconHeight                            uint64
+	Instructions                               [][]string
+	BeaconHeight                               uint64
 	ChainParamEpoch                            uint64
 	EpochBreakPointSwapNewKey                  []uint64
 	ShardID                                    byte
@@ -35,7 +35,6 @@ type ShardCommitteeStateEnvironment struct {
 	ProducersBlackList                         map[string]uint8
 	StakingTx                                  map[string]string
 	IsNullView                                 bool
-	IsProcessInstructionFromBeacon             bool
 	IsProcessShardBlockInstruction             bool
 	IsProcessShardBlockInstructionForKeyListV2 bool
 }
@@ -44,8 +43,8 @@ type ShardCommitteeStateEnvironment struct {
 //Output: pointer of ShardCommitteeStateEnvironment
 func NewShardCommitteeStateEnvironment(
 	txs []metadata.Transaction,
-	beaconInstructions [][]string,
-	newBeaconHeight uint64,
+	beaconHeight uint64,
+	instructions [][]string,
 	chainParamEpoch uint64,
 	epochBreakPointSwapNewKey []uint64,
 	shardID byte,
@@ -56,18 +55,21 @@ func NewShardCommitteeStateEnvironment(
 	isProcessShardBlockInstruction bool,
 	isProcessShardBlockInstructionForKeyListV2 bool) *ShardCommitteeStateEnvironment {
 	return &ShardCommitteeStateEnvironment{
-		Txs:                       txs,
-		NewBeaconHeight:           newBeaconHeight,
-		ChainParamEpoch:           chainParamEpoch,
-		EpochBreakPointSwapNewKey: epochBreakPointSwapNewKey,
-		ProducersBlackList:        make(map[string]uint8),
-		StakingTx:                 make(map[string]string),
-		MaxShardCommitteeSize:     maxShardCommitteeSize,
-		MinShardCommitteeSize:     minShardCommitteeSize,
-		Offset:                    offset,
-		SwapOffset:                swapOffset,
-		ShardID:                   shardID,
-		IsNullView:                isNullView,
+		Txs:                            txs,
+		BeaconHeight:                   beaconHeight,
+		Instructions:                   instructions,
+		ChainParamEpoch:                chainParamEpoch,
+		EpochBreakPointSwapNewKey:      epochBreakPointSwapNewKey,
+		ProducersBlackList:             make(map[string]uint8),
+		StakingTx:                      make(map[string]string),
+		MaxShardCommitteeSize:          maxShardCommitteeSize,
+		MinShardCommitteeSize:          minShardCommitteeSize,
+		Offset:                         offset,
+		SwapOffset:                     swapOffset,
+		ShardID:                        shardID,
+		IsNullView:                     isNullView,
+		IsProcessShardBlockInstruction: isProcessShardBlockInstruction,
+		IsProcessShardBlockInstructionForKeyListV2: isProcessShardBlockInstructionForKeyListV2,
 	}
 }
 
@@ -215,12 +217,12 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	// @tin
 
 	err = newCommitteeState.processInstructionFromBeacon(env.IsNullView,
-		env.NewBeaconInstructions, env.ShardID, committeeChange)
+		env.Instructions, env.ShardID, committeeChange)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if common.IndexOfUint64(env.NewBeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
+	if common.IndexOfUint64(env.BeaconHeight/env.ChainParamEpoch, env.EpochBreakPointSwapNewKey) > -1 {
 		if env.IsProcessShardBlockInstructionForKeyListV2 {
 			err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
 		}
@@ -254,7 +256,7 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateE
 	committeeChange := NewCommitteeChange()
 
 	err := committeeState.processInstructionFromBeacon(env.IsNullView,
-		env.NewBeaconInstructions, env.ShardID, committeeChange)
+		env.Instructions, env.ShardID, committeeChange)
 	if err != nil {
 		panic(err)
 	}
@@ -263,6 +265,8 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateE
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("[committee-state] engine.shardCommitteeStateV1.shardCommittee:", engine.shardCommitteeStateV1.shardCommittee)
 
 }
 
@@ -390,12 +394,12 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
-	if len(env.NewBeaconInstructions) != 0 {
-		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.NewBeaconInstructions)
+	if len(env.Instructions) != 0 {
+		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.Instructions)
 	}
 
 	// Swap committee
-	for _, l := range env.NewBeaconInstructions {
+	for _, l := range env.Instructions {
 		if l[0] == instruction.SWAP_ACTION {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator,
@@ -491,7 +495,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 	env *ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) error {
 	shardID := env.ShardID
-	for _, ins := range env.NewBeaconInstructions {
+	for _, ins := range env.Instructions {
 		if ins[0] == instruction.SWAP_ACTION {
 			shardPendingValidatorStruct := committeeState.shardPendingValidator
 			inPublicKeys := strings.Split(ins[1], ",")

@@ -115,8 +115,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 	//startTimeInsertShardBlock := time.Now()
 
-	committeeChange := committeestate.NewCommitteeChange()
-
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
 	if checkView != nil {
@@ -130,6 +128,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
 	curView := preView.(*ShardBestState)
+
+	fmt.Println("[committee-state] shardcommittees ", curView.shardCommitteeEngine.GetShardCommittee(shardID))
 
 	if blockHeight != curView.ShardHeight+1 {
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomming block height %+v", curView.ShardHeight, blockHeight))
@@ -165,7 +165,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	}
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	newBestState, hashes, _, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
+	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	if err != nil {
 		curView.shardCommitteeEngine.AbortUncommittedShardState()
 		return err
@@ -498,8 +498,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
 		shardBlock.Body.Transactions,
-		shardBlock.Body.Instructions,
 		curView.BeaconHeight,
+		shardBlock.Body.Instructions,
 		curView.Epoch,
 		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
 		shardID,
@@ -729,10 +729,9 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	///
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
-
 		shardBlock.Body.Transactions,
-		shardBlock.Body.Instructions,
 		shardBestState.BeaconHeight,
+		shardBlock.Body.Instructions,
 		shardBestState.Epoch,
 		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
 		shardID,
@@ -797,6 +796,8 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		return err
 	}
 
+	fmt.Println("[committee-state] {initshard} instructions:", instructions)
+
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx[stakePublicKey] = txHash
 	}
@@ -804,8 +805,8 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.shardCommitteeEngine.InitCommitteeState(
 		committeestate.NewShardCommitteeStateEnvironment(
 			genesisShardBlock.Body.Transactions,
-			instructions,
 			shardBestState.BeaconHeight,
+			instructions,
 			shardBestState.Epoch,
 			blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
 			shardBestState.ShardID,
