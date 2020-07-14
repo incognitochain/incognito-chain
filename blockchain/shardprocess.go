@@ -1030,19 +1030,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
 		}
-		//statedb===========================START
-
-		//err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, addedCommittees, rewardReceiver, autoStaking)
-		err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-
-		//err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, addedSubstitutesValidator, rewardReceiver, autoStaking)
-		err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID])
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
 	}
 	//err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, removedCommittees)
 	err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeRemoved[shardID])

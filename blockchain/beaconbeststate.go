@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"time"
 
@@ -32,26 +34,26 @@ type BeaconRootHash struct {
 }
 
 type BeaconBestState struct {
-	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               BeaconBlock          `json:"BestBlock"`             // The block.
-	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
-	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
-	Epoch                   uint64               `json:"Epoch"`
-	BeaconHeight            uint64               `json:"BeaconHeight"`
-	BeaconProposerIndex     int                  `json:"BeaconProposerIndex"`
-	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
-	Params                  map[string]string    `json:"Params,omitempty"`
-	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize   int                  `json:"MinShardCommitteeSize"`
-	ActiveShards            int                  `json:"ActiveShards"`
-	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
-	StakingTx                              map[string]common.Hash                     `json:"-"`
+	BestBlockHash           common.Hash            `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash   common.Hash            `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock               BeaconBlock            `json:"BestBlock"`             // The block.
+	BestShardHash           map[byte]common.Hash   `json:"BestShardHash"`
+	BestShardHeight         map[byte]uint64        `json:"BestShardHeight"`
+	Epoch                   uint64                 `json:"Epoch"`
+	BeaconHeight            uint64                 `json:"BeaconHeight"`
+	BeaconProposerIndex     int                    `json:"BeaconProposerIndex"`
+	CurrentRandomNumber     int64                  `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp  int64                  `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber       bool                   `json:"IsGetRandomNumber"`
+	Params                  map[string]string      `json:"Params,omitempty"`
+	MaxBeaconCommitteeSize  int                    `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize  int                    `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize   int                    `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize   int                    `json:"MinShardCommitteeSize"`
+	ActiveShards            int                    `json:"ActiveShards"`
+	ConsensusAlgorithm      string                 `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm map[byte]string        `json:"ShardConsensusAlgorithm"`
+	StakingTx               map[string]common.Hash `json:"-"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeEngine BeaconCommitteeEngine
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
@@ -351,6 +353,11 @@ func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitok
 
 func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]string {
 	return beaconBestState.beaconCommitteeEngine.GetRewardReceiver()
+}
+
+func (beaconBestState *BeaconBestState) GetRewardReceiverPaymentAddress() map[string]string {
+	data := beaconBestState.beaconCommitteeEngine.GetRewardReceiver()
+	res := make(map[string]privacy.PaymentAddress)
 }
 
 func (beaconBestState *BeaconBestState) GetAutoStaking() map[string]bool {

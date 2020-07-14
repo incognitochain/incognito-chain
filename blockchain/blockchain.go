@@ -198,10 +198,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlockHash := initBeaconBestState.BestBlock.Header.Hash()
 	initBlockHeight := initBeaconBestState.BestBlock.Header.Height
 	// Insert new block into beacon chain
-	if err := statedb.StoreAllShardCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.ShardCommittee); err != nil {
+	if err := statedb.StoreAllShardCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetShardCommittee()); err != nil {
 		return err
 	}
-	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.BeaconCommittee); err != nil {
+	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetBeaconCommittee()); err != nil {
 		return err
 	}
 	if err := statedb.StoreBeaconBlockHashByIndex(initBeaconBestState.consensusStateDB, initBlockHeight, initBlockHash); err != nil {
@@ -210,19 +210,19 @@ func (blockchain *BlockChain) initBeaconState() error {
 
 	if err := statedb.StoreStakerInfo(
 		initBeaconBestState.consensusStateDB,
-		initBeaconBestState.BeaconCommittee,
-		initBeaconBestState.RewardReceiver,
-		initBeaconBestState.AutoStaking.data,
+		initBeaconBestState.GetBeaconCommittee(),
+		initBeaconBestState.GetRewardReceiver(),
+		initBeaconBestState.GetAutoStaking(),
 		initBeaconBestState.StakingTx,
 	); err != nil {
 		return err
 	}
-	for _, committee := range initBeaconBestState.ShardCommittee {
+	for _, committee := range initBeaconBestState.GetShardCommittee() {
 		if err := statedb.StoreStakerInfo(
 			initBeaconBestState.consensusStateDB,
 			committee,
-			initBeaconBestState.RewardReceiver,
-			initBeaconBestState.AutoStaking.data,
+			initBeaconBestState.GetRewardReceiver(),
+			initBeaconBestState.GetAutoStaking(),
 			initBeaconBestState.StakingTx,
 		); err != nil {
 			return err
