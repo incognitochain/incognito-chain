@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	blockHashByIndexPrefix             = []byte("block-hash-by-index-")
 	committeePrefix                    = []byte("shard-com-")
 	substitutePrefix                   = []byte("shard-sub-")
 	nextShardCandidatePrefix           = []byte("next-sha-cand-")
@@ -41,6 +42,7 @@ var (
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
+	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// portal
 	portalFinaExchangeRatesStatePrefix            = []byte("portalfinalexchangeratesstate-")
@@ -111,6 +113,22 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		panic("role not exist: " + strconv.Itoa(role))
 	}
 }
+
+func GetStakerInfoPrefix() []byte {
+	h := common.HashH(stakerInfoPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
+	h := common.HashH(stakerInfoPrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
+}
+
 func GetCommitteeRewardPrefix() []byte {
 	h := common.HashH(committeeRewardPrefix)
 	return h[:][:prefixHashKeyLength]

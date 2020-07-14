@@ -47,7 +47,7 @@ type ConsensusEngine interface {
 	GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetUserLayer() (string, int)
 	GetUserRole() (string, string, int)
-	CommitteeChange(chainName string)
+	// CommitteeChange(chainName string)
 }
 
 type Server interface {

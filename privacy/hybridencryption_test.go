@@ -10,7 +10,7 @@ import (
 	Unit test for Hybrid encryption
 */
 func TestHybridEncryption(t *testing.T) {
-	for i :=0 ; i < 5000; i ++ {
+	for i := 0; i < 5000; i++ {
 		// random message
 		msg := randomMessage()
 

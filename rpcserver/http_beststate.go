@@ -1,7 +1,12 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -12,10 +17,45 @@ import (
 handleGetBeaconBestState - RPC get beacon best state
 */
 func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-
-	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
+	allViews := []*blockchain.BeaconBestState{}
+	beaconBestState := &blockchain.BeaconBestState{}
+	beaconDB := httpServer.blockService.BlockChain.GetBeaconChainDatabase()
+	beaconViews, err := rawdbv2.GetBeaconViews(beaconDB)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+	}
+
+	err = json.Unmarshal(beaconViews, &allViews)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+	}
+
+	sID := []int{}
+	for i := 0; i < httpServer.config.ChainParams.ActiveShards; i++ {
+		sID = append(sID, i)
+	}
+
+	for _, v := range allViews {
+		err := v.RestoreBeaconViewStateFromHash(httpServer.GetBlockchain())
+		if err != nil {
+			continue
+		}
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(beaconDB))
+		if err != nil {
+			continue
+		}
+		v.AutoStaking = blockchain.NewMapStringBool()
+
+		mapAutoStaking := statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
+
+		for hash, value := range mapAutoStaking {
+			v.AutoStaking.Set(hash, value)
+		}
+		// finish reproduce
+		// if !blockchain.BeaconChain.multiView.AddView(v) {
+		// 	continue
+		// }
+		beaconBestState = v
 	}
 
 	result := jsonresult.NewGetBeaconBestState(beaconBestState)

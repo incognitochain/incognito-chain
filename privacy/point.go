@@ -33,13 +33,13 @@ func (p *Point) SetKey(a *C25519.Key) (*Point, error) {
 	p.key = *a
 
 	var point C25519.ExtendedGroupElement
-	if !point.FromBytes(&p.key){
+	if !point.FromBytes(&p.key) {
 		return nil, errors.New("Invalid point value")
 	}
 	return p, nil
 }
 
-func (p *Point) Set(q *Point) (*Point) {
+func (p *Point) Set(q *Point) *Point {
 	if p == nil {
 		p = new(Point)
 	}
@@ -47,7 +47,7 @@ func (p *Point) Set(q *Point) (*Point) {
 	return p
 }
 
-func (p Point) MarshalText() ([]byte) {
+func (p Point) MarshalText() []byte {
 	return []byte(fmt.Sprintf("%x", p.key[:]))
 }
 
@@ -80,7 +80,7 @@ func (p *Point) FromBytes(b [Ed25519KeySize]byte) (*Point, error) {
 	p.key.FromBytes(b)
 
 	var point C25519.ExtendedGroupElement
-	if !point.FromBytes(&p.key){
+	if !point.FromBytes(&p.key) {
 		return nil, errors.New("Invalid point value")
 	}
 
@@ -96,11 +96,11 @@ func (p *Point) FromBytesS(b []byte) (*Point, error) {
 		p = new(Point)
 	}
 	var array [Ed25519KeySize]byte
-	copy(array[:],b)
+	copy(array[:], b)
 	p.key.FromBytes(array)
 
 	var point C25519.ExtendedGroupElement
-	if !point.FromBytes(&p.key){
+	if !point.FromBytes(&p.key) {
 		return nil, errors.New("Invalid point value")
 	}
 
@@ -141,7 +141,6 @@ func (p *Point) ScalarMult(pa *Point, a *Scalar) *Point {
 	return p
 }
 
-
 func (p *Point) MultiScalarMultCached(scalarLs []*Scalar, pointPreComputedLs [][8]C25519.CachedGroupElement) *Point {
 	nSc := len(scalarLs)
 
@@ -150,14 +149,13 @@ func (p *Point) MultiScalarMultCached(scalarLs []*Scalar, pointPreComputedLs [][
 	}
 
 	scalarKeyLs := make([]*C25519.Key, nSc)
-	for i:= 0; i < nSc ; i++ {
+	for i := 0; i < nSc; i++ {
 		scalarKeyLs[i] = &scalarLs[i].key
 	}
 	key := C25519.MultiScalarMultKeyCached(pointPreComputedLs, scalarKeyLs)
 	res, _ := new(Point).SetKey(key)
 	return res
 }
-
 
 func (p *Point) MultiScalarMult(scalarLs []*Scalar, pointLs []*Point) *Point {
 	nSc := len(scalarLs)
@@ -169,7 +167,7 @@ func (p *Point) MultiScalarMult(scalarLs []*Scalar, pointLs []*Point) *Point {
 
 	scalarKeyLs := make([]*C25519.Key, nSc)
 	pointKeyLs := make([]*C25519.Key, nSc)
-	for i:= 0; i < nSc ; i++ {
+	for i := 0; i < nSc; i++ {
 		scalarKeyLs[i] = &scalarLs[i].key
 		pointKeyLs[i] = &pointLs[i].key
 	}
@@ -189,11 +187,11 @@ func (p *Point) InvertScalarMultBase(a *Scalar) *Point {
 
 func (p *Point) InvertScalarMult(pa *Point, a *Scalar) *Point {
 	inv := new(Scalar).Invert(a)
-	p.ScalarMult(pa,inv)
+	p.ScalarMult(pa, inv)
 	return p
 }
 
-func (p *Point) Derive(pa *Point, a *Scalar, b *Scalar) *Point{
+func (p *Point) Derive(pa *Point, a *Scalar, b *Scalar) *Point {
 	c := new(Scalar).Add(a, b)
 	return p.InvertScalarMult(pa, c)
 }
@@ -261,8 +259,8 @@ func IsPointEqual(pa *Point, pb *Point) bool {
 func HashToPointFromIndex(index int64, padStr string) *Point {
 	array := C25519.GBASE.ToBytes()
 	msg := array[:]
-	msg = append(msg,[]byte(padStr)...)
-	msg = append(msg,[]byte(string(index))...)
+	msg = append(msg, []byte(padStr)...)
+	msg = append(msg, []byte(string(index))...)
 
 	keyHash := C25519.Key(C25519.Keccak256(msg))
 	keyPoint := keyHash.HashToPoint()

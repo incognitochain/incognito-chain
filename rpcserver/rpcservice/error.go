@@ -110,6 +110,21 @@ const (
 
 	// feature reward
 	GetRewardFeatureByFeatureNameError
+
+	// Init State Root hash
+	InitStateRootHash
+
+	GetAllBeaconViews
+
+	// Restore
+	RestoreBeaconCommittee
+	RestoreShardCommittee
+	RestoreBeaconPendingValidator
+	RestoreShardPendingValidator
+	RestoreCandidateBeaconWaitingForCurrentRandom
+	RestoreCandidateBeaconWaitingForNextRandom
+	RestoreCandidateShardWaitingForCurrentRandom
+	RestoreCandidateShardWaitingForNextRandom
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -222,6 +237,20 @@ var ErrCodeMessage = map[int]struct {
 
 	// feature reward
 	GetRewardFeatureByFeatureNameError: {-11001, "Get feature reward by feature name error"},
+
+	// InitStateRootHash
+	InitStateRootHash: {-12000, "Init state root hash error"},
+
+	// Restore
+	RestoreBeaconCommittee:                        {-12001, "Restore beacon committee errror"},
+	RestoreShardCommittee:                         {-12002, "Restore shard committee error"},
+	RestoreBeaconPendingValidator:                 {-12003, "Restore beacon pending validator"},
+	RestoreShardPendingValidator:                  {-12004, "Restore shard pending validator"},
+	RestoreCandidateBeaconWaitingForCurrentRandom: {-12005, "Restore candidate beacon waiting for current random"},
+	RestoreCandidateBeaconWaitingForNextRandom:    {-12006, "Restore candidate beacon waiting for next random"},
+	RestoreCandidateShardWaitingForCurrentRandom:  {-12007, "Restore candidate shard waiting for current random"},
+	RestoreCandidateShardWaitingForNextRandom:     {-12008, "Restore candidate shard waiting for next random"},
+	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

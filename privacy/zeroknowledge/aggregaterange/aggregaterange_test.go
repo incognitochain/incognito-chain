@@ -163,13 +163,13 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		proofs = append(proofs, proof)
 	}
 	// verify the proof faster
-	res, err,_ := VerifyBatchingAggregatedRangeProofs(proofs)
+	res, err, _ := VerifyBatchingAggregatedRangeProofs(proofs)
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
 }
 
 func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
-	for k := 1; k < 100; k+=5 {
+	for k := 1; k < 100; k += 5 {
 		count := k
 		proofs := make([]*AggregatedRangeProof, 0)
 		start := time.Now()
@@ -291,10 +291,9 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 			wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
 		}
 
-
 		for i := range wit.a {
 			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			if k == count -1 {
+			if k == count-1 {
 				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.a[i]))
 			} else {
 				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.b[i]))
@@ -311,12 +310,12 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 	}
 	res := VerifyBatchingInnerProductProofs(proofs, csList)
 	assert.Equal(t, false, res)
-	res = VerifyBatchingInnerProductProofs(proofs[1:],csList[1:])
+	res = VerifyBatchingInnerProductProofs(proofs[1:], csList[1:])
 	assert.Equal(t, false, res)
 	res = VerifyBatchingInnerProductProofs(proofs[:len(proofs)-1], csList[:len(proofs)-1])
 	assert.Equal(t, false, res)
 	res = VerifyBatchingInnerProductProofs(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
-	assert.Equal(t, true	, res)
+	assert.Equal(t, true, res)
 }
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 	wit := new(AggregatedRangeWitness)

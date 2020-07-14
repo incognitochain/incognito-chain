@@ -7,7 +7,7 @@ import (
 )
 
 func TestSchnorrSignature(t *testing.T) {
-	for i := 0; i <100; i++ {
+	for i := 0; i < 100; i++ {
 		// generate Schnorr Private Key
 
 		privKey := new(SchnorrPrivateKey)
@@ -34,7 +34,7 @@ func TestSchnorrSignature(t *testing.T) {
 }
 
 func TestSchnorrSignatureWithoutZ2(t *testing.T) {
-	for i := 0; i <100; i++ {
+	for i := 0; i < 100; i++ {
 		// generate Schnorr Private Key
 
 		privKey := new(SchnorrPrivateKey)

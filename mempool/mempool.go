@@ -251,8 +251,14 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, beaconHeight)
+	bHeight := shardView.BestBlock.Header.BeaconHeight
+	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, int64(bHeight))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -260,11 +266,18 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tempTxDesc := &txDesc.Desc
 	return tempTxDesc, err
 }
+
 func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, beaconHeight)
+	bHeight := shardView.BestBlock.Header.BeaconHeight
+	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, int64(bHeight))
 	return txDesc, err
 }
 

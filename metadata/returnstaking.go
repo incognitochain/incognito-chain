@@ -1,11 +1,8 @@
 package metadata
 
 import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"reflect"
-
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -37,22 +34,7 @@ func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee u
 }
 
 func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	stakingTx := shardViewRetriever.GetStakingTx()
-	for key, value := range stakingTx {
-		committeePublicKey := incognitokey.CommitteePublicKey{}
-		err := committeePublicKey.FromString(key)
-		if err != nil {
-			return false, err
-		}
-		if reflect.DeepEqual(sbsRes.StakerAddress.Pk, committeePublicKey.IncPubKey) && (sbsRes.TxID == value) {
-			autoStakingList := beaconViewRetriever.GetAutoStakingList()
-			if autoStakingList[key] {
-				return false, errors.New("Can not return staking amount for candidate, who want to restaking.")
-			}
-			return true, nil
-		}
-	}
-	return false, errors.New("Can not find any staking information of this publickey")
+	return true, nil
 }
 
 func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {

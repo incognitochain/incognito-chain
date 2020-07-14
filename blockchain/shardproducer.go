@@ -3,14 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -83,17 +82,18 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
+
 	//==========Fetch Beacon Blocks============
 	// // startStep = time.Now()
 	BLogger.log.Infof("Producing block: %d", curView.ShardHeight+1)
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
-	beaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
+	beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
 	if err != nil {
 		return nil, err
 	}
-	beaconHash := beaconHashes[0]
+
 	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconHash)
 	if err != nil {
 		return nil, err
@@ -106,17 +106,16 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
-		newBeaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
+		newBeaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
 		if err != nil {
 			return nil, err
 		}
-		newBeaconHash := newBeaconHashes[0]
 		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = shardBestState.Epoch + 1
 	}
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetBeaconChainDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +225,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, NewBlockChainError(PendingValidatorRootError, err)
 	}
-	stakingTxRoot, err := generateHashFromMapStringString(newShardBestState.StakingTx)
+	stakingTxRoot, err := newShardBestState.StakingTx.GenerateHash()
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
@@ -300,51 +299,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
-	tempAutoStakingM := make(map[uint64]map[string]bool)
 	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
+	//TODO: Please check this logic again, why PDE, Bridge build from old beacon block but get info from beacon final view
 	for _, beaconBlock := range beaconBlocks {
-		autoStaking, ok := tempAutoStakingM[beaconBlock.Header.Height]
-		if !ok {
-			beaconConsensusStateRootHash, err := blockGenerator.chain.GetBeaconConsensusRootHash(blockGenerator.chain.GetBeaconChainDatabase(), beaconBlock.Header.Height-1)
-			if err != nil {
-				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
-			}
-			beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetBeaconChainDatabase()))
-			if err != nil {
-				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
-			}
-			_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, blockGenerator.chain.GetShardIDs())
-			tempAutoStakingM[beaconBlock.Header.Height] = newAutoStaking
-			autoStaking = newAutoStaking
-		}
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == instruction.SWAP_ACTION {
-				for _, outPublicKeys := range strings.Split(l[2], ",") {
-					// If out public key has auto staking then ignore this public key
-					res, ok := autoStaking[outPublicKeys]
-					if ok && res {
-						continue
-					}
-					tx, err := blockGenerator.buildReturnStakingAmountTx(curView, outPublicKeys, producerPrivateKey, shardID)
-					if err != nil {
-						if strings.Index(err.Error(), "No staking tx in best state") == -1 {
-							Logger.log.Error(err)
-						}
-						continue
-					}
-					txHash := *tx.Hash()
-					if ok, _ := common.SliceExists(responsedHashTxs, txHash); ok {
-						data, _ := json.Marshal(tx)
-						Logger.log.Error("Double tx from instruction", l, string(data))
-						errorInstructions = append(errorInstructions, l)
-						continue
-					}
-					responsedTxs = append(responsedTxs, tx)
-					responsedHashTxs = append(responsedHashTxs, txHash)
-				}
-
-			}
-			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION || l[0] == instruction.ASSIGN_ACTION || l[0] == instruction.SWAP_ACTION {
+			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
 				continue
 			}
 			if len(l) <= 2 {
@@ -460,6 +419,17 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			}
 		}
 	}
+	returnStakingTxs, errIns, err := blockGenerator.chain.buildReturnStakingTxFromBeaconInstructions(
+		curView,
+		beaconBlocks,
+		producerPrivateKey,
+		shardID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	responsedTxs = append(responsedTxs, returnStakingTxs...)
+	errorInstructions = append(errorInstructions, errIns...)
 	return responsedTxs, errorInstructions, nil
 }
 
@@ -553,32 +523,35 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		swapInstruction       = []string{}
 		// err                   error
 	)
+	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
-		// TODO: 0xmerman
 		backupShardCommittee := shardCommittee
 		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
 		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
-
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
-		beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), beaconHeight)
-		if err != nil {
-			return instructions, shardPendingValidator, shardCommittee, err
-		}
-		beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		if err != nil {
-			return instructions, shardPendingValidator, shardCommittee, err
-		}
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, false, int(shardID), shardCommittee, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			return instructions, shardPendingValidator, shardCommittee, err
+
+		//beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), beaconHeight)
+		//if err != nil {
+		//	return instructions, shardPendingValidator, shardCommittee, err
+		//}
+		//beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		//if err != nil {
+		//	return instructions, shardPendingValidator, shardCommittee, err
+		//}
+		var err error
+		producersBlackList := make(map[string]uint8)
+
+		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedBlockValidators
+		var minShardCommitteeSize int
+		if view.MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+			minShardCommitteeSize = 0
+		} else {
+			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedBlockValidators
 		}
 
-		maxShardCommitteeSize := view.MaxShardCommitteeSize
-		minShardCommitteeSize := view.MinShardCommitteeSize
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
 		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
@@ -595,7 +568,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
-		if shardID == bridgeID {
+		if shardID == bridgeID && committeeChanged(swapInstruction) {
 			blockHeight := view.ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
@@ -765,4 +738,16 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 	seed := make([]byte, 16)
 	rand.Read(seed)
 	return privacy.GeneratePrivateKey(seed)
+}
+
+// committeeChanged checks if swap instructions really changed the committee list
+// (not just empty swap instruction)
+func committeeChanged(swap []string) bool {
+	if len(swap) < 3 {
+		return false
+	}
+
+	in := swap[1]
+	out := swap[2]
+	return len(in) > 0 || len(out) > 0
 }

@@ -32,26 +32,7 @@ func (blockService BlockService) GetLatestFinalizedShardBlock(shardID byte) (*bl
 	return blockService.BlockChain.GetLatestFinalizedShardBlock(shardID)
 }
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
-	shards := make(map[byte]*blockchain.ShardBestState)
-	cacheKey := memcache.GetShardBestStateCachedKey()
-	cacheValue, err := blockService.MemCache.Get(cacheKey)
-	if err == nil && len(cacheValue) > 0 {
-		err1 := json.Unmarshal(cacheValue, &shards)
-		if err1 != nil {
-			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
-		}
-	}
-	if len(shards) == 0 {
-		shards = blockService.BlockChain.GetClonedAllShardBestState()
-		cacheValue, err := json.Marshal(shards)
-		if err == nil {
-			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
-			if err1 != nil {
-				Logger.log.Error("Cache data of shard best state error", err1)
-			}
-		}
-	}
-	return shards
+	return blockService.BlockChain.GetClonedAllShardBestState()
 }
 
 func (blockService BlockService) GetShardBestStateByShardID(shardID byte) (*blockchain.ShardBestState, error) {
@@ -76,8 +57,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 		Logger.log.Debugf("handleGetBeaconBestState result: %+v", nil)
 		return nil, errors.New("Best State beacon not existed")
 	}
-	beacon, err := blockService.BlockChain.GetClonedBeaconBestState()
-	return beacon, err
+	return blockService.BlockChain.GetClonedBeaconBestState()
 }
 
 func (blockService BlockService) GetBeaconBestBlockHash() (*common.Hash, error) {
@@ -547,7 +527,7 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 			isBeaconBlock = true
 			return
 		} else {
-			_, _, _, _, err = blockService.BlockChain.GetTransactionByHash(*hash)
+			_, _, _, _, _, err = blockService.BlockChain.GetTransactionByHash(*hash)
 			if err == nil {
 				isTransaction = true
 			} else {
@@ -933,15 +913,15 @@ func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte
 	return statedb.GetPDEStatus(pdexStateDB, pdePrefix, pdeSuffix)
 }
 
-//============================= Slash ===============================
-func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
-	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetBeaconChainDatabase(), beaconHeight)
-	if err != nil {
-		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
-	}
-	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetBeaconChainDatabase()))
-	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
-}
+////============================= Slash ===============================
+//func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
+//	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
+//	if err != nil {
+//		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
+//	}
+//	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetBeaconChainDatabase()))
+//	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
+//}
 
 //============================= Portal ===============================
 func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (*metadata.PortalCustodianDepositStatus, error) {

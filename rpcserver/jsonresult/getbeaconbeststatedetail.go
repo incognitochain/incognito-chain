@@ -107,14 +107,14 @@ func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBes
 	result.ShardCommittee = make(map[byte][]incognitokey.CommitteeKeyString)
 	for k, v := range data.GetShardCommittee() {
 		result.ShardCommittee[k] = make([]incognitokey.CommitteeKeyString, len(v))
-		tempV := incognitokey.CommitteeKeyListToMapString(v)
+		tempV := incognitokey.CommitteeKeyListToStringList(v)
 		copy(result.ShardCommittee[k], tempV)
 	}
 
 	result.ShardPendingValidator = make(map[byte][]incognitokey.CommitteeKeyString)
 	for k, v := range data.GetShardPendingValidator() {
 		result.ShardPendingValidator[k] = make([]incognitokey.CommitteeKeyString, len(v))
-		tempV := incognitokey.CommitteeKeyListToMapString(v)
+		tempV := incognitokey.CommitteeKeyListToStringList(v)
 		copy(result.ShardPendingValidator[k], tempV)
 	}
 

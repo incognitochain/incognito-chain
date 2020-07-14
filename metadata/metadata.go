@@ -58,7 +58,7 @@ type ChainRetriever interface {
 	GetCentralizedWebsitePaymentAddress(uint64) string
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
-	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
+	GetTransactionByHash(common.Hash) (byte, common.Hash, uint64, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBNBChainID() string
 	GetBTCChainID() string
