@@ -1116,6 +1116,24 @@ func (stateDB *StateDB) getAllPDEShareState() []*PDEShareState {
 	return pdeShareStates
 }
 
+func (stateDB *StateDB) getAllPDETradingFeeState() []*PDETradingFeeState {
+	pdeTradingFeeStates := []*PDETradingFeeState{}
+	temp := stateDB.trie.NodeIterator(GetPDETradingFeePrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		pp := NewPDETradingFeeState()
+		err := json.Unmarshal(newValue, pp)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		pdeTradingFeeStates = append(pdeTradingFeeStates, pp)
+	}
+	return pdeTradingFeeStates
+}
+
 func (stateDB *StateDB) getAllPDEStatus() []*PDEStatusState {
 	pdeStatusStates := []*PDEStatusState{}
 	temp := stateDB.trie.NodeIterator(GetPDEStatusPrefix())

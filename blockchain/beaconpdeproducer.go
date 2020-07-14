@@ -3,10 +3,12 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -233,6 +235,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 	metaType int,
 	currentPDEState *CurrentPDEState,
 	beaconHeight uint64,
+	isPRVRequired bool,
 ) ([][]string, error) {
 	if currentPDEState == nil {
 		Logger.log.Warn("WARN - [buildInstructionsForPDEContribution]: Current PDE state is null.")
@@ -277,7 +280,8 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		return [][]string{inst}, nil
 	}
 	if waitingContribution.TokenIDStr == meta.TokenIDStr ||
-		waitingContribution.ContributorAddressStr != meta.ContributorAddressStr {
+		waitingContribution.ContributorAddressStr != meta.ContributorAddressStr ||
+		(isPRVRequired && waitingContribution.TokenIDStr != common.PRVIDStr && meta.TokenIDStr != common.PRVIDStr) {
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		refundInst1 := buildRefundContributionInst(
 			meta.PDEContributionPairID,
@@ -401,6 +405,261 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		0,
 	)
 	return [][]string{matchedNReturnedInst1, matchedNReturnedInst2}, nil
+}
+
+type tradeInfo struct {
+	tokenIDToBuyStr         string
+	tokenIDToSellStr        string
+	sellAmount              uint64
+	newTokenPoolValueToBuy  uint64
+	newTokenPoolValueToSell uint64
+	receiveAmount           uint64
+}
+
+func (blockchain *BlockChain) buildInstsForSortedTradableActions(
+	currentPDEState *CurrentPDEState,
+	beaconHeight uint64,
+	sortedTradableActions []metadata.PDECrossPoolTradeRequestAction,
+) ([][]string, map[string]uint64) {
+	prvIDStr := common.PRVCoinID.String()
+	tradableInsts := [][]string{}
+	tradingFeeByPair := make(map[string]uint64)
+	for _, tradeAction := range sortedTradableActions {
+		tradeMeta := tradeAction.Meta
+		var sequentialTrades []*tradeInfo
+		if isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) { // direct trade
+			sequentialTrades = []*tradeInfo{
+				&tradeInfo{
+					tokenIDToBuyStr:  tradeMeta.TokenIDToBuyStr,
+					tokenIDToSellStr: tradeMeta.TokenIDToSellStr,
+					sellAmount:       tradeMeta.SellAmount,
+				},
+			}
+		} else { // cross pool trade
+			sequentialTrades = []*tradeInfo{
+				&tradeInfo{
+					tokenIDToBuyStr:  prvIDStr,
+					tokenIDToSellStr: tradeMeta.TokenIDToSellStr,
+					sellAmount:       tradeMeta.SellAmount,
+				},
+				&tradeInfo{
+					tokenIDToBuyStr:  tradeMeta.TokenIDToBuyStr,
+					tokenIDToSellStr: prvIDStr,
+					sellAmount:       uint64(0),
+				},
+			}
+		}
+		newInsts, err := blockchain.buildInstructionsForPDECrossPoolTrade(
+			sequentialTrades,
+			tradeMeta.MinAcceptableAmount,
+			tradeMeta.TradingFee,
+			tradeAction.ShardID,
+			metadata.PDECrossPoolTradeRequestMeta,
+			currentPDEState,
+			beaconHeight,
+			tradeAction.Meta.TraderAddressStr,
+			tradeAction.TxReqID,
+			tradingFeeByPair,
+		)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		if len(newInsts) > 0 {
+			tradableInsts = append(tradableInsts, newInsts...)
+		}
+	}
+	return tradableInsts, tradingFeeByPair
+}
+
+func (blockchain *BlockChain) buildInstsForUntradableActions(
+	untradableActions []metadata.PDECrossPoolTradeRequestAction,
+) [][]string {
+	untradableInsts := [][]string{}
+	for _, tradeAction := range untradableActions {
+		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+			tradeAction.Meta.TraderAddressStr,
+			common.PRVCoinID.String(),
+			tradeAction.Meta.TradingFee,
+			metadata.PDECrossPoolTradeRequestMeta,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
+			tradeAction.ShardID,
+			tradeAction.TxReqID,
+		)
+		untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TokenIDToSellStr,
+			tradeAction.Meta.SellAmount,
+			metadata.PDECrossPoolTradeRequestMeta,
+			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+			tradeAction.ShardID,
+			tradeAction.TxReqID,
+		)
+		untradableInsts = append(untradableInsts, refundSellingTokenInst)
+	}
+	return untradableInsts
+}
+
+func buildCrossPoolTradeRefundInst(
+	traderAddressStr string,
+	tokenIDStr string,
+	amount uint64,
+	metaType int,
+	status string,
+	shardID byte,
+	txReqID common.Hash,
+) []string {
+	refundCrossPoolTrade := metadata.PDERefundCrossPoolTrade{
+		TraderAddressStr: traderAddressStr,
+		TokenIDStr:       tokenIDStr,
+		Amount:           amount,
+		ShardID:          shardID,
+		TxReqID:          txReqID,
+	}
+	refundCrossPoolTradeBytes, _ := json.Marshal(refundCrossPoolTrade)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(refundCrossPoolTradeBytes),
+	}
+}
+
+func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
+	sequentialTrades []*tradeInfo,
+	minAcceptableAmount uint64,
+	tradingFee uint64,
+	shardID byte,
+	metaType int,
+	currentPDEState *CurrentPDEState,
+	beaconHeight uint64,
+	traderAddressStr string,
+	txReqID common.Hash,
+	tradingFeeByPair map[string]uint64,
+) ([][]string, error) {
+	if currentPDEState == nil ||
+		(currentPDEState.PDEPoolPairs == nil || len(currentPDEState.PDEPoolPairs) == 0) {
+		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+			traderAddressStr,
+			common.PRVCoinID.String(),
+			tradingFee,
+			metaType,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
+			shardID,
+			txReqID,
+		)
+		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+			traderAddressStr,
+			sequentialTrades[0].tokenIDToSellStr,
+			sequentialTrades[0].sellAmount,
+			metaType,
+			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+			shardID,
+			txReqID,
+		)
+		return [][]string{refundTradingFeeInst, refundSellingTokenInst}, nil
+	}
+
+	amt := sequentialTrades[0].sellAmount
+	for _, tradeInf := range sequentialTrades {
+		tradeInf.sellAmount = amt
+		pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr))
+		pdePoolPair, _ := currentPDEState.PDEPoolPairs[pairKey]
+		newAmt, newTokenPoolValueToBuy, newTokenPoolValueToSell := calcTradeValue(pdePoolPair, tradeInf.tokenIDToSellStr, amt)
+		amt = newAmt
+		tradeInf.newTokenPoolValueToBuy = newTokenPoolValueToBuy
+		tradeInf.newTokenPoolValueToSell = newTokenPoolValueToSell
+		tradeInf.receiveAmount = amt
+	}
+
+	if minAcceptableAmount > amt {
+		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+			traderAddressStr,
+			common.PRVCoinID.String(),
+			tradingFee,
+			metaType,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
+			shardID,
+			txReqID,
+		)
+		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+			traderAddressStr,
+			sequentialTrades[0].tokenIDToSellStr,
+			sequentialTrades[0].sellAmount,
+			metaType,
+			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+			shardID,
+			txReqID,
+		)
+		return [][]string{refundTradingFeeInst, refundSellingTokenInst}, nil
+	}
+
+	tradeAcceptedContents := []metadata.PDECrossPoolTradeAcceptedContent{}
+	proportionalFee := tradingFee / uint64(len(sequentialTrades))
+	for idx, tradeInf := range sequentialTrades {
+		// update current pde state on mem
+		pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr))
+		pdePoolPair, _ := currentPDEState.PDEPoolPairs[pairKey]
+
+		pdePoolPair.Token1PoolValue = tradeInf.newTokenPoolValueToBuy
+		pdePoolPair.Token2PoolValue = tradeInf.newTokenPoolValueToSell
+		if pdePoolPair.Token1IDStr == tradeInf.tokenIDToSellStr {
+			pdePoolPair.Token1PoolValue = tradeInf.newTokenPoolValueToSell
+			pdePoolPair.Token2PoolValue = tradeInf.newTokenPoolValueToBuy
+		}
+
+		// build trade accepted contents
+		pdeTradeAcceptedContent := metadata.PDECrossPoolTradeAcceptedContent{
+			TraderAddressStr: traderAddressStr,
+			TokenIDToBuyStr:  tradeInf.tokenIDToBuyStr,
+			ReceiveAmount:    tradeInf.receiveAmount,
+			Token1IDStr:      pdePoolPair.Token1IDStr,
+			Token2IDStr:      pdePoolPair.Token2IDStr,
+			ShardID:          shardID,
+			RequestedTxID:    txReqID,
+		}
+		pdeTradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
+			Operator: "-",
+			Value:    tradeInf.receiveAmount,
+		}
+		pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
+			Operator: "+",
+			Value:    tradeInf.sellAmount,
+		}
+		if pdePoolPair.Token1IDStr == tradeInf.tokenIDToSellStr {
+			pdeTradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
+				Operator: "+",
+				Value:    tradeInf.sellAmount,
+			}
+			pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
+				Operator: "-",
+				Value:    tradeInf.receiveAmount,
+			}
+		}
+
+		addingFee := proportionalFee
+		if idx == len(sequentialTrades)-1 {
+			addingFee = tradingFee - uint64(len(sequentialTrades)-1)*proportionalFee
+		}
+		pdeTradeAcceptedContent.AddingFee = addingFee
+		sKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, ""))
+		tradingFeeByPair[sKey] += addingFee
+		tradeAcceptedContents = append(tradeAcceptedContents, pdeTradeAcceptedContent)
+	}
+
+	pdeTradeAcceptedContentsBytes, err := json.Marshal(tradeAcceptedContents)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContents: %+v", err)
+		return [][]string{}, nil
+	}
+	inst := []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		common.PDECrossPoolTradeAcceptedChainStatus,
+		string(pdeTradeAcceptedContentsBytes),
+	}
+	return [][]string{inst}, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDETrade(
@@ -591,13 +850,13 @@ func deductPDEAmountsV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
 	))
-	totalSharesForPair := uint64(0)
+	totalSharesForPair := big.NewInt(0)
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
 		if strings.Contains(shareKey, totalSharesForPairPrefix) {
-			totalSharesForPair += shareAmt
+			totalSharesForPair.Add(totalSharesForPair, big.NewInt(int64(shareAmt)))
 		}
 	}
-	if totalSharesForPair == 0 {
+	if totalSharesForPair.Cmp(big.NewInt(0)) == 0 {
 		return deductingAmounts
 	}
 	wdSharesForWithdrawer := wdMeta.WithdrawalShareAmt
@@ -611,7 +870,7 @@ func deductPDEAmountsV2(
 	deductingAmounts = &DeductingAmountsByWithdrawal{}
 	deductingPoolValueToken1 := big.NewInt(0)
 	deductingPoolValueToken1.Mul(big.NewInt(int64(pdePoolPair.Token1PoolValue)), big.NewInt(int64(wdSharesForWithdrawer)))
-	deductingPoolValueToken1.Div(deductingPoolValueToken1, big.NewInt(int64(totalSharesForPair)))
+	deductingPoolValueToken1.Div(deductingPoolValueToken1, totalSharesForPair)
 	if pdePoolPair.Token1PoolValue < deductingPoolValueToken1.Uint64() {
 		pdePoolPair.Token1PoolValue = 0
 	} else {
@@ -622,7 +881,7 @@ func deductPDEAmountsV2(
 
 	deductingPoolValueToken2 := big.NewInt(0)
 	deductingPoolValueToken2.Mul(big.NewInt(int64(pdePoolPair.Token2PoolValue)), big.NewInt(int64(wdSharesForWithdrawer)))
-	deductingPoolValueToken2.Div(deductingPoolValueToken2, big.NewInt(int64(totalSharesForPair)))
+	deductingPoolValueToken2.Div(deductingPoolValueToken2, totalSharesForPair)
 	if pdePoolPair.Token2PoolValue < deductingPoolValueToken2.Uint64() {
 		pdePoolPair.Token2PoolValue = 0
 	} else {
@@ -707,4 +966,142 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 	}
 	insts = append(insts, inst2)
 	return insts, nil
+}
+
+type shareInfo struct {
+	shareKey string
+	shareAmt uint64
+}
+
+type tradingFeeForContributorByPair struct {
+	ContributorAddressStr string
+	FeeAmt                uint64
+	Token1IDStr           string
+	Token2IDStr           string
+}
+
+func (blockchain *BlockChain) buildInstForTradingFeesDist(
+	currentPDEState *CurrentPDEState,
+	beaconHeight uint64,
+	tradingFeeByPair map[string]uint64,
+) []string {
+	feesForContributorsByPair := []*tradingFeeForContributorByPair{}
+	pdeShares := currentPDEState.PDEShares
+
+	var keys []string
+	for k := range tradingFeeByPair {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, sKey := range keys {
+		feeAmt := tradingFeeByPair[sKey]
+		allSharesByPair := []shareInfo{}
+		totalSharesOfPair := big.NewInt(0)
+
+		var shareKeys []string
+		for shareKey := range pdeShares {
+			shareKeys = append(shareKeys, shareKey)
+		}
+		sort.Strings(shareKeys)
+		for _, shareKey := range shareKeys {
+			shareAmt := pdeShares[shareKey]
+			if strings.Contains(shareKey, sKey) {
+				allSharesByPair = append(allSharesByPair, shareInfo{shareKey: shareKey, shareAmt: shareAmt})
+				totalSharesOfPair.Add(totalSharesOfPair, big.NewInt(int64(shareAmt)))
+			}
+		}
+
+		accumFees := big.NewInt(0)
+		totalFees := big.NewInt(int64(feeAmt))
+		for idx, sInfo := range allSharesByPair {
+			feeForContributor := big.NewInt(0)
+			if idx == len(allSharesByPair)-1 {
+				feeForContributor.Sub(totalFees, accumFees)
+			} else {
+				feeForContributor.Mul(totalFees, big.NewInt(int64(sInfo.shareAmt)))
+				feeForContributor.Div(feeForContributor, totalSharesOfPair)
+			}
+
+			parts := strings.Split(sInfo.shareKey, "-")
+			partsLen := len(parts)
+			if partsLen < 5 {
+				continue
+			}
+			feesForContributorsByPair = append(
+				feesForContributorsByPair,
+				&tradingFeeForContributorByPair{
+					ContributorAddressStr: parts[partsLen-1],
+					FeeAmt:                feeForContributor.Uint64(),
+					Token2IDStr:           parts[partsLen-2],
+					Token1IDStr:           parts[partsLen-3],
+				},
+			)
+			accumFees.Add(accumFees, feeForContributor)
+		}
+	}
+	if len(feesForContributorsByPair) == 0 {
+		return []string{}
+	}
+
+	feesForContributorsByPairBytes, err := json.Marshal(feesForContributorsByPair)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while marshaling feesForContributorsByPair: %+v", err)
+		return []string{}
+	}
+	return []string{
+		strconv.Itoa(metadata.PDETradingFeesDistributionMeta),
+		"",
+		"",
+		string(feesForContributorsByPairBytes),
+	}
+}
+
+func (blockchain *BlockChain) buildInstructionsForPDEFeeWithdrawal(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPDEState *CurrentPDEState,
+	beaconHeight uint64,
+) ([][]string, error) {
+	if currentPDEState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForPDEFeeWithdrawal]: Current PDE state is null.")
+		return [][]string{}, nil
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+		return [][]string{}, nil
+	}
+	var pdeFeeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
+	err = json.Unmarshal(contentBytes, &pdeFeeWithdrawalRequestAction)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
+		return [][]string{}, nil
+	}
+	wdMeta := pdeFeeWithdrawalRequestAction.Meta
+	pdeTradingFees := currentPDEState.PDETradingFees
+	tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr,
+		wdMeta.WithdrawalToken2IDStr,
+		wdMeta.WithdrawerAddressStr,
+	))
+	withdrawableFee, found := pdeTradingFees[tradingFeeKey]
+	if !found || withdrawableFee < wdMeta.WithdrawalFeeAmt {
+		rejectedInst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			common.PDEFeeWithdrawalRejectedChainStatus,
+			contentStr,
+		}
+		return [][]string{rejectedInst}, nil
+	}
+	pdeTradingFees[tradingFeeKey] -= wdMeta.WithdrawalFeeAmt
+	acceptedInst := []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		common.PDEFeeWithdrawalAcceptedChainStatus,
+		contentStr,
+	}
+	return [][]string{acceptedInst}, nil
 }

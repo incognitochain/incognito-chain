@@ -120,8 +120,14 @@ const (
 	PDETradeAcceptedStatus = 1
 	PDETradeRefundStatus   = 2
 
+	PDECrossPoolTradeAcceptedStatus = 1
+	PDECrossPoolTradeRefundStatus   = 2
+
 	PDEWithdrawalAcceptedStatus = 1
 	PDEWithdrawalRejectedStatus = 2
+
+	PDEFeeWithdrawalAcceptedStatus = 1
+	PDEFeeWithdrawalRejectedStatus = 2
 
 	MinTxFeesOnTokenRequirement                             = 10000000000000 // 10000 prv, this requirement is applied from beacon height 87301 mainnet
 	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 87301          // milestone of beacon height, when apply min fee on token requirement
@@ -196,6 +202,17 @@ const (
 
 	PDEWithdrawalAcceptedChainStatus = "accepted"
 	PDEWithdrawalRejectedChainStatus = "rejected"
+
+	PDEFeeWithdrawalAcceptedChainStatus = "accepted"
+	PDEFeeWithdrawalRejectedChainStatus = "rejected"
+
+	PDEWithdrawalOnFeeAcceptedChainStatus      = "onFeeAccepted"
+	PDEWithdrawalOnPoolPairAcceptedChainStatus = "onPoolPairAccepted"
+	PDEWithdrawalWithPRVFeeRejectedChainStatus = "withPRVFeeRejected"
+
+	PDECrossPoolTradeFeeRefundChainStatus          = "xPoolTradeRefundFee"
+	PDECrossPoolTradeSellingTokenRefundChainStatus = "xPoolTradeRefundSellingToken"
+	PDECrossPoolTradeAcceptedChainStatus           = "xPoolTradeAccepted"
 )
 
 // Portal status for chain

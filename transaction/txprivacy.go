@@ -1604,3 +1604,18 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 	//Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
 }
+
+// GetFullTxValues returns both prv and ptoken values
+func (tx Tx) GetFullTxValues() (uint64, uint64) {
+	return tx.CalculateTxValue(), 0
+}
+
+// IsFullBurning returns whether the tx is full burning tx
+func (tx Tx) IsFullBurning(
+	bcr metadata.ChainRetriever,
+	retriever metadata.ShardViewRetriever,
+	viewRetriever metadata.BeaconViewRetriever,
+	beaconHeight uint64,
+) bool {
+	return tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
+}

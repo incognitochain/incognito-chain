@@ -44,6 +44,9 @@ const (
 	PortalRewardInfoObjectType
 	LockedCollateralStateObjectType
 	RewardFeatureStateObjectType
+
+	// PDEX v2
+	PDETradingFeeObjectType
 )
 
 // Prefix length
