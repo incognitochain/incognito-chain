@@ -86,7 +86,7 @@ func (req PortalReqMatchingRedeem) ValidateSanityData(chainRetriever ChainRetrie
 	}
 
 	if ok, err := txr.CheckAuthorizedSender(incogAddr.Pk); err != nil || !ok {
-		return false, false, errors.New("WithdrawerAddr unauthorized")
+		return false, false, errors.New("Request matching redeem is unauthorized")
 	}
 
 	// check tx type

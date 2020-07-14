@@ -156,7 +156,6 @@ func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 	record += portalUserRegister.IncogAddressStr
 	record += strconv.FormatUint(portalUserRegister.RegisterAmount, 10)
 	record += strconv.FormatUint(portalUserRegister.PortingFee, 10)
-
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -84,9 +83,6 @@ func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shard
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong sender address")
-	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("sender address is not signer tx")
 	}
 
 	// check tx type
