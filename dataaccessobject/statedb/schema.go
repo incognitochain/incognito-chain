@@ -3,9 +3,10 @@ package statedb
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 var (
@@ -29,6 +30,7 @@ var (
 	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
 	pdePoolPrefix                      = []byte("pdepool-")
 	pdeSharePrefix                     = []byte("pdeshare-")
+	pdeTradingFeePrefix                = []byte("pdetradingfee-")
 	pdeTradeFeePrefix                  = []byte("pdetradefee-")
 	pdeContributionStatusPrefix        = []byte("pdecontributionstatus-")
 	pdeTradeStatusPrefix               = []byte("pdetradestatus-")
@@ -181,6 +183,11 @@ func GetPDESharePrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
+func GetPDETradingFeePrefix() []byte {
+	h := common.HashH(pdeTradingFeePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 func GetPDEStatusPrefix() []byte {
 	h := common.HashH(pdeStatusPrefix)
 	return h[:][:prefixHashKeyLength]
@@ -249,6 +256,14 @@ func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string)
 // GetPDEShareKey: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
 func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
 	prefix := append(pdeSharePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
+	tokenIDs := []string{token1ID, token2ID}
+	sort.Strings(tokenIDs)
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+}
+
+// GetPDETradingFeeKey: PDETradingFeePrefix + beacon height + token1ID + token2ID
+func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+	prefix := append(pdeTradingFeePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
 	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)

@@ -59,14 +59,24 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &StopAutoStakingMetadata{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
+	case PDEPRVRequiredContributionRequestMeta:
+		md = &PDEContribution{}
 	case PDETradeRequestMeta:
 		md = &PDETradeRequest{}
 	case PDETradeResponseMeta:
 		md = &PDETradeResponse{}
+	case PDECrossPoolTradeRequestMeta:
+		md = &PDECrossPoolTradeRequest{}
+	case PDECrossPoolTradeResponseMeta:
+		md = &PDECrossPoolTradeResponse{}
 	case PDEWithdrawalRequestMeta:
 		md = &PDEWithdrawalRequest{}
 	case PDEWithdrawalResponseMeta:
 		md = &PDEWithdrawalResponse{}
+	case PDEFeeWithdrawalRequestMeta:
+		md = &PDEFeeWithdrawalRequest{}
+	case PDEFeeWithdrawalResponseMeta:
+		md = &PDEFeeWithdrawalResponse{}
 	case PDEContributionResponseMeta:
 		md = &PDEContributionResponse{}
 	case PortalCustodianDepositMeta:

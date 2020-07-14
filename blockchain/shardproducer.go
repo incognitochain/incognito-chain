@@ -366,11 +366,19 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(l) >= 4 {
 					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
+			case metadata.PDECrossPoolTradeRequestMeta:
+				if len(l) >= 4 {
+					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
+				}
 			case metadata.PDEWithdrawalRequestMeta:
 				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDEContributionMeta:
+			case metadata.PDEFeeWithdrawalRequestMeta:
+				if len(l) >= 4 && l[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
+					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				}
+			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
 				if len(l) >= 4 {
 					if l[2] == common.PDEContributionRefundChainStatus {
 						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
