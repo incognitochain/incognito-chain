@@ -831,9 +831,9 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 	}
 
 	// check doubling a input coin in tx
-	serialNumbers := make(map[common.Hash]bool)
+	serialNumbers := make(map[[operation.Ed25519KeySize]byte]bool)
 	for i, inCoin := range proof.GetInputCoins() {
-		hashSN := common.HashH(inCoin.GetKeyImage().ToBytesS())
+		hashSN := inCoin.GetKeyImage().ToBytes()
 		if serialNumbers[hashSN] {
 			Logger.Log.Errorf("Double input in proof - index %v", i)
 			return false, errors.New("double input in tx")
