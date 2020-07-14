@@ -131,10 +131,6 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 		return false, false, errors.New("wrong custodian incognito address")
 	}
 
-	//if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-	//	return false, false, errors.New("custodian incognito address is not signer tx")
-	//}
-
 	// check burning tx
 	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
 	if err != nil || !isBurned {
@@ -147,7 +143,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 	}
 
 	// check tx type and token burn
-	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:])  {
+	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]) {
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 

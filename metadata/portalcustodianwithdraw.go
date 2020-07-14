@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -45,7 +44,7 @@ func NewCustodianWithdrawRequestStatus(paymentAddress string, amount uint64, sta
 
 func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amount uint64) (*PortalCustodianWithdrawRequest, error) {
 	metadataBase := MetadataBase{
-		Type: metaType,
+		Type: metaType, Sig: []byte{},
 	}
 
 	portalCustodianWithdrawReq := &PortalCustodianWithdrawRequest{
@@ -57,6 +56,8 @@ func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amou
 
 	return portalCustodianWithdrawReq, nil
 }
+
+func (*PortalCustodianWithdrawRequest) ShouldSignMetaData() bool { return true }
 
 func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	txr Transaction,
@@ -89,8 +90,8 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(chainRetriever
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("custodian incognito address is not signer tx")
+	if ok, err := tx.CheckAuthorizedSender(incogAddr.Pk); err != nil || !ok {
+		return false, false, errors.New("Withdraw request is unauthorized")
 	}
 
 	// check tx type
@@ -113,11 +114,24 @@ func (Withdraw PortalCustodianWithdrawRequest) Hash() *common.Hash {
 	record := Withdraw.MetadataBase.Hash().String()
 	record += Withdraw.PaymentAddress
 	record += strconv.FormatUint(Withdraw.Amount, 10)
+	if Withdraw.Sig != nil && len(Withdraw.Sig) != 0 {
+		record += string(Withdraw.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (Withdraw PortalCustodianWithdrawRequest) HashWithoutSig() *common.Hash {
+	record := Withdraw.MetadataBase.Hash().String()
+	record += Withdraw.PaymentAddress
+	record += strconv.FormatUint(Withdraw.Amount, 10)
 
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
+
 
 func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalCustodianWithdrawRequestAction{
