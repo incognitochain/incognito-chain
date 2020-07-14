@@ -177,7 +177,10 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = initShardState.initShardBestState(blockchain, blockchain.GetShardChainDatabase(shardID), &initShardBlock, genesisBeaconBlock)
+
+	err = initShardState.initShardBestState(
+		blockchain, blockchain.GetShardChainDatabase(shardID),
+		&initShardBlock, genesisBeaconBlock, addCommitteesStr)
 	if err != nil {
 		return err
 	}

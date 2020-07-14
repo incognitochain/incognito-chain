@@ -20,6 +20,7 @@ type ShardCommitteeStateHash struct {
 
 //ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment struct {
+	AddedCommitteesStr                         []string
 	ShardHeight                                uint64
 	ShardBlockHash                             uint64
 	Txs                                        []metadata.Transaction
@@ -42,6 +43,7 @@ type ShardCommitteeStateEnvironment struct {
 //NewShardCommitteeStateEnvironment : Default constructor of ShardCommitteeStateEnvironment
 //Output: pointer of ShardCommitteeStateEnvironment
 func NewShardCommitteeStateEnvironment(
+	addedCommitteesStr []string,
 	txs []metadata.Transaction,
 	beaconHeight uint64,
 	instructions [][]string,
@@ -55,6 +57,7 @@ func NewShardCommitteeStateEnvironment(
 	isProcessShardBlockInstruction bool,
 	isProcessShardBlockInstructionForKeyListV2 bool) *ShardCommitteeStateEnvironment {
 	return &ShardCommitteeStateEnvironment{
+		AddedCommitteesStr:             addedCommitteesStr,
 		Txs:                            txs,
 		BeaconHeight:                   beaconHeight,
 		Instructions:                   instructions,
@@ -266,7 +269,12 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env *ShardCommitteeStateE
 		panic(err)
 	}
 
-	fmt.Println("[committee-state] engine.shardCommitteeStateV1.shardCommittee:", engine.shardCommitteeStateV1.shardCommittee)
+	committess, err := incognitokey.CommitteeBase58KeyListToStruct(env.AddedCommitteesStr)
+	if err != nil {
+		panic(err)
+	}
+
+	engine.shardCommitteeStateV1.shardCommittee = append(engine.shardCommitteeStateV1.shardCommittee, committess...)
 
 }
 

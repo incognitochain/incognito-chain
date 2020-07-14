@@ -150,6 +150,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	// process instruction from beacon block
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
+		nil,
 		transactionsForNewBlock,
 		shardBestState.BeaconHeight,
 		[][]string{},

@@ -497,6 +497,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	}
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
+		nil,
 		shardBlock.Body.Transactions,
 		curView.BeaconHeight,
 		shardBlock.Body.Instructions,
@@ -729,6 +730,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	///
 
 	env := committeestate.NewShardCommitteeStateEnvironment(
+		nil,
 		shardBlock.Body.Transactions,
 		shardBestState.BeaconHeight,
 		shardBlock.Body.Instructions,
@@ -754,7 +756,9 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	return shardBestState, hashes, committeeChange, nil
 }
 
-func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain, db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
+func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
+	db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock,
+	addedCommitteesStr []string) error {
 
 	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	shardBestState.BestBlock = genesisShardBlock
@@ -796,14 +800,13 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		return err
 	}
 
-	fmt.Println("[committee-state] {initshard} instructions:", instructions)
-
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx[stakePublicKey] = txHash
 	}
 
 	shardBestState.shardCommitteeEngine.InitCommitteeState(
 		committeestate.NewShardCommitteeStateEnvironment(
+			addedCommitteesStr,
 			genesisShardBlock.Body.Transactions,
 			shardBestState.BeaconHeight,
 			instructions,
