@@ -1,10 +1,12 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -15,65 +17,45 @@ import (
 handleGetBeaconBestState - RPC get beacon best state
 */
 func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-
-	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
+	allViews := []*blockchain.BeaconBestState{}
+	beaconBestState := &blockchain.BeaconBestState{}
+	beaconDB := httpServer.blockService.BlockChain.GetBeaconChainDatabase()
+	beaconViews, err := rawdbv2.GetBeaconViews(beaconDB)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
-	}
-
-	err = beaconBestState.InitStateRootHash(httpServer.config.BlockChain)
-	if err != nil {
-		panic(err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
 	}
 
-	//best block
-	block, _, err := httpServer.config.BlockChain.GetBeaconBlockByHash(beaconBestState.BestBlockHash)
-	if err != nil || block == nil {
-		fmt.Println("block ", block)
-		panic(err)
-	}
-	beaconBestState.BestBlock = *block
-	if beaconBestState.RewardReceiver == nil {
-		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
-	}
-	err = beaconBestState.RestoreBeaconCommittee()
+	err = json.Unmarshal(beaconViews, &allViews)
 	if err != nil {
-		panic(err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
 	}
 
-	err = beaconBestState.RestoreShardCommittee()
-	if err != nil {
-		panic(err)
+	sID := []int{}
+	for i := 0; i < httpServer.config.ChainParams.ActiveShards; i++ {
+		sID = append(sID, i)
 	}
 
-	err = beaconBestState.RestoreBeaconPendingValidator()
-	if err != nil {
-		panic(err)
-	}
+	for _, v := range allViews {
+		err := v.RestoreBeaconViewStateFromHash(httpServer.GetBlockchain())
+		if err != nil {
+			continue
+		}
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(beaconDB))
+		if err != nil {
+			continue
+		}
+		v.AutoStaking = blockchain.NewMapStringBool()
 
-	err = beaconBestState.RestoreShardPendingValidator()
-	if err != nil {
-		panic(err)
-	}
+		mapAutoStaking := statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 
-	err = beaconBestState.RestoreCandidateBeaconWaitingForCurrentRandom()
-	if err != nil {
-		panic(err)
-	}
-
-	err = beaconBestState.RestoreCandidateBeaconWaitingForNextRandom()
-	if err != nil {
-		panic(err)
-	}
-
-	err = beaconBestState.RestoreCandidateShardWaitingForCurrentRandom()
-	if err != nil {
-		panic(err)
-	}
-
-	err = beaconBestState.RestoreCandidateShardWaitingForNextRandom()
-	if err != nil {
-		panic(err)
+		for hash, value := range mapAutoStaking {
+			v.AutoStaking.Set(hash, value)
+		}
+		// finish reproduce
+		// if !blockchain.BeaconChain.multiView.AddView(v) {
+		// 	continue
+		// }
+		beaconBestState = v
 	}
 
 	result := jsonresult.NewGetBeaconBestState(beaconBestState)
