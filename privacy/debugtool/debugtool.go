@@ -23,7 +23,7 @@ func (this *DebugTool) InitTestnet() *DebugTool {
 	if this == nil {
 		this = new(DebugTool)
 	}
-	this.url = "http://51.83.36.184:9334"
+	this.url = "https://testnet.incognito.org/fullnode"
 	return this
 }
 
