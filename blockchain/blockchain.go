@@ -154,9 +154,9 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 		newShardCandidateStructs = append(newShardCandidateStructs, key)
 	}
 
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams,
-		committeestate.NewShardCommitteeEngine(
-			1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1()))
+	engine := committeestate.NewShardCommitteeEngine(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
+
+	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, engine)
 
 	addCommittees := []incognitokey.CommitteePublicKey{}
 	addCommittees = append(addCommittees, newShardCandidateStructs[int(shardID)*blockchain.

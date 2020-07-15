@@ -149,22 +149,26 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
 
-	env := committeestate.NewShardCommitteeStateEnvironment(
-		[]string{},
-		shardPendingValidator,
-		transactionsForNewBlock,
-		shardBestState.BeaconHeight,
-		[][]string{},
-		shardBestState.Epoch,
-		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
-		shardID,
-		shardBestState.MaxShardCommitteeSize,
-		shardBestState.MinShardCommitteeSize,
-		blockchain.config.ChainParams.Offset,
-		blockchain.config.ChainParams.SwapOffset,
-		nil,
-		make(map[string]string),
-		false)
+	env := committeestate.
+		NewShardEnvBuilder().
+		BuildBeaconHeight(shardBestState.BeaconHeight).
+		BuildChainParamEpoch(shardBestState.Epoch).
+		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		BuildInstructions([][]string{}).
+		BuildIsProcessShardBlockInstructionForKeyListV2(false).
+		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
+		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
+		BuildOffset(blockchain.config.ChainParams.Offset).
+		BuildProducersBlackList(make(map[string]uint8)).
+		BuildRecentCommitteesStr([]string{}).
+		BuildRecentSubtitutesStr(shardPendingValidator).
+		BuildShardBlockHash(curView.BestBlockHash).
+		BuildShardHeight(curView.ShardHeight).
+		BuildShardID(shardID).
+		BuildStakingTx(make(map[string]string)).
+		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+		BuildTxs(transactionsForNewBlock).
+		Build()
 
 	_, committeeChange, err := curView.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {

@@ -499,22 +499,32 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		}
 	}
 
-	env := committeestate.NewShardCommitteeStateEnvironment(
-		[]string{},
-		shardPendingValidatorStr,
-		shardBlock.Body.Transactions,
-		curView.BeaconHeight,
-		shardBlock.Body.Instructions,
-		curView.Epoch,
-		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
-		shardID,
-		curView.MaxShardCommitteeSize,
-		curView.MinShardCommitteeSize,
-		blockchain.config.ChainParams.Offset,
-		blockchain.config.ChainParams.SwapOffset,
-		nil,
-		make(map[string]string),
-		false)
+	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
+		false, int(curView.ShardID), shardCommittee, curView.BeaconHeight)
+	if err != nil {
+		return err
+	}
+
+	env := committeestate.
+		NewShardEnvBuilder().
+		BuildBeaconHeight(curView.BeaconHeight).
+		BuildChainParamEpoch(curView.Epoch).
+		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		BuildInstructions(shardBlock.Body.Instructions).
+		BuildIsProcessShardBlockInstructionForKeyListV2(false).
+		BuildMaxShardCommitteeSize(curView.MaxShardCommitteeSize).
+		BuildMinShardCommitteeSize(curView.MinShardCommitteeSize).
+		BuildOffset(blockchain.config.ChainParams.Offset).
+		BuildProducersBlackList(producersBlackList).
+		BuildRecentCommitteesStr([]string{}).
+		BuildRecentSubtitutesStr(shardPendingValidatorStr).
+		BuildShardBlockHash(curView.BestBlockHash).
+		BuildShardHeight(curView.ShardHeight).
+		BuildShardID(shardID).
+		BuildStakingTx(make(map[string]string)).
+		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+		BuildTxs(shardBlock.Body.Transactions).
+		Build()
 
 	_, committeeChange, err := curView.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -734,22 +744,26 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 
-	env := committeestate.NewShardCommitteeStateEnvironment(
-		[]string{},
-		shardPendingValidatorStr,
-		shardBlock.Body.Transactions,
-		shardBestState.BeaconHeight,
-		shardBlock.Body.Instructions,
-		shardBestState.Epoch,
-		blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
-		shardID,
-		shardBestState.MaxShardCommitteeSize,
-		shardBestState.MinShardCommitteeSize,
-		blockchain.config.ChainParams.Offset,
-		blockchain.config.ChainParams.SwapOffset,
-		producersBlackList,
-		make(map[string]string),
-		true)
+	env := committeestate.
+		NewShardEnvBuilder().
+		BuildBeaconHeight(shardBestState.BeaconHeight).
+		BuildChainParamEpoch(shardBestState.Epoch).
+		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		BuildInstructions(shardBlock.Body.Instructions).
+		BuildIsProcessShardBlockInstructionForKeyListV2(true).
+		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
+		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
+		BuildOffset(blockchain.config.ChainParams.Offset).
+		BuildProducersBlackList(producersBlackList).
+		BuildRecentCommitteesStr([]string{}).
+		BuildRecentSubtitutesStr(shardPendingValidatorStr).
+		BuildShardBlockHash(shardBestState.BestBlockHash).
+		BuildShardHeight(shardBestState.ShardHeight).
+		BuildShardID(shardID).
+		BuildStakingTx(make(map[string]string)).
+		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+		BuildTxs(shardBlock.Body.Transactions).
+		Build()
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -815,23 +829,28 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		}
 	}
 
-	shardBestState.shardCommitteeEngine.InitCommitteeState(
-		committeestate.NewShardCommitteeStateEnvironment(
-			addedCommitteesStr,
-			shardPendingValidatorStr,
-			genesisShardBlock.Body.Transactions,
-			shardBestState.BeaconHeight,
-			instructions,
-			shardBestState.Epoch,
-			blockchain.config.ChainParams.EpochBreakPointSwapNewKey,
-			shardBestState.ShardID,
-			shardBestState.MaxShardCommitteeSize,
-			shardBestState.MinShardCommitteeSize,
-			blockchain.config.ChainParams.Offset,
-			blockchain.config.ChainParams.SwapOffset,
-			producersBlackList,
-			make(map[string]string),
-			false))
+	env := committeestate.
+		NewShardEnvBuilder().
+		BuildBeaconHeight(shardBestState.BeaconHeight).
+		BuildChainParamEpoch(shardBestState.Epoch).
+		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		BuildInstructions(instructions).
+		BuildIsProcessShardBlockInstructionForKeyListV2(false).
+		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
+		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
+		BuildOffset(blockchain.config.ChainParams.Offset).
+		BuildProducersBlackList(producersBlackList).
+		BuildRecentCommitteesStr(addedCommitteesStr).
+		BuildRecentSubtitutesStr(shardPendingValidatorStr).
+		BuildShardBlockHash(shardBestState.BestBlockHash).
+		BuildShardHeight(shardBestState.ShardHeight).
+		BuildShardID(shardBestState.ShardID).
+		BuildStakingTx(make(map[string]string)).
+		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+		BuildTxs(genesisShardBlock.Body.Transactions).
+		Build()
+
+	shardBestState.shardCommitteeEngine.InitCommitteeState(env)
 
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
