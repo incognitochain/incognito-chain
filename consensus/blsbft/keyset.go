@@ -2,14 +2,14 @@ package blsbft
 
 import (
 	"encoding/json"
-	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"sort"
 )
 
 // type blsKeySet struct {
@@ -136,53 +136,3 @@ func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, bri
 	}
 	return
 }
-
-func GenerateFullKeyFromPrivateKey (privateKey string) error {
-	// generate inc key
-	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
-	if err != nil {
-		return err
-	}
-	err = keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
-	if err != nil {
-		return err
-	}
-
-	// calculate private seed
-	privateSeedBytes := common.HashB(common.HashB(keyWallet.KeySet.PrivateKey))
-
-	// generate mining key from private seed
-	var miningKey MiningKey
-	miningKey.PriKey = map[string][]byte{}
-	miningKey.PubKey = map[string][]byte{}
-
-	// BLS key-pair
-	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
-	miningKey.PriKey[common.BlsConsensus] = blsmultisig.SKBytes(blsPriKey)
-	miningKey.PubKey[common.BlsConsensus] = blsmultisig.PKBytes(blsPubKey)
-
-	// ECDSA key-pair
-	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
-	miningKey.PriKey[common.BridgeConsensus] = bridgesig.SKBytes(&bridgePriKey)
-	miningKey.PubKey[common.BridgeConsensus] = bridgesig.PKBytes(&bridgePubKey)
-
-	// print result
-	privateKeyStr := keyWallet.Base58CheckSerialize(wallet.PriKeyType)
-	paymentAddrStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	readOnlyKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-
-	privateSeedStr := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-	blsPubKeyStr := base58.Base58Check{}.Encode(miningKey.PubKey[common.BlsConsensus], common.Base58Version)
-	committeePubKeyStr := miningKey.GetPublicKeyBase58()
-
-	fmt.Println("Incognito Private Key: ", privateKeyStr)
-	fmt.Println("Incognito Payment Address: ", paymentAddrStr)
-	fmt.Println("Incognito Viewing Key: ", readOnlyKeyStr)
-
-	fmt.Println("Private Seed: ", privateSeedStr)
-	fmt.Println("BLS public key: ", blsPubKeyStr)
-	fmt.Println("Committee Public Key: ", committeePubKeyStr)
-
-	return nil
-}
-

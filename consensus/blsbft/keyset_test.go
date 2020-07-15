@@ -2,9 +2,12 @@ package blsbft
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
+
+	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -12,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"testing"
 )
 
 func TestMiningKey_GetKeyTuble(t *testing.T) {
@@ -165,8 +167,50 @@ func TestGenerateKey(t *testing.T) {
 	}
 }
 
+func GenerateFullKeyFromPrivateKey(privateKey string) error {
+	// generate inc key
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return err
+	}
+	err = keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		return err
+	}
+
+	// calculate private seed
+	privateSeedBytes := common.HashB(common.HashB(keyWallet.KeySet.PrivateKey))
+	committeePubKey, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, keyWallet.KeySet.PaymentAddress.Pk)
+	if err != nil {
+		return err
+	}
+	committeeKeyStr, err := committeePubKey.ToBase58()
+	if err != nil {
+		return err
+	}
+
+	// print result
+	privateKeyStr := keyWallet.Base58CheckSerialize(wallet.PriKeyType)
+	paymentAddrStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	readOnlyKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+
+	privateSeedStr := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	miningKey, _ := committeePubKey.GetMiningKey(common.BlsConsensus)
+	miningKeyStr := base58.Base58Check{}.Encode(miningKey, common.Base58Version)
+
+	fmt.Println("Incognito Private Key: ", privateKeyStr)
+	fmt.Println("Incognito Payment Address: ", paymentAddrStr)
+	fmt.Println("Incognito Viewing Key: ", readOnlyKeyStr)
+
+	fmt.Println("Private Seed:         ", privateSeedStr)
+	fmt.Println("BLS public key:       ", committeePubKey.GetMiningKeyBase58(common.BlsConsensus))
+	fmt.Println("Bridge public key:    ", committeePubKey.GetMiningKeyBase58(common.BridgeConsensus))
+	fmt.Println("Mining Public Key (BLS+DSA): ", miningKeyStr)
+	fmt.Println("Committee Public Key: ", committeeKeyStr)
+	return nil
+}
+
 func TestGenerateFullKeyFromPrivateKey(t *testing.T) {
 	privateKey := "112t8ro4JyjNxs1JtGt4HG9s39wY9QDz61H8tXuo28Ufb9HE9Pshqc8pdChjAs8BXEzkam3PaJc7yHfmYJVsc5NG47eTijME4RqfS9JcR1u9"
 	GenerateFullKeyFromPrivateKey(privateKey)
 }
-
