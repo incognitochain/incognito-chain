@@ -7,9 +7,7 @@ import (
 
 //RecoverCommittee ...
 func (shardBestState *ShardBestState) RestoreCommittee(shardID byte, chain *BlockChain) error {
-
 	committeePublicKey := statedb.GetOneShardCommittee(shardBestState.consensusStateDB, shardID)
-
 	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 	for i, v := range committeePublicKey {
 		shardBestState.ShardCommittee[i] = v
@@ -20,7 +18,6 @@ func (shardBestState *ShardBestState) RestoreCommittee(shardID byte, chain *Bloc
 
 //RestorePendingValidators ...
 func (shardBestState *ShardBestState) RestorePendingValidators(shardID byte, bc *BlockChain) error {
-
 	committeePublicKey := statedb.GetOneShardSubstituteValidator(shardBestState.consensusStateDB, shardID)
 	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(committeePublicKey))
 	for i, v := range committeePublicKey {
@@ -35,7 +32,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	if err != nil {
 		return err
 	}
-
 	//best block
 	block, _, err := blockchain.GetBeaconBlockByHash(beaconBestState.BestBlockHash)
 	if err != nil || block == nil {
@@ -43,7 +39,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
-
 	beaconCommitteeEngine := InitBeaconCommitteeEngineV1(
 		beaconBestState.ActiveShards, beaconBestState.consensusStateDB, beaconBestState.BeaconHeight, beaconBestState.BestBlockHash)
 	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
