@@ -11,13 +11,13 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-//ShardCommitteeStateHash :
+//ShardCommitteeStateHash
 type ShardCommitteeStateHash struct {
 	ShardCommitteeHash  common.Hash
 	ShardSubstituteHash common.Hash
 }
 
-//ShardCommitteeStateV1 :
+//ShardCommitteeStateV1
 type ShardCommitteeStateV1 struct {
 	shardCommittee        []incognitokey.CommitteePublicKey
 	shardPendingValidator []incognitokey.CommitteePublicKey
@@ -25,7 +25,7 @@ type ShardCommitteeStateV1 struct {
 	mu *sync.RWMutex
 }
 
-//ShardCommitteeEngine :
+//ShardCommitteeEngine
 type ShardCommitteeEngine struct {
 	shardHeight                      uint64
 	shardHash                        common.Hash
@@ -34,7 +34,7 @@ type ShardCommitteeEngine struct {
 	uncommittedShardCommitteeStateV1 *ShardCommitteeStateV1
 }
 
-//NewShardCommitteeStateV1 : Default constructor for ShardCommitteeStateV1 ...
+//NewShardCommitteeStateV1 is default constructor for ShardCommitteeStateV1 ...
 //Output: pointer of ShardCommitteeStateV1 struct
 func NewShardCommitteeStateV1() *ShardCommitteeStateV1 {
 	return &ShardCommitteeStateV1{
@@ -42,7 +42,7 @@ func NewShardCommitteeStateV1() *ShardCommitteeStateV1 {
 	}
 }
 
-//NewShardCommitteeStateV1WithValue : Constructor for ShardCommitteeStateV1 with value
+//NewShardCommitteeStateV1WithValue is constructor for ShardCommitteeStateV1 with value
 //Output: pointer of ShardCommitteeStateV1 struct with value
 func NewShardCommitteeStateV1WithValue(shardCommittee, shardPendingValidator []incognitokey.CommitteePublicKey) *ShardCommitteeStateV1 {
 	return &ShardCommitteeStateV1{
@@ -52,7 +52,7 @@ func NewShardCommitteeStateV1WithValue(shardCommittee, shardPendingValidator []i
 	}
 }
 
-//NewShardCommitteeEngine : Default constructor for ShardCommitteeEngine
+//NewShardCommitteeEngine is default constructor for ShardCommitteeEngine
 //Output: pointer of ShardCommitteeEngine
 func NewShardCommitteeEngine(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV1 *ShardCommitteeStateV1) *ShardCommitteeEngine {
@@ -65,7 +65,7 @@ func NewShardCommitteeEngine(shardHeight uint64,
 	}
 }
 
-//clone: clone ShardCommitteeStateV1 to new instance
+//clone ShardCommitteeStateV1 to new instance
 func (committeeState ShardCommitteeStateV1) clone(newCommitteeState *ShardCommitteeStateV1) {
 	newCommitteeState.reset()
 
@@ -86,7 +86,7 @@ func (committeeState *ShardCommitteeStateV1) reset() {
 	committeeState.shardPendingValidator = make([]incognitokey.CommitteePublicKey, 0)
 }
 
-//ValidateCommitteeRootHashes : Validate committee root hashes for checking if it's valid
+//ValidateCommitteeRootHashes validate committee root hashes for checking if it's valid
 //	Input: list rootHashes need checking
 //	Output: result(boolean) and error
 //	Pre-conditions: NULL
@@ -95,7 +95,7 @@ func (engine *ShardCommitteeEngine) ValidateCommitteeRootHashes(rootHashes []com
 	panic("Not implemented yet")
 }
 
-//Commit : Commit commitee state change in uncommittedShardCommitteeStateV1 struct
+//Commit commit committee state change in uncommittedShardCommitteeStateV1 struct
 //	Pre-conditions: uncommittedShardCommitteeStateV1 has been inited
 //	Input: Shard Committee hash
 //	Output: error
@@ -133,7 +133,7 @@ func (engine *ShardCommitteeEngine) Commit(hashes *ShardCommitteeStateHash) erro
 	return nil
 }
 
-//AbortUncommittedShardState : Reset data in uncommittedShardCommitteeStateV1 struct
+//AbortUncommittedShardState reset data in uncommittedShardCommitteeStateV1 struct
 //	Pre-conditions: uncommittedShardCommitteeStateV1 has been inited
 //	Input: NULL
 //	Output: error
@@ -145,7 +145,7 @@ func (engine *ShardCommitteeEngine) AbortUncommittedShardState() {
 	engine.uncommittedShardCommitteeStateV1.reset()
 }
 
-//UpdateCommitteeState : Update committeState from valid data before
+//UpdateCommitteeState update committeState from valid data before
 //	Pre-conditions: Validate committee state
 //	Input: env variables ShardCommitteeStateEnvironment
 // 	Output: New ShardCommitteeEngineV1 and committee changes, error
@@ -220,7 +220,7 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	return hashes, committeeChange, nil
 }
 
-//InitCommitteeState : Init committee state at genesis block or anytime restore program
+//InitCommitteeState init committee state at genesis block or anytime restore program
 // Pre-conditions: right config from files or env variables
 // Input: env variables ShardCommitteeStateEnvironment
 // Output: NULL
@@ -233,44 +233,38 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env ShardCommitteeStateEn
 	defer engine.shardCommitteeStateV1.mu.Unlock()
 
 	committeeState := engine.shardCommitteeStateV1
-
 	committeeChange := NewCommitteeChange()
-
 	err := committeeState.processInstructionFromBeacon(env.RecentSubtitutesStr(),
 		env.Instructions(), env.ShardID(), committeeChange)
 	if err != nil {
 		panic(err)
 	}
-
 	err = committeeState.processShardBlockInstruction(env, committeeChange)
 	if err != nil {
 		panic(err)
 	}
-
 	committess, err := incognitokey.CommitteeBase58KeyListToStruct(env.RecentCommitteesStr())
 	if err != nil {
 		panic(err)
 	}
-
 	engine.shardCommitteeStateV1.shardCommittee = append(engine.shardCommitteeStateV1.shardCommittee, committess...)
-
 }
 
-//GetShardCommittee : Get shard committees
+//GetShardCommittee get shard committees
 //Input: ShardID
 //Output: list array of incognito public keys
 func (engine *ShardCommitteeEngine) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV1.shardCommittee
 }
 
-//GetShardPendingValidator : Get shard pending validators
+//GetShardPendingValidator get shard pending validators
 //Input: ShardID
 //Output: list array of incognito public keys
 func (engine *ShardCommitteeEngine) GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV1.shardPendingValidator
 }
 
-//generateUncommittedCommitteeHashes : generate hashes relate to uncommitted committees of struct ShardCommitteeEngine
+//generateUncommittedCommitteeHashes generate hashes relate to uncommitted committees of struct ShardCommitteeEngine
 //	Input: NULL
 //	Pre-conditions: NULL
 //	Output:
@@ -310,7 +304,7 @@ func (engine ShardCommitteeEngine) generateUncommittedCommitteeHashes() (*ShardC
 	}, nil
 }
 
-//processnstructionFromBeacon : Process instruction from beacon blocks
+//processnstructionFromBeacon process instruction from beacon blocks
 // Pre-conditions: NULL
 //	Input: list instructions, recent subtitutes validators in string data structure, shardID, committee change
 //	Output: error
@@ -325,20 +319,17 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	listInstructions [][]string,
 	shardID byte,
 	committeeChange *CommitteeChange) error {
-
+	var err error
 	shardPendingValidator := []string{}
-
-	shardPendingValidator = append(shardPendingValidator, recentSubtitutesStr...)
-
 	newShardPendingValidator := []string{}
-
+	shardPendingValidator = append(shardPendingValidator, recentSubtitutesStr...)
 	for _, ins := range listInstructions {
+		//TODO: convert ins to intruction.AssignInstruction
 		if ins[0] == instruction.ASSIGN_ACTION && ins[2] == "shard" {
 			assignInstruction, err := instruction.ImportAssignInstructionFromString(ins)
 			if err != nil {
 				return err
 			}
-
 			if assignInstruction.ChainID == int(shardID) {
 				tempNewShardPendingValidator := assignInstruction.ShardCandidates
 				shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
@@ -356,30 +347,27 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 		fmt.Println("[committee-state] committeeChange.ShardSubstituteAdded[shardID]:", committeeChange.ShardSubstituteAdded[shardID])
 	}
 
-	var err error
 	committeeChange.ShardSubstituteAdded[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(newShardPendingValidator)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-//processShardBlockInstruction : process shard block instruction for sending to beacon
+//processShardBlockInstruction process shard block instruction for sending to beacon
 //	Pre-conditions: NULL
-//	Input: ShardCommitteeStateEnvironment, committeechange
+//	Input: ShardCommitteeStateEnvironment, committee change
 //	Output: error
 //	Post-conditions: NULL
 //	Flow:
 //		- get list instructions from input environment
 //		- loop over the list instructions
-//			+ Check type of instructions and process it
+//			+ Check type of instructions and process itp
 //			+ At this moment, there will be only swap action for this function
 //		- After process all instructions, we will updatew commitee change variable
 func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) error {
-
 	var err error
 	shardID := env.ShardID()
 	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(committeeState.shardPendingValidator)
@@ -390,16 +378,15 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	if err != nil {
 		return err
 	}
-
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(env.Instructions()) != 0 {
 		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.Instructions())
 	}
-
 	// Swap committee
-	for _, l := range env.Instructions() {
-		if l[0] == instruction.SWAP_ACTION {
+	for _, inst := range env.Instructions() {
+		//TODO: convert ins to intruction.SwapInstruction
+		if inst[0] == instruction.SWAP_ACTION {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator,
 				shardCommittee, env.MaxShardCommitteeSize(), env.MinShardCommitteeSize(), env.Offset(),
@@ -409,8 +396,8 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 				return err
 			}
 			swapedCommittees := []string{}
-			if len(l[2]) != 0 && l[2] != "" {
-				swapedCommittees = strings.Split(l[2], ",")
+			if len(inst[2]) != 0 && inst[2] != "" {
+				swapedCommittees = strings.Split(inst[2], ",")
 			}
 			for _, v := range swapedCommittees {
 				if txID, ok := env.StakingTx()[v]; ok {
@@ -423,8 +410,8 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 				return fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees)
 			}
 			newCommittees := []string{}
-			if len(l[1]) > 0 {
-				newCommittees = strings.Split(l[1], ",")
+			if len(inst[1]) > 0 {
+				newCommittees = strings.Split(inst[1], ",")
 			}
 			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
 				return fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees)
@@ -472,12 +459,10 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardID, shardNewCommittees)
 		}
 	}
-
 	committeeState.shardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
 	if err != nil {
 		return err
 	}
-
 	committeeState.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
 	if err != nil {
 		return err
@@ -485,7 +470,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	return nil
 }
 
-//processShardBlockInstructionForKeyListV2 : Process shard block instructions for key list v2
+//processShardBlockInstructionForKeyListV2 process shard block instructions for key list v2
 //	Pre-conditions: NULL
 //	Input: ShardCommitteeStateEnvironment, CommitteeChange
 //	Output: error

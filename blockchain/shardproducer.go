@@ -174,11 +174,10 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, NewBlockChainError(ProcessInstructionFromBeaconError, err)
 	}
-
+	curView.shardCommitteeEngine.AbortUncommittedShardState()
 	currentPendingValidators, err = updateCommiteesWithAddedAndRemovedListCommittee(currentPendingValidators,
 		committeeChange.ShardCommitteeAdded[curView.ShardID],
 		committeeChange.ShardCommitteeRemoved[curView.ShardID])
-
 	shardPendingValidator, err = incognitokey.CommitteeKeyListToString(currentPendingValidators)
 	if err != nil {
 		return nil, NewBlockChainError(ProcessInstructionFromBeaconError, err)
