@@ -16,6 +16,7 @@ type PortalCustodianWithdrawResponse struct {
 	ReqTxID        common.Hash
 	PaymentAddress string
 	Amount         uint64
+	SharedRandom       []byte
 }
 
 func NewPortalCustodianWithdrawResponse(
@@ -72,15 +73,14 @@ func (responseMeta *PortalCustodianWithdrawResponse) CalculateSize() uint64 {
 
 func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	insts := mintData.Insts
-	instUsed := mintData.InstsUsed
-	for i, inst := range insts {
+
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PortalRequestPTokens response instruction
 			continue
 		}
 
 		instMetaType := inst[0]
-		if instUsed[i] > 0 || instMetaType != strconv.Itoa(PortalCustodianWithdrawRequestMeta) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(PortalCustodianWithdrawRequestMeta) {
 			continue
 		}
 
@@ -115,14 +115,22 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 
 		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.log.Info("WARNING - VALIDATION: Error occured while deserializing receiver address string: ", err)
 			continue
 		}
 
-		_, pk, amount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			portingAmountFromInst != amount ||
-			receivingTokenIDStr != assetID.String() {
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted {
+			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
+			continue
+		}
+
+		if coinID.String() != receivingTokenIDStr {
+			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct.")
+			continue
+		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, responseMeta.SharedRandom, portingAmountFromInst); !ok {
+			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
 			continue
 		}
 
@@ -133,6 +141,10 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalCustodianWithdrawRequest instruction found for PortalCustodianWithdrawResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (responseMeta *PortalCustodianWithdrawResponse) SetSharedRandom(r []byte) {
+	responseMeta.SharedRandom = r
 }

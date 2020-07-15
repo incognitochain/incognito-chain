@@ -109,22 +109,22 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ContributorAddressStr incorrect"))
 	}
 
-	incogAddr := keyWallet.KeySet.PaymentAddress
-	if len(incogAddr.Pk) == 0 {
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("custodian incognito address is not signer tx")
+	//if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
+	//	return false, false, errors.New("custodian incognito address is not signer tx")
+	//}
+
+	// check burning tx
+	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
 
 	// check tx type
-	if txr.GetType() != common.TxNormalType {
-		return false, false, errors.New("tx custodian deposit must be TxNormalType")
-	}
-
-	// check burning tx
-	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("must send coin to burning address")
+	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]) {
+		return false, false, errors.New("tx custodian deposit must be TxNormalType and coin burn is PRV")
 	}
 
 	if len(portalUserRegister.UniqueRegisterId) <= 0 {
@@ -138,12 +138,8 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 	}
 
 	//validation porting fee
-	if portalUserRegister.PortingFee == 0 {
-		return false, false, errors.New("porting fee should be larger than 0")
-	}
-
-	if (portalUserRegister.PortingFee) != txr.CalculateTxValue() {
-		return false, false, errors.New("Total of register amount and porting fee should be equal to the tx value")
+	if (portalUserRegister.PortingFee) != burnCoin.GetValue() || portalUserRegister.PortingFee == 0 {
+		return false, false, errors.New("Total of register amount and porting fee should be equal to the tx value and larger than 0")
 	}
 
 	return true, true, nil
@@ -160,7 +156,6 @@ func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 	record += portalUserRegister.IncogAddressStr
 	record += strconv.FormatUint(portalUserRegister.RegisterAmount, 10)
 	record += strconv.FormatUint(portalUserRegister.PortingFee, 10)
-
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

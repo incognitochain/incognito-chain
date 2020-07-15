@@ -773,7 +773,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if isBatch == false {
-		valid, err := proof.aggregatedRangeProof.Verify()
+		valid, err := proof.aggregatedRangeProof. Verify()
 		if !valid {
 			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
 			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
