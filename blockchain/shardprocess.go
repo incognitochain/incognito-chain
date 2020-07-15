@@ -510,7 +510,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		BuildBeaconHeight(curView.BeaconHeight).
 		BuildChainParamEpoch(curView.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		BuildInstructions(shardBlock.Body.Instructions).
+		BuildBeaconInstructions(shardBlock.Body.Instructions).
 		BuildIsProcessShardBlockInstructionForKeyListV2(false).
 		BuildMaxShardCommitteeSize(curView.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(curView.MinShardCommitteeSize).
@@ -740,7 +740,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		BuildInstructions(shardBlock.Body.Instructions).
+		BuildBeaconInstructions(shardBlock.Body.Instructions).
 		BuildIsProcessShardBlockInstructionForKeyListV2(true).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
@@ -824,7 +824,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		BuildInstructions(instructions).
+		BuildBeaconInstructions(instructions).
 		BuildIsProcessShardBlockInstructionForKeyListV2(false).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).

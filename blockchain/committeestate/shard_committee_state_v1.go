@@ -177,7 +177,7 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	}
 
 	err = newCommitteeState.processInstructionFromBeacon(env.RecentSubtitutesStr(),
-		env.Instructions(), env.ShardID(), committeeChange)
+		env.BeaconInstructions(), env.ShardID(), committeeChange)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -235,7 +235,7 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env ShardCommitteeStateEn
 	committeeState := engine.shardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
 	err := committeeState.processInstructionFromBeacon(env.RecentSubtitutesStr(),
-		env.Instructions(), env.ShardID(), committeeChange)
+		env.BeaconInstructions(), env.ShardID(), committeeChange)
 	if err != nil {
 		panic(err)
 	}
@@ -380,11 +380,11 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	}
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
-	if len(env.Instructions()) != 0 {
-		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.Instructions())
+	if len(env.ShardInstructions()) != 0 {
+		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.ShardInstructions())
 	}
 	// Swap committee
-	for _, inst := range env.Instructions() {
+	for _, inst := range env.ShardInstructions() {
 		//TODO: convert ins to intruction.SwapInstruction
 		if inst[0] == instruction.SWAP_ACTION {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
@@ -484,7 +484,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) error {
 	shardID := env.ShardID()
-	for _, ins := range env.Instructions() {
+	for _, ins := range env.ShardInstructions() {
 		if ins[0] == instruction.SWAP_ACTION {
 			shardPendingValidatorStruct := committeeState.shardPendingValidator
 			inPublicKeys := strings.Split(ins[1], ",")

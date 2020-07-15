@@ -7,12 +7,14 @@ import (
 
 //ShardEnvBuilder : Interface for building shard environment
 type ShardEnvBuilder interface {
+	BuildShardInstructions(instructions [][]string) ShardEnvBuilder
+	BuildBeaconBlockHash(blockHash common.Hash) ShardEnvBuilder
 	BuildRecentCommitteesStr(recentCommitteesStr []string) ShardEnvBuilder
 	BuildRecentSubtitutesStr(recentSubtitutesStr []string) ShardEnvBuilder
 	BuildShardHeight(height uint64) ShardEnvBuilder
 	BuildShardBlockHash(blockHash common.Hash) ShardEnvBuilder
 	BuildTxs(txs []metadata.Transaction) ShardEnvBuilder
-	BuildInstructions(instructions [][]string) ShardEnvBuilder
+	BuildBeaconInstructions(instructions [][]string) ShardEnvBuilder
 	BuildBeaconHeight(height uint64) ShardEnvBuilder
 	BuildChainParamEpoch(chainParamEpoch uint64) ShardEnvBuilder
 	BuildEpochBreakPointSwapNewKey(epochBreakPointSwapNewKey []uint64) ShardEnvBuilder
@@ -38,8 +40,10 @@ type ShardCommitteeStateEnvironment interface {
 	RecentSubtitutesStr() []string
 	ShardHeight() uint64
 	ShardBlockHash() common.Hash
+	BeaconBlockHash() common.Hash
 	Txs() []metadata.Transaction
-	Instructions() [][]string
+	BeaconInstructions() [][]string
+	ShardInstructions() [][]string
 	BeaconHeight() uint64
 	ChainParamEpoch() uint64
 	EpochBreakPointSwapNewKey() []uint64
@@ -59,8 +63,10 @@ type shardCommitteeStateEnvironment struct {
 	recentSubtitutesStr                        []string
 	shardHeight                                uint64
 	shardBlockHash                             common.Hash
+	beaconBlockHash                            common.Hash
+	shardInstructions                          [][]string
 	txs                                        []metadata.Transaction
-	instructions                               [][]string
+	beaconInstructions                         [][]string
 	beaconHeight                               uint64
 	chainParamEpoch                            uint64
 	epochBreakPointSwapNewKey                  []uint64
@@ -92,6 +98,12 @@ func (env *shardCommitteeStateEnvironment) BuildShardHeight(height uint64) Shard
 	return env
 }
 
+//BuildBeaconBlockHash :
+func (env *shardCommitteeStateEnvironment) BuildBeaconBlockHash(blockHash common.Hash) ShardEnvBuilder {
+	env.beaconBlockHash = blockHash
+	return env
+}
+
 //BuildShardBlockHash :
 func (env *shardCommitteeStateEnvironment) BuildShardBlockHash(blockHash common.Hash) ShardEnvBuilder {
 	env.shardBlockHash = blockHash
@@ -104,9 +116,15 @@ func (env *shardCommitteeStateEnvironment) BuildTxs(txs []metadata.Transaction) 
 	return env
 }
 
-//BuildInstructions :
-func (env *shardCommitteeStateEnvironment) BuildInstructions(instructions [][]string) ShardEnvBuilder {
-	env.instructions = instructions
+//BuildShardInstructions :
+func (env *shardCommitteeStateEnvironment) BuildShardInstructions(instructions [][]string) ShardEnvBuilder {
+	env.shardInstructions = instructions
+	return env
+}
+
+//BuildBeaconInstructions :
+func (env *shardCommitteeStateEnvironment) BuildBeaconInstructions(instructions [][]string) ShardEnvBuilder {
+	env.beaconInstructions = instructions
 	return env
 }
 
@@ -200,14 +218,24 @@ func (env *shardCommitteeStateEnvironment) ShardBlockHash() common.Hash {
 	return env.shardBlockHash
 }
 
+//BeaconBlockHash :
+func (env *shardCommitteeStateEnvironment) BeaconBlockHash() common.Hash {
+	return env.beaconBlockHash
+}
+
 //Txs :
 func (env *shardCommitteeStateEnvironment) Txs() []metadata.Transaction {
 	return env.txs
 }
 
-//Instructions :
-func (env *shardCommitteeStateEnvironment) Instructions() [][]string {
-	return env.instructions
+//BeaconInstructions :
+func (env *shardCommitteeStateEnvironment) BeaconInstructions() [][]string {
+	return env.beaconInstructions
+}
+
+//ShardInstructions :
+func (env *shardCommitteeStateEnvironment) ShardInstructions() [][]string {
+	return env.shardInstructions
 }
 
 //BeaconHeight :

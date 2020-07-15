@@ -70,14 +70,13 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	// startTime := time.Now()
 	shardPendingValidator, err := incognitokey.
-		CommitteeKeyListToString(curView.
-			shardCommitteeEngine.GetShardPendingValidator(curView.ShardID))
+		CommitteeKeyListToString(curView.GetShardPendingValidator())
 	if err != nil {
 		return nil, err
 	}
+
 	currentCommitteePubKeys, err := incognitokey.
-		CommitteeKeyListToString(curView.
-			shardCommitteeEngine.GetShardCommittee(curView.ShardID))
+		CommitteeKeyListToString(curView.GetCommittee())
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +153,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		BuildInstructions([][]string{}).
+		BuildShardInstructions([][]string{}).
 		BuildIsProcessShardBlockInstructionForKeyListV2(false).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
