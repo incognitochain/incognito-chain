@@ -362,13 +362,6 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 			if len(inst[2]) != 0 && inst[2] != "" {
 				swapedCommittees = strings.Split(inst[2], ",")
 			}
-			for _, v := range swapedCommittees {
-				if txID, ok := env.StakingTx()[v]; ok {
-					if checkReturnStakingTxExistence(txID, env.Txs()) {
-						delete(env.StakingTx(), v)
-					}
-				}
-			}
 			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
 				return fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees)
 			}
