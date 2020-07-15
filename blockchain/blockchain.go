@@ -213,7 +213,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		initBeaconBestState.GetBeaconCommittee(),
 		initBeaconBestState.GetRewardReceiver(),
 		initBeaconBestState.GetAutoStaking(),
-		initBeaconBestState.StakingTx,
+		initBeaconBestState.GetStakingTx(),
 	); err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 			committee,
 			initBeaconBestState.GetRewardReceiver(),
 			initBeaconBestState.GetAutoStaking(),
-			initBeaconBestState.StakingTx,
+			initBeaconBestState.GetStakingTx(),
 		); err != nil {
 			return err
 		}

@@ -18,25 +18,28 @@ func CreateGenesisBeaconBlock(
 	inst := [][]string{}
 	shardAutoStaking := []string{}
 	beaconAutoStaking := []string{}
+	txStakes := []string{}
 	for i := 0; i < len(genesisParams.PreSelectShardNodeSerializedPubkey); i++ {
 		shardAutoStaking = append(shardAutoStaking, "false")
+		txStakes = append(txStakes, "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d")
 	}
 	for i := 0; i < len(genesisParams.PreSelectBeaconNodeSerializedPubkey); i++ {
 		beaconAutoStaking = append(beaconAutoStaking, "false")
+		txStakes = append(txStakes, "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d")
 	}
 	// build validator beacon
 	// test generate public key in utility/generateKeys
 	beaconAssignInstruction := []string{instruction.STAKE_ACTION}
 	beaconAssignInstruction = append(beaconAssignInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPubkey[:], ","))
 	beaconAssignInstruction = append(beaconAssignInstruction, "beacon")
-	beaconAssignInstruction = append(beaconAssignInstruction, []string{""}...)
+	beaconAssignInstruction = append(beaconAssignInstruction, strings.Join(txStakes[:], ","))
 	beaconAssignInstruction = append(beaconAssignInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPaymentAddress[:], ","))
 	beaconAssignInstruction = append(beaconAssignInstruction, strings.Join(beaconAutoStaking[:], ","))
 
 	shardAssignInstruction := []string{instruction.STAKE_ACTION}
 	shardAssignInstruction = append(shardAssignInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPubkey[:], ","))
 	shardAssignInstruction = append(shardAssignInstruction, "shard")
-	shardAssignInstruction = append(shardAssignInstruction, []string{""}...)
+	shardAssignInstruction = append(shardAssignInstruction, strings.Join(txStakes[:], ","))
 	shardAssignInstruction = append(shardAssignInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPaymentAddress[:], ","))
 	shardAssignInstruction = append(shardAssignInstruction, strings.Join(shardAutoStaking[:], ","))
 

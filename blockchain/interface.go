@@ -93,6 +93,7 @@ type BeaconCommitteeEngine interface {
 	GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 	GetAutoStaking() map[string]bool
+	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error

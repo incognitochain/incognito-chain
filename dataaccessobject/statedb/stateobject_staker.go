@@ -11,10 +11,8 @@ import (
 
 type StakerInfo struct {
 	rewardReceiver privacy.PaymentAddress
-	// funderAddress  privacy.PaymentAddress
-	txStakingID common.Hash
-	autoStaking bool
-	// stakingAmount  uint64
+	txStakingID    common.Hash
+	autoStaking    bool
 }
 
 func NewStakerInfo() *StakerInfo {
@@ -23,17 +21,13 @@ func NewStakerInfo() *StakerInfo {
 
 func NewStakerInfoWithValue(
 	rewardReceiver privacy.PaymentAddress,
-	// funderAddress privacy.PaymentAddress,
 	autoStaking bool,
 	txStakingID common.Hash,
-	// stakingAmount uint64,
 ) *StakerInfo {
 	return &StakerInfo{
 		rewardReceiver: rewardReceiver,
-		// funderAddress:  funderAddress,
-		autoStaking: autoStaking,
-		txStakingID: txStakingID,
-		// stakingAmount:  stakingAmount,
+		autoStaking:    autoStaking,
+		txStakingID:    txStakingID,
 	}
 }
 
@@ -42,14 +36,10 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		RewardReceiver privacy.PaymentAddress
 		AutoStaking    bool
 		TxStakingID    common.Hash
-		// FunderAddress  privacy.PaymentAddress
-		// StakingAmount  uint64
 	}{
 		RewardReceiver: c.rewardReceiver,
 		TxStakingID:    c.txStakingID,
-		// FunderAddress:  c.funderAddress,
-		AutoStaking: c.autoStaking,
-		// StakingAmount:  c.stakingAmount,
+		AutoStaking:    c.autoStaking,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -70,7 +60,6 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	}
 	c.txStakingID = temp.TxStakingID
 	c.rewardReceiver = temp.RewardReceiver
-	// c.funderAddress = temp.FunderAddress
 	c.autoStaking = temp.AutoStaking
 	return nil
 }
@@ -78,10 +67,6 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 func (s *StakerInfo) SetRewardReceiver(r privacy.PaymentAddress) {
 	s.rewardReceiver = r
 }
-
-// func (s *StakerInfo) SetFunderAddress(f privacy.PaymentAddress) {
-// 	s.funderAddress = f
-// }
 
 func (s *StakerInfo) SetTxStakingID(t common.Hash) {
 	s.txStakingID = t
@@ -95,10 +80,6 @@ func (s StakerInfo) RewardReceiver() privacy.PaymentAddress {
 	return s.rewardReceiver
 }
 
-// func (s StakerInfo) FunderAddress() privacy.PaymentAddress {
-// 	return s.funderAddress
-// }
-
 func (s StakerInfo) TxStakingID() common.Hash {
 	return s.txStakingID
 }
@@ -106,10 +87,6 @@ func (s StakerInfo) TxStakingID() common.Hash {
 func (s StakerInfo) AutoStaking() bool {
 	return s.autoStaking
 }
-
-// func (s StakerInfo) StakingAmount() uint64 {
-// 	return s.stakingAmount
-// }
 
 type StakerObject struct {
 	db *StateDB
@@ -159,9 +136,6 @@ func newStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*
 	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
 		return nil, fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
 	}
-	// if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.funderAddress); err != nil {
-	// 	return nil, fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
-	// }
 	return &StakerObject{
 		version:             defaultVersion,
 		stakerPublicKeyHash: key,

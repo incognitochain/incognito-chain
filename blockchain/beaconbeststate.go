@@ -33,26 +33,25 @@ type BeaconRootHash struct {
 }
 
 type BeaconBestState struct {
-	BestBlockHash           common.Hash            `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash   common.Hash            `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               BeaconBlock            `json:"BestBlock"`             // The block.
-	BestShardHash           map[byte]common.Hash   `json:"BestShardHash"`
-	BestShardHeight         map[byte]uint64        `json:"BestShardHeight"`
-	Epoch                   uint64                 `json:"Epoch"`
-	BeaconHeight            uint64                 `json:"BeaconHeight"`
-	BeaconProposerIndex     int                    `json:"BeaconProposerIndex"`
-	CurrentRandomNumber     int64                  `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp  int64                  `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber       bool                   `json:"IsGetRandomNumber"`
-	Params                  map[string]string      `json:"Params,omitempty"`
-	MaxBeaconCommitteeSize  int                    `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize  int                    `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize   int                    `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize   int                    `json:"MinShardCommitteeSize"`
-	ActiveShards            int                    `json:"ActiveShards"`
-	ConsensusAlgorithm      string                 `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm map[byte]string        `json:"ShardConsensusAlgorithm"`
-	StakingTx               map[string]common.Hash `json:"-"`
+	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock               BeaconBlock          `json:"BestBlock"`             // The block.
+	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
+	Epoch                   uint64               `json:"Epoch"`
+	BeaconHeight            uint64               `json:"BeaconHeight"`
+	BeaconProposerIndex     int                  `json:"BeaconProposerIndex"`
+	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
+	Params                  map[string]string    `json:"Params,omitempty"`
+	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize   int                  `json:"MinShardCommitteeSize"`
+	ActiveShards            int                  `json:"ActiveShards"`
+	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeEngine BeaconCommitteeEngine
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
@@ -358,6 +357,10 @@ func (beaconBestState *BeaconBestState) GetAutoStaking() map[string]bool {
 	return beaconBestState.beaconCommitteeEngine.GetAutoStaking()
 }
 
+func (beaconBestState *BeaconBestState) GetStakingTx() map[string]common.Hash {
+	return beaconBestState.beaconCommitteeEngine.GetStakingTx()
+}
+
 func (beaconBestState *BeaconBestState) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForCurrentRandom()
 }
@@ -392,9 +395,6 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine
-	if beaconBestState.StakingTx == nil {
-		beaconBestState.StakingTx = make(map[string]common.Hash)
-	}
 	return nil
 }
 
@@ -573,15 +573,15 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 }
 
 func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
-	shardIDs := []int{statedb.BeaconShardID}
+	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < activeShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
-	beaconCurrentValidator := currentValidator[statedb.BeaconShardID]
-	beaconSubstituteValidator := substituteValidator[statedb.BeaconShardID]
-	delete(currentValidator, statedb.BeaconShardID)
-	delete(substituteValidator, statedb.BeaconShardID)
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+	beaconCurrentValidator := currentValidator[statedb.BeaconChainID]
+	beaconSubstituteValidator := substituteValidator[statedb.BeaconChainID]
+	delete(currentValidator, statedb.BeaconChainID)
+	delete(substituteValidator, statedb.BeaconChainID)
 	shardCurrentValidator := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range currentValidator {
 		shardCurrentValidator[byte(k)] = v
@@ -590,7 +590,7 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 	for k, v := range substituteValidator {
 		shardSubstituteValidator[byte(k)] = v
 	}
-	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers)
+	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers, stakingTx)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngine(beaconHeight, beaconHash, beaconCommitteeState)
 	return beaconCommitteeEngine
 }

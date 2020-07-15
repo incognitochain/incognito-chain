@@ -705,7 +705,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.StakingTx)
+	err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
 	if err != nil {
 		return err
 	}
@@ -713,7 +713,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.StakingTx)
+	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
 	if err != nil {
 		return err
 	}

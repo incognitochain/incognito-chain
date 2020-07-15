@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -13,6 +14,7 @@ type StakeInstruction struct {
 	PublicKeyStructs      []incognitokey.CommitteePublicKey
 	Chain                 string
 	TxStakes              []string
+	TxStakeHashes         []common.Hash
 	RewardReceivers       []string
 	RewardReceiverStructs []privacy.PaymentAddress
 	AutoStakingFlag       []bool
@@ -47,6 +49,10 @@ func (s *StakeInstruction) SetChain(chain string) *StakeInstruction {
 
 func (s *StakeInstruction) SetTxStakes(txStakes []string) *StakeInstruction {
 	s.TxStakes = txStakes
+	for _, txStake := range txStakes {
+		res, _ := common.Hash{}.NewHashFromStr(txStake)
+		s.TxStakeHashes = append(s.TxStakeHashes, *res)
+	}
 	return s
 }
 
@@ -124,6 +130,12 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	}
 	publicKeys := strings.Split(instruction[1], SPLITTER)
 	txStakes := strings.Split(instruction[3], SPLITTER)
+	for _, txStake := range txStakes {
+		_, err := common.Hash{}.NewHashFromStr(txStake)
+		if err != nil {
+			return fmt.Errorf("invalid tx stake %+v", err)
+		}
+	}
 	rewardReceivers := strings.Split(instruction[4], SPLITTER)
 	for _, v := range rewardReceivers {
 		_, err := wallet.Base58CheckDeserialize(v)
