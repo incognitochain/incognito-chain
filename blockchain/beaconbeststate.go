@@ -355,7 +355,7 @@ func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]string {
 	return beaconBestState.beaconCommitteeEngine.GetRewardReceiver()
 }
 
-func (beaconBestState *BeaconBestState) GetRewardReceiverPaymentAddress() map[string]string {
+func (beaconBestState *BeaconBestState) GetRewardReceiverPaymentAddress() map[string]privacy.PaymentAddress {
 	data := beaconBestState.beaconCommitteeEngine.GetRewardReceiver()
 	res := make(map[string]privacy.PaymentAddress)
 }
