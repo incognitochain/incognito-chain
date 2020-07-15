@@ -170,6 +170,18 @@ func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBl
 	if len(beaconBlocks) == 0 {
 		return nil, fmt.Errorf("Beacon Block Height %+v NOT FOUND", height)
 	}
+	nBeaconBlocks, err := blockchain.GetBeaconBlockByHeight(height + 1)
+	if err == nil {
+		idByHash := map[string]int{}
+		for id, blk := range beaconBlocks {
+			idByHash[blk.Hash().String()] = id
+		}
+		for _, blk := range nBeaconBlocks {
+			if id, ok := idByHash[blk.GetPrevHash().String()]; ok {
+				return beaconBlocks[id], nil
+			}
+		}
+	}
 	return beaconBlocks[0], nil
 }
 
