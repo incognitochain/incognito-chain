@@ -164,3 +164,9 @@ func TestGenerateKey(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateFullKeyFromPrivateKey(t *testing.T) {
+	privateKey := "112t8ro4JyjNxs1JtGt4HG9s39wY9QDz61H8tXuo28Ufb9HE9Pshqc8pdChjAs8BXEzkam3PaJc7yHfmYJVsc5NG47eTijME4RqfS9JcR1u9"
+	GenerateFullKeyFromPrivateKey(privateKey)
+}
+
