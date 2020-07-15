@@ -17,7 +17,6 @@ type PortalRequestPTokensResponse struct {
 	RequesterAddrStr string
 	Amount           uint64
 	IncTokenID       string
-	SharedRandom       []byte
 }
 
 func NewPortalRequestPTokensResponse(
@@ -67,9 +66,6 @@ func (iRes PortalRequestPTokensResponse) Hash() *common.Hash {
 	record += iRes.RequesterAddrStr
 	record += strconv.FormatUint(iRes.Amount, 10)
 	record += iRes.IncTokenID
-	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
-		record += string(iRes.SharedRandom)
-	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -81,13 +77,14 @@ func (iRes *PortalRequestPTokensResponse) CalculateSize() uint64 {
 
 func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-
-	for i, inst := range mintData.Insts {
+	insts := mintData.Insts
+	instUsed := mintData.InstsUsed
+	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PortalRequestPTokens response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 ||
+		if instUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PortalUserRequestPTokenMeta) {
 			continue
 		}
@@ -126,26 +123,18 @@ func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 			continue
 		}
 
-		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted || coinID.String() != tokenIDStrFromInst {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while validate tx mint: ", err)
+		_, pk, paidAmount, assetID := tx.GetTransferData()
+		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+			portingAmountFromInst != paidAmount ||
+			tokenIDStrFromInst != assetID.String() {
 			continue
 		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, portingAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while check tx mint. CheckCoinValid return false ")
-			continue
-		}
-
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalReqPtokens instruction found for PortalReqPtokensResponse tx %s", tx.Hash().String()))
 	}
-	mintData.InstsUsed[idx] = 1
+	instUsed[idx] = 1
 	return true, nil
-}
-
-func (iRes *PortalRequestPTokensResponse) SetSharedRandom(r []byte) {
-	iRes.SharedRandom = r
 }

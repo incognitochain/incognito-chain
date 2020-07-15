@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -40,7 +41,7 @@ func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*E
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
-	metadataBase := MetadataBase{Type: metaType, Sig: []byte{}}
+	metadataBase := MetadataBase{Type: metaType}
 
 	portalExchangeRates := &PortalExchangeRates{
 		SenderAddress: senderAddress,
@@ -51,8 +52,6 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency []*Exch
 
 	return portalExchangeRates, nil
 }
-
-func (*PortalExchangeRates) ShouldSignMetaData() bool { return true }
 
 type PortalExchangeRatesContent struct {
 	SenderAddress string
@@ -88,8 +87,9 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	if len(senderAddr.Pk) == 0 {
 		return false, false, errors.New("Sender address invalid, sender address must be incognito address")
 	}
-	if ok, err := txr.CheckAuthorizedSender(senderAddr.Pk); err != nil || !ok {
-		return false, false, errors.New("Sender is unauthorized")
+
+	if !bytes.Equal(txr.GetSigPubKey()[:], senderAddr.Pk[:]) {
+		return false, false, errors.New("Sender address is not signer tx")
 	}
 
 	if txr.GetType() != common.TxNormalType {
@@ -120,21 +120,7 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 		record += rateInfo.PTokenID
 		record += strconv.FormatUint(rateInfo.Rate, 10)
 	}
-	if portalExchangeRates.Sig != nil && len(portalExchangeRates.Sig) != 0 {
-		record += string(portalExchangeRates.Sig)
-	}
-	// final hash
-	hash := common.HashH([]byte(record))
-	return &hash
-}
 
-func (portalExchangeRates PortalExchangeRates) HashWithoutSig() *common.Hash {
-	record := portalExchangeRates.MetadataBase.Hash().String()
-	record += portalExchangeRates.SenderAddress
-	for _, rateInfo := range portalExchangeRates.Rates {
-		record += rateInfo.PTokenID
-		record += strconv.FormatUint(rateInfo.Rate, 10)
-	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

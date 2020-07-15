@@ -95,6 +95,10 @@ func (proof PaymentProof) GetOutputCoins() []coin.Coin {
 	return res
 }
 
+func (proof *PaymentProof) SetAggregatedRangeProof(aggregatedRangeProof *aggregatedrange.AggregatedRangeProof) {proof.aggregatedRangeProof = aggregatedRangeProof}
+func (proof *PaymentProof) SetSerialNumberProof(serialNumberProof []*serialnumberprivacy.SNPrivacyProof) {proof.serialNumberProof = serialNumberProof}
+func (proof *PaymentProof) SetOneOfManyProof(oneOfManyProof []*oneoutofmany.OneOutOfManyProof) {proof.oneOfManyProof = oneOfManyProof}
+
 func (proof *PaymentProof) SetInputCoins(v []coin.PlainCoin) error {
 	var err error
 	proof.inputCoins = make([]coin.PlainCoin, len(v))
@@ -770,7 +774,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if isBatch == false {
-		valid, err := proof.aggregatedRangeProof. Verify()
+		valid, err := proof.aggregatedRangeProof.Verify()
 		if !valid {
 			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
 			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
@@ -831,9 +835,9 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 	}
 
 	// check doubling a input coin in tx
-	serialNumbers := make(map[common.Hash]bool)
+	serialNumbers := make(map[[operation.Ed25519KeySize]byte]bool)
 	for i, inCoin := range proof.GetInputCoins() {
-		hashSN := common.HashH(inCoin.GetKeyImage().ToBytesS())
+		hashSN := inCoin.GetKeyImage().ToBytes()
 		if serialNumbers[hashSN] {
 			Logger.Log.Errorf("Double input in proof - index %v", i)
 			return false, errors.New("double input in tx")
@@ -846,6 +850,19 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 	if isPrivacy {
 		if !proof.aggregatedRangeProof.ValidateSanity() {
 			return false, errors.New("validate sanity Aggregated range proof failed")
+		}
+
+		//check commitment in output coins and bulletproof
+		cmsValues := proof.aggregatedRangeProof.GetCommitments()
+		if len(proof.commitmentOutputValue)!=len(cmsValues){
+			return false, errors.New("Commitment length mismatch")
+		}
+
+		for i := 0; i < len(proof.commitmentOutputValue); i += 1 {
+			//check if output coins' commitment is the same as in the proof
+			if !operation.IsPointEqual(cmsValues[i], proof.commitmentOutputValue[i]){
+				return false, errors.New("Coin & Proof Commitments mismatch")
+			}
 		}
 
 		for i := 0; i < len(proof.GetOneOfManyProof()); i++ {

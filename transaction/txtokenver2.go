@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
+	"math"
 	"strconv"
 )
 
@@ -462,4 +463,26 @@ func (txToken TxTokenVersion2) ValidateSanityData(chainRetriever metadata.ChainR
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err1)
 	}
 	return true, nil
+}
+
+func (txToken TxTokenVersion2) GetTxActualSize() uint64 {
+	sizeTx := getTxActualSizeInBytes(txToken.Tx)
+
+	if &txToken.TxTokenData != nil {
+		sizeTx += getTxActualSizeInBytes(txToken.TxTokenData.TxNormal)
+		sizeTx += uint64(len(txToken.TxTokenData.PropertyName))
+		sizeTx += uint64(len(txToken.TxTokenData.PropertySymbol))
+		sizeTx += uint64(len(txToken.TxTokenData.PropertyID))
+		sizeTx += 4 // Type
+		sizeTx += 1 // Mintable
+		sizeTx += 8 // Amount
+	}
+	meta := txToken.GetMetadata()
+	fmt.Println(meta)
+	if meta != nil {
+		sizeTx += meta.CalculateSize()
+	}
+
+	result := uint64(math.Ceil(float64(sizeTx) / 1024))
+	return result
 }

@@ -14,13 +14,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
+	"encoding/json"
+	"encoding/hex"
 	"testing"
 )
 
 var (
 	numInputs          = 5
-	numOutputs         = 5
-	numTests           = 10
+	// must be 1
+	numOutputs         = 1
+	numTests           = 100
 	unitFeeNativeToken = 100
 	//create a sample test DB
 	testDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
@@ -150,11 +153,11 @@ func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognito
 			if err != nil {
 				return nil, err
 			}
-			keyImage, err := tempCoin.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
-			if err != nil {
-				return nil, err
-			}
-			tempCoin.SetKeyImage(keyImage)
+			// keyImage, err := tempCoin.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			// tempCoin.SetKeyImage(keyImage)
 
 			tempCoin.ConcealOutputCoin(keySet.PaymentAddress.GetPublicView())
 			coinsToBeSaved[i] = tempCoin
@@ -202,9 +205,10 @@ func prepareKeySets(numKeySets int) ([]*incognitokey.KeySet, error) {
 
 func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *operation.Point, totalAmount uint64, numFeeInputs, version int) ([]coin.PlainCoin, error) {
 	coinList := []coin.PlainCoin{}
+	tmpAmount := totalAmount/uint64(numFeeInputs)
 	if version == coin.CoinVersion1 {
 		for i := 0; i < numFeeInputs-1; i++ {
-			amount := uint64(common.RandIntInterval(0, int(totalAmount)-1))
+			amount := tmpAmount - uint64(common.RandIntInterval(0, int(tmpAmount)/2))
 			coin, err := createSamplePlainCoinV1(senderSK, pubkey, amount, nil)
 			if err != nil {
 				return nil, err
@@ -387,7 +391,12 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 		err = proveConversion(txConvertOutput, txConvertParams)
 		assert.Equal(t, nil, err, "proveConversion returns an error: %v", err)
 
-		res, err := validateConversionVer1ToVer2(txConvertOutput, txConvertParams.stateDB, 0, &common.PRVCoinID)
+		res, err := validateSanityTxWithoutMetadata(txConvertOutput, nil, nil, nil, 0)
+		assert.Equal(t, true, err == nil, "validateConversionVer1ToVer2 should not return any error")
+		assert.Equal(t, true, res, "validateConversionVer1ToVer2 should be true")
+
+		res,err = validateTxByItself(txConvertOutput, false, txConvertParams.stateDB, nil, 0, true)
+		// res, err := validateConversionVer1ToVer2(txConvertOutput, txConvertParams.stateDB, 0, &common.PRVCoinID)
 		assert.Equal(t, true, err == nil, "validateConversionVer1ToVer2 should not return any error")
 		assert.Equal(t, true, res, "validateConversionVer1ToVer2 should be true")
 	}
@@ -434,63 +443,63 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 		//attempt to convert used coins (used serial numbers)
 		case 2:
 			fmt.Println("------------------Tampering with serial numbers-------------------")
-			serialToBeStored := [][]byte{}
-			for _, inputCoin := range txConversionParams.inputCoins {
-				serialToBeStored = append(serialToBeStored, inputCoin.GetKeyImage().ToBytesS())
-			}
+			usedIndex := common.RandInt() % len(txConversionOutput.Proof.GetInputCoins())
+			inputCoin := txConversionOutput.Proof.GetInputCoins()[usedIndex]
 
-			err := statedb.StoreSerialNumbers(testDB, *txConversionParams.tokenID, serialToBeStored, 0)
+			err := statedb.StoreSerialNumbers(testDB, *txConversionParams.tokenID, [][]byte{inputCoin.GetKeyImage().ToBytesS()}, 0)
 			assert.Equal(t, true, err == nil)
 
 		//tamper with OTAs
 		case 3:
 			fmt.Println("------------------Tampering with OTAs-------------------")
-			otaToBeStored := [][]byte{}
-			outputCoinToBeStored := [][]byte{}
-			for _, outputCoin := range txConversionOutput.Proof.GetOutputCoins() {
-				outputCoinToBeStored = append(outputCoinToBeStored, outputCoin.Bytes())
-				otaToBeStored = append(otaToBeStored, outputCoin.GetPublicKey().ToBytesS())
-			}
+			usedIndex := common.RandInt() % len(txConversionOutput.Proof.GetOutputCoins())
+			outputCoin := txConversionOutput.Proof.GetOutputCoins()[usedIndex]
 
-			err := statedb.StoreOTACoinsAndOnetimeAddresses(testDB, *txConversionParams.tokenID, 0, outputCoinToBeStored, otaToBeStored, 0)
-			assert.Equal(t, true, err == nil)
+			forceSaveCoins(testDB, []coin.Coin{outputCoin}, 0, *txConversionParams.tokenID, t)
+			// assert.Equal(t, true, err == nil)
 
 		//tamper with commitment of output
 		case 4:
 			fmt.Println("------------------Tampering with commitment-------------------")
 			//fmt.Println("Tx hash before altered", txConversionOutput.Hash().String())
 			newOutputCoins := []coin.Coin{}
-			for _, outputCoin := range txConversionOutput.Proof.GetOutputCoins() {
-				newOutputCoin, ok := outputCoin.(*coin.CoinV2)
-				assert.Equal(t, true, ok)
+			outputCoin := txConversionOutput.Proof.GetOutputCoins()[0]
+			newOutputCoin, ok := outputCoin.(*coin.CoinV2)
+			assert.Equal(t, true, ok)
 
-				r := common.RandInt()
 				//Attempt to alter some output coins!
-				if r%4 < 3 {
-					value := new(operation.Scalar).Add(newOutputCoin.GetAmount(), new(operation.Scalar).FromUint64(100))
-					randomness := outputCoin.GetRandomness()
-					newCommitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
-					newOutputCoin.SetCommitment(newCommitment)
-				}
-				newOutputCoins = append(newOutputCoins, newOutputCoin)
-			}
+			value := new(operation.Scalar).Add(newOutputCoin.GetAmount(), new(operation.Scalar).FromUint64(100))
+			randomness := outputCoin.GetRandomness()
+			newCommitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
+			newOutputCoin.SetCommitment(newCommitment)
+			newOutputCoins = append(newOutputCoins, newOutputCoin)
 			txConversionOutput.Proof.SetOutputCoins(newOutputCoins)
 			//fmt.Println("Tx hash after altered", txConversionOutput.Hash().String())
 
 			//Re-sign transaction
 			txConversionOutput.Sig, txConversionOutput.SigPubKey, err = signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
 			assert.Equal(t, nil, err)
-
 		default:
 
 		}
 		//Attempt to verify
-		res, err := validateConversionVer1ToVer2(txConversionOutput, testDB, 0, &common.PRVCoinID)
+		isValidSanity, _ := validateSanityTxWithoutMetadata(txConversionOutput, nil, nil, nil, 0)
+		var isValid bool
+		if !isValidSanity{
+			isValid = false
+		}else{
+			isValid, err = validateTxByItself(txConversionOutput, false, txConversionParams.stateDB, nil, 0, true)	
+		}
+		// assert.Equal(t, false, isValid, "validateConversionVer1ToVer2 on corrupted data should not be true")
+		if isValid{
+			jsb,_ := json.Marshal(txConversionOutput)
+			fmt.Printf("Unexpected error in case %d : %v\nTransaction : %s\n",m%5,err,string(jsb))
+			// return
+		}
 		//This validation should return an error
-		assert.Equal(t, true, err != nil)
-		fmt.Println(err)
+		assert.Equal(t, false, isValid)
 		//Result should be false
-		assert.Equal(t, false, res)
+		// assert.Equal(t, false, res)
 	}
 }
 
@@ -530,6 +539,9 @@ func TestValidateTxTokenConversion(t *testing.T) {
 			assert.Equal(t, true, err != nil)
 		//attempt to use PRV coins ver 1 as fee inputs
 		case 3:
+			// TODO: reconsider this test
+			// storeOTA cannot be used to store coinv1 or the db will be corrupted
+			return
 			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
 			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 1, tokenID)
 			assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
@@ -547,7 +559,7 @@ func TestValidateTxTokenConversion(t *testing.T) {
 			//Test validate txTokenConversionParams
 			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
 			assert.Equal(t, true, err != nil)
-			fmt.Println(err)
+			// fmt.Println(err)
 		//testing as usual
 		default:
 			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 100), common.RandIntInterval(0, 100), common.RandIntInterval(0, 100)
@@ -566,7 +578,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	//prepare some fake keysets and fake tokens to save on database
 	fmt.Println("====== INIT TEST =====")
 	numKeySets := 1
-	numTokens := 1
+	numTokens := 10
 	numCoinsPerKeySet := 10
 
 	//generate sample keysets
@@ -580,14 +592,15 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	//init some token
 	tokenIDs := make([]*common.Hash, numTokens)
 	for i := 0; i < numTokens; i++ {
-		tokenID := &common.Hash{common.RandBytes(1)[0]}
+		// tokenID := &common.Hash{common.RandBytes(1)[0]}
 		tokenName := "Token" + string(i)
-		paramToCreateTx, tokenParam, err := createInitTokenParams(coins[i], testDB, tokenID.String(), tokenName, keySets[0])
+		paramToCreateTx, tokenParam, err := createInitTokenParams(coins[i], testDB, "", tokenName, keySets[0])
 		tx := &TxTokenVersion2{}
 
 		err = tx.Init(paramToCreateTx)
 		if err != nil {
-			fmt.Printf("Init returns an error: %v\n", err)
+			jsb,_ := json.Marshal(coins[i])
+			fmt.Printf("Loop %d : Init returns an error: %v\nThat coin is %s\n",i, err, string(jsb))
 			return
 		}
 
@@ -596,7 +609,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		forceSaveCoins(testDB, feeOutputs, 0, common.PRVCoinID, t)
 		statedb.StorePrivacyToken(testDB, *tx.GetTokenID(), tokenParam.PropertyName, tokenParam.PropertySymbol, statedb.InitToken, tokenParam.Mintable, tokenParam.Amount, []byte{}, *tx.Hash())
 
-		fmt.Println(tx.GetTokenID())
+		fmt.Printf("Token %d : ID %s\n",i,hex.EncodeToString(tx.GetTokenID()[:]))
 		tokenExisted := statedb.PrivacyTokenIDExisted(testDB, *tx.GetTokenID())
 		assert.Equal(t, true, tokenExisted)
 
@@ -605,11 +618,14 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	}
 
 	fmt.Println("====== INIT TEST FINISHED =====")
-	tokenID := tokenIDs[0]
-	assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
 
 	for i := 0; i < numTests; i++ {
-		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 100), common.RandIntInterval(1, 100)
+		randomTokenIndex := common.RandInt() % numTokens
+		tokenID := tokenIDs[randomTokenIndex]
+		assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
+
+		fmt.Printf("Test #%d: Convert token %d\n",i,randomTokenIndex)
+		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 100), common.RandIntInterval(1, 5)
 		_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
 
@@ -620,8 +636,117 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 			return
 		}
 
-		res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, &common.PRVCoinID, false, true)
-		assert.Equal(t, true, res, "ValidateTransaction returns an error: %v", err)
+		isValidSanity, err := txToken.ValidateSanityData(nil, nil, nil, 0)
+		assert.Equal(t, true, isValidSanity)
+		assert.Equal(t, nil, err)
+		// validate signatures, proofs, etc. Only do after sanity checks are passed
+		isValidTxItself, err := txToken.ValidateTxByItself(false, testDB, nil, nil, shardID, false, nil, nil)
+		assert.Equal(t, true, isValidTxItself)
+		assert.Equal(t, nil, err)
+
+		testProveVerifyTxTokenConversionTampered(&keySets[0].PrivateKey, txToken, txTokenConversionParams, tokenID, t)
+		// res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, &common.PRVCoinID, false, true)
+		// assert.Equal(t, true, res, "ValidateTransaction returns an error: %v", err)
 
 	}
+}
+
+func testProveVerifyTxTokenConversionTampered(senderSk *key.PrivateKey,txConversionOutput *TxTokenVersion2, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash,t *testing.T) {
+	m := common.RandInt()
+	testDB := convParam.stateDB
+	switch m % 5 { //Change this if you want to test a specific case
+
+	//tamper with fee
+	case 0:
+		fmt.Println("------------------Tampering with fee-------------------")
+		txConversionOutput.GetTxBase().SetTxFee(uint64(common.RandIntInterval(0, 1000)))
+
+		//Re-sign transaction
+		sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
+		txConversionOutput.SetSig(sig)
+		txConversionOutput.SetSigPubKey(sigPubKey)
+		assert.Equal(t, nil, err)
+
+	//tamper with randomness
+	case 1:
+		fmt.Println("------------------Tampering with randomness-------------------")
+		bothInputCoins := append(txConversionOutput.GetProof().GetInputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetInputCoins()...)
+		usedIndex := common.RandInt() % len(bothInputCoins)
+		bothInputCoins[usedIndex].SetRandomness(operation.RandomScalar())
+
+		//Re-sign transaction
+		sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
+		txConversionOutput.SetSig(sig)
+		txConversionOutput.SetSigPubKey(sigPubKey)
+		assert.Equal(t, nil, err)
+
+	//attempt to convert used coins (used serial numbers)
+	case 2:
+		fmt.Println("------------------Tampering with serial numbers-------------------")
+		bothInputCoins := append(txConversionOutput.GetProof().GetInputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetInputCoins()...)
+		usedIndex := common.RandInt() % len(bothInputCoins)
+		inputCoin := bothInputCoins[usedIndex]
+
+		// these errors are not important
+		err := statedb.StoreSerialNumbers(testDB, *tokenID, [][]byte{inputCoin.GetKeyImage().ToBytesS()}, 0)
+		err = statedb.StoreSerialNumbers(testDB, common.PRVCoinID, [][]byte{inputCoin.GetKeyImage().ToBytesS()}, 0)
+		assert.Equal(t, true, err == nil)
+
+	//tamper with OTAs
+	case 3:
+		fmt.Println("------------------Tampering with OTAs-------------------")
+		bothOutputCoins := append(txConversionOutput.GetProof().GetOutputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()...)
+		usedIndex := common.RandInt() % len(bothOutputCoins)
+		outputCoin := bothOutputCoins[usedIndex]
+
+		forceSaveCoins(testDB, []coin.Coin{outputCoin}, 0, *tokenID, t)
+		forceSaveCoins(testDB, []coin.Coin{outputCoin}, 0, common.PRVCoinID, t)
+		// assert.Equal(t, true, err == nil)
+
+	//tamper with commitment of output
+	case 4:
+		fmt.Println("------------------Tampering with commitment-------------------")
+		//fmt.Println("Tx hash before altered", txConversionOutput.Hash().String())
+		bothOutputCoins := append(txConversionOutput.GetProof().GetOutputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()...)
+		usedIndex := common.RandInt() % len(bothOutputCoins)
+		outputCoin := bothOutputCoins[usedIndex]
+		outputCoinSpecific, ok := outputCoin.(*coin.CoinV2)
+		assert.Equal(t,true,ok)
+
+		//Attempt to alter some output coins!
+		outputCoinSpecific.SetCommitment(operation.RandomPoint())
+		//Re-sign transaction
+		sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
+		txConversionOutput.SetSig(sig)
+		txConversionOutput.SetSigPubKey(sigPubKey)
+		assert.Equal(t, nil, err)
+	default:
+
+	}
+	//Attempt to verify
+	var isValid bool
+	isValidAlready, _ := txConversionOutput.ValidateSanityData(nil, nil, nil, 0)
+	if !isValidAlready{
+		isValid = false
+	}else{
+	// validate signatures, proofs, etc. Only do after sanity checks are passed
+		isValidAlready, _ = txConversionOutput.ValidateTxByItself(false, testDB, nil, nil, shardID, false, nil, nil)
+	}
+	// assert.Equal(t, false, isValid, "validateConversionVer1ToVer2 on corrupted data should not be true")
+	if !isValidAlready{
+		isValid = false
+	}else{
+		err := txConversionOutput.ValidateTxWithBlockChain(nil, nil, nil, shardID, testDB)
+		isValid = (err==nil)
+	}
+	if isValid{
+		jsb,_ := json.Marshal(txConversionOutput)
+		fmt.Printf("Unexpected error in case %d . Transaction : %s\n",m%5,string(jsb))
+		// return
+	}
+	//This validation should return an error
+	assert.Equal(t, false, isValid)
+	//Result should be false
+	// assert.Equal(t, false, res)
+
 }

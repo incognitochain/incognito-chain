@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -245,24 +244,6 @@ func (txToken TxTokenBase) Hash() *common.Hash {
 	hash := common.HashH([]byte(txToken.String()))
 	txToken.cachedHash = &hash
 	return &hash
-}
-
-// GetTxActualSize computes the virtual size of a given transaction
-// size of this tx = (normal TxNormal size) + (custom token data size)
-func (txToken TxTokenBase) GetTxActualSize() uint64 {
-	normalTxSize := txToken.Tx.GetTxActualSize()
-	tokenDataSize := uint64(0)
-	tokenDataSize += txToken.TxTokenData.TxNormal.GetTxActualSize()
-	tokenDataSize += uint64(len(txToken.TxTokenData.PropertyName))
-	tokenDataSize += uint64(len(txToken.TxTokenData.PropertySymbol))
-	tokenDataSize += uint64(len(txToken.TxTokenData.PropertyID))
-	tokenDataSize += 4 // for TxPrivacyTokenDataVersion1.Type
-	tokenDataSize += 8 // for TxPrivacyTokenDataVersion1.Amount
-	meta := txToken.GetMetadata()
-	if meta != nil {
-		tokenDataSize += meta.CalculateSize()
-	}
-	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
 // Get SigPubKey of ptoken

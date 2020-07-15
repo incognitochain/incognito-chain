@@ -116,22 +116,27 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 	if err != nil {
 		return false, false, errors.New("IncogAddressStr of custodian incorrect")
 	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+	incogAddr := keyWallet.KeySet.PaymentAddress
+	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
+	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
+		return false, false, errors.New("custodian incognito address is not signer tx")
+	}
+
+	// check tx type
+	if txr.GetType() != common.TxNormalType {
+		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
 	// check burning tx
-	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
-	if err != nil || !isBurned {
-		return false, false, errors.New("Error This is not Tx Burn")
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+		return false, false, errors.New("must send coin to burning address")
 	}
-	// check tx type
-	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]) {
-		return false, false, errors.New("tx custodian deposit must be TxNormalType")
-	}
+
 	// validate amount deposit
-	if p.DepositedAmount == 0 || p.DepositedAmount != burnCoin.GetValue(){
-		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
+	if p.DepositedAmount != txr.CalculateTxValue() {
+		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
 	if !common.IsPortalToken(p.PTokenID) {

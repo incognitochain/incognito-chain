@@ -375,6 +375,9 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
 	}
 
+	if offset >= len(coinBytes) {
+		return errors.New("Offset is larger than len(bytes), cannot parse txRandom")
+	}
 	if coinBytes[offset] != TxRandomGroupSize {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of TxRandomGroup is not correct")
 	}
@@ -438,16 +441,11 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 	if !r.ScalarValid() {
 		return false
 	}
-
 	rK := new(operation.Point).ScalarMult(paymentAdd.GetPublicView(), r)
-	txRandomPoint, index, err := c.GetTxRandomDetail()
+	_, index, err := c.GetTxRandomDetail()
 	if err  != nil {
 		return false
 	}
-	if !operation.IsPointEqual(new(operation.Point).ScalarMultBase(r), txRandomPoint) {
-		return false
-	}
-
 	hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
 	HrKG := new(operation.Point).ScalarMultBase(hash)
 	tmpPubKey := new(operation.Point).Add(HrKG, paymentAdd.GetPublicSpend())

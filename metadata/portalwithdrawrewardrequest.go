@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -51,7 +52,7 @@ func NewPortalRequestWithdrawReward(
 	incogAddressStr string,
 	tokenID common.Hash) (*PortalRequestWithdrawReward, error) {
 	metadataBase := MetadataBase{
-		Type: metaType, Sig: []byte{},
+		Type: metaType,
 	}
 	meta := &PortalRequestWithdrawReward{
 		CustodianAddressStr: incogAddressStr,
@@ -60,8 +61,6 @@ func NewPortalRequestWithdrawReward(
 	meta.MetadataBase = metadataBase
 	return meta, nil
 }
-
-func (*PortalRequestWithdrawReward) ShouldSignMetaData() bool { return true }
 
 func (meta PortalRequestWithdrawReward) ValidateTxWithBlockChain(
 	txr Transaction,
@@ -82,8 +81,8 @@ func (meta PortalRequestWithdrawReward) ValidateSanityData(chainRetriever ChainR
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("Custodian incognito address is invalid")
 	}
-	if ok, err := txr.CheckAuthorizedSender(incogAddr.Pk); err != nil || !ok {
-		return false, false, errors.New("Withdraw request sender is unauthorized")
+	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
+		return false, false, errors.New("Custodian incognito address is not signer")
 	}
 
 	// check tx type
@@ -99,18 +98,6 @@ func (meta PortalRequestWithdrawReward) ValidateMetadataByItself() bool {
 }
 
 func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
-	record := meta.MetadataBase.Hash().String()
-	record += meta.CustodianAddressStr
-	record += meta.TokenID.String()
-	if meta.Sig != nil && len(meta.Sig) != 0 {
-		record += string(meta.Sig)
-	}
-	// final hash
-	hash := common.HashH([]byte(record))
-	return &hash
-}
-
-func (meta PortalRequestWithdrawReward) HashWithoutSig() *common.Hash {
 	record := meta.MetadataBase.Hash().String()
 	record += meta.CustodianAddressStr
 	record += meta.TokenID.String()

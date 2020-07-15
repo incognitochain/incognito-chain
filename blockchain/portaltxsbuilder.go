@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -42,15 +43,26 @@ func (curView *ShardBestState) buildPortalRefundCustodianDepositTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// TODO OTA
-
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundDeposit.DepositedAmount, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
 	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	//modify the type of the salary transaction
+	// resTx.Type = common.TxBlockProducerCreatedType
+	return resTx, nil
 }
 
 func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
@@ -88,9 +100,19 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	// the returned currency is PRV
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while initializing refund top up waiting porting (normal) tx: %+v", err)
+		return nil, nil
+	}
+	return resTx, nil
 }
 
 func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
@@ -109,6 +131,7 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 	if refundDeposit.ShardID != shardID {
 		return nil, nil
 	}
+
 	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
 		common.PortalLiquidationCustodianDepositRejectedChainStatus,
 		refundDeposit.TxReqID,
@@ -116,6 +139,7 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 		refundDeposit.DepositedAmount,
 		metadata.PortalLiquidationCustodianDepositResponseMeta,
 	)
+
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian liquidation address string: %+v", err)
@@ -128,9 +152,21 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	// the returned currency is PRV
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	//modify the type of the salary transaction
+	// resTx.Type = common.TxBlockProducerCreatedType
+	return resTx, nil
 }
 
 func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
@@ -164,15 +200,27 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// OTA
+	// TODO OTA
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundDeposit.DepositedAmount, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	// the returned currency is PRV
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	//modify the type of the salary transaction
+	// resTx.Type = common.TxBlockProducerCreatedType
+	return resTx, nil
 }
 
 // buildPortalAcceptedRequestPTokensTx builds response tx for user request ptoken tx with status "accepted"
@@ -210,23 +258,52 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
 		return nil, nil
 	}
-
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	tokenID, err := new(common.Hash).NewHashFromStr(acceptedReqPToken.TokenID)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
-		return nil, nil
-	}
+	receiveAmt := acceptedReqPToken.PortingAmount
+	tokenID, _ := new(common.Hash).NewHashFromStr(acceptedReqPToken.TokenID)
 
-	// OTA
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(acceptedReqPToken.PortingAmount, receiverAddr)
+	// in case the returned currency is privacy custom token
+	receiver := &privacy.PaymentInfo{
+		Amount:         receiveAmt,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.TokenParam{
+		PropertyID: propID.String(),
+		PropertyName:   "",
+		PropertySymbol: "",
+		Amount:      receiveAmt,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{receiver},
+		TokenInput:  []coin.PlainCoin{},
+		Mintable:    true,
+	}
+	txTokenParams := transaction.NewTxTokenParams(
+		producerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		tokenParams,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+		false,
+		false,
+		shardID,
+		nil,
+		beaconState.GetBeaconFeatureStateDB(),
+	)
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta, tokenID)
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing request ptoken response tx: %+v", initErr)
+		return nil, nil
+	}
+	return resTx, nil
 }
 
 func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
@@ -260,17 +337,29 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian address string: %+v", err)
 		return nil, nil
 	}
+
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := custodianWithdrawRequest.Amount
-	// OTA
+	// TODO OTA
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	// the returned currency is PRV
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
+		return nil, nil
+	}
+
+	return resTx, nil
 }
 
 func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
@@ -309,15 +398,27 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.TotalPTokenReceived
-	// OTA
+	// TODO OTA
 	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+
+	// the returned currency is PRV
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
+		return nil, nil
+	}
+
+	return resTx, nil
 }
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
@@ -357,20 +458,49 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.RedeemAmount
-	tokenID, err := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
-		return nil, nil
+	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
+
+	// in case the returned currency is privacy custom token
+	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
+		Amount:         receiveAmt,
+		PaymentAddress: receiverAddr,
 	}
-	// OTA
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.TokenParam{
+		PropertyID:  propID.String(),
+		Amount:      receiveAmt,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
+		TokenInput:  []coin.PlainCoin{},
+		Mintable:    true,
+	}
+	txTokenParams := transaction.NewTxTokenParams(
+		producerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		tokenParams,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+		false,
+		false,
+		shardID,
+		nil,
+		beaconState.GetBeaconFeatureStateDB(),
+	)
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta, tokenID)
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
+		return nil, nil
+	}
+	Logger.log.Info("[Shard buildPortalRejectedRedeemRequestTx] Finished...")
+	return resTx, nil
 }
 
 // buildPortalRefundCustodianDepositTx builds refund tx for custodian deposit tx with status "refund"
@@ -407,16 +537,27 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiveAmt := liqCustodian.LiquidatedCollateralAmount
-	// OTA
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiveAmt, receiverAddr)
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(liqCustodian.LiquidatedCollateralAmount, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	// the returned currency is PRV
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	Logger.log.Infof("[Portal liquidate custodian response] Success with txID %v\n", resTx.Hash().String())
+	Logger.log.Infof("[Portal liquidate custodian response] Success with tx %+v\n", resTx)
+	return resTx, nil
 }
 
 // buildPortalAcceptedWithdrawRewardTx builds withdraw portal rewards response tx
@@ -447,28 +588,75 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 		metadata.PortalRequestWithdrawRewardResponseMeta,
 	)
 
-	tokenID := withdrawRewardContent.TokenID
-
 	keyWallet, err := wallet.Base58CheckDeserialize(withdrawRewardContent.CustodianAddressStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiverAmt := withdrawRewardContent.RewardAmount
-	// OTA
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiverAmt, receiverAddr)
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(withdrawRewardContent.RewardAmount, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
 	// the returned currency is PRV
 	if withdrawRewardContent.TokenID.String() == common.PRVIDStr {
-		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+		resTx := new(transaction.TxVersion2)
+		err = resTx.InitTxSalary(
+			otaCoin,
+			producerPrivateKey,
+			curView.GetCopiedTransactionStateDB(),
+			meta,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", err)
+			return nil, nil
+		}
+		return resTx, nil
 	} else {
-		return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta, &tokenID)
+		// in case the returned currency is privacy custom token
+		receiver := &privacy.PaymentInfo{
+			Amount:         withdrawRewardContent.RewardAmount,
+			PaymentAddress: receiverAddr,
+		}
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], withdrawRewardContent.TokenID[:])
+		propID := common.Hash(propertyID)
+		tokenParams := &transaction.TokenParam{
+			PropertyID: propID.String(),
+			// PropertyName:   issuingAcceptedInst.IncTokenName,
+			// PropertySymbol: issuingAcceptedInst.IncTokenName,
+			Amount:      withdrawRewardContent.RewardAmount,
+			TokenTxType: transaction.CustomTokenInit,
+			Receiver:    []*privacy.PaymentInfo{receiver},
+			TokenInput:  []coin.PlainCoin{},
+			Mintable:    true,
+		}
+		txTokenParams := transaction.NewTxTokenParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			curView.GetCopiedTransactionStateDB(),
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+			baeconState.GetBeaconFeatureStateDB(),
+		)
+		resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+		if err != nil {
+			Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+			return nil, err
+		}
+		if initErr := resTx.Init(txTokenParams); initErr != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", initErr)
+			return nil, nil
+		}
+		return resTx, nil
 	}
 }
 
@@ -502,17 +690,26 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiverAmt := portalPortingRequest.PortingFee
-	// OTA
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiverAmt, receiverAddr)
+	// TODO OTA
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(portalPortingRequest.PortingFee, receiverAddr)
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
 	// the returned currency is PRV
-	return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	resTx := new(transaction.TxVersion2)
+	err = resTx.InitTxSalary(
+		otaCoin,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing portal refund porting fee tx: %+v", err)
+		return nil, nil
+	}
+	Logger.log.Info("[Portal refund porting fee] Finished...")
+	return resTx, nil
 }
 
 // buildPortalRefundRedeemFromLiquidationTx builds response tx for user request redeem from liquidation pool tx with status "rejected"
@@ -552,18 +749,48 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiverAmt := redeemReqContent.RedeemAmount
-	tokenID, err := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
-
-	//OTA
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiverAmt, receiverAddr)
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
-	}
-	// set shareRandom for metadata
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+	receiveAmt := redeemReqContent.RedeemAmount
+	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
 	// in case the returned currency is privacy custom token
-	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta, tokenID)
+	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
+		Amount:         receiveAmt,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.TokenParam{
+		PropertyID:  propID.String(),
+		Amount:      receiveAmt,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
+		TokenInput:  []coin.PlainCoin{},
+		Mintable:    true,
+	}
+	txTokenParams := transaction.NewTxTokenParams(
+		producerPrivateKey,
+		[]*privacy.PaymentInfo{},
+		nil,
+		0,
+		tokenParams,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+		false,
+		false,
+		shardID,
+		nil,
+		baeconState.GetBeaconFeatureStateDB(),
+	)
+	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if err != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, err
+	}
+	if initErr := resTx.Init(txTokenParams); initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
+		return nil, nil
+	}
+	Logger.log.Info("[Shard buildPortalRefundRedeemFromLiquidationTx] Finished...")
+	return resTx, nil
 }

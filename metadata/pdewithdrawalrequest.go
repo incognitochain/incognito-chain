@@ -80,6 +80,9 @@ func (pc PDEWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever,
 		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}
 
+	//if !bytes.Equal(tx.GetSigPubKey()[:], withdrawerAddr.Pk[:]) {
+	//	return false, false, errors.New("WithdrawerAddr incorrect")
+	//}
 	_, err = common.Hash{}.NewHashFromStr(pc.WithdrawalToken1IDStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawalTokenID1Str incorrect"))
@@ -123,6 +126,7 @@ func (pc PDEWithdrawalRequest) HashWithoutSig() *common.Hash {
 	hash := common.HashH([]byte(record))
 	return &hash
 }
+
 
 func (pc *PDEWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PDEWithdrawalRequestAction{

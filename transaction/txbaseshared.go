@@ -107,7 +107,7 @@ func validateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionSta
 	}
 	meta := tx.GetMetadata()
 	if meta != nil {
-		if hasPrivacy {
+		if hasPrivacy && tx.GetVersion() == 1{
 			return false, errors.New("Metadata can not exist in not privacy tx")
 		}
 		validateMetadata := meta.ValidateMetadataByItself()
@@ -186,4 +186,32 @@ func validateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever met
 		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(info), 512))
 	}
 	return true, nil
+}
+
+func getTxActualSizeInBytes(tx metadata.Transaction) uint64{
+	if tx == nil {
+		return uint64(0)
+	}
+	sizeTx := uint64(0)
+	sizeTx += uint64(1) //version
+	sizeTx += uint64(len(tx.GetType()) + 1) //type string
+	sizeTx += uint64(8) //locktime
+	sizeTx += uint64(8) //fee
+	sizeTx += uint64(len(tx.GetInfo())) //info
+
+	sizeTx += uint64(len(tx.GetSigPubKey())) //sigpubkey
+	sizeTx += uint64(len(tx.GetSig())) //signature
+	sizeTx += uint64(1) //pubkeylastbytesender
+
+	//paymentproof
+	if tx.GetProof() != nil {
+		sizeTx += uint64(len(tx.GetProof().Bytes()))
+	}
+
+	//metadata
+	if tx.GetMetadata() != nil {
+		sizeTx += tx.GetMetadata().CalculateSize()
+	}
+
+	return sizeTx
 }

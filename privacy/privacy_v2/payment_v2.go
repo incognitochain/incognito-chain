@@ -371,7 +371,11 @@ func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
 	}
 	// Verify the proof that output values and sum of them do not exceed v_max
 	for i := 0; i < len(proof.outputCoins); i += 1 {
+
 		if !proof.outputCoins[i].IsEncrypted() {
+			if wallet.IsPublicKeyBurningAddress(proof.outputCoins[i].GetPublicKey().ToBytesS()) {
+				continue
+			}
 			return false, errors.New("Verify has privacy should have every coin encrypted")
 		}
 		//check if output coins' commitment is the same as in the proof
@@ -419,11 +423,6 @@ func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee ui
 			return false, errors.New("Duplicate input coin in PaymentProofV2")
 		}
 		dupMap[identifier] = true
-	}
-
-	// has no privacy
-	if !hasPrivacy {
-		return proof.verifyHasNoPrivacy(fee)
 	}
 
 	return proof.verifyHasPrivacy(isBatch)

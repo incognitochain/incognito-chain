@@ -15,7 +15,6 @@ type PortalCustodianDepositResponse struct {
 	DepositStatus    string
 	ReqTxID          common.Hash
 	CustodianAddrStr string
-	SharedRandom       []byte
 }
 
 func NewPortalCustodianDepositResponse(
@@ -58,9 +57,7 @@ func (iRes PortalCustodianDepositResponse) Hash() *common.Hash {
 	record := iRes.DepositStatus
 	record += iRes.ReqTxID.String()
 	record += iRes.MetadataBase.Hash().String()
-	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
-		record += string(iRes.SharedRandom)
-	}
+
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -73,13 +70,14 @@ func (iRes *PortalCustodianDepositResponse) CalculateSize() uint64 {
 //todo:
 func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-
-	for i, inst := range mintData.Insts {
+	insts := mintData.Insts
+	instUsed := mintData.InstsUsed
+	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PortalCustodianDeposit response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 ||
+		if instUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PortalCustodianDepositMeta) {
 			continue
 		}
@@ -116,26 +114,20 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 			continue
 		}
 
-		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted || coinID.String() != common.PRVCoinID.String() {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while validate tx mint: ", err)
+		// collateral must be PRV
+		PRVIDStr := common.PRVCoinID.String()
+		_, pk, paidAmount, assetID := tx.GetTransferData()
+		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+			depositedAmountFromInst != paidAmount ||
+			PRVIDStr != assetID.String() {
 			continue
 		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, depositedAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while check tx mint. CheckCoinValid return false ")
-			continue
-		}
-
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalCustodianDeposit instruction found for PortalCustodianDepositResponse tx %s", tx.Hash().String()))
 	}
-	mintData.InstsUsed[idx] = 1
+	instUsed[idx] = 1
 	return true, nil
-}
-
-func (iRes *PortalCustodianDepositResponse) SetSharedRandom(r []byte) {
-	iRes.SharedRandom = r
 }

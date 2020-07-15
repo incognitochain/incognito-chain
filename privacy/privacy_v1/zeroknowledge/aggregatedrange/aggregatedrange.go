@@ -121,6 +121,10 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 
 }
 
+func (proof AggregatedRangeProof) GetCommitments() []*operation.Point {
+	return proof.cmsValue
+}
+
 func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil

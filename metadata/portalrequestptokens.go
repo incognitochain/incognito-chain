@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -94,13 +95,17 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever ChainRet
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
 	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+	incogAddr := keyWallet.KeySet.PaymentAddress
+	if len(incogAddr.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
+	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
+		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is not signer"))
 	}
 
 	// check tx type
 	if txr.GetType() != common.TxNormalType {
-		return false, false, errors.New("tx ptoken request must be TxNormalType")
+		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
 	// validate amount deposit
