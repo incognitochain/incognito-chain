@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+	"math"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -252,4 +253,20 @@ func (txToken TxTokenVersion1) ValidateSanityData(chainRetriever metadata.ChainR
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err1)
 	}
 	return true, nil
+}
+
+func (txToken TxTokenVersion1) GetTxActualSize() uint64 {
+	normalTxSize := txToken.Tx.GetTxActualSize()
+	tokenDataSize := uint64(0)
+	tokenDataSize += txToken.TxTokenData.TxNormal.GetTxActualSize()
+	tokenDataSize += uint64(len(txToken.TxTokenData.PropertyName))
+	tokenDataSize += uint64(len(txToken.TxTokenData.PropertySymbol))
+	tokenDataSize += uint64(len(txToken.TxTokenData.PropertyID))
+	tokenDataSize += 4 // for TxPrivacyTokenDataVersion1.Type
+	tokenDataSize += 8 // for TxPrivacyTokenDataVersion1.Amount
+	meta := txToken.GetMetadata()
+	if meta != nil {
+		tokenDataSize += meta.CalculateSize()
+	}
+	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }

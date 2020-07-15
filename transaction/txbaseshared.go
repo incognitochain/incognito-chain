@@ -187,3 +187,31 @@ func validateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever met
 	}
 	return true, nil
 }
+
+func getTxActualSizeInBytes(tx metadata.Transaction) uint64{
+	if tx == nil {
+		return uint64(0)
+	}
+	sizeTx := uint64(0)
+	sizeTx += uint64(1) //version
+	sizeTx += uint64(len(tx.GetType()) + 1) //type string
+	sizeTx += uint64(8) //locktime
+	sizeTx += uint64(8) //fee
+	sizeTx += uint64(len(tx.GetInfo())) //info
+
+	sizeTx += uint64(len(tx.GetSigPubKey())) //sigpubkey
+	sizeTx += uint64(len(tx.GetSig())) //signature
+	sizeTx += uint64(1) //pubkeylastbytesender
+
+	//paymentproof
+	if tx.GetProof() != nil {
+		sizeTx += uint64(len(tx.GetProof().Bytes()))
+	}
+
+	//metadata
+	if tx.GetMetadata() != nil {
+		sizeTx += tx.GetMetadata().CalculateSize()
+	}
+
+	return sizeTx
+}

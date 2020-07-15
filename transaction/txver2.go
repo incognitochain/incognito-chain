@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"time"
@@ -653,4 +654,14 @@ func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *st
 
 func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	return validateTxByItself(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+}
+
+func (tx TxVersion2) GetTxActualSize() uint64 {
+	if tx.cachedActualSize != nil {
+		return *tx.cachedActualSize
+	}
+	sizeTx := getTxActualSizeInBytes(&tx)
+	result := uint64(math.Ceil(float64(sizeTx) / 1024))
+	tx.cachedActualSize = &result
+	return *tx.cachedActualSize
 }

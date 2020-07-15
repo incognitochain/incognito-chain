@@ -357,6 +357,7 @@ func (tx TxBase) GetTxActualSize() uint64 {
 		metaSize := meta.CalculateSize()
 		sizeTx += metaSize
 	}
+	fmt.Println("BUGLOG2 txNormalSize in txbase", sizeTx)
 	result := uint64(math.Ceil(float64(sizeTx) / 1024))
 	tx.cachedActualSize = &result
 	return *tx.cachedActualSize
