@@ -642,11 +642,12 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		remainedShardCommittees := b.shardCommittee[shardID][removedCommittee:]
 		b.shardCommittee[shardID] = append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
 	}
-	for i := 0; i < removedCommittee; i++ {
-		delete(b.autoStake, swapInstruction.OutPublicKeys[i])
-		delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[i].GetIncKeyBase58())
-		b.autoStake[swapInstruction.InPublicKeys[i]] = false
-		b.rewardReceiver[swapInstruction.InPublicKeyStructs[i].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[i]
+	for index := 0; index < removedCommittee; index++ {
+		delete(b.autoStake, swapInstruction.OutPublicKeys[index])
+		delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
+		b.autoStake[swapInstruction.InPublicKeys[index]] = false
+		b.rewardReceiver[swapInstruction.InPublicKeyStructs[index].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[index]
+		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
 	}
 }
 
