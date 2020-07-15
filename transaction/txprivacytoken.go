@@ -919,3 +919,18 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 	}
 	return nil
 }
+
+// GetFullTxValues returns both prv and ptoken values
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetFullTxValues() (uint64, uint64) {
+	return txCustomTokenPrivacy.Tx.CalculateTxValue(), txCustomTokenPrivacy.CalculateTxValue()
+}
+
+// IsFullBurning returns whether the tx is full burning tx
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsFullBurning(
+	bcr metadata.ChainRetriever,
+	retriever metadata.ShardViewRetriever,
+	viewRetriever metadata.BeaconViewRetriever,
+	beaconHeight uint64,
+) bool {
+	return txCustomTokenPrivacy.Tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight) && txCustomTokenPrivacy.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
+}

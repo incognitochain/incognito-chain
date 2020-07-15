@@ -126,6 +126,8 @@ type Transaction interface {
 	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
+	GetFullTxValues() (uint64, uint64)
+	IsFullBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 }
 
 func getPDEPoolPair(
