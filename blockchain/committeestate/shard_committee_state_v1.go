@@ -167,11 +167,29 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
 
+	// fmt.Println("[committee-state] committeeChange before processInstructionFromBeacon :", committeeChange
+
+	if len(committeeChange.CurrentEpochShardCandidateAdded) != 0 ||
+		len(committeeChange.CurrentEpochShardCandidateRemoved) != 0 ||
+		len(committeeChange.NextEpochBeaconCandidateAdded) != 0 ||
+		len(committeeChange.NextEpochShardCandidateRemoved) != 0 {
+		fmt.Println("[committee-state] committeeChange before processInstructionFromBeacon :", committeeChange)
+	}
+
 	err = newCommitteeState.processInstructionFromBeacon(env.RecentSubtitutesStr(),
 		env.Instructions(), env.ShardID(), committeeChange)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if len(committeeChange.CurrentEpochShardCandidateAdded) != 0 ||
+		len(committeeChange.CurrentEpochShardCandidateRemoved) != 0 ||
+		len(committeeChange.NextEpochBeaconCandidateAdded) != 0 ||
+		len(committeeChange.NextEpochShardCandidateRemoved) != 0 {
+		fmt.Println("[committee-state] committeeChange before processInstructionFromBeacon :", committeeChange)
+	}
+
+	// fmt.Println("[committee-state] committeeChange before process shard block instruction :", committeeChange)
 
 	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 &&
 		env.IsProcessShardBlockInstructionForKeyListV2() {
@@ -181,6 +199,15 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 			err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
 		}
 	}
+
+	if len(committeeChange.CurrentEpochShardCandidateAdded) != 0 ||
+		len(committeeChange.CurrentEpochShardCandidateRemoved) != 0 ||
+		len(committeeChange.NextEpochBeaconCandidateAdded) != 0 ||
+		len(committeeChange.NextEpochShardCandidateRemoved) != 0 {
+		fmt.Println("[committee-state] committeeChange before processInstructionFromBeacon :", committeeChange)
+	}
+
+	// fmt.Println("[committee-state] committeeChange after process shard block instruction :", committeeChange)
 
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -319,6 +346,14 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 				committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 			}
 		}
+	}
+
+	if len(newShardPendingValidator) != 0 {
+		fmt.Println("[committee-state] newShardPendingValidator:", newShardPendingValidator)
+	}
+
+	if len(committeeChange.ShardSubstituteAdded[shardID]) != 0 {
+		fmt.Println("[committee-state] committeeChange.ShardSubstituteAdded[shardID]:", committeeChange.ShardSubstituteAdded[shardID])
 	}
 
 	var err error

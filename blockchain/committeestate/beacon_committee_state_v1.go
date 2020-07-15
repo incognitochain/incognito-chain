@@ -307,7 +307,8 @@ func (engine *BeaconCommitteeEngine) InitCommitteeState(env *BeaconCommitteeStat
 }
 
 //UpdateCommitteeState :
-func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (*BeaconCommitteeStateHash, *CommitteeChange, error) {
+func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
+	*BeaconCommitteeStateHash, *CommitteeChange, error) {
 	engine.uncommittedBeaconCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()
 	engine.beaconCommitteeStateV1.mu.RLock()
