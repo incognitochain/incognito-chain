@@ -205,9 +205,10 @@ func prepareKeySets(numKeySets int) ([]*incognitokey.KeySet, error) {
 
 func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *operation.Point, totalAmount uint64, numFeeInputs, version int) ([]coin.PlainCoin, error) {
 	coinList := []coin.PlainCoin{}
+	tmpAmount := totalAmount/uint64(numFeeInputs)
 	if version == coin.CoinVersion1 {
 		for i := 0; i < numFeeInputs-1; i++ {
-			amount := uint64(common.RandIntInterval(0, int(totalAmount)-1))
+			amount := tmpAmount - uint64(common.RandIntInterval(0, int(tmpAmount)/2))
 			coin, err := createSamplePlainCoinV1(senderSK, pubkey, amount, nil)
 			if err != nil {
 				return nil, err

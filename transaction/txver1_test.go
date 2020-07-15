@@ -15,29 +15,29 @@ import (
 	"testing"
 )
 
-func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, pubKey *operation.Point, testDB *statedb.StateDB) ([]coin.PlainCoin, error){
+func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, pubKey *operation.Point, testDB *statedb.StateDB) ([]coin.PlainCoin, error) {
 	//amount := uint64(common.RandIntInterval(0, 1000000))
-	amount := uint64(1000000)
+	amount := uint64(numCoins * 1000)
 	outCoins := []coin.PlainCoin{}
-	for i:=0;i<numEquals;i++{
+	for i := 0; i < numEquals; i++ {
 		coin, err := createSamplePlainCoinV1(privKey, pubKey, 1000, nil)
 		if err != nil {
 			return nil, err
 		}
 		outCoins = append(outCoins, coin)
 	}
-	tmpOutCoins, err := createSamplePlainCoinsFromTotalAmount(privKey, pubKey, amount, numCoins - numEquals, 1)
-	for _, coin :=range tmpOutCoins{
+	tmpOutCoins, err := createSamplePlainCoinsFromTotalAmount(privKey, pubKey, amount, numCoins-numEquals, 1)
+	for _, coin := range tmpOutCoins {
 		outCoins = append(outCoins, coin)
 	}
-	if err !=nil {
+	if err != nil {
 		return nil, err
 	}
 
 	//save coins and commitment indices onto the database
 	commitmentsToBeSaved := [][]byte{}
 	coinsToBeSaved := [][]byte{}
-	for _, outCoin := range outCoins{
+	for _, outCoin := range outCoins {
 		coinsToBeSaved = append(coinsToBeSaved, outCoin.Bytes())
 		commitmentsToBeSaved = append(commitmentsToBeSaved, outCoin.GetCommitment().ToBytesS())
 	}
@@ -57,7 +57,6 @@ func createTxPrivacyInitParams(keySet *incognitokey.KeySet, inputCoins []coin.Pl
 	//initialize payment info of input coins
 	paymentInfos := coin.CreatePaymentInfosFromPlainCoinsAndAddress(inputCoins, keySet.PaymentAddress, nil)
 
-
 	//create privacyinitparam
 	txPrivacyInitParam := NewTxPrivacyInitParams(&keySet.PrivateKey,
 		paymentInfos,
@@ -72,7 +71,7 @@ func createTxPrivacyInitParams(keySet *incognitokey.KeySet, inputCoins []coin.Pl
 	return keySet, txPrivacyInitParam, nil
 }
 
-func TestTxVersion1_ValidateTransaction(t *testing.T){
+func TestTxVersion1_ValidateTransaction(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -80,30 +79,30 @@ func TestTxVersion1_ValidateTransaction(t *testing.T){
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, testDB)
+	for i:=0; i < numTests; i++ {
+		coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, testDB)
+		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-	tx := new(TxVersion1)
+		tx := new(TxVersion1)
 
-	//choose some input coins to spend
-	inputCoins := coins[:10]
-	_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
-	assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+		r := common.RandInt() % 90
 
-	err = validateTxParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+		inputCoins := coins[r:r+10]
 
-	err = tx.initializeTxAndParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "Init returns an error: %v", err)
+		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
-	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParam(txPrivacyParams)
-	assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+		err = tx.Init(txPrivacyParams)
+		assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
 
-	err = tx.proveAndSignCore(txPrivacyParams, paymentWitnessParamPtr)
-	assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v")
+		res, err := tx.ValidateSanityData(nil, nil, nil, 0)
+		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
+		assert.Equal(t, true, res)
 
-	res, err := tx.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
-	assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
-	assert.Equal(t, true, res)
+		res, err = tx.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
+		assert.Equal(t, true, res)
+	}
 }
 
 func TestTxVersion1_InputCoinReplication(t *testing.T) {
@@ -114,46 +113,45 @@ func TestTxVersion1_InputCoinReplication(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(100, 2, keySet.PrivateKey, pubKey, testDB)
+	for i:=0; i< numTests; i++ {
+		coins, err := createAndSaveCoinV1s(100, 2, keySet.PrivateKey, pubKey, testDB)
+		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-	fmt.Println(coins[0].GetValue())
+		fmt.Println(coins[0].GetValue())
 
-	tx := new(TxVersion1)
-	//choose some input coins to spend => make sure that inputCoins[0] and inputCoins[1] have the same amount
-	inputCoins := coins[:10]
+		tx := new(TxVersion1)
+		//choose some input coins to spend => make sure that inputCoins[0] and inputCoins[1] have the same amount
+		inputCoins := coins[:10]
 
-	_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
-	assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
-	err = validateTxParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+		err = validateTxParams(txPrivacyParams)
+		assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
 
-	err = tx.initializeTxAndParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "Init returns an error: %v", err)
+		err = tx.initializeTxAndParams(txPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error: %v", err)
 
-	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParam(txPrivacyParams)
-	assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+		paymentWitnessParamPtr, err := tx.initializePaymentWitnessParam(txPrivacyParams)
+		assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
 
-	//copy the first coin to the second
-	sz := privacy.CommitmentRingSize
-	paymentWitnessParamPtr.InputCoins[1] = paymentWitnessParamPtr.InputCoins[0]
-	paymentWitnessParamPtr.MyCommitmentIndices[1] = paymentWitnessParamPtr.MyCommitmentIndices[0]
-	for i :=0;i< sz ; i++ {
-		paymentWitnessParamPtr.CommitmentIndices[i+sz] = paymentWitnessParamPtr.CommitmentIndices[i]
-		paymentWitnessParamPtr.Commitments[i+sz] = paymentWitnessParamPtr.Commitments[i]
-	}
+		//copy the first coin to the second
+		sz := privacy.CommitmentRingSize
+		paymentWitnessParamPtr.InputCoins[1] = paymentWitnessParamPtr.InputCoins[0]
+		paymentWitnessParamPtr.MyCommitmentIndices[1] = paymentWitnessParamPtr.MyCommitmentIndices[0]
+		for i := 0; i < sz; i++ {
+			paymentWitnessParamPtr.CommitmentIndices[i+sz] = paymentWitnessParamPtr.CommitmentIndices[i]
+			paymentWitnessParamPtr.Commitments[i+sz] = paymentWitnessParamPtr.Commitments[i]
+		}
 
-	err = tx.proveAndSignCore(txPrivacyParams, paymentWitnessParamPtr)
-	assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v")
+		err = tx.proveAndSignCore(txPrivacyParams, paymentWitnessParamPtr)
+		assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v")
 
-
-	res, err := tx.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
-
-	//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
-	//if res is true => successfully double-spent!!!
-	assert.Equal(t, true, res) // <= this test should failed
-	if res {
-		assert.Equal(t, true, bytes.Equal(paymentWitnessParamPtr.InputCoins[1].Bytes(), paymentWitnessParamPtr.InputCoins[0].Bytes()))
+		res, err := tx.ValidateSanityData(nil,nil,nil,0)
+		assert.Equal(t, false, res)
+		if res {
+			assert.Equal(t, true, bytes.Equal(paymentWitnessParamPtr.InputCoins[1].Bytes(), paymentWitnessParamPtr.InputCoins[0].Bytes()))
+		}
 	}
 }
 
@@ -165,71 +163,74 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-	//create 2 transactions
-	tx1 := new(TxVersion1)
-	tx2 := new(TxVersion1)
-	inputCoins := coins[:10]
-	_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
-	assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+	for i:=0;i<1;i++ {
+		//create 2 transactions
+		tx1 := new(TxVersion1)
+		tx2 := new(TxVersion1)
+		inputCoins := coins[i*20 : i*20+10]
 
-	err = validateTxParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
-	err = tx1.initializeTxAndParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "Init returns an error: %v", err)
+		err = tx1.Init(txPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error: %v", err)
 
-	paymentWitnessParamPtr, err := tx1.initializePaymentWitnessParam(txPrivacyParams)
-	assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+		res, err := tx1.ValidateSanityData(nil, nil, nil, 0)
+		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
+		assert.Equal(t, true, res)
 
-	err = tx1.proveAndSignCore(txPrivacyParams, paymentWitnessParamPtr)
-	assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
+		res, err = tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
+		assert.Equal(t, true, res)
 
-	res, err := tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
-	assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
-	assert.Equal(t, true, res)
+		proof, ok := tx1.Proof.(*zkp.PaymentProof)
+		assert.Equal(t, true, ok, "cannot parse proof")
 
-	proof, ok := tx1.Proof.(*zkp.PaymentProof)
-	assert.Equal(t, true, ok, "cannot parse proof")
+		//retrieve the bulletproof
+		oldAggregatedProof, ok := proof.GetAggregatedRangeProof().(*aggregatedrange.AggregatedRangeProof)
+		assert.Equal(t, true, ok, "cannot parse bulletproof")
 
-	//retrieve the bulletproof
-	oldAggregatedProof, ok := proof.GetAggregatedRangeProof().(*aggregatedrange.AggregatedRangeProof)
-	assert.Equal(t, true, ok, "cannot parse bulletproof")
+		//create a new transaction and reuse the bulletproof
+		inputCoins2 := coins[i*20+10 : i*20+20]
 
-	//create a new transaction and reuse the bulletproof
-	//choose some input coins to spend
-	inputCoins2 := coins[10:20]
-	_, newTxPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins2)
-	fmt.Println("BUGLOG2 output", newTxPrivacyParams.paymentInfo[0].Amount)
-	assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+		_, newTxPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins2)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
-	err = validateTxParams(newTxPrivacyParams)
-	assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+		err = validateTxParams(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
 
-	err = tx2.initializeTxAndParams(newTxPrivacyParams)
-	assert.Equal(t, nil, err, "Init returns an error: %v", err)
+		err = tx2.initializeTxAndParams(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error: %v", err)
 
-	newPaymentWitnessParamPtr, err := tx2.initializePaymentWitnessParam(newTxPrivacyParams)
-	assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+		newPaymentWitnessParamPtr, err := tx2.initializePaymentWitnessParam(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
 
-	err = tx2.proveAndSignCore(newTxPrivacyParams, newPaymentWitnessParamPtr)
-	assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
+		err = tx2.proveAndSignCore(newTxPrivacyParams, newPaymentWitnessParamPtr)
+		assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
 
-	proof, ok = tx2.Proof.(*zkp.PaymentProof)
-	assert.Equal(t, true, ok, "cannot parse proof")
-	proof.SetAggregatedRangeProof(oldAggregatedProof)
+		proof, ok = tx2.Proof.(*zkp.PaymentProof)
+		assert.Equal(t, true, ok, "cannot parse proof")
 
-	tx2.Sig = nil
-	err = tx2.sign()
-	assert.Equal(t, nil, err, "sign returns an error: %v", err)
+		//assert that tx2 and tx1 have different bulletproofs
+		assert.Equal(t, false, bytes.Equal(oldAggregatedProof.Bytes(), proof.Bytes()), "tx2 and tx1 have the same bulletproof")
 
-	res, err = tx2.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
-	//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
-	assert.Equal(t, true, res) // <= this test should failed
+		proof.SetAggregatedRangeProof(oldAggregatedProof)
+
+		tx2.Sig = nil
+		err = tx2.sign()
+		assert.Equal(t, nil, err, "sign returns an error: %v", err)
+
+		res, err = tx2.ValidateSanityData(nil, nil, nil, 0)
+		//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
+		assert.Equal(t, false, res)
+
+	}
 }
 
-func TestTxVersion1_SerialNumberCommitmentConsistency(t *testing.T){
+func TestTxVersion1_SerialNumberCommitmentConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -237,69 +238,141 @@ func TestTxVersion1_SerialNumberCommitmentConsistency(t *testing.T){
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-	//create 2 transactions
-	tx1 := new(TxVersion1)
-	tx2 := new(TxVersion1)
-	inputCoins := coins[:10]
-	_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
-	assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+	for i := 0; i < 5; i++ {
+		//create 2 transactions
+		tx1 := new(TxVersion1)
+		tx2 := new(TxVersion1)
+		inputCoins := coins[i*20 : i*20+10]
 
-	err = validateTxParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
-	err = tx1.initializeTxAndParams(txPrivacyParams)
-	assert.Equal(t, nil, err, "Init returns an error: %v", err)
+		err = tx1.Init(txPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error at test number %v: %v", i, err)
 
-	paymentWitnessParamPtr, err := tx1.initializePaymentWitnessParam(txPrivacyParams)
-	assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+		res, err := tx1.ValidateSanityData(nil, nil, nil, 0)
+		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
+		assert.Equal(t, true, res)
 
-	err = tx1.proveAndSignCore(txPrivacyParams, paymentWitnessParamPtr)
-	assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
+		res, err = tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
+		assert.Equal(t, true, res)
 
-	res, err := tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
-	assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
-	assert.Equal(t, true, res)
+		proof, ok := tx1.Proof.(*zkp.PaymentProof)
+		assert.Equal(t, true, ok, "cannot parse proof")
 
-	proof, ok := tx1.Proof.(*zkp.PaymentProof)
-	assert.Equal(t, true, ok, "cannot parse proof")
+		//retrieve the serial number proof
+		oldSNProof := proof.GetSerialNumberProof()
 
-	//retrieve the bulletproof
-	oldSNProof := proof.GetSerialNumberProof()
+		//create a new transaction and reuse the serial number proof
+		inputCoins2 := coins[i*20+10 : i*20+20]
 
-	//create a new transaction and reuse the serial number proof
-	//choose some input coins to spend
-	inputCoins2 := coins[10:20]
-	_, newTxPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins2)
-	assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+		_, newTxPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins2)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
-	err = validateTxParams(newTxPrivacyParams)
-	assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+		err = validateTxParams(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
 
-	err = tx2.initializeTxAndParams(newTxPrivacyParams)
-	assert.Equal(t, nil, err, "Init returns an error: %v", err)
+		err = tx2.initializeTxAndParams(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error: %v", err)
 
-	newPaymentWitnessParamPtr, err := tx2.initializePaymentWitnessParam(newTxPrivacyParams)
-	assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+		newPaymentWitnessParamPtr, err := tx2.initializePaymentWitnessParam(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
 
-	err = tx2.proveAndSignCore(newTxPrivacyParams, newPaymentWitnessParamPtr)
-	assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
+		err = tx2.proveAndSignCore(newTxPrivacyParams, newPaymentWitnessParamPtr)
+		assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
 
-	proof, ok = tx2.Proof.(*zkp.PaymentProof)
-	assert.Equal(t, true, ok, "cannot parse proof")
+		proof, ok = tx2.Proof.(*zkp.PaymentProof)
+		assert.Equal(t, true, ok, "cannot parse proof")
 
-	//check that the SNProof has changed
-	assert.Equal(t, false, bytes.Equal(oldSNProof[0].Bytes(), proof.GetSerialNumberProof()[0].Bytes()))
-	assert.Equal(t, false, bytes.Equal(oldSNProof[1].Bytes(), proof.GetSerialNumberProof()[1].Bytes()))
-	proof.SetSerialNumberProof(oldSNProof)
+		//check that the SNProof has changed
+		assert.Equal(t, false, bytes.Equal(oldSNProof[0].Bytes(), proof.GetSerialNumberProof()[0].Bytes()))
+		assert.Equal(t, false, bytes.Equal(oldSNProof[1].Bytes(), proof.GetSerialNumberProof()[1].Bytes()))
+		proof.SetSerialNumberProof(oldSNProof)
 
-	//re-sign the transaction
-	tx2.Sig = nil
-	err = tx2.sign()
-	assert.Equal(t, nil, err, "sign returns an error: %v", err)
+		//re-sign the transaction
+		tx2.Sig = nil
+		err = tx2.sign()
+		assert.Equal(t, nil, err, "sign returns an error: %v", err)
 
-	res, err = tx2.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
-	//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
-	assert.Equal(t, false, res) // <= this test should failed
+		res, err = tx2.ValidateSanityData(nil, nil, nil, 0)
+		assert.Equal(t, false, res)
+	}
+}
+
+func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
+	keySets, err := prepareKeySets(1)
+	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
+	keySet := keySets[0]
+
+	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
+	assert.Equal(t, nil, err, "Cannot parse public key")
+
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
+
+	for i := 0; i < 5; i++ {
+		//create 2 transactions
+		tx1 := new(TxVersion1)
+		tx2 := new(TxVersion1)
+		inputCoins := coins[i*20 : i*20+10]
+
+		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+
+		err = tx1.Init(txPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error at test number %v: %v", i, err)
+
+		res, err := tx1.ValidateSanityData(nil, nil, nil, 0)
+		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
+		assert.Equal(t, true, res)
+
+		res, err = tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
+		assert.Equal(t, true, res)
+
+		proof, ok := tx1.Proof.(*zkp.PaymentProof)
+		assert.Equal(t, true, ok, "cannot parse proof")
+
+		//retrieve the serial number proof
+		oldOneOfMany := proof.GetOneOfManyProof()
+
+		//create a new transaction and reuse the serial number proof
+		inputCoins2 := coins[i*20+10 : i*20+20]
+
+		_, newTxPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins2)
+		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+
+		err = validateTxParams(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "validateTxParams returns an error: %v", err)
+
+		err = tx2.initializeTxAndParams(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "Init returns an error: %v", err)
+
+		newPaymentWitnessParamPtr, err := tx2.initializePaymentWitnessParam(newTxPrivacyParams)
+		assert.Equal(t, nil, err, "initializePaymentWitnessParam returns an error: %v", err)
+
+		err = tx2.proveAndSignCore(newTxPrivacyParams, newPaymentWitnessParamPtr)
+		assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v", err)
+
+		proof, ok = tx2.Proof.(*zkp.PaymentProof)
+		assert.Equal(t, true, ok, "cannot parse proof")
+
+		//check that the SNProof has changed
+		assert.Equal(t, false, bytes.Equal(oldOneOfMany[0].Bytes(), proof.GetSerialNumberProof()[0].Bytes()))
+		assert.Equal(t, false, bytes.Equal(oldOneOfMany[1].Bytes(), proof.GetSerialNumberProof()[1].Bytes()))
+		proof.SetOneOfManyProof(oldOneOfMany)
+
+		//re-sign the transaction
+		tx2.Sig = nil
+		err = tx2.sign()
+		assert.Equal(t, nil, err, "sign returns an error: %v", err)
+
+		res, err = tx2.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
+		assert.Equal(t, false, res)
+	}
 }
