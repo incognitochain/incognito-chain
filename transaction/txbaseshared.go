@@ -107,7 +107,7 @@ func validateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionSta
 	}
 	meta := tx.GetMetadata()
 	if meta != nil {
-		if hasPrivacy {
+		if hasPrivacy && tx.GetVersion() == 1{
 			return false, errors.New("Metadata can not exist in not privacy tx")
 		}
 		validateMetadata := meta.ValidateMetadataByItself()
