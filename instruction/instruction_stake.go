@@ -3,16 +3,19 @@ package instruction
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"strings"
 )
 
 type StakeInstruction struct {
-	PublicKeys       []string
-	PublicKeyStructs []incognitokey.CommitteePublicKey
-	Chain            string
-	TxStakes         []string
-	RewardReceivers  []string
-	AutoStakingFlag  []bool
+	PublicKeys            []string
+	PublicKeyStructs      []incognitokey.CommitteePublicKey
+	Chain                 string
+	TxStakes              []string
+	RewardReceivers       []string
+	RewardReceiverStructs []privacy.PaymentAddress
+	AutoStakingFlag       []bool
 }
 
 func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []string, rewardReceivers []string, autoStakingFlag []bool) *StakeInstruction {
@@ -49,6 +52,10 @@ func (s *StakeInstruction) SetTxStakes(txStakes []string) *StakeInstruction {
 
 func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeInstruction {
 	s.RewardReceivers = rewardReceivers
+	for _, v := range rewardReceivers {
+		wl, _ := wallet.Base58CheckDeserialize(v)
+		s.RewardReceiverStructs = append(s.RewardReceiverStructs, wl.KeySet.PaymentAddress)
+	}
 	return s
 }
 
@@ -118,7 +125,13 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	publicKeys := strings.Split(instruction[1], SPLITTER)
 	txStakes := strings.Split(instruction[3], SPLITTER)
 	rewardReceivers := strings.Split(instruction[4], SPLITTER)
-	autoStakings := strings.Split(instruction[5], SPLITTER)
+	for _, v := range rewardReceivers {
+		_, err := wallet.Base58CheckDeserialize(v)
+		if err != nil {
+			return fmt.Errorf("invalid privacy payment address %+v", err)
+		}
+	}
+	autoStakes := strings.Split(instruction[5], SPLITTER)
 	_, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
 	if err != nil {
 		return fmt.Errorf("invalid public key type,err %+v, %+v", err, instruction)
@@ -129,7 +142,7 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	if len(rewardReceivers) != len(txStakes) {
 		return fmt.Errorf("invalid reward receivers & tx stake length, %+v", instruction)
 	}
-	if len(rewardReceivers) != len(autoStakings) {
+	if len(rewardReceivers) != len(autoStakes) {
 		return fmt.Errorf("invalid reward receivers & tx auto staking length, %+v", instruction)
 	}
 	return nil

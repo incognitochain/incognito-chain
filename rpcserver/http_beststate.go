@@ -5,10 +5,8 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -40,21 +38,6 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 		if err != nil {
 			continue
 		}
-		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(beaconDB))
-		if err != nil {
-			continue
-		}
-		v.AutoStaking = blockchain.NewMapStringBool()
-
-		mapAutoStaking := statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
-
-		for hash, value := range mapAutoStaking {
-			v.AutoStaking.Set(hash, value)
-		}
-		// finish reproduce
-		// if !blockchain.BeaconChain.multiView.AddView(v) {
-		// 	continue
-		// }
 		beaconBestState = v
 	}
 

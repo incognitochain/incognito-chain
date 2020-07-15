@@ -13,9 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -51,7 +48,7 @@ type ShardBestState struct {
 	ShardCommittee         []incognitokey.CommitteePublicKey `json:"-"`
 	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"-"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
-	StakingTx              *MapStringString                  `json:"-"`
+	StakingTx              *common.MapStringString           `json:"-"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
@@ -133,7 +130,7 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
-	bestStateShard.StakingTx = NewMapStringString()
+	bestStateShard.StakingTx = common.NewMapStringString()
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
@@ -226,12 +223,12 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 	}
 	keystr := []string{}
 
-	for _, k := range shardBestState.StakingTx.data {
+	for _, k := range shardBestState.StakingTx.Data() {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
 	for _, key := range keystr {
-		value := shardBestState.StakingTx.data[key]
+		value := shardBestState.StakingTx.Data()[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
@@ -338,7 +335,7 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 
 func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	m := make(map[string]string)
-	for k, v := range shardBestState.StakingTx.data {
+	for k, v := range shardBestState.StakingTx.Data() {
 		m[k] = v
 	}
 	return m

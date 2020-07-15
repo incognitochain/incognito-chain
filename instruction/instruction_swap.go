@@ -3,6 +3,8 @@ package instruction
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 	"strings"
 )
@@ -16,8 +18,9 @@ type SwapInstruction struct {
 	// old slashing, never used
 	PunishedPublicKeys string
 	// this field is only for replace committee
-	NewRewardReceivers []string
-	IsReplace          bool
+	NewRewardReceivers       []string
+	NewRewardReceiverStructs []privacy.PaymentAddress
+	IsReplace                bool
 }
 
 func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int, punishedPublicKeys string, newRewardReceivers []string) *SwapInstruction {
@@ -84,6 +87,10 @@ func (s *SwapInstruction) SetPunishedPublicKeys(punishedPublicKeys string) *Swap
 
 func (s *SwapInstruction) SetNewRewardReceivers(newRewardReceivers []string) *SwapInstruction {
 	s.NewRewardReceivers = newRewardReceivers
+	for _, v := range newRewardReceivers {
+		rewardReceiver, _ := wallet.Base58CheckDeserialize(v)
+		s.NewRewardReceiverStructs = append(s.NewRewardReceiverStructs, rewardReceiver.KeySet.PaymentAddress)
+	}
 	return s
 }
 
@@ -152,6 +159,14 @@ func ValidateSwapInstructionSanity(instruction []string) error {
 			_, err := strconv.Atoi(instruction[4])
 			if err != nil {
 				return fmt.Errorf("invalid swap shard id, %+v, %+v", err, instruction)
+			}
+		}
+	}
+	if len(instruction) == 7 {
+		for _, v := range strings.Split(instruction[7], ",") {
+			_, err := wallet.Base58CheckDeserialize(v)
+			if err != nil {
+				return fmt.Errorf("invalid privacy payment address %+v", err)
 			}
 		}
 	}

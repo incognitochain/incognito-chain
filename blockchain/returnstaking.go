@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -177,7 +178,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		beaconConsensusStateDB = nil
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == SwapAction {
+			if l[0] == instruction.SWAP_ACTION {
 				if beaconConsensusStateDB == nil {
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
 					if err != nil {

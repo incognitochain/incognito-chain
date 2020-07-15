@@ -252,7 +252,7 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
-	map[string]string,
+	map[string]privacy.PaymentAddress,
 	map[string]bool,
 ) {
 	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate, tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate, rewardReceivers, autoStaking := stateDB.getAllCommitteeState(shardIDs)

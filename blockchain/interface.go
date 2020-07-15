@@ -3,6 +3,7 @@ package blockchain
 import (
 	"context"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -92,7 +93,7 @@ type BeaconCommitteeEngine interface {
 	GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 	GetAutoStaking() map[string]bool
-	GetRewardReceiver() map[string]string
+	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()

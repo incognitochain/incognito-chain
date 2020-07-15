@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"time"
 
@@ -351,13 +350,8 @@ func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitok
 	return beaconBestState.beaconCommitteeEngine.GetBeaconSubstitute()
 }
 
-func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]string {
+func (beaconBestState *BeaconBestState) GetRewardReceiver() map[string]privacy.PaymentAddress {
 	return beaconBestState.beaconCommitteeEngine.GetRewardReceiver()
-}
-
-func (beaconBestState *BeaconBestState) GetRewardReceiverPaymentAddress() map[string]privacy.PaymentAddress {
-	data := beaconBestState.beaconCommitteeEngine.GetRewardReceiver()
-	res := make(map[string]privacy.PaymentAddress)
 }
 
 func (beaconBestState *BeaconBestState) GetAutoStaking() map[string]bool {
@@ -601,9 +595,6 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 	return beaconCommitteeEngine
 }
 
-func (blockchain *BlockChain) GetBeaconConsensusRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	return rawdbv2.GetBeaconConsensusStateRootHash(db, height)
-}
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
 	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
 	if e != nil {

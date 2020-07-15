@@ -3,6 +3,7 @@ package jsonresult
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -105,7 +106,8 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 
 	result.RewardReceiver = make(map[string]string)
 	for k, v := range data.GetRewardReceiver() {
-		result.RewardReceiver[k] = v
+		tempV := base58.Base58Check{}.Encode(v.Bytes(), common.Base58Version)
+		result.RewardReceiver[k] = tempV
 	}
 
 	result.ShardCommittee = make(map[byte][]string)

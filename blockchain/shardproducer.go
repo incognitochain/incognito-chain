@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -302,103 +304,103 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
 	//TODO: Please check this logic again, why PDE, Bridge build from old beacon block but get info from beacon final view
 	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
+		for _, inst := range beaconBlock.Body.Instructions {
+			if instruction.IsConsensusInstruction(inst[0]) {
 				continue
 			}
-			if len(l) <= 2 {
+			if len(inst) <= 2 {
 				continue
 			}
-			metaType, err := strconv.Atoi(l[0])
+			metaType, err := strconv.Atoi(inst[0])
 			if err != nil {
 				return nil, nil, err
 			}
 			var newTx metadata.Transaction
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
-				if len(l) >= 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildETHIssuanceTx(inst[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.IssuingRequestMeta:
-				if len(l) >= 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDETradeRequestMeta:
-				if len(l) >= 4 {
-					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 {
+					newTx, err = blockGenerator.buildPDETradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDECrossPoolTradeRequestMeta:
-				if len(l) >= 4 {
-					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 {
+					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDEWithdrawalRequestMeta:
-				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 && inst[2] == common.PDEWithdrawalAcceptedChainStatus {
+					newTx, err = blockGenerator.buildPDEWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDEFeeWithdrawalRequestMeta:
-				if len(l) >= 4 && l[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 && inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
+					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-				if len(l) >= 4 {
-					if l[2] == common.PDEContributionRefundChainStatus {
-						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
-					} else if l[2] == common.PDEContributionMatchedNReturnedChainStatus {
-						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) >= 4 {
+					if inst[2] == common.PDEContributionRefundChainStatus {
+						newTx, err = blockGenerator.buildPDERefundContributionTx(inst[3], producerPrivateKey, shardID, curView, beaconView)
+					} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
+						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(inst[3], producerPrivateKey, shardID, curView, beaconView)
 					}
 				}
 			// portal
 			case metadata.PortalUserRegisterMeta:
-				if len(l) >= 4 && l[2] == common.PortalPortingRequestRejectedChainStatus {
-					newTx, err = curView.buildPortalRefundPortingFeeTx(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalPortingRequestRejectedChainStatus {
+					newTx, err = curView.buildPortalRefundPortingFeeTx(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalCustodianDepositMeta:
-				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
-					newTx, err = curView.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalCustodianDepositRefundChainStatus {
+					newTx, err = curView.buildPortalRefundCustodianDepositTx(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalUserRequestPTokenMeta:
-				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
-					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalReqPTokensAcceptedChainStatus {
+					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 				//custodian withdraw
 			case metadata.PortalCustodianWithdrawRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
-					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
+					newTx, err = curView.buildPortalCustodianWithdrawRequest(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:
-				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
-					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && (inst[2] == common.PortalRedeemRequestRejectedChainStatus || inst[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
+					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
 			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
-				if len(l) >= 4 {
-					if l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
-						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
-					} else if l[2] == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
-						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 {
+					if inst[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(inst[3], producerPrivateKey, shardID)
+					} else if inst[2] == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 					}
 				}
 			case metadata.PortalLiquidateCustodianMeta:
-				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
-					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalLiquidateCustodianSuccessChainStatus {
+					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRequestWithdrawRewardMeta:
-				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
-					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
+					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 				//liquidation: custodian deposit
 			case metadata.PortalLiquidationCustodianDepositMeta:
-				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
-					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalLiquidationCustodianDepositMetaV2:
-				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
-					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(inst[3], producerPrivateKey, shardID)
 				}
 			//
 			case metadata.PortalTopUpWaitingPortingRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
-					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(l[3], producerPrivateKey, shardID)
+				if len(inst) >= 4 && inst[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
+					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(inst[3], producerPrivateKey, shardID)
 				}
 			default:
 				continue
@@ -410,8 +412,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				newTxHash := *newTx.Hash()
 				if ok, _ := common.SliceExists(responsedHashTxs, newTxHash); ok {
 					data, _ := json.Marshal(newTx)
-					Logger.log.Error("Double tx from instruction", l, string(data))
-					errorInstructions = append(errorInstructions, l)
+					Logger.log.Error("Double tx from instruction", inst, string(data))
+					errorInstructions = append(errorInstructions, inst)
 					//continue
 				}
 				responsedTxs = append(responsedTxs, newTx)

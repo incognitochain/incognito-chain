@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	instruction2 "github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
@@ -19,7 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
 		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), i)
@@ -75,9 +75,9 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	return crossIDs
 }
 
-// CreateSwapInstruction creates swap instruction and return new validator list
+// CreateSwapInstruction creates swap inst and return new validator list
 // Return param:
-// #1: swap instruction
+// #1: swap inst
 // #2: new pending validator list after swapped
 // #3: new committees after swapped
 // #4: error
@@ -119,7 +119,7 @@ func CreateShardSwapActionForKeyListV2(
 	return swapInstruction[shardID], newPendingValidator, append(newShardCommittees[shardID], remainShardCommittees...)
 }
 
-// CreateShardInstructionsFromTransactionAndInstruction create instruction from transactions in shard block
+// CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
 // Stake:
 //  ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
 //	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
@@ -193,8 +193,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		instruction := []string{instruction2.STAKE_ACTION, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
-		instructions = append(instructions, instruction)
+		inst := []string{instruction.STAKE_ACTION, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
+		instructions = append(instructions, inst)
 	}
 	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
 		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) && len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoStaking) {
@@ -205,13 +205,13 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			return nil, fmt.Errorf("Failed To Convert Stake Beacon Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		instruction := []string{instruction2.STAKE_ACTION, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
-		instructions = append(instructions, instruction)
+		inst := []string{instruction.STAKE_ACTION, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
+		instructions = append(instructions, inst)
 	}
 	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
 		// ["stopautostaking" "pubkey1,pubkey2,..."]
-		instruction := []string{instruction2.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
-		instructions = append(instructions, instruction)
+		inst := []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
+		instructions = append(instructions, inst)
 	}
 	return instructions, nil
 }

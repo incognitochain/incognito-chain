@@ -461,29 +461,17 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		sID = append(sID, i)
 	}
 	for _, v := range allViews {
-		v.RestoreBeaconViewStateFromHash(blockchain)
-		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
-		if err != nil {
+		if err := v.RestoreBeaconViewStateFromHash(blockchain); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
-		v.AutoStaking = NewMapStringBool()
-		v.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
 		}
-		err := v.InitStateRootHash(blockchain)
-		if err != nil {
+		if err := v.InitStateRootHash(blockchain); err != nil {
 			panic(err)
 		}
-		beaconCommitteeEngine := InitBeaconCommitteeEngineV1(v.ActiveShards, v.consensusStateDB, v.BeaconHeight, v.BestBlockHash)
-		v.beaconCommitteeEngine = beaconCommitteeEngine
-		currentPDEState, err := InitCurrentPDEStateFromDB(v.featureStateDB, v.BeaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil
-		}
-		v.currentPDEState = currentPDEState
+
 	}
 	return nil
 }
@@ -541,8 +529,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic("Something wrong when retrieve mapStakingTx")
 		}
 
-		v.StakingTx = NewMapStringString()
-		v.StakingTx.data = mapStakingTx
+		v.StakingTx = common.NewMapStringString()
+		v.StakingTx.SetData(mapStakingTx)
 
 		err = v.RestorePendingValidators(shardID, blockchain)
 		if err != nil {
@@ -674,12 +662,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
 		sID = append(sID, i)
 	}
-	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconView.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
-	if err != nil {
-		return nil, NewBlockChainError(BeaconError, err)
-	}
-	beaconView.AutoStaking = NewMapStringBool()
-	beaconView.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 	blockchain.beaconViewCache.Add(blockHash, beaconView)
 	return beaconView, err
 }
