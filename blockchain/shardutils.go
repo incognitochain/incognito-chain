@@ -601,9 +601,7 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 func updateCommiteesWithAddedAndRemovedListCommittee(
 	source, addedCommittees,
 	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
-
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
-
 	m := make(map[string]bool)
 	for _, v := range removedCommittees {
 		str, err := v.ToBase58()
@@ -612,7 +610,6 @@ func updateCommiteesWithAddedAndRemovedListCommittee(
 		}
 		m[str] = true
 	}
-
 	for _, v := range source {
 		str, err := v.ToBase58()
 		if err != nil {
@@ -622,8 +619,6 @@ func updateCommiteesWithAddedAndRemovedListCommittee(
 			newShardPendingValidator = append(newShardPendingValidator, v)
 		}
 	}
-
 	newShardPendingValidator = append(newShardPendingValidator, addedCommittees...)
-
 	return newShardPendingValidator, nil
 }
