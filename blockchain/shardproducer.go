@@ -162,8 +162,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		Build()
 
 	committeeChange := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
-
 	curView.shardCommitteeEngine.AbortUncommittedShardState()
+
 	currentPendingValidators, err = updateCommiteesWithAddedAndRemovedListCommittee(currentPendingValidators,
 		committeeChange.ShardCommitteeAdded[curView.ShardID],
 		committeeChange.ShardCommitteeRemoved[curView.ShardID])
@@ -218,6 +218,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, err
 	}
+	curView.shardCommitteeEngine.AbortUncommittedShardState()
 	//============Build Header=============
 	// Build Root Hash for Header
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)

@@ -256,15 +256,17 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
 	shardPendingValidator = append(shardPendingValidator, recentSubtitutesStr...)
 
-	for _, ins := range listInstructions {
-		assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(ins)
-		if err != nil {
-			Logger.log.Errorf("Invalid Assign Instruction, %+v", err)
-		}
-		if err == nil && assignInstruction.ChainID == int(shardID) {
-			shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-			newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
-			committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+	for _, inst := range listInstructions {
+		if len(inst) > 0 && inst[0] == instruction.ASSIGN_ACTION {
+			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("Invalid Assign Instruction, %+v", err)
+			}
+			if err == nil && assignInstruction.ChainID == int(shardID) {
+				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
+				newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+				committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+			}
 		}
 	}
 	committeeChange.ShardSubstituteAdded[shardID] = newShardPendingValidator

@@ -95,6 +95,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	if err != nil {
 		return err
 	}
+	curView.shardCommitteeEngine.AbortUncommittedShardState()
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
 	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 		return err
