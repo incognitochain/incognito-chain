@@ -467,7 +467,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 //	- Get Cross Output Data from cross shard block (shard pool) and verify cross transaction hash
 //	- Get Cross Tx Custom Token from cross shard block (shard pool) then verify
 //
-func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *ShardBestState, shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
+func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *ShardBestState,
+	shardBlock *ShardBlock, beaconBlocks []*BeaconBlock,
+	txInstructions [][]string, shardID byte) error {
 	var err error
 	var isOldBeaconHeight = false
 	startTimeVerifyPreProcessingShardBlockForSigning := time.Now()
@@ -478,7 +480,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	// Verify Instruction
-	instructions := [][]string{}
+	beaconInstructions := [][]string{}
 	shardCommittee, err := incognitokey.
 		CommitteeKeyListToString(curView.
 			shardCommitteeEngine.GetShardCommittee(curView.ShardID))
@@ -505,31 +507,25 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		return err
 	}
 
+	beaconInstructions, _, err = blockchain.
+		preProcessInstructionFromBeacon(beaconBlocks, curView.ShardID)
+	if err != nil {
+		return err
+	}
+
 	env := committeestate.
 		NewShardEnvBuilder().
-		BuildBeaconHeight(curView.BeaconHeight).
-		BuildChainParamEpoch(curView.Epoch).
-		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		BuildBeaconInstructions(shardBlock.Body.Instructions).
-		BuildIsProcessShardBlockInstructionForKeyListV2(false).
-		BuildMaxShardCommitteeSize(curView.MaxShardCommitteeSize).
-		BuildMinShardCommitteeSize(curView.MinShardCommitteeSize).
-		BuildOffset(blockchain.config.ChainParams.Offset).
 		BuildProducersBlackList(producersBlackList).
-		BuildRecentCommitteesStr([]string{}).
+		BuildBeaconInstructions(beaconInstructions).
 		BuildRecentSubtitutesStr(shardPendingValidatorStr).
-		BuildShardBlockHash(curView.BestBlockHash).
-		BuildShardHeight(curView.ShardHeight).
-		BuildShardID(shardID).
-		BuildStakingTx(make(map[string]string)).
-		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
-		BuildTxs(shardBlock.Body.Transactions).
 		Build()
 
-	_, committeeChange, err := curView.shardCommitteeEngine.UpdateCommitteeState(env)
+	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
 	if err != nil {
-		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
+		return err
 	}
+
+	instructions := [][]string{}
 
 	if curView.BeaconHeight == shardBlock.Header.BeaconHeight {
 		isOldBeaconHeight = true
