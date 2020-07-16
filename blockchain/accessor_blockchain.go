@@ -189,7 +189,7 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
 		}
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
-			tempShardBlock, err := blockchain.GetFinalizedShardBlockByHeight(shardHeight, shardID)
+			tempShardBlock, err := blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
 			if err != nil {
 				Logger.log.Errorf("GetFinalizedShardBlockByHeight shard %+v, error  %+v", shardID, err)
 				break
@@ -206,7 +206,7 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
 		shardBlocks := []*ShardBlock{}
 		for _, height := range requiredShardBlockHeight {
-			shardBlock, err := blockchain.GetFinalizedShardBlockByHeight(height, shardID)
+			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
 			if err != nil {
 				return allRequireShardBlocks, err
 			}
