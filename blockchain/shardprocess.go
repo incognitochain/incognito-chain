@@ -520,10 +520,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		BuildRecentSubtitutesStr(shardPendingValidatorStr).
 		Build()
 
-	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
-	if err != nil {
-		return err
-	}
+	committeeChange := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
 
 	instructions := [][]string{}
 

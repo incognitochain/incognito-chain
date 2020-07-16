@@ -161,10 +161,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		BuildRecentSubtitutesStr(shardPendingValidator).
 		Build()
 
-	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
-	if err != nil {
-		return nil, err
-	}
+	committeeChange := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
 
 	curView.shardCommitteeEngine.AbortUncommittedShardState()
 	currentPendingValidators, err = updateCommiteesWithAddedAndRemovedListCommittee(currentPendingValidators,
