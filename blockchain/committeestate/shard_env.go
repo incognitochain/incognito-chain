@@ -37,7 +37,7 @@ func NewShardEnvBuilder() ShardEnvBuilder {
 // ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment interface {
 	RecentCommitteesStr() []string
-	RecentSubtitutesStr() []string
+	RecentSubstitutesStr() []string
 	ShardHeight() uint64
 	ShardBlockHash() common.Hash
 	BeaconBlockHash() common.Hash
@@ -60,7 +60,7 @@ type ShardCommitteeStateEnvironment interface {
 //shardCommitteeStateEnvironment :
 type shardCommitteeStateEnvironment struct {
 	recentCommitteesStr                        []string
-	recentSubtitutesStr                        []string
+	recentSubstitutesStr                       []string
 	shardHeight                                uint64
 	shardBlockHash                             common.Hash
 	beaconBlockHash                            common.Hash
@@ -88,7 +88,7 @@ func (env *shardCommitteeStateEnvironment) BuildRecentCommitteesStr(recentCommit
 
 //BuildRecentSubtitutesStr :
 func (env *shardCommitteeStateEnvironment) BuildRecentSubtitutesStr(recentSubtitutesStr []string) ShardEnvBuilder {
-	env.recentSubtitutesStr = recentSubtitutesStr
+	env.recentSubstitutesStr = recentSubtitutesStr
 	return env
 }
 
@@ -204,8 +204,8 @@ func (env *shardCommitteeStateEnvironment) RecentCommitteesStr() []string {
 }
 
 //RecentSubtitutesStr :
-func (env *shardCommitteeStateEnvironment) RecentSubtitutesStr() []string {
-	return env.recentSubtitutesStr
+func (env *shardCommitteeStateEnvironment) RecentSubstitutesStr() []string {
+	return env.recentSubstitutesStr
 }
 
 //ShardHeight :

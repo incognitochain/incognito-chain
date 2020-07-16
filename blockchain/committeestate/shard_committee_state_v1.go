@@ -147,7 +147,7 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
 
-	newCommitteeState.processInstructionFromBeacon(env.RecentSubtitutesStr(),
+	newCommitteeState.processInstructionFromBeacon(env.RecentSubstitutesStr(),
 		env.BeaconInstructions(), env.ShardID(), committeeChange)
 
 	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 &&
@@ -180,7 +180,7 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env ShardCommitteeStateEn
 
 	committeeState := engine.shardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
-	committeeState.processInstructionFromBeacon(env.RecentSubtitutesStr(),
+	committeeState.processInstructionFromBeacon(env.RecentSubstitutesStr(),
 		env.BeaconInstructions(), env.ShardID(), committeeChange)
 
 	err := committeeState.processShardBlockInstruction(env, committeeChange)
@@ -428,7 +428,7 @@ func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 	committeeChange := NewCommitteeChange()
 
 	newCommitteeState.processInstructionFromBeacon(
-		env.RecentSubtitutesStr(),
+		env.RecentSubstitutesStr(),
 		env.BeaconInstructions(),
 		env.ShardID(), committeeChange)
 
