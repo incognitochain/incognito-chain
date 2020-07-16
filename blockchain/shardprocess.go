@@ -734,6 +734,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		//TODO: change to beacon instruction
 		BuildBeaconInstructions(shardBlock.Body.Instructions).
 		BuildIsProcessShardBlockInstructionForKeyListV2(true).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
@@ -748,6 +749,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildStakingTx(make(map[string]string)).
 		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
 		BuildTxs(shardBlock.Body.Transactions).
+		BuildShardInstructions(shardBlock.Body.Instructions).
 		Build()
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
