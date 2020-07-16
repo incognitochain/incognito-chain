@@ -625,8 +625,8 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
 
 		fmt.Printf("Test #%d: Convert token %d\n",i,randomTokenIndex)
-		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 100), common.RandIntInterval(1, 5)
-		_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 10), common.RandIntInterval(1, 3)
+		mySupposedlyPersonalKey, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
 
 		txToken := new(TxTokenVersion2)
@@ -644,16 +644,24 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		assert.Equal(t, true, isValidTxItself)
 		assert.Equal(t, nil, err)
 
-		testProveVerifyTxTokenConversionTampered(&keySets[0].PrivateKey, txToken, txTokenConversionParams, tokenID, t)
+		testProveVerifyTxTokenConversionTampered(mySupposedlyPersonalKey, txToken, txTokenConversionParams, tokenID, t)
 		// res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, &common.PRVCoinID, false, true)
 		// assert.Equal(t, true, res, "ValidateTransaction returns an error: %v", err)
 
 	}
 }
 
-func testProveVerifyTxTokenConversionTampered(senderSk *key.PrivateKey,txConversionOutput *TxTokenVersion2, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash,t *testing.T) {
+func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet,txConversionOutput *TxTokenVersion2, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash,t *testing.T) {
 	m := common.RandInt()
 	testDB := convParam.stateDB
+	txPrivacyParams := NewTxPrivacyInitParams(
+		convParam.senderSK, convParam.feePayments, convParam.feeInputs, convParam.fee,
+		false, convParam.stateDB, &common.PRVCoinID, convParam.metaData, convParam.info,
+	)
+	var err error
+	txInner,ok := txConversionOutput.GetTxTokenData().TxNormal.(*TxVersion2)
+	assert.Equal(t,true,ok)
+
 	switch m % 5 { //Change this if you want to test a specific case
 
 	//tamper with fee
@@ -662,23 +670,33 @@ func testProveVerifyTxTokenConversionTampered(senderSk *key.PrivateKey,txConvers
 		txConversionOutput.GetTxBase().SetTxFee(uint64(common.RandIntInterval(0, 1000)))
 
 		//Re-sign transaction
-		sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
-		txConversionOutput.SetSig(sig)
-		txConversionOutput.SetSigPubKey(sigPubKey)
-		assert.Equal(t, nil, err)
+		txInner.Sig, txInner.SigPubKey, err = signNoPrivacy(convParam.senderSK, txInner.Hash()[:])
+		assert.Equal(t,nil,err)
+		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
+		
+		// fmt.Println(err)
+		// if err!=nil{
+		// 	return
+		// }
+		// assert.Equal(t, nil, err)
+		// sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
+		// txConversionOutput.SetSig(sig)
+		// txConversionOutput.SetSigPubKey(sigPubKey)
+		// assert.Equal(t, nil, err)
 
 	//tamper with randomness
 	case 1:
 		fmt.Println("------------------Tampering with randomness-------------------")
-		bothInputCoins := append(txConversionOutput.GetProof().GetInputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetInputCoins()...)
+		// txNormal is of type `convert`, so its inputs' randomness field matters
+		// meanwhile txFee has version 2, which means feeInput's randomness becomes irrelevant after the proof is made
+		bothInputCoins := txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetInputCoins()
 		usedIndex := common.RandInt() % len(bothInputCoins)
 		bothInputCoins[usedIndex].SetRandomness(operation.RandomScalar())
 
 		//Re-sign transaction
-		sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
-		txConversionOutput.SetSig(sig)
-		txConversionOutput.SetSigPubKey(sigPubKey)
-		assert.Equal(t, nil, err)
+		txInner.Sig, txInner.SigPubKey, err = signNoPrivacy(convParam.senderSK, txInner.Hash()[:])
+		assert.Equal(t,nil,err)
+		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
 
 	//attempt to convert used coins (used serial numbers)
 	case 2:
@@ -716,22 +734,23 @@ func testProveVerifyTxTokenConversionTampered(senderSk *key.PrivateKey,txConvers
 		//Attempt to alter some output coins!
 		outputCoinSpecific.SetCommitment(operation.RandomPoint())
 		//Re-sign transaction
-		sig, sigPubKey, err := signNoPrivacy(senderSk, txConversionOutput.Hash()[:])
-		txConversionOutput.SetSig(sig)
-		txConversionOutput.SetSigPubKey(sigPubKey)
-		assert.Equal(t, nil, err)
+		txInner.Sig, txInner.SigPubKey, err = signNoPrivacy(convParam.senderSK, txInner.Hash()[:])
+		assert.Equal(t,nil,err)
+		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
 	default:
 
 	}
 	//Attempt to verify
 	var isValid bool
-	isValidAlready, _ := txConversionOutput.ValidateSanityData(nil, nil, nil, 0)
+	isValidAlready, err := txConversionOutput.ValidateSanityData(nil, nil, nil, 0)
+	fmt.Printf("First error: %v\n",err)
 	if !isValidAlready{
 		isValid = false
 	}else{
 	// validate signatures, proofs, etc. Only do after sanity checks are passed
-		isValidAlready, _ = txConversionOutput.ValidateTxByItself(false, testDB, nil, nil, shardID, false, nil, nil)
+		isValidAlready, err = txConversionOutput.ValidateTxByItself(false, testDB, nil, nil, shardID, false, nil, nil)
 	}
+	fmt.Printf("Second error: %v\n",err)
 	// assert.Equal(t, false, isValid, "validateConversionVer1ToVer2 on corrupted data should not be true")
 	if !isValidAlready{
 		isValid = false
@@ -739,6 +758,7 @@ func testProveVerifyTxTokenConversionTampered(senderSk *key.PrivateKey,txConvers
 		err := txConversionOutput.ValidateTxWithBlockChain(nil, nil, nil, shardID, testDB)
 		isValid = (err==nil)
 	}
+	fmt.Printf("Third error: %v\n",err)
 	if isValid{
 		jsb,_ := json.Marshal(txConversionOutput)
 		fmt.Printf("Unexpected error in case %d . Transaction : %s\n",m%5,string(jsb))
