@@ -112,12 +112,12 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		var err error
-		result, err = rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk)
+		resultTemp, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk)
 		if err == nil {
-			if result == nil || len(result) == 0 {
+			if resultTemp == nil || len(resultTemp) == 0 {
 				continue
 			}
-			return result, nil
+			result[shardID] = resultTemp[shardID]
 		}
 	}
 	return result, nil
