@@ -61,6 +61,18 @@ func (blockchain *BlockChain) GetFinalizedBeaconBlockByHeight(height uint64) (*B
 	if len(beaconBlocks) == 0 {
 		return nil, fmt.Errorf("Beacon Block Height %+v NOT FOUND", height)
 	}
+	nBeaconBlocks, err := blockchain.GetBeaconBlockByHeight(height + 1)
+	if err == nil {
+		idByHash := map[string]int{}
+		for id, blk := range beaconBlocks {
+			idByHash[blk.Hash().String()] = id
+		}
+		for _, blk := range nBeaconBlocks {
+			if id, ok := idByHash[blk.GetPrevHash().String()]; ok {
+				return beaconBlocks[id], nil
+			}
+		}
+	}
 	return beaconBlocks[0], nil
 }
 
@@ -108,12 +120,23 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	return shardBlockMap, err
 }
 
-func (blockchain *BlockChain) GetFinalizedShardBlockByHeight(height uint64, shardID byte) (*ShardBlock, error) {
-	res, err := blockchain.GetShardBlockByHeight(height, shardID)
+func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*ShardBlock, error) {
+	shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
 		return nil, err
 	}
-	for _, v := range res {
+	if len(shardBlocks) == 0 {
+		return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
+	}
+	nShardBlocks, err := blockchain.GetShardBlockByHeight(height+1, shardID)
+	if err == nil {
+		for _, blk := range nShardBlocks {
+			if sBlk, ok := shardBlocks[blk.GetPrevHash()]; ok {
+				return sBlk, nil
+			}
+		}
+	}
+	for _, v := range shardBlocks {
 		return v, nil
 	}
 	return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
