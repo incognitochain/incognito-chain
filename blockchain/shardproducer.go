@@ -729,7 +729,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 		for _, l := range beaconBlock.Body.Instructions {
 			// Get Staking Tx
 			// assume that stake instruction already been validated by beacon committee
-			//TODO: review assign instruction
 			if l[0] != instruction.STAKE_ACTION {
 				instructions = append(instructions, l)
 				continue

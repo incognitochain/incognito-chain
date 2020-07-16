@@ -729,13 +729,19 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			return nil, nil, nil, err
 		}
 	}
+
+	instructions, _, err := blockchain.
+		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		//TODO: change to beacon instruction
-		BuildBeaconInstructions(shardBlock.Body.Instructions).
+		BuildBeaconInstructions(instructions).
 		BuildIsProcessShardBlockInstructionForKeyListV2(true).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
