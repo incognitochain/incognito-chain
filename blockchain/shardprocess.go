@@ -165,10 +165,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
-	if err != nil {
-		curView.shardCommitteeEngine.AbortUncommittedShardState()
-		return err
-	}
 	var err2 error
 	defer func() {
 		if err2 != nil {
@@ -882,36 +878,18 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	hashes *committeestate.ShardCommitteeStateHash) error {
 
 	if !hashes.ShardCommitteeHash.IsEqual(&shardBlock.Header.CommitteeRoot) {
-		// return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
-		return errors.New("Wrong hash")
+		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect %+v but get %+v", shardBlock.Header.CommitteeRoot, hashes.ShardCommitteeHash))
 	}
 
 	if !hashes.ShardSubstituteHash.IsEqual(&shardBlock.Header.PendingValidatorRoot) {
-		// return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
-		return errors.New("Wrong hash")
+		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect %+v but get %+v", shardBlock.Header.PendingValidatorRoot, hashes.ShardSubstituteHash))
 	}
 
 	startTimeVerifyPostProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-
-	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID))
-	if err != nil {
-		return err
-	}
-	if hash, ok := verifyHashFromStringArray(shardCommitteeStr, shardBlock.Header.CommitteeRoot); !ok {
-		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect shard committee root hash to be %+v but get %+v", shardBlock.Header.CommitteeRoot, hash))
-	}
-
-	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID))
-	if err != nil {
-		return err
-	}
-	if hash, isOk := verifyHashFromStringArray(shardPendingValidatorStr, shardBlock.Header.PendingValidatorRoot); !isOk {
-		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v but get %+v", shardBlock.Header.PendingValidatorRoot, hash))
-	}
-	if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot); !isOk {
-		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
-	}
+	//if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot); !isOk {
+	//	return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
+	//}
 	shardVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingShardBlock)
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	return nil
