@@ -176,9 +176,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	// update number of blocks produced by producers to shard best state
 	newBestState.updateNumOfBlocksByProducers(shardBlock)
 
-	newCommittee, err := incognitokey.CommitteeKeyListToString(newBestState.shardCommitteeEngine.GetShardCommittee(curView.ShardID))
-	if err != nil {
-		return err
+	newCommittee := []string{}
+	newCommittee, err2 = incognitokey.CommitteeKeyListToString(newBestState.shardCommitteeEngine.GetShardCommittee(curView.ShardID))
+	if err2 != nil {
+		return err2
 	}
 	if !common.CompareStringArray(oldCommittee, newCommittee) {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
@@ -186,17 +187,17 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
-			return err
+		if err2 = newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
+			return err2
 		}
 	} else {
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	}
 	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
-	if err != nil {
-		return err
+	err2 = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
+	if err2 != nil {
+		return err2
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	//========Store new  Shard block and new shard bestState
@@ -213,13 +214,13 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 
 	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
 		newBestState.ShardID, shardBlock.Header.Height, blockHash)
-	if err2 := newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
+	if err2 = newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
 	}
 
-	err = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, confirmBeaconBlock)
-	if err != nil {
-		return err
+	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, confirmBeaconBlock)
+	if err2 != nil {
+		return err2
 	}
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))

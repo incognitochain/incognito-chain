@@ -257,16 +257,11 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	shardPendingValidator = append(shardPendingValidator, recentSubtitutesStr...)
 
 	for _, inst := range listInstructions {
-		if len(inst) > 0 && inst[0] == instruction.ASSIGN_ACTION {
-			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("Invalid Assign Instruction, %+v", err)
-			}
-			if err == nil && assignInstruction.ChainID == int(shardID) {
-				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-				newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
-				committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
-			}
+		assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
+		if err == nil && assignInstruction.ChainID == int(shardID) {
+			shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
+			newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+			committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 		}
 	}
 	committeeChange.ShardSubstituteAdded[shardID] = newShardPendingValidator
@@ -422,6 +417,9 @@ func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
+	engine.shardCommitteeStateV1.mu.RLock()
+	engine.shardCommitteeStateV1.clone(engine.uncommittedShardCommitteeStateV1)
+	engine.shardCommitteeStateV1.mu.RUnlock()
 
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 
@@ -431,6 +429,8 @@ func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 		env.RecentSubstitutesStr(),
 		env.BeaconInstructions(),
 		env.ShardID(), committeeChange)
+
+	engine.uncommittedShardCommitteeStateV1.reset()
 
 	return committeeChange
 }
