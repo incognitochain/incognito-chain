@@ -593,6 +593,13 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			return errors.New("double spend")
 		}
 	}
+	for _, outCoin := range tx.GetProof().GetOutputCoins(){
+		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
+		ok, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
+		if ok || err != nil {
+			return errors.New("OTA of output coin already in database")
+		}
+	}
 	return nil
 }
 
