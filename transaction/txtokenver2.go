@@ -412,11 +412,10 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 		return false, err
 	}
 	ok, err := txToken.verifySig(transactionStateDB, shardID, tokenID)
-	if err != nil {
-		Logger.Log.Errorf("Cannot create txPrivacyFromVersionNumber from TxPrivacyTokenDataVersion1, err %v", err)
-		return false, err
-	}
-	if ok {
+	if !ok {
+		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v \n", txToken.Hash().String(), err)
+		return false, NewTransactionErr(VerifyTxSigFailError, err)
+	}else {
 		// validate for pToken
 		tokenID := txToken.TxTokenData.PropertyID
 		switch txToken.TxTokenData.Type {
@@ -438,9 +437,10 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 					txToken.TxTokenData.TxNormal.IsPrivacy(),
 					transactionStateDB, bridgeStateDB, shardID, &tokenID, isBatch, isNewTransaction)
 			}
+		default:
+			return false, errors.New("Cannot validate Tx Token. Unavailable type")
 		}
 	}
-	return false, err
 }
 
 func (txToken TxTokenVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
