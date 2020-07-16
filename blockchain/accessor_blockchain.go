@@ -231,11 +231,22 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*ShardBlock, error) {
-	res, err := blockchain.GetShardBlockByHeight(height, shardID)
+	shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
 		return nil, err
 	}
-	for _, v := range res {
+	if len(shardBlocks) == 0 {
+		return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
+	}
+	nShardBlocks, err := blockchain.GetShardBlockByHeight(height+1, shardID)
+	if err == nil {
+		for _, blk := range nShardBlocks {
+			if sBlk, ok := shardBlocks[blk.GetPrevHash()]; ok {
+				return sBlk, nil
+			}
+		}
+	}
+	for _, v := range shardBlocks {
 		return v, nil
 	}
 	return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
