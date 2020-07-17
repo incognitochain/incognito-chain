@@ -5,7 +5,6 @@ package mlsag
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
@@ -298,6 +297,9 @@ func (this *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation.
 func verifyKeyImages(keyImages []*operation.Point) bool {
 	var check bool = true
 	for i := 0; i < len(keyImages); i += 1 {
+		if keyImages[i]==nil{
+			return false
+		}
 		lKI := new(operation.Point).ScalarMult(keyImages[i], CurveOrder)
 		check = check && lKI.IsIdentity()
 	}
@@ -307,7 +309,6 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
-	fmt.Println("BUGLOG in verifyRing", R)
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			message,
