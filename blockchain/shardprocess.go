@@ -877,8 +877,12 @@ func (shardBestState *ShardBestState) processShardBlockInstructionForKeyListV2(b
 			shardCommitteesStruct := append(inPublicKeyStructs, remainedShardCommittees...)
 			shardBestState.ShardPendingValidator = shardPendingValidatorStruct
 			shardBestState.ShardCommittee = shardCommitteesStruct
-			committeeChange.shardCommitteeAdded[shardID] = inPublicKeyStructs
-			committeeChange.shardCommitteeRemoved[shardID] = outPublicKeyStructs
+			// committeeChange.shardCommitteeAdded[shardID] = inPublicKeyStructs
+			// committeeChange.shardCommitteeRemoved[shardID] = outPublicKeyStructs
+			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
+			committeeReplace[common.REPLACE_IN] = append(committeeChange.shardCommitteeAdded[shardID], inPublicKeyStructs...)
+			committeeReplace[common.REPLACE_OUT] = append(committeeChange.shardCommitteeAdded[shardID], outPublicKeyStructs...)
+			committeeChange.shardCommitteeReplaced[shardID] = committeeReplace
 		}
 	}
 	return nil
@@ -1042,6 +1046,10 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		// }
 		// rewardReceiver, autoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, blockchain.GetShardIDs())
 		//statedb===========================START
+		err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeReplaced[shardID])
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
 		err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
@@ -1049,19 +1057,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID])
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
-		}
-		//statedb===========================START
-
-		//err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, addedCommittees, rewardReceiver, autoStaking)
-		err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-
-		//err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, addedSubstitutesValidator, rewardReceiver, autoStaking)
-		err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID])
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
 		}
 	}
 	//err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, removedCommittees)

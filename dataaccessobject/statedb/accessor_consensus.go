@@ -83,6 +83,22 @@ func StoreAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][]inco
 	return nil
 }
 
+func ReplaceOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittee [2][]incognitokey.CommitteePublicKey) error {
+	if len(shardCommittee[common.REPLACE_IN]) == 0 {
+		return nil
+	}
+	newEnterTime := GetOneShardCommitteeEnterTime(stateDB, shardID)
+	err := storeCommittee(stateDB, int(shardID), CurrentValidator, shardCommittee[common.REPLACE_IN], newEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreAllShardCommitteeError, err)
+	}
+	err = deleteCommittee(stateDB, int(shardID), CurrentValidator, shardCommittee[common.REPLACE_OUT])
+	if err != nil {
+		return NewStatedbError(DeleteOneShardCommitteeError, err)
+	}
+	return nil
+}
+
 func ReplaceAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][2][]incognitokey.CommitteePublicKey) error {
 	for shardID, committee := range allShardCommittees {
 		if len(committee[common.REPLACE_IN]) == 0 {
