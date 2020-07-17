@@ -111,6 +111,22 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 
+		someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, t)
+		for _,theInvalidTx := range someInvalidTxs{
+			txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
+			assert.Equal(t, true, ok)
+			// look for potential panics by calling verify
+			isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+			if !isSane{
+				continue
+			}
+			txSpecific.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, false, nil, nil)
+			txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		}
+		// focused on the above right now
+		continue 
+
 		testTxTokenV2DeletedProof(tx, dummyDB, t)
 		// testTxTokenV2OneFakeOutput(tx, dummyDB, paramToCreateTx, t)
 
@@ -164,6 +180,8 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		err = tx2.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 		
+
+
 		testTxTokenV2DeletedProof(tx2, dummyDB, t)
 		testTxTokenV2InvalidFee(tx2, dummyDB, t)
 		testTxTokenV2OneFakeOutput(tx2, dummyDB, paramToCreateTx2, t)
