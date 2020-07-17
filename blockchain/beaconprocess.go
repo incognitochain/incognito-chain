@@ -1187,16 +1187,20 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 				return NewBlockChainError(ProcessSwapInstructionError, err)
 			}
 			shardID := byte(temp)
-			// update shard pending validator
-			committeeChange.shardCommitteeRemoved[shardID] = append(committeeChange.shardCommitteeRemoved[shardID], outPublicKeyStructs...)
+			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
+			// update shard COMMITTEE
+			committeeReplace[common.REPLACE_OUT] = append(committeeReplace[common.REPLACE_OUT], outPublicKeyStructs...)
 			// add new public key to committees
-			committeeChange.shardCommitteeAdded[shardID] = append(committeeChange.shardCommitteeAdded[shardID], inPublicKeyStructs...)
+			committeeReplace[common.REPLACE_IN] = append(committeeReplace[common.REPLACE_IN], inPublicKeyStructs...)
+			committeeChange.shardCommitteeReplaced[shardID] = committeeReplace
 			remainedShardCommittees := beaconBestState.ShardCommittee[shardID][removedCommittee:]
 			beaconBestState.ShardCommittee[shardID] = append(inPublicKeyStructs, remainedShardCommittees...)
 		} else if instruction[3] == "beacon" {
-			committeeChange.beaconCommitteeRemoved = append(committeeChange.beaconCommitteeRemoved, outPublicKeyStructs...)
+
+			committeeChange.beaconCommitteeReplaced[common.REPLACE_OUT] = append(committeeChange.beaconCommitteeReplaced[common.REPLACE_OUT], outPublicKeyStructs...)
 			// add new public key to committees
-			committeeChange.beaconCommitteeAdded = append(committeeChange.beaconCommitteeAdded, inPublicKeyStructs...)
+			committeeChange.beaconCommitteeReplaced[common.REPLACE_IN] = append(committeeChange.beaconCommitteeReplaced[common.REPLACE_IN], inPublicKeyStructs...)
+
 			remainedBeaconCommittees := beaconBestState.BeaconCommittee[removedCommittee:]
 			beaconBestState.BeaconCommittee = append(inPublicKeyStructs, remainedBeaconCommittees...)
 		}
@@ -1376,11 +1380,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	err = statedb.ReplaceAllShardCommittee(newBestState.consensusStateDB, committeeChange.shardCommitteeReplaced)
+	if err != nil {
+		return err
+	}
 	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.beaconSubstituteAdded)
 	if err != nil {
 		return err
 	}
 	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.beaconCommitteeAdded)
+	if err != nil {
+		return err
+	}
+	err = statedb.ReplaceBeaconCommittee(newBestState.consensusStateDB, committeeChange.beaconCommitteeReplaced)
 	if err != nil {
 		return err
 	}
