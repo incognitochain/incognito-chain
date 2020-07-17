@@ -95,9 +95,13 @@ func (proof PaymentProof) GetOutputCoins() []coin.Coin {
 	return res
 }
 
+func (proof *PaymentProof) SetCommitmentShardID(commitmentShardID *operation.Point){proof.commitmentInputShardID = commitmentShardID}
+func (proof *PaymentProof) SetCommitmentInputSND(commitmentInputSND []*operation.Point){proof.commitmentInputSND = commitmentInputSND}
 func (proof *PaymentProof) SetAggregatedRangeProof(aggregatedRangeProof *aggregatedrange.AggregatedRangeProof) {proof.aggregatedRangeProof = aggregatedRangeProof}
 func (proof *PaymentProof) SetSerialNumberProof(serialNumberProof []*serialnumberprivacy.SNPrivacyProof) {proof.serialNumberProof = serialNumberProof}
 func (proof *PaymentProof) SetOneOfManyProof(oneOfManyProof []*oneoutofmany.OneOutOfManyProof) {proof.oneOfManyProof = oneOfManyProof}
+func (proof *PaymentProof) SetSerialNumberNoPrivacyProof(serialNumberNoPrivacyProof []*serialnumbernoprivacy.SNNoPrivacyProof) {proof.serialNumberNoPrivacyProof = serialNumberNoPrivacyProof}
+func (proof *PaymentProof) SetCommitmentInputValue(commitmentInputValue []*operation.Point) {proof.commitmentInputValue = commitmentInputValue}
 
 func (proof *PaymentProof) SetInputCoins(v []coin.PlainCoin) error {
 	var err error

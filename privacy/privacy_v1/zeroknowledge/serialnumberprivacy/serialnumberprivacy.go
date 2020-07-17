@@ -326,7 +326,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint1.Add(rightPoint1, proof.tInput)
 
 	if !operation.IsPointEqual(leftPoint1, rightPoint1) {
-		Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
+		//Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
 		return false, errors.New("verify serial number privacy proof statement 1 failed")
 	}
 
@@ -353,4 +353,23 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func Copy(proof SNPrivacyProof) *SNPrivacyProof{
+	tmpProof := new(SNPrivacyProof)
+	tmpProof.tInput = new(operation.Point).Set(proof.tInput)
+	tmpProof.tSK = new(operation.Point).Set(proof.tSK)
+	tmpProof.tSN = new(operation.Point).Set(proof.tSN)
+	tmpProof.zInput = new(operation.Scalar).Set(proof.zInput)
+	tmpProof.zRInput = new(operation.Scalar).Set(proof.zRInput)
+	tmpProof.zSK = new(operation.Scalar).Set(proof.zSK)
+	tmpProof.zRSK = new(operation.Scalar).Set(proof.zRSK)
+
+	sn := new(operation.Point).Set(proof.stmt.sn)
+	comSK := new(operation.Point).Set(proof.stmt.comSK)
+	comInput := new(operation.Point).Set(proof.stmt.comInput)
+	tmpProof.stmt = new(SerialNumberPrivacyStatement)
+	tmpProof.stmt.Set(sn, comSK, comInput)
+
+	return tmpProof
 }
