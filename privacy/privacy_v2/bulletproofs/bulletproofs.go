@@ -124,6 +124,9 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.cmsValue = make([]*operation.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("Range Proof unmarshaling from bytes failed")
+		}
 		proof.cmsValue[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -131,38 +134,60 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 		offset += operation.Ed25519KeySize
 	}
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.a, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.s, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.t1, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.t2, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.tauX = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.tHat = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 	proof.mu = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
+	
 	if offset >= len(bytes){
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}

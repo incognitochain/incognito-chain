@@ -197,6 +197,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get cl array
 	proof.cl = make([]*operation.Point, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.cl[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -207,6 +210,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get ca array
 	proof.ca = make([]*operation.Point, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.ca[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -217,6 +223,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get cb array
 	proof.cb = make([]*operation.Point, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.cb[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -227,6 +236,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get cd array
 	proof.cd = make([]*operation.Point, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.cd[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -237,6 +249,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get f array
 	proof.f = make([]*operation.Scalar, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.f[i] = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		offset = offset + operation.Ed25519KeySize
 	}
@@ -244,6 +259,9 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get za array
 	proof.za = make([]*operation.Scalar, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.za[i] = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		offset = offset + operation.Ed25519KeySize
 	}
@@ -251,11 +269,17 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get zb array
 	proof.zb = make([]*operation.Scalar, n)
 	for i := 0; i < n; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("One-out-of-many Proof byte unmarshaling failed")
+		}
 		proof.zb[i] = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		offset = offset + operation.Ed25519KeySize
 	}
 
 	// get zd
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("One-out-of-many Proof byte unmarshaling failed")
+	}
 	proof.zd = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 
 	return nil

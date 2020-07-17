@@ -79,6 +79,9 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 
 	proof.l = make([]*operation.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("Inner Product Proof byte unmarshaling failed")
+		}
 		proof.l[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -88,6 +91,9 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 
 	proof.r = make([]*operation.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
+		if offset+operation.Ed25519KeySize > len(bytes){
+			return errors.New("Inner Product Proof byte unmarshaling failed")
+		}
 		proof.r[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -95,12 +101,21 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 		offset += operation.Ed25519KeySize
 	}
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Inner Product Proof byte unmarshaling failed")
+	}
 	proof.a = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Inner Product Proof byte unmarshaling failed")
+	}
 	proof.b = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
+	if offset+operation.Ed25519KeySize > len(bytes){
+		return errors.New("Inner Product Proof byte unmarshaling failed")
+	}
 	proof.p, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
