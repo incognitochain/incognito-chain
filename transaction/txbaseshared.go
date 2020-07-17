@@ -192,26 +192,47 @@ func getTxActualSizeInBytes(tx metadata.Transaction) uint64{
 	if tx == nil {
 		return uint64(0)
 	}
-	sizeTx := uint64(0)
-	sizeTx += uint64(1) //version
-	sizeTx += uint64(len(tx.GetType()) + 1) //type string
-	sizeTx += uint64(8) //locktime
-	sizeTx += uint64(8) //fee
-	sizeTx += uint64(len(tx.GetInfo())) //info
+	var sizeTx = uint64(0)
+	txTokenBase, ok := tx.(TxTokenBase)
+	if ok { //TxTokenBase
+		sizeTx += getTxActualSizeInBytes(txTokenBase.Tx)
 
-	sizeTx += uint64(len(tx.GetSigPubKey())) //sigpubkey
-	sizeTx += uint64(len(tx.GetSig())) //signature
-	sizeTx += uint64(1) //pubkeylastbytesender
+		if &txTokenBase.TxTokenData != nil {
+			sizeTx += getTxActualSizeInBytes(txTokenBase.TxTokenData.TxNormal)
+			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyName))
+			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertySymbol))
+			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyID))
+			sizeTx += 4 // Type
+			sizeTx += 1 // Mintable
+			sizeTx += 8 // Amount
+		}
+		meta := txTokenBase.GetMetadata()
+		if meta != nil {
+			sizeTx += meta.CalculateSize()
+		}
 
-	//paymentproof
-	if tx.GetProof() != nil {
-		sizeTx += uint64(len(tx.GetProof().Bytes()))
+		return sizeTx
+	}else{ //TxBase
+		sizeTx += uint64(1) //version
+		sizeTx += uint64(len(tx.GetType()) + 1) //type string
+		sizeTx += uint64(8) //locktime
+		sizeTx += uint64(8) //fee
+		sizeTx += uint64(len(tx.GetInfo())) //info
+
+		sizeTx += uint64(len(tx.GetSigPubKey())) //sigpubkey
+		sizeTx += uint64(len(tx.GetSig())) //signature
+		sizeTx += uint64(1) //pubkeylastbytesender
+
+		//paymentproof
+		if tx.GetProof() != nil {
+			sizeTx += uint64(len(tx.GetProof().Bytes()))
+		}
+
+		//metadata
+		if tx.GetMetadata() != nil {
+			sizeTx += tx.GetMetadata().CalculateSize()
+		}
+
+		return sizeTx
 	}
-
-	//metadata
-	if tx.GetMetadata() != nil {
-		sizeTx += tx.GetMetadata().CalculateSize()
-	}
-
-	return sizeTx
 }
