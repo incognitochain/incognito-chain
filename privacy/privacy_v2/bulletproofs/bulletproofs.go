@@ -163,6 +163,9 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.mu = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
+	if offset >= len(bytes){
+		return errors.New("Range Proof unmarshaling from bytes failed")
+	}
 
 	proof.innerProductProof = new(InnerProductProof)
 	err = proof.innerProductProof.SetBytes(bytes[offset:])
