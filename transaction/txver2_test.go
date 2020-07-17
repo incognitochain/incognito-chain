@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	// "encoding/json"
+	"encoding/json"
+	"unicode"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -19,6 +20,7 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +31,10 @@ var (
 
 	maxInputs = 10
 	minInputs = 1
-	numOfLoops = 1
+	
+	maxJsonChanges = 50
+	maxTries = 100
+	numOfLoops = 200
 )
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
@@ -179,7 +184,7 @@ func TestTxV2Salary(t *testing.T){
 		var err error
 		preparePaymentKeys(numOfPrivateKeys,t)
 
-// create 2 otaCoins, the second one will already be stored in the db
+	// create 2 otaCoins, the second one will already be stored in the db
 		theCoins := make([]*coin.CoinV2, 2)
 		theCoinsGeneric := make([]coin.Coin,2)
 		for i, _ := range theCoins {
@@ -205,16 +210,16 @@ func TestTxV2Salary(t *testing.T){
 		}
 		forceSaveCoins(dummyDB, []coin.Coin{theCoinsGeneric[1]}, 0, common.PRVCoinID, t)
 
-// creating the TX object
+		// creating the TX object
 		tx := TxVersion2{}
-// actually making the salary TX
+		// actually making the salary TX
 		err = tx.InitTxSalary(theCoins[0], dummyPrivateKeys[0], dummyDB, nil)
 
 		isValid,err := tx.ValidateTxSalary(dummyDB)
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
 
-// this other coin is already in db so it must be rejected
+		// this other coin is already in db so it must be rejected
 		err = tx.InitTxSalary(theCoins[1], dummyPrivateKeys[0], dummyDB, nil)
 		assert.NotEqual(t,nil,err)
 	}
@@ -300,12 +305,26 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
 
-		testTxV2DeletedProof(tx, t)
-		testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
-		testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
-		testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
-		testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
-		testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
+		// first, test the json marshaller
+		someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, t)
+		for _,theInvalidTx := range someInvalidTxs{
+			txSpecific, ok := theInvalidTx.(*TxVersion2)
+			assert.Equal(t, true, ok)
+			// look for potential panics by calling verify
+			isSane, _ := txSpecific.ValidateSanityData(nil,nil,nil,0)
+			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+			if !isSane{
+				continue
+			}
+			txSpecific.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
+		}
+
+		// testTxV2DeletedProof(tx, t)
+		// testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
+		// testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
+		// testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
+		// testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
+		// testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
 	}
 }
 
@@ -511,4 +530,110 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 		err = malTx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
 		assert.NotEqual(t,nil,err)
 		
+}
+
+
+func getRandomDigit() rune{
+
+	ind := common.RandInt() % 10
+	return rune(int(rune('0'))+ind)
+}
+
+func getRandomLetter() rune{
+	ind := common.RandInt() % 52
+	if ind < 26{
+		return rune(int(rune('A'))+ind)
+	}else{
+		return rune(int(rune('a'))+ind-26)
+	}
+}
+
+func getCorruptedJsonDeserializedTxs(tx metadata.Transaction,t *testing.T) []metadata.Transaction{
+	jsonBytes, err := json.Marshal(tx)
+	assert.Equal(t, nil, err)
+
+	reconstructedTx, err := NewTransactionFromJsonBytes(jsonBytes)
+	assert.Equal(t, nil, err)
+	jsonBytesAgain, err := json.Marshal(reconstructedTx)
+	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
+	var result []metadata.Transaction
+	// json bytes are readable strings
+	// we try to malleify a letter / digit
+	for i:=0; i<maxJsonChanges; i++{
+		// let the changes stack up many times to exhaust more cases
+		s := string(jsonBytesAgain)
+		theRunes := []rune(s)
+		corruptedIndex := common.RandInt() % len(theRunes)
+		for j:=maxTries;j>0;j--{
+			if j==0{
+				fmt.Printf("Strange letterless TX with json form : %s\n",s)
+				panic("End")
+			}
+			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]){
+				break
+			}
+			// not letter -> retry
+			corruptedIndex = common.RandInt() % len(theRunes)
+		}
+		// replace this letter with a random one
+		if unicode.IsLetter(theRunes[corruptedIndex]){
+			theRunes[corruptedIndex] = getRandomLetter()
+		}else{
+			theRunes[corruptedIndex] = getRandomDigit()
+		}
+
+
+		reconstructedTx, err = NewTransactionFromJsonBytes([]byte(string(theRunes)))
+		if err != nil{
+			fmt.Printf("A byte array failed to deserialize\n")
+			continue
+		}
+		result = append(result,reconstructedTx)
+	}
+	return result
+}
+
+func getCorruptedJsonDeserializedTokenTxs(tx TransactionToken,t *testing.T) []TransactionToken{
+	jsonBytes, err := json.Marshal(tx)
+	assert.Equal(t, nil, err)
+
+	reconstructedTx, err := NewTransactionTokenFromJsonBytes(jsonBytes)
+	assert.Equal(t, nil, err)
+	jsonBytesAgain, err := json.Marshal(reconstructedTx)
+	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
+	var result []TransactionToken
+	// json bytes are readable strings
+	// we try to malleify a letter / digit
+	for i:=0; i<maxJsonChanges; i++{
+		// let the changes stack up many times to exhaust more cases
+		s := string(jsonBytesAgain)
+		theRunes := []rune(s)
+		corruptedIndex := common.RandInt() % len(theRunes)
+		for j:=maxTries;j>0;j--{
+			if j==0{
+				fmt.Printf("Strange letterless TX with json form : %s\n",s)
+				panic("End")
+			}
+			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]){
+				break
+			}
+			// not letter -> retry
+			corruptedIndex = common.RandInt() % len(theRunes)
+		}
+		// replace this letter with a random one
+		if unicode.IsLetter(theRunes[corruptedIndex]){
+			theRunes[corruptedIndex] = getRandomLetter()
+		}else{
+			theRunes[corruptedIndex] = getRandomDigit()
+		}
+
+
+		reconstructedTx, err = NewTransactionTokenFromJsonBytes([]byte(string(theRunes)))
+		if err != nil{
+			fmt.Printf("A byte array failed to deserialize\n")
+			continue
+		}
+		result = append(result,reconstructedTx)
+	}
+	return result
 }
