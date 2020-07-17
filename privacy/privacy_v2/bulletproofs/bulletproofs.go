@@ -165,10 +165,10 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset += operation.Ed25519KeySize
 
 	proof.innerProductProof = new(InnerProductProof)
-	proof.innerProductProof.SetBytes(bytes[offset:])
-
+	err = proof.innerProductProof.SetBytes(bytes[offset:])
+	// it's the last check, so we just return it
 	//operation.Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
-	return nil
+	return err
 }
 
 func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scalar) {
