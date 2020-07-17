@@ -1046,10 +1046,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		// }
 		// rewardReceiver, autoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, blockchain.GetShardIDs())
 		//statedb===========================START
-		err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeReplaced[shardID])
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
 		err = statedb.StoreOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
@@ -1058,6 +1054,10 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
 		}
+	}
+	err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeReplaced[shardID])
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	//err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, removedCommittees)
 	err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeRemoved[shardID])
