@@ -579,7 +579,7 @@ func (tx *TxVersion2) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 		errStr := fmt.Sprintf("error when getting coin shardID, err: %v", errShard)
 		return false, NewTransactionErr(UnexpectedError, errors.New(errStr))
 	}
-	if coinShardID != tx.PubKeyLastByteSender {
+	if coinShardID != common.GetShardIDFromLastByte(tx.PubKeyLastByteSender) {
 		return false, NewTransactionErr(UnexpectedError, errors.New("output coin's shardID is different from tx pubkey last byte"))
 	}
 
