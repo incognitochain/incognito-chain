@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,13 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
-	"encoding/json"
-	"encoding/hex"
 	"testing"
 )
 
 var (
-	numInputs          = 5
+	numInputs = 5
 	// must be 1
 	numOutputs         = 1
 	numTests           = 100
@@ -141,40 +141,68 @@ func createConversionParams(numInputs, numOutputs int, tokenID *common.Hash) (*i
 	return keySet, paymentInfo, txConversionParams, nil
 }
 
-func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognitokey.KeySet, testDB *statedb.StateDB) ([]*coin.CoinV2, error) {
+func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognitokey.KeySet, testDB *statedb.StateDB, version int) ([]coin.Coin, error) {
 	var err error
-	coinsToBeSaved := make([]*coin.CoinV2, numCoins)
-	for _, keySet := range keySets {
-		for i, _ := range coinsToBeSaved {
-			amount := uint64(common.RandIntInterval(0, 100000000))
-			paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Dummy token"))
-
-			tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+	if version == coin.CoinVersion1 {
+		coinsToBeSaved := make([]coin.Coin, numCoins*len(keySets))
+		for i, keySet := range keySets {
+			pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 			if err != nil {
 				return nil, err
 			}
-			// keyImage, err := tempCoin.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
-			// if err != nil {
-			// 	return nil, err
-			// }
-			// tempCoin.SetKeyImage(keyImage)
-
-			tempCoin.ConcealOutputCoin(keySet.PaymentAddress.GetPublicView())
-			coinsToBeSaved[i] = tempCoin
+			for j := 0; j < numCoins; j++ {
+				amount := uint64(common.RandIntInterval(0, 100000000))
+				tmpCoin, err := createSamplePlainCoinV1(keySet.PrivateKey, pubKey, amount, nil)
+				tmpCoin2 := new(coin.CoinV1)
+				tmpCoin2.CoinDetails = tmpCoin
+				if err != nil {
+					return nil, err
+				}
+				coinsToBeSaved[i*len(keySets)+j] = tmpCoin2
+			}
 		}
+		cmtBytesToBeSaved := make([][]byte, 0)
+		for _, coin := range coinsToBeSaved {
+			cmtBytesToBeSaved = append(cmtBytesToBeSaved, coin.GetCommitment().ToBytesS())
+		}
+		err = statedb.StoreCommitments(testDB, tokenID, cmtBytesToBeSaved, 0)
+
+		return coinsToBeSaved, err
+	} else {
+		coinsToBeSaved := make([]coin.Coin, numCoins*len(keySets))
+		for i, keySet := range keySets {
+			for j := 0; j < numCoins; j++ {
+				amount := uint64(common.RandIntInterval(0, 100000000))
+				paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Dummy token"))
+
+				tmpCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+				if err != nil {
+					return nil, err
+				}
+				// keyImage, err := tempCoin.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
+				// if err != nil {
+				// 	return nil, err
+				// }
+				// tempCoin.SetKeyImage(keyImage)
+
+				tmpCoin.ConcealOutputCoin(keySet.PaymentAddress.GetPublicView())
+				coinsToBeSaved[i*len(keySets)+j] = tmpCoin
+			}
+		}
+
+		coinsBytesToBeSaved := make([][]byte, 0)
+		otasToBeSaved := make([][]byte, 0)
+		for _, c := range coinsToBeSaved {
+			coinsBytesToBeSaved = append(coinsBytesToBeSaved, c.Bytes())
+			otasToBeSaved = append(otasToBeSaved, c.GetPublicKey().ToBytesS())
+		}
+		err = statedb.StoreOTACoinsAndOnetimeAddresses(testDB, tokenID, 0, coinsBytesToBeSaved, otasToBeSaved, 0)
+		if err != nil {
+			return nil, err
+		}
+		return coinsToBeSaved, nil
 	}
 
-	coinsBytesToBeSaved := make([][]byte, 0)
-	otasToBeSaved := make([][]byte, 0)
-	for _, c := range coinsToBeSaved {
-		coinsBytesToBeSaved = append(coinsBytesToBeSaved, c.Bytes())
-		otasToBeSaved = append(otasToBeSaved, c.GetPublicKey().ToBytesS())
-	}
-	err = statedb.StoreOTACoinsAndOnetimeAddresses(testDB, tokenID, 0, coinsBytesToBeSaved, otasToBeSaved, 0)
-	if err != nil {
-		return nil, err
-	}
-	return coinsToBeSaved, nil
 }
 
 func prepareKeySets(numKeySets int) ([]*incognitokey.KeySet, error) {
@@ -205,7 +233,7 @@ func prepareKeySets(numKeySets int) ([]*incognitokey.KeySet, error) {
 
 func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *operation.Point, totalAmount uint64, numFeeInputs, version int) ([]coin.PlainCoin, error) {
 	coinList := []coin.PlainCoin{}
-	tmpAmount := totalAmount/uint64(numFeeInputs)
+	tmpAmount := totalAmount / uint64(numFeeInputs)
 	if version == coin.CoinVersion1 {
 		for i := 0; i < numFeeInputs-1; i++ {
 			amount := tmpAmount - uint64(common.RandIntInterval(0, int(tmpAmount)/2))
@@ -395,7 +423,7 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 		assert.Equal(t, true, err == nil, "validateConversionVer1ToVer2 should not return any error")
 		assert.Equal(t, true, res, "validateConversionVer1ToVer2 should be true")
 
-		res,err = validateTxByItself(txConvertOutput, false, txConvertParams.stateDB, nil, 0, true)
+		res, err = validateTxByItself(txConvertOutput, false, txConvertParams.stateDB, nil, 0, true)
 		// res, err := validateConversionVer1ToVer2(txConvertOutput, txConvertParams.stateDB, 0, &common.PRVCoinID)
 		assert.Equal(t, true, err == nil, "validateConversionVer1ToVer2 should not return any error")
 		assert.Equal(t, true, res, "validateConversionVer1ToVer2 should be true")
@@ -467,7 +495,7 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 			newOutputCoin, ok := outputCoin.(*coin.CoinV2)
 			assert.Equal(t, true, ok)
 
-				//Attempt to alter some output coins!
+			//Attempt to alter some output coins!
 			value := new(operation.Scalar).Add(newOutputCoin.GetAmount(), new(operation.Scalar).FromUint64(100))
 			randomness := outputCoin.GetRandomness()
 			newCommitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
@@ -485,15 +513,15 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 		//Attempt to verify
 		isValidSanity, _ := validateSanityTxWithoutMetadata(txConversionOutput, nil, nil, nil, 0)
 		var isValid bool
-		if !isValidSanity{
+		if !isValidSanity {
 			isValid = false
-		}else{
-			isValid, err = validateTxByItself(txConversionOutput, false, txConversionParams.stateDB, nil, 0, true)	
+		} else {
+			isValid, err = validateTxByItself(txConversionOutput, false, txConversionParams.stateDB, nil, 0, true)
 		}
 		// assert.Equal(t, false, isValid, "validateConversionVer1ToVer2 on corrupted data should not be true")
-		if isValid{
-			jsb,_ := json.Marshal(txConversionOutput)
-			fmt.Printf("Unexpected error in case %d : %v\nTransaction : %s\n",m%5,err,string(jsb))
+		if isValid {
+			jsb, _ := json.Marshal(txConversionOutput)
+			fmt.Printf("Unexpected error in case %d : %v\nTransaction : %s\n", m%5, err, string(jsb))
 			// return
 		}
 		//This validation should return an error
@@ -586,7 +614,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	assert.Equal(t, nil, err, "prepareKeySets returns an errors: %v", err)
 
 	//create and save some PRV coins
-	coins, err := createAndSaveTokens(numCoinsPerKeySet, common.PRVCoinID, keySets, testDB)
+	coins, err := createAndSaveTokens(numCoinsPerKeySet, common.PRVCoinID, keySets, testDB, 2)
 	assert.Equal(t, nil, err, "createAndSaveTokens returns an error: %v", err)
 
 	//init some token
@@ -594,13 +622,15 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	for i := 0; i < numTokens; i++ {
 		// tokenID := &common.Hash{common.RandBytes(1)[0]}
 		tokenName := "Token" + string(i)
-		paramToCreateTx, tokenParam, err := createInitTokenParams(coins[i], testDB, "", tokenName, keySets[0])
+		theInputCoin, ok := coins[i].(coin.Coin)
+		assert.Equal(t, true, ok, "Cannot parse coin")
+		paramToCreateTx, tokenParam, err := createInitTokenParams(theInputCoin, testDB, "", tokenName, keySets[0])
 		tx := &TxTokenVersion2{}
 
 		err = tx.Init(paramToCreateTx)
 		if err != nil {
-			jsb,_ := json.Marshal(coins[i])
-			fmt.Printf("Loop %d : Init returns an error: %v\nThat coin is %s\n",i, err, string(jsb))
+			jsb, _ := json.Marshal(coins[i])
+			fmt.Printf("Loop %d : Init returns an error: %v\nThat coin is %s\n", i, err, string(jsb))
 			return
 		}
 
@@ -609,7 +639,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		forceSaveCoins(testDB, feeOutputs, 0, common.PRVCoinID, t)
 		statedb.StorePrivacyToken(testDB, *tx.GetTokenID(), tokenParam.PropertyName, tokenParam.PropertySymbol, statedb.InitToken, tokenParam.Mintable, tokenParam.Amount, []byte{}, *tx.Hash())
 
-		fmt.Printf("Token %d : ID %s\n",i,hex.EncodeToString(tx.GetTokenID()[:]))
+		fmt.Printf("Token %d : ID %s\n", i, hex.EncodeToString(tx.GetTokenID()[:]))
 		tokenExisted := statedb.PrivacyTokenIDExisted(testDB, *tx.GetTokenID())
 		assert.Equal(t, true, tokenExisted)
 
@@ -624,7 +654,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		tokenID := tokenIDs[randomTokenIndex]
 		assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
 
-		fmt.Printf("Test #%d: Convert token %d\n",i,randomTokenIndex)
+		fmt.Printf("Test #%d: Convert token %d\n", i, randomTokenIndex)
 		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 10), common.RandIntInterval(1, 3)
 		mySupposedlyPersonalKey, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
@@ -651,7 +681,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	}
 }
 
-func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet,txConversionOutput *TxTokenVersion2, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash,t *testing.T) {
+func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet, txConversionOutput *TxTokenVersion2, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash, t *testing.T) {
 	m := common.RandInt()
 	testDB := convParam.stateDB
 	txPrivacyParams := NewTxPrivacyInitParams(
@@ -659,8 +689,8 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 		false, convParam.stateDB, &common.PRVCoinID, convParam.metaData, convParam.info,
 	)
 	var err error
-	txInner,ok := txConversionOutput.GetTxTokenData().TxNormal.(*TxVersion2)
-	assert.Equal(t,true,ok)
+	txInner, ok := txConversionOutput.GetTxTokenData().TxNormal.(*TxVersion2)
+	assert.Equal(t, true, ok)
 
 	switch m % 5 { //Change this if you want to test a specific case
 
@@ -671,9 +701,9 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 
 		//Re-sign transaction
 		txInner.Sig, txInner.SigPubKey, err = signNoPrivacy(convParam.senderSK, txInner.Hash()[:])
-		assert.Equal(t,nil,err)
+		assert.Equal(t, nil, err)
 		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
-		
+
 		// fmt.Println(err)
 		// if err!=nil{
 		// 	return
@@ -695,7 +725,7 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 
 		//Re-sign transaction
 		txInner.Sig, txInner.SigPubKey, err = signNoPrivacy(convParam.senderSK, txInner.Hash()[:])
-		assert.Equal(t,nil,err)
+		assert.Equal(t, nil, err)
 		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
 
 	//attempt to convert used coins (used serial numbers)
@@ -729,13 +759,13 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 		usedIndex := common.RandInt() % len(bothOutputCoins)
 		outputCoin := bothOutputCoins[usedIndex]
 		outputCoinSpecific, ok := outputCoin.(*coin.CoinV2)
-		assert.Equal(t,true,ok)
+		assert.Equal(t, true, ok)
 
 		//Attempt to alter some output coins!
 		outputCoinSpecific.SetCommitment(operation.RandomPoint())
 		//Re-sign transaction
 		txInner.Sig, txInner.SigPubKey, err = signNoPrivacy(convParam.senderSK, txInner.Hash()[:])
-		assert.Equal(t,nil,err)
+		assert.Equal(t, nil, err)
 		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
 	default:
 
@@ -743,25 +773,25 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 	//Attempt to verify
 	var isValid bool
 	isValidAlready, err := txConversionOutput.ValidateSanityData(nil, nil, nil, 0)
-	fmt.Printf("First error: %v\n",err)
-	if !isValidAlready{
+	fmt.Printf("First error: %v\n", err)
+	if !isValidAlready {
 		isValid = false
-	}else{
-	// validate signatures, proofs, etc. Only do after sanity checks are passed
+	} else {
+		// validate signatures, proofs, etc. Only do after sanity checks are passed
 		isValidAlready, err = txConversionOutput.ValidateTxByItself(false, testDB, nil, nil, shardID, false, nil, nil)
 	}
-	fmt.Printf("Second error: %v\n",err)
+	fmt.Printf("Second error: %v\n", err)
 	// assert.Equal(t, false, isValid, "validateConversionVer1ToVer2 on corrupted data should not be true")
-	if !isValidAlready{
+	if !isValidAlready {
 		isValid = false
-	}else{
+	} else {
 		err := txConversionOutput.ValidateTxWithBlockChain(nil, nil, nil, shardID, testDB)
-		isValid = (err==nil)
+		isValid = (err == nil)
 	}
-	fmt.Printf("Third error: %v\n",err)
-	if isValid{
-		jsb,_ := json.Marshal(txConversionOutput)
-		fmt.Printf("Unexpected error in case %d . Transaction : %s\n",m%5,string(jsb))
+	fmt.Printf("Third error: %v\n", err)
+	if isValid {
+		jsb, _ := json.Marshal(txConversionOutput)
+		fmt.Printf("Unexpected error in case %d . Transaction : %s\n", m%5, string(jsb))
 		// return
 	}
 	//This validation should return an error
