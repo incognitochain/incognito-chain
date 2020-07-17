@@ -213,7 +213,7 @@ func (c *CoinV2) Init() *CoinV2 {
 func (c CoinV2) GetSNDerivator() *operation.Scalar { return nil }
 
 func (c CoinV2) IsEncrypted() bool {
-	if c.mask == nil {
+	if c.mask == nil || c.amount == nil{
 		return true
 	}
 	tempCommitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
