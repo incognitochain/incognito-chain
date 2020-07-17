@@ -318,10 +318,11 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 	}
 	indexes := txSigPubKey.Indexes
 	n := len(indexes)
-	m := len(indexes[0])
 	if n == 0 {
 		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
 	}
+	
+	m := len(indexes[0])
 
 	ring := make([][]*operation.Point, n)
 	for i := 0; i < n; i += 1 {
