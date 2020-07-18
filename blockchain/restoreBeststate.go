@@ -145,7 +145,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
-
 	if beaconBestState.RewardReceiver == nil {
 		beaconBestState.RewardReceiver = make(map[string]privacy.PaymentAddress)
 	}
@@ -188,5 +187,17 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	if err != nil {
 		panic(err)
 	}
+
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconBestState.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		panic(err)
+	}
+	beaconBestState.AutoStaking = NewMapStringBool()
+	sids := []int{}
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
+		sids = append(sids, i)
+	}
+	beaconBestState.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sids)
+
 	return nil
 }
