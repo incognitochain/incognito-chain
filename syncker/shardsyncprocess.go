@@ -231,6 +231,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 					time.Sleep(5 * time.Second)
 				}
 				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
+					Logger.Infof("Cannot find beacon for inserting shard block")
 					return
 				}
 			}

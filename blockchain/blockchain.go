@@ -649,6 +649,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 
 	beaconView := &BeaconBestState{
 		BestBlockHash:            blockHash,
+		ActiveShards:             blockchain.config.ChainParams.ActiveShards, //we assume active shard not change (if not, we must store active shard in db)
 		ConsensusStateDBRootHash: bRH.ConsensusStateDBRootHash,
 		FeatureStateDBRootHash:   bRH.FeatureStateDBRootHash,
 		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
