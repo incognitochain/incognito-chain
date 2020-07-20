@@ -15,7 +15,7 @@ var defaultEnterTime = []int64{}
 func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, newEnterTime []int64) error {
 	enterTime := time.Now().UnixNano()
 	for id, committee := range committees {
-		if len(newEnterTime) != 0 {
+		if (len(newEnterTime) != 0) && (id < len(newEnterTime)) {
 			enterTime = newEnterTime[id]
 		}
 		key, err := GenerateCommitteeObjectKeyWithRole(role, shardID, committee)
@@ -102,7 +102,7 @@ func ReplaceOneShardCommittee(stateDB *StateDB, shardID byte, shardCommittee [2]
 func ReplaceAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][2][]incognitokey.CommitteePublicKey) error {
 	for shardID, committee := range allShardCommittees {
 		if len(committee[common.REPLACE_IN]) == 0 {
-			return nil
+			continue
 		}
 		newEnterTime := GetOneShardCommitteeEnterTime(stateDB, shardID)
 		err := storeCommittee(stateDB, int(shardID), CurrentValidator, committee[common.REPLACE_IN], newEnterTime)
