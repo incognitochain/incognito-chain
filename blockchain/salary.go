@@ -410,8 +410,7 @@ func splitReward(
 }
 
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
-	//31536000 =
-	return (365 * 24 * 60 * 60) / blockCreationTimeSeconds
+	return (365.25 * 24 * 60 * 60) / blockCreationTimeSeconds
 }
 
 func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
