@@ -12,6 +12,9 @@ type MlsagSig struct {
 }
 
 func NewMlsagSig(c *operation.Scalar, keyImages []*operation.Point, r [][]*operation.Scalar) (*MlsagSig, error) {
+	if len(r)==0 {
+		return nil, errors.New("Cannot create new mlsag signature, length of r is not correct")
+	}
 	if len(keyImages) != len(r[0]) {
 		return nil, errors.New("Cannot create new mlsag signature, length of keyImages is not correct")
 	}

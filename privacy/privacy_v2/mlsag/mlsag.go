@@ -309,6 +309,9 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
+	if len(R.keys) != len(sig.r){
+		return false, errors.New("MLSAG Error : Malformed Ring")
+	}
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			message,
