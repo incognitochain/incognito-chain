@@ -73,7 +73,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(swapPublicKey s
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
 	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
-	n := blkHeight / blockInYear
+	n := (blkHeight - 1) / blockInYear
 	reward := uint64(blockchain.config.ChainParams.BasicReward)
 	for ; n > 0; n-- {
 		reward *= 91
