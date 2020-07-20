@@ -277,7 +277,7 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	outputCoins := proof.GetOutputCoins()
 	// cmsValues := proof.aggregatedRangeProof.GetCommitments()
 	for i, outputCoin := range outputCoins {
-		if !outputCoin.GetPublicKey().PointValid() {
+		if outputCoin.GetPublicKey()==nil || !outputCoin.GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
 		}
 
