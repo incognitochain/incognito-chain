@@ -414,7 +414,7 @@ func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
 }
 
 func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
-	year := blockHeight / blkPerYear
+	year := (blockHeight - 1) / blkPerYear
 	if year > (UpperBoundPercentForIncDAO - LowerBoundPercentForIncDAO) {
 		return LowerBoundPercentForIncDAO
 	} else {
