@@ -479,14 +479,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	}
 	// Verify Instruction
 	beaconInstructions := [][]string{}
-	shardCommittee, err := incognitokey.
-		CommitteeKeyListToString(curView.
-			shardCommitteeEngine.GetShardCommittee(curView.ShardID))
+	shardCommittee, err := incognitokey.CommitteeKeyListToString(curView.GetShardCommittee())
 	if err != nil {
 		return err
 	}
 
-	shardPendingValidator := curView.shardCommitteeEngine.GetShardPendingValidator(curView.ShardID)
+	shardPendingValidator := curView.GetShardPendingValidator()
 
 	shardPendingValidatorStr := []string{}
 
@@ -518,7 +516,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		BuildRecentSubtitutesStr(shardPendingValidatorStr).
 		Build()
 
-	committeeChange := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
+	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
+	if err != nil {
+		return err
+	}
 
 	instructions := [][]string{}
 
@@ -553,6 +554,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
+
+	if len(totalInstructions) != 0 {
+		Logger.log.Info("[committee-state] totalInstructions:", totalInstructions)
+	}
+
 	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
 		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but %+v", shardBlock.Header.InstructionsRoot, hash))
 	}

@@ -145,7 +145,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
-		BeaconHeightBreakPointBurnAddr: 250000,
+		BeaconHeightBreakPointBurnAddr: 2,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
 		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,

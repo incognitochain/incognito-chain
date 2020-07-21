@@ -147,8 +147,12 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
 
-	newCommitteeState.processInstructionFromBeacon(env.RecentSubstitutesStr(),
+	err = newCommitteeState.processInstructionFromBeacon(env.RecentSubstitutesStr(),
 		env.BeaconInstructions(), env.ShardID(), committeeChange)
+
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
 
 	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 &&
 		env.IsProcessShardBlockInstructionForKeyListV2() {
@@ -180,10 +184,14 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env ShardCommitteeStateEn
 
 	committeeState := engine.shardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
-	committeeState.processInstructionFromBeacon(env.RecentSubstitutesStr(),
+	err := committeeState.processInstructionFromBeacon(env.RecentSubstitutesStr(),
 		env.BeaconInstructions(), env.ShardID(), committeeChange)
 
-	err := committeeState.processShardBlockInstruction(env, committeeChange)
+	if err != nil {
+		panic(err)
+	}
+
+	err = committeeState.processShardBlockInstruction(env, committeeChange)
 	if err != nil {
 		panic(err)
 	}
@@ -250,7 +258,7 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	recentSubtitutesStr []string,
 	listInstructions [][]string,
 	shardID byte,
-	committeeChange *CommitteeChange) {
+	committeeChange *CommitteeChange) error {
 
 	shardPendingValidator := []string{}
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
@@ -259,12 +267,24 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	for _, inst := range listInstructions {
 		assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
 		if err == nil && assignInstruction.ChainID == int(shardID) {
+			// Logger.log.Info("[committee-state] assignInstruction.ShardCandidates...:", assignInstruction.ShardCandidates)
 			shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
+			// Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
 			newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 			committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 		}
 	}
-	committeeChange.ShardSubstituteAdded[shardID] = newShardPendingValidator
+
+	Logger.log.Info("[committee-state] recentSubtitutesStr:", recentSubtitutesStr)
+	Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
+
+	addedSubstituteValidator, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
+	if err != nil {
+		return err
+	}
+
+	committeeChange.ShardSubstituteAdded[shardID] = addedSubstituteValidator
+	return nil
 }
 
 //processShardBlockInstruction process shard block instruction for sending to beacon
@@ -413,7 +433,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 
 //ProcessInstructionFromBeacon : process instrucction from beacon
 func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
-	env ShardCommitteeStateEnvironment) *CommitteeChange {
+	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
 
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
@@ -425,12 +445,16 @@ func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 
 	committeeChange := NewCommitteeChange()
 
-	newCommitteeState.processInstructionFromBeacon(
+	err := newCommitteeState.processInstructionFromBeacon(
 		env.RecentSubstitutesStr(),
 		env.BeaconInstructions(),
 		env.ShardID(), committeeChange)
 
+	if err != nil {
+		return nil, err
+	}
+
 	engine.uncommittedShardCommitteeStateV1.reset()
 
-	return committeeChange
+	return committeeChange, nil
 }

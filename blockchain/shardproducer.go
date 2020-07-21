@@ -161,16 +161,54 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		BuildRecentSubtitutesStr(shardPendingValidator).
 		Build()
 
-	committeeChange := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
+	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
+	if err != nil {
+		return nil, err
+	}
+
 	curView.shardCommitteeEngine.AbortUncommittedShardState()
+
+	// Logger.log.Info("[committee-state] len(committeeChange.ShardSubstituteAdded[curView.ShardID]):", len(committeeChange.ShardSubstituteAdded[curView.ShardID]))
+	// for _, v := range committeeChange.ShardSubstituteAdded[curView.ShardID] {
+	// 	key, _ := v.ToBase58()
+	// 	Logger.log.Info("[committee-state] key:", key)
+	// }
+
+	// Logger.log.Info("[committee-state] len(committeeChange.ShardSubstituteRemoved[curView.ShardID]):", len(committeeChange.ShardSubstituteRemoved[curView.ShardID]))
+	// for _, v := range committeeChange.ShardSubstituteRemoved[curView.ShardID] {
+	// 	key, _ := v.ToBase58()
+	// 	Logger.log.Info("[committee-state] key:", key)
+	// }
+
+	Logger.log.Info("[committee-state] len(currentPendingValidators):", len(currentPendingValidators))
+	for _, v := range currentPendingValidators {
+		key, _ := v.ToBase58()
+		Logger.log.Info("[committee-state] key:", key)
+	}
+
+	// Logger.log.Info("[committee-state] len(committeeChange.ShardCommitteeAdded[curView.ShardID]):", len(committeeChange.ShardCommitteeAdded[curView.ShardID]))
+	// for _, v := range committeeChange.ShardCommitteeAdded[curView.ShardID] {
+	// 	key, _ := v.ToBase58()
+	// 	Logger.log.Info("[committee-state] key:", key)
+	// }
+
+	// Logger.log.Info("[committee-state] len(committeeChange.ShardCommitteeRemoved[curView.ShardID]):", len(committeeChange.ShardCommitteeRemoved[curView.ShardID]))
+	// for _, v := range committeeChange.ShardCommitteeRemoved[curView.ShardID] {
+	// 	key, _ := v.ToBase58()
+	// 	Logger.log.Info("[committee-state] key:", key)
+	// }
 
 	currentPendingValidators, err = updateCommiteesWithAddedAndRemovedListCommittee(currentPendingValidators,
 		committeeChange.ShardCommitteeAdded[curView.ShardID],
 		committeeChange.ShardCommitteeRemoved[curView.ShardID])
+
 	shardPendingValidator, err = incognitokey.CommitteeKeyListToString(currentPendingValidators)
 	if err != nil {
 		return nil, NewBlockChainError(ProcessInstructionFromBeaconError, err)
 	}
+
+	// Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
+	// Logger.log.Info("[committee-state] currentCommitteePubKeys:", currentCommitteePubKeys)
 
 	shardInstructions, _, _, err = blockchain.generateInstruction(curView, shardID,
 		beaconHeight, isOldBeaconHeight, beaconBlocks,
@@ -518,6 +556,9 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
 
+		Logger.log.Info("[committee-state] len(shardPendingValidator) :", len(shardPendingValidator), "shardPendingValidator:", shardPendingValidator)
+		Logger.log.Info("[committee-state] len(shardCommittee) :", len(shardCommittee), "shardCommittee:", shardCommittee)
+
 		maxShardCommitteeSize := view.MaxShardCommitteeSize
 		minShardCommitteeSize := view.MinShardCommitteeSize
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
@@ -532,6 +573,13 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			}
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
+
+		Logger.log.Info("[committee-state] len(shardPendingValidator) :", len(shardPendingValidator), "shardPendingValidator:", shardPendingValidator)
+		Logger.log.Info("[committee-state] len(shardCommittee) :", len(shardCommittee), "shardCommittee:", shardCommittee)
+		Logger.log.Info("[committee-state] swapInstruction:", swapInstruction)
+
+		//Here: @tin
+
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
 		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
@@ -715,10 +763,6 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 //preProcessInstructionFromBeacon : preprcess for beacon instructions before move to handle it in committee state
 // Store stakingtx address and return it back to outside
 // Only process for instruction not stake instruction
-//Pre-conditions: NULL
-//Input: List Beaconblock in this height, shardID
-//Output: list instructions after filter, map staking tx address, error
-//Post-conditions: NULL
 func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 	beaconBlocks []*BeaconBlock,
 	shardID byte) ([][]string, map[string]string, error) {
@@ -729,6 +773,13 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 		for _, l := range beaconBlock.Body.Instructions {
 			// Get Staking Tx
 			// assume that stake instruction already been validated by beacon committee
+
+			// if l[0] == instruction.STAKE_ACTION ||
+			// 	l[0] == instruction.SWAP_ACTION ||
+			// 	l[0] == instruction.ASSIGN_ACTION {
+			// 	Logger.log.Info("[committee-state] beacon instruction:", l)
+			// }
+
 			if l[0] != instruction.STAKE_ACTION {
 				instructions = append(instructions, l)
 				continue

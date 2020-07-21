@@ -2,11 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 )
 
 //Network fixed params
@@ -107,17 +108,17 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
+	TestnetEpoch            = 10
+	TestnetRandomTime       = 5
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 16
+	TestNetShardCommitteeSize     = 4
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second

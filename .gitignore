@@ -72,3 +72,5 @@ bin/data
 *~
 tags
 .txt
+keylist.json
+run_new_local.sh
