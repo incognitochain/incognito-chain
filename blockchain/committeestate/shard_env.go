@@ -9,8 +9,6 @@ import (
 type ShardEnvBuilder interface {
 	BuildShardInstructions(instructions [][]string) ShardEnvBuilder
 	BuildBeaconBlockHash(blockHash common.Hash) ShardEnvBuilder
-	BuildRecentCommitteesStr(recentCommitteesStr []string) ShardEnvBuilder
-	BuildRecentSubtitutesStr(recentSubtitutesStr []string) ShardEnvBuilder
 	BuildShardHeight(height uint64) ShardEnvBuilder
 	BuildShardBlockHash(blockHash common.Hash) ShardEnvBuilder
 	BuildTxs(txs []metadata.Transaction) ShardEnvBuilder
@@ -25,7 +23,6 @@ type ShardEnvBuilder interface {
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
 	BuildProducersBlackList(producersBlackList map[string]uint8) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
-	BuildIsProcessShardBlockInstructionForKeyListV2(isProcessShardBlockInstructionForKeyListV2 bool) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -36,9 +33,6 @@ func NewShardEnvBuilder() ShardEnvBuilder {
 
 // ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment interface {
-	//TODO: remove RecentCommitteesStr, RecentSubstitutesStr,  (IsProcessShardBlockInstructionForKeyListV2 or ChainParamEpoch + EpochBreakPointSwapNewKey)
-	RecentCommitteesStr() []string
-	RecentSubstitutesStr() []string
 	ShardHeight() uint64
 	ShardBlockHash() common.Hash
 	BeaconBlockHash() common.Hash
@@ -55,7 +49,6 @@ type ShardCommitteeStateEnvironment interface {
 	SwapOffset() int
 	ProducersBlackList() map[string]uint8
 	StakingTx() map[string]string
-	IsProcessShardBlockInstructionForKeyListV2() bool
 }
 
 //shardCommitteeStateEnvironment :
@@ -79,18 +72,6 @@ type shardCommitteeStateEnvironment struct {
 	producersBlackList                         map[string]uint8
 	stakingTx                                  map[string]string
 	isProcessShardBlockInstructionForKeyListV2 bool
-}
-
-//BuildRecentCommitteesStr :
-func (env *shardCommitteeStateEnvironment) BuildRecentCommitteesStr(recentCommitteesStr []string) ShardEnvBuilder {
-	env.recentCommitteesStr = recentCommitteesStr
-	return env
-}
-
-//BuildRecentSubtitutesStr :
-func (env *shardCommitteeStateEnvironment) BuildRecentSubtitutesStr(recentSubtitutesStr []string) ShardEnvBuilder {
-	env.recentSubstitutesStr = recentSubtitutesStr
-	return env
 }
 
 //BuildShardHeight :
@@ -190,24 +171,7 @@ func (env *shardCommitteeStateEnvironment) BuildStakingTx(stakingTx map[string]s
 	return env
 }
 
-//BuildIsProcessShardBlockInstructionForKeyListV2 :
-func (env *shardCommitteeStateEnvironment) BuildIsProcessShardBlockInstructionForKeyListV2(
-	isProcessShardBlockInstructionForKeyListV2 bool) ShardEnvBuilder {
-	env.isProcessShardBlockInstructionForKeyListV2 = isProcessShardBlockInstructionForKeyListV2
-	return env
-}
-
 ////
-
-//RecentCommitteesStr :
-func (env *shardCommitteeStateEnvironment) RecentCommitteesStr() []string {
-	return env.recentCommitteesStr
-}
-
-//RecentSubtitutesStr :
-func (env *shardCommitteeStateEnvironment) RecentSubstitutesStr() []string {
-	return env.recentSubstitutesStr
-}
 
 //ShardHeight :
 func (env *shardCommitteeStateEnvironment) ShardHeight() uint64 {
@@ -287,11 +251,6 @@ func (env *shardCommitteeStateEnvironment) ProducersBlackList() map[string]uint8
 //StakingTx :
 func (env *shardCommitteeStateEnvironment) StakingTx() map[string]string {
 	return env.stakingTx
-}
-
-//IsProcessShardBlockInstructionForKeyListV2 :
-func (env *shardCommitteeStateEnvironment) IsProcessShardBlockInstructionForKeyListV2() bool {
-	return env.isProcessShardBlockInstructionForKeyListV2
 }
 
 //Build :

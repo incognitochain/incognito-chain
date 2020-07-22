@@ -513,7 +513,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		NewShardEnvBuilder().
 		BuildProducersBlackList(producersBlackList).
 		BuildBeaconInstructions(beaconInstructions).
-		BuildRecentSubtitutesStr(shardPendingValidatorStr).
 		Build()
 
 	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
@@ -723,15 +722,15 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
-	shardPendingValidatorStr := []string{}
-	if shardBestState != nil {
-		var err error
-		shardPendingValidatorStr, err = incognitokey.
-			CommitteeKeyListToString(shardBestState.GetShardPendingValidator())
-		if err != nil {
-			return nil, nil, nil, err
-		}
-	}
+	// shardPendingValidatorStr := []string{}
+	// if shardBestState != nil {
+	// 	var err error
+	// 	shardPendingValidatorStr, err = incognitokey.
+	// 		CommitteeKeyListToString(shardBestState.GetShardPendingValidator())
+	// 	if err != nil {
+	// 		return nil, nil, nil, err
+	// 	}
+	// }
 
 	instructions, _, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
@@ -745,13 +744,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
-		BuildIsProcessShardBlockInstructionForKeyListV2(true).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
 		BuildProducersBlackList(producersBlackList).
-		BuildRecentCommitteesStr([]string{}).
-		BuildRecentSubtitutesStr(shardPendingValidatorStr).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardID).
@@ -813,16 +809,16 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		shardBestState.StakingTx[stakePublicKey] = txHash
 	}
 
-	shardPendingValidatorStr := []string{}
+	// shardPendingValidatorStr := []string{}
 
-	if shardBestState != nil {
-		var err error
-		shardPendingValidatorStr, err = incognitokey.
-			CommitteeKeyListToString(shardBestState.GetShardPendingValidator())
-		if err != nil {
-			return err
-		}
-	}
+	// if shardBestState != nil {
+	// 	var err error
+	// 	shardPendingValidatorStr, err = incognitokey.
+	// 		CommitteeKeyListToString(shardBestState.GetShardPendingValidator())
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	env := committeestate.
 		NewShardEnvBuilder().
@@ -830,13 +826,10 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
-		BuildIsProcessShardBlockInstructionForKeyListV2(false).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
 		BuildProducersBlackList(producersBlackList).
-		BuildRecentCommitteesStr(addedCommitteesStr).
-		BuildRecentSubtitutesStr(shardPendingValidatorStr).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardBestState.ShardID).
