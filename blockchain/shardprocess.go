@@ -922,29 +922,17 @@ func (blockchain *BlockChain) verifyPostProcessingShardBlock(shardBestState *Sha
 		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v but get %+v", shardBlock.Header.PendingValidatorRoot, hash))
 	}
 	if shardBestState.BeaconHeight > blockchain.config.ChainParams.ReplaceStakingTxHeight {
-		panic("ReplaceStakingTxHeight")
-
-		//build staking tx from beacon
-		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), shardBestState.BeaconHeight)
-		if err != nil {
-			fmt.Println(err)
-			panic("Beacon not ready! Must not access here")
-		}
-
-		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		mapStakingTx, err := beaconConsensusStateDB.GetCurrentStakingTX(blockchain.GetShardIDs())
-		if err != nil {
-			fmt.Println(err)
-			panic("Something wrong when retrieve mapStakingTx")
-		}
 
 		stakingTx := NewMapStringString()
-		stakingTx.data = mapStakingTx
+		stakingTx.data, err = blockchain.GetShardStakingTx(shardBestState)
+		if err != nil {
+			panic(err)
+		}
 		stakingTxHashFromBeacon, _ := stakingTx.GenerateHash()
 
 		//compare stakingtx from beacon with shard stakingtx
 		if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, stakingTxHashFromBeacon); !isOk {
-			return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
+			return NewBlockChainError(ShardStakingTxRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
 		}
 
 		//compare stakingtx with shardblock
