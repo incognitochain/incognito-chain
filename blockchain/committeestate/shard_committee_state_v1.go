@@ -275,8 +275,8 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 		}
 	}
 
-	Logger.log.Info("[committee-state] recentSubtitutesStr:", recentSubtitutesStr)
-	Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
+	// Logger.log.Info("[committee-state] recentSubtitutesStr:", recentSubtitutesStr)
+	// Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
 
 	addedSubstituteValidator, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
 	if err != nil {
@@ -457,4 +457,9 @@ func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 	engine.uncommittedShardCommitteeStateV1.reset()
 
 	return committeeChange, nil
+}
+
+//ProcessInstructionFromShard :
+func (engine *ShardCommitteeEngine) ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
+	return nil, nil
 }

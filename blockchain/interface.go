@@ -116,4 +116,5 @@ type ShardCommitteeEngine interface {
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey
 	ProcessInstructionFromBeacon(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
+	ProcessInstructionFromShard(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 }
