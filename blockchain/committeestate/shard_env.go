@@ -36,6 +36,7 @@ func NewShardEnvBuilder() ShardEnvBuilder {
 
 // ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment interface {
+	//TODO: remove RecentCommitteesStr, RecentSubstitutesStr,  (IsProcessShardBlockInstructionForKeyListV2 or ChainParamEpoch + EpochBreakPointSwapNewKey)
 	RecentCommitteesStr() []string
 	RecentSubstitutesStr() []string
 	ShardHeight() uint64

@@ -282,7 +282,7 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	if err != nil {
 		return err
 	}
-
+	//TODO: only new shard candidate from assign instruction
 	committeeChange.ShardSubstituteAdded[shardID] = addedSubstituteValidator
 	return nil
 }
@@ -434,7 +434,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 //ProcessInstructionFromBeacon : process instrucction from beacon
 func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-
+	//TODO: change uncommittedShardCommitteeStateV1 => newShardCommitteeState := &ShardCommitteeStateV1{}
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.shardCommitteeStateV1.mu.RLock()
