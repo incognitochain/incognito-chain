@@ -722,6 +722,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
+
 	// shardPendingValidatorStr := []string{}
 	// if shardBestState != nil {
 	// 	var err error
@@ -767,8 +768,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 }
 
 func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
-	db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock,
-	addedCommitteesStr []string) error {
+	db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
 
 	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	shardBestState.BestBlock = genesisShardBlock

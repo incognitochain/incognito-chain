@@ -3,6 +3,7 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -183,40 +184,50 @@ func (engine *ShardCommitteeEngine) InitCommitteeState(env ShardCommitteeStateEn
 
 	committeeState := engine.shardCommitteeStateV1
 	committeeChange := NewCommitteeChange()
-	// committeeChange, err := committeeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), committeeChange)
 
 	shardPendingValidator := []string{}
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
 
+	shardsCommittees := []string{}
+
 	for _, beaconInstruction := range env.BeaconInstructions() {
-		assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(beaconInstruction)
-		if err == nil && assignInstruction.ChainID == int(env.ShardID()) {
-			// Logger.log.Info("[committee-state] assignInstruction.ShardCandidates...:", assignInstruction.ShardCandidates)
-			shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-			// Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
-			newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
-			committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+		if beaconInstruction[0] == instruction.STAKE_ACTION {
+			shardsCommittees = strings.Split(beaconInstruction[1], ",")
+		}
+		if beaconInstruction[0] == instruction.ASSIGN_ACTION {
+			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(beaconInstruction)
+			if err == nil && assignInstruction.ChainID == int(env.ShardID()) {
+				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
+				newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+				committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+			}
 		}
 	}
 
-	// addedSubstituteValidator, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// _, newShardCandidate := getStakingCandidate(env.BeaconInstructions())
+	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
+	for _, candidate := range shardsCommittees {
+		key := incognitokey.CommitteePublicKey{}
+		err := key.FromBase58(candidate)
+		if err != nil {
+			panic(err)
+		}
+		newShardCandidateStructs = append(newShardCandidateStructs, key)
+	}
 
-	committees := []incognitokey.CommitteePublicKey{}
+	addedCommittees := []incognitokey.CommitteePublicKey{}
+	addedCommittees = append(addedCommittees, newShardCandidateStructs[int(env.ShardID())*
+		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
 
 	err := committeeState.processShardBlockInstruction(env, committeeChange)
 	if err != nil {
 		panic(err)
 	}
 
-	// committess, err := incognitokey.CommitteeBase58KeyListToStruct(env.RecentCommitteesStr())
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	engine.shardCommitteeStateV1.shardCommittee = append(engine.shardCommitteeStateV1.shardCommittee, committees...)
+	engine.shardCommitteeStateV1.shardCommittee = append(engine.shardCommitteeStateV1.shardCommittee,
+		addedCommittees...)
+	engine.shardCommitteeStateV1.shardPendingValidator = append(engine.shardCommitteeStateV1.shardPendingValidator,
+		newShardPendingValidator...)
 }
 
 //GetShardCommittee get shard committees

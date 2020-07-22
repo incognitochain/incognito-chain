@@ -17,7 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -143,34 +142,10 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
-	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
-	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
-	for _, candidate := range newShardCandidate {
-		key := incognitokey.CommitteePublicKey{}
-		err := key.FromBase58(candidate)
-		if err != nil {
-			return err
-		}
-		newShardCandidateStructs = append(newShardCandidateStructs, key)
-	}
 
 	engine := committeestate.NewShardCommitteeEngine(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
 
 	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, engine)
-
-	addCommittees := []incognitokey.CommitteePublicKey{}
-	addCommittees = append(addCommittees, newShardCandidateStructs[int(shardID)*blockchain.
-		config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.
-		config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
-
-	addCommitteesStr := []string{}
-	for _, v := range addCommittees {
-		str, err := v.ToBase58()
-		if err != nil {
-			return err
-		}
-		addCommitteesStr = append(addCommitteesStr, str)
-	}
 
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	genesisBeaconBlock := beaconBlocks[0]
@@ -180,7 +155,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 	err = initShardState.initShardBestState(
 		blockchain, blockchain.GetShardChainDatabase(shardID),
-		&initShardBlock, genesisBeaconBlock, addCommitteesStr)
+		&initShardBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
