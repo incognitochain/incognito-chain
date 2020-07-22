@@ -81,6 +81,49 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
 	}
 
+	block, _, err := httpServer.config.BlockChain.GetShardBlockByHash(shardBestState.BestBlockHash)
+	if err != nil || block == nil {
+		fmt.Println("block ", block)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+	shardBestState.BestBlock = block
+
+	err = shardBestState.InitStateRootHash(httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	err = shardBestState.RestoreCommittee(shardID, httpServer.config.BlockChain)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	beaconConsensusRootHash, err := httpServer.config.BlockChain.GetBeaconConsensusRootHash(httpServer.config.BlockChain.GetBeaconBestState(), shardBestState.BeaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	mapStakingTx, err := beaconConsensusStateDB.GetCurrentStakingTX(httpServer.config.BlockChain.GetShardIDs())
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	shardBestState.StakingTx = blockchain.NewMapStringString()
+
+	for i, v := range mapStakingTx {
+		shardBestState.StakingTx.Set(i, v)
+	}
+
+	err = shardBestState.RestorePendingValidators(shardID, httpServer.config.BlockChain)
+	if err != nil {
+		panic(err)
+	}
+
 	result := jsonresult.NewGetShardBestState(shardBestState)
 	return result, nil
 }

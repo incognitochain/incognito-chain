@@ -95,7 +95,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
-	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+	if err := blockchain.verifyPostProcessingShardBlock(newBeststate, shardBlock, shardID); err != nil {
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing", shardID, shardBlock.GetHeight(), shardBlock.Hash().String())
@@ -172,8 +172,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
-		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := newBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+		Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		if err := blockchain.verifyPostProcessingShardBlock(newBestState, shardBlock, shardID); err != nil {
 			fmt.Println("Instructions", shardBlock.Body.Instructions)
 			return err
 		}
@@ -632,9 +632,20 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-			Logger.log.Error(stakePublicKey, txHash, err)
-			return nil, errors.New("Cannot store staker info")
+	}
+
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			// Process Swap Instruction, and delete stakingtx if we get return
+			if l[0] == SwapAction {
+				for _, outPublicKey := range strings.Split(l[2], ",") {
+					if txId, ok := shardBestState.StakingTx.Get(outPublicKey); ok {
+						if checkReturnStakingTxExistence(txId, shardBlock) {
+							shardBestState.StakingTx.Remove(outPublicKey)
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -688,11 +699,11 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, shardPendingValidatorStr...)
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-			return err
-		}
+		//if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
+		//	return err
+		//}
 	}
-	err = shardBestState.processShardBlockInstruction(blockchain, genesisShardBlock, committeeChange)
+	err = shardBestState.processShardBlockInstruction(blockchain, genesisShardBlock, newCommitteeChange())
 	if err != nil {
 		return err
 	}
@@ -891,7 +902,7 @@ func (shardBestState *ShardBestState) processShardBlockInstructionForKeyListV2(b
 // verifyPostProcessingShardBlock
 //	- commitee root
 //	- pending validator root
-func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock *ShardBlock, shardID byte) error {
+func (blockchain *BlockChain) verifyPostProcessingShardBlock(shardBestState *ShardBestState, shardBlock *ShardBlock, shardID byte) error {
 	startTimeVerifyPostProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 
@@ -910,10 +921,38 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	if hash, isOk := verifyHashFromStringArray(shardPendingValidatorStr, shardBlock.Header.PendingValidatorRoot); !isOk {
 		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v but get %+v", shardBlock.Header.PendingValidatorRoot, hash))
 	}
+	if shardBestState.BeaconHeight > blockchain.config.ChainParams.ReplaceStakingTxHeight {
+		panic("ReplaceStakingTxHeight")
 
-	if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot); !isOk {
-		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
+		//build staking tx from beacon
+		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), shardBestState.BeaconHeight)
+		if err != nil {
+			fmt.Println(err)
+			panic("Beacon not ready! Must not access here")
+		}
+
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		mapStakingTx, err := beaconConsensusStateDB.GetCurrentStakingTX(blockchain.GetShardIDs())
+		if err != nil {
+			fmt.Println(err)
+			panic("Something wrong when retrieve mapStakingTx")
+		}
+
+		stakingTx := NewMapStringString()
+		stakingTx.data = mapStakingTx
+		stakingTxHashFromBeacon, _ := stakingTx.GenerateHash()
+
+		//compare stakingtx from beacon with shard stakingtx
+		if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, stakingTxHashFromBeacon); !isOk {
+			return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
+		}
+
+		//compare stakingtx with shardblock
+		if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot); !isOk {
+			return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
+		}
 	}
+
 	shardVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingShardBlock)
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	return nil
@@ -1014,7 +1053,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
-	// Update bridge issuance request status
+	// Update bridge issuancstore sharde request status
 	err = blockchain.updateBridgeIssuanceStatus(newShardState.featureStateDB, shardBlock)
 	if err != nil {
 		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)

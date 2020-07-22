@@ -505,6 +505,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		return err
 	}
 	fmt.Println("debug RestoreShardViews", len(allViews))
+WAIT_FOR_BEACON:
 	for _, v := range allViews {
 
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
@@ -524,7 +525,15 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		mapStakingTx, err := GetMapAllStaker(v.consensusStateDB, blockchain.GetShardChainDatabase(shardID), int(shardID))
+		//build staking tx
+		beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), v.BeaconHeight)
+		if err != nil {
+			Logger.log.Error("Cannot restore shard, beacon not ready!")
+			goto WAIT_FOR_BEACON
+		}
+
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		mapStakingTx, err := beaconConsensusStateDB.GetCurrentStakingTX(blockchain.GetShardIDs())
 		if err != nil {
 			fmt.Println(err)
 			panic("Something wrong when retrieve mapStakingTx")
@@ -542,38 +551,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic("Restart shard views fail")
 		}
 	}
-
 	return nil
-}
-
-func GetMapAllStaker(bcDB *statedb.StateDB, sdb incdb.Database, shardID int) (map[string]string, error) {
-	mapStakingTx := make(map[string]string)
-	stakersInfo := bcDB.IterateWithStaker(statedb.GetStakerInfoPrefix())
-
-	for _, staker := range stakersInfo {
-		if staker.TxStakingID().String() != common.HashH([]byte{0}).String() {
-			blockHash, txindex, err := rawdbv2.GetTransactionByHash(sdb, staker.TxStakingID())
-			if err != nil { //no transaction in this node
-				continue
-			}
-			shardBlockBytes, err := rawdbv2.GetShardBlockByHash(sdb, blockHash)
-			if err != nil { //no transaction in this node
-				panic("Have transaction but cannot found block")
-			}
-			shardBlock := NewShardBlock()
-			err = json.Unmarshal(shardBlockBytes, shardBlock)
-			if err != nil {
-				panic("Cannot unmarshal shardblock")
-			}
-			if shardBlock.GetShardID() != shardID {
-				continue
-			}
-			txData := shardBlock.Body.Transactions[txindex]
-			committeePk := txData.GetMetadata().(*metadata.StakingMetadata).CommitteePublicKey
-			mapStakingTx[committeePk] = staker.TxStakingID().String()
-		}
-	}
-	return mapStakingTx, nil
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------
