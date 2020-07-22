@@ -596,7 +596,7 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
+	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
 	if e != nil {
 		return common.Hash{}, e
 	}
@@ -605,7 +605,7 @@ func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *Beacon
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
+	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
 	if e != nil {
 		return common.Hash{}, e
 	}
