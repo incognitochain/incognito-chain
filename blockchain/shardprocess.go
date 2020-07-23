@@ -526,9 +526,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		isOldBeaconHeight = true
 	}
 
-	shardPendingValidator, err = updateCommiteesWithAddedAndRemovedListCommittee(shardPendingValidator,
-		committeeChange.ShardCommitteeAdded[curView.ShardID],
-		committeeChange.ShardCommitteeRemoved[curView.ShardID])
+	shardPendingValidator, err = updateCommiteesWithAddedAndRemovedListValidator(shardPendingValidator,
+		committeeChange.ShardSubstituteAdded[curView.ShardID],
+		committeeChange.ShardSubstituteRemoved[curView.ShardID])
 
 	if err != nil {
 		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
@@ -555,7 +555,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	}
 
 	if len(totalInstructions) != 0 {
-		Logger.log.Info("[committee-state] totalInstructions:", totalInstructions)
+		Logger.log.Info("totalInstructions:", totalInstructions)
 	}
 
 	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {

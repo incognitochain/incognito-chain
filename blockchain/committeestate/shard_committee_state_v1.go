@@ -140,16 +140,14 @@ func (engine *ShardCommitteeEngine) AbortUncommittedShardState() {
 //	- Only call once in new or insert block process
 func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
-	var err error
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.shardCommitteeStateV1.mu.RLock()
 	engine.shardCommitteeStateV1.clone(engine.uncommittedShardCommitteeStateV1)
 	engine.shardCommitteeStateV1.mu.RUnlock()
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
-	committeeChange := NewCommitteeChange()
 
-	committeeChange, err = newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), committeeChange)
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), NewCommitteeChange())
 
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -158,9 +156,7 @@ func (engine *ShardCommitteeEngine) UpdateCommitteeState(
 	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 {
 		committeeChange, err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
 	} else {
-		if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 {
-			committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
-		}
+		committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
 	}
 
 	if err != nil {
@@ -306,7 +302,6 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 		return nil, err
 	}
 
-	//TODO: only new shard candidate from assign instruction
 	newCommitteeChange.ShardSubstituteAdded[shardID] = addedSubstituteValidator
 
 	return newCommitteeChange, nil
@@ -343,12 +338,20 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 
 		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(ins)
 		if err == nil {
+
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
+			Logger.log.Info("[committee-state] swapInstruction:", swapInstruction)
+			Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
+			Logger.log.Info("[committee-state] shardCommittee:", shardCommittee)
+			Logger.log.Info("[committee-state] shardSwappedCommittees:", shardSwappedCommittees)
+			Logger.log.Info("[committee-state] shardNewCommittees:", shardNewCommittees)
+
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err =
 				SwapValidator(shardPendingValidator,
 					shardCommittee, env.MaxShardCommitteeSize(),
 					env.MinShardCommitteeSize(), env.Offset(),
 					env.ProducersBlackList(), env.SwapOffset())
+
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
 				return nil, err
@@ -468,11 +471,9 @@ func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 	engine.shardCommitteeStateV1.clone(newCommitteeState)
 	engine.shardCommitteeStateV1.mu.RUnlock()
 
-	committeeChange := NewCommitteeChange()
-
 	committeeChange, err := newCommitteeState.processInstructionFromBeacon(
 		env.BeaconInstructions(),
-		env.ShardID(), committeeChange)
+		env.ShardID(), NewCommitteeChange())
 
 	if err != nil {
 		return nil, err

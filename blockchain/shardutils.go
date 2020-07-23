@@ -593,8 +593,8 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 	return newHash.IsEqual(res)
 }
 
-//updateCommiteesWithAddedAndRemovedListCommittee :
-func updateCommiteesWithAddedAndRemovedListCommittee(
+//updateCommiteesWithAddedAndRemovedListValidator :
+func updateCommiteesWithAddedAndRemovedListValidator(
 	source,
 	addedCommittees,
 	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {

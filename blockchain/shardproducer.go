@@ -167,49 +167,60 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 
 	curView.shardCommitteeEngine.AbortUncommittedShardState()
 
-	// Logger.log.Info("[committee-state] len(committeeChange.ShardSubstituteAdded[curView.ShardID]):", len(committeeChange.ShardSubstituteAdded[curView.ShardID]))
-	// for _, v := range committeeChange.ShardSubstituteAdded[curView.ShardID] {
-	// 	key, _ := v.ToBase58()
-	// 	Logger.log.Info("[committee-state] key:", key)
-	// }
+	if committeeChange.ShardSubstituteAdded != nil {
+		Logger.log.Info("[committee-state] len(committeeChange.ShardSubstituteAdded[curView.ShardID]):", len(committeeChange.ShardSubstituteAdded[curView.ShardID]))
+		// for _, v := range committeeChange.ShardSubstituteAdded[curView.ShardID] {
+		// 	key, _ := v.ToBase58()
+		// 	Logger.log.Info("[committee-state] key:", key)
+		// }
+	}
 
-	// Logger.log.Info("[committee-state] len(committeeChange.ShardSubstituteRemoved[curView.ShardID]):", len(committeeChange.ShardSubstituteRemoved[curView.ShardID]))
-	// for _, v := range committeeChange.ShardSubstituteRemoved[curView.ShardID] {
-	// 	key, _ := v.ToBase58()
-	// 	Logger.log.Info("[committee-state] key:", key)
+	// if committeeChange.ShardSubstituteRemoved != nil {
+	// 	Logger.log.Info("[committee-state] len(committeeChange.ShardSubstituteRemoved[curView.ShardID]):", len(committeeChange.ShardSubstituteRemoved[curView.ShardID]))
+	// 	// for _, v := range committeeChange.ShardSubstituteRemoved[curView.ShardID] {
+	// 	// 	key, _ := v.ToBase58()
+	// 	// 	Logger.log.Info("[committee-state] key:", key)
+	// 	// }
 	// }
 
 	// Logger.log.Info("[committee-state] len(currentPendingValidators):", len(currentPendingValidators))
-	// for _, v := range currentPendingValidators {
-	// 	key, _ := v.ToBase58()
-	// 	Logger.log.Info("[committee-state] key:", key)
+	// // for _, v := range currentPendingValidators {
+	// // 	key, _ := v.ToBase58()
+	// // 	Logger.log.Info("[committee-state] key:", key)
+	// // }
+
+	// if committeeChange.ShardCommitteeAdded != nil {
+	// 	Logger.log.Info("[committee-state] len(committeeChange.ShardCommitteeAdded[curView.ShardID]):", len(committeeChange.ShardCommitteeAdded[curView.ShardID]))
+	// 	// for _, v := range committeeChange.ShardCommitteeAdded[curView.ShardID] {
+	// 	// 	key, _ := v.ToBase58()
+	// 	// 	Logger.log.Info("[committee-state] key:", key)
+	// 	// }
 	// }
 
-	// Logger.log.Info("[committee-state] len(committeeChange.ShardCommitteeAdded[curView.ShardID]):", len(committeeChange.ShardCommitteeAdded[curView.ShardID]))
-	// for _, v := range committeeChange.ShardCommitteeAdded[curView.ShardID] {
-	// 	key, _ := v.ToBase58()
-	// 	Logger.log.Info("[committee-state] key:", key)
+	// if committeeChange.ShardCommitteeRemoved != nil {
+	// 	Logger.log.Info("[committee-state] len(committeeChange.ShardCommitteeRemoved[curView.ShardID]):", len(committeeChange.ShardCommitteeRemoved[curView.ShardID]))
+	// 	// for _, v := range committeeChange.ShardCommitteeRemoved[curView.ShardID] {
+	// 	// 	key, _ := v.ToBase58()
+	// 	// 	Logger.log.Info("[committee-state] key:", key)
+	// 	// }
 	// }
 
-	// Logger.log.Info("[committee-state] len(committeeChange.ShardCommitteeRemoved[curView.ShardID]):", len(committeeChange.ShardCommitteeRemoved[curView.ShardID]))
-	// for _, v := range committeeChange.ShardCommitteeRemoved[curView.ShardID] {
-	// 	key, _ := v.ToBase58()
-	// 	Logger.log.Info("[committee-state] key:", key)
-	// }
-
-	currentPendingValidators, err = updateCommiteesWithAddedAndRemovedListCommittee(currentPendingValidators,
-		committeeChange.ShardCommitteeAdded[curView.ShardID],
-		committeeChange.ShardCommitteeRemoved[curView.ShardID])
+	currentPendingValidators, err = updateCommiteesWithAddedAndRemovedListValidator(currentPendingValidators,
+		committeeChange.ShardSubstituteAdded[curView.ShardID],
+		committeeChange.ShardSubstituteRemoved[curView.ShardID])
 
 	shardPendingValidatorStr, err = incognitokey.CommitteeKeyListToString(currentPendingValidators)
 	if err != nil {
 		return nil, NewBlockChainError(ProcessInstructionFromBeaconError, err)
 	}
 
-	Logger.log.Info("[committee-state] Outside shardPendingValidatorStr:", shardPendingValidatorStr)
-	Logger.log.Info("[committee-state] Outside currentCommitteePubKeys:", currentCommitteePubKeys)
+	Logger.log.Info("[committee-state] before generate isntructions shardPendingValidatorStr:", shardPendingValidatorStr)
+	Logger.log.Info("[committee-state] before generate isntructions currentCommitteePubKeys:", currentCommitteePubKeys)
 
-	shardInstructions, _, _, err = blockchain.generateInstruction(curView, shardID,
+	pendingValidators := []string{}
+	committees := []string{}
+
+	shardInstructions, pendingValidators, committees, err = blockchain.generateInstruction(curView, shardID,
 		beaconHeight, isOldBeaconHeight, beaconBlocks,
 		shardPendingValidatorStr, currentCommitteePubKeys)
 	if err != nil {
@@ -219,6 +230,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if len(shardInstructions) != 0 {
 		Logger.log.Info("Shard Producer: Instruction", shardInstructions)
 	}
+
+	Logger.log.Info("[committee-state] after generate isntructions pendingValidators:", pendingValidators)
+	Logger.log.Info("[committee-state] after generate isntructions committees:", committees)
 
 	newShardBlock.BuildShardBlockBody(shardInstructions, crossTransactions, transactionsForNewBlock)
 	//==========Build Essential Header Data=========
