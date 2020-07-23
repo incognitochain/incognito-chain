@@ -289,9 +289,7 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	for _, inst := range listInstructions {
 		assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
 		if err == nil && assignInstruction.ChainID == int(shardID) {
-			// Logger.log.Info("[committee-state] assignInstruction.ShardCandidates...:", assignInstruction.ShardCandidates)
 			shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-			// Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
 			newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 			committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 		}
@@ -340,11 +338,6 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 		if err == nil {
 
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			Logger.log.Info("[committee-state] swapInstruction:", swapInstruction)
-			Logger.log.Info("[committee-state] shardPendingValidator:", shardPendingValidator)
-			Logger.log.Info("[committee-state] shardCommittee:", shardCommittee)
-			Logger.log.Info("[committee-state] shardSwappedCommittees:", shardSwappedCommittees)
-			Logger.log.Info("[committee-state] shardNewCommittees:", shardNewCommittees)
 
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err =
 				SwapValidator(shardPendingValidator,
