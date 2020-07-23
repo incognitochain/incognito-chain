@@ -24,8 +24,8 @@ type BeaconCommitteeStateEnvironment struct {
 	AssignOffset                    int
 	ActiveShards                    int
 	MinShardCommitteeSize           int
+	ConsensusStateDB                *statedb.StateDB
 	allCandidateSubstituteCommittee []string
-	consensusStateDB                *statedb.StateDB
 }
 
 type BeaconCommitteeStateHash struct {
@@ -547,7 +547,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				// if auto staking not found or flag auto stake is false then do not re-stake for this out public key
 				// if auto staking flag is true then system will automatically add this out public key to current candidate list
 				for index, outPublicKey := range swapInstruction.OutPublicKeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(env.consensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}
@@ -602,7 +602,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					return newBeaconCandidates, newShardCandidates, err
 				}
 				for index, outPublicKey := range swapInstruction.OutPublicKeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(env.consensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}
@@ -653,7 +653,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
 	}
 	err := statedb.StoreStakerInfo(
-		env.consensusStateDB,
+		env.ConsensusStateDB,
 		swapInstruction.InPublicKeyStructs,
 		b.rewardReceiver,
 		b.autoStake,
@@ -797,7 +797,7 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 		return err
 	}
 	err = statedb.StoreStakerInfo(
-		env.consensusStateDB,
+		env.ConsensusStateDB,
 		stopAutoStakingIncognitoKey,
 		b.rewardReceiver,
 		b.autoStake,

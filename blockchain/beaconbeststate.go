@@ -569,6 +569,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		IsBeaconRandomTime:        isBeaconRandomTime,
 		ActiveShards:              beaconBestState.ActiveShards,
 		MinShardCommitteeSize:     beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:          beaconBestState.consensusStateDB,
 	}
 }
 
