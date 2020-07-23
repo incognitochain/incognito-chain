@@ -468,10 +468,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
 		}
-		if err := v.InitStateRootHash(blockchain); err != nil {
-			panic(err)
-		}
-
 	}
 	return nil
 }

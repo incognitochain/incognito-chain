@@ -678,8 +678,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.NumTxns = uint64(len(genesisShardBlock.Body.Transactions))
 	shardBestState.ShardProposerIdx = 0
 
-	committeeChange := newCommitteeChange()
-
 	//shardBestState.processBeaconBlocks(genesisShardBlock, []*BeaconBlock{genesisBeaconBlock})
 	shardPendingValidator, _, stakingTx := blockchain.processInstructionFromBeacon(nil, []*BeaconBlock{genesisBeaconBlock}, genesisShardBlock.Header.ShardID, committeestate.NewCommitteeChange())
 
@@ -882,9 +880,9 @@ func (shardBestState *ShardBestState) processShardBlockInstructionForKeyListV2(b
 			// committeeChange.shardCommitteeAdded[shardID] = inPublicKeyStructs
 			// committeeChange.shardCommitteeRemoved[shardID] = outPublicKeyStructs
 			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
-			committeeReplace[common.REPLACE_IN] = append(committeeChange.shardCommitteeAdded[shardID], inPublicKeyStructs...)
-			committeeReplace[common.REPLACE_OUT] = append(committeeChange.shardCommitteeAdded[shardID], outPublicKeyStructs...)
-			committeeChange.shardCommitteeReplaced[shardID] = committeeReplace
+			committeeReplace[common.REPLACE_IN] = append(committeeChange.ShardCommitteeAdded[shardID], inPublicKeyStructs...)
+			committeeReplace[common.REPLACE_OUT] = append(committeeChange.ShardCommitteeAdded[shardID], outPublicKeyStructs...)
+			committeeChange.ShardCommitteeReplaced[shardID] = committeeReplace
 		}
 	}
 	return nil
@@ -1034,7 +1032,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
 		}
 	}
-	err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeReplaced[shardID])
+	err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.ShardCommitteeReplaced[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}

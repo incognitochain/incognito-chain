@@ -41,7 +41,7 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 }
 
 func StoreBeaconCommittee(stateDB *StateDB, beaconCommittees []incognitokey.CommitteePublicKey) error {
-	err := storeCommittee(stateDB, BeaconShardID, CurrentValidator, beaconCommittees, defaultEnterTime)
+	err := storeCommittee(stateDB, BeaconChainID, CurrentValidator, beaconCommittees, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreBeaconCommitteeError, err)
 	}
@@ -54,11 +54,11 @@ func ReplaceBeaconCommittee(stateDB *StateDB, beaconCommittees [2][]incognitokey
 	}
 	// for beaconCommittees
 	newEnterTime := GetBeaconCommitteeEnterTime(stateDB)
-	err := storeCommittee(stateDB, BeaconShardID, CurrentValidator, beaconCommittees[common.REPLACE_IN], newEnterTime)
+	err := storeCommittee(stateDB, BeaconChainID, CurrentValidator, beaconCommittees[common.REPLACE_IN], newEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreBeaconCommitteeError, err)
 	}
-	err = deleteCommittee(stateDB, BeaconShardID, CurrentValidator, beaconCommittees[common.REPLACE_OUT])
+	err = deleteCommittee(stateDB, BeaconChainID, CurrentValidator, beaconCommittees[common.REPLACE_OUT])
 	if err != nil {
 		return NewStatedbError(DeleteBeaconCommitteeError, err)
 	}
@@ -130,7 +130,7 @@ func StoreNextEpochShardCandidate(
 	if err != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
 	}
-	err = storeCommittee(stateDB, CandidateShardID, NextEpochShardCandidate, candidate, defaultEnterTime)
+	err = storeCommittee(stateDB, CandidateChainID, NextEpochShardCandidate, candidate, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
 	}
@@ -138,7 +138,7 @@ func StoreNextEpochShardCandidate(
 }
 
 func StoreCurrentEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey) error {
-	err := storeCommittee(stateDB, CandidateShardID, CurrentEpochShardCandidate, candidate, defaultEnterTime)
+	err := storeCommittee(stateDB, CandidateChainID, CurrentEpochShardCandidate, candidate, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreCurrentEpochCandidateError, err)
 	}
@@ -156,7 +156,7 @@ func StoreNextEpochBeaconCandidate(
 	if err != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
 	}
-	err = storeCommittee(stateDB, BeaconShardID, NextEpochBeaconCandidate, candidate, defaultEnterTime)
+	err = storeCommittee(stateDB, BeaconChainID, NextEpochBeaconCandidate, candidate, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
 	}
@@ -164,7 +164,7 @@ func StoreNextEpochBeaconCandidate(
 }
 
 func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey) error {
-	err := storeCommittee(stateDB, BeaconShardID, CurrentEpochBeaconCandidate, candidate, defaultEnterTime)
+	err := storeCommittee(stateDB, BeaconChainID, CurrentEpochBeaconCandidate, candidate, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreCurrentEpochCandidateError, err)
 	}
@@ -190,7 +190,7 @@ func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubs
 }
 
 func StoreBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incognitokey.CommitteePublicKey) error {
-	err := storeCommittee(stateDB, BeaconShardID, SubstituteValidator, beaconSubstitute, defaultEnterTime)
+	err := storeCommittee(stateDB, BeaconChainID, SubstituteValidator, beaconSubstitute, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreBeaconSubstitutesValidatorError, err)
 	}
@@ -605,8 +605,8 @@ func StoreStakerInfo(
 func GetBeaconCommitteeEnterTime(
 	stateDB *StateDB,
 ) []int64 {
-	m := stateDB.getAllValidatorCommitteePublicKey(CurrentValidator, []int{BeaconShardID})
-	tempBeaconCommitteeStates := m[BeaconShardID]
+	m := stateDB.getAllValidatorCommitteePublicKey(CurrentValidator, []int{BeaconChainID})
+	tempBeaconCommitteeStates := m[BeaconChainID]
 	sort.Slice(tempBeaconCommitteeStates, func(i, j int) bool {
 		return tempBeaconCommitteeStates[i].EnterTime() < tempBeaconCommitteeStates[j].EnterTime()
 	})
