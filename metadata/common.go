@@ -30,7 +30,12 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		return nil, err
 	}
 	var md Metadata
-	switch int(mtTemp["Type"].(float64)) {
+	typeFloat,ok := mtTemp["Type"].(float64)
+	if !ok{
+		return nil, errors.Errorf("Could not parse metadata with type: %v", mtTemp["Type"])
+	}
+	theType := int(typeFloat)
+	switch theType {
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
 	case IssuingResponseMeta:
@@ -127,7 +132,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
-		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
+		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
 	}
 
 	err = json.Unmarshal(metaInBytes, &md)
