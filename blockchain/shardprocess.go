@@ -5,19 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	instruction2 "github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -155,7 +153,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, true, shardID); err != nil {
 			return err
 		}
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.ShardCommittee); err != nil {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.shardCommitteeEngine.GetShardCommittee(shardID)); err != nil {
 			return err
 		}
 	} else {
@@ -224,7 +222,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *ShardBlock) {
 	isSwapInstContained := false
 	for _, inst := range shardBlock.Body.Instructions {
-		if len(inst) > 0 && inst[0] == instruction2.SWAP_ACTION {
+		if len(inst) > 0 && inst[0] == instruction.SWAP_ACTION {
 			isSwapInstContained = true
 			break
 		}
@@ -705,13 +703,6 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	for stakePublicKey, txHash := range stakingTx {
-		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-			Logger.log.Error(stakePublicKey, txHash, err)
-			return nil, errors.New("Cannot store staker info")
-		}
-	}
 	//updateShardBestState best cross shard
 	for shardID, crossShardBlock := range shardBlock.Body.CrossTransactions {
 		shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
@@ -735,12 +726,18 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	// 	}
 	// }
 
-	instructions, _, err := blockchain.
+	instructions, stakingTx, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
+	for stakePublicKey, txHash := range stakingTx {
+		shardBestState.StakingTx.Set(stakePublicKey, txHash)
+		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
+			Logger.log.Error(stakePublicKey, txHash, err)
+			return nil, nil, nil, errors.New("Cannot store staker info")
+		}
+	}
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
@@ -786,22 +783,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
 
-	//Part add for transfering
-	listCommittees, err := incognitokey.
-		CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID))
-	if err != nil {
-		return err
-	}
-	for stakePublicKey, txHash := range stakingTx {
-		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-			return err
-		}
-	}
-
 	// Get all instructions from beacon here
-	//
-
 	instructions, stakingTx, err := blockchain.
 		preProcessInstructionFromBeacon([]*BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
 	if err != nil {
@@ -809,19 +791,11 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	}
 
 	for stakePublicKey, txHash := range stakingTx {
-		shardBestState.StakingTx[stakePublicKey] = txHash
+		shardBestState.StakingTx.Set(stakePublicKey, txHash)
+		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
+			return err
+		}
 	}
-
-	// shardPendingValidatorStr := []string{}
-
-	// if shardBestState != nil {
-	// 	var err error
-	// 	shardPendingValidatorStr, err = incognitokey.
-	// 		CommitteeKeyListToString(shardBestState.GetShardPendingValidator())
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
 
 	env := committeestate.
 		NewShardEnvBuilder().
@@ -833,7 +807,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
-		BuildProducersBlackList(producersBlackList).
+		BuildProducersBlackList(make(map[string]uint8)).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardBestState.ShardID).

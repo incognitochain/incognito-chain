@@ -11,8 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
-	"reflect"
-	"sync"
 )
 
 type BeaconCommitteeStateEnvironment struct {
