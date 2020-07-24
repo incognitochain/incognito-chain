@@ -45,11 +45,11 @@ func NewGetShardBestStateDetail(data *blockchain.ShardBestState) *GetShardBestSt
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
 	}
 
-	tempShardCommittee := incognitokey.CommitteeKeyListToMapString(data.ShardCommitteeEngine().GetShardCommittee(data.ShardID))
+	tempShardCommittee := incognitokey.CommitteeKeyListToStringList(data.ShardCommitteeEngine().GetShardCommittee(data.ShardID))
 	result.ShardCommittee = make([]incognitokey.CommitteeKeyString, len(data.ShardCommitteeEngine().GetShardCommittee(data.ShardID)))
 	copy(result.ShardCommittee, tempShardCommittee)
 
-	tempShardPendingValidator := incognitokey.CommitteeKeyListToMapString(data.ShardCommitteeEngine().GetShardPendingValidator(data.ShardID))
+	tempShardPendingValidator := incognitokey.CommitteeKeyListToStringList(data.ShardCommitteeEngine().GetShardPendingValidator(data.ShardID))
 	result.ShardPendingValidator = make([]incognitokey.CommitteeKeyString, len(data.ShardCommitteeEngine().GetShardPendingValidator(data.ShardID)))
 	copy(result.ShardPendingValidator, tempShardPendingValidator)
 

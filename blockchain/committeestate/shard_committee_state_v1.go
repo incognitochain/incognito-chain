@@ -317,6 +317,8 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	if err != nil {
 		return nil, err
 	}
+	fixedProducerShardValidators := shardCommittee[:env.NumberOfFixedBlockValidators()]
+	shardCommittee = shardCommittee[env.NumberOfFixedBlockValidators():]
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(env.ShardInstructions()) != 0 {
@@ -409,7 +411,7 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 		return nil, err
 	}
 
-	committeeState.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	committeeState.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append(fixedProducerShardValidators, shardCommittee...))
 	if err != nil {
 		return nil, err
 	}

@@ -2,16 +2,13 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 

@@ -250,7 +250,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
 
-	stakingTxRoot, err := generateHashFromMapStringString(newShardBestState.StakingTx)
+	stakingTxRoot, err := generateHashFromMapStringString(newShardBestState.StakingTx.Data())
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
@@ -768,4 +768,16 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 	}
 
 	return instructions, stakingTx, nil
+}
+
+// committeeChanged checks if swap instructions really changed the committee list
+// (not just empty swap instruction)
+func committeeChanged(swap []string) bool {
+	if len(swap) < 3 {
+		return false
+	}
+
+	in := swap[1]
+	out := swap[2]
+	return len(in) > 0 || len(out) > 0
 }
