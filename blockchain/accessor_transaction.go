@@ -277,7 +277,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	var outCointsInBytes [][]byte
 	var err error
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
