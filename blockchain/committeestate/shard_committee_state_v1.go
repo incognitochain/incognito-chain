@@ -281,28 +281,19 @@ func (committeeState *ShardCommitteeStateV1) processInstructionFromBeacon(
 	shardID byte,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
-	newCommitteeChange := committeeChange
-
-	shardPendingValidator := []string{}
-	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
+	addedSubstituteValidator := []incognitokey.CommitteePublicKey{}
 
 	for _, inst := range listInstructions {
 		assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
 		if err == nil && assignInstruction.ChainID == int(shardID) {
-			shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-			newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
+			addedSubstituteValidator = append(addedSubstituteValidator, assignInstruction.ShardCandidatesStruct...)
 			committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 		}
 	}
 
-	addedSubstituteValidator, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	if err != nil {
-		return nil, err
-	}
+	committeeChange.ShardSubstituteAdded[shardID] = addedSubstituteValidator
 
-	newCommitteeChange.ShardSubstituteAdded[shardID] = addedSubstituteValidator
-
-	return newCommitteeChange, nil
+	return committeeChange, nil
 }
 
 //processShardBlockInstruction process shard block instruction for sending to beacon
@@ -458,7 +449,6 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 //ProcessInstructionFromBeacon : process instrucction from beacon
 func (engine *ShardCommitteeEngine) ProcessInstructionFromBeacon(
 	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	//TODO: change uncommittedShardCommitteeStateV1 => newShardCommitteeState := &ShardCommitteeStateV1{}
 	newCommitteeState := &ShardCommitteeStateV1{}
 	engine.shardCommitteeStateV1.mu.RLock()
 	engine.shardCommitteeStateV1.clone(newCommitteeState)

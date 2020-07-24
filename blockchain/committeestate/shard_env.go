@@ -53,25 +53,22 @@ type ShardCommitteeStateEnvironment interface {
 
 //shardCommitteeStateEnvironment :
 type shardCommitteeStateEnvironment struct {
-	recentCommitteesStr                        []string
-	recentSubstitutesStr                       []string
-	shardHeight                                uint64
-	shardBlockHash                             common.Hash
-	beaconBlockHash                            common.Hash
-	shardInstructions                          [][]string
-	txs                                        []metadata.Transaction
-	beaconInstructions                         [][]string
-	beaconHeight                               uint64
-	chainParamEpoch                            uint64
-	epochBreakPointSwapNewKey                  []uint64
-	shardID                                    byte
-	maxShardCommitteeSize                      int
-	minShardCommitteeSize                      int
-	offset                                     int
-	swapOffset                                 int
-	producersBlackList                         map[string]uint8
-	stakingTx                                  map[string]string
-	isProcessShardBlockInstructionForKeyListV2 bool
+	shardHeight               uint64
+	shardBlockHash            common.Hash
+	beaconBlockHash           common.Hash
+	shardInstructions         [][]string
+	beaconInstructions        [][]string
+	txs                       []metadata.Transaction
+	beaconHeight              uint64
+	chainParamEpoch           uint64
+	epochBreakPointSwapNewKey []uint64
+	shardID                   byte
+	maxShardCommitteeSize     int
+	minShardCommitteeSize     int
+	offset                    int
+	swapOffset                int
+	producersBlackList        map[string]uint8
+	stakingTx                 map[string]string
 }
 
 //BuildShardHeight :
