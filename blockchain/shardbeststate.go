@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -14,6 +13,8 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -27,6 +28,14 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
+type ShardRootHash struct {
+	ConsensusStateDBRootHash   common.Hash
+	TransactionStateDBRootHash common.Hash
+	FeatureStateDBRootHash     common.Hash
+	RewardStateDBRootHash      common.Hash
+	SlashStateDBRootHash       common.Hash
+}
+
 type ShardBestState struct {
 	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
 	BestBlock              *ShardBlock       `json:"BestBlock"`     // block data
@@ -39,12 +48,12 @@ type ShardBestState struct {
 	MinShardCommitteeSize  int               `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int               `json:"ShardProposerIdx"`
 	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
-	StakingTx              map[string]string `json:"StakingTx"`
 	NumTxns                uint64            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
 	ConsensusAlgorithm     string            `json:"ConsensusAlgorithm"`
+	StakingTx              *common.MapStringString           `json:"-"`
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
@@ -62,10 +71,11 @@ type ShardBestState struct {
 	RewardStateDBRootHash      common.Hash
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
-	lock                       sync.RWMutex
-
-	//shardCommitteeEngine : interacting with committees in shard
 	shardCommitteeEngine ShardCommitteeEngine
+}
+
+func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
+	return shardBestState.consensusStateDB.Copy()
 }
 
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
@@ -119,7 +129,7 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeE
 	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
-	bestStateShard.StakingTx = make(map[string]string)
+	bestStateShard.StakingTx = common.NewMapStringString()
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
@@ -156,51 +166,6 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *B
 	}
 	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
 	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Database, bc *BlockChain) error {
-	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-	if rootHash, err := bc.GetShardConsensusRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
-		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
-		if err != nil {
-			return err
-		}
-	} else {
-		return err
-	}
-	if rootHash, err := bc.GetShardTransactionRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
-		shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
-		if err != nil {
-			return err
-		}
-	} else {
-		return err
-	}
-	if rootHash, err := bc.GetShardFeatureRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
-		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
-		if err != nil {
-			return err
-		}
-	} else {
-		return err
-	}
-	if rootHash, err := bc.GetShardCommitteeRewardRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
-		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
-		if err != nil {
-			return err
-		}
-	} else {
-		return err
-	}
-	if rootHash, err := bc.GetShardSlashRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
-		shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
-		if err != nil {
-			return err
-		}
-	} else {
 		return err
 	}
 	return nil
@@ -257,12 +222,13 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 		res = append(res, valueBytes...)
 	}
 	keystr := []string{}
-	for _, k := range shardBestState.StakingTx {
+
+	for _, k := range shardBestState.StakingTx.Data() {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
 	for _, key := range keystr {
-		value := shardBestState.StakingTx[key]
+		value := shardBestState.StakingTx.Data()[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
@@ -343,18 +309,22 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	if reflect.DeepEqual(*shardBestState, ShardBestState{}) {
 		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
 	}
+
+	shardBestState.StakingTx = target.StakingTx.LazyCopy()
+
 	shardBestState.consensusStateDB = target.consensusStateDB.Copy()
 	shardBestState.transactionStateDB = target.transactionStateDB.Copy()
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
 	shardBestState.shardCommitteeEngine = target.shardCommitteeEngine
+	shardBestState.BestBlock = target.BestBlock
 	return nil
 }
 
 func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	m := make(map[string]string)
-	for k, v := range shardBestState.StakingTx {
+	for k, v := range shardBestState.StakingTx.Data() {
 		m[k] = v
 	}
 	return m
@@ -400,24 +370,18 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 	return tokenIDs
 }
 
-func (blockchain *BlockChain) GetShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardConsensusRootHash(db, shardID, height)
-}
-
-func (blockchain *BlockChain) GetShardCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardCommitteeRewardRootHash(db, shardID, height)
-}
-
-func (blockchain *BlockChain) GetShardTransactionRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardTransactionRootHash(db, shardID, height)
-}
-
-func (blockchain *BlockChain) GetShardFeatureRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardFeatureRootHash(db, shardID, height)
-}
-
-func (blockchain *BlockChain) GetShardSlashRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	return rawdbv2.GetShardSlashRootHash(db, shardID, height)
+func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
+	h, e := statedb.GetShardBlockHashByIndex(shardBestState.consensusStateDB, shardID, height)
+	if e != nil {
+		return nil, e
+	}
+	data, e := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, h)
+	if e != nil {
+		return nil, e
+	}
+	sRH := &ShardRootHash{}
+	err := json.Unmarshal(data, sRH)
+	return sRH, err
 }
 
 //InitShardCommitteeEngine : Init shard committee engine for every time restore process
@@ -440,7 +404,6 @@ func InitShardCommitteeEngine(
 
 	return shardCommitteeEngine
 }
-
 //ShardCommitteeEngine : getter of shardCommitteeEngine ...
 func (shardBestState *ShardBestState) ShardCommitteeEngine() ShardCommitteeEngine {
 	return shardBestState.shardCommitteeEngine

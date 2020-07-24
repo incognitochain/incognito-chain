@@ -9,7 +9,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -374,12 +373,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		allCommitteeValidatorCandidate := []string{}
 		// avoid dead lock
 		// if producer new block then lock beststate
-		if isProducer {
-			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
-		} else {
-			// if process block then do not lock beststate
-			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
-		}
+		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 		for _, tempStopAutoStakingPublicKey := range stopAutoStakeInstruction.PublicKeys {
 			if common.IndexOfStr(tempStopAutoStakingPublicKey, allCommitteeValidatorCandidate) > -1 {
 				stopAutoStakingPublicKeys = append(stopAutoStakingPublicKeys, tempStopAutoStakingPublicKey)
@@ -457,15 +451,16 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if err != nil {
 			return [][]string{}, err
 		}
-		beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), newBeaconHeight-1)
-		if err != nil {
-			return [][]string{}, err
-		}
-		beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
-		if err != nil {
-			Logger.log.Error(err)
-		}
+		//beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(beaconBestState, newBeaconHeight-1)
+		//if err != nil {
+		//	return [][]string{}, err
+		//}
+		//beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		//producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//}
+		producersBlackList := make(map[string]uint8)
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(true, -1, beaconCommitteeStr)
 		badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
 		if err != nil {

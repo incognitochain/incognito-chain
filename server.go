@@ -1155,7 +1155,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		//}
 		//listen.GetPeerConnsMtx().Unlock()
 	} else {
-		peerConn.SetVerValid(true)
+		peerConn.SetVerValid(false)
 	}
 
 	Logger.log.Debug("Receive verack message END")

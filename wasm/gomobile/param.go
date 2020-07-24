@@ -78,7 +78,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 
 			if msgB64Encode != "" {
 				msgBytes, err = base64.StdEncoding.DecodeString(msgB64Encode)
-				if err != nil{
+				if err != nil {
 					println("Can not decode msg string in payment info for ptoken")
 					return nil, errors.New("Can not decode msg string in payment info for ptoken")
 				}
@@ -319,7 +319,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 
 			if msgB64Encode != "" {
 				msgBytes, err = base64.StdEncoding.DecodeString(msgB64Encode)
-				if err != nil{
+				if err != nil {
 					println("Can not decode msg string in payment info for ptoken")
 					return nil, errors.New("Can not decode msg string in payment info for ptoken")
 				}
@@ -631,7 +631,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 
 			if msgB64Encode != "" {
 				msgBytes, err = base64.StdEncoding.DecodeString(msgB64Encode)
-				if err != nil{
+				if err != nil {
 					println("Can not decode msg string in payment info for ptoken")
 					return nil, errors.New("Can not decode msg string in payment info for ptoken")
 				}

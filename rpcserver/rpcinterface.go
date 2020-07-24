@@ -45,20 +45,19 @@ var HttpHandler = map[string]httpHandler{
 	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
 	// block
-	getBestBlock:                 (*HttpServer).handleGetBestBlock,
-	getLatestFinalizedShardBlock: (*HttpServer).handleGetLatestFinalizedShardBlock,
-	getBestBlockHash:             (*HttpServer).handleGetBestBlockHash,
-	retrieveBlock:                (*HttpServer).handleRetrieveBlock,
-	retrieveBlockByHeight:        (*HttpServer).handleRetrieveBlockByHeight,
-	retrieveBeaconBlock:          (*HttpServer).handleRetrieveBeaconBlock,
-	retrieveBeaconBlockByHeight:  (*HttpServer).handleRetrieveBeaconBlockByHeight,
-	getBlocks:                    (*HttpServer).handleGetBlocks,
-	getBlockChainInfo:            (*HttpServer).handleGetBlockChainInfo,
-	getBlockCount:                (*HttpServer).handleGetBlockCount,
-	getBlockHash:                 (*HttpServer).handleGetBlockHash,
-	checkHashValue:               (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
-	getBlockHeader:               (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
-	getCrossShardBlock:           (*HttpServer).handleGetCrossShardBlock,
+	getBestBlock:                (*HttpServer).handleGetBestBlock,
+	getBestBlockHash:            (*HttpServer).handleGetBestBlockHash,
+	retrieveBlock:               (*HttpServer).handleRetrieveBlock,
+	retrieveBlockByHeight:       (*HttpServer).handleRetrieveBlockByHeight,
+	retrieveBeaconBlock:         (*HttpServer).handleRetrieveBeaconBlock,
+	retrieveBeaconBlockByHeight: (*HttpServer).handleRetrieveBeaconBlockByHeight,
+	getBlocks:                   (*HttpServer).handleGetBlocks,
+	getBlockChainInfo:           (*HttpServer).handleGetBlockChainInfo,
+	getBlockCount:               (*HttpServer).handleGetBlockCount,
+	getBlockHash:                (*HttpServer).handleGetBlockHash,
+	checkHashValue:              (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
+	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
@@ -155,18 +154,25 @@ var HttpHandler = map[string]httpHandler{
 	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
 
 	// pde
-	getPDEState:                           (*HttpServer).handleGetPDEState,
-	createAndSendTxWithWithdrawalReq:      (*HttpServer).handleCreateAndSendTxWithWithdrawalReq,
-	createAndSendTxWithPTokenTradeReq:     (*HttpServer).handleCreateAndSendTxWithPTokenTradeReq,
-	createAndSendTxWithPRVTradeReq:        (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
-	createAndSendTxWithPTokenContribution: (*HttpServer).handleCreateAndSendTxWithPTokenContribution,
-	createAndSendTxWithPRVContribution:    (*HttpServer).handleCreateAndSendTxWithPRVContribution,
-	getPDEContributionStatus:              (*HttpServer).handleGetPDEContributionStatus,
-	getPDEContributionStatusV2:            (*HttpServer).handleGetPDEContributionStatusV2,
-	getPDETradeStatus:                     (*HttpServer).handleGetPDETradeStatus,
-	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
-	convertPDEPrices:                      (*HttpServer).handleConvertPDEPrices,
-	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
+	getPDEState:                                (*HttpServer).handleGetPDEState,
+	createAndSendTxWithWithdrawalReq:           (*HttpServer).handleCreateAndSendTxWithWithdrawalReq,
+	createAndSendTxWithWithdrawalReqV2:         (*HttpServer).handleCreateAndSendTxWithWithdrawalReqV2,
+	createAndSendTxWithPDEFeeWithdrawalReq:     (*HttpServer).handleCreateAndSendTxWithPDEFeeWithdrawalReq,
+	createAndSendTxWithPTokenTradeReq:          (*HttpServer).handleCreateAndSendTxWithPTokenTradeReq,
+	createAndSendTxWithPTokenCrossPoolTradeReq: (*HttpServer).handleCreateAndSendTxWithPTokenCrossPoolTradeReq,
+	createAndSendTxWithPRVTradeReq:             (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
+	createAndSendTxWithPRVCrossPoolTradeReq:    (*HttpServer).handleCreateAndSendTxWithPRVCrossPoolTradeReq,
+	createAndSendTxWithPTokenContribution:      (*HttpServer).handleCreateAndSendTxWithPTokenContribution,
+	createAndSendTxWithPRVContribution:         (*HttpServer).handleCreateAndSendTxWithPRVContribution,
+	createAndSendTxWithPTokenContributionV2:    (*HttpServer).handleCreateAndSendTxWithPTokenContributionV2,
+	createAndSendTxWithPRVContributionV2:       (*HttpServer).handleCreateAndSendTxWithPRVContributionV2,
+	getPDEContributionStatus:                   (*HttpServer).handleGetPDEContributionStatus,
+	getPDEContributionStatusV2:                 (*HttpServer).handleGetPDEContributionStatusV2,
+	getPDETradeStatus:                          (*HttpServer).handleGetPDETradeStatus,
+	getPDEWithdrawalStatus:                     (*HttpServer).handleGetPDEWithdrawalStatus,
+	getPDEFeeWithdrawalStatus:                  (*HttpServer).handleGetPDEFeeWithdrawalStatus,
+	convertPDEPrices:                           (*HttpServer).handleConvertPDEPrices,
+	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
@@ -228,6 +234,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
+
+	// get committeeByHeight
 }
 
 // Commands that are available to a limited user

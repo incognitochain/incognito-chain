@@ -1,15 +1,15 @@
 package privacy
 
 import (
-	"github.com/stretchr/testify/assert"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestKey(t *testing.T) {
-	for i:=0; i< 1; i ++ {
+	for i := 0; i < 1; i++ {
 		// random seed
-		seed := []byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,1,2,3,4,5,6,7,8,9,10,11,12}
+		seed := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 
 		// generate private key from seed
 		privateKey := GeneratePrivateKey(seed)

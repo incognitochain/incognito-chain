@@ -46,7 +46,7 @@ func (ciphertext elGamalCipherText) Bytes() []byte {
 	}
 	b1 := ciphertext.c1.ToBytes()
 	b2 := ciphertext.c2.ToBytes()
-	res := append(b1[:], b2[:] ...)
+	res := append(b1[:], b2[:]...)
 	return res
 }
 
@@ -63,14 +63,14 @@ func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 	var err error
 
 	var tmp [Ed25519KeySize]byte
-	copy(tmp[:],bytes[:Ed25519KeySize])
+	copy(tmp[:], bytes[:Ed25519KeySize])
 	ciphertext.c1, err = new(Point).FromBytes(tmp)
-	if err != nil{
+	if err != nil {
 		return err
 	}
-	copy(tmp[:],bytes[Ed25519KeySize:])
+	copy(tmp[:], bytes[Ed25519KeySize:])
 	ciphertext.c2, err = new(Point).FromBytes(tmp)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 

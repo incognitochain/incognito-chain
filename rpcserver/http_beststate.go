@@ -1,9 +1,12 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -12,10 +15,30 @@ import (
 handleGetBeaconBestState - RPC get beacon best state
 */
 func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-
-	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
+	allViews := []*blockchain.BeaconBestState{}
+	beaconBestState := &blockchain.BeaconBestState{}
+	beaconDB := httpServer.blockService.BlockChain.GetBeaconChainDatabase()
+	beaconViews, err := rawdbv2.GetBeaconViews(beaconDB)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+	}
+
+	err = json.Unmarshal(beaconViews, &allViews)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+	}
+
+	sID := []int{}
+	for i := 0; i < httpServer.config.ChainParams.ActiveShards; i++ {
+		sID = append(sID, i)
+	}
+
+	for _, v := range allViews {
+		err := v.RestoreBeaconViewStateFromHash(httpServer.GetBlockchain())
+		if err != nil {
+			continue
+		}
+		beaconBestState = v
 	}
 
 	result := jsonresult.NewGetBeaconBestState(beaconBestState)

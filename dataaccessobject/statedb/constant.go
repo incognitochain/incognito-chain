@@ -44,6 +44,12 @@ const (
 	PortalRewardInfoObjectType
 	LockedCollateralStateObjectType
 	RewardFeatureStateObjectType
+
+	// PDEX v2
+	PDETradingFeeObjectType
+
+	BlockHashObjectType
+	StakerObjectType
 )
 
 // Prefix length
@@ -62,8 +68,8 @@ const (
 	CurrentValidator
 )
 const (
-	BeaconShardID    = -1
-	CandidateShardID = -2
+	BeaconChainID    = -1
+	CandidateChainID = -2
 )
 
 // PDE Track Status type

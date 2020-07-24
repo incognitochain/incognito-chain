@@ -2,7 +2,6 @@ package instruction
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/pkg/errors"
 )
 
 type Instruction interface {
@@ -28,45 +27,8 @@ type CommitteeStateInstruction struct {
 	StopAutoStakeInstructions []*StopAutoStakeInstruction
 }
 
-// ImportCommitteeStateInstruction skip all invalid instructions
-func ImportCommitteeStateInstruction(instructions [][]string) *CommitteeStateInstruction {
-	instructionManager := new(CommitteeStateInstruction)
-	for _, instruction := range instructions {
-		if len(instruction) < 1 {
-			continue
-		}
-		switch instruction[0] {
-		case SWAP_ACTION:
-			swapInstruction, err := ValidateAndImportSwapInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, "Skip Swap Instruction"))
-				continue
-			}
-			instructionManager.SwapInstructions = append(instructionManager.SwapInstructions, swapInstruction)
-		case ASSIGN_ACTION:
-			assignInstruction, err := ValidateAndImportAssignInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, "Skip Assign Instruction"))
-				continue
-			}
-			instructionManager.AssignInstructions = append(instructionManager.AssignInstructions, assignInstruction)
-		case STAKE_ACTION:
-			stakeInstruction, err := ValidateAndImportStakeInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, "Skip Stake Instruction"))
-				continue
-			}
-			instructionManager.StakeInstructions = append(instructionManager.StakeInstructions, stakeInstruction)
-		case STOP_AUTO_STAKE_ACTION:
-			stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(instruction)
-			if err != nil {
-				Logger.Log.Error(errors.Wrap(err, "Skip Stop Auto Stake Instruction"))
-				continue
-			}
-			instructionManager.StopAutoStakeInstructions = append(instructionManager.StopAutoStakeInstructions, stopAutoStakeInstruction)
-		}
-	}
-	return instructionManager
+func IsConsensusInstruction(action string) bool {
+	return action == RANDOM_ACTION || action == SWAP_ACTION || action == STAKE_ACTION || action == ASSIGN_ACTION || action == STOP_AUTO_STAKE_ACTION || action == SET_ACTION
 }
 
 // the order of instruction must always be maintain
