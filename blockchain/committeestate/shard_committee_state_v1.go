@@ -324,16 +324,20 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	}
 	// Swap committee
 	for _, ins := range env.ShardInstructions() {
-
 		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(ins)
 		if err == nil {
-
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-
+			maxShardCommitteeSize := env.MaxShardCommitteeSize() - env.NumberOfFixedBlockValidators()
+			var minShardCommitteeSize int
+			if env.MinShardCommitteeSize()-env.NumberOfFixedBlockValidators() < 0 {
+				minShardCommitteeSize = 0
+			} else {
+				minShardCommitteeSize = env.MinShardCommitteeSize() - env.NumberOfFixedBlockValidators()
+			}
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err =
 				SwapValidator(shardPendingValidator,
-					shardCommittee, env.MaxShardCommitteeSize(),
-					env.MinShardCommitteeSize(), env.Offset(),
+					shardCommittee, maxShardCommitteeSize,
+					minShardCommitteeSize, env.Offset(),
 					env.ProducersBlackList(), env.SwapOffset())
 
 			if err != nil {
@@ -425,7 +429,6 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 	newCommitteeChange := committeeChange
 	for _, inst := range env.ShardInstructions() {
 		if inst[0] == instruction.SWAP_ACTION {
-			shardPendingValidatorStruct := committeeState.shardPendingValidator
 			swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(inst)
 			if err != nil {
 				return nil, err
@@ -437,7 +440,6 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 				return nil, fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs)
 			}
 			shardCommitteesStruct := append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
-			committeeState.shardPendingValidator = shardPendingValidatorStruct
 			committeeState.shardCommittee = shardCommitteesStruct
 			newCommitteeChange.ShardCommitteeAdded[shardID] = swapInstruction.InPublicKeyStructs
 			newCommitteeChange.ShardCommitteeRemoved[shardID] = swapInstruction.OutPublicKeyStructs
