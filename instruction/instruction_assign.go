@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 var (
@@ -12,8 +14,9 @@ var (
 )
 
 type AssignInstruction struct {
-	ChainID         int
-	ShardCandidates []string
+	ChainID               int
+	ShardCandidates       []string
+	ShardCandidatesStruct []incognitokey.CommitteePublicKey
 }
 
 func NewAssignInstructionWithValue(chainID int, shardCandidates []string) *AssignInstruction {
@@ -50,17 +53,25 @@ func ValidateAndImportAssignInstructionFromString(instruction []string) (*Assign
 	if err := ValidateAssignInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
-	return ImportAssignInstructionFromString(instruction), nil
+	return ImportAssignInstructionFromString(instruction)
 }
 
 // ImportAssignInstructionFromString is unsafe method
-func ImportAssignInstructionFromString(instruction []string) *AssignInstruction {
+func ImportAssignInstructionFromString(instruction []string) (*AssignInstruction, error) {
 	assignIntruction := NewAssignInstruction()
 	tempShardID := instruction[3]
 	chainID, _ := strconv.Atoi(tempShardID)
 	assignIntruction.SetChainID(chainID)
 	assignIntruction.SetShardCandidates(strings.Split(instruction[1], SPLITTER))
-	return assignIntruction
+
+	shardPendingValidatorStruct, err := incognitokey.CommitteeBase58KeyListToStruct(assignIntruction.ShardCandidates)
+	if err != nil {
+		return nil, err
+	}
+
+	assignIntruction.ShardCandidatesStruct = shardPendingValidatorStruct
+
+	return assignIntruction, err
 }
 
 //ValidateAssignInstructionSanity ...

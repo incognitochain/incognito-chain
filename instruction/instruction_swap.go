@@ -2,11 +2,12 @@ package instruction
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
-	"strings"
 )
 
 type SwapInstruction struct {
@@ -108,12 +109,20 @@ func ValidateAndImportSwapInstructionFromString(instruction []string) (*SwapInst
 
 func ImportSwapInstructionFromString(instruction []string) *SwapInstruction {
 	swapInstruction := NewSwapInstruction()
+
+	inPublicKey := []string{}
+	outPublicKey := []string{}
+
 	if len(instruction[1]) > 0 {
-		swapInstruction, _ = swapInstruction.SetInPublicKeys(strings.Split(instruction[1], SPLITTER))
+		inPublicKey = strings.Split(instruction[1], SPLITTER)
 	}
+	swapInstruction, _ = swapInstruction.SetInPublicKeys(inPublicKey)
+
 	if len(instruction[2]) > 0 {
-		swapInstruction, _ = swapInstruction.SetOutPublicKeys(strings.Split(instruction[2], SPLITTER))
+		outPublicKey = strings.Split(instruction[2], SPLITTER)
 	}
+	swapInstruction, _ = swapInstruction.SetOutPublicKeys(outPublicKey)
+
 	if len(instruction) == 7 {
 		swapInstruction.SetIsReplace(true)
 		swapInstruction.SetNewRewardReceivers(strings.Split(instruction[6], SPLITTER))

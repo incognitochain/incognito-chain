@@ -5,11 +5,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"io"
 	"sort"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
@@ -17,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -151,23 +151,16 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := ShardBlock{}
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
-	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
-	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
-	for _, candidate := range newShardCandidate {
-		key := incognitokey.CommitteePublicKey{}
-		err := key.FromBase58(candidate)
-		if err != nil {
-			return err
-		}
-		newShardCandidateStructs = append(newShardCandidateStructs, key)
-	}
-	initShardState.ShardCommittee = append(initShardState.ShardCommittee, newShardCandidateStructs[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
+
+	engine := committeestate.NewShardCommitteeEngine(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
+
+	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, engine)
+
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -190,7 +183,8 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeestate.NewBeaconCommitteeEngine(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
+	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams,
+		committeestate.NewBeaconCommitteeEngine(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -513,29 +507,15 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
-
-		err = v.RestoreCommittee(shardID, blockchain)
-		if err != nil {
-			panic(err)
-		}
-
+		shardCommitteeEngine := InitShardCommitteeEngine(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+		v.shardCommitteeEngine = shardCommitteeEngine
 		mapStakingTx, err := GetMapAllStaker(v.consensusStateDB, blockchain.GetShardChainDatabase(shardID), int(shardID))
 		if err != nil {
 			fmt.Println(err)
 			panic("Something wrong when retrieve mapStakingTx")
 		}
-
 		v.StakingTx = common.NewMapStringString()
 		v.StakingTx.SetData(mapStakingTx)
-
-		err = v.RestorePendingValidators(shardID, blockchain)
-		if err != nil {
-			panic(err)
-		}
-
-		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
-			panic("Restart shard views fail")
-		}
 	}
 
 	return nil

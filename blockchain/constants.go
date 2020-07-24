@@ -2,11 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 )
 
 //Network fixed params

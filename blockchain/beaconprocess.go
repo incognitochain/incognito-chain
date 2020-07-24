@@ -5,18 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
 )
@@ -508,7 +508,8 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 //  - Shard Candidate root: CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
 //  - Shard Validator root: ShardCommittee + ShardPendingValidator
 //  - Random number if have in instruction
-func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
+func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock,
+	randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
 	startTimeVerifyPostProcessingBeaconBlock := time.Now()
 	if !hashes.BeaconCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.BeaconCommitteeAndValidatorRoot) {
 		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
@@ -620,11 +621,14 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 			isBeginRandom = true
 		}
 	}
-	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams, beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
+
+	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 	hashes, committeeChange, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
 		return nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
+
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 	return beaconBestState, hashes, committeeChange, nil
@@ -655,9 +659,14 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
 		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
 	}
-	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams, genesisBeaconBlock.Body.Instructions, false, false))
+
+	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
+		NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+			genesisBeaconBlock.Body.Instructions, false, false))
+
 	beaconBestState.Epoch = 1
 	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+
 	//statedb===========================START
 	var err error
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)

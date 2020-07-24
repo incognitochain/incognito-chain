@@ -112,7 +112,7 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().ShardCommittee...)
+	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee(byte(chain.shardID))...)
 }
 
 func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
@@ -127,15 +127,15 @@ func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.Committe
 
 func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().ShardPendingValidator...)
+	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardPendingValidator(byte(chain.shardID))...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	return len(chain.GetBestState().ShardCommittee)
+	return len(chain.GetBestState().shardCommitteeEngine.GetShardCommittee(byte(chain.shardID)))
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.GetBestState().ShardCommittee {
+	for index, key := range chain.GetBestState().shardCommitteeEngine.GetShardCommittee(byte(chain.shardID)) {
 		if key.GetMiningKeyBase58(chain.GetBestState().ConsensusAlgorithm) == pubkey {
 			return index
 		}
