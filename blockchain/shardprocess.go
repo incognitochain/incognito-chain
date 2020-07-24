@@ -176,14 +176,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	// update number of blocks produced by producers to shard best state
 	newBestState.updateNumOfBlocksByProducers(shardBlock)
 
-	newCommittee := []string{}
-	newCommittee, err2 = incognitokey.CommitteeKeyListToString(newBestState.shardCommitteeEngine.GetShardCommittee(curView.ShardID))
-	if err2 != nil {
-		return err2
-	}
-	if !common.CompareStringArray(oldCommittee, newCommittee) {
-		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
-	}
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
