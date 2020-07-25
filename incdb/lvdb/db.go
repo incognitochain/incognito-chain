@@ -247,6 +247,33 @@ func (db *db) Batch(data []incdb.BatchData) leveldb.Batch {
 	return *batch
 }
 
+func (db db) LatestBackup(path string) int {
+	backupFolder := filepath.Join(db.dbPath, path)
+	//fmt.Println("backupFolder", backupFolder)
+	files, err := ioutil.ReadDir(backupFolder)
+	if err != nil {
+		return 0
+	}
+	//fmt.Println("files", files)
+	if len(files) == 0 {
+		return 0
+	}
+	latestBackupEpoch := 0
+	//Get max epoch
+	for _, file := range files {
+		//fmt.Println("file", file.Name())
+		epoch, err := strconv.Atoi(file.Name())
+		if err != nil {
+			return 0
+		}
+		if epoch > latestBackupEpoch {
+			latestBackupEpoch = epoch
+		}
+	}
+
+	return latestBackupEpoch
+}
+
 func (db db) Backup(backupFile string) {
 	backupFile = filepath.Join(db.dbPath, backupFile)
 	fmt.Println("backupFile", backupFile)
