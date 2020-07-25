@@ -57,4 +57,5 @@ type Database interface {
 	io.Closer
 	Backup(backupFolder string)
 	ReOpen() error
+	Clear() error
 }

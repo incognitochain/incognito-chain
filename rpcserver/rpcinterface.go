@@ -46,6 +46,9 @@ var HttpHandler = map[string]httpHandler{
 	// //getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
 	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
+	//backup and preload
+	setBackup: (*HttpServer).handleSetBackup,
+
 	// block
 	getBestBlock:                (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:            (*HttpServer).handleGetBestBlockHash,
