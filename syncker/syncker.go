@@ -105,6 +105,14 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
 		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+			preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+			if preloadAddr != "" {
+				if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid))); err != nil {
+					Logger.Infof("Preload shard %s fail!", sid)
+				} else {
+					Logger.Infof("Preload shard %s successful", sid)
+				}
+			}
 			syncProc.start()
 		} else {
 			syncProc.stop()

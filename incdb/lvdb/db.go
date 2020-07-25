@@ -247,6 +247,22 @@ func (db *db) Batch(data []incdb.BatchData) leveldb.Batch {
 	return *batch
 }
 
+func (db *db) PreloadBackup(backupFile string) error {
+	err := uncompress(backupFile, db.dbPath+"_")
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(db.dbPath)
+	if err != nil {
+		return err
+	}
+	err = os.Rename(db.dbPath+"_", db.dbPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db db) LatestBackup(path string) int {
 	backupFolder := filepath.Join(db.dbPath, path)
 	//fmt.Println("backupFolder", backupFolder)
@@ -355,5 +371,34 @@ func removeUnusedBackupDatabase(filePath string) error {
 		}
 	}
 
+	return nil
+}
+
+//Uncompress file from zip file
+func uncompress(srcPath, desPath string) error {
+
+	//uncompress write
+	//Remove all old data
+	// if err := os.RemoveAll(srcPath); err != nil {
+	// 	panic(err)
+	// }
+	fmt.Println("start decompress")
+	if err := os.RemoveAll(desPath); err != nil {
+		panic(err)
+	}
+	//Create new data
+	if err := os.MkdirAll(desPath, 0700); err != nil {
+		panic(err)
+	}
+
+	err := common.DecompressDatabaseBackup(srcPath, desPath)
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(srcPath); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("done decompress")
 	return nil
 }

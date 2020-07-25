@@ -70,6 +70,7 @@ type Params struct {
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
 	IsBackup                         bool
+	PreloadAddress                   string
 }
 
 type GenesisParams struct {
@@ -171,6 +172,7 @@ func init() {
 		},
 		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
 		IsBackup:                  false,
+		PreloadAddress:            "",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -246,6 +248,7 @@ func init() {
 		},
 		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
 		IsBackup:                  false,
+		PreloadAddress:            "",
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

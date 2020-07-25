@@ -29,7 +29,11 @@ func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeCha
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainName is invalid"))
 		}
 
-		return httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", chainName)), nil
+		return struct {
+			LatestEpoch int
+		}{
+			httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", chainName)),
+		}, nil
 	}
 
 	return 0, nil

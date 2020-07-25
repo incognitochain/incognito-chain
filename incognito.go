@@ -154,6 +154,11 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
+	//update preload address
+	if cfg.PreloadAddress != "" {
+		activeNetParams.Params.PreloadAddress = cfg.PreloadAddress
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
@@ -173,6 +178,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- &server
 	}
+
 	// Check Metric analyzation system
 	env := os.Getenv("GrafanaURL")
 	if env != "" {
