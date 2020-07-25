@@ -95,17 +95,17 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	if err := blockchain.initChainState(); err != nil {
+	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
 	return nil
 }
 
-// initChainState attempts to load and initialize the chain state from the
+// InitChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
 // chain state are initialized to the genesis block.
-func (blockchain *BlockChain) initChainState() error {
+func (blockchain *BlockChain) InitChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
@@ -134,7 +134,7 @@ func (blockchain *BlockChain) initChainState() error {
 		}
 		if err := blockchain.RestoreShardViews(shardID); err != nil {
 			Logger.log.Error("debug restore shard fail, init")
-			err := blockchain.initShardState(shardID)
+			err := blockchain.InitShardState(shardID)
 			if err != nil {
 				Logger.log.Error("debug shard state init error")
 				return err
@@ -151,7 +151,7 @@ func (blockchain *BlockChain) initChainState() error {
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
 */
-func (blockchain *BlockChain) initShardState(shardID byte) error {
+func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := ShardBlock{}
@@ -461,6 +461,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
 		sID = append(sID, i)
 	}
+
+	blockchain.BeaconChain.multiView.Reset()
 	for _, v := range allViews {
 		v.RestoreBeaconViewStateFromHash(blockchain)
 		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(v.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
@@ -505,6 +507,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		return err
 	}
 	fmt.Println("debug RestoreShardViews", len(allViews))
+	blockchain.ShardChain[shardID].multiView.Reset()
+
 	for _, v := range allViews {
 
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 //JsonRequest ...
@@ -32,6 +34,32 @@ type JsonResponse struct {
 	Params  interface{}     `json:"Params"`
 	Method  string          `json:"Method"`
 	Jsonrpc string          `json:"Jsonrpc"`
+}
+
+func makeRPCDownloadRequest(address string, method string, w io.Writer, params ...interface{}) error {
+	request := JsonRequest{
+		Jsonrpc: "1.0",
+		Method:  method,
+		Params:  params,
+		Id:      "1",
+	}
+	requestBytes, err := json.Marshal(&request)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(requestBytes))
+	resp, err := http.Post(address, "application/json", bytes.NewBuffer(requestBytes))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	n, err := io.Copy(w, resp.Body)
+	fmt.Println(n, err)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func makeRPCRequest(address string, method string, params ...interface{}) (*JsonResponse, error) {
@@ -82,17 +110,29 @@ func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Databas
 		return err
 	}
 
-	if currentEpoch < result.LatestEpoch-10 {
-		backupFile := ""
-
-		db.Close()
-		defer db.ReOpen()
-
-		err := db.PreloadBackup(backupFile)
+	if currentEpoch < result.LatestEpoch-2 {
+		backupFile := "/data/" + chainName
+		fd, err := os.OpenFile(backupFile, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			return err
 		}
+		fd.Truncate(0)
 
+		err = makeRPCDownloadRequest(url, "downloadbackup", fd, chainName)
+		fd.Close()
+
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println("Download finish", chainName)
+		db.Close()
+		defer db.ReOpen()
+
+		err = db.PreloadBackup(backupFile)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

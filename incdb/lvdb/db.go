@@ -252,10 +252,13 @@ func (db *db) PreloadBackup(backupFile string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("remove ", db.dbPath)
 	err = os.RemoveAll(db.dbPath)
 	if err != nil {
 		return err
 	}
+	fmt.Println("rename ", db.dbPath)
 	err = os.Rename(db.dbPath+"_", db.dbPath)
 	if err != nil {
 		return err
@@ -263,16 +266,16 @@ func (db *db) PreloadBackup(backupFile string) error {
 	return nil
 }
 
-func (db db) LatestBackup(path string) int {
+func (db db) LatestBackup(path string) (int, string) {
 	backupFolder := filepath.Join(db.dbPath, path)
 	//fmt.Println("backupFolder", backupFolder)
 	files, err := ioutil.ReadDir(backupFolder)
 	if err != nil {
-		return 0
+		return 0, ""
 	}
 	//fmt.Println("files", files)
 	if len(files) == 0 {
-		return 0
+		return 0, ""
 	}
 	latestBackupEpoch := 0
 	//Get max epoch
@@ -280,14 +283,14 @@ func (db db) LatestBackup(path string) int {
 		//fmt.Println("file", file.Name())
 		epoch, err := strconv.Atoi(file.Name())
 		if err != nil {
-			return 0
+			return 0, ""
 		}
 		if epoch > latestBackupEpoch {
 			latestBackupEpoch = epoch
 		}
 	}
 
-	return latestBackupEpoch
+	return latestBackupEpoch, fmt.Sprintf("%v/%v", backupFolder, latestBackupEpoch)
 }
 
 func (db db) Backup(backupFile string) {
@@ -382,7 +385,7 @@ func uncompress(srcPath, desPath string) error {
 	// if err := os.RemoveAll(srcPath); err != nil {
 	// 	panic(err)
 	// }
-	fmt.Println("start decompress")
+	fmt.Println("start decompress", srcPath)
 	if err := os.RemoveAll(desPath); err != nil {
 		panic(err)
 	}
@@ -395,10 +398,7 @@ func uncompress(srcPath, desPath string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.RemoveAll(srcPath); err != nil {
-		panic(err)
-	}
 
-	fmt.Println("done decompress")
+	fmt.Println("done decompress", desPath)
 	return nil
 }

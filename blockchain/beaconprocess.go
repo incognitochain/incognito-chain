@@ -1540,12 +1540,21 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
-	//backup
-	//if (newBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 0 {
-	//	blockchain.GetBeaconChainDatabase().Close()
-	//	blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../../backup/beacon/%d", newBestState.Epoch))
-	//	blockchain.GetBeaconChainDatabase().ReOpen()
-	//}
+	if !blockchain.config.ChainParams.IsBackup {
+		return nil
+	}
+	if (newBestState.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+		err := blockchain.GetBeaconChainDatabase().Close()
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+		err = blockchain.GetBeaconChainDatabase().ReOpen()
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
