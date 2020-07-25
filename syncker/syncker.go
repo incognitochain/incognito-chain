@@ -105,14 +105,15 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	//check preload beacon
 	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
 	if preloadAddr != "" {
-		if err := preloadDatabase(-1, int(synckerManager.BeaconSyncProcess.chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetBeaconChainDatabase()); err != nil {
-			fmt.Println(err)
-			Logger.Infof("Preload beacon fail!")
-		} else {
-			if synckerManager.BeaconSyncProcess.status != RUNNING_SYNC { //run only when start
+		if synckerManager.BeaconSyncProcess.status != RUNNING_SYNC { //run only when start
+			if err := preloadDatabase(-1, int(synckerManager.BeaconSyncProcess.chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetBeaconChainDatabase()); err != nil {
+				fmt.Println(err)
+				Logger.Infof("Preload beacon fail!")
+			} else {
 				synckerManager.config.Blockchain.RestoreBeaconViews()
 			}
 		}
+
 	}
 	synckerManager.BeaconSyncProcess.start()
 
@@ -121,14 +122,15 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
 			//check preload shard
 			if preloadAddr != "" {
-				if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid))); err != nil {
-					fmt.Println(err)
-					Logger.Infof("Preload shard %v fail!", sid)
-				} else {
-					if syncProc.status != RUNNING_SYNC { //run only when start
+				if syncProc.status != RUNNING_SYNC { //run only when start
+					if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid))); err != nil {
+						fmt.Println(err)
+						Logger.Infof("Preload shard %v fail!", sid)
+					} else {
 						synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
 					}
 				}
+
 			}
 			syncProc.start()
 		} else {
