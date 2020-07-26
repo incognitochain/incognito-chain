@@ -292,6 +292,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 }
 
 //buildInstRewardForBeacons create reward instruction for beacons
+//TODO: should change blockchain.BestState.Beacon.BeaconCommittee into len in param
 func (blockchain *BlockChain) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
