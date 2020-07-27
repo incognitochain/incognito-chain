@@ -44,20 +44,34 @@ func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeCha
 
 func (httpServer *HttpServer) handleDownloadBackup(conn net.Conn, params interface{}) {
 	paramArray, ok := params.([]interface{})
-	if ok && len(paramArray) == 1 {
+	if ok && len(paramArray) >= 1 {
 		chainName, ok := paramArray[0].(string)
 		if !ok {
 			return
 		}
-		_, filepath := httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", chainName))
-
-		fd, err := os.Open(filepath)
-		if err != nil {
-			fmt.Println(err)
-			return
+		var fd *os.File
+		var err error
+		if len(paramArray) == 1 {
+			_, filepath := httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", chainName))
+			fd, err = os.Open(filepath)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer fd.Close()
+		} else if len(paramArray) == 2 {
+			otherChain, ok := paramArray[1].(string)
+			if !ok {
+				return
+			}
+			_, filepath := httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", otherChain))
+			fd, err = os.Open(filepath)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			defer fd.Close()
 		}
-		defer fd.Close()
-
 		_, err = conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
 		if err != nil {
 			return

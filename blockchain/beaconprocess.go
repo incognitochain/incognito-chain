@@ -1549,6 +1549,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			fmt.Println(err)
 			return err
 		}
+
+		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
+		if err != nil {
+			return err
+		}
+
 		blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 		err = blockchain.GetBeaconChainDatabase().ReOpen()
 		if err != nil {

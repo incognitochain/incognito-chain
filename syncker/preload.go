@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incdb"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -92,7 +93,7 @@ func makeRPCRequest(address string, method string, params ...interface{}) (*Json
 }
 
 //preloadDatabase call to backuped database node ...
-func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Database) error {
+func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Database, btcChain *btcrelaying.BlockChain) error {
 	chainName := "beacon"
 	if chainID > -1 {
 		chainName = fmt.Sprintf("shard%v", chainID)
@@ -112,26 +113,48 @@ func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Databas
 
 	if currentEpoch < result.LatestEpoch-2 {
 		backupFile := "/data/" + chainName
+
 		fd, err := os.OpenFile(backupFile, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			return err
 		}
 		fd.Truncate(0)
-
 		err = makeRPCDownloadRequest(url, "downloadbackup", fd, chainName)
-		fd.Close()
-
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
+		fd.Close()
+
+		if chainName == "beacon" {
+			fd, err = os.OpenFile("/data/btc", os.O_CREATE|os.O_WRONLY, 0666)
+			if err != nil {
+				return err
+			}
+			fd.Truncate(0)
+			err = makeRPCDownloadRequest(url, "downloadbackup", fd, chainName, "btc")
+			if err != nil {
+				return err
+			}
+			fd.Close()
+		}
+
 		fmt.Println("Download finish", chainName)
+
 		db.Close()
 		defer db.ReOpen()
 
+		//restore beacon|shard
 		err = db.PreloadBackup(backupFile)
 		if err != nil {
 			return err
+		}
+
+		//restore btc if we restore beacon
+		if chainName == "beacon" {
+			err = btcChain.RestoreDBFromBackup("/data/btc")
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	return nil
