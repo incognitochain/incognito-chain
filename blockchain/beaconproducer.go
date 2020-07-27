@@ -430,7 +430,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	stopAutoStakingPublicKeys := []string{}
 	tempValidStakePublicKeys := []string{}
 	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
-	//TODO: dangerous code, reward can be missed because of json marshal error
 	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
 	if err != nil {
 		// if err then ignore accepted reward instruction
