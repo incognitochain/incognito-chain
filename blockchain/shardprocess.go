@@ -1160,14 +1160,9 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	}
 
 	if backupPoint {
-		err := blockchain.GetShardChainDatabase(newShardState.ShardID).Close()
+		err := blockchain.GetShardChainDatabase(newShardState.ShardID).Backup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
 		if err != nil {
-			return err
-		}
-		blockchain.GetShardChainDatabase(newShardState.ShardID).Backup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		err = blockchain.GetShardChainDatabase(newShardState.ShardID).ReOpen()
-		if err != nil {
-			return err
+			blockchain.GetShardChainDatabase(newShardState.ShardID).RemoveBackup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
 		}
 	}
 

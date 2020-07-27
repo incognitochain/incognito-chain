@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
 
@@ -25,6 +26,7 @@ type db struct {
 	fn     string // filename for reporting
 	dbPath string
 	lvdb   *leveldb.DB
+	lock   sync.RWMutex
 }
 
 func init() {
@@ -101,6 +103,8 @@ func (db *db) Has(key []byte) (bool, error) {
 }
 
 func (db *db) Get(key []byte) ([]byte, error) {
+	db.lock.RLock()
+	defer db.lock.RUnlock()
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		return nil, err
@@ -266,7 +270,7 @@ func (db *db) PreloadBackup(backupFile string) error {
 	return nil
 }
 
-func (db db) LatestBackup(path string) (int, string) {
+func (db *db) LatestBackup(path string) (int, string) {
 	backupFolder := filepath.Join(db.dbPath, path)
 	//fmt.Println("backupFolder", backupFolder)
 	files, err := ioutil.ReadDir(backupFolder)
@@ -293,23 +297,40 @@ func (db db) LatestBackup(path string) (int, string) {
 	return latestBackupEpoch, fmt.Sprintf("%v/%v", backupFolder, latestBackupEpoch)
 }
 
-func (db db) Backup(backupFile string) {
+func (db *db) RemoveBackup(backupFile string) {
+	backupFile = filepath.Join(db.dbPath, backupFile)
+	os.Remove(backupFile)
+}
+
+func (db *db) Backup(backupFile string) error {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
 	backupFile = filepath.Join(db.dbPath, backupFile)
 	fmt.Println("backupFile", backupFile)
 
 	if err := os.MkdirAll(filepath.Dir(backupFile), 0700); err != nil {
 		panic(err)
 	}
-	fmt.Println("mkdir ", filepath.Dir(backupFile))
+
+	if err := db.Close(); err != nil {
+		return err
+	}
 
 	err := common.CompressDatabase(db.dbPath, backupFile)
 	if err != nil {
+		return err
+	}
+
+	if err := db.ReOpen(); err != nil {
 		panic(err)
 	}
 
 	if err := removeUnusedBackupDatabase(backupFile); err != nil {
 		panic(err)
 	}
+
+	return nil
 }
 
 func (db *db) Clear() error {

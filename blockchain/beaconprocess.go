@@ -1544,22 +1544,20 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return nil
 	}
 	if (newBestState.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
-		err := blockchain.GetBeaconChainDatabase().Close()
+
+		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 		if err != nil {
-			fmt.Println(err)
-			return err
+			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+			return nil
 		}
 
 		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
 		if err != nil {
-			return err
+			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
+			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+			return nil
 		}
 
-		blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-		err = blockchain.GetBeaconChainDatabase().ReOpen()
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

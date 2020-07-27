@@ -1939,6 +1939,11 @@ func New(config *Config, genesisBlkHeight int32) (*BlockChain, error) {
 	return &b, nil
 }
 
+func (b *BlockChain) RemoveBackup(backupFile string) {
+	backupFile = filepath.Join(b.dbPath, backupFile)
+	os.Remove(backupFile)
+	return
+}
 func (b *BlockChain) BackupDB(backupFile string) error {
 	b.db.Close()
 

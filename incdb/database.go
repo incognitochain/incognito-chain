@@ -55,7 +55,8 @@ type Database interface {
 	Stater
 	Compacter
 	io.Closer
-	Backup(backupFolder string)
+	RemoveBackup(string)
+	Backup(backupFolder string) error
 	LatestBackup(backupFolder string) (int, string)
 	PreloadBackup(backupFile string) error
 	ReOpen() error
