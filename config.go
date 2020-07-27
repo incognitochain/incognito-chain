@@ -154,6 +154,7 @@ type config struct {
 
 	//backup
 	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
+	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
 }
 
 func (cfg config) IsTestnet() bool {
