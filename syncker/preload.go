@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incdb"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/incognitochain/incognito-chain/incdb"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 //JsonRequest ...
@@ -112,7 +113,7 @@ func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Databas
 	}
 
 	if currentEpoch < result.LatestEpoch-2 {
-		backupFile := "/data/" + chainName
+		backupFile := "./data/preload" + chainName
 
 		fd, err := os.OpenFile(backupFile, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
@@ -126,7 +127,7 @@ func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Databas
 		fd.Close()
 
 		if chainName == "beacon" {
-			fd, err = os.OpenFile("/data/btc", os.O_CREATE|os.O_WRONLY, 0666)
+			fd, err = os.OpenFile("./data/preload/btc", os.O_CREATE|os.O_WRONLY, 0666)
 			if err != nil {
 				return err
 			}
@@ -151,7 +152,7 @@ func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Databas
 
 		//restore btc if we restore beacon
 		if chainName == "beacon" {
-			err = btcChain.RestoreDBFromBackup("/data/btc")
+			err = btcChain.RestoreDBFromBackup("./data/preload/btc")
 			if err != nil {
 				panic(err)
 			}

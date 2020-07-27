@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/0xBahamoot/go-bigcompressor"
 	"sync"
+
+	"github.com/0xBahamoot/go-bigcompressor"
 )
 
 var bigCompress bigcompressor.BigCompressor
