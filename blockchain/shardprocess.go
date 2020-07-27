@@ -716,21 +716,12 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 
-	// shardPendingValidatorStr := []string{}
-	// if shardBestState != nil {
-	// 	var err error
-	// 	shardPendingValidatorStr, err = incognitokey.
-	// 		CommitteeKeyListToString(shardBestState.GetShardPendingValidator())
-	// 	if err != nil {
-	// 		return nil, nil, nil, err
-	// 	}
-	// }
-
-	instructions, stakingTx, err := blockchain.
+	beaconInstructions, stakingTx, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
 		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
@@ -738,12 +729,27 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			return nil, nil, nil, errors.New("Cannot store staker info")
 		}
 	}
+
+	for _, beaconInstruction := range beaconInstructions {
+		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(beaconInstruction)
+		if err == nil {
+			for _, v := range swapInstruction.OutPublicKeys {
+				shardBestState.StakingTx.Remove(v)
+				if txID, ok := shardBestState.StakingTx.Get(v); ok {
+					if checkReturnStakingTxExistence(txID, shardBlock) {
+						shardBestState.StakingTx.Remove(v)
+					}
+				}
+			}
+		}
+	}
+
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
-		BuildBeaconInstructions(instructions).
+		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildNumberOfFixedBlockValidators(NumberOfFixedBlockValidators).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
