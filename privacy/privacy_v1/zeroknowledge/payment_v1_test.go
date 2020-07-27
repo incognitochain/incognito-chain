@@ -9,6 +9,13 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+var _ = func() (_ struct{}) {
+	fmt.Println("This runs before init() starting payment v1 logger for test !")
+	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
+
+
 type CoinObject struct {
 	PublicKey      string
 	CoinCommitment string
@@ -17,6 +24,28 @@ type CoinObject struct {
 	Randomness     string
 	Value          uint64
 	Info           string
+}
+
+func createSamplePlainCoinV1(privKey privacy.PrivateKey, pubKey *operation.Point, amount uint64, msg []byte) (*coin.PlainCoinV1, error) {
+	c := new(coin.PlainCoinV1).Init()
+
+	c.SetValue(amount)
+	c.SetInfo(msg)
+	c.SetPublicKey(pubKey)
+	c.SetSNDerivator(operation.RandomScalar())
+	c.SetRandomness(operation.RandomScalar())
+
+	//Derive serial number from snDerivator
+	c.SetKeyImage(new(operation.Point).Derive(privacy.PedCom.G[0], new(operation.Scalar).FromBytesS(privKey), c.GetSNDerivator()))
+
+	//Create commitment
+	err := c.CommitAll()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*coin.PlainCoinV1, uint64) {
@@ -160,9 +189,13 @@ func TestPaymentProofToBytes(t *testing.T) {
 	//CommitmentIndices       []uint64
 	//MyCommitmentIndices     []uint64
 	//Fee                     uint64
+	var inputCoinsGeneric []coin.PlainCoin
+	for _,c := range inputCoins{
+		inputCoinsGeneric = append(inputCoinsGeneric, c)
+	}
 	witnessParam.HasPrivacy = true
 	witnessParam.PrivateKey = senderKeyBN
-	witnessParam.InputCoins = inputCoins
+	witnessParam.InputCoins = inputCoinsGeneric
 	witnessParam.OutputCoins = outputCoins
 	witnessParam.PublicKeyLastByteSender = keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
 

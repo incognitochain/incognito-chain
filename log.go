@@ -33,6 +33,7 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 var (
@@ -67,6 +68,8 @@ var (
 	daov2Logger            = backendLog.Logger("DAO log", false)
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
+	privacyV1Logger        = backendLog.Logger("Privacy V1 log ", false)
+	privacyV2Logger        = backendLog.Logger("Privacy V2 log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -110,6 +113,8 @@ func init() {
 	dataaccessobject.Logger.Init(daov2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
+	privacy.LoggerV1.Init(privacyV1Logger)
+	privacy.LoggerV2.Init(privacyV2Logger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

@@ -20,6 +20,13 @@ var (
 
 )
 
+var _ = func() (_ struct{}) {
+	fmt.Println("This runs before init() starting payment v2 logger for test !")
+	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
+
+
 func TestPaymentV2InitAndMarshalling(t *testing.T) {
 	for loop:=0;loop<=numOfLoops;loop++{
 		outCoinCount := common.RandInt() % (maxOutCoinCount-minOutCoinCount+1) + minOutCoinCount

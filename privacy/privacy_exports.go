@@ -95,6 +95,9 @@ type AggregatedRangeProof = agg_interface.AggregatedRangeProof
 type AggregatedRangeProofV1 = aggregatedrange.AggregatedRangeProof
 type AggregatedRangeProofV2 = bulletproofs.AggregatedRangeProof
 
+var LoggerV1 = &zkp.Logger
+var LoggerV2 = &privacy_v2.Logger
+
 func NewProofWithVersion(version int8) Proof {
 	var result Proof
 	if version == 1 {
