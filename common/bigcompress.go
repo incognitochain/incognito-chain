@@ -1,6 +1,8 @@
 package common
 
 import (
+	"sync"
+
 	"github.com/0xBahamoot/go-bigcompressor"
 	"sync"
 )
