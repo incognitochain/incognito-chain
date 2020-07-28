@@ -663,11 +663,11 @@ func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBe
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, height uint64) (*BeaconRootHash, error) {
-	h, e := statedb.GetBeaconBlockHashByIndex(stateDB, height)
+	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
 	if e != nil {
 		return nil, e
 	}
-	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), h)
+	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), *h)
 	if e != nil {
 		return nil, e
 	}

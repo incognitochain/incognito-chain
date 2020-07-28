@@ -38,7 +38,8 @@ const (
 	getShardPoolStateV2         = "getshardpoolstatev2"
 	getBeaconPoolStateV2        = "getbeaconpoolstatev2"
 	//getFeeEstimator             = "getfeeestimator"
-
+	setBackup                   = "setbackup"
+	getLatestBackup             = "getlatestbackup"
 	getBestBlock                = "getbestblock"
 	getBestBlockHash            = "getbestblockhash"
 	getBlocks                   = "getblocks"

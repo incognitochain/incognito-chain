@@ -8,10 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -92,15 +90,18 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
-	beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
+
+	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
+	if err != nil {
+		fmt.Println("cannot find beacon block ", beaconHeight)
+		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
+	}
+
+	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
 	if err != nil {
 		return nil, err
 	}
 
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconHash)
-	if err != nil {
-		return nil, err
-	}
 	beaconBlock := BeaconBlock{}
 	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 	if err != nil {
@@ -109,9 +110,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
-		newBeaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), beaconHeight)
+		newBeaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
 		if err != nil {
-			return nil, err
+			return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
 		}
 		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = shardBestState.Epoch + 1
@@ -176,7 +177,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		Epoch:             epoch,
 		CrossShardBitMap:  CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
 		BeaconHeight:      beaconHeight,
-		BeaconHash:        beaconHash,
+		BeaconHash:        *beaconHash,
 		TotalTxsFee:       totalTxsFee,
 		ConsensusType:     curView.ConsensusAlgorithm,
 	}

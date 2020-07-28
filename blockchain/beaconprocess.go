@@ -1351,7 +1351,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
-	blockHeight := beaconBlock.Header.Height
 
 	var err error
 	//statedb===========================START
@@ -1467,9 +1466,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
-	if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
-		return err
-	}
+	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
+	//	return err
+	//}
 
 	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
@@ -1527,25 +1526,67 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := rawdbv2.StoreBeaconBlock(batch, blockHeight, blockHash, beaconBlock); err != nil {
+	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+
+	finalView := blockchain.BeaconChain.multiView.GetFinalView()
+
 	blockchain.BeaconChain.multiView.AddView(newBestState)
+
+	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
+
+	for finalView == nil || finalView.GetHeight() != newFinalView.GetHeight() {
+		fmt.Println("Store finalized beacon block ")
+		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, newFinalView.GetHeight(), *newFinalView.GetHash())
+		if err != nil {
+			return NewBlockChainError(StoreBeaconBlockError, err)
+		}
+
+		prevHash := newFinalView.GetPreviousHash()
+		if prevHash == nil {
+			return NewBlockChainError(StoreBeaconBlockError, fmt.Errorf("Cannot get prev hash of current multiview!"))
+		}
+
+		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(*prevHash)
+		if newFinalView == nil {
+			break
+		}
+	}
+
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
 		panic("Backup shard view error")
 	}
+
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
-	//backup
-	//if (newBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 0 {
-	//	blockchain.GetBeaconChainDatabase().Close()
-	//	blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../../backup/beacon/%d", newBestState.Epoch))
-	//	blockchain.GetBeaconChainDatabase().ReOpen()
-	//}
+	if !blockchain.config.ChainParams.IsBackup {
+		return nil
+	}
+	if (newBestState.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+
+		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+		if err != nil {
+			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+			return nil
+		}
+
+		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
+		if err != nil {
+			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
+			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+			return nil
+		}
+
+	}
 
 	return nil
+}
+
+func isNil(v interface{}) bool {
+	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
