@@ -23,20 +23,22 @@ func GetBeaconRootsHash(db incdb.KeyValueReader, hash common.Hash) ([]byte, erro
 	return data, err
 }
 
-// StoreBeaconBlock store block hash => block value and block index => block hash
-// record1: prefix-index-hash => empty
-// record2: prefix-hash => block value
-func StoreBeaconBlock(db incdb.KeyValueWriter, index uint64, hash common.Hash, v interface{}) error {
+// StoreBeaconBlock store block hash => block value
+func StoreBeaconBlockByHash(db incdb.KeyValueWriter, hash common.Hash, v interface{}) error {
 	keyHash := GetBeaconHashToBlockKey(hash)
-	//keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
 	val, err := json.Marshal(v)
 	if err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
 	}
-	//if err := db.Put(keyIndex, []byte{}); err != nil {
-	//	return NewRawdbError(StoreBeaconBlockError, err)
-	//}
 	if err := db.Put(keyHash, val); err != nil {
+		return NewRawdbError(StoreBeaconBlockError, err)
+	}
+	return nil
+}
+
+func StoreFinalizedBeaconBlockHashByIndex(db incdb.KeyValueWriter, index uint64, hash common.Hash) error {
+	keyHash := GetBeaconIndexToBlockHashKey(index)
+	if err := db.Put(keyHash, hash.Bytes()); err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
 	}
 	return nil
@@ -66,6 +68,16 @@ func GetBeaconBlockByHash(db incdb.KeyValueReader, hash common.Hash) ([]byte, er
 	ret := make([]byte, len(block))
 	copy(ret, block)
 	return ret, nil
+}
+
+func GetFinalizedBeaconBlockHashByIndex(db incdb.KeyValueReader, index uint64) (*common.Hash, error) {
+	keyHash := GetBeaconIndexToBlockHashKey(index)
+	val, err := db.Get(keyHash)
+	if err != nil {
+		return nil, NewRawdbError(GetBeaconBlockByIndexError, err)
+	}
+	h, err := common.Hash{}.NewHash(val)
+	return h, err
 }
 
 func StoreBeaconViews(db incdb.KeyValueWriter, val []byte) error {

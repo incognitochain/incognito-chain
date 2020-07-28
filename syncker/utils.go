@@ -3,8 +3,6 @@ package syncker
 import (
 	"reflect"
 
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -43,37 +41,19 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 
-	if len(sameCommitteeBlock) > 0 {
-		for i, blk := range sameCommitteeBlock {
-			if blk.GetHeight()-1 == chain.CurrentHeight() {
-				sameCommitteeBlock = sameCommitteeBlock[i:]
-				break
+	for i, v := range sameCommitteeBlock {
+		if !chain.CheckExistedBlk(v) {
+			var err error
+			if i == len(sameCommitteeBlock)-1 {
+				err = chain.InsertBlk(v, true)
 			} else {
-				if !chain.CheckExistedBlk(blk) {
-					err := chain.InsertBlk(blk, false)
-					if err != nil {
-						return 0, err
-					}
-				}
+			err = chain.InsertBlk(v, false)
+			}
+			if err != nil {
+				return 0, err
 			}
 		}
-		if sameCommitteeBlock[0].GetHeight()-1 != chain.CurrentHeight() {
-			err := errors.Errorf("Not expected height: %d %d", sameCommitteeBlock[0].GetHeight()-1, chain.CurrentHeight())
-			Logger.Error(err)
-			return 0, err
-		}
-	}
 
-	for i, v := range sameCommitteeBlock {
-		var err error
-		if i == len(sameCommitteeBlock)-1 {
-			err = chain.InsertBlk(v, true)
-		} else {
-			err = chain.InsertBlk(v, false)
-		}
-		if err != nil {
-			return 0, err
-		}
 	}
 
 	return len(sameCommitteeBlock), nil

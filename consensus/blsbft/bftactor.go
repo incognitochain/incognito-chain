@@ -420,7 +420,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	var errCh chan error
 	var block common.BlockInterface = nil
 	errCh = make(chan error)
-	timeout := time.NewTimer(e.Chain.GetMaxBlkCreateTime()).C
+	timeout := time.NewTimer(timeout / 2).C
 
 	go func() {
 		time1 := time.Now()
