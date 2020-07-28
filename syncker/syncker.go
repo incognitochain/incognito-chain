@@ -15,6 +15,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
+const MAX_S2B_BLOCK = 90
+
 type SynckerManagerConfig struct {
 	Node       Server
 	Blockchain *blockchain.BlockChain
@@ -240,6 +242,9 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
 			res[byte(i)] = append(res[byte(i)], v)
+			if len(res[byte(i)]) > MAX_S2B_BLOCK {
+				break
+			}
 			//fmt.Println("syncker: get block ", i, v.GetHeight(), v.Hash().String())
 		}
 	}
