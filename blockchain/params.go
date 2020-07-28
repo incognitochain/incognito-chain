@@ -71,6 +71,7 @@ type Params struct {
 	EpochBreakPointSwapNewKey        []uint64
 	IsBackup                         bool
 	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
 }
 
 type GenesisParams struct {
@@ -171,6 +172,7 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
 		IsBackup:                  false,
 		PreloadAddress:            "",
 	}
@@ -247,6 +249,7 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
 		IsBackup:                  false,
 		PreloadAddress:            "",
 	}

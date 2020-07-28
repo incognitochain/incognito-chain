@@ -529,14 +529,11 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		mapStakingTx, err := GetMapAllStaker(v.consensusStateDB, blockchain.GetShardChainDatabase(shardID), int(shardID))
-		if err != nil {
-			fmt.Println(err)
-			panic("Something wrong when retrieve mapStakingTx")
-		}
-
 		v.StakingTx = NewMapStringString()
-		v.StakingTx.data = mapStakingTx
+		v.StakingTx.data, err = blockchain.GetShardStakingTx(v)
+		if err != nil {
+			panic(err)
+		}
 
 		err = v.RestorePendingValidators(shardID, blockchain)
 		if err != nil {
@@ -547,17 +544,32 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic("Restart shard views fail")
 		}
 	}
-
 	return nil
 }
 
-func GetMapAllStaker(bcDB *statedb.StateDB, sdb incdb.Database, shardID int) (map[string]string, error) {
-	mapStakingTx := make(map[string]string)
-	stakersInfo := bcDB.IterateWithStaker(statedb.GetStakerInfoPrefix())
+func (blockchain *BlockChain) GetShardStakingTx(shardView *ShardBestState) (map[string]string, error) {
+	shardID := shardView.ShardID
+	//build staking tx
+	beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), shardView.BeaconHeight)
+	if err != nil {
+		Logger.log.Error("Cannot restore shard, beacon not ready!")
+		return nil, err
+	}
 
-	for _, staker := range stakersInfo {
-		if staker.TxStakingID().String() != common.HashH([]byte{0}).String() {
-			blockHash, txindex, err := rawdbv2.GetTransactionByHash(sdb, staker.TxStakingID())
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	mapStakingTx, err := beaconConsensusStateDB.GetAllStakingTX(blockchain.GetShardIDs())
+
+	if err != nil {
+		fmt.Println(err)
+		panic("Something wrong when retrieve mapStakingTx")
+	}
+
+	sdb := blockchain.GetShardChainDatabase(byte(shardID))
+	shardStakingTx := map[string]string{}
+	for _, stakingtx := range mapStakingTx {
+		if stakingtx != common.HashH([]byte{0}).String() {
+			stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingtx)
+			blockHash, txindex, err := rawdbv2.GetTransactionByHash(sdb, *stakingTxHash)
 			if err != nil { //no transaction in this node
 				continue
 			}
@@ -570,15 +582,15 @@ func GetMapAllStaker(bcDB *statedb.StateDB, sdb incdb.Database, shardID int) (ma
 			if err != nil {
 				panic("Cannot unmarshal shardblock")
 			}
-			if shardBlock.GetShardID() != shardID {
+			if shardBlock.GetShardID() != int(shardID) {
 				continue
 			}
 			txData := shardBlock.Body.Transactions[txindex]
 			committeePk := txData.GetMetadata().(*metadata.StakingMetadata).CommitteePublicKey
-			mapStakingTx[committeePk] = staker.TxStakingID().String()
+			shardStakingTx[committeePk] = stakingtx
 		}
 	}
-	return mapStakingTx, nil
+	return shardStakingTx, nil
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------

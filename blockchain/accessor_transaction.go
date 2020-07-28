@@ -191,6 +191,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
 	beaconBlocks []*BeaconBlock,
 	shardID byte,
 ) error {
+	//mainnet have two block return double when height < REPLACE_STAKINGTX
+	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < blockchain.config.ChainParams.ReplaceStakingTxHeight {
+		return nil
+	}
 	return blockchain.ValidateReturnStakingTxFromBeaconInstructions(
 		curView,
 		beaconBlocks,

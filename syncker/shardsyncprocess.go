@@ -226,9 +226,9 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		case blk := <-ch:
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
-				//Logger.Infof("Syncker shard receive block %v", blk.GetHeight())
+
 				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
-					time.Sleep(5 * time.Second)
+					time.Sleep(30 * time.Second)
 				}
 				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 					Logger.Infof("Cannot find beacon for inserting shard block")
