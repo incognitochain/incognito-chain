@@ -331,14 +331,6 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 		row := make([]*operation.Point, m+1)
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
-			if ok, err := txDatabaseWrapper.hasOTACoinIndex(transactionStateDB, *tokenID, index.Uint64(), shardID); !ok || err != nil {
-				if !ok {
-					Logger.Log.Errorf("OTACoinIndex does not exist: %v", index.Uint64())
-					return nil, errors.New(fmt.Sprintf("OTACoinIndex does not exist: %v, %s", index.Uint64(), tokenID.String()))
-				}
-				Logger.Log.Errorf("HasOTACoinIndex error %v", err)
-				return nil, err
-			}
 			randomCoinBytes, err := txDatabaseWrapper.getOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if err != nil {
 				Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
@@ -352,12 +344,7 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 			row[j] = randomCoin.GetPublicKey()
 			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
 		}
-		byteCommitment := sumCommitment.ToBytesS()
-		var err error
-		if row[m], err = new(operation.Point).FromBytesS(byteCommitment); err != nil {
-			Logger.Log.Errorf("Getting last column commitment fromBytesS got error %v ", err)
-			return nil, err
-		}
+		row[m] = new(operation.Point).Set(sumCommitment)
 		ring[i] = row
 	}
 	return mlsag.NewRing(ring), nil
@@ -393,10 +380,6 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				if ok, err := txDatabaseWrapper.hasOTACoinIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID); !ok || err != nil {
-					Logger.Log.Errorf("Has commitment index error %v ", err)
-					return nil, nil, err
-				}
 				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
 					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
