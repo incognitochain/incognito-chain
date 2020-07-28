@@ -43,6 +43,7 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		ShardProposerIdx:       data.ShardProposerIdx,
 		TotalTxns:              data.TotalTxns,
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
+		BestCrossShard:         data.BestCrossShard,
 	}
 
 	result.ShardCommittee = make([]string, len(data.ShardCommittee))

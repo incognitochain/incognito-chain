@@ -151,6 +151,10 @@ type config struct {
 
 	// Highway
 	Libp2pPrivateKey string `long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
+
+	//backup
+	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
+	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
 }
 
 func (cfg config) IsTestnet() bool {

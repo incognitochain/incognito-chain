@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -12,6 +10,9 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -154,9 +155,15 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
+	//update preload address
+	if cfg.PreloadAddress != "" {
+		activeNetParams.Params.PreloadAddress = cfg.PreloadAddress
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
+	activeNetParams.Params.IsBackup = cfg.ForceBackup
 	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
@@ -173,6 +180,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- &server
 	}
+
 	// Check Metric analyzation system
 	env := os.Getenv("GrafanaURL")
 	if env != "" {

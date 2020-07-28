@@ -3,54 +3,47 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
-func (blockchain *BlockChain) GetBeaconBlockByHeightAndView(height uint64, viewHash common.Hash) (*BeaconBlock, error) {
-	finalView := blockchain.BeaconChain.GetFinalView()
+//get beacon block hash by height, with current view
+func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
 
-	if height == finalView.GetHeight() {
-		return finalView.GetBlock().(*BeaconBlock), nil
+	blkheight := bestView.GetHeight()
+	blkhash := *bestView.GetHash()
+
+	if height > blkheight {
+		return nil, fmt.Errorf("Beacon, Block Height %+v not found", height)
 	}
-	if height < finalView.GetHeight() {
-		beaconBlocks, err := blockchain.GetBeaconBlockByHeight(height)
+
+	if height == blkheight {
+		return &blkhash, nil
+	}
+
+	// => check if <= final block, using rawdb
+	if height <= finalView.GetHeight() { //note there is chance that == final view, but block is not stored (store in progress)
+		return rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), height)
+	}
+
+	// => if > finalblock, we use best view to trace back the correct height
+	blkhash = *bestView.GetPreviousHash()
+	blkheight = blkheight - 1
+	for height < blkheight {
+		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(blkhash)
 		if err != nil {
 			return nil, err
 		}
-		return beaconBlocks[0], nil
-	}
-	if height > finalView.GetHeight() {
-		view := blockchain.BeaconChain.GetViewByHash(viewHash)
-		if view != nil {
-			return view.GetBlock().(*BeaconBlock), nil
-		}
-	}
-	return nil, fmt.Errorf("Beacon, Block Height %+v, View %+v, not found", height, viewHash)
-}
-
-func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBlock, error) {
-	if blockchain.IsTest {
-		return []*BeaconBlock{}, nil
-	}
-	beaconBlocks := []*BeaconBlock{}
-	beaconBlockHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), height)
-	if err != nil {
-		return nil, err
+		blkheight--
+		blkhash = beaconBlock.GetPrevHash()
 	}
 
-	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconBlockHash)
-	if err != nil {
-		return nil, err
-	}
-	beaconBlocks = append(beaconBlocks, beaconBlock)
-
-	return beaconBlocks, nil
+	return &blkhash, nil
 }
 
 func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBlock, error) {
@@ -62,6 +55,27 @@ func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBl
 		return nil, fmt.Errorf("Beacon Block Height %+v NOT FOUND", height)
 	}
 	return beaconBlocks[0], nil
+}
+
+func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBlock, error) {
+
+	if blockchain.IsTest {
+		return []*BeaconBlock{}, nil
+	}
+	beaconBlocks := []*BeaconBlock{}
+
+	blkhash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
+	if err != nil {
+		return nil, err
+	}
+
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlocks = append(beaconBlocks, beaconBlock)
+
+	return beaconBlocks, nil
 }
 
 func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*BeaconBlock, uint64, error) {
@@ -80,22 +94,47 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
-func (blockchain *BlockChain) GetShardBlockHashByHeight(height uint64, shardID byte) (common.Hash, error) {
-	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB.Copy(), shardID, height)
-	if err != nil {
-		return hash, err
+//SHARD
+func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
+
+	blkheight := bestView.GetHeight()
+	blkhash := *bestView.GetHash()
+
+	if height > blkheight {
+		return nil, fmt.Errorf("Beacon, Block Height %+v not found", height)
 	}
 
-	return hash, nil
+	if height == blkheight {
+		return &blkhash, nil
+	}
+
+	// => check if <= final block, using rawdb
+	if height <= finalView.GetHeight() { //note there is chance that == final view, but block is not stored (store in progress)
+		return rawdbv2.GetFinalizedShardBlockHashByIndex(blockchain.GetShardChainDatabase(bestView.(*ShardBestState).ShardID), bestView.(*ShardBestState).ShardID, height)
+	}
+
+	// => if > finalblock, we use best view to trace back the correct height
+	blkhash = *bestView.GetPreviousHash()
+	blkheight = blkheight - 1
+	for height < blkheight {
+		shardBlock, _, err := blockchain.GetShardBlockByHash(blkhash)
+		if err != nil {
+			return nil, err
+		}
+		blkheight--
+		blkhash = shardBlock.GetPrevHash()
+	}
+
+	return &blkhash, nil
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*ShardBlock, error) {
 	shardBlockMap := make(map[common.Hash]*ShardBlock)
-	hash, err := statedb.GetShardBlockHashByIndex(blockchain.GetBestStateShard(shardID).consensusStateDB.Copy(), shardID, height)
+	blkhash, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
 		return nil, err
 	}
-	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
+	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
 	if err != nil {
 		return nil, err
 	}

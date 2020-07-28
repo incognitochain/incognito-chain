@@ -2383,7 +2383,15 @@ func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *
 }
 
 func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
-	return s.blockChain.GetBeaconBlockByHeightAndView(height, common.Hash{})
+	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock, _, err := s.blockChain.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlock, nil
 }
 
 func (s *Server) GetBeaconChainDatabase() incdb.Database {

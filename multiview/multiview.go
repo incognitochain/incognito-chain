@@ -51,6 +51,11 @@ func NewMultiView() *MultiView {
 
 }
 
+func (multiView *MultiView) Reset() {
+	multiView.viewByHash = make(map[common.Hash]View)
+	multiView.viewByPrevHash = make(map[common.Hash][]View)
+}
+
 func (multiView *MultiView) removeOutdatedView() {
 	for h, v := range multiView.viewByHash {
 		if v.GetHeight() < multiView.finalView.GetHeight() {
