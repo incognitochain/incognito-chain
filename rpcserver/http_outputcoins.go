@@ -52,7 +52,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err1)
 	}
-	if len(paramsArray) == 3 {
+	if len(paramsArray) == 4 {
 		tokenIDStr, ok := paramsArray[3].(string)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
