@@ -111,23 +111,24 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 
-		someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, t)
-		for _,theInvalidTx := range someInvalidTxs{
-			txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
-			assert.Equal(t, true, ok)
-			// look for potential panics by calling verify
-			isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
-			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-			if !isSane{
-				continue
-			}
-			txSpecific.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, false, nil, nil)
-			txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
-		}
-		// focused on the above right now
-		continue 
+		testTxTokenV2JsonMarshaler(tx, 25, dummyDB, t)
+		// someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, t)
+		// for _,theInvalidTx := range someInvalidTxs{
+		// 	txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
+		// 	assert.Equal(t, true, ok)
+		// 	// look for potential panics by calling verify
+		// 	isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+		// 	// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+		// 	if !isSane{
+		// 		continue
+		// 	}
+		// 	txSpecific.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, false, nil, nil)
+		// 	txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		// }
+		// // focused on the above right now
+		// continue 
 
-		testTxTokenV2DeletedProof(tx, dummyDB, t)
+		// testTxTokenV2DeletedProof(tx, dummyDB, t)
 		// testTxTokenV2OneFakeOutput(tx, dummyDB, paramToCreateTx, t)
 
 		// save the fee outputs into the db
@@ -180,6 +181,20 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		err = tx2.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 		
+		// someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx2, t)
+		// for _,theInvalidTx := range someInvalidTxs{
+		// 	txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
+		// 	assert.Equal(t, true, ok)
+		// 	// look for potential panics by calling verify
+		// 	isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+		// 	// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+		// 	if !isSane{
+		// 		continue
+		// 	}
+		// 	txSpecific.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, false, nil, nil)
+		// 	txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		// }
+		testTxTokenV2JsonMarshaler(tx2, 25, dummyDB, t)
 
 
 		testTxTokenV2DeletedProof(tx2, dummyDB, t)
@@ -368,6 +383,10 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	err = tx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
 	// fmt.Println(err)
 	assert.NotEqual(t,nil,err)
+	if err==nil{
+		fmt.Println(err)
+		panic("Test Terminated Early : Double Spent")
+	}
 }
 
 func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, t *testing.T) (*TxTokenParams,*TokenParam){
@@ -472,10 +491,29 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 	forceSaveCoins(db, []coin.Coin{theCoinsGeneric[1]}, 0, *tokenID, t)
 
 	// creating the TX object
-	txsal := TxTokenVersion2{}
+	txsal := &TxTokenVersion2{}
 	// actually making the salary TX
 	err = txsal.InitTxTokenSalary(theCoins[0], dummyPrivateKeys[0], db, nil, tokenID, "Token 1")
+	if err!=nil{
+		fmt.Println(err)
+		panic("Test Terminated Early")
+	}
 	assert.Equal(t, nil, err)
+
+	testTxTokenV2JsonMarshaler(txsal, 25, db, t)
+	// someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(txsal, t)
+	// for _,theInvalidTx := range someInvalidTxs{
+	// 	txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
+	// 	// assert.Equal(t, true, ok)
+	// 	if !ok{
+	// 		// it's a txToken but not ver2 for some reason. We ignore for now
+	// 		continue
+	// 	}
+	// 	// look for potential panics by calling verify
+	// 	isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+	// 	// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+	// 	_ = isSane
+	// }
 	// isValidSanity, err := txsal.ValidateSanityData(nil, nil, nil, 0)
 	// assert.Equal(t, true, isValidSanity)
 	// assert.Equal(t, nil, err)
