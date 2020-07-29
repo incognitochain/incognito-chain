@@ -190,16 +190,16 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	//========Store new  Shard block and new shard bestState
-	confirmBeaconBlock := NewBeaconBlock()
-	if len(beaconBlocks) > 0 {
-		confirmBeaconBlock = beaconBlocks[len(beaconBlocks)-1]
-	} else {
-		confirmBeaconBlocks, err := blockchain.GetBeaconBlockByHeight(shardBlock.Header.BeaconHeight)
-		if err != nil {
-			return err
-		}
-		confirmBeaconBlock = confirmBeaconBlocks[0]
-	}
+	//confirmBeaconBlock := NewBeaconBlock()
+	//if len(beaconBlocks) > 0 {
+	//	confirmBeaconBlock = beaconBlocks[len(beaconBlocks)-1]
+	//} else {
+	//	confirmBeaconBlocks, err := blockchain.GetBeaconBlockByHeight(shardBlock.Header.BeaconHeight)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	confirmBeaconBlock = confirmBeaconBlocks[0]
+	//}
 
 	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
 		newBestState.ShardID, shardBlock.Header.Height, blockHash)
@@ -207,7 +207,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		return err2
 	}
 
-	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, confirmBeaconBlock)
+	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
 	if err2 != nil {
 		return err2
 	}
@@ -727,7 +727,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
+		if err := statedb.StoreStakerInfo(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
 			Logger.log.Error(stakePublicKey, txHash, err)
 			return nil, nil, nil, errors.New("Cannot store staker info")
 		}
@@ -939,7 +939,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store incoming cross shard block
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
-func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *ShardBlock, committeeChange *committeestate.CommitteeChange, beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *ShardBlock, committeeChange *committeestate.CommitteeChange, beaconBlocks []*BeaconBlock) error {
 	startTimeProcessStoreShardBlock := time.Now()
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height

@@ -176,7 +176,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	}
 	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
-	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
+	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, []*BeaconBlock{genesisBeaconBlock})
 	if err != nil {
 		return err
 	}
@@ -516,7 +516,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		}
 		shardCommitteeEngine := InitShardCommitteeEngine(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		v.shardCommitteeEngine = shardCommitteeEngine
-		mapStakingTx, err := GetMapAllStaker(v.consensusStateDB, blockchain.GetShardChainDatabase(shardID), int(shardID))
+		mapStakingTx, err := blockchain.GetShardStakingTx(v)
 		if err != nil {
 			panic(err)
 		}
@@ -536,6 +536,10 @@ func (blockchain *BlockChain) GetShardStakingTx(shardView *ShardBestState) (map[
 	}
 
 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		Logger.log.Error("Cannot restore shard, beacon not ready!")
+		return nil, err
+	}
 	mapStakingTx, err := beaconConsensusStateDB.GetAllStakingTX(blockchain.GetShardIDs())
 
 	if err != nil {
