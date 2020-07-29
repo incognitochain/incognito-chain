@@ -177,6 +177,7 @@ const (
 	ProcessAutoStakingError
 	ProcessPortalRelayingError
 	GetTotalLockedCollateralError
+	ReplaceShardCommitteeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -337,6 +338,7 @@ var ErrCodeMessage = map[int]struct {
 	BackupCurrentBeaconStateError:                     {-1151, "Backup Current Beacon State Error"},
 	ProcessAutoStakingError:                           {-1152, "Process Auto Staking Error"},
 	ProcessPortalRelayingError:                        {-1153, "Process Portal Relaying Error"},
+	ReplaceShardCommitteeError:                        {-1154, "Replace One Shard Committee Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 }

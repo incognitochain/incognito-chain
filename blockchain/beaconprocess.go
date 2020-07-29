@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1185,15 +1186,21 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 			}
 			shardID := byte(temp)
 			// update shard pending validator
-			committeeChange.shardCommitteeRemoved[shardID] = append(committeeChange.shardCommitteeRemoved[shardID], outPublicKeyStructs...)
+			// committeeChange.shardCommitteeRemoved[shardID] = append(committeeChange.shardCommitteeRemoved[shardID], outPublicKeyStructs...)
 			// add new public key to committees
-			committeeChange.shardCommitteeAdded[shardID] = append(committeeChange.shardCommitteeAdded[shardID], inPublicKeyStructs...)
+			// committeeChange.shardCommitteeAdded[shardID] = append(committeeChange.shardCommitteeAdded[shardID], inPublicKeyStructs...)
+			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
+			committeeReplace[common.REPLACE_OUT] = append(committeeReplace[common.REPLACE_OUT], outPublicKeyStructs...)
+			committeeReplace[common.REPLACE_IN] = append(committeeReplace[common.REPLACE_IN], inPublicKeyStructs...)
+			committeeChange.shardCommitteeReplaced[shardID] = committeeReplace
 			remainedShardCommittees := beaconBestState.ShardCommittee[shardID][removedCommittee:]
 			beaconBestState.ShardCommittee[shardID] = append(inPublicKeyStructs, remainedShardCommittees...)
 		} else if instruction[3] == "beacon" {
-			committeeChange.beaconCommitteeRemoved = append(committeeChange.beaconCommitteeRemoved, outPublicKeyStructs...)
+			// committeeChange.beaconCommitteeRemoved = append(committeeChange.beaconCommitteeRemoved, outPublicKeyStructs...)
 			// add new public key to committees
-			committeeChange.beaconCommitteeAdded = append(committeeChange.beaconCommitteeAdded, inPublicKeyStructs...)
+			// committeeChange.beaconCommitteeAdded = append(committeeChange.beaconCommitteeAdded, inPublicKeyStructs...)
+			committeeChange.beaconCommitteeReplaced[common.REPLACE_OUT] = append(committeeChange.beaconCommitteeReplaced[common.REPLACE_OUT], outPublicKeyStructs...)
+			committeeChange.beaconCommitteeReplaced[common.REPLACE_IN] = append(committeeChange.beaconCommitteeReplaced[common.REPLACE_IN], inPublicKeyStructs...)
 			remainedBeaconCommittees := beaconBestState.BeaconCommittee[removedCommittee:]
 			beaconBestState.BeaconCommittee = append(inPublicKeyStructs, remainedBeaconCommittees...)
 		}
@@ -1324,11 +1331,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	if err != nil {
 		return err
 	}
+	err = statedb.ReplaceAllShardCommittee(tempBeaconBestState.consensusStateDB, committeeChange.shardCommitteeReplaced, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
+	if err != nil {
+		return err
+	}
 	err = statedb.StoreBeaconSubstituteValidator(tempBeaconBestState.consensusStateDB, committeeChange.beaconSubstituteAdded, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
 	err = statedb.StoreBeaconCommittee(tempBeaconBestState.consensusStateDB, committeeChange.beaconCommitteeAdded, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
+	if err != nil {
+		return err
+	}
+	err = statedb.ReplaceBeaconCommittee(tempBeaconBestState.consensusStateDB, committeeChange.beaconCommitteeReplaced, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
