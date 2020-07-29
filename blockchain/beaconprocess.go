@@ -1536,21 +1536,24 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 
-	for finalView == nil || finalView.GetHeight() != newFinalView.GetHeight() {
-		fmt.Println("Store finalized beacon block ")
-		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, newFinalView.GetHeight(), *newFinalView.GetHash())
+	storeBlock := newFinalView.GetBlock()
+	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
+		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
-
-		prevHash := newFinalView.GetPreviousHash()
-		if prevHash == nil {
-			return NewBlockChainError(StoreBeaconBlockError, fmt.Errorf("Cannot get prev hash of current multiview!"))
-		}
-
-		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(*prevHash)
-		if newFinalView == nil {
+		if storeBlock.GetHeight() == 1 {
 			break
+		}
+		prevHash := storeBlock.GetPrevHash()
+		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if newFinalView == nil {
+			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
+			if err != nil {
+				panic("Database is corrupt")
+			}
+		} else {
+			storeBlock = newFinalView.GetBlock()
 		}
 	}
 
