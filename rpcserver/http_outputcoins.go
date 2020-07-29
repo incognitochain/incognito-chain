@@ -57,11 +57,13 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
 		}
-		tokenIDHash, err2 := common.Hash{}.NewHashFromStr(tokenIDStr)
-		if err2 != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+		if tokenIDStr != "" {
+			tokenIDHash, err2 := common.Hash{}.NewHashFromStr(tokenIDStr)
+			if err2 != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+			}
+			tokenID = tokenIDHash
 		}
-		tokenID = tokenIDHash
 	}
 
 	result, err := httpServer.outputCoinService.ListUnspentOutputCoinsByKey(listKeyParams, tokenID)
