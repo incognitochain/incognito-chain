@@ -903,7 +903,6 @@ func (beaconConsensusStateDB *StateDB) GetAllStakingTX(ids []int) (map[string]st
 func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, error) {
 	allStaker := []*CommitteeState{}
 	mapAutoStaking := map[string]bool{}
-	mapStakingTx := map[string]common.Hash{}
 
 	// Current Beacon Validator
 	prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, BeaconChainID)
@@ -946,23 +945,22 @@ func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, error) {
 		key := GetStakerInfoKey(pubKeyBytes)
 		stakerInfo, has, err := stateDB.getStakerInfo(key)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		pKey, err := v.committeePublicKey.ToBase58()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if (!has) || (stakerInfo == nil) {
-			return nil, nil, errors.Errorf("Can not found staker info for this committee public key %v", pKey)
+			return nil, errors.Errorf("Can not found staker info for this committee public key %v", pKey)
 		}
 		if stakerInfo.txStakingID.String() != common.HashH([]byte{0}).String() {
 			mapAutoStaking[pKey] = stakerInfo.autoStaking
 		} else {
 			mapAutoStaking[pKey] = false
 		}
-		mapStakingTx[pKey] = stakerInfo.txStakingID
 	}
-	return mapAutoStaking, mapStakingTx, nil
+	return mapAutoStaking, nil
 }
 
 // ================================= Reward Request OBJECT =======================================

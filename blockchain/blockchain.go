@@ -154,7 +154,6 @@ func (blockchain *BlockChain) InitChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) InitShardState(shardID byte) error {
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := ShardBlock{}
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
@@ -177,7 +176,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	}
 	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
-	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, []*BeaconBlock{genesisBeaconBlock})
+	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}

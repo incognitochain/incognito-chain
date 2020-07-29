@@ -375,12 +375,12 @@ func GetAllCommitteeStakeInfo(stateDB *StateDB, shardIDs []int) map[int][]*Stake
 	return stateDB.getShardsCommitteeInfo(shardIDs)
 }
 
-func GetStakingInfo(bcDB *StateDB, shardIDs []int) (map[string]bool, map[string]common.Hash) {
-	mapAutoStaking, mapStakingTx, err := bcDB.getMapAutoStaking(shardIDs)
+func GetStakingInfo(bcDB *StateDB, shardIDs []int) map[string]bool {
+	mapAutoStaking, err := bcDB.getMapAutoStaking(shardIDs)
 	if err != nil {
 		panic(err)
 	}
-	return mapAutoStaking, mapStakingTx
+	return mapAutoStaking
 }
 
 func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, error) {
