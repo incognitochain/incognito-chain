@@ -370,6 +370,10 @@ func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, s
 	inputCoins := txFee.GetProof().GetInputCoins()
 	keyImages := make([]*operation.Point, len(inputCoins)+1)
 	for i := 0; i < len(inputCoins); i += 1 {
+		if inputCoins[i].GetKeyImage()==nil {
+			Logger.Log.Errorf("Error when reconstructing mlsagSignature: missing keyImage")
+			return false, err
+		}
 		keyImages[i] = inputCoins[i].GetKeyImage()
 	}
 	// The last column is gone, so just fill in any value
