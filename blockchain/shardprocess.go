@@ -727,10 +727,6 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfo(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-			Logger.log.Error(stakePublicKey, txHash, err)
-			return nil, nil, nil, errors.New("Cannot store staker info")
-		}
 	}
 
 	for _, beaconInstruction := range beaconInstructions {
