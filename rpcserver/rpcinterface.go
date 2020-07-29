@@ -128,6 +128,7 @@ var HttpHandler = map[string]httpHandler{
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:                (*HttpServer).handleDefragmentAccount,
+	defragmentAccountToken:           (*HttpServer).handleDefragmentAccountToken,
 	getStackingAmount:                (*HttpServer).handleGetStakingAmount,
 	hashToIdenticon:                  (*HttpServer).handleHashToIdenticon,
 	createAndSendBurningRequest:      (*HttpServer).handleCreateAndSendBurningRequest,
