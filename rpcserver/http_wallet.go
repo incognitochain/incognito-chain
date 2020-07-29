@@ -466,10 +466,7 @@ func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interf
 
 // ------------------------------------ Defragment output coin of account by combine many input coin in to 1 output coin --------------------
 /*
-handleImportAccount - import a new account by private-key
-- Param #1: private-key string
-- Param #2: account name
-- Param #3: passPhrase of wallet
+handleDefragmentAccount
 */
 func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
@@ -512,6 +509,53 @@ func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params inter
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
+// defragment for token
+func (httpServer *HttpServer) handleDefragmentAccountToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	data, err := httpServer.createRawDefragmentAccountTokenTransaction(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionTokenResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:    sendResult.(jsonresult.CreateTransactionTokenResult).TxID,
+		ShardID: tx.ShardID,
+	}
+	return result, nil
+}
+
+// createRawDefragmentAccountTokenTransaction
+func (httpServer *HttpServer) createRawDefragmentAccountTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	tx, err := httpServer.txService.BuildRawDefragmentPrivacyCustomTokenTransaction(params, nil)
+	if err.(*rpcservice.RPCError) != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	result := jsonresult.CreateTransactionTokenResult{
+		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
+		TokenName:       tx.TxPrivacyTokenData.PropertyName,
+		TokenAmount:     tx.TxPrivacyTokenData.Amount,
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
