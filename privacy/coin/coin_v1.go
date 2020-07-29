@@ -467,7 +467,7 @@ func (c *CoinV1) SetBytes(bytes []byte) error {
 	}
 
 	// try get 1-byte for len
-	if offset > len(bytes) {
+	if offset >= len(bytes) {
 		// out of range
 		return errors.New("out of range Parse CoinDetails")
 	}
