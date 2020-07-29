@@ -10,15 +10,19 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/metadata"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumberprivacy"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+	"os"
+	"math/rand"
+	"strconv"
 )
 
-func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, pubKey *operation.Point, testDB *statedb.StateDB) ([]coin.PlainCoin, error) {
+func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, pubKey *operation.Point, dummyDB *statedb.StateDB) ([]coin.PlainCoin, error) {
 	//amount := uint64(common.RandIntInterval(0, 1000000))
 	amount := uint64(numCoins * 1000)
 	outCoins := []coin.PlainCoin{}
@@ -44,11 +48,11 @@ func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, p
 		coinsToBeSaved = append(coinsToBeSaved, outCoin.Bytes())
 		commitmentsToBeSaved = append(commitmentsToBeSaved, outCoin.GetCommitment().ToBytesS())
 	}
-	err = statedb.StoreOutputCoins(testDB, common.PRVCoinID, pubKey.ToBytesS(), coinsToBeSaved, shardID)
+	err = statedb.StoreOutputCoins(dummyDB, common.PRVCoinID, pubKey.ToBytesS(), coinsToBeSaved, shardID)
 	if err != nil {
 		return nil, err
 	}
-	err = statedb.StoreCommitments(testDB, common.PRVCoinID, commitmentsToBeSaved, shardID)
+	err = statedb.StoreCommitments(dummyDB, common.PRVCoinID, commitmentsToBeSaved, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +80,7 @@ func createTxPrivacyInitParams(keySet *incognitokey.KeySet, inputCoins []coin.Pl
 		inputCoins,
 		0,
 		hasPrivacy,
-		testDB,
+		dummyDB,
 		&common.PRVCoinID,
 		nil,
 		nil)
@@ -93,7 +97,7 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
 	for i:=0; i < numTests; i++ {
-		coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, testDB)
+		coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, dummyDB)
 		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 		tx := new(TxVersion1)
@@ -112,13 +116,15 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
+		
+		testTxV1JsonMarshaler(tx, 50, dummyDB, t)
 	}
 }
 
-func TestTxVersion1_InputCoinReplication(t *testing.T) {
+func testTxVersion1_InputCoinReplication(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -127,10 +133,10 @@ func TestTxVersion1_InputCoinReplication(t *testing.T) {
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
 	for i:=0; i< numTests; i++ {
-		coins, err := createAndSaveCoinV1s(100, 2, keySet.PrivateKey, pubKey, testDB)
+		coins, err := createAndSaveCoinV1s(100, 2, keySet.PrivateKey, pubKey, dummyDB)
 		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-		fmt.Println(coins[0].GetValue())
+		// fmt.Println(coins[0].GetValue())
 
 		tx := new(TxVersion1)
 		//choose some input coins to spend => make sure that inputCoins[0] and inputCoins[1] have the same amount
@@ -168,7 +174,7 @@ func TestTxVersion1_InputCoinReplication(t *testing.T) {
 	}
 }
 
-func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
+func testTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -176,7 +182,7 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, dummyDB)
 	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 	for i:=0;i<numTests;i++ {
@@ -195,7 +201,7 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx1.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -243,7 +249,7 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	}
 }
 
-func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
+func testTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -251,7 +257,7 @@ func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, dummyDB)
 	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 	for i := 0; i < numTests; i++ {
@@ -270,7 +276,7 @@ func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx1.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -316,7 +322,7 @@ func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 	}
 }
 
-func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
+func testTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -324,7 +330,7 @@ func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, dummyDB)
 	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 	for i := 0; i < numTests; i++ {
@@ -343,7 +349,7 @@ func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx1.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx1.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -388,13 +394,13 @@ func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx2.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx2.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, false, res)
 	}
 }
 
-func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
+func testTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -402,7 +408,7 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, dummyDB)
 	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 	for i := 0; i < numTests; i++ {
@@ -422,7 +428,7 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx1.ValidateTransaction(false, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx1.ValidateTransaction(false, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -469,13 +475,13 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res) //This should fail
 
-		res, err = tx2.ValidateTransaction(false, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx2.ValidateTransaction(false, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 	}
 }
 
-func TestTxVersion1_OutputTampered(t *testing.T) {
+func testTxVersion1_OutputTampered(t *testing.T) {
 	//This test will attempt to create a transaction ver1 which has output value larger than sum of input values
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
@@ -484,7 +490,7 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, testDB)
+	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, dummyDB)
 	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 	for i := 0; i < numTests; i++ {
@@ -551,8 +557,173 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, err = tx.ValidateTransaction(true, testDB, testDB, 0, &common.PRVCoinID, false, false)
+		res, err = tx.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, true, res, err)
 
+	}
+}
+
+func BenchmarkTxV1BatchVerify(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	clargs := os.Args[5:]
+	// fmt.Println(clargs)
+
+	numOfInputs,_ := strconv.Atoi(clargs[0])
+	numOfOutputs,_ := strconv.Atoi(clargs[1])
+	numOfPrivateKeys := 50
+	// fmt.Printf("\n------------------TxVersion2 Verify Benchmark\n")
+	// fmt.Printf("Number of transactions : %d\n", 1)
+	// fmt.Printf("Number of inputs       : %d\n", numOfInputs)
+	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
+	// fmt.Println("Will prepare keys")
+	keySets, _ := prepareKeySets(numOfPrivateKeys)
+	numOfTxs := numOfPrivateKeys
+
+	var txsForBenchmark []*TxVersion1
+	for i:=0; i < numOfTxs; i++ {
+		keySet := keySets[i]
+		pubKey, _ := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
+		// fmt.Printf("Will create coins for tx #%d\n",i)
+		coins, _ := createAndSaveCoinV1s(2*numOfInputs, 0, keySet.PrivateKey, pubKey, dummyDB)
+
+		tx := new(TxVersion1)
+		// r := RandInt() % 90
+		inputCoins := coins[:numOfInputs]
+		// fmt.Printf("Will create tx params for tx #%d\n",i)
+		_, txPrivacyParams, _ := createTxPrivacyInitParams(keySet, inputCoins, true, numOfOutputs)
+		// assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+		// fmt.Printf("Finished creating tx params for tx #%d\n",i)
+		tx.Init(txPrivacyParams)
+		txsForBenchmark = append(txsForBenchmark, tx)
+
+	}
+
+	batchLength, _ := strconv.Atoi(clargs[2])
+	// each loop verifies x transactions as one batch
+	// so the ops/sec will need to be divided by x afterwards
+	// for fair comparison
+	b.ResetTimer()
+	var pass bool
+	for loop := 0; loop < b.N; loop++ {
+		var batchContent []metadata.Transaction
+		for j:=0;j<batchLength;j++{
+			chosenIndex := RandInt() % len(txsForBenchmark)
+			currentTx := txsForBenchmark[chosenIndex]
+			currentTx.ValidateSanityData(nil,nil,nil,0)
+			currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+			
+			batchContent = append(batchContent, currentTx)
+		}
+		batch := NewBatchTransaction(batchContent)
+		// fmt.Println("About to verify batch")
+		success, _, _ := batch.Validate(dummyDB, nil)
+		if !success{
+			fmt.Println("Something wrong")
+			panic("Invalid tx batch")
+		}
+		pass = true
+	}
+	assert.Equal(b,true,pass)
+}
+
+func BenchmarkTxV1Verify(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	clargs := os.Args[5:]
+	// fmt.Println(clargs)
+
+	numOfInputs,_ := strconv.Atoi(clargs[0])
+	numOfOutputs,_ := strconv.Atoi(clargs[1])
+	numOfPrivateKeys := 50
+	numOfTxs := numOfPrivateKeys
+	// fmt.Printf("\n------------------TxVersion1 Verify Benchmark\n")
+	// fmt.Printf("Number of transactions : %d\n", numOfTxs)
+	// fmt.Printf("Number of inputs       : %d\n", numOfInputs)
+	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
+	keySets, _ := prepareKeySets(numOfPrivateKeys)
+	
+
+	var txsForBenchmark []*TxVersion1
+	for i:=0; i < numOfTxs; i++ {
+		keySet := keySets[i]
+		pubKey, _ := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
+		coins, _ := createAndSaveCoinV1s(2*numOfInputs, 0, keySet.PrivateKey, pubKey, dummyDB)
+
+		tx := new(TxVersion1)
+		// r := RandInt() % 90
+		inputCoins := coins[:numOfInputs]
+		_, txPrivacyParams, _ := createTxPrivacyInitParams(keySet, inputCoins, true, numOfOutputs)
+		// assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
+		tx.Init(txPrivacyParams)
+		txsForBenchmark = append(txsForBenchmark, tx)
+
+	}
+
+	// batchLength, _ := strconv.Atoi(clargs[2])
+	// each loop verifies 20 transactions as one batch
+	// so the ops/sec will need to be divided by 20 afterwards
+	// for fair comparison
+	b.ResetTimer()
+	for loop := 0; loop < b.N; loop++ {
+		chosenIndex := RandInt() % len(txsForBenchmark)
+		currentTx := txsForBenchmark[chosenIndex]
+
+		var err error
+		var isValid bool
+		isValid, err = currentTx.ValidateSanityData(nil,nil,nil,0)
+		if !isValid{
+			panic("Invalid tx sanity")
+		}
+		isValid, err = currentTx.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
+		if !isValid{
+			panic("Invalid tx")
+		}
+		err = currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		if err!=nil{
+			panic("Invalid tx : double spent")
+		}		
+	}
+}
+
+func testTxV1JsonMarshaler(tx *TxVersion1, count int, db *statedb.StateDB, t *testing.T){
+	someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
+	for _,theInvalidTx := range someInvalidTxs{
+		txSpecific, ok := theInvalidTx.(*TxVersion1)
+		if !ok{
+			fmt.Println("Skipping a transaction from wrong version")
+			continue
+		}
+		// look for potential panics by calling verify
+		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+		if !isSane{
+			continue
+		}
+		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+		if !isSane{
+			continue
+		}
+		txSpecific.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	}
+}
+
+func testTxTokenV1JsonMarshaler(tx *TxTokenVersion1, count int, db *statedb.StateDB, t *testing.T){
+	someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
+	for _,theInvalidTx := range someInvalidTxs{
+		txSpecific, ok := theInvalidTx.(*TxTokenVersion1)
+		if !ok{
+			fmt.Println("Skipping a transaction from wrong version")
+			continue
+		}
+		// look for potential panics by calling verify
+		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+		if !isSane{
+			continue
+		}
+		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+		if !isSane{
+			continue
+		}
+		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
