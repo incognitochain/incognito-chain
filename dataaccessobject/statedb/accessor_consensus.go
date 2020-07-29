@@ -496,32 +496,31 @@ func DeleteBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incogn
 //finally, we have {B: F,A: D};
 //Note1: A and E in same shard,means if A and E in different shard, then there is no replacement
 //Note2: only staking tx is used in this staker info
-
-func StoreStakerInfoAtShardDB(stateDB *StateDB, committeeStr string, stakingTX string) error {
-	var committee = new(incognitokey.CommitteePublicKey)
-	if err := committee.FromString(committeeStr); err != nil {
-		return err
-	}
-	keyBytes, err := committee.RawBytes()
-	if err != nil {
-		fmt.Println("get raw byte fail", err)
-		return err
-	}
-	key := GetStakerInfoKey(keyBytes)
-	value := NewStakerInfo()
-	stakingTXHash, err := common.Hash{}.NewHashFromStr(stakingTX)
-	if err != nil {
-		fmt.Println("import hash fail!", err)
-		return err
-	}
-	value.SetTxStakingID(*stakingTXHash)
-	value.SetRewardReceiver(privacy.PaymentAddress{Pk: privacy.PublicKey{0}, Tk: privacy.TransmissionKey{0}})
-	err = stateDB.SetStateObject(StakerObjectType, key, value)
-	if err != nil {
-		fmt.Println("set state fail!", err)
-	}
-	return err
-}
+//func StoreStakerInfoAtShardDB(stateDB *StateDB, committeeStr string, stakingTX string) error {
+//	var committee = new(incognitokey.CommitteePublicKey)
+//	if err := committee.FromString(committeeStr); err != nil {
+//		return err
+//	}
+//	keyBytes, err := committee.RawBytes()
+//	if err != nil {
+//		fmt.Println("get raw byte fail", err)
+//		return err
+//	}
+//	key := GetStakerInfoKey(keyBytes)
+//	value := NewStakerInfo()
+//	stakingTXHash, err := common.Hash{}.NewHashFromStr(stakingTX)
+//	if err != nil {
+//		fmt.Println("import hash fail!", err)
+//		return err
+//	}
+//	value.SetTxStakingID(*stakingTXHash)
+//	value.SetRewardReceiver(privacy.PaymentAddress{Pk: privacy.PublicKey{0}, Tk: privacy.TransmissionKey{0}})
+//	err = stateDB.SetStateObject(StakerObjectType, key, value)
+//	if err != nil {
+//		fmt.Println("set state fail!", err)
+//	}
+//	return err
+//}
 
 func storeStakerInfo(
 	stateDB *StateDB,

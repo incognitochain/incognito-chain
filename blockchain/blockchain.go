@@ -94,17 +94,17 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	if err := blockchain.initChainState(); err != nil {
+	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
 	return nil
 }
 
-// initChainState attempts to load and initialize the chain state from the
+// InitChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
 // chain state are initialized to the genesis block.
-func (blockchain *BlockChain) initChainState() error {
+func (blockchain *BlockChain) InitChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
@@ -123,6 +123,9 @@ func (blockchain *BlockChain) initChainState() error {
 	}
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
 
+	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
+	//panic(beaconHash.String())
+
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
@@ -133,7 +136,7 @@ func (blockchain *BlockChain) initChainState() error {
 		}
 		if err := blockchain.RestoreShardViews(shardID); err != nil {
 			Logger.log.Error("debug restore shard fail, init")
-			err := blockchain.initShardState(shardID)
+			err := blockchain.InitShardState(shardID)
 			if err != nil {
 				Logger.log.Error("debug shard state init error")
 				return err
@@ -150,7 +153,8 @@ func (blockchain *BlockChain) initChainState() error {
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
 */
-func (blockchain *BlockChain) initShardState(shardID byte) error {
+func (blockchain *BlockChain) InitShardState(shardID byte) error {
+	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := ShardBlock{}
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
@@ -173,7 +177,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	}
 	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
-	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, genesisBeaconBlock)
+	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, []*BeaconBlock{genesisBeaconBlock})
 	if err != nil {
 		return err
 	}
@@ -196,9 +200,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetBeaconCommittee()); err != nil {
-		return err
-	}
-	if err := statedb.StoreBeaconBlockHashByIndex(initBeaconBestState.consensusStateDB, initBlockHeight, initBlockHash); err != nil {
 		return err
 	}
 
@@ -228,10 +229,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
-	if err := rawdbv2.StoreBeaconBlock(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash, &initBeaconBestState.BestBlock); err != nil {
+	if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
 	}
+	rawdbv2.StoreFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash)
 
 	// State Root Hash
 	bRH := BeaconRootHash{
@@ -454,6 +456,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
 		sID = append(sID, i)
 	}
+
+	blockchain.BeaconChain.multiView.Reset()
 	for _, v := range allViews {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain); err != nil {
 			return NewBlockChainError(BeaconError, err)
@@ -494,6 +498,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		return err
 	}
 	fmt.Println("debug RestoreShardViews", len(allViews))
+	blockchain.ShardChain[shardID].multiView.Reset()
+
 	for _, v := range allViews {
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")
@@ -513,23 +519,37 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		v.shardCommitteeEngine = shardCommitteeEngine
 		mapStakingTx, err := GetMapAllStaker(v.consensusStateDB, blockchain.GetShardChainDatabase(shardID), int(shardID))
 		if err != nil {
-			fmt.Println(err)
-			panic("Something wrong when retrieve mapStakingTx")
+			panic(err)
 		}
 		v.StakingTx = common.NewMapStringString()
 		v.StakingTx.SetData(mapStakingTx)
 	}
-
 	return nil
 }
 
-func GetMapAllStaker(bcDB *statedb.StateDB, sdb incdb.Database, shardID int) (map[string]string, error) {
-	mapStakingTx := make(map[string]string)
-	stakersInfo := bcDB.IterateWithStaker(statedb.GetStakerInfoPrefix())
+func (blockchain *BlockChain) GetShardStakingTx(shardView *ShardBestState) (map[string]string, error) {
+	shardID := shardView.ShardID
+	//build staking tx
+	beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), shardView.BeaconHeight)
+	if err != nil {
+		Logger.log.Error("Cannot restore shard, beacon not ready!")
+		return nil, err
+	}
 
-	for _, staker := range stakersInfo {
-		if staker.TxStakingID().String() != common.HashH([]byte{0}).String() {
-			blockHash, txindex, err := rawdbv2.GetTransactionByHash(sdb, staker.TxStakingID())
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	mapStakingTx, err := beaconConsensusStateDB.GetAllStakingTX(blockchain.GetShardIDs())
+
+	if err != nil {
+		fmt.Println(err)
+		panic("Something wrong when retrieve mapStakingTx")
+	}
+
+	sdb := blockchain.GetShardChainDatabase(byte(shardID))
+	shardStakingTx := map[string]string{}
+	for _, stakingtx := range mapStakingTx {
+		if stakingtx != common.HashH([]byte{0}).String() {
+			stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingtx)
+			blockHash, txindex, err := rawdbv2.GetTransactionByHash(sdb, *stakingTxHash)
 			if err != nil { //no transaction in this node
 				continue
 			}
@@ -542,15 +562,15 @@ func GetMapAllStaker(bcDB *statedb.StateDB, sdb incdb.Database, shardID int) (ma
 			if err != nil {
 				panic("Cannot unmarshal shardblock")
 			}
-			if shardBlock.GetShardID() != shardID {
+			if shardBlock.GetShardID() != int(shardID) {
 				continue
 			}
 			txData := shardBlock.Body.Transactions[txindex]
 			committeePk := txData.GetMetadata().(*metadata.StakingMetadata).CommitteePublicKey
-			mapStakingTx[committeePk] = staker.TxStakingID().String()
+			shardStakingTx[committeePk] = stakingtx
 		}
 	}
-	return mapStakingTx, nil
+	return shardStakingTx, nil
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------

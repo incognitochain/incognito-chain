@@ -398,18 +398,21 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	//Get beacon hash by height in db
 	//If hash not found then fail to verify
-	beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), shardBlock.Header.BeaconHeight)
+	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
+
 	//Hash in db must be equal to hash in shard shardBlock
 	newHash, err := common.Hash{}.NewHash(shardBlock.Header.BeaconHash.GetBytes())
 	if err != nil {
 		return NewBlockChainError(HashError, err)
 	}
-	if !newHash.IsEqual(&beaconHash) {
-		return NewBlockChainError(BeaconBlockNotCompatibleError, fmt.Errorf("Expect beacon shardBlock hash to be %+v but get %+v", beaconHash, newHash))
+
+	if !newHash.IsEqual(beaconHash) {
+		return NewBlockChainError(BeaconBlockNotCompatibleError, fmt.Errorf("Expect beacon shardBlock hash to be %+v but get %+v", beaconHash.String(), newHash.String()))
 	}
+
 	// Swap instruction
 	for _, l := range shardBlock.Body.Instructions {
 		if l[0] == "swap" {
@@ -798,9 +801,9 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-			return err
-		}
+		//if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
+		//	return err
+		//}
 	}
 
 	env := committeestate.
@@ -974,7 +977,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
-	// Update bridge issuance request status
+	// Update bridge issuancstore sharde request status
 	err = blockchain.updateBridgeIssuanceStatus(newShardState.featureStateDB, shardBlock)
 	if err != nil {
 		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
@@ -993,7 +996,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		}
 		err = statedb.StoreOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.ShardSubstituteAdded[shardID])
 		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
+			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", newShardState.GetHeight(), err))
 		}
 	}
 	err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.ShardCommitteeReplaced[shardID])
@@ -1008,9 +1011,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	//err = statedb.DeleteOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, removedSubstitutesValidator)
 	err = statedb.DeleteOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.ShardSubstituteRemoved[shardID])
 	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	if err := statedb.StoreShardBlockHashByIndex(newShardState.consensusStateDB, shardID, blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
@@ -1098,6 +1098,25 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err := batchData.Write(); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	if !blockchain.config.ChainParams.IsBackup {
+		return nil
+	}
+
+	backupPoint := false
+	for _, bblk := range beaconBlocks {
+		if (bblk.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+			backupPoint = true
+		}
+	}
+
+	if backupPoint {
+		err := blockchain.GetShardChainDatabase(newShardState.ShardID).Backup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
+		if err != nil {
+			blockchain.GetShardChainDatabase(newShardState.ShardID).RemoveBackup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
+		}
+	}
+
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil

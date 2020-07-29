@@ -1041,8 +1041,17 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 }
 
 func (tp *TxPool) EmptyPool() bool {
+	tp.mtx.Lock()
 	tp.candidateMtx.Lock()
-	defer tp.candidateMtx.Unlock()
+	tp.requestStopStakingMtx.Lock()
+	tp.roleMtx.Lock()
+	defer func() {
+		tp.candidateMtx.Unlock()
+		tp.mtx.Unlock()
+		tp.requestStopStakingMtx.Unlock()
+		tp.roleMtx.Unlock()
+	}()
+
 	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 {
 		return true
 	}
