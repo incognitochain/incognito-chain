@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -79,25 +77,15 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
 
-	err = shardBestState.RestoreCommittee(shardID, httpServer.config.BlockChain)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
-	}
-
 	mapStakingTx, err := httpServer.config.BlockChain.GetShardStakingTx(shardBestState)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
 
-	shardBestState.StakingTx = blockchain.NewMapStringString()
+	shardBestState.StakingTx = common.NewMapStringString()
 
 	for i, v := range mapStakingTx {
 		shardBestState.StakingTx.Set(i, v)
-	}
-
-	err = shardBestState.RestorePendingValidators(shardID, httpServer.config.BlockChain)
-	if err != nil {
-		panic(err)
 	}
 
 	result := jsonresult.NewGetShardBestState(shardBestState)
