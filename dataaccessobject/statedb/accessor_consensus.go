@@ -126,12 +126,12 @@ func StoreNextEpochShardCandidate(
 	stakingTx map[string]common.Hash,
 	// amountStaking map[string]uint64,
 ) error {
-	err := storeStakerInfo(stateDB, candidate, rewardReceiver, autoStaking, stakingTx)
-	if err != nil {
-		return NewStatedbError(StoreNextEpochCandidateError, err)
-	}
-	err = storeCommittee(stateDB, CandidateChainID, NextEpochShardCandidate, candidate, defaultEnterTime)
-	if err != nil {
+	//err := storeStakerInfo(stateDB, candidate, rewardReceiver, autoStaking, stakingTx)
+	//if err != nil {
+	//	return NewStatedbError(StoreNextEpochCandidateError, err)
+	//}
+	err1 := storeCommittee(stateDB, CandidateChainID, NextEpochShardCandidate, candidate, defaultEnterTime)
+	if err1 != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
 	}
 	return nil
@@ -152,12 +152,12 @@ func StoreNextEpochBeaconCandidate(
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 ) error {
-	err := storeStakerInfo(stateDB, candidate, rewardReceiver, autoStaking, stakingTx)
-	if err != nil {
-		return NewStatedbError(StoreNextEpochCandidateError, err)
-	}
-	err = storeCommittee(stateDB, BeaconChainID, NextEpochBeaconCandidate, candidate, defaultEnterTime)
-	if err != nil {
+	//err := storeStakerInfo(stateDB, candidate, rewardReceiver, autoStaking, stakingTx)
+	//if err != nil {
+	//	return NewStatedbError(StoreNextEpochCandidateError, err)
+	//}
+	err1 := storeCommittee(stateDB, BeaconChainID, NextEpochBeaconCandidate, candidate, defaultEnterTime)
+	if err1 != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err)
 	}
 	return nil
