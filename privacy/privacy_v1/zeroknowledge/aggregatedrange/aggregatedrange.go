@@ -136,6 +136,9 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.cmsValue = make([]*operation.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
+		if offset + operation.Ed25519KeySize > len(bytes) {
+			return errors.New("Not enough bytes to unmarshal Aggregated Range Proof")
+		}
 		proof.cmsValue[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
@@ -143,6 +146,9 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 		offset += operation.Ed25519KeySize
 	}
 
+	if offset + 7*operation.Ed25519KeySize > len(bytes) {
+		return errors.New("Not enough bytes to unmarshal Aggregated Range Proof")
+	}
 	proof.a, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
@@ -177,10 +183,10 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset += operation.Ed25519KeySize
 
 	proof.innerProductProof = new(InnerProductProof)
-	proof.innerProductProof.SetBytes(bytes[offset:])
+	err = proof.innerProductProof.SetBytes(bytes[offset:])
 
 	//Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
-	return nil
+	return err
 }
 
 func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scalar) {

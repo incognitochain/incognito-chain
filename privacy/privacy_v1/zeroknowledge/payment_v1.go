@@ -829,6 +829,21 @@ func (proof *PaymentProof) IsPrivacy() bool {
 	return true
 }
 
+
+func isBadScalar(sc *operation.Scalar) bool {
+	if sc == nil || !sc.ScalarValid() {
+		return true
+	}
+	return false
+}
+
+func isBadPoint(point *operation.Point) bool {
+	if point == nil || !point.PointValid() {
+		return true
+	}
+	return false
+}
+
 func (proof PaymentProof) ValidateSanity() (bool, error) {
 	if len(proof.inputCoins) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.inputCoins)))
@@ -887,58 +902,58 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 
 		// check input coins with privacy
 		for i := 0; i < len(proof.inputCoins); i++ {
-			if !proof.inputCoins[i].GetKeyImage().PointValid() {
+			if isBadPoint(proof.inputCoins[i].GetKeyImage()) {
 				return false, errors.New("validate sanity Serial number of input coin failed")
 			}
 		}
 		// check output coins with privacy
 		for i := 0; i < len(proof.outputCoins); i++ {
-			if !proof.outputCoins[i].CoinDetails.GetPublicKey().PointValid() {
+			if isBadPoint(proof.outputCoins[i].CoinDetails.GetPublicKey()) {
 				return false, errors.New("validate sanity Public key of output coin failed")
 			}
-			if !proof.outputCoins[i].CoinDetails.GetCommitment().PointValid() {
+			if isBadPoint(proof.outputCoins[i].CoinDetails.GetCommitment()) {
 				return false, errors.New("validate sanity Coin commitment of output coin failed")
 			}
-			if !proof.outputCoins[i].CoinDetails.GetSNDerivator().ScalarValid() {
+			if isBadScalar(proof.outputCoins[i].CoinDetails.GetSNDerivator()) {
 				return false, errors.New("validate sanity SNDerivator of output coin failed")
 			}
 		}
 		// check ComInputSK
-		if !proof.GetCommitmentInputSecretKey().PointValid() {
+		if isBadPoint(proof.GetCommitmentInputSecretKey()) {
 			return false, errors.New("validate sanity ComInputSK of proof failed")
 		}
 		// check ComInputValue
 		for i := 0; i < len(proof.GetCommitmentInputValue()); i++ {
-			if !proof.GetCommitmentInputValue()[i].PointValid() {
+			if isBadPoint(proof.GetCommitmentInputValue()[i]) {
 				return false, errors.New("validate sanity ComInputValue of proof failed")
 			}
 		}
 		//check ComInputSND
 		for i := 0; i < len(proof.GetCommitmentInputSND()); i++ {
-			if !proof.GetCommitmentInputSND()[i].PointValid() {
+			if isBadPoint(proof.GetCommitmentInputSND()[i]) {
 				return false, errors.New("validate sanity ComInputSND of proof failed")
 			}
 		}
 		//check ComInputShardID
-		if !proof.GetCommitmentInputShardID().PointValid() {
+		if isBadPoint(proof.GetCommitmentInputShardID()) {
 			return false, errors.New("validate sanity ComInputShardID of proof failed")
 		}
 
 		// check ComOutputShardID
 		for i := 0; i < len(proof.GetCommitmentOutputShardID()); i++ {
-			if !proof.GetCommitmentOutputShardID()[i].PointValid() {
+			if isBadPoint(proof.GetCommitmentOutputShardID()[i]) {
 				return false, errors.New("validate sanity ComOutputShardID of proof failed")
 			}
 		}
 		//check ComOutputSND
 		for i := 0; i < len(proof.GetCommitmentOutputShardID()); i++ {
-			if !proof.GetCommitmentOutputShardID()[i].PointValid() {
+			if isBadPoint(proof.GetCommitmentOutputShardID()[i]) {
 				return false, errors.New("validate sanity ComOutputSND of proof failed")
 			}
 		}
 		//check ComOutputValue
 		for i := 0; i < len(proof.GetCommitmentOutputValue()); i++ {
-			if !proof.GetCommitmentOutputValue()[i].PointValid() {
+			if isBadPoint(proof.GetCommitmentOutputValue()[i]) {
 				return false, errors.New("validate sanity ComOutputValue of proof failed")
 			}
 		}
@@ -962,35 +977,35 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 		}
 		// check input coins without privacy
 		for i := 0; i < len(proof.inputCoins); i++ {
-			if !proof.inputCoins[i].GetCommitment().PointValid() {
+			if isBadPoint(proof.inputCoins[i].GetCommitment()) {
 				return false, errors.New("validate sanity CoinCommitment of input coin failed")
 			}
-			if !proof.inputCoins[i].GetPublicKey().PointValid() {
+			if isBadPoint(proof.inputCoins[i].GetPublicKey()) {
 				return false, errors.New("validate sanity PublicKey of input coin failed")
 			}
-			if !proof.inputCoins[i].GetKeyImage().PointValid() {
+			if isBadPoint(proof.inputCoins[i].GetKeyImage()) {
 				return false, errors.New("validate sanity Serial number of input coin failed")
 			}
-			if !proof.inputCoins[i].GetRandomness().ScalarValid() {
+			if isBadScalar(proof.inputCoins[i].GetRandomness()) {
 				return false, errors.New("validate sanity Randomness of input coin failed")
 			}
-			if !proof.inputCoins[i].GetSNDerivator().ScalarValid() {
+			if isBadScalar(proof.inputCoins[i].GetSNDerivator()) {
 				return false, errors.New("validate sanity SNDerivator of input coin failed")
 			}
 		}
 
 		// check output coins without privacy
 		for i := 0; i < len(proof.outputCoins); i++ {
-			if !proof.outputCoins[i].CoinDetails.GetCommitment().PointValid() {
+			if isBadPoint(proof.outputCoins[i].CoinDetails.GetCommitment()) {
 				return false, errors.New("validate sanity CoinCommitment of output coin failed")
 			}
-			if !proof.outputCoins[i].CoinDetails.GetPublicKey().PointValid() {
+			if isBadPoint(proof.outputCoins[i].CoinDetails.GetPublicKey()) {
 				return false, errors.New("validate sanity PublicKey of output coin failed")
 			}
-			if !proof.outputCoins[i].CoinDetails.GetRandomness().ScalarValid() {
+			if isBadScalar(proof.outputCoins[i].CoinDetails.GetRandomness()) {
 				return false, errors.New("validate sanity Randomness of output coin failed")
 			}
-			if !proof.outputCoins[i].CoinDetails.GetSNDerivator().ScalarValid() {
+			if isBadScalar(proof.outputCoins[i].CoinDetails.GetSNDerivator()) {
 				return false, errors.New("validate sanity SNDerivator of output coin failed")
 			}
 		}
