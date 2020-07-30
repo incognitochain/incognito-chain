@@ -315,7 +315,7 @@ func (engine *BeaconCommitteeEngine) InitCommitteeState(env *BeaconCommitteeStat
 		}
 		if inst[0] == instruction.STAKE_ACTION {
 			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
-			tempNewBeaconCandidates, tempNewShardCandidates := b.processStakeInstruction(stakeInstruction)
+			tempNewBeaconCandidates, tempNewShardCandidates, _ := b.processStakeInstruction(stakeInstruction, env)
 			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
 			newShardCandidates = append(newShardCandidates, tempNewShardCandidates...)
 		}
@@ -361,7 +361,11 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
 				continue
 			}
-			tempNewBeaconCandidates, tempNewShardCandidates = newB.processStakeInstruction(stakeInstruction)
+			tempNewBeaconCandidates, tempNewShardCandidates, err = newB.processStakeInstruction(stakeInstruction, env)
+			if err != nil {
+				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
+				continue
+			}
 		case instruction.SWAP_ACTION:
 			swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(inst)
 			if err != nil {
@@ -472,7 +476,8 @@ func (b *BeaconCommitteeEngine) GenerateAssignInstruction(candidates []string, n
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
-) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+	env *BeaconCommitteeStateEnvironment,
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	for index, candidate := range stakeInstruction.PublicKeyStructs {
@@ -485,7 +490,17 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	} else {
 		newShardCandidates = append(newShardCandidates, stakeInstruction.PublicKeyStructs...)
 	}
-	return newBeaconCandidates, newShardCandidates
+	err := statedb.StoreStakerInfo(
+		env.ConsensusStateDB,
+		stakeInstruction.PublicKeyStructs,
+		b.rewardReceiver,
+		b.autoStake,
+		b.stakingTx,
+	)
+	if err != nil {
+		return newBeaconCandidates, newShardCandidates, err
+	}
+	return newBeaconCandidates, newShardCandidates, nil
 }
 
 func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
