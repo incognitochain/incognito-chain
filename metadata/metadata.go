@@ -64,6 +64,7 @@ type ChainRetriever interface {
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
+	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 }
 
 type BeaconViewRetriever interface {
@@ -78,6 +79,7 @@ type BeaconViewRetriever interface {
 
 type ShardViewRetriever interface {
 	GetBeaconHeight() uint64
+	GetShardID() byte
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB

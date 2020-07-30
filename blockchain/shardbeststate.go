@@ -294,6 +294,10 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
+func (shardBestState ShardBestState) GetShardID() byte {
+	return shardBestState.ShardID
+}
+
 //cloneShardBestStateFrom - remember to use lock
 func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
 	tempMarshal, err := json.Marshal(target)

@@ -77,7 +77,7 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
 
-	mapStakingTx, err := httpServer.config.BlockChain.GetShardStakingTx(shardBestState)
+	mapStakingTx, err := httpServer.config.BlockChain.GetShardStakingTx(shardBestState.ShardID, shardBestState.BeaconHeight)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}

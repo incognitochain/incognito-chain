@@ -29,6 +29,7 @@ const (
 	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError
 
 	StopAutoStakingRequestNotInCommitteeListError
+	StopAutoStakingRequestGetStakingTransactionError
 	StopAutoStakingRequestStakingTransactionNotFoundError
 	StopAutoStakingRequestInvalidTransactionSenderError
 	StopAutoStakingRequestNoAutoStakingAvaiableError
@@ -84,6 +85,7 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingRequestNoAutoStakingAvaiableError:      {-4003, "Stop Auto-Staking Request No Auto Staking Avaliable Error"},
 	StopAutoStakingRequestTypeAssertionError:              {-4004, "Stop Auto-Staking Request Type Assertion Error"},
 	StopAutoStakingRequestAlreadyStopError:                {-4005, "Stop Auto Staking Request Already Stop Error"},
+	StopAutoStakingRequestGetStakingTransactionError:      {-4006, "Stop Auto Staking Request Get Staking Transaction Error"},
 
 	// -5xxx dev reward error
 	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
