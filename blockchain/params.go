@@ -68,6 +68,7 @@ type Params struct {
 	PortalParams                     map[uint64]PortalParams
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
+	NewStakingTxBeaconHeighSwitch    uint64
 }
 
 type GenesisParams struct {
@@ -166,7 +167,8 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		EpochBreakPointSwapNewKey:     TestnetReplaceCommitteeEpoch,
+		NewStakingTxBeaconHeighSwitch: 0,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -239,7 +241,8 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		EpochBreakPointSwapNewKey:     MainnetReplaceCommitteeEpoch,
+		NewStakingTxBeaconHeighSwitch: 559380,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

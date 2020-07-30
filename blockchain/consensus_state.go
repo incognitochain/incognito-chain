@@ -23,6 +23,8 @@ type committeeChange struct {
 	beaconCommitteeAdded               []incognitokey.CommitteePublicKey
 	beaconCommitteeRemoved             []incognitokey.CommitteePublicKey
 	stopAutoStaking                    []string
+	beaconCommitteeReplaced            [2][]incognitokey.CommitteePublicKey
+	shardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 }
 
 func newCommitteeChange() *committeeChange {
@@ -31,6 +33,9 @@ func newCommitteeChange() *committeeChange {
 		shardSubstituteRemoved: make(map[byte][]incognitokey.CommitteePublicKey),
 		shardCommitteeAdded:    make(map[byte][]incognitokey.CommitteePublicKey),
 		shardCommitteeRemoved:  make(map[byte][]incognitokey.CommitteePublicKey),
+
+		shardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
+		beaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)
@@ -38,6 +43,7 @@ func newCommitteeChange() *committeeChange {
 		committeeChange.shardSubstituteRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.shardCommitteeAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.shardCommitteeRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.shardCommitteeReplaced[shardID] = [2][]incognitokey.CommitteePublicKey{}
 	}
 	return committeeChange
 }

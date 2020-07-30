@@ -74,7 +74,7 @@ func generateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]str
 	return generateHashFromStringArray(append(shardPendingValidator, shardValidator...))
 }
 
-func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, error) {
+func GenerateHashFromMapStringString(maps1 map[string]string) (common.Hash, error) {
 	var keys []string
 	var res []string
 	for k := range maps1 {
@@ -193,7 +193,7 @@ func verifyLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint64,
 	return hash, hash.IsEqual(&targetHash)
 }
 func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Hash) (common.Hash, bool) {
-	hash, err := generateHashFromMapStringString(maps1)
+	hash, err := GenerateHashFromMapStringString(maps1)
 	if err != nil {
 		return hash, false
 	}

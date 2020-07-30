@@ -10,6 +10,7 @@ RUN crontab /etc/cron.d/removeoldlog
 
 COPY ./keylist.json /
 COPY ./keylist-v2.json /
+COPY ./stakingtx_main.json /stakingtx.json
 COPY ./sample-config.conf /
 
 COPY ./run_incognito.sh /

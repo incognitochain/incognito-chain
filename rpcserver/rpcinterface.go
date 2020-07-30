@@ -92,6 +92,7 @@ var HttpHandler = map[string]httpHandler{
 	getShardBestState:             (*HttpServer).handleGetShardBestState,
 	getShardBestStateDetail:       (*HttpServer).handleGetShardBestStateDetail,
 	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
+	getMapStakingTx:               (*HttpServer).handleGetMapStakingTx,
 	getBeaconBestStateDetail:      (*HttpServer).handleGetBeaconBestStateDetail,
 	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
 	getShardPoolState:             (*HttpServer).handleGetShardPoolState,
@@ -124,6 +125,7 @@ var HttpHandler = map[string]httpHandler{
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:                (*HttpServer).handleDefragmentAccount,
+	defragmentAccountToken:           (*HttpServer).handleDefragmentAccountToken,
 	getStackingAmount:                (*HttpServer).handleGetStakingAmount,
 	hashToIdenticon:                  (*HttpServer).handleHashToIdenticon,
 	createAndSendBurningRequest:      (*HttpServer).handleCreateAndSendBurningRequest,

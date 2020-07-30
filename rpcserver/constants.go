@@ -104,6 +104,7 @@ const (
 
 	getShardBestState        = "getshardbeststate"
 	getShardBestStateDetail  = "getshardbeststatedetail"
+	getMapStakingTx          = "getmapstakingtx"
 	getBeaconBestState       = "getbeaconbeststate"
 	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 
@@ -125,6 +126,7 @@ const (
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	defragmentAccount              = "defragmentaccount"
+	defragmentAccountToken         = "defragmentaccounttoken"
 
 	getStackingAmount = "getstackingamount"
 

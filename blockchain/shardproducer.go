@@ -226,7 +226,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(PendingValidatorRootError, err)
 	}
-	stakingTxRoot, err := generateHashFromMapStringString(shardBestState.StakingTx)
+	stakingTxRoot, err := GenerateHashFromMapStringString(shardBestState.StakingTx)
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
