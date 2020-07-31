@@ -14,6 +14,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
+const MAX_S2B_BLOCK = 90
+
 type SynckerManagerConfig struct {
 	Node       Server
 	Blockchain *blockchain.BlockChain
@@ -96,10 +98,37 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	}
 	role, chainID := synckerManager.config.Node.GetUserMiningState()
 	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
+
+	//check preload beacon
+	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	if preloadAddr != "" {
+		if synckerManager.BeaconSyncProcess.status != RUNNING_SYNC { //run only when start
+			if err := preloadDatabase(-1, int(synckerManager.BeaconSyncProcess.chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetBeaconChainDatabase(), synckerManager.config.Blockchain.GetBTCHeaderChain()); err != nil {
+				fmt.Println(err)
+				Logger.Infof("Preload beacon fail!")
+			} else {
+				synckerManager.config.Blockchain.RestoreBeaconViews()
+			}
+		}
+
+	}
 	synckerManager.BeaconSyncProcess.start()
+
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
-		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) || synckerManager.BeaconSyncProcess.isCommittee {
+		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+			//check preload shard
+			if preloadAddr != "" {
+				if syncProc.status != RUNNING_SYNC { //run only when start
+					if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
+						fmt.Println(err)
+						Logger.Infof("Preload shard %v fail!", sid)
+					} else {
+						synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
+					}
+				}
+
+			}
 			syncProc.start()
 		} else {
 			syncProc.stop()

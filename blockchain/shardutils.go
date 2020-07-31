@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -22,11 +21,11 @@ import (
 func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), i)
+		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
 		if err != nil {
 			return nil, err
 		}
-		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconHash)
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
 		if err != nil {
 			return beaconBlocks, err
 		}

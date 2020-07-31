@@ -119,16 +119,7 @@ func GetBeaconHashToBlockKey(hash common.Hash) []byte {
 	return append(temp, hash[:]...)
 }
 
-func GetBeaconIndexToBlockHashKey(index uint64, hash common.Hash) []byte {
-	buf := common.Uint64ToBytes(index)
-	temp := make([]byte, 0, len(beaconIndexToBlockHashPrefix))
-	temp = append(temp, beaconIndexToBlockHashPrefix...)
-	key := append(temp, buf...)
-	key = append(key, splitter...)
-	return append(key, hash[:]...)
-}
-
-func GetBeaconIndexToBlockHashPrefix(index uint64) []byte {
+func GetBeaconIndexToBlockHashKey(index uint64) []byte {
 	buf := common.Uint64ToBytes(index)
 	temp := make([]byte, 0, len(beaconIndexToBlockHashPrefix))
 	temp = append(temp, beaconIndexToBlockHashPrefix...)

@@ -294,6 +294,10 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
+func (shardBestState ShardBestState) GetShardID() byte {
+	return shardBestState.ShardID
+}
+
 //cloneShardBestStateFrom - remember to use lock
 func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
 	tempMarshal, err := json.Marshal(target)
@@ -365,16 +369,16 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 }
 
 func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
-	h, e := statedb.GetShardBlockHashByIndex(shardBestState.consensusStateDB, shardID, height)
-	if e != nil {
-		return nil, e
+	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
+	if err != nil {
+		return nil, err
 	}
-	data, e := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, h)
-	if e != nil {
-		return nil, e
+	data, err := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, *h)
+	if err != nil {
+		return nil, err
 	}
 	sRH := &ShardRootHash{}
-	err := json.Unmarshal(data, sRH)
+	err = json.Unmarshal(data, sRH)
 	return sRH, err
 }
 

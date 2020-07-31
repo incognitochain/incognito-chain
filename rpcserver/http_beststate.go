@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -62,6 +63,29 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	shardBestState, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
+	}
+
+	block, _, err := httpServer.config.BlockChain.GetShardBlockByHash(shardBestState.BestBlockHash)
+	if err != nil || block == nil {
+		fmt.Println("block ", block)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+	shardBestState.BestBlock = block
+
+	err = shardBestState.InitStateRootHash(httpServer.config.BlockChain.GetShardChainDatabase(shardID), httpServer.config.BlockChain)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	mapStakingTx, err := httpServer.config.BlockChain.GetShardStakingTx(shardBestState.ShardID, shardBestState.BeaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	shardBestState.StakingTx = common.NewMapStringString()
+
+	for i, v := range mapStakingTx {
+		shardBestState.StakingTx.Set(i, v)
 	}
 
 	result := jsonresult.NewGetShardBestState(shardBestState)
