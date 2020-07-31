@@ -202,26 +202,28 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
-	if err := statedb.StoreStakerInfo(
-		initBeaconBestState.consensusStateDB,
-		initBeaconBestState.GetBeaconCommittee(),
-		initBeaconBestState.GetRewardReceiver(),
-		initBeaconBestState.GetAutoStaking(),
-		initBeaconBestState.GetStakingTx(),
-	); err != nil {
-		return err
-	}
-	for _, committee := range initBeaconBestState.GetShardCommittee() {
-		if err := statedb.StoreStakerInfo(
-			initBeaconBestState.consensusStateDB,
-			committee,
-			initBeaconBestState.GetRewardReceiver(),
-			initBeaconBestState.GetAutoStaking(),
-			initBeaconBestState.GetStakingTx(),
-		); err != nil {
-			return err
-		}
-	}
+	//if err := statedb.StoreStakerInfo(
+	//	initBeaconBestState.consensusStateDB,
+	//	initBeaconBestState.GetBeaconCommittee(),
+	//	initBeaconBestState.GetRewardReceiver(),
+	//	initBeaconBestState.GetAutoStaking(),
+	//	initBeaconBestState.GetStakingTx(),
+	//); err != nil {
+	//	return err
+	//}
+
+	//for _, committee := range initBeaconBestState.GetShardCommittee() {
+	//	if err := statedb.StoreStakerInfo(
+	//		initBeaconBestState.consensusStateDB,
+	//		committee,
+	//		initBeaconBestState.GetRewardReceiver(),
+	//		initBeaconBestState.GetAutoStaking(),
+	//		initBeaconBestState.GetStakingTx(),
+	//	); err != nil {
+	//		return err
+	//	}
+	//}
+
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
 	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
 	if err != nil {

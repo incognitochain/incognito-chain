@@ -636,6 +636,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 
 func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *BeaconBlock, blockchain *BlockChain, db incdb.Database) error {
 	Logger.log.Info("Process Update Beacon Best State With Beacon Genesis Block")
+	var err error
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *genesisBeaconBlock.Hash()
 	beaconBestState.BestBlock = *genesisBeaconBlock
@@ -660,15 +661,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
 	}
 
-	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
-		NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
-			genesisBeaconBlock.Body.Instructions, false, false))
-
-	beaconBestState.Epoch = 1
-	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
-
-	//statedb===========================START
-	var err error
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
 	beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
@@ -690,10 +682,14 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.SlashStateDBRootHash = common.EmptyRoot
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
-	if err != nil {
-		return err
-	}
-	//statedb===========================END
+
+	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
+		NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+			genesisBeaconBlock.Body.Instructions, false, false))
+
+	beaconBestState.Epoch = 1
+	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+
 	return nil
 }
 
