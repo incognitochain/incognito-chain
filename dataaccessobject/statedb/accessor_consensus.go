@@ -132,7 +132,7 @@ func StoreNextEpochShardCandidate(
 	//}
 	err1 := storeCommittee(stateDB, CandidateChainID, NextEpochShardCandidate, candidate, defaultEnterTime)
 	if err1 != nil {
-		return NewStatedbError(StoreNextEpochCandidateError, err)
+		return NewStatedbError(StoreNextEpochCandidateError, err1)
 	}
 	return nil
 }
@@ -158,7 +158,7 @@ func StoreNextEpochBeaconCandidate(
 	//}
 	err1 := storeCommittee(stateDB, BeaconChainID, NextEpochBeaconCandidate, candidate, defaultEnterTime)
 	if err1 != nil {
-		return NewStatedbError(StoreNextEpochCandidateError, err)
+		return NewStatedbError(StoreNextEpochCandidateError, err1)
 	}
 	return nil
 }
