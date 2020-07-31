@@ -139,7 +139,7 @@ func (sig SchnSignature) Bytes() []byte {
 }
 
 func (sig *SchnSignature) SetBytes(bytes []byte) error {
-	if len(bytes) == 0 {
+	if len(bytes) != 2*operation.Ed25519KeySize && len(bytes) != 3 * operation.Ed25519KeySize{
 		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
 	}
 	sig.e = new(operation.Scalar).FromBytesS(bytes[0:operation.Ed25519KeySize])
