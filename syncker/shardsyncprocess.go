@@ -3,6 +3,7 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -149,6 +150,14 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 				continue
 			}
 
+			//fullnode delay 1 block (make sure insert final block)
+			if os.Getenv("FULLNODE") != "" {
+				preBlk := s.shardPool.GetBlockByPrevHash(*blk.Hash())
+				if len(preBlk) == 0 {
+					continue
+				}
+			}
+
 			fmt.Println("Syncker: Insert shard", s.shardID, "from pool", blk.(common.BlockInterface).GetHeight())
 			if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
 				return
@@ -206,13 +215,19 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	if pState.processed {
 		return
 	}
+	toHeight := pState.BestViewHeight
 
-	if pState.BestViewHeight <= s.Chain.GetBestViewHeight() {
+	//fullnode delay 1 block (make sure insert final block)
+	if os.Getenv("FULLNODE") != "" {
+		toHeight = pState.BestViewHeight - 1
+	}
+
+	if toHeight <= s.Chain.GetBestViewHeight() {
 		return
 	}
 
 	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
-	ch, err := s.Server.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, pState.BestViewHeight)
+	ch, err := s.Server.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
 	// ch, err := s.Server.RequestShardBlocksViaStream(ctx, "", s.shardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
