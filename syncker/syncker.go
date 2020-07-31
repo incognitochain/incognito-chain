@@ -44,6 +44,18 @@ func NewSynckerManager() *SynckerManager {
 
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
+
+	//check preload beacon
+	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	if preloadAddr != "" {
+		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
+			fmt.Println(err)
+			Logger.Infof("Preload beacon fail!")
+		} else {
+			config.Blockchain.RestoreBeaconViews()
+		}
+	}
+
 	//init beacon sync process
 	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
@@ -99,42 +111,36 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	role, chainID := synckerManager.config.Node.GetUserMiningState()
 	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
 
-	//check preload beacon
 	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
-	if preloadAddr != "" {
-		if synckerManager.BeaconSyncProcess.status != RUNNING_SYNC { //run only when start
-			if err := preloadDatabase(-1, int(synckerManager.BeaconSyncProcess.chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetBeaconChainDatabase(), synckerManager.config.Blockchain.GetBTCHeaderChain()); err != nil {
-				fmt.Println(err)
-				Logger.Infof("Preload beacon fail!")
-			} else {
-				synckerManager.config.Blockchain.RestoreBeaconViews()
-			}
-		}
-
-	}
 	synckerManager.BeaconSyncProcess.start()
 
+	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
-		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
-			//check preload shard
-			if preloadAddr != "" {
-				if syncProc.status != RUNNING_SYNC { //run only when start
-					if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
-						fmt.Println(err)
-						Logger.Infof("Preload shard %v fail!", sid)
-					} else {
-						synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
+		wg.Add(1)
+		go func(sid int, syncProc *ShardSyncProcess) {
+			defer wg.Done()
+			if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+				//check preload shard
+				if preloadAddr != "" {
+					if syncProc.status != RUNNING_SYNC { //run only when start
+						if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
+							fmt.Println(err)
+							Logger.Infof("Preload shard %v fail!", sid)
+						} else {
+							synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
+						}
 					}
 				}
-
+				syncProc.start()
+			} else {
+				syncProc.stop()
 			}
-			syncProc.start()
-		} else {
-			syncProc.stop()
-		}
-		syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+			syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+		}(sid, syncProc)
 	}
+	wg.Wait()
+
 }
 
 //Process incomming broadcast block

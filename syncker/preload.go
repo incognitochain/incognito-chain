@@ -113,7 +113,7 @@ func preloadDatabase(chainID int, currentEpoch int, url string, db incdb.Databas
 	}
 
 	if currentEpoch < result.LatestEpoch-2 {
-		backupFile := "./data/preload" + chainName
+		backupFile := "./data/preload/" + chainName
 
 		fd, err := os.OpenFile(backupFile, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
