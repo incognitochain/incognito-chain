@@ -187,7 +187,7 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	}
 	offset += operation.Ed25519KeySize
 
-	pro.zSeed.FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
+	pro.zSeed = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 
 	return nil
 }
