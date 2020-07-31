@@ -119,9 +119,12 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
+	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
+		wg.Add(1)
 		go func(sid int, syncProc *ShardSyncProcess) {
+			defer wg.Done()
 			if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
 				//check preload shard
 				if preloadAddr != "" {
@@ -141,6 +144,8 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 			syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
 		}(sid, syncProc)
 	}
+	wg.Wait()
+
 }
 
 //Process incomming broadcast block
