@@ -126,6 +126,7 @@ const (
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	defragmentAccount              = "defragmentaccount"
+	defragmentAccountToken         = "defragmentaccounttoken"
 
 	getStackingAmount = "getstackingamount"
 
