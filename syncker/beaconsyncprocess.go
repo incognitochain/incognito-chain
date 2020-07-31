@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -239,6 +240,14 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 				continue
 			}
 
+			//fullnode delay 1 block (make sure insert final block)
+			if os.Getenv("FULLNODE") != "" {
+				preBlk := s.beaconPool.GetBlockByPrevHash(*blk.Hash())
+				if len(preBlk) == 0 {
+					continue
+				}
+			}
+
 			Logger.Infof("Syncker: Insert beacon from pool %v", blk.(common.BlockInterface).GetHeight())
 			if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
 				return
@@ -296,6 +305,11 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 
 	toHeight := pState.BestViewHeight
 	//process param
+
+	//fullnode delay 1 block (make sure insert final block)
+	if os.Getenv("FULLNODE") != "" {
+		toHeight = toHeight - 1
+	}
 
 	if toHeight <= s.chain.GetBestViewHeight() {
 		return
