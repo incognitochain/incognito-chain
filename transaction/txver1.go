@@ -449,7 +449,6 @@ func (tx *TxVersion1) verifySig() (bool, error) {
 		Logger.Log.Error(err)
 		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
-
 	res := verifyKey.Verify(signature, tx.Hash()[:])
 	return res, nil
 }
@@ -475,8 +474,8 @@ func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	}
 	inputCoins := tx.Proof.GetInputCoins()
 	outputCoins := tx.Proof.GetOutputCoins()
-	outputCoinsV2 := coin.ArrayCoinToCoinV1(outputCoins)
-	if err := validateSndFromOutputCoin(outputCoinsV2); err != nil {
+	outputCoinsAsV1 := coin.ArrayCoinToCoinV1(outputCoins)
+	if err := validateSndFromOutputCoin(outputCoinsAsV1); err != nil {
 		return false, err
 	}
 
@@ -505,7 +504,11 @@ func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 		}
 	}
 	// Verify the payment proof
-	txProofV1 := tx.Proof.(*privacy.ProofV1)
+	txProofV1, ok := tx.Proof.(*privacy.ProofV1)
+	if !ok{
+		return false, NewTransactionErr(RejectTxVersion, errors.New("Wrong proof version"))
+	}
+
 	commitments, err := getCommitmentsInDatabase(txProofV1, hasPrivacy, tx.SigPubKey, transactionStateDB, shardID, tokenID, isBatch)
 	if err != nil {
 		return false, err
@@ -624,12 +627,19 @@ func (tx TxVersion1) ValidateTxSalary(
 	if err != nil {
 		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
-	if ok, err := checkSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].GetSNDerivator(), db); ok || err != nil {
+	outputCoins := tx.Proof.GetOutputCoins()
+	if len(outputCoins) != 1 {
+		return false, NewTransactionErr(UnexpectedError, errors.New("length outputCoins of proof is not 1"))
+	}
+	coin := outputCoins[0]
+	if coin.GetPublicKey()==nil || coin.GetSNDerivator()==nil || coin.GetRandomness()==nil || coin.GetCommitment()==nil{
+		return false, NewTransactionErr(UnexpectedError, errors.New("output coin is corrupted"))
+	}
+	if ok, err := checkSNDerivatorExistence(tokenID, coin.GetSNDerivator(), db); ok || err != nil {
 		return false, err
 	}
 
 	// check output coin's coin commitment is calculated correctly
-	coin := tx.Proof.GetOutputCoins()[0]
 	shardID, err := coin.GetShardID()
 	if err != nil {
 		Logger.Log.Errorf("Cannot get shardID from coin %v", err)
@@ -642,7 +652,7 @@ func (tx TxVersion1) ValidateTxSalary(
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID))))
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
 
-	ok := operation.IsPointEqual(cmTmp2, tx.Proof.GetOutputCoins()[0].GetCommitment())
+	ok := operation.IsPointEqual(cmTmp2, coin.GetCommitment())
 	if !ok {
 		return ok, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
 	}
