@@ -29,7 +29,7 @@ const (
 	UpperBoundPercentForIncDAO    = 10
 	GetValidBlock                 = 20
 	TestRandom                    = false
-	NumberOfFixedBlockValidators  = 22
+	NumberOfFixedBlockValidators  = 4
 	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
@@ -107,17 +107,17 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
+	TestnetEpoch            = 40
+	TestnetRandomTime       = 20
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -159,7 +159,7 @@ var SelectShardNodeTestnetSerializedPubkeyV2 = make(map[uint64][]string)
 var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
-var IsTestNet = false
+var IsTestNet = true
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
