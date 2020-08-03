@@ -4,13 +4,14 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
 type ReturnStakingMetadata struct {
 	MetadataBase
 	TxID          string
-	StakerAddress privacy.PaymentAddress
+	StakerAddress privacy.PaymentAddress // Payment Address of funder, not staker
 }
 
 func NewReturnStaking(
@@ -24,6 +25,25 @@ func NewReturnStaking(
 	return &ReturnStakingMetadata{
 		TxID:          txID,
 		StakerAddress: producerAddress,
+		MetadataBase:  metadataBase,
+	}
+}
+
+func NewReturnStakingMetaFromStakingTx(
+	txStake Transaction,
+) *ReturnStakingMetadata {
+	metadataBase := MetadataBase{
+		Type: ReturnStakingMeta,
+	}
+	meta := txStake.GetMetadata()
+	stakeMeta, ok := meta.(*StakingMetadata)
+	if !ok {
+		return nil
+	}
+	funder, _ := wallet.PaymentAddressFromString(stakeMeta.FunderPaymentAddress)
+	return &ReturnStakingMetadata{
+		TxID:          txStake.Hash().String(),
+		StakerAddress: funder,
 		MetadataBase:  metadataBase,
 	}
 }

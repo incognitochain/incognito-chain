@@ -3,6 +3,11 @@ package instruction
 import (
 	"fmt"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type StopAutoStakeInstruction struct {
@@ -51,4 +56,24 @@ func ValidateStopAutoStakeInstructionSanity(instruction []string) error {
 		return fmt.Errorf("invalid stop auto stake action, %+v", instruction)
 	}
 	return nil
+}
+
+func (saI *StopAutoStakeInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
+	pkStructs, err := incognitokey.CommitteeBase58KeyListToStruct(saI.PublicKeys)
+	if err != nil {
+		return err
+	}
+	// TODO:
+	// Instead of preprocessing for create input for storeStakerInfo, create function update stakerinfo
+	asMap := map[string]bool{}
+	for _, pk := range saI.PublicKeys {
+		asMap[pk] = true
+	}
+	return statedb.StoreStakerInfo(
+		sDB,
+		pkStructs,
+		map[string]privacy.PaymentAddress{}, //Empty map cuz we just update auto staking flag
+		asMap,
+		map[string]common.Hash{},
+	)
 }

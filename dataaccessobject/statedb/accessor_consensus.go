@@ -502,7 +502,7 @@ func storeStakerInfo(
 			if !ok {
 				return fmt.Errorf("txStakingID of %+v not found", committeeString)
 			}
-			value = NewStakerInfoWithValue(rewardReceiverPaymentAddress, autoStakingValue, txStakingID)
+			value = NewStakerInfoWithValue(rewardReceiverPaymentAddress, autoStakingValue, txStakingID, 0)
 		} else {
 			if !ok {
 				// In this case, this committee is already storage in db, it just swap out of committee and rejoin waiting candidate without change autostaking param

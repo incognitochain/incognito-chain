@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 var (
@@ -76,6 +79,24 @@ func ValidateAssignInstructionSanity(instruction []string) error {
 	}
 	if _, err := strconv.Atoi(instruction[3]); err != nil {
 		return fmt.Errorf("%+v: invalid assign shard ID, err %+v, %+v", ErrAssignInstruction, err, instruction)
+	}
+	return nil
+}
+
+func (aI *AssignInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
+	candidates, err := incognitokey.CommitteeBase58KeyListToStruct(aI.ShardCandidates)
+	if err != nil {
+		return err
+	}
+	if aI.ChainID == BEACON_CHAIN_ID {
+		err = statedb.StoreBeaconSubstituteValidator(sDB, candidates)
+		if err != nil {
+			return err
+		}
+	}
+	err = statedb.StoreOneShardSubstitutesValidator(sDB, byte(aI.ChainID), candidates)
+	if err != nil {
+		return err
 	}
 	return nil
 }

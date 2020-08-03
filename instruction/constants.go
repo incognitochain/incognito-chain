@@ -7,6 +7,7 @@ const (
 	ASSIGN_ACTION          = "assign"
 	STOP_AUTO_STAKE_ACTION = "stopautostake"
 	SET_ACTION             = "set"
+	RETURN_ACTION          = "return"
 
 	SHARD_INST  = "shard"
 	BEACON_INST = "beacon"

@@ -1,12 +1,14 @@
 package instruction
 
 import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type Instruction interface {
 	GetType() string
 	ToString() []string
+	InsertIntoStateDB(*statedb.StateDB) error
 }
 
 type ViewEnvironment struct {
