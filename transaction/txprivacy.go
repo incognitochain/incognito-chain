@@ -920,6 +920,20 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 		}
 
 		if isPrivacy {
+			// check cmValue of output coins is equal to comValue in Bulletproof
+			cmValueOfOutputCoins := txN.Proof.GetCommitmentOutputValue()
+			cmValueInBulletProof := txN.Proof.GetAggregatedRangeProof().GetCmValues()
+			if len(cmValueOfOutputCoins) != len(cmValueInBulletProof) {
+				return false, errors.New("invalid cmValues in Bullet proof")
+			}
+
+			for i := 0; i < len(cmValueOfOutputCoins); i++ {
+				if !privacy.IsPointEqual(cmValueOfOutputCoins[i], cmValueInBulletProof[i]) {
+					Logger.log.Errorf("cmValue in Bulletproof is not equal to commitment of output's Value - txId %v", txN.Hash().String())
+					return false, fmt.Errorf("cmValue %v in Bulletproof is not equal to commitment of output's Value", i)
+				}
+			}
+
 			if !txN.Proof.GetAggregatedRangeProof().ValidateSanity() {
 				return false, errors.New("validate sanity Aggregated range proof failed")
 			}
@@ -934,13 +948,13 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			cmInputSK := txN.Proof.GetCommitmentInputSecretKey()
 			for i := 0; i < len(txN.Proof.GetSerialNumberProof()); i++ {
 				// check cmSK of input coin is equal to comSK in serial number proof
-				if !privacy.IsPointEqual(cmInputSK, txN.Proof.GetSerialNumberProof()[i].GetComSK()){
+				if !privacy.IsPointEqual(cmInputSK, txN.Proof.GetSerialNumberProof()[i].GetComSK()) {
 					Logger.log.Errorf("ComSK in SNproof is not equal to commitment of private key - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("comSK of SNProof %v is not comSK of input coins", i))
 				}
 
 				// check cmSND of input coins is equal to comInputSND in serial number proof
-				if !privacy.IsPointEqual(cmInputSNDs[i], txN.Proof.GetSerialNumberProof()[i].GetComInput()){
+				if !privacy.IsPointEqual(cmInputSNDs[i], txN.Proof.GetSerialNumberProof()[i].GetComInput()) {
 					Logger.log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("cmSND in SNproof %v is not equal to commitment of input's SND", i))
 				}
@@ -1016,13 +1030,13 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 		if !isPrivacy {
 			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
 				// check PK of input coin is equal to vKey in serial number proof
-				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()){
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
 					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
 				}
 
 				// check SND of input coins is equal to SND in serial number no privacy proof
-				if !privacy.IsScalarEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetInput()){
+				if !privacy.IsScalarEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetInput()) {
 					Logger.log.Errorf("SND in SNProof is not equal to input's SND - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNProof %v is not equal to input's SND", i))
 				}
