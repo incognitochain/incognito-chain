@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 
@@ -407,7 +408,12 @@ func (proof PaymentProofV2) verifyHasNoPrivacy(fee uint64) (bool, error) {
 		}
 		sumOutput += proof.outputCoins[i].GetValue()
 	}
-	if sumInput != sumOutput + fee {
+	tmpSum := sumOutput + fee
+	if tmpSum < sumOutput || tmpSum < fee {
+		return false, errors.New(fmt.Sprintf("Overflown sumOutput+fee: output value = %v, fee = %v, tmpSum = %v\n", sumOutput, fee, tmpSum))
+	}
+
+	if sumInput != tmpSum {
 		return false, errors.New("VerifyHasNo privacy has sum input different from sum output with fee")
 	}
 	return true, nil
