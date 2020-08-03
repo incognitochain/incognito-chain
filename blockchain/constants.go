@@ -76,6 +76,7 @@ const (
 	// relaying header chain
 	MainnetBNBChainID = "Binance-Chain-Tigris"
 	MainnetBTCChainID = "Bitcoin-Mainnet"
+	MainnetBTCDataFolderName = "btcrelayingv7"
 
 	// BNB fullnode
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
@@ -135,8 +136,9 @@ const (
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
-	TestnetBNBChainID = "Binance-Chain-Ganges"
-	TestnetBTCChainID = "Bitcoin-Testnet"
+	TestnetBNBChainID        = "Binance-Chain-Ganges"
+	TestnetBTCChainID        = "Bitcoin-Testnet"
+	TestnetBTCDataFolderName = "btcrelayingv8"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"

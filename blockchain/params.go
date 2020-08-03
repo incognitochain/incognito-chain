@@ -63,6 +63,7 @@ type Params struct {
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
+	BTCDataFolderName                string
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
@@ -148,6 +149,7 @@ func init() {
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
+		BTCDataFolderName:              TestnetBTCDataFolderName,
 		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                TestnetBNBFullNodeHost,
 		BNBFullNodePort:                TestnetBNBFullNodePort,
@@ -222,6 +224,7 @@ func init() {
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
+		BTCDataFolderName:              MainnetBTCDataFolderName,
 		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                MainnetBNBFullNodeHost,
 		BNBFullNodePort:                MainnetBNBFullNodePort,
