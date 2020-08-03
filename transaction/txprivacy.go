@@ -930,11 +930,19 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				}
 			}
 
+			cmInputSNDs := txN.Proof.GetCommitmentInputSND()
+			cmInputSK := txN.Proof.GetCommitmentInputSecretKey()
 			for i := 0; i < len(txN.Proof.GetSerialNumberProof()); i++ {
 				// check cmSK of input coin is equal to comSK in serial number proof
-				if !privacy.IsPointEqual(txN.Proof.GetCommitmentInputSecretKey(), txN.Proof.GetSerialNumberProof()[i].GetComSK()){
+				if !privacy.IsPointEqual(cmInputSK, txN.Proof.GetSerialNumberProof()[i].GetComSK()){
 					Logger.log.Errorf("ComSK in SNproof is not equal to commitment of private key - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("comSK of SNProof %v is not comSK of input coins", i))
+				}
+
+				// check cmSND of input coins is equal to comInputSND in serial number proof
+				if !privacy.IsPointEqual(cmInputSNDs[i], txN.Proof.GetSerialNumberProof()[i].GetComInput()){
+					Logger.log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("cmSND in SNproof %v is not equal to commitment of input's SND", i))
 				}
 
 				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
