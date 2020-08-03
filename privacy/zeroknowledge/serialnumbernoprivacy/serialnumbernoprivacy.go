@@ -85,8 +85,12 @@ func (pro *SNNoPrivacyProof) Init() *SNNoPrivacyProof {
 	return pro
 }
 
-func (proof SNNoPrivacyProof) GetVKey() *privacy.Point {
-	return proof.stmt.vKey
+func (pro SNNoPrivacyProof) GetVKey() *privacy.Point {
+	return pro.stmt.vKey
+}
+
+func (pro SNNoPrivacyProof) GetInput() *privacy.Scalar {
+	return pro.stmt.input
 }
 
 // Set sets Witness

@@ -1020,6 +1020,13 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
 				}
+
+				// check SND of input coins is equal to SND in serial number no privacy proof
+				if !privacy.IsScalarEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetInput()){
+					Logger.log.Errorf("SND in SNProof is not equal to input's SND - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNProof %v is not equal to input's SND", i))
+				}
+
 				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
