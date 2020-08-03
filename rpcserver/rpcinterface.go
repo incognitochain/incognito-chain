@@ -44,6 +44,9 @@ var HttpHandler = map[string]httpHandler{
 	// //getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
 	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
+	//backup and preload
+	setBackup:       (*HttpServer).handleSetBackup,
+	getLatestBackup: (*HttpServer).handleGetLatestBackup,
 	// block
 	getBestBlock:                (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:            (*HttpServer).handleGetBestBlockHash,
@@ -123,6 +126,7 @@ var HttpHandler = map[string]httpHandler{
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:                (*HttpServer).handleDefragmentAccount,
+	defragmentAccountToken:           (*HttpServer).handleDefragmentAccountToken,
 	getStackingAmount:                (*HttpServer).handleGetStakingAmount,
 	hashToIdenticon:                  (*HttpServer).handleHashToIdenticon,
 	createAndSendBurningRequest:      (*HttpServer).handleCreateAndSendBurningRequest,
@@ -236,6 +240,9 @@ var HttpHandler = map[string]httpHandler{
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
 	// get committeeByHeight
+
+	// unstake
+	unstake: (*HttpServer).handleUnstakeTx,
 }
 
 // Commands that are available to a limited user

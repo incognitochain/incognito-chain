@@ -15,16 +15,18 @@ type CoinService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte) ([]*privacy.OutputCoin, error) {
-	prvCoinID := &common.Hash{}
-	err := prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return nil, err
+func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
+	if tokenID == nil {
+		tokenID = &common.Hash{}
+		err := tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return nil, err
+		}
 	}
-	return coinService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardID, prvCoinID)
+	return coinService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardID, tokenID)
 }
 
-func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
+func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}, tokenID *common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -48,7 +50,7 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
 		}
 		keyWallet.KeySet = *keySetTmp
-		outCoins, err := coinService.ListOutputCoinsByKeySet(&keyWallet.KeySet, shardID)
+		outCoins, err := coinService.ListOutputCoinsByKeySet(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
 		}

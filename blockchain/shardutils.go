@@ -3,9 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
@@ -13,7 +10,9 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -22,11 +21,11 @@ import (
 func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), i)
+		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
 		if err != nil {
 			return nil, err
 		}
-		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconHash)
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
 		if err != nil {
 			return beaconBlocks, err
 		}
@@ -589,4 +588,32 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 		return false
 	}
 	return newHash.IsEqual(res)
+}
+
+//updateCommiteesWithAddedAndRemovedListValidator :
+func updateCommiteesWithAddedAndRemovedListValidator(
+	source,
+	addedCommittees,
+	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
+	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
+	m := make(map[string]bool)
+	for _, v := range removedCommittees {
+		str, err := v.ToBase58()
+		if err != nil {
+			return nil, err
+		}
+		m[str] = true
+	}
+	for _, v := range source {
+		str, err := v.ToBase58()
+		if err != nil {
+			return nil, err
+		}
+		if m[str] == false {
+			newShardPendingValidator = append(newShardPendingValidator, v)
+		}
+	}
+	newShardPendingValidator = append(newShardPendingValidator, addedCommittees...)
+
+	return newShardPendingValidator, nil
 }

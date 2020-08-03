@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -131,6 +132,9 @@ func TestValidateAssignInstructionSanity(t *testing.T) {
 }
 
 func TestImportAssignInstructionFromString(t *testing.T) {
+
+	initPublicKey()
+
 	type args struct {
 		instruction []string
 	}
@@ -147,13 +151,20 @@ func TestImportAssignInstructionFromString(t *testing.T) {
 			want: &AssignInstruction{
 				ChainID:         0,
 				ShardCandidates: []string{key1, key2, key3, key4},
+				ShardCandidatesStruct: []incognitokey.CommitteePublicKey{
+					*incKey1,
+					*incKey2,
+					*incKey3,
+					*incKey4,
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ImportAssignInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
+			if got, err := ImportAssignInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ImportAssignInstructionFromString() = %v, want %v", got, tt.want)
+				assert.Nil(t, err, "Error is not null")
 			}
 		})
 	}

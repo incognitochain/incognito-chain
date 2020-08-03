@@ -74,5 +74,7 @@ bin/data
 *.swo
 *~
 tags
+keylist.json
+run_new_local.sh
 *.txt
 *.log
