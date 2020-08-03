@@ -46,6 +46,7 @@ func MakeBFTProposeMsg(proposeCtn *BFTPropose, chainKey string, ts int64, height
 	msg.(*wire.MessageBFT).Type = MSG_PROPOSE
 	msg.(*wire.MessageBFT).TimeSlot = ts
 	msg.(*wire.MessageBFT).Timestamp = int64(height)
+	msg.(*wire.MessageBFT).PeerID = proposeCtn.PeerID
 	return msg, nil
 }
 
