@@ -845,7 +845,7 @@ func (tx Tx) ValidateTxWithBlockChain(
 	return tx.ValidateDoubleSpendWithBlockchain(bcr, shardID, stateDB, nil)
 }
 
-func (tx Tx) validateNormalTxSanityData() (bool, error) {
+func (tx Tx) validateNormalTxSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
 	//check version
 	if tx.Version > txVersion {
 		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
@@ -863,7 +863,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	// check sanity of Proof
-	validateSanityOfProof, err := tx.validateSanityDataOfProof()
+	validateSanityOfProof, err := tx.validateSanityDataOfProof(bcr, beaconHeight)
 	if err != nil || !validateSanityOfProof {
 		return false, err
 	}
@@ -890,9 +890,8 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	return true, nil
 }
 
-func (txN Tx) validateSanityDataOfProof() (bool, error) {
+func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
 	if txN.Proof != nil {
-
 		if len(txN.Proof.GetInputCoins()) > 255 {
 			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetInputCoins())))
 		}
@@ -914,7 +913,6 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 
 		isPrivacy := true
 		// check Privacy or not
-
 		if txN.Proof.GetAggregatedRangeProof() == nil || len(txN.Proof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
 			isPrivacy = false
 		}
@@ -998,9 +996,22 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 					return false, errors.New("validate sanity ComInputSND of proof failed")
 				}
 			}
+
 			//check ComInputShardID
 			if !txN.Proof.GetCommitmentInputShardID().PointValid() {
 				return false, errors.New("validate sanity ComInputShardID of proof failed")
+			}
+
+			fixedRand := bcr.GetFixedRandomForShardIDCommitment(beaconHeight)
+			if fixedRand != nil {
+				shardIDSender := common.GetShardIDFromLastByte(txN.GetSenderAddrLastByte())
+				expectedCMShardID := privacy.PedCom.CommitAtIndex(
+					new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
+					fixedRand, privacy.PedersenShardIDIndex)
+
+				if !privacy.IsPointEqual(expectedCMShardID, txN.Proof.GetCommitmentInputShardID()) {
+					return false, errors.New("ComInputShardID must be committed with the fixed randomness")
+				}
 			}
 
 			// check ComOutputShardID
@@ -1095,7 +1106,7 @@ func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight u
 		}
 	}
 	Logger.log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
-	return tx.validateNormalTxSanityData()
+	return tx.validateNormalTxSanityData(bcr, beaconHeight)
 }
 
 func (tx Tx) ValidateTxByItself(

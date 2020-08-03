@@ -69,6 +69,7 @@ type Params struct {
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
 	NewStakingTxBeaconHeighSwitch    uint64
+	BCHeightBreakPointFixRandShardCM uint64
 }
 
 type GenesisParams struct {
@@ -137,7 +138,7 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -167,8 +168,9 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:     TestnetReplaceCommitteeEpoch,
-		NewStakingTxBeaconHeighSwitch: 0,
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		NewStakingTxBeaconHeighSwitch:    0,
+		BCHeightBreakPointFixRandShardCM: 20,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -211,7 +213,7 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -241,8 +243,9 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:     MainnetReplaceCommitteeEpoch,
-		NewStakingTxBeaconHeighSwitch: 559380,
+		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
+		NewStakingTxBeaconHeighSwitch:    559380,
+		BCHeightBreakPointFixRandShardCM: 596000,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

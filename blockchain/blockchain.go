@@ -561,3 +561,17 @@ func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams 
 
 	return portalParamMap[bchKey]
 }
+
+// GetFixedRandomForShardIDCommitment returns the fixed randomness for shardID commitments
+// if bc height is greater than or equal to BCHeightBreakPointFixRandShardCM
+// otherwise, return nil
+func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconHeight()
+	}
+	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointFixRandShardCM {
+		return privacy.FixedRandomnessShardID
+	}
+
+	return nil
+}
