@@ -73,6 +73,7 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
+	BCHeightBreakPointFixRandShardCM uint64
 }
 
 type GenesisParams struct {
@@ -141,7 +142,7 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -177,6 +178,7 @@ func init() {
 		ReplaceStakingTxHeight:    1,
 		IsBackup:                  false,
 		PreloadAddress:            "",
+		BCHeightBreakPointFixRandShardCM: 20,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -219,7 +221,7 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -251,10 +253,12 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
+
 		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:    559380,
 		IsBackup:                  false,
 		PreloadAddress:            "",
+		BCHeightBreakPointFixRandShardCM: 596000,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew
