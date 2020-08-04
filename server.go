@@ -2260,3 +2260,7 @@ func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]b
 	}
 	return nil
 }
+
+func (serverObj *Server) GetSelfPeerID() libp2p.ID {
+	return serverObj.highway.LocalHost.Host.ID()
+}
