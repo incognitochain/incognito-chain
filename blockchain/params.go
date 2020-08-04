@@ -73,6 +73,7 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
+	ETHRemoveBridgeSigEpoch          uint64
 }
 
 type GenesisParams struct {
@@ -177,6 +178,7 @@ func init() {
 		ReplaceStakingTxHeight:    1,
 		IsBackup:                  false,
 		PreloadAddress:            "",
+		ETHRemoveBridgeSigEpoch:   1,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -255,6 +257,7 @@ func init() {
 		ReplaceStakingTxHeight:    559380,
 		IsBackup:                  false,
 		PreloadAddress:            "",
+		ETHRemoveBridgeSigEpoch:   1,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

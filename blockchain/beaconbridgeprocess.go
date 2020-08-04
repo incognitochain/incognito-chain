@@ -5,14 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
 )
 
 // NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
@@ -244,19 +245,19 @@ func (blockchain *BlockChain) processBurningReq(instruction []string, updatingIn
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) storeBurningConfirm(bridgeStateDB *statedb.StateDB, shardBlock *ShardBlock) error {
-	for _, inst := range shardBlock.Body.Instructions {
+func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, instructions [][]string, blockHeight uint64) error {
+	for _, inst := range instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) &&
 			inst[0] != strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta) {
 			continue
 		}
-		BLogger.log.Infof("storeBurningConfirm for shardBlock %d, inst %v, meta type %d", shardBlock.Header.Height, inst, inst[0])
+		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v, meta type %d", blockHeight, inst, inst[0])
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := statedb.StoreBurningConfirm(bridgeStateDB, *txID, shardBlock.Header.Height); err != nil {
+		if err := statedb.StoreBurningConfirm(stateDB, *txID, blockHeight); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}

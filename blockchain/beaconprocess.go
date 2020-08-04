@@ -1450,6 +1450,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
+	// Save result of BurningConfirm instruction to get proof later
+	epoch := beaconBlock.Header.Height / blockchain.config.ChainParams.Epoch
+	if epoch >= blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch {
+		if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height); err != nil {
+			return NewBlockChainError(StoreBurningConfirmError, err)
+		}
+	}
 
 	// execute, store Portal Instruction
 	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
