@@ -42,9 +42,9 @@ type BeaconCommitteeStateV1 struct {
 	currentEpochBeaconCandidate []incognitokey.CommitteePublicKey
 	shardCommittee              map[byte][]incognitokey.CommitteePublicKey
 	shardSubstitute             map[byte][]incognitokey.CommitteePublicKey
-	autoStake                   map[string]bool
-	rewardReceiver              map[string]privacy.PaymentAddress
-	stakingTx                   map[string]common.Hash
+	autoStake                   map[string]bool                   // committee public key => reward receiver payment address
+	rewardReceiver              map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
+	stakingTx                   map[string]common.Hash            // committee public key => reward receiver payment address
 
 	mu *sync.RWMutex
 }
