@@ -3,6 +3,14 @@ package transaction
 import (
 	"bytes"
 	"fmt"
+	"encoding/json"
+	"testing"
+	"time"
+	"os"
+	"math/rand"
+	"math/big"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -15,11 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumberprivacy"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
-	"os"
-	"math/rand"
-	"strconv"
 )
 
 func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, pubKey *operation.Point, dummyDB *statedb.StateDB) ([]coin.PlainCoin, error) {
@@ -53,6 +56,44 @@ func createAndSaveCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, p
 		return nil, err
 	}
 	err = statedb.StoreCommitments(dummyDB, common.PRVCoinID, commitmentsToBeSaved, shardID)
+	if err != nil {
+		return nil, err
+	}
+
+	return outCoins, nil
+}
+
+func createAndSaveTokenCoinV1s(numCoins, numEquals int, privKey privacy.PrivateKey, pubKey *operation.Point, tokenID common.Hash, dummyDB *statedb.StateDB) ([]coin.PlainCoin, error) {
+	//amount := uint64(common.RandIntInterval(0, 1000000))
+	amount := uint64(numCoins * 1000)
+	outCoins := []coin.PlainCoin{}
+	for i := 0; i < numEquals; i++ {
+		coin, err := createSamplePlainCoinV1(privKey, pubKey, 1000, nil)
+		if err != nil {
+			return nil, err
+		}
+		outCoins = append(outCoins, coin)
+	}
+	tmpOutCoins, err := createSamplePlainCoinsFromTotalAmount(privKey, pubKey, amount, numCoins-numEquals, 1)
+	for _, coin := range tmpOutCoins {
+		outCoins = append(outCoins, coin)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	//save coins and commitment indices onto the database
+	commitmentsToBeSaved := [][]byte{}
+	coinsToBeSaved := [][]byte{}
+	for _, outCoin := range outCoins {
+		coinsToBeSaved = append(coinsToBeSaved, outCoin.Bytes())
+		commitmentsToBeSaved = append(commitmentsToBeSaved, outCoin.GetCommitment().ToBytesS())
+	}
+	err = statedb.StoreOutputCoins(dummyDB, tokenID, pubKey.ToBytesS(), coinsToBeSaved, shardID)
+	if err != nil {
+		return nil, err
+	}
+	err = statedb.StoreCommitments(dummyDB, tokenID, commitmentsToBeSaved, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,16 +138,18 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
 	for i:=0; i < numTests; i++ {
+		numOfInputs := RandInt() % (maxInputs - minInputs + 1) + minInputs
+		numOfOutputs := RandInt() % (maxInputs - minInputs + 1) + minInputs
 		coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, dummyDB)
 		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
 		tx := new(TxVersion1)
 
-		r := common.RandInt() % 90
+		r := common.RandInt() % (100 - numOfInputs)
 
-		inputCoins := coins[r:r+10]
+		inputCoins := coins[r:r+numOfInputs]
 
-		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, 1)
+		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, numOfOutputs)
 		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
 
 		err = tx.Init(txPrivacyParams)
@@ -120,11 +163,11 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 		
-		testTxV1JsonMarshaler(tx, 50, dummyDB, t)
+		testTxV1JsonMarshaler(tx, 25, dummyDB, t)
 	}
 }
 
-func testTxVersion1_InputCoinReplication(t *testing.T) {
+func TestTxVersion1_InputCoinReplication(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -174,7 +217,7 @@ func testTxVersion1_InputCoinReplication(t *testing.T) {
 	}
 }
 
-func testTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
+func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -249,7 +292,7 @@ func testTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	}
 }
 
-func testTxVersion1_SerialNumberProofConsistency(t *testing.T) {
+func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -322,7 +365,7 @@ func testTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 	}
 }
 
-func testTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
+func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -400,7 +443,7 @@ func testTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 	}
 }
 
-func testTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
+func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
 	keySet := keySets[0]
@@ -481,7 +524,7 @@ func testTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 	}
 }
 
-func testTxVersion1_OutputTampered(t *testing.T) {
+func TestTxVersion1_OutputTampered(t *testing.T) {
 	//This test will attempt to create a transaction ver1 which has output value larger than sum of input values
 	keySets, err := prepareKeySets(1)
 	assert.Equal(t, nil, err, "prepareKeySets returns an error: %v", err)
@@ -698,7 +741,13 @@ func testTxV1JsonMarshaler(tx *TxVersion1, count int, db *statedb.StateDB, t *te
 		if !isSane{
 			continue
 		}
-		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+		isValid, _ := txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+		if !isValid{
+			continue
+		}
+		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
+	}
+}
 		if !isSane{
 			continue
 		}
@@ -720,8 +769,8 @@ func testTxTokenV1JsonMarshaler(tx *TxTokenVersion1, count int, db *statedb.Stat
 		if !isSane{
 			continue
 		}
-		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		if !isSane{
+		isValid, _ := txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+		if !isValid{
 			continue
 		}
 		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)

@@ -30,14 +30,14 @@ import (
 
 var (
 	// num of private keys
-	maxPrivateKeys = 15
-	minPrivateKeys = 6
+	maxPrivateKeys = 20
+	minPrivateKeys = 1
 
 	maxInputs = 20
 	minInputs = 1
 
 	maxTries = 100
-	numOfLoops = 2000
+	numOfLoops = 5000
 )
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
@@ -336,16 +336,16 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// 			shardID byte (we're testing with only 1 shard), 
 		//			tokenID *common.Hash (set to nil, meaning we use PRV),
 		//			isBatch bool, isNewTransaction bool
-		isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
-		assert.Equal(t,nil,err)
-		assert.Equal(t,true,isValid)
+		// isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
+		// assert.Equal(t,nil,err)
+		// assert.Equal(t,true,isValid)
 		// isValid,err = tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
-		isValid,err = tx.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
-		assert.Equal(t,nil,err)
-		assert.Equal(t,true,isValid)
+		// isValid,err = tx.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
+		// assert.Equal(t,nil,err)
+		// assert.Equal(t,true,isValid)
 
 		// first, test the json marshaller
-		testTxV2JsonMarshaler(tx, 50, dummyDB, t)
+		testTxV2JsonMarshaler(tx, 25, dummyDB, t)
 
 		// testTxV2DeletedProof(tx, t)
 		// testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
@@ -578,7 +578,7 @@ func testTxV2JsonMarshaler(tx *TxVersion2, count int, db *statedb.StateDB, t *te
 		if !isSane{
 			continue
 		}
-		txSpecific.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 
@@ -662,7 +662,7 @@ func getCorruptedJsonDeserializedTxs(tx metadata.Transaction, maxJsonChanges int
 		}
 		result = append(result,reconstructedTx)
 	}
-	fmt.Printf("Made %d dummy faulty txs\n",len(result))
+	// fmt.Printf("Made %d dummy faulty txs\n",len(result))
 	return result
 }
 
