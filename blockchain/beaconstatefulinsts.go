@@ -371,9 +371,9 @@ func calcTradeValue(
 		tokenPoolValueToBuy = pdePoolPair.Token2PoolValue
 	}
 	invariant := big.NewInt(0)
-	invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
+	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
 	newTokenPoolValueToSell := big.NewInt(0)
-	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(sellAmount)))
+	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(sellAmount))
 
 	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
 	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
@@ -458,13 +458,13 @@ func categorizeNSortPDECrossPoolTradeInstsByFee(
 		// comparing a/b to c/d is equivalent with comparing a*d to c*b
 		firstItemProportion := big.NewInt(0)
 		firstItemProportion.Mul(
-			big.NewInt(int64(firstTradingFee)),
-			big.NewInt(int64(secondSellAmount)),
+			new(big.Int).SetUint64(firstTradingFee),
+			new(big.Int).SetUint64(secondSellAmount),
 		)
 		secondItemProportion := big.NewInt(0)
 		secondItemProportion.Mul(
-			big.NewInt(int64(secondTradingFee)),
-			big.NewInt(int64(firstSellAmount)),
+			new(big.Int).SetUint64(secondTradingFee),
+			new(big.Int).SetUint64(firstSellAmount),
 		)
 		return firstItemProportion.Cmp(secondItemProportion) == 1
 	})
@@ -535,13 +535,13 @@ func sortPDETradeInstsByFee(
 			// comparing a/b to c/d is equivalent with comparing a*d to c*b
 			firstItemProportion := big.NewInt(0)
 			firstItemProportion.Mul(
-				big.NewInt(int64(tradeActions[i].Meta.TradingFee)),
-				big.NewInt(int64(tradeActions[j].Meta.SellAmount)),
+				new(big.Int).SetUint64(tradeActions[i].Meta.TradingFee),
+				new(big.Int).SetUint64(tradeActions[j].Meta.SellAmount),
 			)
 			secondItemProportion := big.NewInt(0)
 			secondItemProportion.Mul(
-				big.NewInt(int64(tradeActions[j].Meta.TradingFee)),
-				big.NewInt(int64(tradeActions[i].Meta.SellAmount)),
+				new(big.Int).SetUint64(tradeActions[j].Meta.TradingFee),
+				new(big.Int).SetUint64(tradeActions[i].Meta.SellAmount),
 			)
 			return firstItemProportion.Cmp(secondItemProportion) == 1
 		})
