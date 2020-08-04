@@ -1,11 +1,17 @@
 package blockchain
 
 import (
+	"io/ioutil"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"
 	"strconv"
@@ -19,17 +25,30 @@ type PDETestSuiteV2 struct {
 	suite.Suite
 	currentPDEStateForProducer CurrentPDEState
 	currentPDEStateForProcess  CurrentPDEState
+	sdb *statedb.StateDB
 }
 
 func (s *PDETestSuiteV2) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	stateDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+
+	s.sdb = stateDB
 	s.currentPDEStateForProducer = CurrentPDEState{
 		WaitingPDEContributions: make(map[string]*rawdbv2.PDEContribution),
+		DeletedWaitingPDEContributions: make(map[string]*rawdbv2.PDEContribution),
 		PDEPoolPairs:            make(map[string]*rawdbv2.PDEPoolForPair),
 		PDEShares:               make(map[string]uint64),
 		PDETradingFees:          make(map[string]uint64),
 	}
 	s.currentPDEStateForProcess = CurrentPDEState{
 		WaitingPDEContributions: make(map[string]*rawdbv2.PDEContribution),
+		DeletedWaitingPDEContributions: make(map[string]*rawdbv2.PDEContribution),
 		PDEPoolPairs:            make(map[string]*rawdbv2.PDEPoolForPair),
 		PDEShares:               make(map[string]uint64),
 		PDETradingFees:          make(map[string]uint64),
@@ -179,6 +198,40 @@ func buildPDEWithdrawalRequestAction(
 	return action
 }
 
+func processAllNewInsts(
+	blockchain *BlockChain,
+	insts [][]string,
+	pdexStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	currentPDEState *CurrentPDEState,
+) {
+	for _, inst := range insts {
+		if len(inst) < 2 {
+			continue // Not error, just not PDE instruction
+		}
+		var err error
+		switch inst[0] {
+		case strconv.Itoa(metadata.PDEContributionMeta):
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDETradeRequestMeta):
+			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta):
+			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+		case strconv.Itoa(metadata.PDETradingFeesDistributionMeta):
+			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
+		}
+		if err != nil {
+			fmt.Printf("An error occured while process instruction: %v\n", inst)
+		}
+	}
+}
+
 // All methods that begin with "Test" are run as tests within a
 // suite.
 // test contribution
@@ -287,6 +340,18 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1001() {
 	}
 
 	s.Equal(len(newInsts), 14)
+
+	// run functions for processing block with its instructions
+	processAllNewInsts(
+		bc,
+		newInsts,
+		s.sdb,
+		beaconHeight - 1,
+		&s.currentPDEStateForProcess,
+	)
+
+	s.currentPDEStateForProcess.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	s.Equal(true, reflect.DeepEqual(&s.currentPDEStateForProcess, &s.currentPDEStateForProducer))
 
 	// check result of functions
 	// case 1:
@@ -544,6 +609,22 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 	newTradeInsts = append(newTradeInsts, tradingFeesDistInst)
 
 	s.Equal(12, len(newTradeInsts))
+
+	// run functions for processing block with its instructions
+	processAllNewInsts(
+		bc,
+		append(newSetupInsts, newTradeInsts...),
+		s.sdb,
+		beaconHeight - 1,
+		&s.currentPDEStateForProcess,
+	)
+
+	s.Equal(true, reflect.DeepEqual(&s.currentPDEStateForProcess.PDEPoolPairs, &s.currentPDEStateForProducer.PDEPoolPairs))
+	s.Equal(true, reflect.DeepEqual(&s.currentPDEStateForProcess.PDEShares, &s.currentPDEStateForProducer.PDEShares))
+	s.Equal(27, int(s.currentPDEStateForProcess.PDETradingFees["pdetradingfee-1001-0000000000000000000000000000000000000000000000000000000000000004-tokenID1-contributorAddress1"]))
+	s.Equal(28, int(s.currentPDEStateForProcess.PDETradingFees["pdetradingfee-1001-0000000000000000000000000000000000000000000000000000000000000004-tokenID1-contributorAddress2"]))
+	s.Equal(22, int(s.currentPDEStateForProcess.PDETradingFees["pdetradingfee-1001-0000000000000000000000000000000000000000000000000000000000000004-tokenID2-contributorAddress1"]))
+	s.Equal(52, int(s.currentPDEStateForProcess.PDETradingFees["pdetradingfee-1001-0000000000000000000000000000000000000000000000000000000000000004-tokenID2-contributorAddress2"]))
 
 	// check new trade insts
 	// new trade instruction 0 (for trade request 3)
@@ -861,6 +942,10 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1003() {
 	beaconHeight := uint64(1003)
 
 	s.SetupTestWithdraw(beaconHeight - 1)
+	stateContent, _ := json.Marshal(s.currentPDEStateForProducer)
+	json.Unmarshal(stateContent, &s.currentPDEStateForProcess)
+
+	// s.currentPDEStateForProcess = s.currentPDEStateForProducer
 
 	fmt.Printf("PDPDETradingFees before processing instructions : %v\n", s.currentPDEStateForProducer.PDETradingFees)
 
@@ -950,6 +1035,16 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1003() {
 		s.Equal(nil, err)
 		newWithdrawInsts = append(newWithdrawInsts, newInst...)
 	}
+
+	// run functions for processing block with its instructions
+	processAllNewInsts(
+		bc,
+		newWithdrawInsts,
+		s.sdb,
+		beaconHeight - 1,
+		&s.currentPDEStateForProcess,
+	)
+	s.Equal(true, reflect.DeepEqual(&s.currentPDEStateForProcess, &s.currentPDEStateForProducer))
 
 	// check newWithdrawInsts
 	s.Equal("rejected", newWithdrawInsts[0][2])
