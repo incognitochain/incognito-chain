@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -45,8 +46,8 @@ type Params struct {
 	MaxBeaconBlockCreation           time.Duration
 	StakingAmountShard               uint64
 	ActiveShards                     int
-	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
+	GenesisBeaconBlock               *BeaconBlock      // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                *types.ShardBlock // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
 	Epoch                            uint64
 	RandomTime                       uint64

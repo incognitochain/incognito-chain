@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
 
@@ -164,9 +165,9 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 			}
 		}
 
-	case *blockchain.ShardBlock:
+	case *types.ShardBlock:
 
-		shardBlk := blk.(*blockchain.ShardBlock)
+		shardBlk := blk.(*types.ShardBlock)
 		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
@@ -185,8 +186,8 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 			}
 		}
 
-	case *blockchain.CrossShardBlock:
-		csBlk := blk.(*blockchain.CrossShardBlock)
+	case *types.CrossShardBlock:
+		csBlk := blk.(*types.CrossShardBlock)
 		if synckerManager.CrossShardSyncProcess[int(csBlk.ToShardID)] != nil {
 			fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
 			synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
@@ -390,11 +391,11 @@ func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context,
 		}
 		blk := <-ch
 		if !isNil(blk) {
-			if blk.(*blockchain.ShardBlock).GetHeight() <= synckerManager.config.Blockchain.ShardChain[sid].GetFinalViewHeight() {
+			if blk.(*types.ShardBlock).GetHeight() <= synckerManager.config.Blockchain.ShardChain[sid].GetFinalViewHeight() {
 				return
 			}
 			synckerManager.shardPool[int(sid)].AddBlock(blk.(common.BlockPoolInterface))
-			prevHash := blk.(*blockchain.ShardBlock).GetPrevHash()
+			prevHash := blk.(*types.ShardBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.ShardChain[sid].GetViewByHash(prevHash); v == nil {
 				requestHash = prevHash
 				continue

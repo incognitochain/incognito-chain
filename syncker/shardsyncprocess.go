@@ -3,13 +3,13 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"os"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -39,7 +39,7 @@ type ShardSyncProcess struct {
 
 func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
-		if blk.(*blockchain.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
+		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
 		}
 		return false
@@ -242,10 +242,10 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
 
-				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
+				if blk.(*types.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 					time.Sleep(30 * time.Second)
 				}
-				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
+				if blk.(*types.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 					Logger.Infof("Cannot find beacon for inserting shard block")
 					return
 				}

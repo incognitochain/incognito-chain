@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"strings"
 
@@ -70,7 +71,7 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	curView *ShardBestState,
 	beaconBlocks []*BeaconBlock,
-	shardBlock *ShardBlock,
+	shardBlock *types.ShardBlock,
 	shardID byte,
 ) error {
 	if shardID == 1 && shardBlock.GetHeight() == 432620 {

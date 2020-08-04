@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"strconv"
@@ -53,11 +54,11 @@ import (
 //	3. Build Shard Block Essential Data for Header
 //	4. Update Cloned ShardBestState with New Shard Block
 //	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
-func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int, proposer string, round int, start time.Time) (*ShardBlock, error) {
+func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int, proposer string, round int, start time.Time) (*types.ShardBlock, error) {
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
-		newShardBlock           = NewShardBlock()
+		newShardBlock           = types.NewShardBlock()
 		shardInstructions       = [][]string{}
 		isOldBeaconHeight       = false
 		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset()
@@ -202,7 +203,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
 		}
 	}
-	newShardBlock.Header = ShardHeader{
+	newShardBlock.Header = types.ShardHeader{
 		Producer:          producerKey, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr: producerPubKeyStr,
 		ShardID:           shardID,
@@ -581,19 +582,19 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 //	  - Process valid block to extract:
 //	   + Cross output coin
 //	   + Cross Normal Token
-func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]CrossTransaction {
-	crossTransactions := make(map[byte][]CrossTransaction)
+func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
+	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
-	var allCrossShardBlock = make([][]*CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
+	var allCrossShardBlock = make([][]*types.CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
 	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard) {
 		for _, b := range v {
-			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
+			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*types.CrossShardBlock))
 		}
 	}
 	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {
 		for _, blk := range crossShardBlock {
-			crossTransaction := CrossTransaction{
+			crossTransaction := types.CrossTransaction{
 				OutputCoin:       blk.CrossOutputCoin,
 				TokenPrivacyData: blk.CrossTxTokenPrivacyData,
 				BlockHash:        *blk.Hash(),

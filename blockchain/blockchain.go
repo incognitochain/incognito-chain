@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io"
 	"sort"
 
@@ -155,7 +156,7 @@ func (blockchain *BlockChain) InitChainState() error {
 */
 func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
-	initShardBlock := ShardBlock{}
+	initShardBlock := types.ShardBlock{}
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
@@ -337,7 +338,7 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 		if err != nil {
 			return err
 		}
-		var shardBlock *ShardBlock
+		var shardBlock *types.ShardBlock
 		for _, v := range shardBlocks {
 			shardBlock = v
 		}
@@ -539,7 +540,7 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 			if err != nil { //no transaction in this node
 				panic("Have transaction but cannot found block")
 			}
-			shardBlock := NewShardBlock()
+			shardBlock := types.NewShardBlock()
 			err = json.Unmarshal(shardBlockBytes, shardBlock)
 			if err != nil {
 				panic("Cannot unmarshal shardblock")

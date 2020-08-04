@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -82,7 +83,7 @@ func getBridgeSwapProofOnBridge(
 func findBridgeBlockWithInst(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-) (*blockchain.ShardBlock, int, error) {
+) (*types.ShardBlock, int, error) {
 	bridgeID := byte(common.BridgeShardID)
 	for _, state := range beaconBlock.Body.ShardState[bridgeID] {
 		bridgeBlock, _, err := getShardAndBeaconBlocks(state.Height, bc)

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -35,7 +36,7 @@ type TxPool interface {
 }
 
 type FeeEstimator interface {
-	RegisterBlock(block *ShardBlock) error
+	RegisterBlock(block *types.ShardBlock) error
 }
 
 type ConsensusEngine interface {

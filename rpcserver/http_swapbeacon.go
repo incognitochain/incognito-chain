@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 
@@ -106,7 +107,7 @@ func getSwapProofOnBeacon(
 func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
-) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
+) (*types.ShardBlock, []*blockchain.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
 	bridgeBlocks, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
@@ -115,7 +116,7 @@ func getShardAndBeaconBlocks(
 	if len(bridgeBlocks) == 0 {
 		return nil, nil, fmt.Errorf("shard block bridgeID %+v, height %+v not found", bridgeID, height)
 	}
-	var bridgeBlock *blockchain.ShardBlock
+	var bridgeBlock *types.ShardBlock
 	for _, temp := range bridgeBlocks {
 		bridgeBlock = temp
 	}
@@ -210,7 +211,7 @@ func getIncludedBeaconBlocks(
 	if err != nil {
 		return nil, err
 	}
-	var previousShardBlock *blockchain.ShardBlock
+	var previousShardBlock *types.ShardBlock
 	for _, temp := range prevShardBlocks {
 		previousShardBlock = temp
 	}
@@ -227,7 +228,7 @@ func getIncludedBeaconBlocks(
 
 // extractInstsFromShardBlock returns all instructions in a shard block as a slice of []string
 func extractInstsFromShardBlock(
-	shardBlock *blockchain.ShardBlock,
+	shardBlock *types.ShardBlock,
 	//beaconBlocks []*blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 ) ([][]string, error) {
@@ -315,7 +316,7 @@ func (bb *beaconBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 }
 
 type shardBlock struct {
-	*blockchain.ShardBlock
+	*types.ShardBlock
 }
 
 func (sb *shardBlock) InstructionMerkleRoot() []byte {

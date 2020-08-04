@@ -2,6 +2,7 @@ package netsync
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -449,7 +450,7 @@ func (netSync *NetSync) cacheLoop() {
 		select {
 		case msg := <-netSync.config.ShardBlockEvent:
 			{
-				if shardBlock, ok := msg.Value.(*blockchain.ShardBlock); !ok {
+				if shardBlock, ok := msg.Value.(*types.ShardBlock); !ok {
 					continue
 				} else {
 					go netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())

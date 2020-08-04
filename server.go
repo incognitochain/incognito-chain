@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io"
 	"io/ioutil"
 	"log"
@@ -1765,7 +1766,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		serverObj.PushMessageToAll(msg)
 		return nil
 	} else {
-		shardBlock, ok := block.(*blockchain.ShardBlock)
+		shardBlock, ok := block.(*types.ShardBlock)
 		if !ok || shardBlock == nil {
 			return fmt.Errorf("Can not parse shard block or shard block is nil %v %v", ok, shardBlock == nil)
 		}
@@ -1777,7 +1778,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
 		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
 
-		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.GetBeaconBestState().ActiveShards)
+		crossShardBlks := blockchain.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {
@@ -2078,9 +2079,9 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 
 			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
 			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
+				newBlk = new(types.ShardBlock)
 			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
+				newBlk = new(types.CrossShardBlock)
 			}
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
@@ -2133,9 +2134,9 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 
 			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
 			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
+				newBlk = new(types.ShardBlock)
 			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
+				newBlk = new(types.CrossShardBlock)
 			}
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)

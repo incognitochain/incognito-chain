@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -93,15 +94,15 @@ func CreateGenesisShardBlock(
 	net uint16,
 	genesisBlockTime string,
 	icoParams *GenesisParams,
-) *ShardBlock {
-	body := ShardBody{}
+) *types.ShardBlock {
+	body := types.ShardBody{}
 	layout := "2006-01-02T15:04:05.000Z"
 	str := genesisBlockTime
 	genesisTime, err := time.Parse(layout, str)
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	header := ShardHeader{
+	header := types.ShardHeader{
 		Timestamp:         genesisTime.Unix(),
 		Version:           version,
 		BeaconHeight:      1,
@@ -117,7 +118,7 @@ func CreateGenesisShardBlock(
 		body.Transactions = append(body.Transactions, &testSalaryTX)
 	}
 
-	block := &ShardBlock{
+	block := &types.ShardBlock{
 		Body:   body,
 		Header: header,
 	}

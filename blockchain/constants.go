@@ -15,7 +15,6 @@ const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
 	VERSION                       = 1
 	RANDOM_NUMBER                 = 3
-	SHARD_BLOCK_VERSION           = 1
 	DefaultMaxBlkReqPerPeer       = 900
 	DefaultMaxBlkReqPerTime       = 900
 	MinCommitteeSize              = 3                // min size to run bft
@@ -76,8 +75,8 @@ const (
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
 	// relaying header chain
-	MainnetBNBChainID = "Binance-Chain-Tigris"
-	MainnetBTCChainID = "Bitcoin-Mainnet"
+	MainnetBNBChainID        = "Binance-Chain-Tigris"
+	MainnetBTCChainID        = "Bitcoin-Mainnet"
 	MainnetBTCDataFolderName = "btcrelayingv7"
 
 	// BNB fullnode

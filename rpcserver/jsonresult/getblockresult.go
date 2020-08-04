@@ -2,6 +2,7 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -75,7 +76,7 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 	return getBlockResult
 }
 
-func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetShardBlockResult {
+func NewGetBlockResult(block *types.ShardBlock, size uint64, nextBlockHash string) *GetShardBlockResult {
 	getBlockResult := &GetShardBlockResult{}
 	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.ValidationData = block.ValidationData

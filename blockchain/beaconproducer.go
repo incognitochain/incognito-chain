@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math/rand"
 	"sort"
 	"time"
@@ -251,7 +252,7 @@ func (blockchain *BlockChain) GetShardState(
 func (blockchain *BlockChain) GetShardStateFromBlock(
 	curView *BeaconBestState,
 	newBeaconHeight uint64,
-	shardBlock *ShardBlock,
+	shardBlock *types.ShardBlock,
 	shardID byte,
 	isProducer bool,
 	validStakePublicKeys []string,

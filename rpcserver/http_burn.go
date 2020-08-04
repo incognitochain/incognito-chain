@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -94,7 +95,7 @@ func getBurnProofByHeight(
 func getBurnProofOnBridge(
 	burningMetaType int,
 	txID *common.Hash,
-	bridgeBlock *blockchain.ShardBlock,
+	bridgeBlock *types.ShardBlock,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
