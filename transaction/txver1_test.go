@@ -3,12 +3,12 @@ package transaction
 import (
 	"bytes"
 	"fmt"
-	"encoding/json"
+	// "encoding/json"
 	"testing"
 	"time"
 	"os"
 	"math/rand"
-	"math/big"
+	// "math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -162,7 +162,7 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 		res, err = tx.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
-		
+
 		testTxV1JsonMarshaler(tx, 25, dummyDB, t)
 	}
 }
@@ -654,7 +654,7 @@ func BenchmarkTxV1BatchVerify(b *testing.B) {
 			currentTx := txsForBenchmark[chosenIndex]
 			currentTx.ValidateSanityData(nil,nil,nil,0)
 			currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
-			
+
 			batchContent = append(batchContent, currentTx)
 		}
 		batch := NewBatchTransaction(batchContent)
@@ -683,7 +683,7 @@ func BenchmarkTxV1Verify(b *testing.B) {
 	// fmt.Printf("Number of inputs       : %d\n", numOfInputs)
 	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
 	keySets, _ := prepareKeySets(numOfPrivateKeys)
-	
+
 
 	var txsForBenchmark []*TxVersion1
 	for i:=0; i < numOfTxs; i++ {
@@ -723,7 +723,7 @@ func BenchmarkTxV1Verify(b *testing.B) {
 		err = currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		if err!=nil{
 			panic("Invalid tx : double spent")
-		}		
+		}
 	}
 }
 
@@ -746,12 +746,6 @@ func testTxV1JsonMarshaler(tx *TxVersion1, count int, db *statedb.StateDB, t *te
 			continue
 		}
 		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
-	}
-}
-		if !isSane{
-			continue
-		}
-		txSpecific.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
 	}
 }
 
