@@ -31,6 +31,9 @@ func CreateAllCrossShardBlock(shardBlock *types.ShardBlock, activeShards int) ma
 		shardID := common.GetShardIDFromLastByte(byte(i))
 		if shardID != shardBlock.Header.ShardID {
 			crossShard, err := CreateCrossShardBlock(shardBlock, shardID)
+			if crossShard != nil {
+				Logger.log.Criticalf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
+			}
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
 			}
