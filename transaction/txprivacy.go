@@ -1138,6 +1138,33 @@ func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
+func (tx Tx) CalculateBurningTxValue(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, uint64) {
+	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
+		return false, 0
+	}
+	//get burning address
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil {
+		return false, 0
+	}
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+
+	// check burning amount
+	totalBurningAmount := uint64(0)
+	for _, outCoin := range tx.Proof.GetOutputCoins() {
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().ToBytesS()
+		if bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
+			totalBurningAmount += outCoin.CoinDetails.GetValue()
+		}
+	}
+	if totalBurningAmount > 0 {
+		return true, totalBurningAmount
+	}
+	return false, 0
+}
+
 func (tx Tx) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
