@@ -189,7 +189,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
 	curView *ShardBestState,
 	shardBlock *types.ShardBlock,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	shardID byte,
 ) error {
 	//mainnet have two block return double when height < REPLACE_STAKINGTX

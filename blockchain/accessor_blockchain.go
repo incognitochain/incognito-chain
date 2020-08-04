@@ -47,7 +47,7 @@ func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView mul
 	return &blkhash, nil
 }
 
-func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBlock, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*types.BeaconBlock, error) {
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(height)
 	if err != nil {
 		return nil, err
@@ -58,12 +58,12 @@ func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBl
 	return beaconBlocks[0], nil
 }
 
-func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBlock, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*types.BeaconBlock, error) {
 
 	if blockchain.IsTest {
-		return []*BeaconBlock{}, nil
+		return []*types.BeaconBlock{}, nil
 	}
-	beaconBlocks := []*BeaconBlock{}
+	beaconBlocks := []*types.BeaconBlock{}
 
 	blkhash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
 	if err != nil {
@@ -79,15 +79,15 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBl
 	return beaconBlocks, nil
 }
 
-func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*BeaconBlock, uint64, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*types.BeaconBlock, uint64, error) {
 	if blockchain.IsTest {
-		return &BeaconBlock{}, 2, nil
+		return &types.BeaconBlock{}, 2, nil
 	}
 	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
-	beaconBlock := NewBeaconBlock()
+	beaconBlock := types.NewBeaconBlock()
 	err = json.Unmarshal(beaconBlockBytes, beaconBlock)
 	if err != nil {
 		return nil, 0, err

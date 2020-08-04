@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math/big"
 	"strconv"
 	"strings"
@@ -81,7 +82,7 @@ func getGenerateInstructionTestcase(pending, val int) (
 	*BlockChain,
 	byte,
 	uint64,
-	[]*BeaconBlock,
+	[]*types.BeaconBlock,
 	[]string,
 	[]string,
 ) {
@@ -110,7 +111,7 @@ func getGenerateInstructionTestcase(pending, val int) (
 	}
 
 	shardID := byte(1)
-	beaconBlocks := []*BeaconBlock{}
+	beaconBlocks := []*types.BeaconBlock{}
 	vals := keyStore()
 	shardPendingValidator := vals[:pending]
 	shardCommittee := vals[pending : pending+val]

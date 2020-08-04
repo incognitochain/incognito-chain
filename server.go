@@ -1759,7 +1759,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 			Logger.log.Error(err)
 			return err
 		}
-		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*blockchain.BeaconBlock)
+		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*types.BeaconBlock)
 		if !ok || msg.(*wire.MessageBlockBeacon).Block == nil {
 			return fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
 		}
@@ -2077,7 +2077,7 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 				return
 			}
 
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			var newBlk common.BlockInterface = new(types.BeaconBlock)
 			if req.Type == proto.BlkType_BlkShard {
 				newBlk = new(types.ShardBlock)
 			} else if req.Type == proto.BlkType_BlkXShard {
@@ -2132,7 +2132,7 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 				return
 			}
 
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			var newBlk common.BlockInterface = new(types.BeaconBlock)
 			if req.Type == proto.BlkType_BlkShard {
 				newBlk = new(types.ShardBlock)
 			} else if req.Type == proto.BlkType_BlkXShard {
@@ -2228,7 +2228,7 @@ func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *
 	return res
 }
 
-func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
+func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error) {
 	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
 	if err != nil {
 		return nil, err

@@ -15,7 +15,7 @@ func CreateGenesisBeaconBlock(
 	net uint16,
 	genesisBlockTime string,
 	genesisParams *GenesisParams,
-) *BeaconBlock {
+) *types.BeaconBlock {
 	inst := [][]string{}
 	shardAutoStaking := []string{}
 	beaconAutoStaking := []string{}
@@ -57,8 +57,8 @@ func CreateGenesisBeaconBlock(
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	body := BeaconBody{ShardState: nil, Instructions: inst}
-	header := BeaconHeader{
+	body := types.BeaconBody{ShardState: nil, Instructions: inst}
+	header := types.BeaconHeader{
 		Timestamp:                       genesisTime.Unix(),
 		Version:                         version,
 		Epoch:                           1,
@@ -73,7 +73,7 @@ func CreateGenesisBeaconBlock(
 		InstructionHash:                 common.Hash{},
 	}
 
-	block := &BeaconBlock{
+	block := &types.BeaconBlock{
 		Body:   body,
 		Header: header,
 	}

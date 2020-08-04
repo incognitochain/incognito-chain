@@ -48,12 +48,12 @@ import (
 //	e. ShardStateHash: shard states from blocks of all shard
 //	f. InstructionHash: from instructions in beacon block body
 //	g. InstructionMerkleRoot
-func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version int, proposer string, round int, startTime int64) (*BeaconBlock, error) {
+func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version int, proposer string, round int, startTime int64) (*types.BeaconBlock, error) {
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	//============Init Variable============
 	var err error
 	var epoch uint64
-	beaconBlock := NewBeaconBlock()
+	beaconBlock := types.NewBeaconBlock()
 	beaconBestState := NewBeaconBestState()
 	rewardByEpochInstruction := [][]string{}
 	// produce new block with current beststate
@@ -189,8 +189,8 @@ func (blockchain *BlockChain) GetShardState(
 	beaconBestState *BeaconBestState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
-) (map[byte][]ShardState, []*instruction.StakeInstruction, map[byte][]*instruction.SwapInstruction, [][]string, [][]string, []*instruction.StopAutoStakeInstruction) {
-	shardStates := make(map[byte][]ShardState)
+) (map[byte][]types.ShardState, []*instruction.StakeInstruction, map[byte][]*instruction.SwapInstruction, [][]string, [][]string, []*instruction.StopAutoStakeInstruction) {
+	shardStates := make(map[byte][]types.ShardState)
 	validStakeInstructions := []*instruction.StakeInstruction{}
 	validStakePublicKeys := []string{}
 	validStopAutoStakeInstructions := []*instruction.StopAutoStakeInstruction{}
@@ -256,9 +256,9 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardID byte,
 	isProducer bool,
 	validStakePublicKeys []string,
-) (map[byte]ShardState, []*instruction.StakeInstruction, []string, map[byte][]*instruction.SwapInstruction, [][]string, []string, []*instruction.StopAutoStakeInstruction, [][]string) {
+) (map[byte]types.ShardState, []*instruction.StakeInstruction, []string, map[byte][]*instruction.SwapInstruction, [][]string, []string, []*instruction.StopAutoStakeInstruction, [][]string) {
 	//Variable Declaration
-	shardStates := make(map[byte]ShardState)
+	shardStates := make(map[byte]types.ShardState)
 	stakeInstructions := []*instruction.StakeInstruction{}
 	swapInstructions := make(map[byte][]*instruction.SwapInstruction)
 	stopAutoStakingInstructions := []*instruction.StopAutoStakeInstruction{}
@@ -283,7 +283,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		acceptedRewardInstructions = []string{}
 	}
 	//Get Shard State from Block
-	shardState := ShardState{}
+	shardState := types.ShardState{}
 	shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShardBitMap))
 	copy(shardState.CrossShard, shardBlock.Header.CrossShardBitMap)
 	shardState.Hash = shardBlock.Header.Hash()

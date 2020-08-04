@@ -64,7 +64,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 
 // getBridgeSwapProofOnBridge finds a bridge committee swap instruction in a bridge block and returns its proof; the bridge block must be included in a given beaconBlock
 func getBridgeSwapProofOnBridge(
-	beaconBlock *blockchain.BeaconBlock,
+	beaconBlock *types.BeaconBlock,
 	bc *blockchain.BlockChain,
 	ce ConsensusEngine,
 ) (*swapProof, uint64, error) {
@@ -81,7 +81,7 @@ func getBridgeSwapProofOnBridge(
 
 // findBridgeBlockWithInst traverses all shard blocks included in a beacon block and returns the one containing a bridge swap instruction
 func findBridgeBlockWithInst(
-	beaconBlock *blockchain.BeaconBlock,
+	beaconBlock *types.BeaconBlock,
 	bc *blockchain.BlockChain,
 ) (*types.ShardBlock, int, error) {
 	bridgeID := byte(common.BridgeShardID)

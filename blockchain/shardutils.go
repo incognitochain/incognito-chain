@@ -19,8 +19,8 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
-	beaconBlocks := []*BeaconBlock{}
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
+	beaconBlocks := []*types.BeaconBlock{}
 	for i := from; i <= to; i++ {
 		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
 		if err != nil {
@@ -30,7 +30,7 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 		if err != nil {
 			return beaconBlocks, err
 		}
-		beaconBlock := BeaconBlock{}
+		beaconBlock := types.BeaconBlock{}
 		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 		if err != nil {
 			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)

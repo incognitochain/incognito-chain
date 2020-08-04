@@ -46,8 +46,8 @@ type Params struct {
 	MaxBeaconBlockCreation           time.Duration
 	StakingAmountShard               uint64
 	ActiveShards                     int
-	GenesisBeaconBlock               *BeaconBlock      // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock                *types.ShardBlock // GenesisBlock defines the first block of the chain.
+	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
 	Epoch                            uint64
 	RandomTime                       uint64

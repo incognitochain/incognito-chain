@@ -79,7 +79,7 @@ func getSwapProofOnBeacon(
 	bc *blockchain.BlockChain,
 	ce ConsensusEngine,
 	meta int,
-) (*swapProof, *blockchain.BeaconBlock, *rpcservice.RPCError) {
+) (*swapProof, *types.BeaconBlock, *rpcservice.RPCError) {
 	// Get beacon block
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(bc, height, height)
 	if len(beaconBlocks) == 0 {
@@ -107,7 +107,7 @@ func getSwapProofOnBeacon(
 func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
-) (*types.ShardBlock, []*blockchain.BeaconBlock, error) {
+) (*types.ShardBlock, []*types.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
 	bridgeBlocks, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
@@ -185,7 +185,7 @@ func buildProofForBlock(
 // getBeaconSwapProofOnBeacon finds in given beacon blocks a beacon committee swap instruction and returns its proof
 func getBeaconSwapProofOnBeacon(
 	inst []string,
-	beaconBlocks []*blockchain.BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
@@ -206,7 +206,7 @@ func getIncludedBeaconBlocks(
 	beaconHeight uint64,
 	shardID byte,
 	bc *blockchain.BlockChain,
-) ([]*blockchain.BeaconBlock, error) {
+) ([]*types.BeaconBlock, error) {
 	prevShardBlocks, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
 		return nil, err
@@ -299,7 +299,7 @@ func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
 }
 
 type beaconBlock struct {
-	*blockchain.BeaconBlock
+	*types.BeaconBlock
 }
 
 func (bb *beaconBlock) InstructionMerkleRoot() []byte {
@@ -333,7 +333,7 @@ func (sb *shardBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 }
 
 // findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found
-func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) (*blockchain.BeaconBlock, int) {
+func findBeaconBlockWithInst(beaconBlocks []*types.BeaconBlock, inst []string) (*types.BeaconBlock, int) {
 	for _, b := range beaconBlocks {
 		for k, blkInst := range b.Body.Instructions {
 			diff := false

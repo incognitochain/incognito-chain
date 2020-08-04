@@ -102,7 +102,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, err
 	}
 
-	beaconBlock := BeaconBlock{}
+	beaconBlock := types.BeaconBlock{}
 	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 	if err != nil {
 		return nil, err
@@ -288,7 +288,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 // 3. Build response Transaction For Shard
 // 4. Build response Transaction For Beacon
 // 5. Return valid transaction from pending, response transactions from shard and beacon
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*types.BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
@@ -322,7 +322,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBe
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*types.BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
@@ -470,7 +470,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 //	#4: error
 func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	shardID byte, beaconHeight uint64,
-	isOldBeaconHeight bool, beaconBlocks []*BeaconBlock,
+	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock,
 	shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
 		instructions          = [][]string{}
@@ -611,7 +611,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 */
 func (blockGenerator *BlockGenerator) getPendingTransaction(
 	shardID byte,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	blockCreationTimeLeftOver int64,
 	beaconHeight uint64,
 	curView *ShardBestState,
@@ -708,7 +708,7 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 // Store stakingtx address and return it back to outside
 // Only process for instruction not stake instruction
 func (blockchain *BlockChain) preProcessInstructionFromBeacon(
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	shardID byte) ([][]string, map[string]string, error) {
 
 	instructions := [][]string{}

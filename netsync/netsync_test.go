@@ -32,7 +32,7 @@ var (
 	}
 	crossShardBlock  = types.CrossShardBlock{}
 	shardBlock       = types.ShardBlock{}
-	beaconBlock      = blockchain.BeaconBlock{}
+	beaconBlock      = types.BeaconBlock{}
 	msgGetBlockShard = &wire.MessageGetBlockShard{
 		FromPool:         true,
 		ByHash:           false,
@@ -214,7 +214,7 @@ func TestNetSyncStart(t *testing.T) {
 
 	shardBlock := types.ShardBlock{}
 	shardBlock.Header.Height = 2
-	beaconBlock := blockchain.BeaconBlock{}
+	beaconBlock := types.BeaconBlock{}
 	beaconBlock.Header.Height = 2
 	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, &shardBlock))
 	<-time.Tick(1 * time.Second)
@@ -431,7 +431,7 @@ func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
 		Consensus:     consensus,
 	})
 
-	block := blockchain.BeaconBlock{}
+	block := types.BeaconBlock{}
 	block.Header.Height = 2
 	netSync.Start()
 	netSync.cMessage <- &wire.MessageBlockBeacon{Block: &block}

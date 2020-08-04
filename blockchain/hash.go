@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math"
 	"sort"
@@ -388,7 +389,7 @@ func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
 	}
 	return generateHashFromStringArray(res)
 }
-func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
+func generateHashFromShardState(allShardState map[byte][]types.ShardState) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
 	for k := range allShardState {
@@ -481,7 +482,7 @@ func verifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]strin
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-func verifyHashFromShardState(allShardState map[byte][]ShardState, hash common.Hash) bool {
+func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash) bool {
 	res, err := generateHashFromShardState(allShardState)
 	if err != nil {
 		return false

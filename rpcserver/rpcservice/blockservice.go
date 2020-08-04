@@ -353,7 +353,7 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 
 func (blockService BlockService) RetrieveBeaconBlockByHeight(blockHeight uint64) ([]*jsonresult.GetBeaconBlockResult, *RPCError) {
 	var err error
-	nextBeaconBlocks := []*blockchain.BeaconBlock{}
+	nextBeaconBlocks := []*types.BeaconBlock{}
 	beaconBlocks, err := blockService.BlockChain.GetBeaconBlockByHeight(blockHeight)
 	if err != nil {
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
@@ -743,7 +743,7 @@ func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error) 
 func (blockService BlockService) GetBlockHashByHeightV2(shardID int, height uint64) ([]common.Hash, error) {
 	var hash *common.Hash
 	var err error
-	var beaconBlocks []*blockchain.BeaconBlock
+	var beaconBlocks []*types.BeaconBlock
 	var shardBlocks map[common.Hash]*types.ShardBlock
 	res := []common.Hash{}
 	isGetBeacon := shardID == -1

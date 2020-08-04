@@ -148,8 +148,8 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 //Process incomming broadcast block
 func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
 	switch blk.(type) {
-	case *blockchain.BeaconBlock:
-		beaconBlk := blk.(*blockchain.BeaconBlock)
+	case *types.BeaconBlock:
+		beaconBlk := blk.(*types.BeaconBlock)
 		fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
 		//create fake s2b pool peerstate
 		if synckerManager.BeaconSyncProcess != nil {
@@ -238,7 +238,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 				break
 			}
 
-			beaconBlock := new(blockchain.BeaconBlock)
+			beaconBlock := new(types.BeaconBlock)
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
@@ -366,11 +366,11 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 		}
 		blk := <-ch
 		if !isNil(blk) {
-			if blk.(*blockchain.BeaconBlock).GetHeight() <= synckerManager.config.Blockchain.BeaconChain.GetFinalViewHeight() {
+			if blk.(*types.BeaconBlock).GetHeight() <= synckerManager.config.Blockchain.BeaconChain.GetFinalViewHeight() {
 				return
 			}
 			synckerManager.beaconPool.AddBlock(blk.(common.BlockPoolInterface))
-			prevHash := blk.(*blockchain.BeaconBlock).GetPrevHash()
+			prevHash := blk.(*types.BeaconBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.BeaconChain.GetViewByHash(prevHash); v == nil {
 				requestHash = prevHash
 				continue

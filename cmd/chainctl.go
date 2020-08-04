@@ -242,7 +242,7 @@ func restoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 				return err
 			}
 		}
-		block := &blockchain.BeaconBlock{}
+		block := &types.BeaconBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
 			return err

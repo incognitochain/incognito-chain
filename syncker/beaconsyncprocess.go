@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"os"
 	"time"
 
@@ -38,7 +39,7 @@ type BeaconSyncProcess struct {
 func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
-		if blk.(*blockchain.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
+		if blk.(*types.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
 		}
 		return false
@@ -164,7 +165,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	}
 }
 
-func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock *blockchain.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock *types.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
 	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {

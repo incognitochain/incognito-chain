@@ -115,7 +115,7 @@ func getBurnProofOnBridge(
 // getBurnProofOnBeacon finds in given beacon blocks a BurningConfirm instruction and returns its proof
 func getBurnProofOnBeacon(
 	inst []string,
-	beaconBlocks []*blockchain.BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
@@ -130,7 +130,7 @@ func getBurnProofOnBeacon(
 }
 
 // findBeaconBlockWithBurnInst finds a beacon block with a specific burning instruction and the instruction's index; nil if not found
-func findBeaconBlockWithBurnInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) (*blockchain.BeaconBlock, int) {
+func findBeaconBlockWithBurnInst(beaconBlocks []*types.BeaconBlock, inst []string) (*types.BeaconBlock, int) {
 	for _, b := range beaconBlocks {
 		for k, blkInst := range b.Body.Instructions {
 			diff := false

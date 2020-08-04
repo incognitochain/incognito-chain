@@ -25,7 +25,7 @@ type returnStakingInfo struct {
 
 func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 	curView *ShardBestState,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (
@@ -70,7 +70,7 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 
 func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	curView *ShardBestState,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	shardBlock *types.ShardBlock,
 	shardID byte,
 ) error {
@@ -163,7 +163,7 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 
 func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	curView *ShardBestState,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	shardID byte,
 ) (
 	map[common.Hash]returnStakingInfo,

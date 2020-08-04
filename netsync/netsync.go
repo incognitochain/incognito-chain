@@ -458,7 +458,7 @@ func (netSync *NetSync) cacheLoop() {
 			}
 		case msg := <-netSync.config.BeaconBlockEvent:
 			{
-				if beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock); !ok {
+				if beaconBlock, ok := msg.Value.(*types.BeaconBlock); !ok {
 					continue
 				} else {
 					go netSync.handleCacheBlock("b" + beaconBlock.Header.Hash().String())

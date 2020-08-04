@@ -270,7 +270,7 @@ func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *t
 //	- Validate transaction created from miner via instruction
 //	- Validate Response Transaction From Transaction with Metadata
 //	- ALL Transaction in block: see in verifyTransactionFromNewBlock
-func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestState, shardBlock *types.ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPreSign bool) error {
+func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestState, shardBlock *types.ShardBlock, beaconBlocks []*types.BeaconBlock, shardID byte, isPreSign bool) error {
 	startTimeVerifyPreProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	if shardBlock.Header.ShardID != shardID {
@@ -462,7 +462,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 //	- Get Cross Tx Custom Token from cross shard block (shard pool) then verify
 //
 func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *ShardBestState,
-	shardBlock *types.ShardBlock, beaconBlocks []*BeaconBlock,
+	shardBlock *types.ShardBlock, beaconBlocks []*types.BeaconBlock,
 	txInstructions [][]string, shardID byte) error {
 	var err error
 	var isOldBeaconHeight = false
@@ -666,7 +666,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 //	- Execute swap instruction, swap pending validator and committee (if exist)
 func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	shardBlock *types.ShardBlock,
-	beaconBlocks []*BeaconBlock) (
+	beaconBlocks []*types.BeaconBlock) (
 	*ShardBestState, *committeestate.ShardCommitteeStateHash, *committeestate.CommitteeChange, error) {
 	var (
 		err     error
@@ -774,7 +774,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 }
 
 func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
-	db incdb.Database, genesisShardBlock *types.ShardBlock, genesisBeaconBlock *BeaconBlock) error {
+	db incdb.Database, genesisShardBlock *types.ShardBlock, genesisBeaconBlock *types.BeaconBlock) error {
 
 	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	shardBestState.BestBlock = genesisShardBlock
@@ -791,7 +791,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 
 	// Get all instructions from beacon here
 	instructions, stakingTx, err := blockchain.
-		preProcessInstructionFromBeacon([]*BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
+		preProcessInstructionFromBeacon([]*types.BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
 	if err != nil {
 		return err
 	}
@@ -936,7 +936,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store incoming cross shard block
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
-func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *types.ShardBlock, committeeChange *committeestate.CommitteeChange, beaconBlocks []*BeaconBlock) error {
+func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *types.ShardBlock, committeeChange *committeestate.CommitteeChange, beaconBlocks []*types.BeaconBlock) error {
 	startTimeProcessStoreShardBlock := time.Now()
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
