@@ -72,12 +72,23 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+
+	//if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+	//	return false, false, errors.New("Must send coin to burning address")
+	//}
+	//if bReq.BurningAmount != tx.CalculateTxValue() {
+	//	return false, false, errors.New("BurningAmount incorrect")
+	//}
+
+	// check burning value
+	isBurning, burningAmount := tx.CalculateBurningTxValue(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	if !isBurning {
 		return false, false, errors.New("Must send coin to burning address")
 	}
-	if bReq.BurningAmount != tx.CalculateTxValue() {
+	if burningAmount == 0 || bReq.BurningAmount != burningAmount {
 		return false, false, errors.New("BurningAmount incorrect")
 	}
+
 	if !bytes.Equal(tx.GetSigPubKey()[:], bReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
 	}
