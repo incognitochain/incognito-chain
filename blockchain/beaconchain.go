@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
 
@@ -172,7 +173,7 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int
 //this function for version 2
 func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
-	newBlock := new(BeaconBlock)
+	newBlock := new(types.BeaconBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
@@ -180,7 +181,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterf
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), shouldValidate); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
@@ -195,7 +196,7 @@ func (chain *BeaconChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
@@ -212,7 +213,7 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 }
 
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
@@ -298,7 +299,7 @@ func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicK
 }
 
 func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
-	var beaconBlk BeaconBlock
+	var beaconBlk types.BeaconBlock
 	err := json.Unmarshal(blockString, &beaconBlk)
 	if err != nil {
 		return nil, err

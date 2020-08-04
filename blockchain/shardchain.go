@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
 
@@ -166,7 +167,7 @@ func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int,
 
 func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
-	newBlock := new(ShardBlock)
+	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
@@ -204,7 +205,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), shouldValidate)
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -219,7 +220,7 @@ func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), true)
 	if err != nil {
 		return err
 	}
@@ -243,7 +244,7 @@ func (chain *ShardChain) GetShardID() int {
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
-	var shardBlk ShardBlock
+	var shardBlk types.ShardBlock
 	err := json.Unmarshal(blockString, &shardBlk)
 	if err != nil {
 		return nil, err
@@ -252,7 +253,7 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), byte(block.(*ShardBlock).GetShardID()))
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), byte(block.(*types.ShardBlock).GetShardID()))
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {
