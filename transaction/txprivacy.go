@@ -975,7 +975,11 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beacon
 			}
 
 			// check SigPubKey
-			sigPubKeyPoint, _ := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			sigPubKeyPoint, err := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			if err != nil {
+				Logger.log.Errorf("SigPubKey is invalid - txId %v", txN.Hash().String())
+				return false, errors.New("SigPubKey is invalid")
+			}
 			if !privacy.IsPointEqual(cmInputSK, sigPubKeyPoint) {
 				Logger.log.Errorf("SigPubKey is not equal to commitment of private key - txId %v", txN.Hash().String())
 				return false, errors.New("SigPubKey is not equal to commitment of private key")
@@ -1037,7 +1041,11 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beacon
 
 		if !isPrivacy {
 			// check SigPubKey
-			sigPubKeyPoint, _ := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			sigPubKeyPoint, err := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			if err != nil {
+				Logger.log.Errorf("SigPubKey is invalid - txId %v", txN.Hash().String())
+				return false, errors.New("SigPubKey is invalid")
+			}
 			inputCoins := txN.Proof.GetInputCoins()
 			for i := 0; i < len(inputCoins); i++ {
 				// check PublicKey of input coin is equal to SigPubKey
