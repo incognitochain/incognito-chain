@@ -74,8 +74,8 @@ const (
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
 	// relaying header chain
-	MainnetBNBChainID = "Binance-Chain-Tigris"
-	MainnetBTCChainID = "Bitcoin-Mainnet"
+	MainnetBNBChainID        = "Binance-Chain-Tigris"
+	MainnetBTCChainID        = "Bitcoin-Mainnet"
 	MainnetBTCDataFolderName = "btcrelayingv7"
 
 	// BNB fullnode
@@ -131,7 +131,8 @@ const (
 	//TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
 	//TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
 	//TestnetETHContractAddressStr            = "0x79382223241799fc1706a85adf9df4231715A731"
-	TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
+	//TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
+	TestnetETHContractAddressStr            = "0xfB51a5e0Ac5B4c9D6Bf086acf041E14f49f183d2"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
