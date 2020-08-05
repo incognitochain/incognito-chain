@@ -93,6 +93,10 @@ func (pro SNNoPrivacyProof) GetInput() *privacy.Scalar {
 	return pro.stmt.input
 }
 
+func (pro SNNoPrivacyProof) GetOutput() *privacy.Point {
+	return pro.stmt.output
+}
+
 // Set sets Witness
 func (wit *SNNoPrivacyWitness) Set(
 	output *privacy.Point,

@@ -125,6 +125,10 @@ func (proof SNPrivacyProof) GetComInput() *privacy.Point {
 	return proof.stmt.comInput
 }
 
+func (proof SNPrivacyProof) GetSN() *privacy.Point {
+	return proof.stmt.sn
+}
+
 // Set sets Statement
 func (stmt *SerialNumberPrivacyStatement) Set(
 	SN *privacy.Point,

@@ -109,6 +109,23 @@ func (paymentProof *PaymentProof) SetOutputCoins(v []*privacy.OutputCoin) {
 	paymentProof.outputCoins = v
 }
 
+func (paymentProof *PaymentProof) SetAggregatedRangeProof(p *aggregaterange.AggregatedRangeProof ) {
+	paymentProof.aggregatedRangeProof = p
+}
+
+func (paymentProof *PaymentProof) SetSerialNumberProof(p []*serialnumberprivacy.SNPrivacyProof)  {
+	paymentProof.serialNumberProof = p
+}
+
+func (paymentProof *PaymentProof) SetOneOfManyProof(p []*oneoutofmany.OneOutOfManyProof) {
+	paymentProof.oneOfManyProof = p
+}
+
+func (paymentProof *PaymentProof) SetSerialNumberNoPrivacyProof(p []*serialnumbernoprivacy.SNNoPrivacyProof)  {
+	paymentProof.serialNumberNoPrivacyProof = p
+}
+
+
 // End GET/SET function
 
 // Init
