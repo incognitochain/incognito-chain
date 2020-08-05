@@ -876,16 +876,23 @@ func (blockService BlockService) CheckETHHashIssued(data map[string]interface{})
 	return issued, err
 }
 
-func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, error) {
+func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, bool, error) {
+	// Get from beacon first
+	burningConfirmStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	if res, err := statedb.GetBurningConfirm(burningConfirmStateDB, txID); err == nil {
+		return res, true, nil
+	}
+
+	// Get from shard
 	for i := 0; i < blockService.BlockChain.GetBeaconBestState().ActiveShards; i++ {
 		shardID := byte(i)
 		burningConfirmStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetCopiedFeatureStateDB()
 		res, err := statedb.GetBurningConfirm(burningConfirmStateDB, txID)
 		if err == nil {
-			return res, nil
+			return res, false, nil
 		}
 	}
-	return 0, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
+	return 0, false, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
 }
 
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {

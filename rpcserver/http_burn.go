@@ -49,11 +49,43 @@ func retrieveBurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	// Get block height from txID
-	height, err := httpServer.blockService.GetBurningConfirm(*txID)
+	height, onBeacon, err := httpServer.blockService.GetBurningConfirm(*txID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
-	return getBurnProofByHeight(burningMetaType, httpServer, height, txID)
+
+	if !onBeacon {
+		return getBurnProofByHeight(burningMetaType, httpServer, height, txID)
+	}
+	return getBurnProofByHeightV2(burningMetaType, httpServer, height, txID)
+}
+
+func getBurnProofByHeightV2(
+	burningMetaType int,
+	httpServer *HttpServer,
+	height uint64,
+	txID *common.Hash,
+) (interface{}, *rpcservice.RPCError) {
+	// Get beacon block
+	beaconBlock, err := getSingleBeaconBlockByHeight(httpServer.GetBlockchain(), height)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	// Get proof of instruction on beacon
+	inst, instID := findBurnConfirmInst(burningMetaType, beaconBlock.Body.Instructions, txID)
+	if instID == -1 {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find inst %s in beacon block %d", txID.String(), height))
+	}
+
+	beaconInstProof, err := getBurnProofOnBeacon(inst, []*blockchain.BeaconBlock{beaconBlock}, httpServer.config.ConsensusEngine)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	// Decode instruction to send to Ethereum without having to decode on client
+	decodedInst, beaconHeight := splitAndDecodeInstV2(beaconInstProof.inst)
+	return buildProofResult(decodedInst, beaconInstProof, nil, beaconHeight, ""), nil
 }
 
 func getBurnProofByHeight(
@@ -186,6 +218,18 @@ func splitAndDecodeInst(bridgeInst, beaconInst []string) (string, string, string
 	return decodedInst, bridgeHeight, beaconHeight
 }
 
+// splitAndDecodeInst splits BurningConfirm insts (on beacon and bridge) into 2 parts: the inst itself and beaconHeight that contains the inst
+func splitAndDecodeInstV2(beaconInst []string) (string, string) {
+	// Decode instructions
+	beaconInstFlat, _ := blockchain.DecodeInstruction(beaconInst)
+
+	// Split of last 32 bytes (block height)
+	beaconHeight := hex.EncodeToString(beaconInstFlat[len(beaconInstFlat)-32:])
+
+	decodedInst := hex.EncodeToString(beaconInstFlat[:len(beaconInstFlat)-32])
+	return decodedInst, beaconHeight
+}
+
 // handleGetBurnProof returns a proof of a tx burning pETH
 func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	listParams, ok := params.([]interface{})
@@ -204,4 +248,12 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 	burningAddress := httpServer.blockService.GetBurningAddress(uint64(beaconHeightParam))
 
 	return burningAddress, nil
+}
+
+func getSingleBeaconBlockByHeight(bc *blockchain.BlockChain, height uint64) (*blockchain.BeaconBlock, error) {
+	beaconBlock, err := bc.GetBeaconBlockByView(bc.BeaconChain.GetFinalView(), height)
+	if err != nil {
+		return nil, fmt.Errorf("cannot find beacon block with height %d %w", height, err)
+	}
+	return beaconBlock, nil
 }
