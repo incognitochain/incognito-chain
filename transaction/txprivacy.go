@@ -973,6 +973,14 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beacon
 			if !txN.Proof.GetCommitmentInputSecretKey().PointValid() {
 				return false, errors.New("validate sanity ComInputSK of proof failed")
 			}
+
+			// check SigPubKey
+			sigPubKeyPoint, _ := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			if !privacy.IsPointEqual(cmInputSK, sigPubKeyPoint) {
+				Logger.log.Errorf("SigPubKey is not equal to commitment of private key - txId %v", txN.Hash().String())
+				return false, errors.New("SigPubKey is not equal to commitment of private key")
+			}
+
 			// check ComInputValue
 			for i := 0; i < len(txN.Proof.GetCommitmentInputValue()); i++ {
 				if !txN.Proof.GetCommitmentInputValue()[i].PointValid() {
@@ -1028,6 +1036,17 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beacon
 		}
 
 		if !isPrivacy {
+			// check SigPubKey
+			sigPubKeyPoint, _ := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			inputCoins := txN.Proof.GetInputCoins()
+			for i := 0; i < len(inputCoins); i++ {
+				// check PublicKey of input coin is equal to SigPubKey
+				if !privacy.IsPointEqual(inputCoins[i].CoinDetails.GetPublicKey(), sigPubKeyPoint) {
+					Logger.log.Errorf("SigPubKey is not equal to public key of input coins - txId %v", txN.Hash().String())
+					return false, errors.New("SigPubKey is not equal to public key of input coins")
+				}
+			}
+
 			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
 				// check PK of input coin is equal to vKey in serial number proof
 				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
