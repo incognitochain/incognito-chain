@@ -2,11 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 )
 
 //Network fixed params
@@ -14,7 +15,6 @@ const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
 	VERSION                       = 1
 	RANDOM_NUMBER                 = 3
-	SHARD_BLOCK_VERSION           = 1
 	DefaultMaxBlkReqPerPeer       = 900
 	DefaultMaxBlkReqPerTime       = 900
 	MinCommitteeSize              = 3                // min size to run bft
@@ -75,8 +75,9 @@ const (
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
 	// relaying header chain
-	MainnetBNBChainID = "Binance-Chain-Tigris"
-	MainnetBTCChainID = "Bitcoin-Mainnet"
+	MainnetBNBChainID        = "Binance-Chain-Tigris"
+	MainnetBTCChainID        = "Bitcoin-Mainnet"
+	MainnetBTCDataFolderName = "btcrelayingv7"
 
 	// BNB fullnode
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
@@ -136,11 +137,12 @@ const (
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
-	TestnetBNBChainID = "Binance-Chain-Nile"
-	TestnetBTCChainID = "Bitcoin-Testnet"
+	TestnetBNBChainID        = "Binance-Chain-Ganges"
+	TestnetBTCChainID        = "Bitcoin-Testnet"
+	TestnetBTCDataFolderName = "btcrelayingv8"
 
 	// BNB fullnode
-	TestnetBNBFullNodeHost     = "data-seed-pre-0-s1.binance.org"
+	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"

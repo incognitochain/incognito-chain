@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io"
 	"io/ioutil"
 	"log"
@@ -1758,14 +1759,14 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 			Logger.log.Error(err)
 			return err
 		}
-		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*blockchain.BeaconBlock)
+		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*types.BeaconBlock)
 		if !ok || msg.(*wire.MessageBlockBeacon).Block == nil {
 			return fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
 		}
 		serverObj.PushMessageToAll(msg)
 		return nil
 	} else {
-		shardBlock, ok := block.(*blockchain.ShardBlock)
+		shardBlock, ok := block.(*types.ShardBlock)
 		if !ok || shardBlock == nil {
 			return fmt.Errorf("Can not parse shard block or shard block is nil %v %v", ok, shardBlock == nil)
 		}
@@ -1777,7 +1778,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
 		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
 
-		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.GetBeaconBestState().ActiveShards)
+		crossShardBlks := blockchain.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {
@@ -2076,11 +2077,11 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 				return
 			}
 
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			var newBlk common.BlockInterface = new(types.BeaconBlock)
 			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
+				newBlk = new(types.ShardBlock)
 			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
+				newBlk = new(types.CrossShardBlock)
 			}
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
@@ -2131,11 +2132,11 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 				return
 			}
 
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			var newBlk common.BlockInterface = new(types.BeaconBlock)
 			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
+				newBlk = new(types.ShardBlock)
 			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
+				newBlk = new(types.CrossShardBlock)
 			}
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
@@ -2227,8 +2228,16 @@ func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *
 	return res
 }
 
-func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
-	return s.blockChain.GetBeaconBlockByHeightAndView(height, common.Hash{})
+func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error) {
+	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock, _, err := s.blockChain.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlock, nil
 }
 
 func (s *Server) GetBeaconChainDatabase() incdb.Database {
@@ -2251,4 +2260,8 @@ func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]b
 		}
 	}
 	return nil
+}
+
+func (serverObj *Server) GetSelfPeerID() libp2p.ID {
+	return serverObj.highway.LocalHost.Host.ID()
 }

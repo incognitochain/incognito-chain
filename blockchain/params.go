@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -45,8 +46,8 @@ type Params struct {
 	MaxBeaconBlockCreation           time.Duration
 	StakingAmountShard               uint64
 	ActiveShards                     int
-	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
+	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
 	Epoch                            uint64
 	RandomTime                       uint64
@@ -63,12 +64,16 @@ type Params struct {
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
+	BTCDataFolderName                string
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
 	PortalParams                     map[uint64]PortalParams
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
 }
 
 type GenesisParams struct {
@@ -148,6 +153,7 @@ func init() {
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
+		BTCDataFolderName:              TestnetBTCDataFolderName,
 		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                TestnetBNBFullNodeHost,
 		BNBFullNodePort:                TestnetBNBFullNodePort,
@@ -169,6 +175,9 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -222,6 +231,7 @@ func init() {
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
+		BTCDataFolderName:              MainnetBTCDataFolderName,
 		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                MainnetBNBFullNodeHost,
 		BNBFullNodePort:                MainnetBNBFullNodePort,
@@ -243,6 +253,9 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
+		IsBackup:                  false,
+		PreloadAddress:            "",
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

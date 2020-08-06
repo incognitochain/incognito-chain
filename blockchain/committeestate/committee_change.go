@@ -22,15 +22,19 @@ type CommitteeChange struct {
 	BeaconSubstituteRemoved            []incognitokey.CommitteePublicKey
 	BeaconCommitteeAdded               []incognitokey.CommitteePublicKey
 	BeaconCommitteeRemoved             []incognitokey.CommitteePublicKey
+	BeaconCommitteeReplaced            [2][]incognitokey.CommitteePublicKey
+	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
 }
 
 func NewCommitteeChange() *CommitteeChange {
 	committeeChange := &CommitteeChange{
-		ShardSubstituteAdded:   make(map[byte][]incognitokey.CommitteePublicKey),
-		ShardSubstituteRemoved: make(map[byte][]incognitokey.CommitteePublicKey),
-		ShardCommitteeAdded:    make(map[byte][]incognitokey.CommitteePublicKey),
-		ShardCommitteeRemoved:  make(map[byte][]incognitokey.CommitteePublicKey),
+		ShardSubstituteAdded:    make(map[byte][]incognitokey.CommitteePublicKey),
+		ShardSubstituteRemoved:  make(map[byte][]incognitokey.CommitteePublicKey),
+		ShardCommitteeAdded:     make(map[byte][]incognitokey.CommitteePublicKey),
+		ShardCommitteeRemoved:   make(map[byte][]incognitokey.CommitteePublicKey),
+		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
+		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)

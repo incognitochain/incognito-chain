@@ -2,14 +2,14 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -36,7 +36,7 @@ type TxPool interface {
 }
 
 type FeeEstimator interface {
-	RegisterBlock(block *ShardBlock) error
+	RegisterBlock(block *types.ShardBlock) error
 }
 
 type ConsensusEngine interface {
@@ -79,6 +79,7 @@ type Syncker interface {
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }
 
+//BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
@@ -98,18 +99,23 @@ type BeaconCommitteeEngine interface {
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()
-	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, error)
+	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash,
+		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string)
 }
 
+//ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
-	Commit(env *committeestate.ShardCommitteeStateEnvironment) error
-	AbortUncommittedBeaconState()
-	UpdateCommitteeState(env *committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateEnvironment, *committeestate.CommitteeChange, error)
-	InitCommitteeState(env *committeestate.ShardCommitteeStateEnvironment)
+	Commit(*committeestate.ShardCommitteeStateHash) error
+	AbortUncommittedShardState()
+	UpdateCommitteeState(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateHash,
+		*committeestate.CommitteeChange, error)
+	InitCommitteeState(env committeestate.ShardCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey
+	ProcessInstructionFromBeacon(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
+	ProcessInstructionFromShard(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 }

@@ -3,16 +3,16 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/privacy"
-
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // BestState houses information about the current best block and other info
@@ -35,7 +35,7 @@ type BeaconRootHash struct {
 type BeaconBestState struct {
 	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
 	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               BeaconBlock          `json:"BestBlock"`             // The block.
+	BestBlock               types.BeaconBlock    `json:"BestBlock"`             // The block.
 	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
 	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
 	Epoch                   uint64               `json:"Epoch"`
@@ -157,7 +157,7 @@ func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
-func (beaconBestState *BeaconBestState) GetProducerIndexFromBlock(block *BeaconBlock) int {
+func (beaconBestState *BeaconBestState) GetProducerIndexFromBlock(block *types.BeaconBlock) int {
 	//TODO: revert his
 	//return (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
 	return 0
@@ -402,7 +402,7 @@ func (beaconBestState *BeaconBestState) CloneBeaconBestStateFrom(target *BeaconB
 	return beaconBestState.cloneBeaconBestStateFrom(target)
 }
 
-func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]ShardState) {
+func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]types.ShardState) {
 	lastCrossShardState := beaconBestState.LastCrossShardState
 	for fromShard, shardBlocks := range shardStates {
 		for _, shardBlock := range shardBlocks {
@@ -419,7 +419,7 @@ func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates ma
 		}
 	}
 }
-func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates map[byte][]ShardState) {
+func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates map[byte][]types.ShardState) {
 	beaconBestState.updateLastCrossShardState(shardStates)
 }
 
@@ -569,6 +569,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		IsBeaconRandomTime:        isBeaconRandomTime,
 		ActiveShards:              beaconBestState.ActiveShards,
 		MinShardCommitteeSize:     beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:          beaconBestState.consensusStateDB,
 	}
 }
 
@@ -596,7 +597,7 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
+	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
 	if e != nil {
 		return common.Hash{}, e
 	}
@@ -605,7 +606,7 @@ func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *Beacon
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
+	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
 	if e != nil {
 		return common.Hash{}, e
 	}
@@ -613,11 +614,11 @@ func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBe
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, height uint64) (*BeaconRootHash, error) {
-	h, e := statedb.GetBeaconBlockHashByIndex(stateDB, height)
+	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
 	if e != nil {
 		return nil, e
 	}
-	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), h)
+	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), *h)
 	if e != nil {
 		return nil, e
 	}

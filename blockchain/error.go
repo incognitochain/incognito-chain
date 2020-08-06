@@ -43,6 +43,7 @@ const (
 	ShardStateError
 	TransactionFromNewBlockError
 	GenerateInstructionError
+	ProcessInstructionFromBeaconError
 	SwapError
 	DuplicateShardBlockError
 	CommitteeOrValidatorError
@@ -80,6 +81,7 @@ const (
 	VerifyCrossShardCustomTokenError
 	ShardCommitteeRootHashError
 	ShardPendingValidatorRootHashError
+	ShardStakingTxRootHashError
 	BeaconCommitteeAndPendingValidatorRootError
 	ShardCommitteeAndPendingValidatorRootError
 	ShardCandidateRootError
@@ -177,6 +179,7 @@ const (
 	GetShardBlockByHashError
 	ResponsedTransactionFromBeaconInstructionsError
 	UpdateBeaconCommitteeStateError
+	UpdateShardCommitteeStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -340,10 +343,13 @@ var ErrCodeMessage = map[int]struct {
 	InsertShardBlockError:                             {-1154, "Insert Shard Block Error"},
 	GetShardBlockHeightByHashError:                    {-1155, "Get Shard Block Height By Hash Error"},
 	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
+	ProcessInstructionFromBeaconError:                 {-1157, "Process Instruction From Beacon Error"},
+	ShardStakingTxRootHashError:                       {-1158, "Build Shard StakingTX error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},
 	UpdateBeaconCommitteeStateError:                   {-4000, "Update Beacon Committee State Error"},
+	UpdateShardCommitteeStateError:                    {-4001, "Update Shard Committee State Error"},
 }
 
 type BlockChainError struct {

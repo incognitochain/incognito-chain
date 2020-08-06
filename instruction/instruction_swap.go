@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -110,12 +109,20 @@ func ValidateAndImportSwapInstructionFromString(instruction []string) (*SwapInst
 
 func ImportSwapInstructionFromString(instruction []string) *SwapInstruction {
 	swapInstruction := NewSwapInstruction()
+
+	inPublicKey := []string{}
+	outPublicKey := []string{}
+
 	if len(instruction[1]) > 0 {
-		swapInstruction, _ = swapInstruction.SetInPublicKeys(strings.Split(instruction[1], SPLITTER))
+		inPublicKey = strings.Split(instruction[1], SPLITTER)
 	}
+	swapInstruction, _ = swapInstruction.SetInPublicKeys(inPublicKey)
+
 	if len(instruction[2]) > 0 {
-		swapInstruction, _ = swapInstruction.SetOutPublicKeys(strings.Split(instruction[2], SPLITTER))
+		outPublicKey = strings.Split(instruction[2], SPLITTER)
 	}
+	swapInstruction, _ = swapInstruction.SetOutPublicKeys(outPublicKey)
+
 	if len(instruction) == 7 {
 		swapInstruction.SetIsReplace(true)
 		swapInstruction.SetNewRewardReceivers(strings.Split(instruction[6], SPLITTER))
@@ -183,29 +190,29 @@ func ValidateSwapInstructionSanity(instruction []string) error {
 	return nil
 }
 
-func (swI *SwapInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
-	if swI.IsReplace {
-		//TODO Merge code replace
-		return nil
-	}
-	if swI.ChainID == BEACON_CHAIN_ID {
-		err := statedb.StoreBeaconCommittee(sDB, swI.InPublicKeyStructs)
-		if err != nil {
-			return err
-		}
-		err = statedb.DeleteBeaconSubstituteValidator(sDB, swI.InPublicKeyStructs)
-		if err != nil {
-			return err
-		}
-		return statedb.DeleteBeaconCommittee(sDB, swI.OutPublicKeyStructs)
-	}
-	err := statedb.StoreOneShardCommittee(sDB, byte(swI.ChainID), swI.InPublicKeyStructs)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteOneShardSubstitutesValidator(sDB, byte(swI.ChainID), swI.InPublicKeyStructs)
-	if err != nil {
-		return err
-	}
-	return statedb.DeleteOneShardCommittee(sDB, byte(swI.ChainID), swI.OutPublicKeyStructs)
-}
+// func (swI *SwapInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
+// 	if swI.IsReplace {
+// 		//TODO Merge code replace
+// 		return nil
+// 	}
+// 	if swI.ChainID == BEACON_CHAIN_ID {
+// 		err := statedb.StoreBeaconCommittee(sDB, swI.InPublicKeyStructs)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		err = statedb.DeleteBeaconSubstituteValidator(sDB, swI.InPublicKeyStructs)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		return statedb.DeleteBeaconCommittee(sDB, swI.OutPublicKeyStructs)
+// 	}
+// 	err := statedb.StoreOneShardCommittee(sDB, byte(swI.ChainID), swI.InPublicKeyStructs)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = statedb.DeleteOneShardSubstitutesValidator(sDB, byte(swI.ChainID), swI.InPublicKeyStructs)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return statedb.DeleteOneShardCommittee(sDB, byte(swI.ChainID), swI.OutPublicKeyStructs)
+// }

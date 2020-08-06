@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"strings"
 
@@ -24,7 +25,7 @@ type returnStakingInfo struct {
 
 func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 	curView *ShardBestState,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (
@@ -69,8 +70,8 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 
 func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	curView *ShardBestState,
-	beaconBlocks []*BeaconBlock,
-	shardBlock *ShardBlock,
+	beaconBlocks []*types.BeaconBlock,
+	shardBlock *types.ShardBlock,
 	shardID byte,
 ) error {
 	if shardID == 1 && shardBlock.GetHeight() == 432620 {
@@ -162,7 +163,7 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 
 func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	curView *ShardBestState,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	shardID byte,
 ) (
 	map[common.Hash]returnStakingInfo,

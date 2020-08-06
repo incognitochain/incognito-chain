@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
@@ -106,7 +107,7 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(slashStateDB *statedb
 	return sortMapStringUint8Keys(producersBlackList), nil
 }
 
-func (blockchain *BlockChain) processForSlashing(slashStateDB *statedb.StateDB, beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) processForSlashing(slashStateDB *statedb.StateDB, beaconBlock *types.BeaconBlock) error {
 	var err error
 	punishedProducersFinished := []string{}
 	fliterPunishedProducersFinished := []string{}

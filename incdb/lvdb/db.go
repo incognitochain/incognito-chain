@@ -1,15 +1,18 @@
 package lvdb
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"fmt"
-	"github.com/pkg/errors"
-	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+
+	"github.com/incognitochain/incognito-chain/common"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -23,6 +26,7 @@ type db struct {
 	fn     string // filename for reporting
 	dbPath string
 	lvdb   *leveldb.DB
+	lock   sync.RWMutex
 }
 
 func init() {
@@ -99,6 +103,8 @@ func (db *db) Has(key []byte) (bool, error) {
 }
 
 func (db *db) Get(key []byte) ([]byte, error) {
+	db.lock.RLock()
+	defer db.lock.RUnlock()
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		return nil, err
@@ -245,146 +251,175 @@ func (db *db) Batch(data []incdb.BatchData) leveldb.Batch {
 	return *batch
 }
 
-func (db *db) Backup(backupFile string) {
-	backupFile = filepath.Join(db.dbPath, backupFile)
-	fmt.Println("backupFile", backupFile)
-
-	// tar + gzip
-	var buf bytes.Buffer
-	if err := compress(db.dbPath, &buf); err != nil {
-		panic(err)
-	}
-
-	// write the .tar.gzip
-	if err := os.MkdirAll(filepath.Dir(backupFile), 0666); err != nil {
-		panic(err)
-	}
-	fmt.Println("mkdir ", filepath.Dir(backupFile))
-	fileToWrite, err := os.OpenFile(backupFile, os.O_CREATE|os.O_RDWR, os.FileMode(600))
+func (db *db) PreloadBackup(backupFile string) error {
+	err := uncompress(backupFile, db.dbPath+"_")
 	if err != nil {
-		panic(err)
-	}
-	if _, err := io.Copy(fileToWrite, &buf); err != nil {
-		panic(err)
-	}
-
-	// untar write
-	//fd, _ := os.Open(backupFile)
-	//if err := os.RemoveAll("/data/untar"); err != nil {
-	//	panic(err)
-	//}
-	//if err := os.MkdirAll("/data/untar", 0666); err != nil {
-	//	panic(err)
-	//}
-	//
-	//if err := uncompress(fd, "/data/untar/"); err != nil {
-	//	fmt.Println(err)
-	//}
-}
-
-func compress(src string, buf io.Writer) error {
-	// tar > gzip > buf
-	zr := gzip.NewWriter(buf)
-	tw := tar.NewWriter(zr)
-
-	// walk through every file in the folder
-	_ = filepath.Walk(src, func(file string, fi os.FileInfo, err error) error {
-		// generate tar header
-		header, err := tar.FileInfoHeader(fi, file)
-
-		if err != nil {
-			return err
-		}
-
-		// must provide real name
-		// (see https://golang.org/src/archive/tar/common.go?#L626)
-		header.Name = strings.Replace(file, src, "", 1)
-
-		// write header
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
-		// if not a dir, write file content
-		if !fi.IsDir() {
-			data, err := os.Open(file)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(tw, data); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
-	// produce tar
-	if err := tw.Close(); err != nil {
 		return err
 	}
-	// produce gzip
-	if err := zr.Close(); err != nil {
+
+	fmt.Println("remove ", db.dbPath)
+	err = os.RemoveAll(db.dbPath)
+	if err != nil {
 		return err
 	}
-	//
+	fmt.Println("rename ", db.dbPath)
+	err = os.Rename(db.dbPath+"_", db.dbPath)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-// check for path traversal and correct forward slashes
-func validRelPath(p string) bool {
-	if p == "" || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
-		return false
+func (db *db) LatestBackup(path string) (int, string) {
+	backupFolder := filepath.Join(db.dbPath, path)
+	//fmt.Println("backupFolder", backupFolder)
+	files, err := ioutil.ReadDir(backupFolder)
+	if err != nil {
+		return 0, ""
 	}
-	return true
+	//fmt.Println("files", files)
+	if len(files) == 0 {
+		return 0, ""
+	}
+	latestBackupEpoch := 0
+	//Get max epoch
+	for _, file := range files {
+		//fmt.Println("file", file.Name())
+		epoch, err := strconv.Atoi(file.Name())
+		if err != nil {
+			return 0, ""
+		}
+		if epoch > latestBackupEpoch {
+			latestBackupEpoch = epoch
+		}
+	}
+
+	return latestBackupEpoch, fmt.Sprintf("%v/%v", backupFolder, latestBackupEpoch)
 }
 
-func uncompress(src io.Reader, dst string) error {
-	// ungzip
-	zr, err := gzip.NewReader(src)
+func (db *db) RemoveBackup(backupFile string) {
+	backupFile = filepath.Join(db.dbPath, backupFile)
+	os.Remove(backupFile)
+}
+
+func (db *db) Backup(backupFile string) error {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	backupFile = filepath.Join(db.dbPath, backupFile)
+	fmt.Println("backupFile", backupFile)
+
+	if err := os.MkdirAll(filepath.Dir(backupFile), 0700); err != nil {
+		panic(err)
+	}
+
+	if err := db.Close(); err != nil {
+		return err
+	}
+
+	err := common.CompressDatabase(db.dbPath, backupFile)
 	if err != nil {
 		return err
 	}
-	// untar
-	tr := tar.NewReader(zr)
 
-	// uncompress each element
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break // End of archive
-		}
+	if err := db.ReOpen(); err != nil {
+		panic(err)
+	}
+
+	if err := removeUnusedBackupDatabase(backupFile); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
+func (db *db) Clear() error {
+	files, err := filepath.Glob(filepath.Join(db.dbPath, "*"))
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		err = os.RemoveAll(file)
 		if err != nil {
 			return err
 		}
-		target := filepath.Join(dst, header.Name)
+	}
+	return nil
+}
 
-		// if no join is needed, replace with ToSlash:
-		// target = filepath.ToSlash(header.Name)
+//removeUnusedBackupDatabase ...
+// for remove unused databases in backup folder
+func removeUnusedBackupDatabase(filePath string) error {
+	strs := strings.Split(filePath, "/")
 
-		// check the type
-		switch header.Typeflag {
+	//Get latest epoch
+	latestEpoch, err := strconv.Atoi(strs[len(strs)-1])
+	if err != nil {
+		return err
+	}
 
-		// if its a dir and it doesn't exist create it (with 0755 permission)
-		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
-					return err
-				}
-			}
-		// if it's a file create it (with same permission)
-		case tar.TypeReg:
-			fileToWrite, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			// copy over contents
-			if _, err := io.Copy(fileToWrite, tr); err != nil {
-				return err
-			}
-			// manually close here after each file operation; defering would cause each file close
-			// to wait until all operations have completed.
-			fileToWrite.Close()
+	//Get path directory of this file
+	path := filePath
+	for i := len(path) - 1; i > -1; i-- {
+		if path[i] != '/' {
+			path = path[:len(path)-1]
+		} else {
+			log.Println(1)
+			break
 		}
 	}
 
+	//Get needed epoch to download
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return err
+	}
+
+	//Get file name and compare with latest epoch
+	for _, file := range files {
+
+		epoch, err := strconv.Atoi(file.Name())
+		if err != nil {
+			return err
+		}
+
+		if epoch != latestEpoch && epoch != latestEpoch-1 {
+			name := path + "/" + file.Name()
+			err = os.Remove(name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+//Uncompress file from zip file
+func uncompress(srcPath, desPath string) error {
+
+	//uncompress write
+	//Remove all old data
+	// if err := os.RemoveAll(srcPath); err != nil {
+	// 	panic(err)
+	// }
+	fmt.Println("start decompress", srcPath)
+	if err := os.RemoveAll(desPath); err != nil {
+		panic(err)
+	}
+	//Create new data
+	if err := os.MkdirAll(desPath, 0700); err != nil {
+		panic(err)
+	}
+
+	err := common.DecompressDatabaseBackup(srcPath, desPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("done decompress", desPath)
 	return nil
 }
