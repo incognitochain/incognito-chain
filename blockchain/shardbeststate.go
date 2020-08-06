@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"sort"
 	"time"
@@ -36,7 +37,7 @@ type ShardRootHash struct {
 
 type ShardBestState struct {
 	BestBlockHash          common.Hash             `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock             `json:"BestBlock"`     // block data
+	BestBlock              *types.ShardBlock       `json:"BestBlock"`     // block data
 	BestBeaconHash         common.Hash             `json:"BestBeaconHash"`
 	BeaconHeight           uint64                  `json:"BeaconHeight"`
 	ShardID                byte                    `json:"ShardID"`

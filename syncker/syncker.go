@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -44,6 +46,18 @@ func NewSynckerManager() *SynckerManager {
 
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
+
+	//check preload beacon
+	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	if preloadAddr != "" {
+		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
+			fmt.Println(err)
+			Logger.Infof("Preload beacon fail!")
+		} else {
+			config.Blockchain.RestoreBeaconViews()
+		}
+	}
+
 	//init beacon sync process
 	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
@@ -99,49 +113,43 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	role, chainID := synckerManager.config.Node.GetUserMiningState()
 	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
 
-	//check preload beacon
 	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
-	if preloadAddr != "" {
-		if synckerManager.BeaconSyncProcess.status != RUNNING_SYNC { //run only when start
-			if err := preloadDatabase(-1, int(synckerManager.BeaconSyncProcess.chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetBeaconChainDatabase(), synckerManager.config.Blockchain.GetBTCHeaderChain()); err != nil {
-				fmt.Println(err)
-				Logger.Infof("Preload beacon fail!")
-			} else {
-				synckerManager.config.Blockchain.RestoreBeaconViews()
-			}
-		}
-
-	}
 	synckerManager.BeaconSyncProcess.start()
 
+	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
-		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
-			//check preload shard
-			if preloadAddr != "" {
-				if syncProc.status != RUNNING_SYNC { //run only when start
-					if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
-						fmt.Println(err)
-						Logger.Infof("Preload shard %v fail!", sid)
-					} else {
-						synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
+		wg.Add(1)
+		go func(sid int, syncProc *ShardSyncProcess) {
+			defer wg.Done()
+			if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+				//check preload shard
+				if preloadAddr != "" {
+					if syncProc.status != RUNNING_SYNC { //run only when start
+						if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
+							fmt.Println(err)
+							Logger.Infof("Preload shard %v fail!", sid)
+						} else {
+							synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
+						}
 					}
 				}
-
+				syncProc.start()
+			} else {
+				syncProc.stop()
 			}
-			syncProc.start()
-		} else {
-			syncProc.stop()
-		}
-		syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+			syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+		}(sid, syncProc)
 	}
+	wg.Wait()
+
 }
 
 //Process incomming broadcast block
 func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
 	switch blk.(type) {
-	case *blockchain.BeaconBlock:
-		beaconBlk := blk.(*blockchain.BeaconBlock)
+	case *types.BeaconBlock:
+		beaconBlk := blk.(*types.BeaconBlock)
 		fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
 		//create fake s2b pool peerstate
 		if synckerManager.BeaconSyncProcess != nil {
@@ -157,9 +165,9 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 			}
 		}
 
-	case *blockchain.ShardBlock:
+	case *types.ShardBlock:
 
-		shardBlk := blk.(*blockchain.ShardBlock)
+		shardBlk := blk.(*types.ShardBlock)
 		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
@@ -178,8 +186,8 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 			}
 		}
 
-	case *blockchain.CrossShardBlock:
-		csBlk := blk.(*blockchain.CrossShardBlock)
+	case *types.CrossShardBlock:
+		csBlk := blk.(*types.CrossShardBlock)
 		if synckerManager.CrossShardSyncProcess[int(csBlk.ToShardID)] != nil {
 			fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
 			synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
@@ -230,7 +238,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 				break
 			}
 
-			beaconBlock := new(blockchain.BeaconBlock)
+			beaconBlock := new(types.BeaconBlock)
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
@@ -358,11 +366,11 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 		}
 		blk := <-ch
 		if !isNil(blk) {
-			if blk.(*blockchain.BeaconBlock).GetHeight() <= synckerManager.config.Blockchain.BeaconChain.GetFinalViewHeight() {
+			if blk.(*types.BeaconBlock).GetHeight() <= synckerManager.config.Blockchain.BeaconChain.GetFinalViewHeight() {
 				return
 			}
 			synckerManager.beaconPool.AddBlock(blk.(common.BlockPoolInterface))
-			prevHash := blk.(*blockchain.BeaconBlock).GetPrevHash()
+			prevHash := blk.(*types.BeaconBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.BeaconChain.GetViewByHash(prevHash); v == nil {
 				requestHash = prevHash
 				continue
@@ -383,11 +391,11 @@ func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context,
 		}
 		blk := <-ch
 		if !isNil(blk) {
-			if blk.(*blockchain.ShardBlock).GetHeight() <= synckerManager.config.Blockchain.ShardChain[sid].GetFinalViewHeight() {
+			if blk.(*types.ShardBlock).GetHeight() <= synckerManager.config.Blockchain.ShardChain[sid].GetFinalViewHeight() {
 				return
 			}
 			synckerManager.shardPool[int(sid)].AddBlock(blk.(common.BlockPoolInterface))
-			prevHash := blk.(*blockchain.ShardBlock).GetPrevHash()
+			prevHash := blk.(*types.ShardBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.ShardChain[sid].GetViewByHash(prevHash); v == nil {
 				requestHash = prevHash
 				continue

@@ -3,15 +3,16 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // BestState houses information about the current best block and other info
@@ -34,7 +35,7 @@ type BeaconRootHash struct {
 type BeaconBestState struct {
 	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
 	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               BeaconBlock          `json:"BestBlock"`             // The block.
+	BestBlock               types.BeaconBlock    `json:"BestBlock"`             // The block.
 	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
 	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
 	Epoch                   uint64               `json:"Epoch"`
@@ -156,7 +157,7 @@ func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
-func (beaconBestState *BeaconBestState) GetProducerIndexFromBlock(block *BeaconBlock) int {
+func (beaconBestState *BeaconBestState) GetProducerIndexFromBlock(block *types.BeaconBlock) int {
 	//TODO: revert his
 	//return (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
 	return 0
@@ -401,7 +402,7 @@ func (beaconBestState *BeaconBestState) CloneBeaconBestStateFrom(target *BeaconB
 	return beaconBestState.cloneBeaconBestStateFrom(target)
 }
 
-func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]ShardState) {
+func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]types.ShardState) {
 	lastCrossShardState := beaconBestState.LastCrossShardState
 	for fromShard, shardBlocks := range shardStates {
 		for _, shardBlock := range shardBlocks {
@@ -418,7 +419,7 @@ func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates ma
 		}
 	}
 }
-func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates map[byte][]ShardState) {
+func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates map[byte][]types.ShardState) {
 	beaconBestState.updateLastCrossShardState(shardStates)
 }
 

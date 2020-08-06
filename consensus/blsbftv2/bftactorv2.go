@@ -475,6 +475,7 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	blockData, _ := json.Marshal(block)
 	var proposeCtn = new(BFTPropose)
 	proposeCtn.Block = blockData
+	proposeCtn.PeerID = e.Node.GetSelfPeerID().String()
 	msg, _ := MakeBFTProposeMsg(proposeCtn, e.ChainKey, e.currentTimeSlot, block.GetHeight())
 	go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 	go e.Node.PushMessageToChain(msg, e.Chain)

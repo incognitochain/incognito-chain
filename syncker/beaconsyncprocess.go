@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"os"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -37,7 +39,7 @@ type BeaconSyncProcess struct {
 func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
-		if blk.(*blockchain.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
+		if blk.(*types.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
 		}
 		return false
@@ -163,7 +165,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	}
 }
 
-func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock *blockchain.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock *types.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
 	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
@@ -230,6 +232,14 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 				continue
 			}
 
+			//fullnode delay 1 block (make sure insert final block)
+			if os.Getenv("FULLNODE") != "" {
+				preBlk := s.beaconPool.GetBlockByPrevHash(*blk.Hash())
+				if len(preBlk) == 0 {
+					continue
+				}
+			}
+
 			Logger.Infof("Syncker: Insert beacon from pool %v", blk.(common.BlockInterface).GetHeight())
 			if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
 				return
@@ -287,6 +297,11 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 
 	toHeight := pState.BestViewHeight
 	//process param
+
+	//fullnode delay 1 block (make sure insert final block)
+	if os.Getenv("FULLNODE") != "" {
+		toHeight = toHeight - 1
+	}
 
 	if toHeight <= s.chain.GetBestViewHeight() {
 		return

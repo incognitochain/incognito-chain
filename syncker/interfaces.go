@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -24,7 +25,7 @@ type Server interface {
 	RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan common.BlockInterface, err error)
 	RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error)
 	//database
-	FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error)
+	FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error)
 	GetBeaconChainDatabase() incdb.Database
 	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *NextCrossShardInfo
 	//StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error

@@ -1,4 +1,4 @@
-package blockchain
+package types
 
 import (
 	"encoding/json"
@@ -93,10 +93,6 @@ func (beaconBlock BeaconBlock) GetShardID() int {
 	return -1
 }
 
-// func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
-// 	return string(beaconBlock.Header.ProducerAddress.Pk)
-// }
-
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
 		ValidationData string `json:"ValidationData"`
@@ -105,12 +101,8 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	}{}
 	err := json.Unmarshal(data, &tempBeaconBlock)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonShardBlockError, err)
+		return err
 	}
-	// beaconBlock.AggregatedSig = tempBlk.AggregatedSig
-	// beaconBlock.R = tempBlk.R
-	// beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
-	// beaconBlock.ProducerSig = tempBlk.ProducerSig
 	beaconBlock.ValidationData = tempBeaconBlock.ValidationData
 	beaconBlock.Header = tempBeaconBlock.Header
 	beaconBlock.Body = tempBeaconBlock.Body
