@@ -2,12 +2,14 @@ package committeestate
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // assignShardCandidate Assign Candidates Into Shard Pending Validator List
@@ -263,4 +265,23 @@ func ShuffleCandidate(candidates []incognitokey.CommitteePublicKey, rand int64) 
 	}
 	Logger.log.Debug("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil
+}
+
+//checkReturnStakingTxExistence : Check if there is any return staking transactions available
+// Preconditions: NULL
+// Input: transactionid and list transactions
+// Output: true or false
+func checkReturnStakingTxExistence(txID string, transactions []metadata.Transaction) bool {
+	for _, tx := range transactions {
+		if tx.GetMetadata() != nil {
+			if tx.GetMetadata().GetType() == metadata.ReturnStakingMeta {
+				if returnStakingMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata); ok {
+					if returnStakingMeta.TxID == txID {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }

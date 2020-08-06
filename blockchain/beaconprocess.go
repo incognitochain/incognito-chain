@@ -5,18 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
 )
@@ -508,7 +508,8 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 //  - Shard Candidate root: CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
 //  - Shard Validator root: ShardCommittee + ShardPendingValidator
 //  - Random number if have in instruction
-func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
+func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock,
+	randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
 	startTimeVerifyPostProcessingBeaconBlock := time.Now()
 	if !hashes.BeaconCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.BeaconCommitteeAndValidatorRoot) {
 		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
@@ -620,11 +621,14 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 			isBeginRandom = true
 		}
 	}
-	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams, beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
+
+	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 	hashes, committeeChange, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
 		return nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
+
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 	return beaconBestState, hashes, committeeChange, nil
@@ -655,9 +659,14 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
 		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
 	}
-	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams, genesisBeaconBlock.Body.Instructions, false, false))
+
+	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
+		NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+			genesisBeaconBlock.Body.Instructions, false, false))
+
 	beaconBestState.Epoch = 1
 	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+
 	//statedb===========================START
 	var err error
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
@@ -696,7 +705,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
-	blockHeight := beaconBlock.Header.Height
 
 	var err error
 	//statedb===========================START
@@ -725,11 +733,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	err = statedb.ReplaceAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeReplaced)
+	if err != nil {
+		return err
+	}
 	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteAdded)
 	if err != nil {
 		return err
 	}
 	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeAdded)
+	if err != nil {
+		return err
+	}
+	err = statedb.ReplaceBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeReplaced)
 	if err != nil {
 		return err
 	}
@@ -804,9 +820,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
-	if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
-		return err
-	}
+	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
+	//	return err
+	//}
 
 	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
@@ -864,25 +880,70 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := rawdbv2.StoreBeaconBlock(batch, blockHeight, blockHash, beaconBlock); err != nil {
+	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+
+	finalView := blockchain.BeaconChain.multiView.GetFinalView()
+
 	blockchain.BeaconChain.multiView.AddView(newBestState)
+
+	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
+
+	storeBlock := newFinalView.GetBlock()
+	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
+		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
+		if err != nil {
+			return NewBlockChainError(StoreBeaconBlockError, err)
+		}
+		if storeBlock.GetHeight() == 1 {
+			break
+		}
+		prevHash := storeBlock.GetPrevHash()
+		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if newFinalView == nil {
+			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
+			if err != nil {
+				panic("Database is corrupt")
+			}
+		} else {
+			storeBlock = newFinalView.GetBlock()
+		}
+	}
+
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
 		panic("Backup shard view error")
 	}
+
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
-	//backup
-	//if (newBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 0 {
-	//	blockchain.GetBeaconChainDatabase().Close()
-	//	blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../../backup/beacon/%d", newBestState.Epoch))
-	//	blockchain.GetBeaconChainDatabase().ReOpen()
-	//}
+	if !blockchain.config.ChainParams.IsBackup {
+		return nil
+	}
+	if (newBestState.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+
+		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+		if err != nil {
+			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+			return nil
+		}
+
+		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
+		if err != nil {
+			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
+			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
+			return nil
+		}
+
+	}
 
 	return nil
+}
+
+func isNil(v interface{}) bool {
+	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }

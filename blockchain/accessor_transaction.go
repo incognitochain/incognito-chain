@@ -191,6 +191,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
 	beaconBlocks []*BeaconBlock,
 	shardID byte,
 ) error {
+	//mainnet have two block return double when height < REPLACE_STAKINGTX
+	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < blockchain.config.ChainParams.ReplaceStakingTxHeight {
+		return nil
+	}
 	return blockchain.ValidateReturnStakingTxFromBeaconInstructions(
 		curView,
 		beaconBlocks,
@@ -277,7 +281,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	var outCointsInBytes [][]byte
 	var err error
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}

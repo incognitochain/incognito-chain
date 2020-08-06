@@ -845,10 +845,64 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 	return curValidatorInfo
 }
 
-func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, map[string]common.Hash, error) {
+func (beaconConsensusStateDB *StateDB) GetAllStakingTX(ids []int) (map[string]string, error) {
+	allStaker := []*CommitteeState{}
+	mapStakingTx := map[string]string{}
+	for _, shardID := range ids {
+		// Current Validator
+		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
+		resCurrentValidator := beaconConsensusStateDB.iterateWithCommitteeState(prefixCurrentValidator)
+		allStaker = append(allStaker, resCurrentValidator...)
+		// Substitute Validator
+		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
+		resSubstituteValidator := beaconConsensusStateDB.iterateWithCommitteeState(prefixSubstituteValidator)
+		allStaker = append(allStaker, resSubstituteValidator...)
+	}
+	// next epoch candidate
+	prefixNextEpochCandidate := GetCommitteePrefixWithRole(NextEpochShardCandidate, -2)
+	resNextEpochCandidate := beaconConsensusStateDB.iterateWithCommitteeState(prefixNextEpochCandidate)
+	allStaker = append(allStaker, resNextEpochCandidate...)
+	// current epoch candidate
+	prefixCurrentEpochCandidate := GetCommitteePrefixWithRole(CurrentEpochShardCandidate, -2)
+	resCurrentEpochCandidate := beaconConsensusStateDB.iterateWithCommitteeState(prefixCurrentEpochCandidate)
+	allStaker = append(allStaker, resCurrentEpochCandidate...)
+
+	// next epoch candidate
+	prefixNextEpochBeaconCandidate := GetCommitteePrefixWithRole(NextEpochBeaconCandidate, -2)
+	resNextEpochBeaconCandidate := beaconConsensusStateDB.iterateWithCommitteeState(prefixNextEpochBeaconCandidate)
+	allStaker = append(allStaker, resNextEpochBeaconCandidate...)
+	// current epoch candidate
+	prefixCurrentEpochBeaconCandidate := GetCommitteePrefixWithRole(CurrentEpochBeaconCandidate, -2)
+	resCurrentEpochBeaconCandidate := beaconConsensusStateDB.iterateWithCommitteeState(prefixCurrentEpochBeaconCandidate)
+	allStaker = append(allStaker, resCurrentEpochBeaconCandidate...)
+
+	for _, v := range allStaker {
+		pubKeyBytes, _ := v.committeePublicKey.RawBytes()
+		key := GetStakerInfoKey(pubKeyBytes)
+		stakerInfo, has, err := beaconConsensusStateDB.getStakerInfo(key)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		pKey, err := v.committeePublicKey.ToBase58()
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		if (!has) || (stakerInfo == nil) {
+			fmt.Println("No staker info")
+			return nil, errors.Errorf("Can not found staker info for this committee public key %v", pKey)
+		}
+		if stakerInfo.txStakingID.String() != common.HashH([]byte{0}).String() {
+			mapStakingTx[pKey] = stakerInfo.txStakingID.String()
+		}
+	}
+	return mapStakingTx, nil
+}
+
+func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, error) {
 	allStaker := []*CommitteeState{}
 	mapAutoStaking := map[string]bool{}
-	mapStakingTx := map[string]common.Hash{}
 
 	// Current Beacon Validator
 	prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, BeaconChainID)
@@ -891,23 +945,22 @@ func (stateDB *StateDB) getMapAutoStaking(ids []int) (map[string]bool, map[strin
 		key := GetStakerInfoKey(pubKeyBytes)
 		stakerInfo, has, err := stateDB.getStakerInfo(key)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		pKey, err := v.committeePublicKey.ToBase58()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if (!has) || (stakerInfo == nil) {
-			return nil, nil, errors.Errorf("Can not found staker info for this committee public key %v", pKey)
+			return nil, errors.Errorf("Can not found staker info for this committee public key %v", pKey)
 		}
 		if stakerInfo.txStakingID.String() != common.HashH([]byte{0}).String() {
 			mapAutoStaking[pKey] = stakerInfo.autoStaking
 		} else {
 			mapAutoStaking[pKey] = false
 		}
-		mapStakingTx[pKey] = stakerInfo.txStakingID
 	}
-	return mapAutoStaking, mapStakingTx, nil
+	return mapAutoStaking, nil
 }
 
 // ================================= Reward Request OBJECT =======================================

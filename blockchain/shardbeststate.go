@@ -8,11 +8,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
-
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -35,25 +35,23 @@ type ShardRootHash struct {
 }
 
 type ShardBestState struct {
-	BestBlockHash          common.Hash                       `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock                       `json:"-"`             // block data
-	BestBeaconHash         common.Hash                       `json:"BestBeaconHash"`
-	BeaconHeight           uint64                            `json:"BeaconHeight"`
-	ShardID                byte                              `json:"ShardID"`
-	Epoch                  uint64                            `json:"Epoch"`
-	ShardHeight            uint64                            `json:"ShardHeight"`
-	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
-	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
-	ShardCommittee         []incognitokey.CommitteePublicKey `json:"-"`
-	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"-"`
-	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
-	StakingTx              *common.MapStringString           `json:"-"`
-	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
-	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
-	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
-	ActiveShards           int                               `json:"ActiveShards"`
-	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
+	BestBlockHash          common.Hash             `json:"BestBlockHash"` // hash of block.
+	BestBlock              *ShardBlock             `json:"BestBlock"`     // block data
+	BestBeaconHash         common.Hash             `json:"BestBeaconHash"`
+	BeaconHeight           uint64                  `json:"BeaconHeight"`
+	ShardID                byte                    `json:"ShardID"`
+	Epoch                  uint64                  `json:"Epoch"`
+	ShardHeight            uint64                  `json:"ShardHeight"`
+	MaxShardCommitteeSize  int                     `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int                     `json:"MinShardCommitteeSize"`
+	ShardProposerIdx       int                     `json:"ShardProposerIdx"`
+	BestCrossShard         map[byte]uint64         `json:"BestCrossShard"`         // Best cross shard block by heigh
+	NumTxns                uint64                  `json:"NumTxns"`                // The number of txns in the block.
+	TotalTxns              uint64                  `json:"TotalTxns"`              // The total number of txns in the chain.
+	TotalTxnsExcludeSalary uint64                  `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
+	ActiveShards           int                     `json:"ActiveShards"`
+	ConsensusAlgorithm     string                  `json:"ConsensusAlgorithm"`
+	StakingTx              *common.MapStringString `json:"-"`
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
@@ -71,6 +69,7 @@ type ShardBestState struct {
 	RewardStateDBRootHash      common.Hash
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
+	shardCommitteeEngine       ShardCommitteeEngine
 }
 
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
@@ -113,7 +112,7 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState {
+func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeEngine ShardCommitteeEngine) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -124,10 +123,8 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 		panic(err)
 	}
 	bestStateShard.BestBlock = nil
-	bestStateShard.ShardCommittee = []incognitokey.CommitteePublicKey{}
 	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
 	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.StakingTx = common.NewMapStringString()
@@ -135,6 +132,7 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
 	bestStateShard.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	bestStateShard.shardCommitteeEngine = shardCommitteeEngine
 	return bestStateShard
 }
 
@@ -196,14 +194,14 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 	proposerIdxBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(shardBestState.ShardProposerIdx))
 	res = append(res, proposerIdxBytes...)
-	for _, value := range shardBestState.ShardCommittee {
+	for _, value := range shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID) {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
 		}
 		res = append(res, valueBytes...)
 	}
-	for _, value := range shardBestState.ShardPendingValidator {
+	for _, value := range shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID) {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
@@ -296,6 +294,10 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
+func (shardBestState ShardBestState) GetShardID() byte {
+	return shardBestState.ShardID
+}
+
 //cloneShardBestStateFrom - remember to use lock
 func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
 	tempMarshal, err := json.Marshal(target)
@@ -317,19 +319,8 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
-
+	shardBestState.shardCommitteeEngine = target.shardCommitteeEngine
 	shardBestState.BestBlock = target.BestBlock
-
-	shardBestState.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(target.ShardCommittee))
-	for i, v := range target.ShardCommittee {
-		shardBestState.ShardCommittee[i] = v
-	}
-
-	shardBestState.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(target.ShardPendingValidator))
-	for i, v := range target.ShardPendingValidator {
-		shardBestState.ShardPendingValidator[i] = v
-	}
-
 	return nil
 }
 
@@ -343,12 +334,12 @@ func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 
 func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, shardBestState.ShardCommittee...)
+	return append(result, shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID)...)
 }
 
 func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
 	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
-	return shardBestState.ShardCommittee[id]
+	return shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID)[id]
 }
 
 func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
@@ -361,11 +352,11 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 }
 
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return shardBestState.ShardCommittee
+	return shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID)
 }
 
 func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.CommitteePublicKey {
-	return shardBestState.ShardPendingValidator
+	return shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID)
 }
 
 func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
@@ -378,15 +369,41 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 }
 
 func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
-	h, e := statedb.GetShardBlockHashByIndex(shardBestState.consensusStateDB, shardID, height)
-	if e != nil {
-		return nil, e
+	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
+	if err != nil {
+		return nil, err
 	}
-	data, e := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, h)
-	if e != nil {
-		return nil, e
+	data, err := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, *h)
+	if err != nil {
+		return nil, err
 	}
 	sRH := &ShardRootHash{}
-	err := json.Unmarshal(data, sRH)
+	err = json.Unmarshal(data, sRH)
 	return sRH, err
+}
+
+//InitShardCommitteeEngine : Init shard committee engine for every time restore process
+//Pre-conditions: Already blocks, best view have been initialized before
+//Input:
+// + consensusStateDB: instance of statedb -> query shard committees and shard pending validators
+// + shardHeight, shardID, shardHash: Basic data for shard committee engine
+//Output: [Interface] ShardCommitteeEngine
+func InitShardCommitteeEngine(
+	consensusStateDB *statedb.StateDB,
+	shardHeight uint64,
+	shardID byte,
+	shardHash common.Hash) ShardCommitteeEngine {
+
+	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
+
+	shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
+	shardCommitteeEngine := committeestate.NewShardCommitteeEngine(shardHeight, shardHash, shardID, shardCommitteeState)
+
+	return shardCommitteeEngine
+}
+
+//ShardCommitteeEngine : getter of shardCommitteeEngine ...
+func (shardBestState *ShardBestState) ShardCommitteeEngine() ShardCommitteeEngine {
+	return shardBestState.shardCommitteeEngine
 }

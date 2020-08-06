@@ -3,13 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -569,6 +568,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		IsBeaconRandomTime:        isBeaconRandomTime,
 		ActiveShards:              beaconBestState.ActiveShards,
 		MinShardCommitteeSize:     beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:          beaconBestState.consensusStateDB,
 	}
 }
 
@@ -596,7 +596,7 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
+	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
 	if e != nil {
 		return common.Hash{}, e
 	}
@@ -605,7 +605,7 @@ func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *Beacon
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB, height)
+	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
 	if e != nil {
 		return common.Hash{}, e
 	}
@@ -613,11 +613,11 @@ func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBe
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, height uint64) (*BeaconRootHash, error) {
-	h, e := statedb.GetBeaconBlockHashByIndex(stateDB, height)
+	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
 	if e != nil {
 		return nil, e
 	}
-	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), h)
+	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), *h)
 	if e != nil {
 		return nil, e
 	}

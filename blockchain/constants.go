@@ -2,11 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 )
 
 //Network fixed params
@@ -136,11 +137,11 @@ const (
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
-	TestnetBNBChainID = "Binance-Chain-Nile"
+	TestnetBNBChainID = "Binance-Chain-Ganges"
 	TestnetBTCChainID = "Bitcoin-Testnet"
 
 	// BNB fullnode
-	TestnetBNBFullNodeHost     = "data-seed-pre-0-s1.binance.org"
+	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
