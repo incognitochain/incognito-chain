@@ -1,4 +1,4 @@
-package manager
+package instructionsprocessor
 
 import (
 	"encoding/json"

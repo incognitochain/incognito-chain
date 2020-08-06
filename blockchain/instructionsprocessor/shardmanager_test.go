@@ -11,9 +11,9 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-func SamplingStakingTxs() *statedb.StateDB {
+// func SamplingStakingTxs() *statedb.StateDB {
 
-}
+// }
 
 func TestShardManager_BuildTransactionsFromInstructions(t *testing.T) {
 	type fields struct {
