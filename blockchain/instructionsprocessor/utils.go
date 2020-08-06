@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -30,7 +31,7 @@ func GetTxDataByHash(
 	if err != nil {
 		return nil, err
 	}
-	shardBlock := NewShardBlock()
+	shardBlock := types.NewShardBlock()
 	err = json.Unmarshal(shardBlockBytes, shardBlock)
 	if err != nil {
 		return nil, err
