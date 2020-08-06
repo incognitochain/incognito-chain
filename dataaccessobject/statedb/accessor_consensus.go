@@ -622,3 +622,11 @@ func GetOneShardCommitteeEnterTime(
 	}
 	return list
 }
+
+//GetShardsUnstakeValidators : Get all shard unstake validators by statedb
+func GetShardsUnstakeValidators(
+	stateDB *StateDB,
+) (map[string]bool, error) {
+
+	return nil, nil
+}

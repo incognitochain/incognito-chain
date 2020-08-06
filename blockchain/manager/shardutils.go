@@ -87,6 +87,21 @@ func stopInsFromTx(
 	return nil
 }
 
-func unstakeFromTx() {
-	//TODO
+//unstakeInsFromTx : Build unstake instruction
+// from unstake tx of ShardBlock
+// for making BeaconBlock from below instruction
+func unstakeInsFromTx(
+	shardID byte,
+	meta metadata.Metadata,
+) (*instruction.UnstakeInstruction, error) {
+	unstakingMetadata, ok := meta.(*metadata.UnStakingMetadata)
+	if !ok {
+		return nil, errors.Errorf("Can not parse this metadata %v", meta.Hash())
+	}
+
+	unstakingInstruction, err := instruction.
+		ValidateAndImportUnstakeInstructionFromString(
+			[]string{instruction.UNSTAKE_ACTION, unstakingMetadata.CommitteePublicKey})
+
+	return unstakingInstruction, err
 }

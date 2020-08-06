@@ -3,9 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -573,7 +574,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
-func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
+func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) (BeaconCommitteeEngine, error) {
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < activeShards; i++ {
 		shardIDs = append(shardIDs, i)
@@ -591,9 +592,16 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 	for k, v := range substituteValidator {
 		shardSubstituteValidator[byte(k)] = v
 	}
-	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers, stakingTx)
+
+	//Get list unstake validators
+	unstakeValidators, err := statedb.GetShardsUnstakeValidators(consensusStateDB)
+	if err != nil {
+		return nil, err
+	}
+
+	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers, stakingTx, unstakeValidators)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngine(beaconHeight, beaconHash, beaconCommitteeState)
-	return beaconCommitteeEngine
+	return beaconCommitteeEngine, nil
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {

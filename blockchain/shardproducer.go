@@ -3,13 +3,14 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -519,10 +520,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			}
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
-
-		// view.shardCommitteeEngine.ProcessInstructionFromShard()
-
-		//Here: @tin
 
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
 		// shardCommittee must include all producers and validators in the right order

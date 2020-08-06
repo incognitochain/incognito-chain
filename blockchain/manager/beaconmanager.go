@@ -54,8 +54,14 @@ func (bM *BeaconManager) BuildInstructionsFromTransactions(txs []metadata.Transa
 				//TODO
 				continue
 			}
-			//case metadata.UnstakingMeta
-			//TODO @tin
+		case metadata.UnStakingMeta:
+			unstakeIns, err := unstakeInsFromTx(
+				tx.GetSenderAddrLastByte(),
+				tx.GetMetadata())
+			if err != nil {
+				continue
+			}
+			res = append(res, unstakeIns)
 		}
 	}
 	for _, v := range stakeInsMap {

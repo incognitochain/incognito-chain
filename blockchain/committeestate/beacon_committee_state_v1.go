@@ -49,6 +49,7 @@ type BeaconCommitteeStateV1 struct {
 	autoStake                   map[string]bool                   // committee public key => reward receiver payment address
 	rewardReceiver              map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx                   map[string]common.Hash            // committee public key => reward receiver payment address
+	unstake                     map[string]bool
 
 	mu *sync.RWMutex
 }
@@ -81,6 +82,7 @@ func NewBeaconCommitteeStateV1WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	unstake map[string]bool,
 ) *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		beaconCommittee:             beaconCommittee,
@@ -94,6 +96,7 @@ func NewBeaconCommitteeStateV1WithValue(
 		autoStake:                   autoStake,
 		rewardReceiver:              rewardReceiver,
 		stakingTx:                   stakingTx,
+		unstake:                     unstake,
 		mu:                          new(sync.RWMutex),
 	}
 }
@@ -105,6 +108,7 @@ func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 		autoStake:       make(map[string]bool),
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
+		unstake:         make(map[string]bool),
 		mu:              new(sync.RWMutex),
 	}
 }
@@ -131,6 +135,9 @@ func (b BeaconCommitteeStateV1) clone(newB *BeaconCommitteeStateV1) {
 	}
 	for k, v := range b.stakingTx {
 		newB.stakingTx[k] = v
+	}
+	for k, v := range b.unstake {
+		newB.unstake[k] = v
 	}
 }
 
@@ -262,6 +269,16 @@ func (engine *BeaconCommitteeEngine) GetAllCandidateSubstituteCommittee() []stri
 	return engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
 }
 
+func (engine *BeaconCommitteeEngine) Unstake() map[string]bool {
+	engine.beaconCommitteeStateV1.mu.RLock()
+	defer engine.beaconCommitteeStateV1.mu.RUnlock()
+	unstake := make(map[string]bool)
+	for k, v := range engine.beaconCommitteeStateV1.unstake {
+		unstake[k] = v
+	}
+	return unstake
+}
+
 //Commit :
 func (engine *BeaconCommitteeEngine) Commit(hashes *BeaconCommitteeStateHash) error {
 	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV1, NewBeaconCommitteeStateV1()) {
@@ -382,6 +399,15 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 			}
 			newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
+		case instruction.UNSTAKE_ACTION:
+			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
+			}
+			_, committeeChange, err = newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
+			if err != nil {
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 		}
 		if len(tempNewBeaconCandidates) > 0 {
 			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
