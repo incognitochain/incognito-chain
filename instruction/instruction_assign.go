@@ -90,21 +90,3 @@ func ValidateAssignInstructionSanity(instruction []string) error {
 	}
 	return nil
 }
-
-// func (aI *AssignInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
-// 	candidates, err := incognitokey.CommitteeBase58KeyListToStruct(aI.ShardCandidates)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if aI.ChainID == BEACON_CHAIN_ID {
-// 		err = statedb.StoreBeaconSubstituteValidator(sDB, candidates)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	err = statedb.StoreOneShardSubstitutesValidator(sDB, byte(aI.ChainID), candidates)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }

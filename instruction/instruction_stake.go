@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -180,42 +179,4 @@ func ImportInitStakeInstructionFromString(instruction []string) *StakeInstructio
 	stakeInstruction.SetAutoStakingFlag(autoStakeFlags)
 	stakeInstruction.SetChain(instruction[2])
 	return stakeInstruction
-}
-
-func (sI *StakeInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
-	rrMap := map[string]privacy.PaymentAddress{}
-	asMap := map[string]bool{}
-	tsMap := map[string]common.Hash{}
-	for i, pk := range sI.PublicKeys {
-		rrMap[pk] = sI.RewardReceiverStructs[i]
-		asMap[pk] = sI.AutoStakingFlag[i]
-		tsMap[pk] = sI.TxStakeHashes[i]
-	}
-	err := statedb.StoreStakerInfo(
-		sDB,
-		sI.PublicKeyStructs,
-		rrMap,
-		asMap,
-		tsMap,
-	)
-	if err != nil {
-		return err
-	}
-	//TODO Replace from Next Epoch ---> Common Pool
-	if sI.Chain == "beacon" {
-		return statedb.StoreNextEpochBeaconCandidate(
-			sDB,
-			sI.PublicKeyStructs,
-			rrMap,
-			asMap,
-			tsMap,
-		)
-	}
-	return statedb.StoreNextEpochShardCandidate(
-		sDB,
-		sI.PublicKeyStructs,
-		rrMap,
-		asMap,
-		tsMap,
-	)
 }

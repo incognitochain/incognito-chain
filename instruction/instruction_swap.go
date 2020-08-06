@@ -189,30 +189,3 @@ func ValidateSwapInstructionSanity(instruction []string) error {
 	}
 	return nil
 }
-
-// func (swI *SwapInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
-// 	if swI.IsReplace {
-// 		//TODO Merge code replace
-// 		return nil
-// 	}
-// 	if swI.ChainID == BEACON_CHAIN_ID {
-// 		err := statedb.StoreBeaconCommittee(sDB, swI.InPublicKeyStructs)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		err = statedb.DeleteBeaconSubstituteValidator(sDB, swI.InPublicKeyStructs)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		return statedb.DeleteBeaconCommittee(sDB, swI.OutPublicKeyStructs)
-// 	}
-// 	err := statedb.StoreOneShardCommittee(sDB, byte(swI.ChainID), swI.InPublicKeyStructs)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	err = statedb.DeleteOneShardSubstitutesValidator(sDB, byte(swI.ChainID), swI.InPublicKeyStructs)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return statedb.DeleteOneShardCommittee(sDB, byte(swI.ChainID), swI.OutPublicKeyStructs)
-// }

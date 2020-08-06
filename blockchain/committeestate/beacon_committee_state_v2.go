@@ -3,14 +3,45 @@ package committeestate
 import (
 	"math/rand"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func (b *BeaconCommitteeEngine) AssignSubstitutePoolUsingRandomInstruction(
+	blkHash common.Hash,
 	seed int64,
 ) ([]string, map[byte][]string) {
-	_ = b.GetCandidateBeaconWaitingForCurrentRandom()
-	return []string{}, map[byte][]string{}
+	//Still update
+	subsSizeMap := map[byte]int{}
+	numShards := len(b.beaconCommitteeStateV1.shardCommittee)
+	for i := 0; i < numShards; i++ {
+		shardCandidates, err := b.SubstituteGetter(blkHash, i)
+		if err != nil {
+			//TODO handle error?
+		}
+		subsSizeMap[byte(i)] = len(shardCandidates)
+	}
+	shardCandidates, err := b.CandidateGetter(blkHash, false)
+	if err != nil {
+		//TODO handle error?
+	}
+	beaconCandidates, err := b.CandidateGetter(blkHash, true)
+	if err != nil {
+		//TODO handle error?
+	}
+	shCandListString, _ := incognitokey.CommitteeKeyListToString(shardCandidates)
+	bcCandListString, _ := incognitokey.CommitteeKeyListToString(beaconCandidates)
+	newShSubs := b.AssignShardsPoolUsingRandomInstruction(
+		seed,
+		numShards,
+		shCandListString,
+		subsSizeMap,
+	)
+	newBcSubs := b.AssignBeaconUsingRandomInstruction(
+		seed,
+		bcCandListString,
+	)
+	return newBcSubs, newShSubs
 }
 
 func (b *BeaconCommitteeEngine) AssignShardsPoolUsingRandomInstruction(
@@ -45,7 +76,8 @@ func (b *BeaconCommitteeEngine) AssignShardsPoolUsingRandomInstruction(
 
 func (b *BeaconCommitteeEngine) AssignBeaconUsingRandomInstruction(
 	seed int64,
+	candidateList []string,
 ) []string {
-	res, _ := incognitokey.CommitteeKeyListToString(b.beaconCommitteeStateV1.nextEpochBeaconCandidate)
-	return res
+	//TODO
+	return candidateList
 }
