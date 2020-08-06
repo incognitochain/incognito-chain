@@ -592,11 +592,10 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 	}
 	// Pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BridgeShardID)
-	epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-	if shardID == bridgeID && epoch < blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch { // No need for shard 1's signature after this epoch
+	if shardID == bridgeID { // Pick burning confirm inst for V1
 		prevBlock := view.BestBlock
 		height := view.ShardHeight + 1
-		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
+		confirmInsts := pickBurningConfirmInstructionV1(beaconBlocks, height)
 		if len(confirmInsts) > 0 {
 			bid := []uint64{}
 			for _, b := range beaconBlocks {

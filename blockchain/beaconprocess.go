@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
@@ -1451,11 +1452,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later
-	epoch := beaconBlock.Header.Height / blockchain.config.ChainParams.Epoch
-	if epoch >= blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch {
-		if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height); err != nil {
-			return NewBlockChainError(StoreBurningConfirmError, err)
-		}
+	metas := []string{ // Burning v2: sig on beacon only
+		strconv.Itoa(metadata.BurningConfirmMetaV2),
+		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
+	}
+	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
+		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
 
 	// execute, store Portal Instruction

@@ -6,9 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -99,7 +100,7 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 }
 
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta
+	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

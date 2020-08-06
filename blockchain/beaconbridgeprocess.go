@@ -48,7 +48,7 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta):
+		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 
 		}
@@ -245,12 +245,19 @@ func (blockchain *BlockChain) processBurningReq(instruction []string, updatingIn
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, instructions [][]string, blockHeight uint64) error {
+func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, instructions [][]string, blockHeight uint64, metas []string) error {
 	for _, inst := range instructions {
-		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) &&
-			inst[0] != strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta) {
+		found := false
+		for _, meta := range metas {
+			if inst[0] == meta {
+				found = true
+			}
+		}
+
+		if !found {
 			continue
 		}
+
 		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v, meta type %d", blockHeight, inst, inst[0])
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])

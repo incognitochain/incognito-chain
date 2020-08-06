@@ -17,7 +17,7 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMeta, httpServer)
+	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMetaV2, httpServer)
 }
 
 // handleGetBurnProof returns a proof of a tx burning pETH
@@ -25,7 +25,7 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMeta, httpServer)
+	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMetaV2, httpServer)
 }
 
 func retrieveBurnProof(
