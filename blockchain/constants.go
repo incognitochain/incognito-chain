@@ -132,7 +132,7 @@ const (
 	//TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
 	//TestnetETHContractAddressStr            = "0x79382223241799fc1706a85adf9df4231715A731"
 	//TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
-	TestnetETHContractAddressStr            = "0xfB51a5e0Ac5B4c9D6Bf086acf041E14f49f183d2"
+	TestnetETHContractAddressStr            = "0x81Abb087c1225aAf0f49F3e848aD92F7046Cd112"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
