@@ -58,9 +58,6 @@ type BeaconCommitteeEngineV1 struct {
 	beaconHash                        common.Hash
 	beaconCommitteeStateV1            *BeaconCommitteeStateV1
 	uncommittedBeaconCommitteeStateV1 *BeaconCommitteeStateV1
-	CommitteeGetter                   func(blkHash common.Hash, committeeID int) ([]incognitokey.CommitteePublicKey, error)
-	SubstituteGetter                  func(blkHash common.Hash, committeeID int) ([]incognitokey.CommitteePublicKey, error)
-	CandidateGetter                   func(blkHash common.Hash, getBeacon bool) ([]incognitokey.CommitteePublicKey, error)
 }
 
 func NewBeaconCommitteeEngine(beaconHeight uint64, beaconHash common.Hash, beaconCommitteeStateV1 *BeaconCommitteeStateV1) *BeaconCommitteeEngineV1 {
