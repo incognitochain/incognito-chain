@@ -306,16 +306,16 @@ func testTxTokenV1TransferFakeOutput(txv1 *TxTokenVersion1, db *statedb.StateDB,
 	assert.Equal(t,nil,err)
 	clonedCoin = &coin.CoinV1{}
 	err = clonedCoin.SetBytes(tokenOutput.Bytes())
-	assert.Equal(t,nil,err)
-	pcGeneric, err = clonedCoin.Decrypt(keySets[0])
-	assert.Equal(t,nil,err)
-	pc, ok = pcGeneric.(*coin.PlainCoinV1)
+	// assert.Equal(t,nil,err)
+	// pcGeneric, err = clonedCoin.Decrypt(keySets[0])
+	// assert.Equal(t,nil,err)
+	pc = clonedCoin.CoinDetails
 	assert.Equal(t,true,ok)
 	pc.SetPublicKey(aDifferentPk)
-	pc.SetCommitment(tokenOutput.GetCommitment())
-	forgedCoin = &coin.CoinV1{}
-	forgedCoin.CoinDetails = pc
-	err = forgedCoin.Encrypt(keySets[0].PaymentAddress.Tk)
+	// pc.SetCommitment(tokenOutput.GetCommitment())
+	forgedCoin = clonedCoin
+	// forgedCoin.CoinDetails = pc
+	// err = forgedCoin.Encrypt(keySets[2].PaymentAddress.Tk)
 
 	outs[0] = forgedCoin
 	inner.Proof.SetOutputCoins(outs)
