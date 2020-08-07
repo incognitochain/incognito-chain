@@ -271,14 +271,6 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
-	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
-	if err != nil {
-		return nil, nil, err
-	}
-	if !ok {
-		return nil, nil, fmt.Errorf("Verify Batch Transaction failed %+v", txs)
-	}
 	for _, tx := range txs {
 		// validate tx
 		err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, true, false)
@@ -296,6 +288,15 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 		}
 		txDescs = append(txDescs, &txD.Desc)
 		txHashes = append(txHashes, *tx.Hash())
+	}
+
+	batch := transaction.NewBatchTransaction(txs)
+	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		return nil, nil, fmt.Errorf("Verify Batch Transaction failed %+v", txs)
 	}
 	return txHashes, txDescs, nil
 }
