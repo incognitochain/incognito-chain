@@ -58,7 +58,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		if hasPrivacy {
 			bulletproof := tx.GetProof().GetAggregatedRangeProof()
 			if bulletproof == nil {
-				continue
+				return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("Privacy TX Proof missing at index %d", i)), -1
 			}
 			if tx.GetProof().GetVersion() == 1 {
 				bulletproofV1 := bulletproof.(*privacy.AggregatedRangeProofV1)
