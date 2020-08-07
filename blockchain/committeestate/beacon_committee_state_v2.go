@@ -1,13 +1,129 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy"
 	"math/rand"
+	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-func (b *BeaconCommitteeEngine) AssignSubstitutePoolUsingRandomInstruction(
+type BeaconCommitteeStateV2 struct {
+	beaconCommittee             []incognitokey.CommitteePublicKey
+	beaconSubstitute            []incognitokey.CommitteePublicKey
+	nextEpochShardCandidate     []incognitokey.CommitteePublicKey
+	currentEpochShardCandidate  []incognitokey.CommitteePublicKey
+	nextEpochBeaconCandidate    []incognitokey.CommitteePublicKey
+	currentEpochBeaconCandidate []incognitokey.CommitteePublicKey
+	shardCommittee              map[byte][]incognitokey.CommitteePublicKey
+	shardSubstitute             map[byte][]incognitokey.CommitteePublicKey
+	autoStake                   map[string]bool                   // committee public key => reward receiver payment address
+	rewardReceiver              map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
+	stakingTx                   map[string]common.Hash            // committee public key => reward receiver payment address
+
+	mu *sync.RWMutex
+}
+
+type BeaconCommitteeEngineV2 struct {
+	beaconHeight                      uint64
+	beaconHash                        common.Hash
+	beaconCommitteeStateV1            *BeaconCommitteeStateV2
+	uncommittedBeaconCommitteeStateV1 *BeaconCommitteeStateV2
+	CommitteeGetter                   func(blkHash common.Hash, committeeID int) ([]incognitokey.CommitteePublicKey, error)
+	SubstituteGetter                  func(blkHash common.Hash, committeeID int) ([]incognitokey.CommitteePublicKey, error)
+	CandidateGetter                   func(blkHash common.Hash, getBeacon bool) ([]incognitokey.CommitteePublicKey, error)
+}
+
+func (b *BeaconCommitteeEngineV2) GetBeaconHeight() uint64 {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetBeaconHash() common.Hash {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetBeaconSubstitute() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetShardCommittee() map[byte][]incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetAutoStaking() map[string]bool {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetStakingTx() map[string]common.Hash {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetRewardReceiver() map[string]privacy.PaymentAddress {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GetAllCandidateSubstituteCommittee() []string {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) Commit(hash *BeaconCommitteeStateHash) error {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) AbortUncommittedBeaconState() {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (*BeaconCommitteeStateHash, *CommitteeChange, error) {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error) {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string) {
+	panic("implement me")
+}
+
+func (b *BeaconCommitteeEngineV2) AssignSubstitutePoolUsingRandomInstruction(
 	blkHash common.Hash,
 	seed int64,
 ) ([]string, map[byte][]string) {
@@ -44,7 +160,7 @@ func (b *BeaconCommitteeEngine) AssignSubstitutePoolUsingRandomInstruction(
 	return newBcSubs, newShSubs
 }
 
-func (b *BeaconCommitteeEngine) AssignShardsPoolUsingRandomInstruction(
+func (b *BeaconCommitteeEngineV2) AssignShardsPoolUsingRandomInstruction(
 	seed int64,
 	numShards int,
 	candidatesList []string,
@@ -74,7 +190,7 @@ func (b *BeaconCommitteeEngine) AssignShardsPoolUsingRandomInstruction(
 	return res
 }
 
-func (b *BeaconCommitteeEngine) AssignBeaconUsingRandomInstruction(
+func (b *BeaconCommitteeEngineV2) AssignBeaconUsingRandomInstruction(
 	seed int64,
 	candidateList []string,
 ) []string {

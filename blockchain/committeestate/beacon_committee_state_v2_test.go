@@ -71,7 +71,7 @@ func TestBeaconCommitteeEngine_AssignShardsPoolUsingRandomInstruction(t *testing
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &BeaconCommitteeEngine{
+			b := &BeaconCommitteeEngineV1{
 				beaconHeight:                      tt.fields.beaconHeight,
 				beaconHash:                        tt.fields.beaconHash,
 				beaconCommitteeStateV1:            tt.fields.beaconCommitteeStateV1,
@@ -83,7 +83,7 @@ func TestBeaconCommitteeEngine_AssignShardsPoolUsingRandomInstruction(t *testing
 				fmt.Println(tt.args.subsSizeMap)
 				diff := GetMinMaxRange(tt.args.subsSizeMap)
 				if diff > tt.want {
-					t.Errorf("BeaconCommitteeEngine.AssignShardsPoolUsingRandomInstruction() = %v, want %v", diff, tt.want)
+					t.Errorf("BeaconCommitteeEngineV1.AssignShardsPoolUsingRandomInstruction() = %v, want %v", diff, tt.want)
 				}
 			}
 
