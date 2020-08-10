@@ -1,4 +1,4 @@
-package manager
+package instructionsprocessor
 
 import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -6,11 +6,11 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-type BeaconManager struct {
+type BInsProcessor struct {
 	CommitteeEngine BeaconCommitteeEngine
 }
 
-func (bM *BeaconManager) FromInstructionsToInstructions(inses []instruction.Instruction) ([]instruction.Instruction, error) {
+func (bP *BInsProcessor) FromInstructionsToInstructions(inses []instruction.Instruction) ([]instruction.Instruction, error) {
 	res := []instruction.Instruction{}
 	for _, ins := range inses {
 		switch ins.GetType() {
@@ -20,14 +20,15 @@ func (bM *BeaconManager) FromInstructionsToInstructions(inses []instruction.Inst
 				//TODO handle error
 				continue
 			}
-			newInses := buildAssignInstructionFromRandom(rI, bM.CommitteeEngine)
+			newInses := buildAssignInstructionFromRandom(rI, bP.CommitteeEngine)
 			res = append(res, newInses...)
+		case instruction.SWAP_ACTION:
 		}
 	}
 	return res, nil
 }
 
-func (bM *BeaconManager) BuildInstructionsFromTransactions(txs []metadata.Transaction) []instruction.Instruction {
+func (bP *BInsProcessor) BuildInstructionsFromTransactions(txs []metadata.Transaction) []instruction.Instruction {
 	res := []instruction.Instruction{}
 	stakeInsMap := map[string]*instruction.StakeInstruction{}
 	stopIns := instruction.NewStopAutoStakeInstruction()
@@ -75,18 +76,29 @@ func (bM *BeaconManager) BuildInstructionsFromTransactions(txs []metadata.Transa
 	return nil
 }
 
-func (bM *BeaconManager) StoreInfoFromInstructions(sDB *statedb.StateDB, inses []instruction.Instruction) error {
+func (bP *BInsProcessor) StoreInfoFromInstructions(stDB *statedb.StateDB, inses []instruction.Instruction) error {
 	//TODO:
 	//Should we using this func for filter instructions, like create empty stateDB, insert and check if they return error? If error == nil, we append it into instruction array
 	//It mean this func will be called twice, once when create and filter instructions, once when store block?
 	//This code implement below is just for store block, not for filter
 	for _, ins := range inses {
-		err := ins.InsertIntoStateDB(sDB)
-		if err != nil {
-			return err
+		switch ins.GetType() {
+		case instruction.ASSIGN_ACTION:
+			insertInstructionsAssign(stDB, ins)
+		case instruction.STAKE_ACTION:
+			insertInstructionsStake(stDB, ins)
+		case instruction.STOP_AUTO_STAKE_ACTION:
+			insertInstructionsStopAutoStake(stDB, ins)
+		case instruction.SWAP_ACTION:
+			insertInstructionsSwap(stDB, ins)
 		}
 	}
 	return nil
 }
 
-func (bM *BeaconManager) BuildEpochInstructions() {}
+func (bP *BInsProcessor) BuildEpochInstructions() []instruction.Instruction {
+	//Build Swap/ReturnStaking/RewardInstructions
+	return []instruction.Instruction{}
+}
+
+// func ()

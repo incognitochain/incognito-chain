@@ -1,4 +1,4 @@
-package manager
+package instructionsprocessor
 
 import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -8,16 +8,16 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type ShardManager struct {
+type SInsProcessor struct {
 	ShardDB map[byte]incdb.Database
 }
 
-func (sM *ShardManager) FromInstructionsToInstructions(inses []instruction.Instruction) []instruction.Instruction {
+func (sP *SInsProcessor) FromInstructionsToInstructions(inses []instruction.Instruction) []instruction.Instruction {
 
 	return nil
 }
 
-func (sM *ShardManager) BuildTransactionsFromInstructions(
+func (sP *SInsProcessor) BuildTransactionsFromInstructions(
 	inses []instruction.Instruction,
 	txStateDB *statedb.StateDB,
 	producerPrivateKey *privacy.PrivateKey, shardID byte,
@@ -31,7 +31,7 @@ func (sM *ShardManager) BuildTransactionsFromInstructions(
 				//TODO find the correctly way to handle error here, panic or continue or do something else?
 				continue
 			}
-			tx, err := returnStakingFromIns(*insStake, producerPrivateKey, sM.ShardDB[shardID], txStateDB)
+			tx, err := returnStakingFromIns(*insStake, producerPrivateKey, sP.ShardDB[shardID], txStateDB)
 			if err != nil {
 				res = append(res, tx)
 			}
