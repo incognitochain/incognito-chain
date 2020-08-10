@@ -3,12 +3,14 @@ package statedb
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 var (
+	blockHashByIndexPrefix             = []byte("block-hash-by-index-")
 	committeePrefix                    = []byte("shard-com-")
 	substitutePrefix                   = []byte("shard-sub-")
 	nextShardCandidatePrefix           = []byte("next-sha-cand-")
@@ -29,6 +31,7 @@ var (
 	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
 	pdePoolPrefix                      = []byte("pdepool-")
 	pdeSharePrefix                     = []byte("pdeshare-")
+	pdeTradingFeePrefix                = []byte("pdetradingfee-")
 	pdeTradeFeePrefix                  = []byte("pdetradefee-")
 	pdeContributionStatusPrefix        = []byte("pdecontributionstatus-")
 	pdeTradeStatusPrefix               = []byte("pdetradestatus-")
@@ -39,6 +42,7 @@ var (
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
+	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// portal
 	portalFinaExchangeRatesStatePrefix            = []byte("portalfinalexchangeratesstate-")
@@ -109,6 +113,22 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		panic("role not exist: " + strconv.Itoa(role))
 	}
 }
+
+func GetStakerInfoPrefix() []byte {
+	h := common.HashH(stakerInfoPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
+	h := common.HashH(stakerInfoPrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
+}
+
 func GetCommitteeRewardPrefix() []byte {
 	h := common.HashH(committeeRewardPrefix)
 	return h[:][:prefixHashKeyLength]
@@ -181,6 +201,11 @@ func GetPDESharePrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
+func GetPDETradingFeePrefix() []byte {
+	h := common.HashH(pdeTradingFeePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 func GetPDEStatusPrefix() []byte {
 	h := common.HashH(pdeStatusPrefix)
 	return h[:][:prefixHashKeyLength]
@@ -249,6 +274,14 @@ func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string)
 // GetPDEShareKey: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
 func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
 	prefix := append(pdeSharePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
+	tokenIDs := []string{token1ID, token2ID}
+	sort.Strings(tokenIDs)
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+}
+
+// GetPDETradingFeeKey: PDETradingFeePrefix + beacon height + token1ID + token2ID
+func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+	prefix := append(pdeTradingFeePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
 	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)

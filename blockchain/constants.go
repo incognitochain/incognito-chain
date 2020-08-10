@@ -28,7 +28,7 @@ const (
 	UpperBoundPercentForIncDAO    = 10
 	GetValidBlock                 = 20
 	TestRandom                    = true
-	NumberOfFixedBlockValidators  = 0
+	NumberOfFixedBlockValidators  = 4
 	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
@@ -74,8 +74,9 @@ const (
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
 	// relaying header chain
-	MainnetBNBChainID = "Binance-Chain-Tigris"
-	MainnetBTCChainID = "Bitcoin-Mainnet"
+	MainnetBNBChainID        = "Binance-Chain-Tigris"
+	MainnetBTCChainID        = "Bitcoin-Mainnet"
+	MainnetBTCDataFolderName = "btcrelayingv7"
 
 	// BNB fullnode
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
@@ -112,7 +113,7 @@ const (
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 16
+	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
@@ -120,9 +121,9 @@ const (
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second, timeout is 25
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 6 * time.Second  //second, timeout is 25
+	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward = 400000000 //40 mili PRV
@@ -130,16 +131,18 @@ const (
 	//TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
 	//TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
 	//TestnetETHContractAddressStr            = "0x79382223241799fc1706a85adf9df4231715A731"
-	TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
+	//TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
+	TestnetETHContractAddressStr            = "0x98cD12B85Df38c621d37cD6222E262835a7E87B9"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
-	TestnetBNBChainID = "Binance-Chain-Nile"
-	TestnetBTCChainID = "Bitcoin-Testnet"
+	TestnetBNBChainID        = "Binance-Chain-Ganges"
+	TestnetBTCChainID        = "Bitcoin-Testnet"
+	TestnetBTCDataFolderName = "btcrelayingv8"
 
 	// BNB fullnode
-	TestnetBNBFullNodeHost     = "data-seed-pre-0-s1.binance.org"
+	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"

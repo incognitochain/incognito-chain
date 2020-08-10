@@ -15,6 +15,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
+const MAX_S2B_BLOCK = 90
+
 type SynckerManagerConfig struct {
 	Node       Server
 	Blockchain *blockchain.BlockChain
@@ -45,6 +47,18 @@ func NewSynckerManager() *SynckerManager {
 
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
+
+	//check preload beacon
+	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	if preloadAddr != "" {
+		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
+			fmt.Println(err)
+			Logger.Infof("Preload beacon fail!")
+		} else {
+			config.Blockchain.RestoreBeaconViews()
+		}
+	}
+
 	//init beacon sync process
 	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain)
 	synckerManager.S2BSyncProcess = synckerManager.BeaconSyncProcess.s2bSyncProcess
@@ -101,16 +115,36 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	}
 	role, chainID := synckerManager.config.Node.GetUserMiningState()
 	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
+
+	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
+
+	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
-		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
-			syncProc.start()
-		} else {
-			syncProc.stop()
-		}
-		syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+		wg.Add(1)
+		go func(sid int, syncProc *ShardSyncProcess) {
+			defer wg.Done()
+			if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+				//check preload shard
+				if preloadAddr != "" {
+					if syncProc.status != RUNNING_SYNC { //run only when start
+						if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
+							fmt.Println(err)
+							Logger.Infof("Preload shard %v fail!", sid)
+						} else {
+							synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
+						}
+					}
+				}
+				syncProc.start()
+			} else {
+				syncProc.stop()
+			}
+			syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+		}(sid, syncProc)
 	}
+	wg.Wait()
 
 }
 
@@ -140,6 +174,19 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
+			if synckerManager.ShardSyncProcess[shardBlk.GetShardID()] != nil {
+				synckerManager.ShardSyncProcess[shardBlk.GetShardID()].shardPeerStateCh <- &wire.MessagePeerState{
+					Shards: map[byte]wire.ChainState{
+						byte(shardBlk.GetShardID()): {
+							Timestamp: shardBlk.Header.Timestamp,
+							BlockHash: *shardBlk.Hash(),
+							Height:    shardBlk.GetHeight(),
+						},
+					},
+					SenderID:  peerID,
+					Timestamp: time.Now().Unix(),
+				}
+			}
 		}
 
 	case *blockchain.ShardToBeaconBlock:
@@ -200,6 +247,9 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
 			res[byte(i)] = append(res[byte(i)], v)
+			if len(res[byte(i)]) > MAX_S2B_BLOCK {
+				break
+			}
 			//fmt.Println("syncker: get block ", i, v.GetHeight(), v.Hash().String())
 		}
 	}

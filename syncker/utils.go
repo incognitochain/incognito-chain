@@ -1,8 +1,6 @@
 package syncker
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -43,18 +41,21 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 
-	if len(sameCommitteeBlock) > 0 {
-		if sameCommitteeBlock[0].GetHeight()-1 != chain.CurrentHeight() {
-			return 0, errors.New(fmt.Sprintf("Not expected height: %d %d", sameCommitteeBlock[0].GetHeight()-1, chain.CurrentHeight()))
+	for i, v := range sameCommitteeBlock {
+		if !chain.CheckExistedBlk(v) {
+			var err error
+			if i == len(sameCommitteeBlock)-1 {
+				err = chain.InsertBlk(v, true)
+			} else {
+				err = chain.InsertBlk(v, false)
+			}
+			if err != nil {
+				return 0, err
+			}
 		}
+
 	}
 
-	for _, v := range sameCommitteeBlock {
-		err := chain.InsertBlk(v, false)
-		if err != nil {
-			return 0, err
-		}
-	}
 	return len(sameCommitteeBlock), nil
 }
 

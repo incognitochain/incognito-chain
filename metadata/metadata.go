@@ -55,10 +55,10 @@ type MempoolRetriever interface {
 
 type ChainRetriever interface {
 	GetStakingAmountShard() uint64
-	GetCentralizedWebsitePaymentAddress() string
+	GetCentralizedWebsitePaymentAddress(uint64) string
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
-	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
+	GetTransactionByHash(common.Hash) (byte, common.Hash, uint64, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBNBChainID() string
 	GetBTCChainID() string
@@ -77,6 +77,7 @@ type BeaconViewRetriever interface {
 }
 
 type ShardViewRetriever interface {
+	GetBeaconHeight() uint64
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
@@ -124,7 +125,10 @@ type Transaction interface {
 	IsPrivacy() bool
 	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 	CalculateTxValue() uint64
+	CalculateBurningTxValue(bcr ChainRetriever, retriever ShardViewRetriever, viewRetriever BeaconViewRetriever, beaconHeight uint64) (bool, uint64)
 	IsSalaryTx() bool
+	GetFullTxValues() (uint64, uint64)
+	IsFullBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 }
 
 func getPDEPoolPair(

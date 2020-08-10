@@ -1189,7 +1189,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		//}
 		//listen.GetPeerConnsMtx().Unlock()
 	} else {
-		peerConn.SetVerValid(true)
+		peerConn.SetVerValid(false)
 	}
 
 	Logger.log.Debug("Receive verack message END")
@@ -2331,10 +2331,11 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		}
 	}
 
-	//For Shard, loop through shard chain and check if they in committee
+	//For Shard
 	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
 	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
 
+	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {
 		for _, v := range chain.GetCommittee() {
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
@@ -2342,6 +2343,15 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 			}
 		}
 
+		for _, v := range chain.GetPendingCommittee() {
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+				return common.PendingRole, chain.GetShardID()
+			}
+		}
+	}
+
+	//check if in committee or pending committee in beacon
+	for _, chain := range s.blockChain.ShardChain {
 		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 				return common.PendingRole, chain.GetShardID()
@@ -2354,6 +2364,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 			}
 		}
 	}
+
 	return "", -2
 }
 
@@ -2372,7 +2383,15 @@ func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *
 }
 
 func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
-	return s.blockChain.GetBeaconBlockByHeightAndView(height, common.Hash{})
+	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock, _, err := s.blockChain.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlock, nil
 }
 
 func (s *Server) GetBeaconChainDatabase() incdb.Database {
@@ -2395,4 +2414,8 @@ func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]b
 		}
 	}
 	return nil
+}
+
+func (serverObj *Server) GetSelfPeerID() libp2p.ID {
+	return serverObj.highway.LocalHost.Host.ID()
 }

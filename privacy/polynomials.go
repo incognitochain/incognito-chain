@@ -24,14 +24,14 @@ func newPoly(coeffs ...int) (p Poly) {
 	return
 }
 
-func ScalarToBigInt( sc *Scalar) *big.Int {
+func ScalarToBigInt(sc *Scalar) *big.Int {
 	keyR := Reverse(sc.key)
 	keyRByte := keyR.ToBytes()
 	bi := new(big.Int).SetBytes(keyRByte[:])
 	return bi
 }
 
-func BigIntToScalar( bi *big.Int) *Scalar{
+func BigIntToScalar(bi *big.Int) *Scalar {
 	biByte := common.AddPaddingBigInt(bi, Ed25519KeySize)
 	var key curve25519.Key
 	key.FromBytes(SliceToArray(biByte))

@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -29,11 +30,11 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
+		TimeStart         time.Time
 		Block             common.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
-		TimeStart         time.Time
 		Votes             map[string]vote
 		Round             int
 		NextHeight        uint64
@@ -59,6 +60,10 @@ func (e *BLSBFT) IsOngoing() bool {
 	return e.isOngoing
 }
 
+func (e *BLSBFT) IsStarted() bool {
+	return e.isStarted
+}
+
 func (e *BLSBFT) GetConsensusName() string {
 	return consensusName
 }
@@ -73,7 +78,7 @@ func (e *BLSBFT) GetChainID() int {
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)
-		e.StopCh <- struct{}{}
+		close(e.StopCh)
 		e.isStarted = false
 		e.isOngoing = false
 		return nil
@@ -366,14 +371,17 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
+		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
 		return
 	}
+
 	e.isOngoing = false
-	e.setState(newround)
+	e.setState("")
 	if e.waitForNextRound() {
 		return
 	}
+	e.setState(newround)
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
@@ -412,7 +420,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	var errCh chan error
 	var block common.BlockInterface = nil
 	errCh = make(chan error)
-	timeout := time.NewTimer(e.Chain.GetMaxBlkCreateTime()).C
+	timeout := time.NewTimer(timeout / 2).C
 
 	go func() {
 		time1 := time.Now()
@@ -450,8 +458,8 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		}
 		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
 	}
-
 }
+
 func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT {
 	var newInstance BLSBFT
 	newInstance.Chain = chain

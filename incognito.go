@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -12,6 +10,9 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -35,17 +36,17 @@ var (
 // as a service and reacts accordingly.
 var winServiceMain func() (bool, error)
 
-func getBTCRelayingChain(btcRelayingChainID string) (*btcrelaying.BlockChain, error) {
+func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*btcrelaying.BlockChain, error) {
 	relayingChainParams := map[string]*chaincfg.Params{
 		blockchain.TestnetBTCChainID: btcrelaying.GetTestNet3Params(),
 		blockchain.MainnetBTCChainID: btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		blockchain.TestnetBTCChainID: int32(1764110),
+		blockchain.TestnetBTCChainID: int32(1801899),
 		blockchain.MainnetBTCChainID: int32(634140),
 	}
 	return btcrelaying.GetChainV2(
-		filepath.Join(cfg.DataDir, "btcrelayingv7"),
+		filepath.Join(cfg.DataDir, btcDataFolderName),
 		relayingChainParams[btcRelayingChainID],
 		relayingChainGenesisBlkHeight[btcRelayingChainID],
 	)
@@ -134,7 +135,10 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 
 	// Create btcrelaying chain
-	btcChain, err := getBTCRelayingChain(activeNetParams.Params.BTCRelayingHeaderChainID)
+	btcChain, err := getBTCRelayingChain(
+		activeNetParams.Params.BTCRelayingHeaderChainID,
+		activeNetParams.Params.BTCDataFolderName,
+	)
 	if err != nil {
 		Logger.log.Error("could not get or create btc relaying chain")
 		Logger.log.Error(err)
@@ -154,9 +158,15 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
+	//update preload address
+	if cfg.PreloadAddress != "" {
+		activeNetParams.Params.PreloadAddress = cfg.PreloadAddress
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
+	activeNetParams.Params.IsBackup = cfg.ForceBackup
 	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
@@ -173,6 +183,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- &server
 	}
+
 	// Check Metric analyzation system
 	env := os.Getenv("GrafanaURL")
 	if env != "" {

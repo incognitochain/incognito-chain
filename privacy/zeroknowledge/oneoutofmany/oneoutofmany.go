@@ -16,14 +16,14 @@ type OneOutOfManyStatement struct {
 
 // Statement's witness
 type OneOutOfManyWitness struct {
-	stmt *OneOutOfManyStatement
+	stmt        *OneOutOfManyStatement
 	rand        *privacy.Scalar
 	indexIsZero uint64
 }
 
 // Statement's proof
 type OneOutOfManyProof struct {
-	Statement *OneOutOfManyStatement
+	Statement      *OneOutOfManyStatement
 	cl, ca, cb, cd []*privacy.Point
 	f, za, zb      []*privacy.Scalar
 	zd             *privacy.Scalar
@@ -363,7 +363,7 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	xi := new(privacy.Scalar).FromUint64(1)
 	sum := new(privacy.Scalar).FromUint64(0)
 	for k := 0; k < n; k++ {
-		tmp:= new(privacy.Scalar).Mul(xi, u[k])
+		tmp := new(privacy.Scalar).Mul(xi, u[k])
 		sum.Add(sum, tmp)
 		xi.Mul(xi, x)
 	}
@@ -439,7 +439,6 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 		leftPoint3.Add(leftPoint3, new(privacy.Point).ScalarMult(proof.Statement.Commitments[i], exp))
 	}
 
-
 	tmp2 := new(privacy.Scalar).FromUint64(1)
 	for k := 0; k < n; k++ {
 		xk := new(privacy.Scalar).Sub(new(privacy.Scalar).FromUint64(0), tmp2)
@@ -463,7 +462,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 func getCoefficient(iBinary []byte, k int, n int, scLs []*privacy.Scalar, l []byte) *privacy.Scalar {
 
 	a := make([]*big.Int, len(scLs))
-	for i:=0; i< len(scLs); i++ {
+	for i := 0; i < len(scLs); i++ {
 		a[i] = privacy.ScalarToBigInt(scLs[i])
 	}
 
@@ -510,4 +509,3 @@ func getCoefficientInt(iBinary []byte, k int, n int, a []*big.Int, l []byte) *bi
 	}
 	return res[k]
 }
-

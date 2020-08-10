@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,10 +18,11 @@ type ShardChain struct {
 	shardID   int
 	multiView *multiview.MultiView
 
-	BlockGen   *BlockGenerator
-	Blockchain *BlockChain
-	ChainName  string
-	Ready      bool
+	BlockGen    *BlockGenerator
+	Blockchain  *BlockChain
+	hashHistory *lru.Cache
+	ChainName   string
+	Ready       bool
 
 	insertLock sync.Mutex
 }
@@ -111,6 +115,16 @@ func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return append(result, chain.GetBestState().ShardCommittee...)
 }
 
+func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
+	bcStateRootHash := chain.Blockchain.GetBeaconBestState().ConsensusStateDBRootHash
+	bcDB := chain.Blockchain.GetBeaconChainDatabase()
+	bcStateDB, err := statedb.NewWithPrefixTrie(bcStateRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+	if err != nil {
+		return nil, err
+	}
+	return statedb.GetOneShardCommittee(bcStateDB, byte(chain.shardID)), nil
+}
+
 func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
 	return append(result, chain.GetBestState().ShardPendingValidator...)
@@ -197,10 +211,17 @@ func (chain *ShardChain) InsertBlk(block common.BlockInterface, shouldValidate b
 	return err
 }
 
+func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
+	blkHash := block.Hash()
+	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
+	return err == nil
+}
+
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	return nil

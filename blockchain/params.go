@@ -59,15 +59,20 @@ type Params struct {
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
 	AssignOffset                     int
+	ConsensusV2Epoch                 uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
+	BTCDataFolderName                string
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
 	PortalParams                     map[uint64]PortalParams
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
 }
 
 type GenesisParams struct {
@@ -136,16 +141,18 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			SlashLevel{MinRange: 75, PunishedEpoches: 3},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
+		ConsensusV2Epoch:               16930,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
+		BTCDataFolderName:              TestnetBTCDataFolderName,
 		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                TestnetBNBFullNodeHost,
 		BNBFullNodePort:                TestnetBNBFullNodePort,
@@ -167,6 +174,9 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -209,16 +219,18 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			SlashLevel{MinRange: 75, PunishedEpoches: 3},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
+		ConsensusV2Epoch:               1e9,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
+		BTCDataFolderName:              MainnetBTCDataFolderName,
 		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
 		BNBFullNodeHost:                MainnetBNBFullNodeHost,
 		BNBFullNodePort:                MainnetBNBFullNodePort,
@@ -240,6 +252,9 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
+		IsBackup:                  false,
+		PreloadAddress:            "",
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

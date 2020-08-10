@@ -470,9 +470,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 	if tx.GetType() == common.TxRewardType {
 		return tx.ValidateTxSalary(transactionStateDB)
 	}
-	if tx.GetType() == common.TxReturnStakingType {
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil
-	}
+
 	var valid bool
 	var err error
 
@@ -484,6 +482,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 		}
 		Logger.log.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
+	}
+
+	if tx.GetType() == common.TxReturnStakingType {
+		return true, nil //
 	}
 
 	if tx.Proof != nil {
@@ -826,6 +828,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
+
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
@@ -837,6 +840,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 			return nil
 		}
 	}
+
 	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
@@ -896,6 +900,17 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetOutputCoins())))
 		}
 
+		// check doubling a input coin in tx
+		serialNumbers := make(map[common.Hash]bool)
+		for i, inCoin := range txN.Proof.GetInputCoins() {
+			hashSN := common.HashH(inCoin.CoinDetails.GetSerialNumber().ToBytesS())
+			if serialNumbers[hashSN] {
+				Logger.log.Errorf("Double input in tx - txId %v - index %v", txN.Hash().String(), i)
+				return false, errors.New("double input in tx")
+			}
+			serialNumbers[hashSN] = true
+		}
+
 		isPrivacy := true
 		// check Privacy or not
 
@@ -913,7 +928,14 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 					return false, errors.New("validate sanity One out of many proof failed")
 				}
 			}
+
 			for i := 0; i < len(txN.Proof.GetSerialNumberProof()); i++ {
+				// check cmSK of input coin is equal to comSK in serial number proof
+				if !privacy.IsPointEqual(txN.Proof.GetCommitmentInputSecretKey(), txN.Proof.GetSerialNumberProof()[i].GetComSK()) {
+					Logger.log.Errorf("ComSK in SNproof is not equal to commitment of private key - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("comSK of SNProof %v is not comSK of input coins", i))
+				}
+
 				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number proof failed")
 				}
@@ -984,6 +1006,11 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 
 		if !isPrivacy {
 			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
+				// check PK of input coin is equal to vKey in serial number proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
+					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
+				}
 				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
@@ -1005,7 +1032,6 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
 					return false, errors.New("validate sanity SNDerivator of input coin failed")
 				}
-
 			}
 
 			// check output coins without privacy
@@ -1110,6 +1136,33 @@ func (tx Tx) IsPrivacy() bool {
 
 func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
+}
+
+func (tx Tx) CalculateBurningTxValue(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, uint64) {
+	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
+		return false, 0
+	}
+	//get burning address
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil {
+		return false, 0
+	}
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+
+	// check burning amount
+	totalBurningAmount := uint64(0)
+	for _, outCoin := range tx.Proof.GetOutputCoins() {
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().ToBytesS()
+		if bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
+			totalBurningAmount += outCoin.CoinDetails.GetValue()
+		}
+	}
+	if totalBurningAmount > 0 {
+		return true, totalBurningAmount
+	}
+	return false, 0
 }
 
 func (tx Tx) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
@@ -1581,4 +1634,19 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 	//Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
 	//Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
+}
+
+// GetFullTxValues returns both prv and ptoken values
+func (tx Tx) GetFullTxValues() (uint64, uint64) {
+	return tx.CalculateTxValue(), 0
+}
+
+// IsFullBurning returns whether the tx is full burning tx
+func (tx Tx) IsFullBurning(
+	bcr metadata.ChainRetriever,
+	retriever metadata.ShardViewRetriever,
+	viewRetriever metadata.BeaconViewRetriever,
+	beaconHeight uint64,
+) bool {
+	return tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
 }

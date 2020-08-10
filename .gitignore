@@ -43,6 +43,9 @@ constant-*
 constant_*
 incognito-*
 incognito_*
+batchdb/*
+batchdb_backup/*
+*.tar.gz
 
 pkg
 src/.com
@@ -52,7 +55,9 @@ src/rpcserver
 
 priv.json
 bin/keylist.json
+bin/keylist-v2.json
 bin/incognito
+bin/incognito-test
 bin/bootnode
 bin/sample-config.conf
 incognito
@@ -69,4 +74,5 @@ bin/data
 *.swo
 *~
 tags
-.txt
+*.txt
+*.log
