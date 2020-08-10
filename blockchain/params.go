@@ -170,7 +170,7 @@ func init() {
 		},
 		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
 		NewStakingTxBeaconHeighSwitch:    0,
-		BCHeightBreakPointFixRandShardCM: 20,
+		BCHeightBreakPointFixRandShardCM: 2080000,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -245,7 +245,7 @@ func init() {
 		},
 		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
 		NewStakingTxBeaconHeighSwitch:    559380,
-		BCHeightBreakPointFixRandShardCM: 596000,
+		BCHeightBreakPointFixRandShardCM: 630000,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew
