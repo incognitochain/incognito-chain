@@ -159,8 +159,10 @@ func addShareAmountUpV2(
 		currentPDEState.PDEShares[pdeShareKey] = amt
 	}
 	increasingAmt := big.NewInt(0)
-	increasingAmt.Mul(big.NewInt(int64(totalSharesOnToken)), big.NewInt(int64(amt)))
-	increasingAmt.Div(increasingAmt, big.NewInt(int64(poolValue)))
+
+	increasingAmt.Mul(new(big.Int).SetUint64(totalSharesOnToken), new(big.Int).SetUint64(amt))
+	increasingAmt.Div(increasingAmt, new(big.Int).SetUint64(poolValue))
+
 	currentShare, found := currentPDEState.PDEShares[pdeShareKey]
 	addedUpAmt := increasingAmt.Uint64()
 	if found {

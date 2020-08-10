@@ -49,6 +49,8 @@ func NewBurningRequestMetadata(
 	tokenName string,
 	remoteAddress string,
 	burningMetaType int,
+	bcr metadata.ChainRetriever,
+	beaconHeight uint64,
 ) (*metadata.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
@@ -60,7 +62,8 @@ func NewBurningRequestMetadata(
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
+	//_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
+	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyBurningReceiverArray(tokenReceivers, bcr, beaconHeight)
 	if err != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
