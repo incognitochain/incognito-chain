@@ -1,11 +1,14 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -107,6 +110,28 @@ func (httpServer *HttpServer) handleUnstakeRawTx(params interface{}) (interface{
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, unStakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	allViews := []*blockchain.BeaconBestState{}
+	beaconDB := httpServer.blockService.BlockChain.GetBeaconChainDatabase()
+	beaconViews, err := rawdbv2.GetBeaconViews(beaconDB)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+	}
+
+	err = json.Unmarshal(beaconViews, &allViews)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+	}
+
+	for _, v := range allViews {
+		publickey, err := committeePK.ToBase58()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
+		}
+		if v.Unstake()[publickey] {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("User has already unstaked"))
+		}
 	}
 
 	result := jsonresult.CreateTransactionResult{

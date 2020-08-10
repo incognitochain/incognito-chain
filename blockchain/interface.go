@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -96,6 +97,7 @@ type BeaconCommitteeEngine interface {
 	GetAutoStaking() map[string]bool
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
+	Unstake() map[string]bool
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()

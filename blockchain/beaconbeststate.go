@@ -336,6 +336,11 @@ func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteeP
 	return append(result, committee...)
 }
 
+//Unstake : Get unstake map from committee state
+func (beaconBestState *BeaconBestState) Unstake() map[string]bool {
+	return beaconBestState.beaconCommitteeEngine.Unstake()
+}
+
 func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
 	id := GetProposerByTimeSlot(ts, beaconBestState.MinBeaconCommitteeSize)
 	committee := beaconBestState.GetBeaconCommittee()

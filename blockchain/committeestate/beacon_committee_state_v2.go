@@ -1,9 +1,10 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy"
 	"math/rand"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -21,6 +22,7 @@ type BeaconCommitteeStateV2 struct {
 	autoStake                   map[string]bool                   // committee public key => reward receiver payment address
 	rewardReceiver              map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx                   map[string]common.Hash            // committee public key => reward receiver payment address
+	unstake                     map[string]bool                   // committee public key => isExist ?
 
 	mu *sync.RWMutex
 }
@@ -28,8 +30,8 @@ type BeaconCommitteeStateV2 struct {
 type BeaconCommitteeEngineV2 struct {
 	beaconHeight                      uint64
 	beaconHash                        common.Hash
-	beaconCommitteeStateV1            *BeaconCommitteeStateV2
-	uncommittedBeaconCommitteeStateV1 *BeaconCommitteeStateV2
+	beaconCommitteeStateV2            *BeaconCommitteeStateV2
+	uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
 	CommitteeGetter                   func(blkHash common.Hash, committeeID int) ([]incognitokey.CommitteePublicKey, error)
 	SubstituteGetter                  func(blkHash common.Hash, committeeID int) ([]incognitokey.CommitteePublicKey, error)
 	CandidateGetter                   func(blkHash common.Hash, getBeacon bool) ([]incognitokey.CommitteePublicKey, error)
@@ -123,13 +125,24 @@ func (b *BeaconCommitteeEngineV2) GenerateAssignInstruction(candidates []string,
 	panic("implement me")
 }
 
+//Unstake : Get map unstake value
+func (b *BeaconCommitteeEngineV2) Unstake() map[string]bool {
+	b.beaconCommitteeStateV2.mu.RLock()
+	defer b.beaconCommitteeStateV2.mu.RUnlock()
+	unstake := make(map[string]bool)
+	for k, v := range b.beaconCommitteeStateV2.unstake {
+		unstake[k] = v
+	}
+	return unstake
+}
+
 func (b *BeaconCommitteeEngineV2) AssignSubstitutePoolUsingRandomInstruction(
 	blkHash common.Hash,
 	seed int64,
 ) ([]string, map[byte][]string) {
 	//Still update
 	subsSizeMap := map[byte]int{}
-	numShards := len(b.beaconCommitteeStateV1.shardCommittee)
+	numShards := len(b.beaconCommitteeStateV2.shardCommittee)
 	for i := 0; i < numShards; i++ {
 		shardCandidates, err := b.SubstituteGetter(blkHash, i)
 		if err != nil {

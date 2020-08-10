@@ -29,11 +29,6 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.GetAllBeaconViews, err)
 	}
 
-	sID := []int{}
-	for i := 0; i < httpServer.config.ChainParams.ActiveShards; i++ {
-		sID = append(sID, i)
-	}
-
 	for _, v := range allViews {
 		err := v.RestoreBeaconViewStateFromHash(httpServer.GetBlockchain())
 		if err != nil {
