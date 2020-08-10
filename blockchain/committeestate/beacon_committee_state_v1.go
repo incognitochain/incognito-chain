@@ -49,7 +49,7 @@ type BeaconCommitteeStateV1 struct {
 	autoStake                   map[string]bool                   // committee public key => reward receiver payment address
 	rewardReceiver              map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx                   map[string]common.Hash            // committee public key => reward receiver payment address
-	unstake                     map[string]bool
+	unstake                     map[string]bool                   // committee public key => reward receiver payment address
 
 	mu *sync.RWMutex
 }
@@ -404,7 +404,7 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 			if err != nil {
 				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
 			}
-			_, committeeChange, err = newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
+			committeeChange, err = newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
 			if err != nil {
 				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
