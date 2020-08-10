@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -61,11 +62,17 @@ type heightPair struct {
 var crossShardPoolMap = make(map[byte]*CrossShardPool)
 
 func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db incdb.Database, bc *blockchain.BlockChain) {
-	for i := 0; i < 255; i++ {
+	for i := 0; i < bc.BestState.Beacon.ActiveShards; i++ {
 		crossShardPoolMap[byte(i)] = GetCrossShardPool(byte(i))
 		pool[byte(i)] = crossShardPoolMap[byte(i)]
 		crossShardPoolMap[byte(i)].db = db
 		crossShardPoolMap[byte(i)].bc = bc
+		go func(pool blockchain.CrossShardPool) {
+			for {
+				time.Sleep(time.Minute)
+				pool.UpdatePool()
+			}
+		}(pool[byte(i)])
 	}
 }
 
