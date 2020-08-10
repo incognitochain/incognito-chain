@@ -1,7 +1,5 @@
 package instruction
 
-import "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 type ReturnStakeIns struct {
 	PublicKey     string
 	ShardID       byte
@@ -79,8 +77,4 @@ func (rsI *ReturnStakeIns) ToString() []string {
 	// stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
 	// return stakeInstructionStr
 	return []string{}
-}
-
-func (rsI *ReturnStakeIns) InsertIntoStateDB(sDB *statedb.StateDB) error {
-	return nil
 }

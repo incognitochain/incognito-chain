@@ -1,12 +1,12 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 var (

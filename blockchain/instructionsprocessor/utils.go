@@ -1,9 +1,12 @@
-package manager
+package instructionsprocessor
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -12,6 +15,48 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
 )
+
+func GetTxDataByHash(
+	sDB incdb.Database,
+	txID common.Hash,
+) (
+	metadata.Transaction,
+	error,
+) {
+	blockHash, index, err := rawdbv2.GetTransactionByHash(sDB, txID)
+	if err != nil {
+		return nil, err
+	}
+	shardBlockBytes, err := rawdbv2.GetShardBlockByHash(sDB, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	shardBlock := types.NewShardBlock()
+	err = json.Unmarshal(shardBlockBytes, shardBlock)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil || shardBlock == nil {
+		err = errors.Errorf("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+		return nil, err
+	}
+	return shardBlock.Body.Transactions[index], nil
+}
+
+func buildAssignInstructionFromRandom(
+	rI *instruction.RandomInstruction,
+	bcE BeaconCommitteeEngine,
+) []instruction.Instruction {
+	res := []instruction.Instruction{}
+	bc, shards := bcE.AssignCommitteeUsingRandomInstruction(rI.BtcNonce)
+	aBC := instruction.NewAssignInstructionWithValue(instruction.BEACON_CHAIN_ID, bc)
+	res = append(res, aBC)
+	for sID, s := range shards {
+		aS := instruction.NewAssignInstructionWithValue(int(sID), s)
+		res = append(res, aS)
+	}
+	return res
+}
 
 func returnStakingFromIns(
 	insStake instruction.ReturnStakeIns,
