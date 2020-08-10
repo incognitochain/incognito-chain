@@ -230,7 +230,7 @@ func init() {
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:                     false,
-		ChainVersion:                   "version-chain-test.json",
+		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
