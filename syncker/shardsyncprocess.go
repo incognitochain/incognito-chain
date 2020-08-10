@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -161,7 +162,8 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			Logger.Infof("Syncker: Insert block %v from pool, validate with committee at height %v", blk.(common.BlockInterface).GetHeight(), bestHeight)
 			c := s.Chain.GetCommittee()
 			if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), c); err != nil {
-				Logger.Errorf("Validate Block %v with committee %v from bestviewheight %v got error %v", blk.(common.BlockInterface).GetHeight(), c, bestHeight, err)
+				committeeStr, _ := incognitokey.CommitteeKeyListToString(c)
+				Logger.Errorf("Validate Block %v with committee %v from bestviewheight %v got error %v", blk.(common.BlockInterface).GetHeight(), committeeStr, bestHeight, err)
 				return
 			}
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
