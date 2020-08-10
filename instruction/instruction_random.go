@@ -3,8 +3,6 @@ package instruction
 import (
 	"fmt"
 	"strconv"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 //Random Instruction which get nonce from bitcoin block
@@ -94,9 +92,5 @@ func ValidateRandomInstructionSanity(instruction []string) error {
 	if _, err := strconv.ParseInt(instruction[4], 10, 64); err != nil {
 		return fmt.Errorf("invalid btc time stamp value, %s", err)
 	}
-	return nil
-}
-
-func (rI *RandomInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
 	return nil
 }
