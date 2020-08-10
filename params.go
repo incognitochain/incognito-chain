@@ -29,7 +29,7 @@ var testNetParams = params{
 }
 
 var testNet2Params = params{
-	Params:  &blockchain.ChainTestParam,
+	Params:  &blockchain.ChainTest2Param,
 	rpcPort: Testnet2RpcServerPort,
 	wsPort:  Testnet2WsServerPort,
 }
