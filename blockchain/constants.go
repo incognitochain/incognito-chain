@@ -148,6 +148,48 @@ const (
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 )
 
+// CONSTANT for network TESTNET-2
+const (
+	Testnet2                 = 0x32
+	Testnet2Name             = "testnet-2"
+	Testnet2DefaultPort      = "9444"
+	Testnet2GenesisBlockTime = "2020-08-17T00:00:00.000Z"
+	Testnet2Epoch            = 100
+	Testnet2RandomTime       = 50
+	Testnet2Offset           = 1
+	Testnet2SwapOffset       = 1
+	Testnet2AssignOffset     = 2
+
+	TestNet2ShardCommitteeSize     = 32
+	TestNet2MinShardCommitteeSize  = 4
+	TestNet2BeaconCommitteeSize    = 4
+	TestNet2MinBeaconCommitteeSize = 4
+	TestNet2ActiveShards           = 8
+	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	TestNet2MinBeaconBlkInterval = 10 * time.Second //second
+	TestNet2MaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNet2MinShardBlkInterval  = 10 * time.Second //second
+	TestNet2MaxShardBlkCreation  = 6 * time.Second  //second
+
+	//board and proposal parameters
+	Testnet2BasicReward                      = 400000000 //40 mili PRV
+	Testnet2ETHContractAddressStr            = "0x98cD12B85Df38c621d37cD6222E262835a7E87B9"
+	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
+	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
+	// relaying header chain
+	Testnet2BNBChainID        = "Binance-Chain-Ganges"
+	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
+	Testnet2BTCDataFolderName = "btcrelayingv8"
+
+	// BNB fullnode
+	Testnet2BNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
+	Testnet2BNBFullNodeProtocol = "https"
+	Testnet2BNBFullNodePort     = "443"
+	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+)
+
 // VARIABLE for testnet
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
 var PreSelectBeaconNodeTestnetSerializedPaymentAddress = []string{}
@@ -162,6 +204,7 @@ var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
 var IsTestNet = true
+var IsTestNet2 = false
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {

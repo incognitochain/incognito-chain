@@ -1,0 +1,255 @@
+# ansible_ssh_private_key_file: '/home/david/constant_key'
+ansible_ssh_pass: "autonomous123"
+ansible_ssh_user: "root"
+host_key_checking: false
+ansible_python_interpreter: "/usr/bin/python3"
+
+gdburl: "http://51.91.220.58:8086/write?db=mainnet"
+gdbversion: "1.0-testnet"
+
+fullnode0:
+  IP: "51.83.36.184"
+  NODE_PORT: 10001
+  RPC_PORT: 20001
+  WS_PORT: 30001
+
+fullnode9:
+  IP: "51.83.36.184"
+  NODE_PORT: 10002
+  RPC_PORT: 20002
+  WS_PORT: 30002
+
+highway:
+  0: "45.56.115.6"
+  1: "74.207.247.250"
+KEY:
+  highway:
+    0: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="
+    1: "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="
+
+beacon:
+  0:
+    IP: 51.79.76.116
+    KEY: 12NjwfVK7YoBENaZwmHHPUaspK3uUtv3M22761TFk3H3FEuT83U
+    NODE_PORT: 10000
+    RPC_PORT: 20000
+    WS_PORT: 30000
+  1:
+    IP: 51.79.76.116
+    KEY: 12pLJqKTpcyQxdkUBthhydx2PKSt7G5YhBDRGjVWquGZLB8Mrvk
+    NODE_PORT: 10001
+    RPC_PORT: 20001
+    WS_PORT: 30001
+  2:
+    IP: 51.79.76.116
+    KEY: 1mGVTi2HmraVLx5vpLgpYGT9ZT76pNbb5Hh222hurZJf1257uE
+    NODE_PORT: 10002
+    RPC_PORT: 20002
+    WS_PORT: 30002
+  3:
+    IP: 51.79.76.116
+    KEY: 1vd6YYHi4MdPib8YymiFkdEHpZ3qNUKmqQVDGpwYYGgtDN3dhy
+    NODE_PORT: 10003
+    RPC_PORT: 20003
+    WS_PORT: 30003
+shard:
+  0:
+    0:
+      IP: 51.79.76.116
+      KEY: 16rj6Tbqt3cHjrGvkVaN4VGR87aQ3NM8kuHKQ5V6ciTna3N6CT
+      NODE_PORT: 10004
+      RPC_PORT: 20004
+      WS_PORT: 30004
+    1:
+      IP: 51.195.4.15
+      KEY: 1q8aqZVPCywGKDi5un6NuwDMEKk59GFTd89pkTSj3cpXFmFwDc
+      NODE_PORT: 10005
+      RPC_PORT: 20005
+      WS_PORT: 30005
+    2:
+      IP: 51.195.4.15
+      KEY: 1Vgz5qoz2Qkj462ApBhY3Q7NNQK6V8Q3oSTizaD52tSwTzDqwM
+      NODE_PORT: 10006
+      RPC_PORT: 20006
+      WS_PORT: 30006
+    3:
+      IP: 51.195.4.15
+      KEY: 1vGPif7nGLCdkS5Mvz3WF5LrhfAg7DQEiPDejUbPDjp1PN1iqG
+      NODE_PORT: 10007
+      RPC_PORT: 20007
+      WS_PORT: 30007
+  1:
+    0:
+      IP: 51.79.76.116
+      KEY: 14VKR9zXbdNgEyjCeQC6QhK1MDFqvUxNHmh7HVh5P4RRiDts7m
+      NODE_PORT: 10008
+      RPC_PORT: 20008
+      WS_PORT: 30008
+    1:
+      IP: 51.195.4.15
+      KEY: 1hjGVkVm7k1YebYTChgt6GdawNtDBh6QHPCcrUzbVFnqr5WG8g
+      NODE_PORT: 10009
+      RPC_PORT: 20009
+      WS_PORT: 30009
+    2:
+      IP: 51.195.4.15
+      KEY: 12MqgWkPbbGg4LXmfPyEVqZcYzBuS1aouAnqdriJ1RxkW1sokmR
+      NODE_PORT: 10010
+      RPC_PORT: 20010
+      WS_PORT: 30010
+    3:
+      IP: 51.195.4.15
+      KEY: 1ZwJxDGzVF4kqYu9JkuvBSebn51KAZ875tbVNnfT9xtmKB6vD3
+      NODE_PORT: 10011
+      RPC_PORT: 20011
+      WS_PORT: 30011
+  2:
+    0:
+      IP: 51.79.76.116
+      KEY: 122eKDRq3Cjwk7ne6jHjf9yzJ765XH73BQhQJAgkM5dTyyqsVtu
+      NODE_PORT: 10012
+      RPC_PORT: 20012
+      WS_PORT: 30012
+    1:
+      IP: 51.195.4.15
+      KEY: 12pp52WfWXeXUmDCbpUtduAGaF1wZHF95G1mBWHGu8PeFmWKqtc
+      NODE_PORT: 10013
+      RPC_PORT: 20013
+      WS_PORT: 30013
+    2:
+      IP: 51.195.4.15
+      KEY: 1UoSmsnZn4Kb6bUJDHV6esQNTExZaTvd15imYbt9q7ybTAHTCe
+      NODE_PORT: 10014
+      RPC_PORT: 20014
+      WS_PORT: 30014
+    3:
+      IP: 51.195.4.15
+      KEY: 16CMapPKdNinXKFUrFrAbe5aHPLpjYMZkyvyT6xGBi35gGt4yE
+      NODE_PORT: 10015
+      RPC_PORT: 20015
+      WS_PORT: 30015
+  3:
+    0:
+      IP: 51.79.76.116
+      KEY: 12tAjQneCqnX6Da4c8LTVdEVbaTsBPW2d16VUN7LAfAETW9TkFd
+      NODE_PORT: 10016
+      RPC_PORT: 20016
+      WS_PORT: 30016
+    1:
+      IP: 51.195.4.15
+      KEY: 1AAQxUuvEbKMUSCvSGFKbmYcuCkqVZprD8CxYwPGKM1rJtta4K
+      NODE_PORT: 10017
+      RPC_PORT: 20017
+      WS_PORT: 30017
+    2:
+      IP: 51.195.4.15
+      KEY: 12JzMMjCrSR2HoZadCf9HZ14yvaE9hXPMhqUVsak6ez3voFpWpN
+      NODE_PORT: 10018
+      RPC_PORT: 20018
+      WS_PORT: 30018
+    3:
+      IP: 51.195.4.15
+      KEY: 1nWTLE6RjD5YBfkb19txQ9whswY3yrjz7JRuUFS3juQMXqG5Sc
+      NODE_PORT: 10019
+      RPC_PORT: 20019
+      WS_PORT: 30019
+  4:
+    0:
+      IP: 51.79.76.116
+      KEY: 1LCSxvUtu8QYjj8jHwjYwhWGCQoECRjswjQucop8ofNBTmTDWc
+      NODE_PORT: 10020
+      RPC_PORT: 20020
+      WS_PORT: 30020
+    1:
+      IP: 51.195.4.15
+      KEY: 12q8NX4Dqw9dPoKPHn8UeMzpoaBGimgq3Cac5DnUJWvW3ybe1Ym
+      NODE_PORT: 10021
+      RPC_PORT: 20021
+      WS_PORT: 30021
+    2:
+      IP: 51.195.4.15
+      KEY: 12YJ8sZKzvSyBapNpxyuiWzsMYt3RNffWAgzWKCuTAHHapkEsSw
+      NODE_PORT: 10022
+      RPC_PORT: 20022
+      WS_PORT: 30022
+    3:
+      IP: 51.195.4.15
+      KEY: 12eCYWby4E7aKo1fQgXsuS9uz8U4iskwUWSUfTd49GMSSCjndje
+      NODE_PORT: 10023
+      RPC_PORT: 20023
+      WS_PORT: 30023
+  5:
+    0:
+      IP: 51.79.76.116
+      KEY: 12TwrXRrqBJxaUW47DHME54HKH3gqP9hgKQxUk6WsdaieKNSDq2
+      NODE_PORT: 10024
+      RPC_PORT: 20024
+      WS_PORT: 30024
+    1:
+      IP: 51.195.4.15
+      KEY: 1jWMGaE4TRgtW1WU4fYrMnBjmzDh8qVDy9P1JtkdZA5YoYBAq5
+      NODE_PORT: 10025
+      RPC_PORT: 20025
+      WS_PORT: 30025
+    2:
+      IP: 51.195.4.15
+      KEY: 1eFgxLvGEUNUSNC4f7cn73tqe3YfRkYfbvM2eazRAf2TYJgfdT
+      NODE_PORT: 10026
+      RPC_PORT: 20026
+      WS_PORT: 30026
+    3:
+      IP: 51.195.4.15
+      KEY: 1x6t4B7B1MwfVWuSNAefeppzpRzvhiGuPGaoAFExso5Fya9v94
+      NODE_PORT: 10027
+      RPC_PORT: 20027
+      WS_PORT: 30027
+  6:
+    0:
+      IP: 51.79.76.116
+      KEY: 12UpThNA2NmbiwAw1nh1G3Nyfoh5J1ZgC6FJryhHP4o8bKy8L6S
+      NODE_PORT: 10028
+      RPC_PORT: 20028
+      WS_PORT: 30028
+    1:
+      IP: 51.195.4.15
+      KEY: 12fnVWKKPiUCTN6DuymmRy2tGqz6nxhdU7zh4Y3FuNjAr2wEwT4
+      NODE_PORT: 10029
+      RPC_PORT: 20029
+      WS_PORT: 30029
+    2:
+      IP: 51.195.4.15
+      KEY: 12SPaQnXLWobA4PvXLUNQEHEnB6tMo1eqtvpXRknY5eco3gLJUT
+      NODE_PORT: 10030
+      RPC_PORT: 20030
+      WS_PORT: 30030
+    3:
+      IP: 51.195.4.15
+      KEY: 1JDMToHtz3Ym5hzSqYe6icTDAoRiq9gNo9m8Hr2uKnbtnzhTqj
+      NODE_PORT: 10031
+      RPC_PORT: 20031
+      WS_PORT: 30031
+  7:
+    0:
+      IP: 51.79.76.116
+      KEY: 1JwrhELdf9SLEd5DNh3ox8yVNau7GxhnV1a9hMyTaW4tPpT78Y
+      NODE_PORT: 10032
+      RPC_PORT: 20032
+      WS_PORT: 30032
+    1:
+      IP: 51.195.4.15
+      KEY: 15d7UUgY31BuHvSMXBPveKTCA9F5mPnXz72a252v1EjEK1xnBQ
+      NODE_PORT: 10033
+      RPC_PORT: 20033
+      WS_PORT: 30033
+    2:
+      IP: 51.195.4.15
+      KEY: 12sLUdqnKJn7rNMQkqmq8i7fGm1sgn8rHDpd9S13HEF5jhNuxY3
+      NODE_PORT: 10034
+      RPC_PORT: 20034
+      WS_PORT: 30034
+    3:
+      IP: 51.195.4.15
+      KEY: 12dRXJKzq9Bu6gSMiV7FEFx6wniMgx23BEUCccNrqbPCiwKCUCa
+      NODE_PORT: 10035
+      RPC_PORT: 20035
+      WS_PORT: 30035
