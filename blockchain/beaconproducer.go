@@ -259,7 +259,16 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
 	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer(beaconBestState.BestShardHash, nil) {
 		for _, b := range v {
-			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
+			s2bBlk, ok := b.(*ShardToBeaconBlock)
+			if !ok {
+				break
+			}
+			if len(allShardBlocks[sid]) > 0 {
+				if allShardBlocks[sid][len(allShardBlocks[sid])-1].GetCurrentEpoch() != s2bBlk.GetCurrentEpoch() {
+					break
+				}
+			}
+			allShardBlocks[sid] = append(allShardBlocks[sid], s2bBlk)
 		}
 	}
 
