@@ -242,6 +242,9 @@ func (txToken TxTokenVersion1) ValidateSanityData(chainRetriever metadata.ChainR
 	if !check || err != nil {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
 	}
+	if txToken.GetTokenID().String() == common.PRVCoinID.String(){
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
+	}
 	// validate sanity for tx pToken + metadata
 	check, err = validateSanityTxWithoutMetadata(txToken.TxTokenData.TxNormal, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
