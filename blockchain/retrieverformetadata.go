@@ -5,7 +5,7 @@ func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
 }
 
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight uint64) string {
-	if blockchain.config.ChainParams.Net == Testnet {
+	if blockchain.config.ChainParams.Net == Testnet || blockchain.config.ChainParams.Net == Testnet2 {
 		return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
 	}
 	if blockchain.config.ChainParams.Net == Mainnet {
