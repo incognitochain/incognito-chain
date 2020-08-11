@@ -27,7 +27,6 @@ var (
 	unitFeeNativeToken = 100
 	//create a sample test DB
 	testDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	bridgeDB  = testDB.Copy()
 )
 
 var _ = func() (_ struct{}) {
@@ -158,7 +157,7 @@ func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognito
 				if err != nil {
 					return nil, err
 				}
-				coinsToBeSaved[i*len(keySets)+j] = tmpCoin2
+				coinsToBeSaved[i*numCoins+j] = tmpCoin2
 			}
 		}
 		cmtBytesToBeSaved := make([][]byte, 0)
@@ -186,7 +185,7 @@ func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognito
 				// tempCoin.SetKeyImage(keyImage)
 
 				tmpCoin.ConcealOutputCoin(keySet.PaymentAddress.GetPublicView())
-				coinsToBeSaved[i*len(keySets)+j] = tmpCoin
+				coinsToBeSaved[i*numCoins+j] = tmpCoin
 			}
 		}
 
