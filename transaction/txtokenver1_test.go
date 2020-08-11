@@ -154,6 +154,7 @@ func TestInitAndTransferTxV1PrivacyToken(t *testing.T) {
 
 		testTxTokenV1JsonMarshaler(tx2, 25, dummyDB, t)
 
+		testTxTokenV1DuplicateInput(tx, dummyDB, t)
 		testTxTokenV1InvalidFee(tx2, dummyDB, t)
 		testTxTokenV1TransferFakeOutput(tx2, dummyDB, paramToCreateTx2, t)
 		testTxTokenV1OneDoubleSpentInput(tx2, dummyDB, feeOutputBytesHacked, tokenOutputBytesHacked, t)
@@ -407,6 +408,79 @@ func testTxTokenV1OneDoubleSpentInput(tokenTx *TxTokenVersion1, db *statedb.Stat
 	}
 }
 
+func testTxTokenV1DuplicateInput(txTokenInit *TxTokenVersion1, db *statedb.StateDB, t *testing.T){
+	transferAmount := uint64(696)
+	msgCipherText := []byte("doing a double-spend")
+
+	feeOutputs := txTokenInit.GetTxBase().GetProof().GetOutputCoins()
+	dup := &coin.CoinV1{}
+	dup.SetBytes(feeOutputs[0].Bytes())
+	tokenOutputs := []coin.Coin{dup}
+	prvCoinsToPayTransfer := make([]coin.PlainCoin,0)
+	tokenCoinsToTransfer := make([]coin.PlainCoin,0)
+	var inputAmountFee uint64
+	for _,c := range feeOutputs{
+		cloneCoin := coin.CoinV1{}
+		cloneCoin.SetBytes(c.Bytes())
+		pc,_ := cloneCoin.Decrypt(keySets[0])
+		if inputAmountFee==0{
+			inputAmountFee = pc.GetValue()
+		}
+		// s,_ := json.Marshal(pc.(*coin.CoinV1))
+		// fmt.Printf("Tx Fee : %x has received %d in PRV\n",pc.GetPublicKey().ToBytesS(),pc.GetValue())
+		prvCoinsToPayTransfer = append(prvCoinsToPayTransfer,pc)
+	}
+	for _,c := range tokenOutputs{
+		cloneCoin := coin.CoinV1{}
+		cloneCoin.SetBytes(c.Bytes())
+		pc,err := cloneCoin.Decrypt(keySets[0])
+		// s,_ := json.Marshal(pc.(*coin.CoinV1))
+		// fmt.Printf("Tx Token : %x has received %d in token T1\n",pc.GetPublicKey().ToBytesS(),pc.GetValue())
+		assert.Equal(t,nil,err)
+		tokenCoinsToTransfer = append(tokenCoinsToTransfer,pc)
+	}
+
+	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: transferAmount, Message: msgCipherText}}
+	paymentInfoFee := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: inputAmountFee-140, Message: msgCipherText}}
+	// // token param for transfer token
+	tokenParam2 := &TokenParam{
+		PropertyID:     "0000000000000000000000000000000000000000000000000000000000000004",
+		PropertyName:   "Token 1",
+		PropertySymbol: "PRV",
+		Amount:         transferAmount,
+		TokenTxType:    CustomTokenTransfer,
+		Receiver:       paymentInfo2,
+		TokenInput:     tokenCoinsToTransfer,
+		Mintable:       false,
+		Fee:            0,
+	}
+
+	existed := statedb.PrivacyTokenIDExisted(db, common.PRVCoinID)
+	if !existed{
+		errStore := statedb.StorePrivacyToken(db, common.PRVCoinID, tokenParam2.PropertyName, tokenParam2.PropertySymbol, statedb.InitToken, tokenParam2.Mintable, tokenParam2.Amount, []byte{}, *txTokenInit.Hash())
+		assert.Equal(t,nil,errStore)
+	}
+	malParams := NewTxTokenParams(&keySets[0].PrivateKey,
+		paymentInfoFee, prvCoinsToPayTransfer, 140, tokenParam2, db, nil,
+		hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{},db)
+
+	malTx := &TxTokenVersion1{}
+	errMalInit := malTx.Init(malParams)
+	assert.Equal(t,nil,errMalInit)
+	// sanity should be fine
+	isSane,err := malTx.ValidateSanityData(nil,nil,nil,0)
+	if isSane{
+		fmt.Println("Passed Sanity Test")
+		panic("Test Terminated Early")
+	}
+	_ = err
+	fmt.Printf("Token-fee double spend -> %v\n",err)
+	assert.Equal(t,false,isSane)
+	// validate should reject due to Verify() in PaymentProofV1
+	// isValid,_ = malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	// assert.Equal(t,false,isValid)
+}
+
 func getParamsForTxV1TokenInit(theInputCoin coin.PlainCoin, db *statedb.StateDB) (*TxTokenParams,*TokenParam){
 	msgCipherText := []byte("haha dummy ciphertext")
 	initAmount := uint64(10000)
@@ -451,7 +525,7 @@ func getParamForTxV1TokenTransfer(txTokenInit *TxTokenVersion1, db *statedb.Stat
 		if inputAmountFee==0{
 			inputAmountFee = pc.GetValue()
 		}
-		// s,_ := json.Marshal(pc.(*coin.CoinV2))
+		// s,_ := json.Marshal(pc.(*coin.CoinV1))
 		// fmt.Printf("Tx Fee : %x has received %d in PRV\n",pc.GetPublicKey().ToBytesS(),pc.GetValue())
 		prvCoinsToPayTransfer = append(prvCoinsToPayTransfer,pc)
 	}
@@ -459,7 +533,7 @@ func getParamForTxV1TokenTransfer(txTokenInit *TxTokenVersion1, db *statedb.Stat
 		cloneCoin := coin.CoinV1{}
 		cloneCoin.SetBytes(c.Bytes())
 		pc,err := cloneCoin.Decrypt(keySets[0])
-		// s,_ := json.Marshal(pc.(*coin.CoinV2))
+		// s,_ := json.Marshal(pc.(*coin.CoinV1))
 		// fmt.Printf("Tx Token : %x has received %d in token T1\n",pc.GetPublicKey().ToBytesS(),pc.GetValue())
 		assert.Equal(t,nil,err)
 		tokenCoinsToTransfer = append(tokenCoinsToTransfer,pc)
