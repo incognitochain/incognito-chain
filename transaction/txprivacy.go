@@ -934,6 +934,18 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beacon
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("comSK of SNProof %v is not comSK of input coins", i))
 				}
 
+				// check cmSND of input coins is equal to comInputSND in serial number proof
+				if !privacy.IsPointEqual(cmInputSNDs[i], txN.Proof.GetSerialNumberProof()[i].GetComInput()) {
+					Logger.log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("cmSND in SNproof %v is not equal to commitment of input's SND", i))
+				}
+
+				// check SN of input coins is equal to SN in serial number no privacy proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber(), txN.Proof.GetSerialNumberProof()[i].GetSN()) {
+					Logger.log.Errorf("SN in SNProof is not equal to input's SN - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SN in SNProof %v is not equal to input's SN", i))
+				}
+
 				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number proof failed")
 				}
@@ -1022,6 +1034,19 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beacon
 					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
 				}
+
+				// check SND of input coins is equal to SND in serial number no privacy proof
+				if !privacy.IsScalarEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetInput()) {
+					Logger.log.Errorf("SND in SNProof is not equal to input's SND - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNProof %v is not equal to input's SND", i))
+				}
+
+				// check SN of input coins is equal to SN in serial number no privacy proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetOutput()) {
+					Logger.log.Errorf("SN in SNProof is not equal to input's SN - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SN in SNProof %v is not equal to input's SN", i))
+				}
+
 				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
