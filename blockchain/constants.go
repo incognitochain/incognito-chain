@@ -153,7 +153,7 @@ const (
 	Testnet2                 = 0x32
 	Testnet2Name             = "testnet-2"
 	Testnet2DefaultPort      = "9444"
-	Testnet2GenesisBlockTime = "2020-08-17T00:00:00.000Z"
+	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
 	Testnet2Epoch            = 100
 	Testnet2RandomTime       = 50
 	Testnet2Offset           = 1
