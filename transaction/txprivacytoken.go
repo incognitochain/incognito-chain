@@ -458,7 +458,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata
 	// validate sanity for pToken
 
 	// check tokenID in TxPrivacyTokenData
-	if txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID == common.PRVCoinID {
+	if txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String() == common.PRVIDStr {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("TokenID must not be equal PRVID"))
 	}
 
