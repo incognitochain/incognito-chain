@@ -264,7 +264,7 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 				break
 			}
 			if len(allShardBlocks[sid]) > 0 {
-				if allShardBlocks[sid][len(allShardBlocks[sid])-1].GetCurrentEpoch() != s2bBlk.GetCurrentEpoch() {
+				if allShardBlocks[sid][0].GetCurrentEpoch() != s2bBlk.GetCurrentEpoch() {
 					break
 				}
 			}
