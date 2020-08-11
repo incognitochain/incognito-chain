@@ -221,6 +221,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) er
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	return nil

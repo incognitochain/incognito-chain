@@ -157,9 +157,11 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 					continue
 				}
 			}
-
-			fmt.Println("Syncker: Insert shard", s.shardID, "from pool", blk.(common.BlockInterface).GetHeight())
-			if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+			bestHeight := s.Chain.GetBestViewHeight()
+			Logger.Infof("Syncker: Insert block %v from pool, validate with committee at height %v", blk.(common.BlockInterface).GetHeight(), bestHeight)
+			c := s.Chain.GetCommittee()
+			if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), c); err != nil {
+				Logger.Errorf("Validate Block %v with committee %v from bestviewheight %v got error %v", blk.(common.BlockInterface).GetHeight(), c, bestHeight, err)
 				return
 			}
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
