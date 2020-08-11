@@ -263,7 +263,6 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 		}
 	}
 
-	Logger.log.Infof("In GetShardState allShardBlocks: %+v", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -271,29 +270,33 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 
 	for chainID, shardBlocks := range allShardBlocks {
 		shardID := byte(chainID)
-		//// Only accept block in one epoch
-		//totalBlock := 0
-		//Logger.log.Infof("Beacon Producer Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
-		//for _, shardBlocks := range shardBlocks {
-		//	Logger.log.Infof(" %+v ", shardBlocks.Header.Height)
-		//}
-		////=======
-		//currentCommittee := beaconBestState.GetAShardCommittee(shardID)
-		//for index, shardBlock := range shardBlocks {
-		//	if index == MAX_S2B_BLOCK-1 {
-		//		break
-		//	}
-		//	err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
-		//	Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
-		//	if err != nil {
-		//		break
-		//	}
-		//	totalBlock = index
-		//	if totalBlock > MAX_S2B_BLOCK {
-		//		totalBlock = MAX_S2B_BLOCK
-		//		break
-		//	}
-		//}
+
+		// Only accept block in one epoch
+		Logger.log.Infof("Beacon Producer Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
+		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
+		validBlocks := []*ShardToBeaconBlock{}
+		for index, shardBlock := range shardBlocks {
+			if index < len(shardBlocks)-1 {
+				if reflect.DeepEqual(shardBlock.Hash(), shardBlocks[index+1].GetPrevHash()) {
+					Logger.log.Error("Get S2B for block producer error! Hash chain not correct")
+					panic("this error must not appear")
+				}
+				if shardBlock.GetHeight() != shardBlocks[index+1].GetHeight()-1 {
+					Logger.log.Error("Get S2B for block producer error! Height not correct")
+					panic("this error must not appear")
+				}
+			}
+
+			err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee)
+			if err != nil {
+				Logger.log.Errorf("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err)
+				break
+			}
+			Logger.log.Error("Add S2B block for shard", shardID, "height", shardBlock.GetHeight(), shardBlock.Hash().String())
+			validBlocks = append(validBlocks, shardBlock)
+		}
+		shardBlocks = validBlocks
+
 		//Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
 		for _, shardBlock := range shardBlocks {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
@@ -558,7 +561,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 
 	// Collect stateful actions
 	statefulActions := blockchain.collectStatefulActions(shardBlock.Instructions)
-	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
+	//Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 	return shardStates, stakeInstructions, tempValidStakePublicKeys, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions, statefulActions
 }
 

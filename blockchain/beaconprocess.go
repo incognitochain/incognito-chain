@@ -407,6 +407,26 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 
 	for chainID, shardBlocks := range allShardBlocks {
+		currentCommittee := curView.GetAShardCommittee(byte(chainID))
+		for index, shardBlock := range shardBlocks {
+			if index < len(shardBlocks)-1 {
+				if reflect.DeepEqual(shardBlock.Hash(), shardBlocks[index+1].GetPrevHash()) {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block producer error! Hash chain not correct"))
+
+				}
+				if shardBlock.GetHeight() != shardBlocks[index+1].GetHeight()-1 {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block producer error! Height not correct"))
+				}
+			}
+
+			err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee)
+			if err != nil {
+				Logger.log.Infof("Beacon Process/ Validate Agg Signature for shard %+v, block height %+v, err %+v", chainID, shardBlock.Header.Height, err)
+				return NewBlockChainError(GetShardToBeaconBlocksError, err)
+			}
+			Logger.log.Error("Add S2B block for shard", chainID, "height", shardBlock.GetHeight(), shardBlock.Hash().String())
+		}
+
 		shardID := byte(chainID)
 		shardStates := beaconBlock.Body.ShardState[shardID]
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
