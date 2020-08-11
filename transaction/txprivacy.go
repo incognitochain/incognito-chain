@@ -844,7 +844,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func (tx Tx) validateNormalTxSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
+func (tx Tx) validateNormalTxSanityData(bcr metadata.ChainRetriever, beaconHeight uint64) (bool, error) {
 	//check version
 	if tx.Version > txVersion {
 		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
@@ -889,7 +889,7 @@ func (tx Tx) validateNormalTxSanityData(bcr metadata.BlockchainRetriever, beacon
 	return true, nil
 }
 
-func (txN Tx) validateSanityDataOfProof(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
+func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeight uint64) (bool, error) {
 	if txN.Proof != nil {
 		if len(txN.Proof.GetInputCoins()) > 255 {
 			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetInputCoins())))
@@ -1132,7 +1132,7 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 		}
 	}
 	Logger.log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
-	return tx.validateNormalTxSanityData(bcr, beaconHeight)
+	return tx.validateNormalTxSanityData(chainRetriever, beaconHeight)
 }
 
 func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
