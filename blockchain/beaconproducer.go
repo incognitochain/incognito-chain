@@ -257,7 +257,7 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
-	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer(beaconBestState.BestShardHash) {
+	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer(beaconBestState.BestShardHash, nil) {
 		for _, b := range v {
 			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
 		}
