@@ -276,9 +276,15 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		validBlocks := []*ShardToBeaconBlock{}
 		for index, shardBlock := range shardBlocks {
+			if index == 0 && shardBlock.GetHeight() > 2 {
+				if !reflect.DeepEqual(beaconBestState.BestShardHash[shardID].String(), shardBlock.GetPrevHash().String()) {
+					Logger.log.Error("Get S2B for block producer error! Hash chain not link", beaconBestState.BestShardHash[shardID], shardBlock.GetPrevHash(), beaconBestState.BestShardHeight[shardID], shardBlock.GetHeight())
+					panic("this error must not appear")
+				}
+			}
 			if index < len(shardBlocks)-1 {
-				if reflect.DeepEqual(shardBlock.Hash(), shardBlocks[index+1].GetPrevHash()) {
-					Logger.log.Error("Get S2B for block producer error! Hash chain not correct")
+				if shardBlock.Hash().String() != shardBlocks[index+1].GetPrevHash().String() {
+					Logger.log.Error("Get S2B for block producer error! Hash chain not correct", shardBlock.Hash().String(), shardBlocks[index+1].GetPrevHash().String())
 					panic("this error must not appear")
 				}
 				if shardBlock.GetHeight() != shardBlocks[index+1].GetHeight()-1 {

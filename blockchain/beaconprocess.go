@@ -87,9 +87,9 @@ CONTINUE_VERIFY:
 // var bcAllTime time.Duration
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, shouldValidate bool) error {
-	blockHash := beaconBlock.Hash()
+	blockHash := beaconBlock.Hash().String()
 	preHash := beaconBlock.Header.PreviousBlockHash
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v \nPrev hash:", beaconBlock.Header.Height, blockHash.String(), preHash)
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v \nPrev hash:", beaconBlock.Header.Height, blockHash, preHash)
 	// if beaconBlock.GetHeight() == 2 {
 	// 	bcTmp = 0
 	// 	bcStart = time.Now()
@@ -407,21 +407,27 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 
 	for chainID, shardBlocks := range allShardBlocks {
+		Logger.log.Infof("Beacon Validator Got %+v Shard Block from shard %+v: ", len(shardBlocks), chainID)
 		currentCommittee := curView.GetAShardCommittee(byte(chainID))
 		for index, shardBlock := range shardBlocks {
-			if index < len(shardBlocks)-1 {
-				if reflect.DeepEqual(shardBlock.Hash(), shardBlocks[index+1].GetPrevHash()) {
-					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block producer error! Hash chain not correct"))
+			if index == 0 && shardBlock.GetHeight() > 2 {
+				if !reflect.DeepEqual(curView.BestShardHash[byte(chainID)].String(), shardBlock.GetPrevHash().String()) {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block validator error! Hash chain not link "))
+				}
+			}
 
+			if index < len(shardBlocks)-1 {
+				if !reflect.DeepEqual(shardBlock.Hash().String(), shardBlocks[index+1].GetPrevHash().String()) {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block validator error! Hash chain not correct %v %v", shardBlock.Hash(), shardBlocks[index+1].GetPrevHash()))
 				}
 				if shardBlock.GetHeight() != shardBlocks[index+1].GetHeight()-1 {
-					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block producer error! Height not correct"))
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block validator error! Height not correct"))
 				}
 			}
 
 			err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee)
 			if err != nil {
-				Logger.log.Infof("Beacon Process/ Validate Agg Signature for shard %+v, block height %+v, err %+v", chainID, shardBlock.Header.Height, err)
+				Logger.log.Infof("Beacon Validator/ Validate Agg Signature for shard %+v, block height %+v, err %+v", chainID, shardBlock.Header.Height, err)
 				return NewBlockChainError(GetShardToBeaconBlocksError, err)
 			}
 			Logger.log.Error("Add S2B block for shard", chainID, "height", shardBlock.GetHeight(), shardBlock.Hash().String())
