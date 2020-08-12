@@ -154,8 +154,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, true, shardID); err != nil {
 			return err
 		}
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.ShardCommittee); err != nil {
-			Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), curView.ShardCommittee, err)
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.GetShardCommittee()); err != nil {
+			Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), curView.GetShardCommittee(), err)
 			return err
 		}
 	} else {
