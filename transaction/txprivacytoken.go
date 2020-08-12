@@ -591,6 +591,34 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte
 	return unique, pk, amount, &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) CalculateBurningTxValue(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, uint64) {
+	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
+	if proof == nil || len(proof.GetOutputCoins()) == 0 {
+		return false, 0
+	}
+	//get burning address
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil {
+		return false, 0
+	}
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+
+	// check burning amount
+	totalBurningAmount := uint64(0)
+	for _, outCoin := range proof.GetOutputCoins() {
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().ToBytesS()
+		if bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
+			totalBurningAmount += outCoin.CoinDetails.GetValue()
+		}
+	}
+	if totalBurningAmount > 0 {
+		return true, totalBurningAmount
+	}
+	return false, 0
+}
+
 // IsCoinsBurning - checking this is a burning pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
 	// get proof of pToken
