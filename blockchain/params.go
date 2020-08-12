@@ -144,7 +144,7 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -176,11 +176,11 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointFixRandShardCM: 20,
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           1,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 2070000,
 	}
 	// END TESTNET
 
@@ -258,11 +258,11 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointFixRandShardCM: 20,
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           1,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 1e18,
 	}
 	// END TESTNET-2
 
@@ -306,7 +306,7 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -339,11 +339,11 @@ func init() {
 			},
 		},
 
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    559380,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointFixRandShardCM: 20,
+		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           559380,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 1e18,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
