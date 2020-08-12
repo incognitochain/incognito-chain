@@ -238,7 +238,7 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
