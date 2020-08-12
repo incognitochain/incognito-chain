@@ -135,3 +135,10 @@ func stopInsFromTx(
 func unstakeFromTx() {
 	//TODO
 }
+
+func buildSwapInstructions(
+	bcE BeaconCommitteeEngine,
+) []instruction.Instruction {
+	// mapSwapIn, mapSwapOut := bcE.SwapValidator()
+	return []instruction.Instruction{}
+}

@@ -133,6 +133,51 @@ func StoreNextEpochShardCandidate(
 	return nil
 }
 
+func StoreMembersAtCommonShardPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, CandidateChainID, CommonShardPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberCommonShardPoolError, err)
+	}
+	return nil
+}
+
+func StoreMembersAtCommonBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, BeaconChainID, CommonBeaconPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func StoreMembersAtBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, BeaconChainID, BeaconPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func StoreMembersAtShardPool(
+	stateDB *StateDB,
+	shardID byte,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, int(shardID), ShardPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberShardPoolError, err)
+	}
+	return nil
+}
+
 func StoreCurrentEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.CommitteePublicKey) error {
 	err := storeCommittee(stateDB, CandidateChainID, CurrentEpochShardCandidate, candidate, defaultEnterTime)
 	if err != nil {
@@ -621,4 +666,49 @@ func GetOneShardCommitteeEnterTime(
 		list = append(list, tempShardCommitteeState.EnterTime())
 	}
 	return list
+}
+
+func DeleteMembersAtCommonShardPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, CandidateChainID, CommonShardPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberCommonShardPoolError, err)
+	}
+	return nil
+}
+
+func DeleteMembersAtCommonBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, BeaconChainID, CommonBeaconPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func DeleteMembersAtBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, BeaconChainID, BeaconPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func DeleteMembersAtShardPool(
+	stateDB *StateDB,
+	shardID byte,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, int(shardID), ShardPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberShardPoolError, err)
+	}
+	return nil
 }
