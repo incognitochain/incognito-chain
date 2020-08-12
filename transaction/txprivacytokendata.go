@@ -1,8 +1,10 @@
 package transaction
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	"strconv"
 
@@ -94,6 +96,48 @@ func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy
 			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
 			return nil, 0, err
 		}
+		keySet := keyWallet.KeySet
+		temp := &privacy.PaymentInfo{
+			PaymentAddress: keySet.PaymentAddress,
+			Amount:         uint64(value.(float64)),
+		}
+		result = append(result, temp)
+		voutsAmount += int64(temp.Amount)
+	}
+	return result, voutsAmount, nil
+}
+
+func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr metadata.ChainRetriever, beaconHeight uint64) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	result := []*privacy.PaymentInfo{}
+	voutsAmount := int64(0)
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+
+	for key, value := range receivers {
+
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			return nil, 0, err
+		}
+
+		if !bytes.Equal(keyWallet.KeySet.PaymentAddress.Pk[:], paymentAddressBurningAccount.Pk[:]) {
+			continue
+		}
+
 		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
 			PaymentAddress: keySet.PaymentAddress,

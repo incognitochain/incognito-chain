@@ -897,9 +897,10 @@ func convertPrice(
 	}
 
 	invariant := big.NewInt(0)
-	invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
+	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
+
 	newTokenPoolValueToSell := big.NewInt(0)
-	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(convertingAmt)))
+	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(convertingAmt))
 
 	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
 	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)

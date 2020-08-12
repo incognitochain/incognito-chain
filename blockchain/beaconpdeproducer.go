@@ -134,24 +134,24 @@ func isRightRatio(
 	if waitingContribution1.TokenIDStr == poolPair.Token1IDStr {
 		expectedContribAmt := big.NewInt(0)
 		expectedContribAmt.Mul(
-			big.NewInt(int64(waitingContribution1.Amount)),
-			big.NewInt(int64(poolPair.Token2PoolValue)),
+			new(big.Int).SetUint64(waitingContribution1.Amount),
+			new(big.Int).SetUint64(poolPair.Token2PoolValue),
 		)
 		expectedContribAmt.Div(
 			expectedContribAmt,
-			big.NewInt(int64(poolPair.Token1PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token1PoolValue),
 		)
 		return expectedContribAmt.Uint64() == waitingContribution2.Amount
 	}
 	if waitingContribution1.TokenIDStr == poolPair.Token2IDStr {
 		expectedContribAmt := big.NewInt(0)
 		expectedContribAmt.Mul(
-			big.NewInt(int64(waitingContribution1.Amount)),
-			big.NewInt(int64(poolPair.Token1PoolValue)),
+			new(big.Int).SetUint64(waitingContribution1.Amount),
+			new(big.Int).SetUint64(poolPair.Token1PoolValue),
 		)
 		expectedContribAmt.Div(
 			expectedContribAmt,
-			big.NewInt(int64(poolPair.Token2PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token2PoolValue),
 		)
 		return expectedContribAmt.Uint64() == waitingContribution2.Amount
 	}
@@ -171,26 +171,26 @@ func computeActualContributedAmounts(
 		contribution1Amt := big.NewInt(0)
 		tempAmt := big.NewInt(0)
 		tempAmt.Mul(
-			big.NewInt(int64(waitingContribution2.Amount)),
-			big.NewInt(int64(poolPair.Token1PoolValue)),
+			new(big.Int).SetUint64(waitingContribution2.Amount),
+			new(big.Int).SetUint64(poolPair.Token1PoolValue),
 		)
 		tempAmt.Div(
 			tempAmt,
-			big.NewInt(int64(poolPair.Token2PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token2PoolValue),
 		)
 		if tempAmt.Uint64() > waitingContribution1.Amount {
-			contribution1Amt = big.NewInt(int64(waitingContribution1.Amount))
+			contribution1Amt = new(big.Int).SetUint64(waitingContribution1.Amount)
 		} else {
 			contribution1Amt = tempAmt
 		}
 		contribution2Amt := big.NewInt(0)
 		contribution2Amt.Mul(
 			contribution1Amt,
-			big.NewInt(int64(poolPair.Token2PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token2PoolValue),
 		)
 		contribution2Amt.Div(
 			contribution2Amt,
-			big.NewInt(int64(poolPair.Token1PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token1PoolValue),
 		)
 		actualContribution1Amt := contribution1Amt.Uint64()
 		actualContribution2Amt := contribution2Amt.Uint64()
@@ -201,26 +201,26 @@ func computeActualContributedAmounts(
 		contribution2Amt := big.NewInt(0)
 		tempAmt := big.NewInt(0)
 		tempAmt.Mul(
-			big.NewInt(int64(waitingContribution1.Amount)),
-			big.NewInt(int64(poolPair.Token1PoolValue)),
+			new(big.Int).SetUint64(waitingContribution1.Amount),
+			new(big.Int).SetUint64(poolPair.Token1PoolValue),
 		)
 		tempAmt.Div(
 			tempAmt,
-			big.NewInt(int64(poolPair.Token2PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token2PoolValue),
 		)
 		if tempAmt.Uint64() > waitingContribution2.Amount {
-			contribution2Amt = big.NewInt(int64(waitingContribution2.Amount))
+			contribution2Amt = new(big.Int).SetUint64(waitingContribution2.Amount)
 		} else {
 			contribution2Amt = tempAmt
 		}
 		contribution1Amt := big.NewInt(0)
 		contribution1Amt.Mul(
 			contribution2Amt,
-			big.NewInt(int64(poolPair.Token2PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token2PoolValue),
 		)
 		contribution1Amt.Div(
 			contribution1Amt,
-			big.NewInt(int64(poolPair.Token1PoolValue)),
+			new(big.Int).SetUint64(poolPair.Token1PoolValue),
 		)
 		actualContribution1Amt := contribution1Amt.Uint64()
 		actualContribution2Amt := contribution2Amt.Uint64()
@@ -710,10 +710,10 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		tokenPoolValueToBuy = pdePoolPair.Token2PoolValue
 	}
 	invariant := big.NewInt(0)
-	invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
+	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
 	fee := pdeTradeReqAction.Meta.TradingFee
 	newTokenPoolValueToSell := big.NewInt(0)
-	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(pdeTradeReqAction.Meta.SellAmount)))
+	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(pdeTradeReqAction.Meta.SellAmount))
 
 	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
 	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
@@ -742,7 +742,8 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 
 	// update current pde state on mem
-	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, big.NewInt(int64(fee)))
+	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, new(big.Int).SetUint64(fee))
+
 	pdePoolPair.Token1PoolValue = newTokenPoolValueToBuy
 	pdePoolPair.Token2PoolValue = newTokenPoolValueToSell.Uint64()
 	if pdePoolPair.Token1IDStr == pdeTradeReqAction.Meta.TokenIDToSellStr {
@@ -853,7 +854,7 @@ func deductPDEAmountsV2(
 	totalSharesForPair := big.NewInt(0)
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
 		if strings.Contains(shareKey, totalSharesForPairPrefix) {
-			totalSharesForPair.Add(totalSharesForPair, big.NewInt(int64(shareAmt)))
+			totalSharesForPair.Add(totalSharesForPair, new(big.Int).SetUint64(shareAmt))
 		}
 	}
 	if totalSharesForPair.Cmp(big.NewInt(0)) == 0 {
@@ -869,7 +870,7 @@ func deductPDEAmountsV2(
 
 	deductingAmounts = &DeductingAmountsByWithdrawal{}
 	deductingPoolValueToken1 := big.NewInt(0)
-	deductingPoolValueToken1.Mul(big.NewInt(int64(pdePoolPair.Token1PoolValue)), big.NewInt(int64(wdSharesForWithdrawer)))
+	deductingPoolValueToken1.Mul(new(big.Int).SetUint64(pdePoolPair.Token1PoolValue), new(big.Int).SetUint64(wdSharesForWithdrawer))
 	deductingPoolValueToken1.Div(deductingPoolValueToken1, totalSharesForPair)
 	if pdePoolPair.Token1PoolValue < deductingPoolValueToken1.Uint64() {
 		pdePoolPair.Token1PoolValue = 0
@@ -880,7 +881,7 @@ func deductPDEAmountsV2(
 	deductingAmounts.PoolValue1 = deductingPoolValueToken1.Uint64()
 
 	deductingPoolValueToken2 := big.NewInt(0)
-	deductingPoolValueToken2.Mul(big.NewInt(int64(pdePoolPair.Token2PoolValue)), big.NewInt(int64(wdSharesForWithdrawer)))
+	deductingPoolValueToken2.Mul(new(big.Int).SetUint64(pdePoolPair.Token2PoolValue), new(big.Int).SetUint64(wdSharesForWithdrawer))
 	deductingPoolValueToken2.Div(deductingPoolValueToken2, totalSharesForPair)
 	if pdePoolPair.Token2PoolValue < deductingPoolValueToken2.Uint64() {
 		pdePoolPair.Token2PoolValue = 0
@@ -1007,18 +1008,18 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 			shareAmt := pdeShares[shareKey]
 			if strings.Contains(shareKey, sKey) {
 				allSharesByPair = append(allSharesByPair, shareInfo{shareKey: shareKey, shareAmt: shareAmt})
-				totalSharesOfPair.Add(totalSharesOfPair, big.NewInt(int64(shareAmt)))
+				totalSharesOfPair.Add(totalSharesOfPair, new(big.Int).SetUint64(shareAmt))
 			}
 		}
 
 		accumFees := big.NewInt(0)
-		totalFees := big.NewInt(int64(feeAmt))
+		totalFees := new(big.Int).SetUint64(feeAmt)
 		for idx, sInfo := range allSharesByPair {
 			feeForContributor := big.NewInt(0)
 			if idx == len(allSharesByPair)-1 {
 				feeForContributor.Sub(totalFees, accumFees)
 			} else {
-				feeForContributor.Mul(totalFees, big.NewInt(int64(sInfo.shareAmt)))
+				feeForContributor.Mul(totalFees, new(big.Int).SetUint64(sInfo.shareAmt))
 				feeForContributor.Div(feeForContributor, totalSharesOfPair)
 			}
 
