@@ -161,7 +161,7 @@ var SelectShardNodeTestnetSerializedPubkeyV2 = make(map[uint64][]string)
 var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
-var IsTestNet = true
+var IsTestNet = false
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
