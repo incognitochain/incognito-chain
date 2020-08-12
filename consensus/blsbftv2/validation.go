@@ -3,6 +3,7 @@ package blsbftv2
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -77,6 +78,8 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil
