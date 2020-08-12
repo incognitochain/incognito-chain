@@ -97,7 +97,6 @@ type BeaconCommitteeEngine interface {
 	GetAutoStaking() map[string]bool
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
-	Unstake() map[string]bool
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()

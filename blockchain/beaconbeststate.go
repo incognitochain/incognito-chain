@@ -336,11 +336,6 @@ func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteeP
 	return append(result, committee...)
 }
 
-//Unstake : Get unstake map from committee state
-func (beaconBestState *BeaconBestState) Unstake() map[string]bool {
-	return beaconBestState.beaconCommitteeEngine.Unstake()
-}
-
 func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
 	id := GetProposerByTimeSlot(ts, beaconBestState.MinBeaconCommitteeSize)
 	committee := beaconBestState.GetBeaconCommittee()
@@ -598,13 +593,7 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 		shardSubstituteValidator[byte(k)] = v
 	}
 
-	//Get list unstake validators
-	unstakeValidators, err := statedb.GetShardsUnstakeValidators(consensusStateDB)
-	if err != nil {
-		return nil, err
-	}
-
-	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers, stakingTx, unstakeValidators)
+	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers, stakingTx)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngine(beaconHeight, beaconHash, beaconCommitteeState)
 	return beaconCommitteeEngine, nil
 }
