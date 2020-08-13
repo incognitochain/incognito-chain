@@ -100,7 +100,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		}
 	}
 
-	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, rewardForCustodianByEpoch, portalParams)
+	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions,
+		stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, rewardForCustodianByEpoch, portalParams)
 
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	currentShardCandidate := beaconBestState.GetCandidateShardWaitingForCurrentRandom()
@@ -216,7 +217,11 @@ func (blockchain *BlockChain) GetShardState(
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
 		for _, shardBlock := range shardBlocks {
-			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
+			shardState, validStakeInstruction,
+				tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction,
+				acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(
+				beaconBestState, beaconBestState.BeaconHeight+1,
+				shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
 			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)

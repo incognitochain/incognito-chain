@@ -3,11 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -125,6 +126,8 @@ func CreateShardSwapActionForKeyListV2(
 //	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
 // Stop Auto Staking:
 //	["stopautostaking" "pubkey1,pubkey2,..."]
+// Unstake:
+//  ["unstake", "pubkey1,pubkey2,..."]
 func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
@@ -136,6 +139,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	stakeShardAutoStaking := []string{}
 	stakeBeaconAutoStaking := []string{}
 	stopAutoStaking := []string{}
+	unstaking := []string{}
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
@@ -182,6 +186,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 				}
 				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
 			}
+		case metadata.UnStakingMeta:
+			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
 		}
 	}
 	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
@@ -211,6 +221,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
 		// ["stopautostaking" "pubkey1,pubkey2,..."]
 		inst := []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	if !reflect.DeepEqual(unstaking, []string{}) {
+		// ["unstake" "pubkey1,pubkey2,..."]
+		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
 	return instructions, nil

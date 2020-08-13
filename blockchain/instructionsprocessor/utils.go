@@ -150,3 +150,10 @@ func unstakeInsFromTx(
 
 	return unstakingInstruction, err
 }
+
+func buildSwapInstructions(
+	bcE BeaconCommitteeEngine,
+) []instruction.Instruction {
+	// mapSwapIn, mapSwapOut := bcE.SwapValidator()
+	return []instruction.Instruction{}
+}
