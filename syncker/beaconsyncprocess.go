@@ -343,7 +343,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 					} else {
 						insertBlkCnt += successBlk
 						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
-						if successBlk >= len(blockBuffer) {
+						if successBlk >= len(blockBuffer) || successBlk == 0 {
 							break
 						}
 						blockBuffer = blockBuffer[successBlk:]
