@@ -296,7 +296,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	arrayParams := common.InterfaceSlice(params)
 	getCountTxs := false
 	if len(arrayParams) == 1 {
-		getCountTxs = true
+		getCountTxs = false //not use anymore
 	}
 	listPrivacyToken := make(map[common.Hash]*statedb.TokenState)
 	var err error
