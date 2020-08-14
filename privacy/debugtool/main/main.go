@@ -160,6 +160,13 @@ func TransferPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount strin
 	fmt.Println("========== END TRANSFER PRV  ==========")
 }
 
+func DoubleSpendPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
+	fmt.Println("========== TRANSFER PRV  ==========")
+	b, _ := tool.CreateDoubleSpend(fromPrivKey, toPrivKey, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV  ==========")
+}
+
 // PDE
 func PDEContributePRV(tool *debugtool.DebugTool, privKey, amount string) {
 	fmt.Println("========== PDE CONTRIBUTE PRV  ==========")
@@ -431,6 +438,17 @@ func main() {
 				panic(err)
 			}
 			PDETradeToken(tool, privateKeys[index], args[2], args[3])
+		}
+		if args[0] == "doublespend" {
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoubleSpendPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
 		}
 	}
 }

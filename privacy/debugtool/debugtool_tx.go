@@ -98,7 +98,7 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 		"jsonrpc": "1.0",
 		"method": "createandsendtransaction",
 		"params": [
-			"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", 
+			"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
 			{
 				"12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE":200000000000,
 				"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9":200000000000,
@@ -108,8 +108,8 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 				"12S6mGbnS3Df5bGBaUfBTh56NRax4PvFPDhUnxvP9D6cZVjnTx9T4FsVdFT44pFE8KXTGYaHSAmb2MkpnUJzkrAe49EPHkBULM8N2ZJ":200000000000,
 				"12Rs5tQTYkWGzEdPNo2GRA1tjZ5aDCTYUyzXf6SJFq89QnY3US3ZzYSjWHVmmLUa6h8bdHHUuVYoR3iCVRoYDCNn1AfP6pxTz5YL8Aj":200000000000,
 				"12S33dTF3aVsuSxY7iniK3UULUYyLMZumExKm6DPfsqnNepGjgDZqkQCDp1Z7Te9dFKQp7G2WeeYqCr5vcDCfrA3id4x5UvL4yyLrrT":200000000000
-			}, 
-			1,   
+			},
+			1,
 			1
 		],
 		"id": 1
@@ -130,11 +130,11 @@ func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, privKey
 		"jsonrpc": "1.0",
 		"method": "createandsendtransaction",
 		"params": [
-			"%s", 
+			"%s",
 			{
 				"%s": %s
-			}, 
-			1,   
+			},
+			1,
 			1
 		],
 		"id": 1
@@ -215,19 +215,19 @@ func (this *DebugTool) GetListUnspentOutputTokens(privKeyStr, tokenID string) ([
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 
-	query := fmt.Sprintf(`{  
+	query := fmt.Sprintf(`{
 	   "jsonrpc":"1.0",
 	   "method":"listunspentoutputtokens",
-	   "params":[  
+	   "params":[
 		  0,
 		  999999,
-		  [  
-			 {  
+		  [
+			 {
 				"PrivateKey":"%s",
 				"StartHeight": 0,
 				"tokenID" : "%s"
 			 }
-			 
+
 		  ]
 	   ],
 	   "id":1
@@ -243,18 +243,18 @@ func (this *DebugTool) ListUnspentOutputCoins(privKeyStr string) ([]byte, error)
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
 
-	query := fmt.Sprintf(`{  
+	query := fmt.Sprintf(`{
 	   "jsonrpc":"1.0",
 	   "method":"listunspentoutputcoins",
-	   "params":[  
+	   "params":[
 		  0,
 		  999999,
-		  [  
-			 {  
+		  [
+			 {
 				"PrivateKey":"%s",
 				"StartHeight": 0
 			 }
-			 
+
 		  ]
 	   ],
 	   "id":1
@@ -268,7 +268,7 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
 
-	query := fmt.Sprintf(`{  
+	query := fmt.Sprintf(`{
 	   "jsonrpc":"1.0",
 	   "method":"getbalancebyprivatekey",
 	   "params":["%s"],
@@ -538,7 +538,7 @@ func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 		"jsonrpc": "1.0",
 		"method": "createconvertcoinver1tover2transaction",
 		"params": [
-			"%s", 
+			"%s",
 			1
 		],
 		"id": 1
@@ -619,5 +619,30 @@ func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, e
     ],
     "id": 1
 	}`, privKey, paymentAddStr, tokenID)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amount string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "testbuilddoublespend",
+		"params": [
+			"%s",
+			{
+				"%s": %s
+			},
+			1,
+			1
+		],
+		"id": 1
+	}`, privKeyA, paymentAddStr, amount)
 	return this.SendPostRequestWithQuery(query)
 }
