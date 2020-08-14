@@ -17,10 +17,12 @@ type BeaconCommitteeStateV2 struct {
 	beaconCommitteePool []incognitokey.CommitteePublicKey
 	beaconPool          []incognitokey.CommitteePublicKey
 	beaconCommonPool    []incognitokey.CommitteePublicKey
+	assignBCCheckpoint  int
 
 	shardCommitteePool map[byte][]incognitokey.CommitteePublicKey
 	shardPool          map[byte][]incognitokey.CommitteePublicKey
 	shardCommonPool    []incognitokey.CommitteePublicKey
+	assignShCheckpoint int
 
 	autoStake      map[string]bool                   // committee public key => reward receiver payment address
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
@@ -44,10 +46,10 @@ type BeststateGetter interface {
 }
 
 type BeaconCommitteeEngineV2 struct {
-	beaconHeight     uint64
-	beaconHash       common.Hash
-	oldCommitteeInfo ChainInfoGetter // struct Blockchain?
-	curCommitteeInfo BeststateGetter // struct Beacon Committee State, which store beacon committee best state
+	beaconHeight      uint64
+	beaconHash        common.Hash
+	finalState        *BeaconCommitteeStateV2
+	uncommitteedState *BeaconCommitteeStateV2
 }
 
 func (b *BeaconCommitteeEngineV2) GetBeaconHeight() uint64 {
@@ -62,56 +64,57 @@ func (b *BeaconCommitteeEngineV2) GetBeaconCommittee() []incognitokey.CommitteeP
 	panic("implement me")
 }
 
-func (b *BeaconCommitteeEngineV2) GetBeaconCommitteeAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
-	if blkHash.IsEqual(&b.beaconHash) {
-		//remove hardcode
-		return b.curCommitteeInfo.CommitteeGetter(-1)
-	}
-	return b.oldCommitteeInfo.CommitteeGetter(*blkHash, -1)
-}
+// func (b *BeaconCommitteeEngineV2) GetBeaconCommitteeAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
+// 	if blkHash.IsEqual(&b.beaconHash) {
+// 		//remove hardcode
+// 		return b.curCommitteeInfo.CommitteeGetter(-1)
+// 	}
+// 	return b.oldCommitteeInfo.CommitteeGetter(*blkHash, -1)
+// }
 
-func (b *BeaconCommitteeEngineV2) GetBeaconPoolAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
-	if blkHash.IsEqual(&b.beaconHash) {
-		//remove hardcode
-		return b.curCommitteeInfo.SubstituteGetter(-1)
-	}
-	return b.oldCommitteeInfo.SubstituteGetter(*blkHash, -1)
-}
+// func (b *BeaconCommitteeEngineV2) GetBeaconPoolAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
+// 	if blkHash.IsEqual(&b.beaconHash) {
+// 		//remove hardcode
+// 		return b.curCommitteeInfo.SubstituteGetter(-1)
+// 	}
+// 	return b.oldCommitteeInfo.SubstituteGetter(*blkHash, -1)
+// }
 
-func (b *BeaconCommitteeEngineV2) GetBeaconCommonPoolAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
-	if blkHash.IsEqual(&b.beaconHash) {
-		//remove hardcode
-		return b.curCommitteeInfo.CandidateGetter(true)
-	}
-	return b.oldCommitteeInfo.CandidateGetter(*blkHash, true)
-}
+// func (b *BeaconCommitteeEngineV2) GetBeaconCommonPoolAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
+// 	if blkHash.IsEqual(&b.beaconHash) {
+// 		//remove hardcode
+// 		return b.curCommitteeInfo.CandidateGetter(true)
+// 	}
+// 	return b.oldCommitteeInfo.CandidateGetter(*blkHash, true)
+// }
 
-func (b *BeaconCommitteeEngineV2) GetShardCommitteeAtBlock(blkHash *common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	if blkHash.IsEqual(&b.beaconHash) {
-		//remove hardcode
-		return b.curCommitteeInfo.CommitteeGetter(int(shardID))
-	}
-	return b.oldCommitteeInfo.CommitteeGetter(*blkHash, int(shardID))
-}
+// func (b *BeaconCommitteeEngineV2) GetShardCommitteeAtBlock(blkHash *common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
+// 	if blkHash.IsEqual(&b.beaconHash) {
+// 		//remove hardcode
+// 		return b.curCommitteeInfo.CommitteeGetter(int(shardID))
+// 	}
+// 	return b.oldCommitteeInfo.CommitteeGetter(*blkHash, int(shardID))
+// }
 
-func (b *BeaconCommitteeEngineV2) GetShardPoolAtBlock(blkHash *common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	if blkHash.IsEqual(&b.beaconHash) {
-		//remove hardcode
-		return b.curCommitteeInfo.SubstituteGetter(int(shardID))
-	}
-	return b.oldCommitteeInfo.SubstituteGetter(*blkHash, int(shardID))
-}
+// func (b *BeaconCommitteeEngineV2) GetShardPoolAtBlock(blkHash *common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
+// 	if blkHash.IsEqual(&b.beaconHash) {
+// 		//remove hardcode
+// 		return b.curCommitteeInfo.SubstituteGetter(int(shardID))
+// 	}
+// 	return b.oldCommitteeInfo.SubstituteGetter(*blkHash, int(shardID))
+// }
 
-func (b *BeaconCommitteeEngineV2) GetShardCommonPoolAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
-	if blkHash.IsEqual(&b.beaconHash) {
-		//remove hardcode
-		return b.curCommitteeInfo.CandidateGetter(false)
-	}
-	return b.oldCommitteeInfo.CandidateGetter(*blkHash, false)
-}
+// func (b *BeaconCommitteeEngineV2) GetShardCommonPoolAtBlock(blkHash *common.Hash) ([]incognitokey.CommitteePublicKey, error) {
+// 	if blkHash.IsEqual(&b.beaconHash) {
+// 		//remove hardcode
+// 		return b.curCommitteeInfo.CandidateGetter(false)
+// 	}
+// 	return b.oldCommitteeInfo.CandidateGetter(*blkHash, false)
+// }
 
 func (b *BeaconCommitteeEngineV2) GetCurrentActiveShards() int {
-	return b.curCommitteeInfo.GetActiveShards()
+	// return b.finalState.GetActiveShards()
+	return 5
 }
 
 func (b *BeaconCommitteeEngineV2) GetBeaconSubstitute() []incognitokey.CommitteePublicKey {
@@ -198,20 +201,14 @@ func (b *BeaconCommitteeEngineV2) AssignSubstitutePoolUsingRandomInstruction(
 	subsSizeMap := map[byte]int{}
 	numShards := b.GetCurrentActiveShards()
 	for i := 0; i < numShards; i++ {
-		shardCandidates, err := b.GetShardPoolAtBlock(&blkHash, byte(i))
-		if err != nil {
+		shardSubtitutes, ok := b.finalState.shardPool[byte(i)]
+		if !ok {
 			//TODO handle error?
 		}
-		subsSizeMap[byte(i)] = len(shardCandidates)
+		subsSizeMap[byte(i)] = len(shardSubtitutes)
 	}
-	shardCandidates, err := b.GetShardCommonPoolAtBlock(&blkHash)
-	if err != nil {
-		//TODO handle error?
-	}
-	beaconCandidates, err := b.GetBeaconCommitteeAtBlock(&blkHash)
-	if err != nil {
-		//TODO handle error?
-	}
+	shardCandidates := b.finalState.shardCommonPool[:b.finalState.assignShCheckpoint]
+	beaconCandidates := b.finalState.beaconCommonPool[:b.finalState.assignBCCheckpoint]
 	shCandListString, _ := incognitokey.CommitteeKeyListToString(shardCandidates)
 	bcCandListString, _ := incognitokey.CommitteeKeyListToString(beaconCandidates)
 	newShSubs := b.AssignShardsPoolUsingRandomInstruction(
