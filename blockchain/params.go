@@ -209,8 +209,8 @@ func init() {
 		StakingAmountShard:     TestNet2StakingAmountShard,
 		ActiveShards:           TestNet2ActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
 		MinShardBlockInterval:            TestNet2MinShardBlkInterval,
 		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
