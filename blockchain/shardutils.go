@@ -17,7 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
 		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)

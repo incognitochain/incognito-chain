@@ -930,7 +930,7 @@ func (blockchain *BlockChain) verifyPostProcessingShardBlock(shardBestState *Sha
 		//}
 
 		//compare stakingtx with shardblock
-		if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot); !isOk {
+		if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx.data, shardBlock.Header.StakingTxRoot); !isOk {
 			return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
 		}
 	}
