@@ -234,6 +234,9 @@ var HttpHandler = map[string]httpHandler{
 
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
+
+	// test: create 2 transactions that try double-spending
+	"testbuilddoublespend": (*HttpServer).handleTestCreateDoubleSpendTx,
 }
 
 // Commands that are available to a limited user

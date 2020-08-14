@@ -6,6 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/rpcserver/bean"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -331,4 +333,36 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 		}
 	}
 	return CountResult{Success: success, Fail: fail}, nil
+}
+
+func (httpServer *HttpServer) handleTestCreateDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	txs, err := httpServer.txService.TestBuildDoubleSpendingTransaction(createRawTxParam, nil)
+	if err != nil {
+		// return hex for a new tx
+		return nil, err
+	}
+
+	var result []jsonresult.CreateTransactionResult
+	for i:=0;i<2;i++{
+		jsonBytes, err := json.Marshal(txs[i])
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+	}
+	// tx := data.(jsonresult.CreateTransactionResult)
+	// base58CheckData := tx.Base58CheckData
+	// newParam := make([]interface{}, 0)
+	// newParam = append(newParam, base58CheckData)
+	// sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	// if err != nil {
+	// 	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	// }
+	// result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	return result, nil
 }
