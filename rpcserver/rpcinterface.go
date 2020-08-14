@@ -48,20 +48,19 @@ var HttpHandler = map[string]httpHandler{
 	setBackup:       (*HttpServer).handleSetBackup,
 	getLatestBackup: (*HttpServer).handleGetLatestBackup,
 	// block
-	getBestBlock:                 (*HttpServer).handleGetBestBlock,
-	getLatestFinalizedShardBlock: (*HttpServer).handleGetLatestFinalizedShardBlock,
-	getBestBlockHash:             (*HttpServer).handleGetBestBlockHash,
-	retrieveBlock:                (*HttpServer).handleRetrieveBlock,
-	retrieveBlockByHeight:        (*HttpServer).handleRetrieveBlockByHeight,
-	retrieveBeaconBlock:          (*HttpServer).handleRetrieveBeaconBlock,
-	retrieveBeaconBlockByHeight:  (*HttpServer).handleRetrieveBeaconBlockByHeight,
-	getBlocks:                    (*HttpServer).handleGetBlocks,
-	getBlockChainInfo:            (*HttpServer).handleGetBlockChainInfo,
-	getBlockCount:                (*HttpServer).handleGetBlockCount,
-	getBlockHash:                 (*HttpServer).handleGetBlockHash,
-	checkHashValue:               (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
-	getBlockHeader:               (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
-	getCrossShardBlock:           (*HttpServer).handleGetCrossShardBlock,
+	getBestBlock:                (*HttpServer).handleGetBestBlock,
+	getBestBlockHash:            (*HttpServer).handleGetBestBlockHash,
+	retrieveBlock:               (*HttpServer).handleRetrieveBlock,
+	retrieveBlockByHeight:       (*HttpServer).handleRetrieveBlockByHeight,
+	retrieveBeaconBlock:         (*HttpServer).handleRetrieveBeaconBlock,
+	retrieveBeaconBlockByHeight: (*HttpServer).handleRetrieveBeaconBlockByHeight,
+	getBlocks:                   (*HttpServer).handleGetBlocks,
+	getBlockChainInfo:           (*HttpServer).handleGetBlockChainInfo,
+	getBlockCount:               (*HttpServer).handleGetBlockCount,
+	getBlockHash:                (*HttpServer).handleGetBlockHash,
+	checkHashValue:              (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
+	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,

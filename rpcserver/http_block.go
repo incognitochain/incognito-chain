@@ -8,23 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
-func (httpServer *HttpServer) handleGetLatestFinalizedShardBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramArray, ok := params.([]interface{})
-	if !ok {
-		return 0, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params must be array"))
-	}
-	tempShardID, ok := paramArray[0].(float64)
-	if !ok {
-		return 0, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID must be number"))
-	}
-	shardID := byte(tempShardID)
-	_, shardHeight, err := httpServer.blockService.GetLatestFinalizedShardBlock(shardID)
-	if err != nil {
-		return 0, rpcservice.NewRPCError(rpcservice.GetLatestFinalizedShardBlockError, err)
-	}
-	return shardHeight, nil
-}
-
 // handleGetBestBlock implements the getbestblock command.
 func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result := jsonresult.GetBestBlockResult{
