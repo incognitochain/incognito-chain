@@ -26,11 +26,8 @@ func (httpServer *HttpServer) handleUnstakeTx(params interface{}, closeChan <-ch
 
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	Logger.log.Info("[unstake] tx:", tx)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Info("[unstake] err.(*rpcservice.RPCError):", err.(*rpcservice.RPCError))
-		Logger.log.Info("[unstake] err:", err)
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)

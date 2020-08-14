@@ -26,6 +26,8 @@ type BeaconCommitteeStateEnvironment struct {
 	ActiveShards                    int
 	MinShardCommitteeSize           int
 	ConsensusStateDB                *statedb.StateDB
+	subtituteCandidates             []string
+	validators                      []string
 	allCandidateSubstituteCommittee []string
 }
 
@@ -343,7 +345,16 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()
 	engine.beaconCommitteeStateV1.mu.RLock()
 	engine.beaconCommitteeStateV1.clone(engine.uncommittedBeaconCommitteeStateV1)
-	env.allCandidateSubstituteCommittee = engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
+	var err error
+	env.subtituteCandidates, err = engine.beaconCommitteeStateV1.getSubtituteCandidates()
+	if err != nil {
+		return nil, nil, err
+	}
+	env.validators, err = engine.beaconCommitteeStateV1.getValidators()
+	if err != nil {
+		return nil, nil, err
+	}
+	env.allCandidateSubstituteCommittee = append(env.subtituteCandidates, env.validators...)
 	engine.beaconCommitteeStateV1.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	committeeChange := NewCommitteeChange()
@@ -387,6 +398,7 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 			if err != nil {
 				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
 			}
+
 			committeeChange, err = newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
 			if err != nil {
 				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -455,7 +467,13 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 		committeeChange.BeaconSubstituteAdded = newBeaconSubstitute
 		newB.beaconSubstitute = append(newB.beaconSubstitute, newBeaconSubstitute...)
 	}
-	err := newB.processAutoStakingChange(committeeChange, env)
+
+	// committeeChange, err = newB.processUnstakeChange(committeeChange, env)
+	// if err != nil {
+	// 	return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	// }
+
+	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
@@ -836,6 +854,10 @@ func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {
 	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res
 }
+
+// func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
+// 	return committeeChange, nil
+// }
 
 func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) error {
 	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
