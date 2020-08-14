@@ -147,7 +147,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	return shardBlockMap, err
 }
 
-func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*ShardBlock, error) {
+func (blockchain *BlockChain) GetFinalizedShardBlockByHeight(height uint64, shardID byte) (*ShardBlock, error) {
 	res, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
 		return nil, err
@@ -188,6 +188,49 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 		}
 	}
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
+}
+
+func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*ShardBlock {
+	allShardBlocks := make(map[byte][]*ShardBlock)
+	for shardID, bestShardHeight := range bestShardHeights {
+		finalizedShardHeight := blockchain.GetBestStateShard(shardID).ShardHeight
+		//_, finalizedShardHeight, err := blockchain.GetLatestFinalizedShardBlock(shardID)
+		//if err != nil {
+		//	Logger.log.Errorf("GetLatestFinalizedShardBlock shard %+v, error  %+v", shardID, err)
+		//	continue
+		//}
+		shardBlocks := []*ShardBlock{}
+		// limit maximum number of shard blocks for beacon producer
+		if finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
+			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
+		}
+		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
+			tempShardBlock, err := blockchain.GetFinalizedShardBlockByHeight(shardHeight, shardID)
+			if err != nil {
+				Logger.log.Errorf("GetFinalizedShardBlockByHeight shard %+v, error  %+v", shardID, err)
+				break
+			}
+			shardBlocks = append(shardBlocks, tempShardBlock)
+		}
+		allShardBlocks[shardID] = shardBlocks
+	}
+	return allShardBlocks
+}
+
+func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*ShardBlock, error) {
+	allRequireShardBlocks := make(map[byte][]*ShardBlock)
+	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
+		shardBlocks := []*ShardBlock{}
+		for _, height := range requiredShardBlockHeight {
+			shardBlock, err := blockchain.GetFinalizedShardBlockByHeight(height, shardID)
+			if err != nil {
+				return allRequireShardBlocks, err
+			}
+			shardBlocks = append(shardBlocks, shardBlock)
+		}
+		allRequireShardBlocks[shardID] = shardBlocks
+	}
+	return allRequireShardBlocks, nil
 }
 
 func (blockchain *BlockChain) GetBestStateShardRewardStateDB(shardID byte) *statedb.StateDB {
