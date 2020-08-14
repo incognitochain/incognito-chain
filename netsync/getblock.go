@@ -25,9 +25,9 @@ func (netSync *NetSync) GetBlockByHeight(
 	case proto.BlkType_BlkBc:
 		return bc.GetBeaconBlockByHeightV1(height)
 	case proto.BlkType_BlkShard:
-		return bc.GetFinalizedShardBlockByHeight(height, fromcID)
+		return bc.GetShardBlockByHeightV1(height, fromcID)
 	case proto.BlkType_BlkXShard:
-		blk, err := bc.GetFinalizedShardBlockByHeight(height, fromcID)
+		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
 		if err != nil {
 			return nil, err
 		}
