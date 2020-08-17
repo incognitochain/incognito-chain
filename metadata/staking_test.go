@@ -60,9 +60,9 @@ var (
 )
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE: NOT PASS CONDITION check StakingType
-// @2. RETURN TRUE: PASS CONDITION check StakingType
+// TESTCASE
+// 1. RETURN FALSE: NOT PASS CONDITION check StakingType
+// 2. RETURN TRUE: PASS CONDITION check StakingType
 func TestNewStakingMetadata(t *testing.T) {
 	type args struct {
 		stakingType                  int
@@ -95,12 +95,12 @@ func TestNewStakingMetadata(t *testing.T) {
 }
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE: NOT PASS CONDITION check Base58CheckDeserialize
-// @2. RETURN FALSE: NOT PASS CONDITION check IsInBase58ShortFormat
-// @3. RETURN FALSE: NOT PASS CONDITION check CommitteePublicKey.FromString
-// @4. RETURN FALSE: NOT PASS CONDITION check CommitteePublicKey.CheckSanityData
-// @5. RETURN TRUE: PASS ALL CONDITION
+// TESTCASE
+// 1. RETURN FALSE: NOT PASS CONDITION check Base58CheckDeserialize
+// 2. RETURN FALSE: NOT PASS CONDITION check IsInBase58ShortFormat
+// 3. RETURN FALSE: NOT PASS CONDITION check CommitteePublicKey.FromString
+// 4. RETURN FALSE: NOT PASS CONDITION check CommitteePublicKey.CheckSanityData
+// 5. RETURN TRUE: PASS ALL CONDITION
 func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
 		MetadataBase                 metadata.MetadataBase
@@ -135,16 +135,16 @@ func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 }
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.IsPrivacy
-// @2. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.GetUniqueReceiver
-// @3. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize
-// @4. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.bcr.GetStakingAmountShard() && Stake Shard
-// @5. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.bcr.GetStakingAmountShard() * 3 && Stake Beacon
-// @6. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
-// @7. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize(funderPaymentAddress)
-// @8. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check CommitteePublicKey.FromString
-// @9. RETURN TRUE,TRUE,NO-ERROR : PASS ALL CONDITION
+// TESTCASE
+// 1. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.IsPrivacy
+// 2. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.GetUniqueReceiver
+// 3. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize
+// 4. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.bcr.GetStakingAmountShard() && Stake Shard
+// 5. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.bcr.GetStakingAmountShard() * 3 && Stake Beacon
+// 6. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
+// 7. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize(funderPaymentAddress)
+// 8. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check CommitteePublicKey.FromString
+// 9. RETURN TRUE,TRUE,NO-ERROR : PASS ALL CONDITION
 func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	type fields struct {
 		MetadataBase                 metadata.MetadataBase
@@ -195,11 +195,11 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 }
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE,ERROR: NOT PASS CONDITION check GetAllCommitteeValidatorCandidate
-// @2. RETURN FALSE,ERROR: NOT PASS CONDITION check incognitokey.CommitteeBase58KeyListToStruct
-// @3. RETURN FALSE,ERROR: len(tempStaker) == 0 after filter with
-// @4. RETURN TRUE,NO-ERROR: len(tempStaker) == 1 after filter
+// TESTCASE
+// 1. RETURN FALSE,ERROR: NOT PASS CONDITION check GetAllCommitteeValidatorCandidate
+// 2. RETURN FALSE,ERROR: NOT PASS CONDITION check incognitokey.CommitteeBase58KeyListToStruct
+// 3. RETURN FALSE,ERROR: len(tempStaker) == 0 after filter with
+// 4. RETURN TRUE,NO-ERROR: len(tempStaker) == 1 after filter
 func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)

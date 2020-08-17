@@ -8,9 +8,9 @@ import (
 )
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE: NOT PASS CONDITION check StakingType
-// @2. RETURN TRUE: PASS CONDITION check StakingType
+// TESTCASE
+// 1. RETURN FALSE: NOT PASS CONDITION check StakingType
+// 2. RETURN TRUE: PASS CONDITION check StakingType
 func TestNewStopAutoStakingMetadata(t *testing.T) {
 	type args struct {
 		stopStakingType    int
@@ -39,11 +39,11 @@ func TestNewStopAutoStakingMetadata(t *testing.T) {
 }
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE: NOT PASS CONDITION check Base58CheckDeserialize()
-// @2. RETURN FALSE: NOT PASS CONDITION check CheckSanityData()
-// @3. RETURN FALSE: NOT PASS CONDITION check (stopAutoStakingMetadata.Type != StopAutoStakingMeta)
-// @3. RETURN TRUE: PASS ALL CONDITION
+// TESTCASE
+// 1. RETURN FALSE: NOT PASS CONDITION check Base58CheckDeserialize()
+// 2. RETURN FALSE: NOT PASS CONDITION check CheckSanityData()
+// 3. RETURN FALSE: NOT PASS CONDITION check (stopAutoStakingMetadata.Type != StopAutoStakingMeta)
+// 3. RETURN TRUE: PASS ALL CONDITION
 func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
 		MetadataBase       metadata.MetadataBase
@@ -70,13 +70,13 @@ func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 }
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.IsPrivacy
-// @2. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.GetUniqueReceiver
-// @3. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize
-// @4. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount
-// @5. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check CommitteePublicKey.FromString() && CommitteePublicKey.CheckSanityData()
-// @6. RETURN TRUE,TRUE,NO-ERROR: PASS ALL CONDITION
+// TESTCASE
+// 1. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.IsPrivacy
+// 2. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.GetUniqueReceiver
+// 3. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize
+// 4. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount
+// 5. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check CommitteePublicKey.FromString() && CommitteePublicKey.CheckSanityData()
+// 6. RETURN TRUE,TRUE,NO-ERROR: PASS ALL CONDITION
 func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 	type fields struct {
 		MetadataBase       metadata.MetadataBase
@@ -119,16 +119,16 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 }
 
 // TODO: @lam
-// @TESTCASE
-// @1. RETURN FALSE,ERROR: NOT PASS CONDITION check GetAllCommitteeValidatorCandidateFlattenListFromDatabase
-// @2. RETURN FALSE,ERROR: NOT PASS CONDITION check (common.IndexOfStr(requestedPublicKey, committees) > -1)
-// @3. RETURN FALSE,ERROR: NOT PASS CONDITION check stakingTx[requestedPublicKey]
-// @4. RETURN FALSE,ERROR: NOT PASS CONDITION check common.Hash{}.NewHashFromStr()
-// @5. RETURN FALSE,ERROR: NOT PASS CONDITION check bcr.GetTransactionByHash()
-// @6. RETURN FALSE,ERROR: NOT PASS CONDITION check bytes.Equal(stakingTx.GetSender(), txr.GetSender())
-// @7. RETURN FALSE,ERROR: NOT PASS CONDITION check autoStakingList[stopStakingMetadata.CommitteePublicKey]
-// @8. RETURN FALSE,ERROR: NOT PASS CONDITION check !isAutoStaking
-// @9. RETURN TRUE,NO-ERROR: PASS ALL CONDITION
+// TESTCASE
+// 1. RETURN FALSE,ERROR: NOT PASS CONDITION check GetAllCommitteeValidatorCandidateFlattenListFromDatabase
+// 2. RETURN FALSE,ERROR: NOT PASS CONDITION check (common.IndexOfStr(requestedPublicKey, committees) > -1)
+// 3. RETURN FALSE,ERROR: NOT PASS CONDITION check stakingTx[requestedPublicKey]
+// 4. RETURN FALSE,ERROR: NOT PASS CONDITION check common.Hash{}.NewHashFromStr()
+// 5. RETURN FALSE,ERROR: NOT PASS CONDITION check bcr.GetTransactionByHash()
+// 6. RETURN FALSE,ERROR: NOT PASS CONDITION check bytes.Equal(stakingTx.GetSender(), txr.GetSender())
+// 7. RETURN FALSE,ERROR: NOT PASS CONDITION check autoStakingList[stopStakingMetadata.CommitteePublicKey]
+// 8. RETURN FALSE,ERROR: NOT PASS CONDITION check !isAutoStaking
+// 9. RETURN TRUE,NO-ERROR: PASS ALL CONDITION
 func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	type fields struct {
 		MetadataBase       metadata.MetadataBase
