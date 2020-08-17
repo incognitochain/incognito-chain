@@ -403,6 +403,14 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 			if err != nil {
 				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
+			// Logger.log.Info("[unstake] newB.shardSubstitute[0]:", newB.shardSubstitute[0])
+			// Logger.log.Info("[unstake] newB.shardSubstitute[1]:", newB.shardSubstitute[1])
+			// for _, v := range newB.nextEpochShardCandidate {
+			// 	key, _ := v.ToBase58()
+			// 	Logger.log.Info("[unstake] key:", key)
+			// }
+
 		}
 		if len(tempNewBeaconCandidates) > 0 {
 			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
@@ -468,10 +476,10 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 		newB.beaconSubstitute = append(newB.beaconSubstitute, newBeaconSubstitute...)
 	}
 
-	// committeeChange, err = newB.processUnstakeChange(committeeChange, env)
-	// if err != nil {
-	// 	return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	// }
+	committeeChange, err = newB.processUnstakeChange(committeeChange, env)
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
 
 	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
@@ -854,10 +862,6 @@ func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {
 	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res
 }
-
-// func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
-// 	return committeeChange, nil
-// }
 
 func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) error {
 	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)

@@ -161,8 +161,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
-	Logger.log.Info("[unstake] beaconBlock.Body.Instructions outside", beaconBlock.Body.Instructions)
-
 	newBestState, hashes, committeeChange, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
@@ -272,6 +270,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 	for _, strs := range beaconBlock.Body.Instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
+
 	if hash, ok := verifyHashFromStringArray(tempInstructionArr, beaconBlock.Header.InstructionHash); !ok {
 		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", beaconBlock.Header.InstructionHash, hash))
 	}
@@ -629,8 +628,6 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 			isBeginRandom = true
 		}
 	}
-
-	Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
 		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)

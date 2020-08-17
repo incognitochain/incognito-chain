@@ -241,6 +241,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, err
 	}
+
+	// if len(txInstructions) != 0 {
+	// 	Logger.log.Info("[unstake] txInxtructions:", txInstructions)
+	// }
+
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)

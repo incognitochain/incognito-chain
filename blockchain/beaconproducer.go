@@ -306,6 +306,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
+	if len(instructions) != 0 {
+		Logger.log.Info("[unstake] instructions:", instructions)
+	}
+
 	// extract instructions
 	for _, inst := range instructions {
 		if len(inst) > 0 {
@@ -428,7 +432,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	if len(unstakingPublicKeys) > 0 {
 		tempUnstakeInstruction := instruction.NewUnstakeInstructionWithValue(unstakingPublicKeys)
 		unstakingInstructions = append(unstakingInstructions, tempUnstakeInstruction) // return this in output function
-		// Logger.log.Info("[unstake] unstakingInstructions:", unstakingInstructions)
 	}
 
 	// Create bridge instruction

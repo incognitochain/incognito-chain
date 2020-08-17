@@ -2,13 +2,14 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 //processUnstakeInstruction : process unstake instruction from beacon block
 
-func (b BeaconCommitteeStateV1) processUnstakeInstruction(
+func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	unstakeInstruction *instruction.UnstakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
@@ -16,6 +17,7 @@ func (b BeaconCommitteeStateV1) processUnstakeInstruction(
 	newCommitteeChange := committeeChange
 
 	indexNextEpochShardCandidate := make(map[string]int)
+	nextEpochShardCandidateUnstakeKey := []incognitokey.CommitteePublicKey{}
 
 	for i, v := range b.nextEpochShardCandidate {
 		key, err := v.ToBase58()
@@ -24,8 +26,6 @@ func (b BeaconCommitteeStateV1) processUnstakeInstruction(
 		}
 		indexNextEpochShardCandidate[key] = i
 	}
-
-	Logger.log.Info("[unstake] env.subtituteCandidates:", env.subtituteCandidates)
 
 	for _, committeePublicKey := range unstakeInstruction.PublicKeys {
 		if common.IndexOfStr(committeePublicKey, env.subtituteCandidates) == -1 {
@@ -37,25 +37,23 @@ func (b BeaconCommitteeStateV1) processUnstakeInstruction(
 				}
 
 			} else {
-				Logger.log.Info("[unstake] validators committeePublicKey:", committeePublicKey)
+				Logger.log.Info("[unstake] Node is in active consensus state")
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[committeePublicKey]; ok {
 					b.autoStake[committeePublicKey] = false
 					committeeChange.Unstake = append(committeeChange.Unstake, committeePublicKey)
 				}
 			}
+
 		} else {
-			Logger.log.Info("[unstake] start process delete committee public key")
-			// update stakingtx , commonpool, auto stake. reward receiver
-			// Delete staker info
-			// build rewturnStakingIns for shard handle
+			Logger.log.Info("[unstake] Node is in next epoch candidate")
 
 			if _, ok := b.autoStake[committeePublicKey]; ok {
 				delete(b.autoStake, committeePublicKey)
 			}
 
 			if _, ok := b.stakingTx[committeePublicKey]; ok {
-				delete(b.autoStake, committeePublicKey)
+				delete(b.stakingTx, committeePublicKey)
 			}
 
 			committeePublicKeyStruct := incognitokey.CommitteePublicKey{}
@@ -75,25 +73,12 @@ func (b BeaconCommitteeStateV1) processUnstakeInstruction(
 
 			indexCandidate := indexNextEpochShardCandidate[committeePublicKey]
 			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate[:indexCandidate], b.nextEpochShardCandidate[indexCandidate+1:]...)
-
-			Logger.log.Info("[unstake] commonPoolValidators committeePublicKey:", committeePublicKey)
+			nextEpochShardCandidateUnstakeKey = append(nextEpochShardCandidateUnstakeKey, committeePublicKeyStruct)
 		}
 	}
 
-	// committeePublicKeys := make([]incognitokey.CommitteePublicKey, len(unstakeInstruction.PublicKeys))
-	// for i, v := range unstakeInstruction.PublicKeys {
-	// 	err := committeePublicKeys[i].FromBase58(v)
-	// 	if err != nil {
-	// 		return newCommitteeChange, err
-	// 	}
-	// }
-
-	// err := statedb.DeleteStakerInfo(env.ConsensusStateDB, committeePublicKeys)
-	// if err != nil {
-	// 	return newCommitteeChange, err
-	// }
-
-	return newCommitteeChange, nil
+	err := statedb.DeleteStakerInfo(env.ConsensusStateDB, nextEpochShardCandidateUnstakeKey)
+	return newCommitteeChange, err
 }
 
 func (b *BeaconCommitteeStateV1) getSubtituteCandidates() ([]string, error) {
@@ -160,4 +145,22 @@ func (b *BeaconCommitteeStateV1) getValidators() ([]string, error) {
 	validators = append(validators, candidateShardWaitingForCurrentRandomStr...)
 
 	return validators, nil
+}
+
+func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
+
+	newCommitteeChange := committeeChange
+
+	unstakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.Unstake)
+	if err != nil {
+		return newCommitteeChange, err
+	}
+	err = statedb.StoreStakerInfo(
+		env.ConsensusStateDB,
+		unstakingIncognitoKey,
+		b.rewardReceiver,
+		b.autoStake,
+		b.stakingTx,
+	)
+	return newCommitteeChange, err
 }

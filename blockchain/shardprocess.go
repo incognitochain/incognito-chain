@@ -164,6 +164,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+
 	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	var err2 error
 	defer func() {
@@ -327,6 +328,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
 	}
+
+	if len(txInstructions) != 0 {
+		Logger.log.Info("[unstake] txInstructions:", txInstructions)
+	}
+
 	if !isPreSign {
 		totalInstructions := []string{}
 		for _, value := range txInstructions {
