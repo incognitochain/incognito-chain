@@ -498,7 +498,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 			toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*CrossShardBlock))
 			heightList[i] = b.(*CrossShardBlock).GetHeight()
 		}
-		Logger.log.Infof("GetCrossShardBlocksForShardValidator from shard %v: %v", sid, heightList)
+		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardValidator from shard %v: %v", toShard, sid, heightList)
 
 	}
 	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {

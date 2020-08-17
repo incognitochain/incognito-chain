@@ -632,8 +632,9 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 			heightList[i] = b.(*CrossShardBlock).GetHeight()
 		}
-		Logger.log.Infof("GetCrossShardBlocksForShardProducer from shard %v: %v", sid, heightList)
+		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardProducer from shard %v: %v", toShard, sid, heightList)
 	}
+
 	// allCrossShardBlock => already sort
 	for _, crossShardBlock := range allCrossShardBlock {
 		for _, blk := range crossShardBlock {

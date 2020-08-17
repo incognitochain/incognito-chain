@@ -248,11 +248,13 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 		}
 
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
-			res[byte(i)] = append(res[byte(i)], v)
-			if len(res[byte(i)]) >= MAX_S2B_BLOCK {
+			//if limit has 0 length, we should break now
+			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
 				break
 			}
-			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
+
+			res[byte(i)] = append(res[byte(i)], v)
+			if len(res[byte(i)]) >= MAX_S2B_BLOCK {
 				break
 			}
 		}
@@ -272,6 +274,12 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			if i == int(toShard) {
 				break
 			}
+
+			//if limit has 0 length, we should break now
+			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
+				break
+			}
+
 			requestHeight := lastRequestCrossShard[byte(i)]
 			nextCrossShardInfo := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
 			if nextCrossShardInfo == nil {
@@ -324,10 +332,6 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			}
 
 			if len(res[byte(i)]) >= MAX_CROSSX_BLOCK {
-				break
-			}
-
-			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
 				break
 			}
 		}
