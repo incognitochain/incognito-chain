@@ -248,11 +248,13 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 		}
 
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
-			res[byte(i)] = append(res[byte(i)], v)
-			if len(res[byte(i)]) >= MAX_S2B_BLOCK {
+			//if limit has 0 length, we should break now
+			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
 				break
 			}
-			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
+
+			res[byte(i)] = append(res[byte(i)], v)
+			if len(res[byte(i)]) >= MAX_S2B_BLOCK {
 				break
 			}
 		}
@@ -272,15 +274,22 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			if i == int(toShard) {
 				break
 			}
+
+			//if limit has 0 length, we should break now
+			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
+				break
+			}
+
 			requestHeight := lastRequestCrossShard[byte(i)]
 			nextCrossShardInfo := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
-			//Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 			if nextCrossShardInfo == nil {
 				break
 			}
 			if requestHeight == nextCrossShardInfo.NextCrossShardHeight {
 				break
 			}
+
+			Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
@@ -310,15 +319,19 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 						}
 						//add to result list
 						res[byte(i)] = append(res[byte(i)], blkXShard)
+						//has block in pool, update request pointer
+						lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
 					}
-					lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
 					break
 				}
 			}
-			if len(res[byte(i)]) >= MAX_CROSSX_BLOCK {
+
+			//cannot append crossshard for a shard (no block in pool, validate error) => break process for this shard
+			if requestHeight == lastRequestCrossShard[byte(i)] {
 				break
 			}
-			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
+
+			if len(res[byte(i)]) >= MAX_CROSSX_BLOCK {
 				break
 			}
 		}
@@ -335,7 +348,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(bestViewSha
 	if len(missingBlocks) > 0 {
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		synckerManager.StreamMissingShardToBeaconBlock(ctx, missingBlocks)
-		fmt.Println("debug finish stream missing s2b block")
+		//fmt.Println("debug finish stream missing s2b block")
 
 		s2bPoolLists = synckerManager.GetS2BBlocksForBeaconProducer(bestViewShardHash, list)
 		missingBlocks = compareLists(s2bPoolLists, list)
