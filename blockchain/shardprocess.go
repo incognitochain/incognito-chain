@@ -516,6 +516,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildProducersBlackList(producersBlackList).
+		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
 		Build()
 
