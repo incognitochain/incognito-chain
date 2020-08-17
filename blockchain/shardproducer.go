@@ -627,11 +627,14 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 	// get cross shard block
 	var allCrossShardBlock = make([][]*CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
 	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard, nil) {
-		for _, b := range v {
+		heightList := make([]uint64, len(v))
+		for i, b := range v {
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
+			heightList[i] = b.(*CrossShardBlock).GetHeight()
 		}
+		Logger.log.Infof("GetCrossShardBlocksForShardProducer from shard %v: %v", sid, heightList)
 	}
-	// allCrossShardBlock => already short
+	// allCrossShardBlock => already sort
 	for _, crossShardBlock := range allCrossShardBlock {
 		for _, blk := range crossShardBlock {
 			crossTransaction := CrossTransaction{

@@ -311,13 +311,14 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 						}
 						//add to result list
 						res[byte(i)] = append(res[byte(i)], blkXShard)
+						//has block in pool, update request pointer
 						lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
 					}
 					break
 				}
 			}
 
-			//cannot append crossshard for a shard=> break process for this shard
+			//cannot append crossshard for a shard (no block in pool, validate error) => break process for this shard
 			if requestHeight == lastRequestCrossShard[byte(i)] {
 				break
 			}
@@ -325,6 +326,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			if len(res[byte(i)]) >= MAX_CROSSX_BLOCK {
 				break
 			}
+
 			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
 				break
 			}
