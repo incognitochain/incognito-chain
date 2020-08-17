@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"strconv"
 	"strings"
@@ -50,13 +51,13 @@ func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
 	fmt.Println(string(b))
 	fmt.Println("========== END OUTPUT TOKEN ==========")
 }
+
 func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
 	fmt.Println("========== GET UNSPENT OUTPUT TOKEN ==========")
 	b, _ := tool.GetListUnspentOutputTokens(privKey, tokenID)
 	fmt.Println(string(b))
 	fmt.Println("========== END UNSPENT OUTPUT TOKEN ==========")
 }
-
 
 func TransferToken(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID, amount string) {
 	fmt.Println("========== TRANSFER TOKEN ==========")
@@ -80,7 +81,10 @@ func privateKeyToPaymentAddress(privkey string) string {
 }
 
 func privateKeyToPublicKey(privkey string) []byte {
-	keyWallet, _ := wallet.Base58CheckDeserialize(privkey)
+	keyWallet, err := wallet.Base58CheckDeserialize(privkey)
+	if err != nil {
+		panic(err)
+	}
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	return keyWallet.KeySet.PaymentAddress.Pk
 }
@@ -203,6 +207,70 @@ func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== END PDE TRADE TOKEN  ==========")
 }
 
+
+func sendRawTxNoPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentString string, txType int64){
+	fmt.Println("========== FAKE TRANSACTION ==========")
+	if len(paymentString) < 2{
+		keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
+		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		paymentString = keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	}
+	b, _ := tool.SendTxNoPrivacyFake(privKey, tokenID, paymentString, txType, 1)
+	fmt.Println(string(b))
+	fmt.Println("========== FAKE TRANSACTION FINISH ==========")
+}
+
+func sendRawTxPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentString string, txType int64){
+	fmt.Println("========== FAKE TRANSACTION ==========")
+	b, err := tool.SendTxPrivacyFake(privKey, tokenID, paymentString, txType, 1)
+	if err != nil{
+		panic(err)
+	}
+	fmt.Println(string(b))
+	fmt.Println("========== FAKE TRANSACTION FINISH ==========")
+}
+
+func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string){
+	fmt.Println("========== GET LIST RANDOM COMMITMENTS ==========")
+	outCoins, err := tool.GetPlainOutputCoin(privKey, tokenID)
+	if err != nil {
+		panic(err)
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentString := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+
+	if err !=nil{
+		panic(err)
+	}
+
+	b, err := tool.GetRandomCommitment(common.PRVIDStr, paymentString, outCoins)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(b))
+
+	fmt.Println("========== GET LIST RANDOM COMMITMENT FINISH ==========")
+}
+
+//Blockchain
+func GetBlockchainInfo(tool *debugtool.DebugTool){
+	fmt.Println("========== GET BLOCKCHAIN INFO ==========")
+	b, _ := tool.GetBlockchainInfo()
+	fmt.Println(string(b))
+	fmt.Println("========== END GET BLOCKCHAIN INFO ==========")
+}
+
+func GetShardIDFromPrivateKey(privateKey string) byte{
+	pubkey := privateKeyToPublicKey(privateKey)
+	return common.GetShardIDFromLastByte(pubkey[len(pubkey)-1])
+}
+
+//Comment the init function in blockchain/constants.go to run the debug tool.
 func main() {
 	privateKeys := []string{
 		"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
@@ -236,6 +304,7 @@ func main() {
 
 	tool := new(debugtool.DebugTool).InitLocal("9334")
 
+	//tool := new(debugtool.DebugTool).InitDevNet()
 	//InitToken(tool, privateKeys[0], "something")
 
 	//a := ListTokens(tool)
@@ -257,6 +326,19 @@ func main() {
 		if args[0] == "port" {
 			tool = SwitchPort(args[1])
 		}
+		if args[0] == "inittestnet"{
+			tool = new(debugtool.DebugTool).InitTestnet()
+		}
+		if args[0] == "initdevnet"{
+			tool = new(debugtool.DebugTool).InitDevNet()
+		}
+		if args[0] == "initmainnet"{
+			tool = new(debugtool.DebugTool).InitMainnet()
+		}
+		if args[0] == "initlocal"{
+			tool = new(debugtool.DebugTool).InitLocal(args[1])
+		}
+
 		if args[0] == "convert" {
 			index, err := strconv.ParseInt(args[1], 10, 32)
 			if err != nil {
@@ -279,6 +361,10 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 				panic(err)
+			}
+			if index >= int64(len(privateKeys)){
+				fmt.Println("Cannot find the private key")
+				continue
 			}
 			GetPRVBalance(tool, privateKeys[index])
 		}
@@ -391,15 +477,20 @@ func main() {
 			}
 			GetOutputToken(tool, privateKeys[index], args[2])
 		}
-		if args[0] == "unspentouttoken" {
-			if len(args) < 3 {
-				panic("Not enough param for unspentouttoken")
+		if args[0] == "uot" {
+			if len(args) < 2 {
+				fmt.Println("Not enough param for unspentouttoken")
+				continue
+			}
+			tokenID := common.PRVIDStr
+			if len(args) > 3{
+				tokenID = args[2]
 			}
 			index, err := strconv.ParseInt(args[1], 10, 32)
 			if err != nil {
 				panic(err)
 			}
-			GetUnspentOutputToken(tool, privateKeys[index], args[2])
+			GetUnspentOutputToken(tool, privateKeys[index], tokenID)
 		}
 		// PDE
 		if args[0] == "pdecontributeprv" {
@@ -449,6 +540,61 @@ func main() {
 				panic(err)
 			}
 			DoubleSpendPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
+		}
+
+		if args[0] == "sendraw"{
+			/*
+			args[1] = 0/1 => non-privacy/privacy transaction
+			args[2]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
+			args[3]: sender index
+			args[4]: receiver address (index or full paymentAddress)
+			args[5]: tokenID (optional)
+			*/
+			if len(args) < 5 {
+				fmt.Println("Need at least 5 arguments")
+				continue
+			}
+			flagPrivacy, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			txType, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			idxSender, err := strconv.ParseInt(args[3], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			var paymentAddress string
+			if len(args[4]) < 3{
+				idxReceiver, err := strconv.ParseInt(args[4], 10, 32)
+				if err != nil{
+					fmt.Println(err)
+					continue
+				}
+				paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
+			}else{
+				paymentAddress = args[3]
+			}
+
+			tokenID := common.PRVIDStr
+			if len(args) > 5 {
+				tokenID = args[4]
+			}
+
+			if flagPrivacy == 0{
+				sendRawTxNoPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			}else{
+				sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			}
+
 		}
 	}
 }

@@ -186,7 +186,7 @@ func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, 
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "listoutputtokens",
+		"method": "listoutputcoins",
 		"params": [
 			0,
 			999999,
