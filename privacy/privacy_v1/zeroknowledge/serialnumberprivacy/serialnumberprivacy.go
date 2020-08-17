@@ -122,6 +122,16 @@ func (proof SNPrivacyProof) GetComSK() *operation.Point {
 	return proof.stmt.comSK
 }
 
+func (proof SNPrivacyProof) GetSN() *operation.Point {
+	return proof.stmt.sn
+}
+
+func (proof SNPrivacyProof) GetComInput() *operation.Point {
+	return proof.stmt.comInput
+}
+
+
+
 // Set sets Statement
 func (stmt *SerialNumberPrivacyStatement) Set(
 	SN *operation.Point,

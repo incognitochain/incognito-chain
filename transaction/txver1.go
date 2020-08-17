@@ -180,7 +180,7 @@ func (tx *TxVersion1) Init(paramsInterface interface{}) error {
 		return errors.New("params of tx Init is not TxPrivacyInitParam")
 	}
 
-	Logger.Log.Debugf("CREATING TX........\n")
+	//Logger.Log.Debugf("CREATING TX........\n")
 	if err := validateTxParams(params); err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func (tx *TxVersion1) proveAndSignCore(params *TxPrivacyInitParams, paymentWitne
 }
 
 func (tx *TxVersion1) prove(params *TxPrivacyInitParams) error {
-	// Prepare paymentWitness params
+	// PrepareTransaction paymentWitness params
 	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParam(params)
 	if err != nil {
 		return err
@@ -342,6 +342,13 @@ func (tx *TxVersion1) sign() error {
 	tx.Sig = signature.Bytes()
 
 	return nil
+}
+
+func (tx *TxVersion1) Sign(sigPrivakey []byte) error {//For testing-purpose only, remove when deploy
+	if sigPrivakey != nil{
+		tx.sigPrivKey = sigPrivakey
+	}
+	return tx.sign()
 }
 
 func (tx *TxVersion1) proveASM(params *TxPrivacyInitParamsForASM) error {

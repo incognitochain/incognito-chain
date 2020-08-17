@@ -34,6 +34,10 @@ func (proof SNNoPrivacyProof) GetVKey() *operation.Point {
 	return proof.stmt.vKey
 }
 
+func (proof SNNoPrivacyProof) GetOutput() *operation.Point{
+	return proof.stmt.output
+}
+
 
 func (proof SNNoPrivacyProof) ValidateSanity() bool {
 	if !proof.stmt.output.PointValid() {

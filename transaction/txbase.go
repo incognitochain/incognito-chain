@@ -57,6 +57,10 @@ func NewTransactionFromParams(params *TxPrivacyInitParams) (metadata.Transaction
 	return nil, errors.New("Cannot create new transaction from params, ver is wrong")
 }
 
+func (tx TxBase) ClearCacheHash(){//For testing-purpose only, remove when deploy
+	tx.cachedHash = nil
+}
+
 // Function that choose which version to create metadata Transaction
 
 type TxPrivacyInitParams struct {
@@ -482,9 +486,9 @@ func (tx TxBase) CheckTxVersion(maxTxVersion int8) bool {
 
 func (tx *TxBase) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
 	var err error
-	Logger.Log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
+	//Logger.Log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
 	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
-		Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
+		//Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.senderSK
 		if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
 			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
