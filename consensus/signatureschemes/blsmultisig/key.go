@@ -97,7 +97,7 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 // 	return apk
 // }
 
-func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
+func APKGen(committee []PublicKey, idx []int) (*bn256.G2, []*bn256.G2) {
 	apkTmpList := make([]*bn256.G2, len(idx))
 
 	// pre-calculate for combined committee
@@ -125,7 +125,7 @@ func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
 	for i := 1; i < len(idx); i++ {
 		res.Add(res, apkTmpList[i])
 	}
-	return res
+	return res, apkTmpList
 }
 
 func AiGen(listPKBytes []PublicKey, id int) *big.Int {

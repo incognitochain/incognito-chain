@@ -3,6 +3,7 @@ package blsmultisig
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -48,10 +49,12 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 
 	for _, idx := range signersIdx {
 		if (idx < 0) || (idx >= len(committee)) {
+			fmt.Printf("[blssignature] Verify return Error %v\n", NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message)))
 			return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
 		}
 	}
 	if len(signersIdx) > len(committee) || (len(committee) < 1) {
+		fmt.Printf("[blssignature] Verify return Error %v\n", NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message)))
 		return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
 	}
 	wg := sync.WaitGroup{}
@@ -61,6 +64,9 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 	lPair := new(bn256.GT)
 	rPair := new(bn256.GT)
 	sigPn := new(bn256.G1)
+	apkTmp := new(bn256.G2)
+	apk := new(bn256.G2)
+	apkTmpList := []*bn256.G2{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -68,6 +74,7 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 		gG2Pn.ScalarBaseMult(big.NewInt(1))
 		sigPn, err = DecmprG1(sig)
 		if err != nil {
+			fmt.Printf("[blssignature] Verify return Error %v\n", err)
 			return
 			// errChan <- err
 			// return false, NewBLSSignatureError(DecompressFromByteErr, err)
@@ -77,7 +84,8 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		apk := APKGen(committee, signersIdx)
+		apk, apkTmpList = APKGen(committee, signersIdx)
+		apkTmp = apk
 		dataPn := B2G1P(data)
 		rPair = bn256.Pair(dataPn, apk)
 	}()
@@ -89,10 +97,15 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 	// case <-done:
 	// case err := <-errChan:
 	if err != nil {
+		fmt.Printf("[blssignature] Verify return Error %v\n", NewBLSSignatureError(DecompressFromByteErr, err))
 		return false, NewBLSSignatureError(DecompressFromByteErr, err)
 	}
 	// }
 	if !bytes.Equal(lPair.Marshal(), rPair.Marshal()) {
+		fmt.Printf("[blssignature] Verify return false. Env: sig: %v, data: %v, \n signIdx: %v, committee %v\n, apk %v\n", sig, data, signersIdx, committee, apkTmp.Marshal())
+		for _, apk := range apkTmpList {
+			fmt.Printf("[blssignature] %v\n", apk.Marshal())
+		}
 		return false, nil
 	}
 	// fmt.Printf("ConsLog %v %v %v %v %v %v %v\n", e1.Seconds(), e2.Seconds(), e3.Seconds(), e4.Seconds(), e5.Seconds(), e6.Seconds(), e7.Seconds())

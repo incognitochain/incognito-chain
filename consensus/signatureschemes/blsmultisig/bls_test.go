@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -293,4 +294,93 @@ func Test_SpecialCase(t *testing.T) {
 	// 	fmt.Println("err 4", err)
 	// }
 	fmt.Println(Verify(sig, blkHash, []int{1, 2, 3}, committee))
+}
+
+/*
+return:
+	@param1: blkHash
+	@param2: wantedSig
+	@param2: listPublicKey
+	@param3: listPrivateKey
+	@param4: signIdx
+*/
+func BuildTestnetEnv(i int) ([]byte, []byte, []PublicKey, [][]byte, []int) {
+	switch i {
+	case 0:
+		pks := []PublicKey{}
+		sks := [][]byte{}
+		blkHash := "431907cd7ddf72e44b89474fcffc75f89ae3105abce972333e97a4a6e235db53"
+		sig := []byte{27, 241, 204, 219, 4, 32, 33, 173, 251, 220, 80, 176, 177, 97, 231, 72, 144, 32, 42, 161, 72, 53, 200, 190, 53, 29, 221, 148, 52, 75, 101, 143}
+		sigIdx := []int{1, 2, 3, 5, 6}
+		listPrivateSeed := []string{
+			"12477VBjQHsNH6wVhXhX6cRzL5yNcGw4HLHjvUjf4wibXVmNPsH",
+			"1rKUZeieTgQqgcdEpYGc4krQFNu4Kmf4P5iXMuTiqKXKHEEWmh",
+			"12Ms69atUaTdm2GfJFf49Q5tuFowT8xWQSACk7nEPzyT47ptaRz",
+			"12m4dq4GAtxWZU7R9pm6AifxLXCQKwgiFTWAHo3JtK4SDcGKjK3",
+			"1S98qbp22q1nRmkXaq3F7xF76H1fonm82wWb7V9b3eT21yeFQ4",
+			"1fGk4mcjHza1T9s9PihPhoPquA5RJVGGzSVy9aPWfw544SPgKQ",
+			"19Vcd7kAWyN7N8VpAeXfdbHmAeYiXaprPyxi389jVnx89eAz7h",
+		}
+		for _, s := range listPrivateSeed {
+			seed, _, _ := base58.Base58Check{}.Decode(s)
+			skRaw, pkRaw := KeyGen(seed)
+			sks = append(sks, SKBytes(skRaw))
+			pks = append(pks, PKBytes(pkRaw))
+		}
+		rawHash, _ := common.Hash{}.NewHashFromStr(blkHash)
+		return rawHash.Bytes(), sig, pks, sks, sigIdx
+	}
+	return []byte{}, []byte{}, []PublicKey{}, [][]byte{}, []int{}
+}
+
+func TestTestnet(t *testing.T) {
+	type args struct {
+		data      []byte
+		skBytes   [][]byte
+		signIdx   []int
+		committee []PublicKey
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name:    "Testnet 01",
+			wantErr: false,
+		},
+	}
+	for j, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			allSig := [][]byte{}
+			tt.args.data, tt.want, tt.args.committee, tt.args.skBytes, tt.args.signIdx = BuildTestnetEnv(j)
+			for _, i := range tt.args.signIdx {
+				got, err := Sign(tt.args.data, tt.args.skBytes[i], i, tt.args.committee)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Sign() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				allSig = append(allSig, got)
+			}
+			got, err := combine(allSig)
+			fmt.Println(got)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Sign() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Sign() = %v, want %v", got, tt.want)
+			}
+			valid, err := Verify(got, tt.args.data, tt.args.signIdx, tt.args.committee)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Sign() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !valid {
+				t.Errorf("Sign() = %v, want %v", err, true)
+				return
+			}
+		})
+	}
 }
