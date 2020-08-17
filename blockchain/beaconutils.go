@@ -196,6 +196,12 @@ func CreateBeaconSwapActionForKeyListV2(
 	return swapInstruction, newPendingValidator, append(newBeaconCommittees, remainBeaconCommittees...)
 }
 
+// swap return argument
+// #1 remaining pendingValidators
+// #2 new currentValidators
+// #3 swapped out validator
+// #4 incoming validator
+// #5 error
 func swap(
 	badPendingValidators []string,
 	goodPendingValidators []string,

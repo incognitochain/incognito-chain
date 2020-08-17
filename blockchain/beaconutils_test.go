@@ -94,12 +94,19 @@ func TestUtils(t *testing.T) {
 	}
 }
 
+// TODO: @lam
+// TESTCASE
+// Add 4 more cases, Result and Expected Result MUST BE PRE-CALCULATED Somewhere ELSE
 func TestShuffleShardCandidate(t *testing.T) {
 	shuffledCandiates := shuffleShardCandidate(candidates, randomNumber)
 	if !reflect.DeepEqual(shuffledCandiates, expectedShuffledCandidates) {
 		log.Fatalf("Expect shuffled candidates to be %+v \n but get %+v", priorityKeys, shuffledCandiates)
 	}
 }
+
+// TODO: @lam
+// TESTCASE
+// Add 4 more cases, Result and Expected Result MUST BE PRE-CALCULATED Somewhere ELSE
 func TestAssignShardCandidate(t *testing.T) {
 	numberOfPendingValidator := make(map[byte]int)
 	numberOfPendingValidator[0] = 0
@@ -136,5 +143,138 @@ func TestAssignShardCandidate(t *testing.T) {
 				t.Fatalf("Expect %+v in shard 0 but get %+v", "121VhftSAygpEJZ6i9jGk9a4wsKYVdTBhFsvZ4jwhzaWjFsondoUtyYpqF3hjWmPEUvMJF1Wh9NMhRVGaLYW8JtmS2JcP3Zq1L2AvYjYJaWm5CRqoYPz3DUEeJFSbUDdZPcp5YAL3FizX3J192zR3kWA967p6cZUgVP6e9LbHBdQBFGCQYRYKw8DNRCUzophTmoFeFwjWJF3EuXAWX2gv5ASj2Nem9YytNtjhZHCRS7Vz8pvgLdMJVa7B9fpS6oBV7nS4LWdeZc8NPC9VGKbTa1MCy7YkXfjbHfKpowEArnB9CLaLpWmSiaZruTiRxtZQZkU9z3YCMZW2dW5SHmwMGEseu6WwPPqgLz32tazKzNzHgiAJp561pxfCm7HF4r6VxtTqPKe8gjwLfDZqw3X2ew6rQ8Vo2csnjWrSQJAxYuMeinW", candidates)
 			}
 		}
+	}
+}
+
+// TODO: @lam
+// NOTICE: badPendingValidators is always empty
+// TESTCASE
+// 1. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset is zero
+// 2. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset > maxCommittee
+// 3. Push all pending validator to producer list,NO-ERROR (maxCommittee - len(currentGoodProducers)) >= offset
+// 4. Push some pending validator to producer list and swap the remaining offset (maxCommittee - len(currentGoodProducers)) <= offset
+// 5. Only swap,NO-ERROR len(goodPendingValidators) < offset, (maxCommittee - len(currentGoodProducers)) == 0
+// 6. Only swap,NO-ERROR len(goodPendingValidators) > offset, (maxCommittee - len(currentGoodProducers)) == 0
+func Test_swap(t *testing.T) {
+	type args struct {
+		badPendingValidators  []string
+		goodPendingValidators []string
+		currentGoodProducers  []string
+		currentBadProducers   []string
+		maxCommittee          int
+		offset                int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		want1   []string
+		want2   []string
+		want3   []string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2, got3, err := swap(tt.args.badPendingValidators, tt.args.goodPendingValidators, tt.args.currentGoodProducers, tt.args.currentBadProducers, tt.args.maxCommittee, tt.args.offset)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("swap() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("swap() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("swap() got1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("swap() got2 = %v, want %v", got2, tt.want2)
+			}
+			if !reflect.DeepEqual(got3, tt.want3) {
+				t.Errorf("swap() got3 = %v, want %v", got3, tt.want3)
+			}
+		})
+	}
+}
+
+// TODO: @lam
+// NOTICE: badPendingValidators is always empty, ignore lines 283-304, code not reached in reality
+// TESTCASE
+// 1. Swap when currentValidator length reach maxCommittee len(currentGoodProducers) == maxCommittee, NO-ERROR
+// 2 Swap when currentValidator length reach maxCommittee and offset > goodPendingValidatorsLen, NO-ERROR
+// 3. Swap when currentValidator length reach maxCommittee and offset < goodPendingValidatorsLen, NO-ERROR
+func TestSwapValidator(t *testing.T) {
+	type args struct {
+		pendingValidators  []string
+		currentValidators  []string
+		maxCommittee       int
+		minCommittee       int
+		offset             int
+		producersBlackList map[string]uint8
+		swapOffset         int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		want1   []string
+		want2   []string
+		want3   []string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2, got3, err := SwapValidator(tt.args.pendingValidators, tt.args.currentValidators, tt.args.maxCommittee, tt.args.minCommittee, tt.args.offset, tt.args.producersBlackList, tt.args.swapOffset)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SwapValidator() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SwapValidator() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("SwapValidator() got1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("SwapValidator() got2 = %v, want %v", got2, tt.want2)
+			}
+			if !reflect.DeepEqual(got3, tt.want3) {
+				t.Errorf("SwapValidator() got3 = %v, want %v", got3, tt.want3)
+			}
+		})
+	}
+}
+
+// TODO: @lam
+// TESTCASE
+// 1. EMPTY-STRING-ARRAY,ERROR NOT PASS CONDITION len(removedValidators) > len(validators)
+// 2. 3 cases remove success
+func TestRemoveValidator(t *testing.T) {
+	type args struct {
+		validators        []string
+		removedValidators []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := RemoveValidator(tt.args.validators, tt.args.removedValidators)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RemoveValidator() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveValidator() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
