@@ -165,10 +165,24 @@ func TransferPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount strin
 }
 
 func DoubleSpendPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
-	fmt.Println("========== TRANSFER PRV  ==========")
+	fmt.Println("========== TRANSFER PRV (DOUBLE SPEND - TEST) ==========")
 	b, _ := tool.CreateDoubleSpend(fromPrivKey, toPrivKey, amount)
 	fmt.Println(string(b))
-	fmt.Println("========== END TRANSFER PRV  ==========")
+	fmt.Println("========== END TRANSFER PRV (DOUBLE SPEND - TEST) ==========")
+}
+
+func DoCreateDuplicateInputTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
+	fmt.Println("========== TRANSFER PRV (DUP INPUT - TEST) ==========")
+	b, _ := tool.CreateDuplicateInput(fromPrivKey, toPrivKey, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV (DUP INPUT - TEST) ==========")
+}
+
+func DoCreateOutGtInTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
+	fmt.Println("========== TRANSFER PRV (OUT > IN - TEST) ==========")
+	b, _ := tool.CreateOutGtIn(fromPrivKey, toPrivKey, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV (OUT > IN - TEST) ==========")
 }
 
 // PDE
@@ -540,6 +554,28 @@ func main() {
 				panic(err)
 			}
 			DoubleSpendPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
+		}
+		if args[0] == "dupinput" {
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoCreateDuplicateInputTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
+		}
+		if args[0] == "outgtin" {
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoCreateOutGtInTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
 		}
 
 		if args[0] == "sendraw"{
