@@ -335,7 +335,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 	return CountResult{Success: success, Fail: fail}, nil
 }
 
-func (httpServer *HttpServer) handleTestCreateDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleTestBuildDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
@@ -348,7 +348,7 @@ func (httpServer *HttpServer) handleTestCreateDoubleSpendTx(params interface{}, 
 	}
 
 	var result []jsonresult.CreateTransactionResult
-	for i:=0;i<2;i++{
+	for i,_ := range txs{
 		jsonBytes, err := json.Marshal(txs[i])
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -364,5 +364,49 @@ func (httpServer *HttpServer) handleTestCreateDoubleSpendTx(params interface{}, 
 	// 	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	// }
 	// result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleTestBuildDuplicateInputTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	txs, err := httpServer.txService.TestBuildDuplicateInputTransaction(createRawTxParam, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []jsonresult.CreateTransactionResult
+	for i,_ := range txs{
+		jsonBytes, err := json.Marshal(txs[i])
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleTestBuildOutGtInTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	txs, err := httpServer.txService.TestBuildOutGtInTransaction(createRawTxParam, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []jsonresult.CreateTransactionResult
+	for i,_ := range txs{
+		jsonBytes, err := json.Marshal(txs[i])
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+	}
 	return result, nil
 }
