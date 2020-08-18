@@ -213,17 +213,18 @@ func pickUpCustodians(
 				},
 			)
 
-			//update custodian state
-			err = UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, custodianItem.Key, metadata.PTokenId, neededCollaterals)
-			if err != nil {
-				return nil, err
-			}
-			if pTokenCustodianCanHold == remainPTokens {
+			remainPTokens = remainPTokens - pTokenCustodianCanHold
+			if remainPTokens == 0 {
 				break
 			}
-			remainPTokens = remainPTokens - pTokenCustodianCanHold
 		}
 	}
+
+	if remainPTokens  > 0 {
+		Logger.log.Errorf("Not enough custodians for porting amount %v", metadata.RegisterAmount)
+		return nil, fmt.Errorf("Not enough custodians for porting amount %v", metadata.RegisterAmount)
+	}
+
 	return custodians, nil
 }
 
