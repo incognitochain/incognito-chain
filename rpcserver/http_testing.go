@@ -54,8 +54,19 @@ func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, c
 
 func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	shardID := byte(arrayParams[0].(float64))
-	epoch := uint64(arrayParams[1].(float64))
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	tempShardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+	tempEpoch, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"))
+	}
+	shardID := byte(tempShardID)
+	epoch := uint64(tempEpoch)
 	rewardStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconRewardStateDB()
 	amount, err := statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, shardID, common.PRVCoinID)
 	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)

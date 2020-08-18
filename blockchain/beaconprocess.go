@@ -88,8 +88,9 @@ CONTINUE_VERIFY:
 // var bcAllTime time.Duration
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, shouldValidate bool) error {
-	blockHash := beaconBlock.Hash()
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
+	blockHash := beaconBlock.Hash().String()
+	preHash := beaconBlock.Header.PreviousBlockHash
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v \nPrev hash:", beaconBlock.Header.Height, blockHash, preHash)
 	// if beaconBlock.GetHeight() == 2 {
 	// 	bcTmp = 0
 	// 	bcStart = time.Now()
@@ -115,7 +116,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	}
 
 	//get view that block link to
-	preHash := beaconBlock.Header.PreviousBlockHash
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
 		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
@@ -135,6 +135,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
+
 	// Verify beaconBlock with previous best state
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -142,7 +143,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true, blockchain.config.ChainParams.Epoch); err != nil {
 			return err
 		}
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, curView.BeaconCommittee); err != nil {
+		if err := blockchain.BeaconChain.ValidateBlockSignatures(beaconBlock, curView.BeaconCommittee); err != nil {
 			return err
 		}
 	} else {
@@ -407,6 +408,32 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 
 	for chainID, shardBlocks := range allShardBlocks {
+		Logger.log.Infof("Beacon Validator Got %+v Shard Block from shard %+v: ", len(shardBlocks), chainID)
+		currentCommittee := curView.GetAShardCommittee(byte(chainID))
+		for index, shardBlock := range shardBlocks {
+			if index == 0 && shardBlock.GetHeight() > 2 {
+				if !reflect.DeepEqual(curView.BestShardHash[byte(chainID)].String(), shardBlock.GetPrevHash().String()) {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block validator error! Hash chain not link "))
+				}
+			}
+
+			if index < len(shardBlocks)-1 {
+				if !reflect.DeepEqual(shardBlock.Hash().String(), shardBlocks[index+1].GetPrevHash().String()) {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block validator error! Hash chain not correct %v %v", shardBlock.Hash(), shardBlocks[index+1].GetPrevHash()))
+				}
+				if shardBlock.GetHeight() != shardBlocks[index+1].GetHeight()-1 {
+					return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Get S2B for block validator error! Height not correct"))
+				}
+			}
+
+			err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee)
+			if err != nil {
+				Logger.log.Infof("Beacon Validator/ Validate Agg Signature for shard %+v, block height %+v, err %+v", chainID, shardBlock.Header.Height, err)
+				return NewBlockChainError(GetShardToBeaconBlocksError, err)
+			}
+			Logger.log.Error("Add S2B block for shard", chainID, "height", shardBlock.GetHeight(), shardBlock.Hash().String())
+		}
+
 		shardID := byte(chainID)
 		shardStates := beaconBlock.Body.ShardState[shardID]
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
