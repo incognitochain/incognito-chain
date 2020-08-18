@@ -633,7 +633,7 @@ func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amoun
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testbuilddoublespend",
+		"method": "testBuildDoubleSpend",
 		"params": [
 			"%s",
 			{
@@ -658,7 +658,7 @@ func (this *DebugTool) CreateDuplicateInput(privKeyA string, privKeyB string, am
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testbuildduplicateinput",
+		"method": "testBuildDuplicateInput",
 		"params": [
 			"%s",
 			{
@@ -683,7 +683,32 @@ func (this *DebugTool) CreateOutGtIn(privKeyA string, privKeyB string, amount st
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testbuildoutgtin",
+		"method": "testBuildOutGtIn",
+		"params": [
+			"%s",
+			{
+				"%s": %s
+			},
+			1,
+			-1
+		],
+		"id": 1
+	}`, privKeyA, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) CreateReceiverExists(privKeyA string, amount string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyA)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "testBuildReceiverExists",
 		"params": [
 			"%s",
 			{

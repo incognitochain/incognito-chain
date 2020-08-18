@@ -185,6 +185,13 @@ func DoCreateOutGtInTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount
 	fmt.Println("========== END TRANSFER PRV (OUT > IN - TEST) ==========")
 }
 
+func DoCreateReceiverExistsTx(tool *debugtool.DebugTool, fromPrivKey, amount string) {
+	fmt.Println("========== TRANSFER PRV (OTA EXISTS - TEST) ==========")
+	b, _ := tool.CreateReceiverExists(fromPrivKey, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV (OTA EXISTS - TEST) ==========")
+}
+
 // PDE
 func PDEContributePRV(tool *debugtool.DebugTool, privKey, amount string) {
 	fmt.Println("========== PDE CONTRIBUTE PRV  ==========")
@@ -576,6 +583,13 @@ func main() {
 				panic(err)
 			}
 			DoCreateOutGtInTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
+		}
+		if args[0] == "recvexists" {
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoCreateReceiverExistsTx(tool, privateKeys[indexFrom], args[2])
 		}
 
 		if args[0] == "sendraw"{
