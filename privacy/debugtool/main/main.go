@@ -245,9 +245,10 @@ func sendRawTxNoPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentStri
 func sendRawTxPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentString string, txType int64){
 	fmt.Println("========== FAKE TRANSACTION ==========")
 	b, err := tool.SendTxPrivacyFake(privKey, tokenID, paymentString, txType, 1)
-	if err != nil{
-		panic(err)
-	}
+	//if err != nil{
+	//	return
+	//}
+	fmt.Println("err =", err)
 	fmt.Println(string(b))
 	fmt.Println("========== FAKE TRANSACTION FINISH ==========")
 }
@@ -636,7 +637,7 @@ func main() {
 
 			tokenID := common.PRVIDStr
 			if len(args) > 5 {
-				tokenID = args[4]
+				tokenID = args[5]
 			}
 
 			if flagPrivacy == 0{
@@ -644,7 +645,60 @@ func main() {
 			}else{
 				sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
 			}
+		}
 
+		if args[0] == "sendrawtoken"{
+			/*
+				args[1] = 0/1 => non-privacy/privacy transaction
+				args[2]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
+				args[3]: sender index
+				args[4]: receiver address (index or full paymentAddress)
+				args[5]: tokenID (optional)
+			*/
+			if len(args) < 5 {
+				fmt.Println("Need at least 5 arguments")
+				continue
+			}
+			flagPrivacy, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			txType, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			idxSender, err := strconv.ParseInt(args[3], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			var paymentAddress string
+			if len(args[4]) < 3{
+				idxReceiver, err := strconv.ParseInt(args[4], 10, 32)
+				if err != nil{
+					fmt.Println(err)
+					continue
+				}
+				paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
+			}else{
+				paymentAddress = args[3]
+			}
+
+			tokenID := common.PRVIDStr
+			if len(args) > 5 {
+				tokenID = args[5]
+			}
+
+			if flagPrivacy == 0{
+				sendRawTxNoPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			}else{
+				sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			}
 		}
 	}
 }
