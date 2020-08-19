@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"strings"
 )
 
 func GetStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {

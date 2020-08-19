@@ -108,7 +108,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	currentShardCandidate := beaconBestState.GetCandidateShardWaitingForCurrentRandom()
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions, unstakingInstructions,
-		currentShardCandidate, bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
+		currentShardCandidate, bridgeInstructions, acceptedRewardInstructions,
+		blockchain.config.ChainParams.Epoch,
 		blockchain.config.ChainParams.RandomTime, blockchain,
 	)
 	if err != nil {
@@ -128,11 +129,14 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============End Build Body================
 	//============Update Beacon Best State================
 	// Process new block with beststate
-	_, hashes, _, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	_, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
 	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
 	if err != nil {
 		return nil, err
 	}
+
+	beaconBlock.Body.Instructions = append(beaconBlock.Body.Instructions, incurredInstructions...)
+
 	//============Build Header Hash=============
 	// calculate hash
 	// Shard state hash

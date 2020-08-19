@@ -100,8 +100,11 @@ type BeaconCommitteeEngine interface {
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()
-	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash,
-		*committeestate.CommitteeChange, error)
+	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (
+		*committeestate.BeaconCommitteeStateHash,
+		*committeestate.CommitteeChange,
+		[][]string,
+		error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string)

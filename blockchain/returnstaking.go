@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -179,7 +180,8 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		beaconConsensusStateDB = nil
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == instruction.SWAP_ACTION {
+			switch l[0] {
+			case instruction.SWAP_ACTION:
 				if beaconConsensusStateDB == nil {
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
 					if err != nil {
@@ -245,6 +247,14 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						StakingAmount: txMeta.StakingAmountShard,
 					}
 				}
+			case instruction.RETURN_ACTION:
+				//@tin shard receive return staking ins here and also process it here
+				returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(l)
+				if err != nil {
+					Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", returnStakingIns, err)
+					continue
+				}
+				Logger.log.Info("[unstake] returnStakingIns:", returnStakingIns)
 			}
 		}
 	}
