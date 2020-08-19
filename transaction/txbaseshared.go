@@ -165,7 +165,7 @@ func validateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever met
 		if !ok || err != nil {
 			s := ""
 			if !ok {
-				s = "ValidateSanity Proof got error: ok = false\n"
+				s = fmt.Sprintf("ValidateSanity Proof got error: ok = false; %s\n", err.Error())
 			} else {
 				s = fmt.Sprintf("ValidateSanity Proof got error: error %s\n", err.Error())
 			}
