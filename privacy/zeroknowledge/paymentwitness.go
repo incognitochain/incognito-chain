@@ -111,7 +111,10 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.privateKey, randInputSK, privacy.PedersenPrivateKeyIndex)
 	wit.comInputSecretKey = new(privacy.Point).Set(cmInputSK)
 
-	randInputShardID := privacy.RandomScalar()
+	// from BCHeightBreakPointFixRandShardCM, we fixed the randomness for shardID commitment
+	// instead of generating it randomly.
+	//randInputShardID := privacy.RandomScalar()
+	randInputShardID := privacy.FixedRandomnessShardID
 	senderShardID := common.GetShardIDFromLastByte(publicKeyLastByteSender)
 	wit.comInputShardID = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(uint64(senderShardID)), randInputShardID, privacy.PedersenShardIDIndex)
 
