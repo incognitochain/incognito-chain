@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 func (txService TxService) TestBuildDoubleSpendingTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) ([]metadata.Transaction, *RPCError) {
@@ -39,6 +40,27 @@ func (txService TxService) TestBuildDoubleSpendingTransaction(params *bean.Creat
 	}
 	result = append(result,tx)
 
+	inputCoins, realFee, err1 = txService.chooseOutsCoinByKeyset(
+		params.PaymentInfos, params.EstimateFeeCoinPerKb, 0,
+		params.SenderKeySet, params.ShardIDSender, params.HasPrivacyCoin,
+		meta, nil)
+	if err1 != nil {
+		return nil, err1
+	}
+
+	// try to send some back to self
+	params.PaymentInfos[0].PaymentAddress = params.SenderKeySet.PaymentAddress
+	txPrivacyParams = transaction.NewTxPrivacyInitParams(
+		&params.SenderKeySet.PrivateKey,
+		params.PaymentInfos,
+		inputCoins,
+		realFee,
+		params.HasPrivacyCoin,
+		txService.BlockChain.GetBestStateShard(params.ShardIDSender).GetCopiedTransactionStateDB(),
+		nil, // use for prv coin -> nil is valid
+		meta,
+		params.Info,
+	)
 	tx, err = transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -65,6 +87,7 @@ func (txService TxService) TestBuildDuplicateInputTransaction(params *bean.Creat
 	if inputCoins[0].GetVersion()==1{
 		clonedCoin = &coin.PlainCoinV1{}
 		clonedCoin.SetBytes(inputCoins[0].Bytes())
+		clonedCoin.SetCommitment(operation.RandomPoint())
 	}else{
 		clonedCoin = &coin.CoinV2{}
 		clonedCoin.SetBytes(inputCoins[0].Bytes())
@@ -126,6 +149,9 @@ func (txService TxService) TestBuildOutGtInTransaction(params *bean.CreateRawTxP
 	}
 	realFee = tx.GetTxFee()
 	tx.SetTxFee(realFee + 1000)
+	if tx.GetVersion()==1{
+		transaction.TestResignTxV1(tx)
+	}
 	result = append(result,tx)
 	return result, nil
 }

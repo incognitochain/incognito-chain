@@ -8,6 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+var privIndicator string = "-1"
+
 // Parse from byte to AutoTxByHash
 func ParseAutoTxHashFromBytes(b []byte) (*AutoTxByHash, error) {
 	data := new(AutoTxByHash)
@@ -640,10 +642,10 @@ func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amoun
 				"%s": %s
 			},
 			1,
-			1
+			%s
 		],
 		"id": 1
-	}`, privKeyA, paymentAddStr, amount)
+	}`, privKeyA, paymentAddStr, amount, privIndicator)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -665,10 +667,10 @@ func (this *DebugTool) CreateDuplicateInput(privKeyA string, privKeyB string, am
 				"%s": %s
 			},
 			1,
-			1
+			%s
 		],
 		"id": 1
-	}`, privKeyA, paymentAddStr, amount)
+	}`, privKeyA, paymentAddStr, amount, privIndicator)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -690,10 +692,10 @@ func (this *DebugTool) CreateOutGtIn(privKeyA string, privKeyB string, amount st
 				"%s": %s
 			},
 			1,
-			-1
+			%s
 		],
 		"id": 1
-	}`, privKeyA, paymentAddStr, amount)
+	}`, privKeyA, paymentAddStr, amount, privIndicator)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -715,9 +717,9 @@ func (this *DebugTool) CreateReceiverExists(privKeyA string, amount string) ([]b
 				"%s": %s
 			},
 			1,
-			-1
+			%s
 		],
 		"id": 1
-	}`, privKeyA, paymentAddStr, amount)
+	}`, privKeyA, paymentAddStr, amount, privIndicator)
 	return this.SendPostRequestWithQuery(query)
 }
