@@ -171,6 +171,13 @@ func DoubleSpendPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount st
 	fmt.Println("========== END TRANSFER PRV (DOUBLE SPEND - TEST) ==========")
 }
 
+func DoubleSpendToken(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID string, amount string) {
+	fmt.Println("========== TRANSFER PRV (DOUBLE SPEND TOKEN - TEST) ==========")
+	b, _ := tool.CreateDoubleSpendToken(fromPrivKey, toPrivKey, tokenID, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV (DOUBLE SPEND TOKEN - TEST) ==========")
+}
+
 func DoCreateDuplicateInputTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
 	fmt.Println("========== TRANSFER PRV (DUP INPUT - TEST) ==========")
 	b, _ := tool.CreateDuplicateInput(fromPrivKey, toPrivKey, amount)
@@ -591,6 +598,20 @@ func main() {
 				panic(err)
 			}
 			DoCreateReceiverExistsTx(tool, privateKeys[indexFrom], args[2])
+		}
+		if args[0] == "doublespendtoken"{
+			if len(args) < 5 {
+				panic("Not enough params for transfertoken")
+			}
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoubleSpendToken(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
 		}
 
 		if args[0] == "sendraw"{
