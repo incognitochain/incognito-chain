@@ -635,7 +635,7 @@ func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amoun
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testBuildDoubleSpend",
+		"method": "testbuilddoublespend",
 		"params": [
 			"%s",
 			{
@@ -660,7 +660,7 @@ func (this *DebugTool) CreateDuplicateInput(privKeyA string, privKeyB string, am
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testBuildDuplicateInput",
+		"method": "testbuildduplicateinput",
 		"params": [
 			"%s",
 			{
@@ -685,7 +685,7 @@ func (this *DebugTool) CreateOutGtIn(privKeyA string, privKeyB string, amount st
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testBuildOutGtIn",
+		"method": "testbuildoutgtin",
 		"params": [
 			"%s",
 			{
@@ -710,7 +710,7 @@ func (this *DebugTool) CreateReceiverExists(privKeyA string, amount string) ([]b
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
-		"method": "testBuildReceiverExists",
+		"method": "testbuildreceiverexists",
 		"params": [
 			"%s",
 			{
@@ -721,5 +721,36 @@ func (this *DebugTool) CreateReceiverExists(privKeyA string, amount string) ([]b
 		],
 		"id": 1
 	}`, privKeyA, paymentAddStr, amount, privIndicator)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) CreateDoubleSpendToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "testbuilddoublespendtoken",
+		"params": [
+			"%s",
+			null,
+			10,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "%s",
+				"TokenName": "",
+				"TokenSymbol": "",
+				"TokenFee": 0,
+				"TokenTxType": 1,
+				"TokenAmount": 0,
+				"TokenReceivers": {
+					"%s": %s
+				}
+			}
+			]
+	}`, privKeyStrA, tokenID, paymentAddStr, amount)
 	return this.SendPostRequestWithQuery(query)
 }
