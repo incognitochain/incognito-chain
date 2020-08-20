@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -58,6 +60,18 @@ func ParseOutputCoins(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV1, error
 		tmpCoin.CoinDetails.SetPublicKey(PK)
 		tmpCoin.CoinDetails.SetSNDerivator(sndOut)
 		outputCoins = append(outputCoins, tmpCoin)
+	}
+	return outputCoins, nil
+}
+
+func ParseOutputCoinV2s(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV2, error) {
+	outputCoins := []*coin.CoinV2{}
+	for _, pInfo := range paymentInfo {
+		c, err := coin.NewCoinFromPaymentInfo(pInfo)
+		if err != nil {
+			return nil, err
+		}
+		outputCoins = append(outputCoins, c)
 	}
 	return outputCoins, nil
 }
@@ -437,6 +451,20 @@ func InitParam(tx metadata.Transaction, fee uint64, keySet *incognitokey.KeySet,
 
 }
 
+func ProveAndSign(witness *zkp.PaymentWitness, paymentInfos []*privacy.PaymentInfo, tx *transaction.TxVersion1, keySet *incognitokey.KeySet) error {
+	paymentProof, err := witness.Prove(true, paymentInfos)
+	if err != nil {
+		return err
+	}
+	tx.Proof = paymentProof
+	sigPrivate := append(keySet.PrivateKey, witness.GetRandSecretKey().ToBytesS()...)
+	err1 := tx.Sign(sigPrivate)
+	if err1 != nil {
+		return errors.New(err1.Error())
+	}
+	return nil
+}
+
 func (this *DebugTool) GetRandomCommitment(tokenID, paymentAddress string, input []coin.PlainCoin) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
@@ -468,7 +496,49 @@ func (this *DebugTool) GetRandomCommitment(tokenID, paymentAddress string, input
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (tool *DebugTool) PrepareTransaction(privateKey string, tokenIDString string) (*incognitokey.KeySet, string, *operation.Point, []coin.PlainCoin, []coin.PlainCoin, error) {
+func (tool *DebugTool) InitPaymentWitness(tokenIDString string, senderPaymentAddress string, inputCoins []coin.PlainCoin, paymentInfos []*privacy.PaymentInfo, keySet *incognitokey.KeySet, fee uint64) (*zkp.PaymentWitness, error) {
+	//Get random commitments to create one-of-many proofs
+	jsonRespondInBytes, err := tool.GetRandomCommitment(tokenIDString, senderPaymentAddress, inputCoins)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(string(jsonRespondInBytes))
+
+	commitmentIndices, myCommitmentIndices, commitments, err := ParseIndicesAndCommitmentsFromJson(jsonRespondInBytes)
+	if err != nil {
+		return nil, err
+	}
+
+
+
+	outputCoins, err := ParseOutputCoins(paymentInfos)
+	if err != nil {
+		return nil, err
+	}
+
+	// PrepareTransaction witness for proving
+	paymentWitnessParam := zkp.PaymentWitnessParam{
+		HasPrivacy:              true,
+		PrivateKey:              new(operation.Scalar).FromBytesS(keySet.PrivateKey),
+		InputCoins:              inputCoins,
+		OutputCoins:             outputCoins,
+		PublicKeyLastByteSender: keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1],
+		Commitments:             commitments,
+		CommitmentIndices:       commitmentIndices,
+		MyCommitmentIndices:     myCommitmentIndices,
+		Fee:                     fee,
+	}
+
+	witness := new(zkp.PaymentWitness)
+	err1 := witness.Init(paymentWitnessParam)
+	if err1 != nil {
+		return nil, err1
+	}
+	return witness, nil
+}
+
+func (tool *DebugTool) PrepareTransaction(privateKey string, tokenIDString string) (*wallet.KeyWallet, string, *operation.Point, []coin.PlainCoin, []coin.PlainCoin, error) {
 	listOutputCoins, err := tool.GetPlainOutputCoin(privateKey, tokenIDString)
 	if err != nil {
 		return nil, "", nil, nil, nil, err
@@ -497,7 +567,7 @@ func (tool *DebugTool) PrepareTransaction(privateKey string, tokenIDString strin
 	}
 
 	coinV1s, coinV2s := DivideCoins(listOutputCoins)
-	return keySet, senderPaymentAddress, pubkey, coinV1s, coinV2s, nil
+	return keyWallet, senderPaymentAddress, pubkey, coinV1s, coinV2s, nil
 }
 
 func (tool *DebugTool) GetPlainOutputCoin(privateKey, tokenID string) ([]coin.PlainCoin, error) {
@@ -536,4 +606,35 @@ func (tool *DebugTool) GetPlainOutputCoin(privateKey, tokenID string) ([]coin.Pl
 	}
 
 	return outputCoins, nil
+}
+
+func (tool *DebugTool) InitTxVer1(tx *transaction.TxVersion1, keyWallet *wallet.KeyWallet, paymentString string, inputCoins []coin.PlainCoin, amount uint64, tokenIDString string) error {
+	senderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	keySet := &keyWallet.KeySet
+
+	fee := uint64(100)
+
+	walletReceiver, err := wallet.Base58CheckDeserialize(paymentString)
+	if err != nil {
+		return err
+	}
+
+	paymentInfos, _, err := CreateTxPrivacyInitParams(nil, keySet, walletReceiver.KeySet.PaymentAddress, inputCoins, true, fee, common.PRVCoinID)
+	if err != nil {
+		return err
+	}
+	paymentInfos[0].Amount = amount - fee
+
+	InitParam(tx, fee, keySet, 1)
+
+	witness, err1 := tool.InitPaymentWitness(tokenIDString, senderPaymentAddress, inputCoins, paymentInfos, keySet, fee)
+	if err1 != nil {
+		return err1
+	}
+
+	err2 := ProveAndSign(witness, paymentInfos, tx, keySet)
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
