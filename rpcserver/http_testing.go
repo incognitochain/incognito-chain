@@ -432,3 +432,26 @@ func (httpServer *HttpServer) handleTestBuildReceiverExistsTx(params interface{}
 	}
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleTestBuildDoubleSpendTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// createRawTxParam, errNewParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+	// if errNewParam != nil {
+	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	// }
+
+	txs, err := httpServer.txService.TestBuildDoubleSpendingTokenTransaction(params, nil)
+	if err != nil {
+		// return hex for a new tx
+		return nil, err
+	}
+
+	var result []jsonresult.CreateTransactionResult
+	for i,_ := range txs{
+		jsonBytes, err := json.Marshal(txs[i])
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+	}
+	return result, nil
+}
