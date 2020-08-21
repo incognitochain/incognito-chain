@@ -36,8 +36,8 @@ func NewReturnStakingMetaFromStakingTx(
 		Type: ReturnStakingMeta,
 	}
 	meta := txStake.GetMetadata()
-	// TODO: @tin return nil is hard for debug, error should be return
-	// caller of this function should verify metadata type and only passed transaction hash into it
+	// TODO: return nil is hard for debug, error should be return
+	// TODO: caller of this function should verify metadata type and only passed transaction hash into it
 	stakeMeta, ok := meta.(*StakingMetadata)
 	if !ok {
 		return nil

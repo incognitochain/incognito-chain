@@ -183,6 +183,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 			switch l[0] {
 			case instruction.SWAP_ACTION:
 				if beaconConsensusStateDB == nil {
+					// TODO: @tin GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
@@ -255,6 +256,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				if beaconConsensusStateDB == nil {
+					// TODO: @tin GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
