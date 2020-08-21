@@ -280,8 +280,15 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if stakerInfo != nil {
 						Logger.log.Info("[unstake] staker info:", stakerInfo)
 					}
+					// // If autostaking or staker who not has tx staking, do nothing
+					// if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
+					// 	Logger.log.Info("[unstake] 2")
+					// 	Logger.log.Info("[unstake] stakerInfo.AutoStaking():", stakerInfo.AutoStaking())
+					// 	Logger.log.Info("[unstake] stakerInfo.TxStakingID():", stakerInfo.TxStakingID())
+					// 	continue
+					// }
 					// If autostaking or staker who not has tx staking, do nothing
-					if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
+					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
 						Logger.log.Info("[unstake] 2")
 						Logger.log.Info("[unstake] stakerInfo.AutoStaking():", stakerInfo.AutoStaking())
 						Logger.log.Info("[unstake] stakerInfo.TxStakingID():", stakerInfo.TxStakingID())

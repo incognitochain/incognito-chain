@@ -172,6 +172,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
 	}
 
+	err = curView.postProcessIncurredInstructions(incurredInstructions)
+	if err != nil {
+		return err
+	}
+
 	var err2 error
 	defer func() {
 		if err2 != nil {
