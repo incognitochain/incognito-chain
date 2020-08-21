@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 type Instruction interface {
@@ -59,4 +60,31 @@ func (i *CommitteeStateInstruction) ToString(action string) [][]string {
 // duplicate instruction is result from delay of shard and beacon
 func (i *CommitteeStateInstruction) ValidateAndFilterStakeInstructionsV1(v *ViewEnvironment) {
 	panic("implement me")
+}
+
+func ValidateAndImportInstructionFromString(inst []string) (
+	Instruction,
+	error,
+) {
+	switch inst[0] {
+	case STAKE_ACTION:
+		stakeInstruction, err := ValidateAndImportStakeInstructionFromString(inst)
+		if err != nil {
+			return nil, errors.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
+		}
+		return stakeInstruction, nil
+	case SWAP_ACTION:
+		swapInstruction, err := ValidateAndImportSwapInstructionFromString(inst)
+		if err != nil {
+			return nil, errors.Errorf("SKIP swap instruction %+v, error %+v", inst, err)
+		}
+		return swapInstruction, nil
+	case STOP_AUTO_STAKE_ACTION:
+		stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(inst)
+		if err != nil {
+			return nil, errors.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+		}
+		return stopAutoStakeInstruction, nil
+	}
+	return nil, nil
 }

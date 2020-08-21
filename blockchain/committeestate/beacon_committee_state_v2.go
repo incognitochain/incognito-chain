@@ -4,6 +4,9 @@ import (
 	"math/rand"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/blockchain/instructionsprocessor"
+
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -50,6 +53,7 @@ type BeaconCommitteeEngineV2 struct {
 	beaconHash        common.Hash
 	finalState        *BeaconCommitteeStateV2
 	uncommitteedState *BeaconCommitteeStateV2
+	insProcessor      *instructionsprocessor.BInsProcessor
 }
 
 func (b *BeaconCommitteeEngineV2) GetBeaconHeight() uint64 {
@@ -111,6 +115,8 @@ func (b *BeaconCommitteeEngineV2) GetBeaconCommittee() []incognitokey.CommitteeP
 // 	}
 // 	return b.oldCommitteeInfo.CandidateGetter(*blkHash, false)
 // }
+
+func (b *BeaconCommitteeStateV2) clone(*BeaconCommitteeStateV2) {}
 
 func (b *BeaconCommitteeEngineV2) GetCurrentActiveShards() int {
 	// return b.finalState.GetActiveShards()
@@ -177,8 +183,45 @@ func (b *BeaconCommitteeEngineV2) AbortUncommittedBeaconState() {
 	panic("implement me")
 }
 
+// New flow
+// Store information from instructions into temp stateDB in env
+// When all thing done and no problems, in commit function, we read data in statedb and update
+// BeaconCommitteeStateV2
 func (b *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (*BeaconCommitteeStateHash, *CommitteeChange, error) {
-	panic("implement me")
+	b.uncommitteedState.mu.Lock()
+	defer b.uncommitteedState.mu.Unlock()
+	committeeChange := NewCommitteeChange()
+	instStructs := []instruction.Instruction{}
+	for _, inst := range env.BeaconInstructions {
+		if len(inst) == 0 {
+			continue
+		}
+		instStruct, err := instruction.ValidateAndImportInstructionFromString(inst)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		instStructs = append(instStructs, instStruct)
+	}
+
+	err := b.insProcessor.StoreInfoFromInstructions(env.ConsensusStateDB, instStructs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if env.IsBeaconRandomTime {
+		b.uncommitteedState.assignShCheckpoint = len(b.uncommitteedState.shardCommonPool)
+		b.uncommitteedState.assignBCCheckpoint = len(b.uncommitteedState.beaconCommonPool)
+	}
+	if env.IsFoundRandomNumber {
+		//Already update committee when process assign instruction
+	}
+	hashes, err := b.generateUncommittedCommitteeHashes()
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+	return hashes, committeeChange, nil
+	// panic("implement me")
 }
 
 func (b *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
@@ -283,4 +326,9 @@ func (b *BeaconCommitteeEngineV2) SwapValidator() (
 	out map[int][]string,
 ) {
 	return in, out
+}
+
+func (b *BeaconCommitteeEngineV2) generateUncommittedCommitteeHashes() (*BeaconCommitteeStateHash, error) {
+	panic("implement me")
+	return nil, nil
 }
