@@ -166,3 +166,24 @@ func SwapValidator(
 	newProducers := append(remainingProducers, goodPendingValidators...)
 	return badPendingValidators, newProducers, swappedProducers, goodPendingValidators, nil
 }
+
+func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string) error {
+
+	// Logger.log.Info("[unstake] postProcessIncurredInstructions")
+
+	// for _, inst := range instructions {
+	// 	switch inst[0] {
+	// 	case instruction.RETURN_ACTION:
+	// 		returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+
+	return nil
+}

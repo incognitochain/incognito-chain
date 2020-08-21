@@ -69,7 +69,12 @@ CONTINUE_VERIFY:
 		return err
 	}
 	// Update best state with new block
-	newBestState, hashes, _, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	if err != nil {
+		return err
+	}
+
+	err = curView.postProcessIncurredInstructions(incurredInstructions)
 	if err != nil {
 		return err
 	}
