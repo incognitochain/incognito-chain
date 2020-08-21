@@ -185,6 +185,13 @@ func DoCreateDuplicateInputTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey,
 	fmt.Println("========== END TRANSFER PRV (DUP INPUT - TEST) ==========")
 }
 
+func DoCreateDuplicateInputTokenTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID string, amount string) {
+	fmt.Println("========== TRANSFER PRV (DUPLICATE INPUT TOKEN - TEST) ==========")
+	b, _ := tool.CreateDuplicateInputToken(fromPrivKey, toPrivKey, tokenID, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV (DUPLICATE INPUT TOKEN - TEST) ==========")
+}
+
 func DoCreateOutGtInTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
 	fmt.Println("========== TRANSFER PRV (OUT > IN - TEST) ==========")
 	b, _ := tool.CreateOutGtIn(fromPrivKey, toPrivKey, amount)
@@ -197,6 +204,13 @@ func DoCreateReceiverExistsTx(tool *debugtool.DebugTool, fromPrivKey, amount str
 	b, _ := tool.CreateReceiverExists(fromPrivKey, amount)
 	fmt.Println(string(b))
 	fmt.Println("========== END TRANSFER PRV (OTA EXISTS - TEST) ==========")
+}
+
+func DoCreateReceiverExistsTokenTx(tool *debugtool.DebugTool, fromPrivKey, tokenID string, amount string) {
+	fmt.Println("========== TRANSFER PRV (OTA EXISTS TOKEN - TEST) ==========")
+	b, _ := tool.CreateReceiverExistsToken(fromPrivKey, tokenID, amount)
+	fmt.Println(string(b))
+	fmt.Println("========== END TRANSFER PRV (OTA EXISTS TOKEN - TEST) ==========")
 }
 
 // PDE
@@ -612,6 +626,30 @@ func main() {
 				panic(err)
 			}
 			DoubleSpendToken(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
+		}
+		if args[0] == "dupinputtoken"{
+			if len(args) < 5 {
+				panic("Not enough params for transfertoken")
+			}
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			indexTo, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoCreateDuplicateInputTokenTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
+		}
+		if args[0] == "recvexiststoken"{
+			if len(args) < 4 {
+				panic("Not enough params for transfertoken")
+			}
+			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			DoCreateReceiverExistsTokenTx(tool, privateKeys[indexFrom], args[2], args[3])
 		}
 
 		if args[0] == "sendraw"{

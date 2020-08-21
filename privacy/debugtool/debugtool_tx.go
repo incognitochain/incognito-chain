@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-var privIndicator string = "-1"
+var privIndicator string = "1"
 
 // Parse from byte to AutoTxByHash
 func ParseAutoTxHashFromBytes(b []byte) (*AutoTxByHash, error) {
@@ -733,6 +733,68 @@ func (this *DebugTool) CreateDoubleSpendToken(privKeyStrA string, privKeyStrB st
 		"id": 1,
 		"jsonrpc": "1.0",
 		"method": "testbuilddoublespendtoken",
+		"params": [
+			"%s",
+			null,
+			10,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "%s",
+				"TokenName": "",
+				"TokenSymbol": "",
+				"TokenFee": 0,
+				"TokenTxType": 1,
+				"TokenAmount": 0,
+				"TokenReceivers": {
+					"%s": %s
+				}
+			}
+			]
+	}`, privKeyStrA, tokenID, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) CreateDuplicateInputToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "testbuildduplicateinputtoken",
+		"params": [
+			"%s",
+			null,
+			10,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "%s",
+				"TokenName": "",
+				"TokenSymbol": "",
+				"TokenFee": 0,
+				"TokenTxType": 1,
+				"TokenAmount": 0,
+				"TokenReceivers": {
+					"%s": %s
+				}
+			}
+			]
+	}`, privKeyStrA, tokenID, paymentAddStr, amount)
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) CreateReceiverExistsToken(privKeyStrA string, tokenID string, amount string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrA)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "testbuildreceiverexiststoken",
 		"params": [
 			"%s",
 			null,
