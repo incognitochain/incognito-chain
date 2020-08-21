@@ -135,7 +135,12 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, err
 	}
 
-	beaconBlock.Body.Instructions = append(beaconBlock.Body.Instructions, incurredInstructions...)
+	tempInstruction = append(tempInstruction, incurredInstructions...)
+	beaconBlock.Body.Instructions = tempInstruction
+
+	// if len(incurredInstructions) != 0 {
+	// 	Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
+	// }
 
 	//============Build Header Hash=============
 	// calculate hash
@@ -310,9 +315,9 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
-	if len(instructions) != 0 {
-		Logger.log.Info("[unstake] instructions:", instructions)
-	}
+	// if len(instructions) != 0 {
+	// 	Logger.log.Info("[unstake] instructions:", instructions)
+	// }
 
 	// extract instructions
 	for _, inst := range instructions {

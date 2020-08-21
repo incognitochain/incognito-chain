@@ -329,9 +329,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
 	}
 
-	if len(txInstructions) != 0 {
-		Logger.log.Info("[unstake] txInstructions:", txInstructions)
-	}
+	// if len(txInstructions) != 0 {
+	// 	Logger.log.Info("[unstake] txInstructions:", txInstructions)
+	// }
 
 	if !isPreSign {
 		totalInstructions := []string{}

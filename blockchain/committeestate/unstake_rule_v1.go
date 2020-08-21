@@ -108,8 +108,10 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 		}
 	}
 
-	err := statedb.DeleteStakerInfo(env.ConsensusStateDB, nextEpochShardCandidateUnstakeKey)
-	return newCommitteeChange, incurredInstructions, err
+	Logger.log.Info("[unstake] process unstake instruction in Beacon side")
+
+	// err := statedb.DeleteStakerInfo(env.ConsensusStateDB, nextEpochShardCandidateUnstakeKey)
+	return newCommitteeChange, incurredInstructions, nil
 }
 
 func (b *BeaconCommitteeStateV1) getSubtituteCandidates() ([]string, error) {

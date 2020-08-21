@@ -73,6 +73,7 @@ CONTINUE_VERIFY:
 	if err != nil {
 		return err
 	}
+
 	// Post verififcation: verify new beaconstate with corresponding block
 	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
 		return err
@@ -161,11 +162,16 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
-	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, committeeChange, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
 	}
+
+	if len(incurredInstructions) != 0 {
+		Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
+	}
+
 	var err2 error
 	defer func() {
 		if err2 != nil {
@@ -289,6 +295,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 		return NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
 	root := GetKeccak256MerkleRoot(flattenInsts)
+
 	if !bytes.Equal(root, beaconBlock.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
 	}
@@ -423,9 +430,23 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	if err != nil {
 		return err
 	}
+
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
+
+	if len(unstakeInstructions) != 0 {
+		_, _, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+		if err != nil {
+			return NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		}
+		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
+
+		if len(incurredInstructions) != 0 {
+			tempInstruction = append(tempInstruction, incurredInstructions...)
+		}
+	}
+
 	tempInstructionArr := []string{}
 	for _, strs := range tempInstruction {
 		tempInstructionArr = append(tempInstructionArr, strs...)

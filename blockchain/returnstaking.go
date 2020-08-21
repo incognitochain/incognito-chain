@@ -248,15 +248,104 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 				}
 			case instruction.RETURN_ACTION:
-				//@tin shard receive return staking ins here and also process it here
 				returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(l)
 				if err != nil {
 					Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", returnStakingIns, err)
-					continue
+					// continue
+					return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
-				Logger.log.Info("[unstake] returnStakingIns:", returnStakingIns)
+				if beaconConsensusStateDB == nil {
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
+					if err != nil {
+						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
+					}
+					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+				}
+				Logger.log.Info("[unstake] returnStakingIns.GetPublicKey():", returnStakingIns.GetPublicKey())
+				for _, v := range returnStakingIns.GetPublicKey() {
+					if v == "" {
+						continue
+					}
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, v)
+					if err != nil {
+						Logger.log.Info("[unstake] 0")
+						Logger.log.Error(err)
+						continue
+					}
+					if !has || stakerInfo == nil {
+						Logger.log.Info("[unstake] 1")
+						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", v))
+						continue
+					}
+					if stakerInfo != nil {
+						Logger.log.Info("[unstake] staker info:", stakerInfo)
+					}
+					// If autostaking or staker who not has tx staking, do nothing
+					if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
+						Logger.log.Info("[unstake] 2")
+						Logger.log.Info("[unstake] stakerInfo.AutoStaking():", stakerInfo.AutoStaking())
+						Logger.log.Info("[unstake] stakerInfo.TxStakingID():", stakerInfo.TxStakingID())
+						continue
+					}
+					if _, ok := res[stakerInfo.TxStakingID()]; ok {
+						Logger.log.Info("[unstake] 3")
+						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID())
+						return nil, nil, err
+					}
+					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), stakerInfo.TxStakingID())
+					if err != nil {
+						Logger.log.Info("[unstake] 4")
+						Logger.log.Info("[unstake] error in get transaction by hash from txHash %v ", v)
+						continue
+					}
+					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
+					if err != nil || shardBlock == nil {
+						Logger.log.Info("[unstake] 5")
+						Logger.log.Info("[unstake] error in get shardblock by hash from shard block hash %v ", blockHash)
+						Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+						continue
+					}
+					txData := shardBlock.Body.Transactions[index]
+					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
+					if !ok {
+						Logger.log.Info("[unstake] 6")
+						Logger.log.Info("[unstake] error in get metadata")
+						Logger.log.Error("Can not parse meta data of this tx %v", txData.Hash().String())
+						errorInstructions = append(errorInstructions, l)
+						continue
+					}
+					keyWallet, err := wallet.Base58CheckDeserialize(txMeta.FunderPaymentAddress)
+					if err != nil {
+						Logger.log.Info("[unstake] 7")
+						Logger.log.Info("[unstake] error in Base58CheckDeserialize with funcer payment address %v ", txMeta.FunderPaymentAddress)
+						Logger.log.Error("SA: cannot get payment address", txMeta, shardID)
+						errorInstructions = append(errorInstructions, l)
+						continue
+					}
+					Logger.log.Info("SA: build salary tx", txMeta.FunderPaymentAddress, shardID)
+					paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
+					if paymentShardID != shardID {
+						Logger.log.Info("[unstake] 8")
+						Logger.log.Info("[unstake] payment shard id = %v != shard id = %v", paymentShardID, shardID)
+						err = NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, shardID))
+						errorInstructions = append(errorInstructions, l)
+						Logger.log.Error(err)
+						continue
+					}
+					res[stakerInfo.TxStakingID()] = returnStakingInfo{
+						SwapoutPubKey: v,
+						FunderAddress: keyWallet.KeySet.PaymentAddress,
+						StakingTx:     txData,
+						StakingAmount: txMeta.StakingAmountShard,
+					}
+					Logger.log.Info("[unstake] res[stakerInfo.TxStakingID()]:", res[stakerInfo.TxStakingID()])
+				}
 			}
 		}
 	}
+	if res != nil && len(res) != 0 {
+		Logger.log.Info("[unstake] res:", res)
+	}
+
 	return res, errorInstructions, nil
 }
