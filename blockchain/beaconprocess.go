@@ -69,7 +69,12 @@ CONTINUE_VERIFY:
 		return err
 	}
 	// Update best state with new block
-	newBestState, hashes, _, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	if err != nil {
+		return err
+	}
+
+	err = curView.postProcessIncurredInstructions(incurredInstructions)
 	if err != nil {
 		return err
 	}
@@ -170,11 +175,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	if len(incurredInstructions) != 0 {
 		Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
-	}
-
-	err = curView.postProcessIncurredInstructions(incurredInstructions)
-	if err != nil {
-		return err
 	}
 
 	var err2 error

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
@@ -170,21 +169,21 @@ func SwapValidator(
 
 func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string) error {
 
-	Logger.log.Info("[unstake] postProcessIncurredInstructions")
+	// Logger.log.Info("[unstake] postProcessIncurredInstructions")
 
-	for _, inst := range instructions {
-		switch inst[0] {
-		case instruction.RETURN_ACTION:
-			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
-			if err != nil {
-				return err
-			}
-			err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// for _, inst := range instructions {
+	// 	switch inst[0] {
+	// 	case instruction.RETURN_ACTION:
+	// 		returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 
 	return nil
 }
