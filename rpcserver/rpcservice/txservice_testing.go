@@ -3,7 +3,7 @@ package rpcservice
 import (
 	"errors"
 	"fmt"
-	// "os"
+	"os"
 
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -98,8 +98,9 @@ func (txService TxService) TestBuildDuplicateInputTransaction(params *bean.Creat
 	}else{
 		clonedCoin = &coin.CoinV2{}
 		clonedCoin.SetBytes(inputCoins[0].Bytes())
+		inputCoins = append(inputCoins,clonedCoin)
 	}
-	inputCoins = append(inputCoins,clonedCoin)
+
 
 	txPrivacyParams := transaction.NewTxPrivacyInitParams(
 		&params.SenderKeySet.PrivateKey,
@@ -119,6 +120,10 @@ func (txService TxService) TestBuildDuplicateInputTransaction(params *bean.Creat
 	}
 	if err := tx.Init(txPrivacyParams); err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
+	}
+	if inputCoins[0].GetVersion()==1{
+		tx.GetProof().SetInputCoins(append(inputCoins,clonedCoin))
+		transaction.TestResignTxV1(tx)
 	}
 	result = append(result,tx)
 	return result, nil
@@ -271,7 +276,7 @@ func (txService TxService) TestBuildDoubleSpendingTokenTransaction(params interf
 	isValidTxItself, errItself := tx.ValidateTxByItself(tx.IsPrivacy(), txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), nil, txParam.ShardIDSender, false, nil, nil)
 	// fmt.Fprintf(os.Stderr,"Valid by itself ? %v\n",isValidTxItself)
 	if !isValidTxItself{
-		// fmt.Fprintf(os.Stderr,"Error : %v\n",errItself)
+		fmt.Fprintf(os.Stderr,"Error : %v\n",errItself)
 	}
 	// fmt.Fprintf(os.Stderr,"Height is %d\n",int64(beaconView.BeaconHeight))
 	// _, _, errMp := txService.TxMemPool.MaybeAcceptTransaction(tx, int64(beaconView.BeaconHeight))
@@ -321,6 +326,137 @@ func (txService TxService) TestBuildDoubleSpendingTokenTransaction(params interf
 	// }
 
 	return []transaction.TransactionToken{tx, tx2}, nil
+}
+
+func (txService TxService) TestBuildDuplicateInputTokenTransaction(params interface{}, metaData metadata.Metadata) ([]transaction.TransactionToken, *RPCError) {
+	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+	if errParam != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errParam)
+	}
+	tokenParamsRaw := txParam.TokenParamsRaw
+	tokenParams, err := txService.BuildTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
+	if err != nil {
+		return nil, err
+	}
+
+	if tokenParams == nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("can not build token params for request"))
+	}
+	/******* START choose output native coins(PRV), which is used to create tx *****/
+
+	beaconView := txService.BlockChain.BeaconChain.GetFinalViewState()
+	inputCoins, realFeePRV, err := txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
+		txParam.EstimateFeeCoinPerKb, beaconView.BeaconHeight, txParam.SenderKeySet,
+		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(txParam.PaymentInfos) == 0 && realFeePRV == 0 {
+		txParam.HasPrivacyCoin = false
+	}
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
+	var clonedCoin coin.PlainCoin
+	tokenInputCoins := tokenParams.TokenInput
+	if tokenInputCoins[0].GetVersion()==1{
+		clonedCoin = &coin.PlainCoinV1{}
+		clonedCoin.SetBytes(tokenInputCoins[0].Bytes())
+		clonedCoin.SetCommitment(operation.RandomPoint())
+	}else{
+		clonedCoin = &coin.CoinV2{}
+		clonedCoin.SetBytes(tokenInputCoins[0].Bytes())
+		tokenParams.TokenInput = append(tokenInputCoins,clonedCoin)
+	}
+
+
+	txTokenParams := transaction.NewTxTokenParams(&txParam.SenderKeySet.PrivateKey,
+		txParam.PaymentInfos,
+		inputCoins,
+		realFeePRV,
+		tokenParams,
+		txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetCopiedTransactionStateDB(),
+		metaData,
+		txParam.HasPrivacyCoin,
+		txParam.HasPrivacyToken,
+		txParam.ShardIDSender, txParam.Info,
+		beaconView.GetBeaconFeatureStateDB())
+
+
+	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if errTx != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, NewRPCError(CreateTxDataError, errTx)
+	}
+	errTx = tx.Init(txTokenParams)
+	if errTx != nil {
+		return nil, NewRPCError(CreateTxDataError, errTx)
+	}
+	if tokenInputCoins[0].GetVersion()==1{
+		txNormal := tx.GetTxTokenData().TxNormal
+		txNormal.GetProof().SetInputCoins(append(tokenInputCoins,clonedCoin))
+		transaction.TestResignTxV1(txNormal)
+	}
+	return []transaction.TransactionToken{tx}, nil
+}
+
+func (txService TxService) TestBuildReceiverExistsTokenTransaction(params interface{}, metaData metadata.Metadata) ([]transaction.TransactionToken, *RPCError) {
+	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+	if errParam != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errParam)
+	}
+	tokenParamsRaw := txParam.TokenParamsRaw
+	tokenParams, err := txService.BuildTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
+	if err != nil {
+		return nil, err
+	}
+
+	if tokenParams == nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("can not build token params for request"))
+	}
+	/******* START choose output native coins(PRV), which is used to create tx *****/
+
+	beaconView := txService.BlockChain.BeaconChain.GetFinalViewState()
+	inputCoins, realFeePRV, err := txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
+		txParam.EstimateFeeCoinPerKb, beaconView.BeaconHeight, txParam.SenderKeySet,
+		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(txParam.PaymentInfos) == 0 && realFeePRV == 0 {
+		txParam.HasPrivacyCoin = false
+	}
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
+
+	txTokenParams := transaction.NewTxTokenParams(&txParam.SenderKeySet.PrivateKey,
+		txParam.PaymentInfos,
+		inputCoins,
+		realFeePRV,
+		tokenParams,
+		txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetCopiedTransactionStateDB(),
+		metaData,
+		txParam.HasPrivacyCoin,
+		txParam.HasPrivacyToken,
+		txParam.ShardIDSender, txParam.Info,
+		beaconView.GetBeaconFeatureStateDB())
+
+	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if errTx != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, NewRPCError(CreateTxDataError, errTx)
+	}
+	switch txSpecific := tx.(type){
+	case *transaction.TxTokenVersion2:
+		errTx = txSpecific.InitTestOldOTAToken(txTokenParams)
+		if errTx != nil {
+			return nil, NewRPCError(CreateTxDataError, errTx)
+		}
+	default:
+		if err := txSpecific.Init(txTokenParams); err != nil {
+			return nil, NewRPCError(CreateTxDataError, err)
+		}
+	}
+	return []transaction.TransactionToken{tx}, nil
 }
 
 func (txService TxService) chooseOutsCoinByKeysetTwice(

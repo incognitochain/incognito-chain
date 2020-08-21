@@ -241,6 +241,8 @@ var HttpHandler = map[string]httpHandler{
 	"testbuildoutgtin": (*HttpServer).handleTestBuildOutGtInTx,
 	"testbuildreceiverexists": (*HttpServer).handleTestBuildReceiverExistsTx,
 	"testbuilddoublespendtoken": (*HttpServer).handleTestBuildDoubleSpendTokenTx,
+	"testbuildduplicateinputtoken": (*HttpServer).handleTestBuildDuplicateInputTokenTx,
+	"testbuildreceiverexiststoken": (*HttpServer).handleTestBuildReceiverExistsTokenTx,
 }
 
 // Commands that are available to a limited user
