@@ -34,10 +34,10 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 		indexNextEpochShardCandidate[key] = i
 	}
 
-	for _, committeePublicKey := range unstakeInstruction.PublicKeys {
+	for _, committeePublicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(committeePublicKey, env.subtituteCandidates) == -1 {
 			if common.IndexOfStr(committeePublicKey, env.validators) == -1 {
-
+				// TODO: @tin how this case can occur if we fully verify from beacon producer
 				// if not found then delete auto staking data for this public key if present
 				if _, ok := b.autoStake[committeePublicKey]; ok {
 					delete(b.autoStake, committeePublicKey)
@@ -78,6 +78,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 
 			indexCandidate := indexNextEpochShardCandidate[committeePublicKey]
 			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate[:indexCandidate], b.nextEpochShardCandidate[indexCandidate+1:]...)
+			// TODO: @tin removed unused variable
 			nextEpochShardCandidateUnstakeKey = append(nextEpochShardCandidateUnstakeKey, committeePublicKeyStruct)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, committeePublicKey)
 

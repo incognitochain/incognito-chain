@@ -541,7 +541,7 @@ func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) {
-	for _, committeePublicKey := range stopAutoStakeInstruction.PublicKeys {
+	for _, committeePublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(committeePublicKey, env.allCandidateSubstituteCommittee) == -1 {
 			// if not found then delete auto staking data for this public key if present
 			if _, ok := b.autoStake[committeePublicKey]; ok {

@@ -45,14 +45,14 @@ func insertInstructionsStopAutoStake(sDB *statedb.StateDB, ins instruction.Instr
 	if !ok {
 		return errors.New("Can not parse this instruction to AssignInstructions")
 	}
-	pkStructs, err := incognitokey.CommitteeBase58KeyListToStruct(saI.PublicKeys)
+	pkStructs, err := incognitokey.CommitteeBase58KeyListToStruct(saI.CommitteePublicKeys)
 	if err != nil {
 		return err
 	}
 	// TODO:
 	// Instead of preprocessing for create input for storeStakerInfo, create function update stakerinfo
 	asMap := map[string]bool{}
-	for _, pk := range saI.PublicKeys {
+	for _, pk := range saI.CommitteePublicKeys {
 		asMap[pk] = true
 	}
 	return statedb.StoreStakerInfo(
@@ -164,14 +164,14 @@ func insertInstructionsStopAutoStakev2(sDB *statedb.StateDB, ins instruction.Ins
 	if !ok {
 		return errors.New("Can not parse this instruction to AssignInstructions")
 	}
-	pkStructs, err := incognitokey.CommitteeBase58KeyListToStruct(saI.PublicKeys)
+	pkStructs, err := incognitokey.CommitteeBase58KeyListToStruct(saI.CommitteePublicKeys)
 	if err != nil {
 		return err
 	}
 	// TODO:
 	// Instead of preprocessing for create input for storeStakerInfo, create function update stakerinfo
 	asMap := map[string]bool{}
-	for _, pk := range saI.PublicKeys {
+	for _, pk := range saI.CommitteePublicKeys {
 		asMap[pk] = true
 	}
 	return statedb.StoreStakerInfo(

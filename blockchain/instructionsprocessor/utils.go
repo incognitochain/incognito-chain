@@ -128,7 +128,7 @@ func stopInsFromTx(
 	if !ok {
 		return errors.Errorf("Can not parse this metadata %v", meta.Hash())
 	}
-	insStop.PublicKeys = append(insStop.PublicKeys, stopAutoStakingMetadata.CommitteePublicKey)
+	insStop.CommitteePublicKeys = append(insStop.CommitteePublicKeys, stopAutoStakingMetadata.CommitteePublicKey)
 	return nil
 }
 

@@ -19,7 +19,7 @@ func TestUnstakeInstruction_ToString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			unstakeIns := &UnstakeInstruction{
-				PublicKeys: tt.fields.PublicKeys,
+				CommitteePublicKeys: tt.fields.PublicKeys,
 			}
 			if got := unstakeIns.ToString(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UnstakeInstruction.ToString() = %v, want %v", got, tt.want)

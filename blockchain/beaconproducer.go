@@ -268,6 +268,7 @@ func (blockchain *BlockChain) GetShardState(
 //	4. Bridge Instruction
 //	5. Accepted BlockReward Instruction
 //	6. StopAutoStakingInstruction
+// TODO: @tin filter stop autostake/unstake committeepublickey
 func (blockchain *BlockChain) GetShardStateFromBlock(
 	curView *BeaconBestState,
 	newBeaconHeight uint64,
@@ -349,12 +350,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 				stopAutoStakingInstructionsFromBlock = append(stopAutoStakingInstructionsFromBlock, tempStopAutoStakeInstruction)
 			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
-				// unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
-				// if err != nil {
-				// 	Logger.log.Errorf("SKIP Unstake Instruction Error %+v", err)
-				// 	continue
-				// }
-				// unstakeInstructionFromShardBlock = append(unstakeInstructionFromShardBlock, unstakeInstruction)
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
 					continue
@@ -416,7 +411,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		// avoid dead lock
 		// if producer new block then lock beststate
 		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
-		for _, tempStopAutoStakingPublicKey := range stopAutoStakeInstruction.PublicKeys {
+		for _, tempStopAutoStakingPublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
 			if common.IndexOfStr(tempStopAutoStakingPublicKey, allCommitteeValidatorCandidate) > -1 {
 				stopAutoStakingPublicKeys = append(stopAutoStakingPublicKeys, tempStopAutoStakingPublicKey)
 			}
@@ -432,7 +427,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		// avoid dead lock
 		// if producer new block then lock beststate
 		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
-		for _, tempUnstakePublicKey := range unstakeInstruction.PublicKeys {
+		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
 			if common.IndexOfStr(tempUnstakePublicKey, allCommitteeValidatorCandidate) > -1 {
 				unstakingPublicKeys = append(unstakingPublicKeys, tempUnstakePublicKey)
 			}
@@ -511,15 +506,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if err != nil {
 			return [][]string{}, err
 		}
-		//beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(beaconBestState, newBeaconHeight-1)
-		//if err != nil {
-		//	return [][]string{}, err
-		//}
-		//beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		//producersBlackList, err := blockchain.getUpdatedProducersBlackList(beaconSlashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
-		//if err != nil {
-		//	Logger.log.Error(err)
-		//}
 		producersBlackList := make(map[string]uint8)
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(true, -1, beaconCommitteeStr)
 		badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)

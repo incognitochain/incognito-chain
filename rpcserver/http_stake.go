@@ -36,6 +36,7 @@ func (httpServer *HttpServer) handleUnstakeTx(params interface{}, closeChan <-ch
 
 // handleUnstakeRawTx - handle unstake tx request
 // and return raw data for making raw transaction
+// TODO: @tin handleUnstakeRawTx => handleCreateRawUnstakeTransaction
 func (httpServer *HttpServer) handleUnstakeRawTx(params interface{}) (interface{}, *rpcservice.RPCError) {
 
 	paramsArray := common.InterfaceSlice(params)
@@ -50,6 +51,7 @@ func (httpServer *HttpServer) handleUnstakeRawTx(params interface{}) (interface{
 
 	keyWallet := new(wallet.KeyWallet)
 	keyWallet.KeySet = *createRawTxParam.SenderKeySet
+	// TODO: @tin remove unused code
 	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	_ = funderPaymentAddress
 

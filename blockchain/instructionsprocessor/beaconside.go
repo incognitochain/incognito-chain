@@ -70,7 +70,7 @@ func (bP *BInsProcessor) BuildInstructionsFromTransactions(txs []metadata.Transa
 			res = append(res, v)
 		}
 	}
-	if len(stopIns.PublicKeys) != 0 {
+	if len(stopIns.CommitteePublicKeys) != 0 {
 		res = append(res, stopIns)
 	}
 	return nil

@@ -9,12 +9,12 @@ import (
 
 //UnstakeInstruction : Hold and verify data for unstake action
 type UnstakeInstruction struct {
-	PublicKeys []string
+	CommitteePublicKeys []string
 }
 
 //NewUnstakeInstructionWithValue : Constructor with value
-func NewUnstakeInstructionWithValue(publicKeys []string) *UnstakeInstruction {
-	return &UnstakeInstruction{PublicKeys: publicKeys}
+func NewUnstakeInstructionWithValue(committeePublicKeys []string) *UnstakeInstruction {
+	return &UnstakeInstruction{CommitteePublicKeys: committeePublicKeys}
 }
 
 //NewUnstakeInstruction : Default constructor
@@ -30,7 +30,7 @@ func (unstakeIns *UnstakeInstruction) GetType() string {
 //ToString : Convert class to string
 func (unstakeIns *UnstakeInstruction) ToString() []string {
 	unstakeInstructionStr := []string{UNSTAKE_ACTION}
-	unstakeInstructionStr = append(unstakeInstructionStr, strings.Join(unstakeIns.PublicKeys, SPLITTER))
+	unstakeInstructionStr = append(unstakeInstructionStr, strings.Join(unstakeIns.CommitteePublicKeys, SPLITTER))
 	return unstakeInstructionStr
 }
 
@@ -46,8 +46,8 @@ func ValidateAndImportUnstakeInstructionFromString(instruction []string) (*Unsta
 func ImportUnstakeInstructionFromString(instruction []string) *UnstakeInstruction {
 	unstakeInstruction := NewUnstakeInstruction()
 	if len(instruction[1]) > 0 {
-		publicKeys := strings.Split(instruction[1], SPLITTER)
-		unstakeInstruction.PublicKeys = publicKeys
+		committeePublicKeys := strings.Split(instruction[1], SPLITTER)
+		unstakeInstruction.CommitteePublicKeys = committeePublicKeys
 	}
 	return unstakeInstruction
 }

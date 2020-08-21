@@ -436,6 +436,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 
 	if len(unstakeInstructions) != 0 {
+		// TODO: @tin need to update beacon best state to get incurredInstructions? => too much needless process
+		// TODO: @tin curView is changed?
 		_, _, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 		if err != nil {
 			return NewBlockChainError(UpdateBeaconCommitteeStateError, err)

@@ -28,7 +28,7 @@ func NewUnStakingMetadata(unStakingType int, committeePublicKey string) (*UnStak
 	}, nil
 }
 
-//ValidateMetadataByItself :
+//ValidateMetadataByItself Validate data format/type in unStakingMetadata
 func (unStakingMetadata *UnStakingMetadata) ValidateMetadataByItself() bool {
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	if err := CommitteePublicKey.FromString(unStakingMetadata.CommitteePublicKey); err != nil {
@@ -40,11 +40,10 @@ func (unStakingMetadata *UnStakingMetadata) ValidateMetadataByItself() bool {
 	return (unStakingMetadata.Type == UnStakingMeta)
 }
 
-//ValidateTxWithBlockChain Validate Condition to Request Stop AutoStaking With Blockchain
+//ValidateTxWithBlockChain Validate Condition to Request Unstake With Blockchain
 //- Requested Committee Publickey is in candidate, pending validator,
-//- Requested Committee Publickey is in staking tx list,
-//- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
-//- Not yet requested to stop auto-restaking
+//- Requested Committee Publickey is in staking tx list, TODO: @tin
+//- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key TODO: @tin
 func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transaction,
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
