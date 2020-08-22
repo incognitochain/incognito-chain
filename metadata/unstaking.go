@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -42,8 +43,8 @@ func (unStakingMetadata *UnStakingMetadata) ValidateMetadataByItself() bool {
 
 //ValidateTxWithBlockChain Validate Condition to Request Unstake With Blockchain
 //- Requested Committee Publickey is in candidate, pending validator,
-//- Requested Committee Publickey is in staking tx list, TODO: @tin
-//- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key TODO: @tin
+//- Requested Committee Publickey is in staking tx list,
+//- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transaction,
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
@@ -70,6 +71,36 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 
 	if !has {
 		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, fmt.Errorf("Committee Publickey %+v has not staked yet", requestedPublicKey))
+	}
+
+	stakingTx, err := chainRetriever.GetShardStakingTx(shardViewRetriever.GetShardID(), shardViewRetriever.GetBeaconHeight())
+	if err != nil {
+		return false, NewMetadataTxError(UnStakingRequestNotInCommitteeListError, err)
+	}
+	if tempStakingTxHash, ok := stakingTx[requestedPublicKey]; ok {
+		stakingTxHash, err := common.Hash{}.NewHashFromStr(tempStakingTxHash)
+		if err != nil {
+			return false, err
+		}
+		_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(*stakingTxHash)
+		if err != nil {
+			return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
+		}
+		if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
+			return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), tx.GetSender()))
+		}
+	} else {
+		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
+	}
+
+	autoStakingList := beaconViewRetriever.GetAutoStakingList()
+	ok = false
+	isAutoStaking := false
+	if isAutoStaking, ok = autoStakingList[unStakingMetadata.CommitteePublicKey]; !ok {
+		return false, NewMetadataTxError(UnStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", unStakingMetadata.CommitteePublicKey))
+	}
+	if !isAutoStaking {
+		return false, NewMetadataTxError(UnStakingRequestAlreadyStopError, fmt.Errorf("Auto Staking for Committee Public Key %+v already stop", unStakingMetadata.CommitteePublicKey))
 	}
 
 	return true, nil

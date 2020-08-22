@@ -329,10 +329,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
 	}
 
-	// if len(txInstructions) != 0 {
-	// 	Logger.log.Info("[unstake] txInstructions:", txInstructions)
-	// }
-
 	if !isPreSign {
 		totalInstructions := []string{}
 		for _, value := range txInstructions {
@@ -728,13 +724,11 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
-
 	beaconInstructions, stakingTx, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
 	}
@@ -775,6 +769,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
+
 		return nil, nil, nil, NewBlockChainError(UpdateShardCommitteeStateError, err)
 	}
 	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)

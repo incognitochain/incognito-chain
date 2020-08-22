@@ -107,6 +107,7 @@ type BeaconCommitteeEngine interface {
 		error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
+	BuildIncurredInstructions(env *committeestate.BeaconCommitteeStateEnvironment) ([][]string, error)
 	GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string)
 }
 

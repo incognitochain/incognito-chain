@@ -183,7 +183,6 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 			switch l[0] {
 			case instruction.SWAP_ACTION:
 				if beaconConsensusStateDB == nil {
-					// TODO: @tin GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
@@ -252,40 +251,38 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 				returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(l)
 				if err != nil {
 					Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", returnStakingIns, err)
-					// continue
-					return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+					continue
+					// return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				if beaconConsensusStateDB == nil {
-					// TODO: @tin GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
 					}
 					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 				}
-				Logger.log.Info("[unstake] returnStakingIns.GetPublicKey():", returnStakingIns.GetPublicKey())
 				for _, v := range returnStakingIns.GetPublicKey() {
 					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, v)
 					if err != nil {
-						Logger.log.Error(err)
+						Logger.log.Error(errors.Errorf("Error in trying get information of this public key %v", v))
 						continue
 					}
 					if !has || stakerInfo == nil {
 						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", v))
 						continue
 					}
-					if stakerInfo != nil {
-						Logger.log.Info("[unstake] staker info:", stakerInfo)
-					}
 					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
+						Logger.log.Error(errors.Errorf("Staker info is null %v", stakerInfo.TxStakingID()))
 						continue
 					}
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID())
+						Logger.log.Error(err)
 						return nil, nil, err
 					}
 					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), stakerInfo.TxStakingID())
 					if err != nil {
+						Logger.log.Error("Can't get transaction hash %v from database error %v", stakerInfo.TxStakingID(), err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
@@ -296,7 +293,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					txData := shardBlock.Body.Transactions[index]
 					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
 					if !ok {
-						Logger.log.Error("Can not parse meta data of this tx %v", txData.Hash().String())
+						Logger.log.Errorf("Can not parse meta data of this tx %v", txData.Hash().String())
 						errorInstructions = append(errorInstructions, l)
 						continue
 					}
@@ -320,13 +317,9 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						StakingTx:     txData,
 						StakingAmount: txMeta.StakingAmountShard,
 					}
-					Logger.log.Info("[unstake] res[stakerInfo.TxStakingID()]:", res[stakerInfo.TxStakingID()])
 				}
 			}
 		}
-	}
-	if res != nil && len(res) != 0 {
-		Logger.log.Info("[unstake] res:", res)
 	}
 
 	return res, errorInstructions, nil

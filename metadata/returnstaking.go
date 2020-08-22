@@ -59,17 +59,25 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, cha
 	return true, nil
 }
 
-// TODO: @tin not enough condition, pk fixed at 32 bytes and tk is 33 bytes
+// pk: 32, tk: 32
 func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if len(sbsRes.StakerAddress.Pk) == 0 {
+	if len(sbsRes.StakerAddress.Pk) != 32 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
-	if len(sbsRes.StakerAddress.Tk) == 0 {
+
+	if len(sbsRes.StakerAddress.Tk) != 32 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
+
 	if sbsRes.TxID == "" {
 		return false, false, errors.New("Wrong request info's Tx staking")
 	}
+
+	_, err := common.Hash{}.NewHashFromStr(sbsRes.TxID)
+	if err != nil {
+		return false, false, errors.New("Wrong request info's Tx staking hash")
+	}
+
 	return false, true, nil
 }
 

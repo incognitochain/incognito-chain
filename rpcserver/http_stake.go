@@ -14,10 +14,10 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// handleUnstakeTx - RPC create and send unstake tx to network
-func (httpServer *HttpServer) handleUnstakeTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// handleCreateUnstakeTransaction - RPC create and send unstake tx to network
+func (httpServer *HttpServer) handleCreateUnstakeTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	data, err := httpServer.handleUnstakeRawTx(params)
+	data, err := httpServer.handleCreateRawUnstakeTransaction(params)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
@@ -36,8 +36,7 @@ func (httpServer *HttpServer) handleUnstakeTx(params interface{}, closeChan <-ch
 
 // handleUnstakeRawTx - handle unstake tx request
 // and return raw data for making raw transaction
-// TODO: @tin handleUnstakeRawTx => handleCreateRawUnstakeTransaction
-func (httpServer *HttpServer) handleUnstakeRawTx(params interface{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface{}) (interface{}, *rpcservice.RPCError) {
 
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil || len(paramsArray) < 5 {
@@ -51,9 +50,6 @@ func (httpServer *HttpServer) handleUnstakeRawTx(params interface{}) (interface{
 
 	keyWallet := new(wallet.KeyWallet)
 	keyWallet.KeySet = *createRawTxParam.SenderKeySet
-	// TODO: @tin remove unused code
-	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	_ = funderPaymentAddress
 
 	//Get data to create meta data
 	data, ok := paramsArray[4].(map[string]interface{})

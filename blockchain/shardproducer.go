@@ -151,10 +151,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, err
 	}
 
-	// if len(beaconInstructions) != 0 {
-	// 	Logger.log.Info("[unstake] beaconInstructions:", beaconInstructions)
-	// }
-
 	shardPendingValidatorStr, err := incognitokey.
 		CommitteeKeyListToString(currentPendingValidators)
 	if err != nil {
@@ -245,10 +241,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, err
 	}
-
-	// if len(txInstructions) != 0 {
-	// 	Logger.log.Info("[unstake] txInxtructions:", txInstructions)
-	// }
 
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
@@ -346,12 +338,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			if len(inst) <= 2 {
 				continue
 			}
-			if inst[0] == instruction.RETURN_ACTION {
-				continue
-			}
 			metaType, err := strconv.Atoi(inst[0])
 			if err != nil {
-				return nil, nil, err
+				continue
 			}
 			var newTx metadata.Transaction
 			switch metaType {

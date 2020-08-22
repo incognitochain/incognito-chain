@@ -259,8 +259,7 @@ const (
 	getRewardFeature = "getrewardfeature"
 
 	// stake
-	// TODO: @tin unstake => createunstaketransaction
-	unstake = "unstake"
+	unstake = "createunstaketransaction"
 )
 
 const (

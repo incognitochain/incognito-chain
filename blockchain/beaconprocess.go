@@ -69,12 +69,7 @@ CONTINUE_VERIFY:
 		return err
 	}
 	// Update best state with new block
-	newBestState, hashes, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
-	if err != nil {
-		return err
-	}
-
-	err = curView.postProcessIncurredInstructions(incurredInstructions)
+	newBestState, hashes, _, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
@@ -174,7 +169,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	if len(incurredInstructions) != 0 {
-		Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
+		err := curView.postProcessIncurredInstructions(incurredInstructions)
+		if err != nil {
+			return err
+		}
 	}
 
 	var err2 error
@@ -339,6 +337,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	tempShardStates := make(map[byte][]types.ShardState)
 	stakeInstructions := []*instruction.StakeInstruction{}
 	validStakePublicKeys := []string{}
+	validUnstakePublicKeys := make(map[string]bool)
 	swapInstructions := make(map[byte][]*instruction.SwapInstruction)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
@@ -401,7 +400,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, unstakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
+				tempShardState, stakeInstruction, tempValidStakePublicKeys,
+					swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction,
+					stopAutoStakingInstruction, unstakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys, validUnstakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
 				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
@@ -440,9 +441,19 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
 
+	beaconCommitteeStateEnv := committeestate.NewBeaconCommitteeStateEnvironment()
+	beaconCommitteeStateEnv.ConsensusStateDB = curView.consensusStateDB
+	beaconCommitteeStateEnv.BeaconInstructions = tempInstruction
+
+	incurredInstructions, err := curView.beaconCommitteeEngine.BuildIncurredInstructions(beaconCommitteeStateEnv)
+	if err != nil {
+		return NewBlockChainError(BuildIncurredInstructionError, err)
+	}
+	if len(incurredInstructions) != 0 {
+		tempInstruction = append(tempInstruction, incurredInstructions...)
+	}
+
 	if len(unstakeInstructions) != 0 {
-		// TODO: @tin need to update beacon best state to get incurredInstructions? => too much needless process
-		// TODO: @tin curView is changed?
 		_, _, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 		if err != nil {
 			return NewBlockChainError(UpdateBeaconCommitteeStateError, err)

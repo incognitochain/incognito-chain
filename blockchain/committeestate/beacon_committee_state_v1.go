@@ -100,6 +100,10 @@ func NewBeaconCommitteeStateV1WithValue(
 	}
 }
 
+func NewBeaconCommitteeStateEnvironment() *BeaconCommitteeStateEnvironment {
+	return &BeaconCommitteeStateEnvironment{}
+}
+
 func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),

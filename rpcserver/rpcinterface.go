@@ -242,8 +242,7 @@ var HttpHandler = map[string]httpHandler{
 	// get committeeByHeight
 
 	// unstake
-	// TODO: @tin handleUnstakeTx => handleCreateUnstakeTransaction
-	unstake: (*HttpServer).handleUnstakeTx,
+	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 }
 
 // Commands that are available to a limited user

@@ -138,10 +138,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	tempInstruction = append(tempInstruction, incurredInstructions...)
 	beaconBlock.Body.Instructions = tempInstruction
 
-	// if len(incurredInstructions) != 0 {
-	// 	Logger.log.Info("[unstake] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
-	// }
-
 	//============Build Header Hash=============
 	// calculate hash
 	// Shard state hash
@@ -205,6 +201,7 @@ func (blockchain *BlockChain) GetShardState(
 	shardStates := make(map[byte][]types.ShardState)
 	validStakeInstructions := []*instruction.StakeInstruction{}
 	validStakePublicKeys := []string{}
+	validUnstakePublicKeys := make(map[string]bool)
 	validStopAutoStakeInstructions := []*instruction.StopAutoStakeInstruction{}
 	validUnstakeInstructions := []*instruction.UnstakeInstruction{}
 	validSwapInstructions := make(map[byte][]*instruction.SwapInstruction)
@@ -233,7 +230,7 @@ func (blockchain *BlockChain) GetShardState(
 				acceptedRewardInstruction, stopAutoStakingInstruction,
 				unstakeInstruction, statefulActions := blockchain.GetShardStateFromBlock(
 				beaconBestState, beaconBestState.BeaconHeight+1,
-				shardBlock, shardID, true, validStakePublicKeys)
+				shardBlock, shardID, true, validStakePublicKeys, validUnstakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
 			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)
@@ -268,7 +265,6 @@ func (blockchain *BlockChain) GetShardState(
 //	4. Bridge Instruction
 //	5. Accepted BlockReward Instruction
 //	6. StopAutoStakingInstruction
-// TODO: @tin filter stop autostake/unstake committeepublickey
 func (blockchain *BlockChain) GetShardStateFromBlock(
 	curView *BeaconBestState,
 	newBeaconHeight uint64,
@@ -276,6 +272,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardID byte,
 	isProducer bool,
 	validStakePublicKeys []string,
+	validUnstakePublicKeys map[string]bool,
 ) (map[byte]types.ShardState, []*instruction.StakeInstruction, []string, map[byte][]*instruction.SwapInstruction, [][]string, []string, []*instruction.StopAutoStakeInstruction, []*instruction.UnstakeInstruction, [][]string) {
 	//Variable Declaration
 	shardStates := make(map[byte]types.ShardState)
@@ -315,10 +312,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardStates[shardID] = shardState
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
-
-	// if len(instructions) != 0 {
-	// 	Logger.log.Info("[unstake] instructions:", instructions)
-	// }
 
 	// extract instructions
 	for _, inst := range instructions {
@@ -406,11 +399,16 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		tempStakeBeaconInstruction := instruction.NewStakeInstructionWithValue(stakeBeaconPublicKeys, instruction.BEACON_INST, stakeBeaconTx, stakeBeaconRewardReceiver, stakeBeaconAutoStaking)
 		stakeInstructions = append(stakeInstructions, tempStakeBeaconInstruction)
 	}
-	for _, stopAutoStakeInstruction := range stopAutoStakingInstructionsFromBlock {
-		allCommitteeValidatorCandidate := []string{}
+
+	allCommitteeValidatorCandidate := []string{}
+
+	if len(stopAutoStakingInstructionsFromBlock) != 0 || len(unstakeInstructionFromShardBlock) != 0 {
 		// avoid dead lock
 		// if producer new block then lock beststate
 		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
+	}
+
+	for _, stopAutoStakeInstruction := range stopAutoStakingInstructionsFromBlock {
 		for _, tempStopAutoStakingPublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
 			if common.IndexOfStr(tempStopAutoStakingPublicKey, allCommitteeValidatorCandidate) > -1 {
 				stopAutoStakingPublicKeys = append(stopAutoStakingPublicKeys, tempStopAutoStakingPublicKey)
@@ -423,14 +421,15 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	}
 
 	for _, unstakeInstruction := range unstakeInstructionFromShardBlock {
-		allCommitteeValidatorCandidate := []string{}
-		// avoid dead lock
-		// if producer new block then lock beststate
-		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
+			if validUnstakePublicKeys[tempUnstakePublicKey] {
+				Logger.log.Infof("SHARD %v | UNSTAKE duplicated unstake instruction | ", shardID)
+				continue
+			}
 			if common.IndexOfStr(tempUnstakePublicKey, allCommitteeValidatorCandidate) > -1 {
 				unstakingPublicKeys = append(unstakingPublicKeys, tempUnstakePublicKey)
 			}
+			validUnstakePublicKeys[tempUnstakePublicKey] = true
 		}
 	}
 	if len(unstakingPublicKeys) > 0 {
