@@ -95,6 +95,7 @@ var _ = func() (_ struct{}) {
 	diskBD, _ := incdb.Open("leveldb", dbPath)
 	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(diskBD)
 	dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	testDB = dummyDB.Copy()
 	bridgeDB  = dummyDB.Copy()
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
@@ -120,9 +121,9 @@ func preparePaymentKeys(count int, t *testing.T){
 	// create many random private keys
 	// then use each privatekey to derive Incognito keyset (various keys for everything inside the protocol)
 	// we ensure they all belong in shard 0 for this test
-		
+
 	// PaymentInfo is like `intent` for making Coin.
-	// the paymentInfo slice here will be used to create pastCoins & inputCoins 
+	// the paymentInfo slice here will be used to create pastCoins & inputCoins
 	// we populate `value` fields with some arbitrary, big-enough constant (here, 4000*len)
 	// `message` field can be anything
 	dummyPrivateKeys = make([]*key.PrivateKey,count)
@@ -202,7 +203,7 @@ func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
 // no need for dummy input
 func TestTxV2Salary(t *testing.T){
 	numOfPrivateKeys := 2
-	
+
 	for loop := 0; loop < numOfLoops; loop++ {
 		fmt.Printf("\n------------------TxVersion2 Salary Test\n")
 		var err error
@@ -332,8 +333,8 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		assert.Equal(t,nil,err)
 
 		// verify the TX
-		// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, 
-		// 			shardID byte (we're testing with only 1 shard), 
+		// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB,
+		// 			shardID byte (we're testing with only 1 shard),
 		//			tokenID *common.Hash (set to nil, meaning we use PRV),
 		//			isBatch bool, isNewTransaction bool
 		// isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
@@ -416,7 +417,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 }
 
 func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, params *TxPrivacyInitParams, pastCoins []coin.Coin, t *testing.T){
-	// likewise, if someone took an already proven tx and swaps one input coin 
+	// likewise, if someone took an already proven tx and swaps one input coin
 	// for another random coin from outside, the tx cannot go through
 	// (here we only meddle with coin-changing - not adding/removing - since length checks are included within mlsag)
 	var err error
@@ -557,7 +558,7 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 		// verify with blockchain fails
 		err = malTx.ValidateTxWithBlockChain(nil, nil ,nil, 0, db)
 		assert.NotEqual(t,nil,err)
-		
+
 }
 
 func testTxV2JsonMarshaler(tx *TxVersion2, count int, db *statedb.StateDB, t *testing.T){
@@ -733,9 +734,9 @@ func BenchmarkTxV2Verify(b *testing.B){
 	preparePaymentKeys(numOfPrivateKeys,nil)
 	numOfTxs := numOfPrivateKeys
 	// dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	
+
 	var txsForBenchmark []*TxVersion2
-	for txInd:=0;txInd<numOfTxs;txInd++{ 
+	for txInd:=0;txInd<numOfTxs;txInd++{
 		// pastCoins are coins we forcefully write into the dummyDB to simulate the db having OTAs in the past
 		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
 		pastCoins := make([]coin.Coin, numOfInputs)
@@ -791,8 +792,8 @@ func BenchmarkTxV2Verify(b *testing.B){
 		chosenIndex := RandInt() % len(txsForBenchmark)
 		currentTx := txsForBenchmark[chosenIndex]
 		// verify the TX
-		// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, 
-		// 			shardID byte (we're testing with only 1 shard), 
+		// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB,
+		// 			shardID byte (we're testing with only 1 shard),
 		//			tokenID *common.Hash (set to nil, meaning we use PRV),
 		//			isBatch bool, isNewTransaction bool
 		var err error
@@ -830,9 +831,9 @@ func BenchmarkTxV2BatchVerify(b *testing.B){
 	preparePaymentKeys(numOfPrivateKeys,nil)
 	numOfTxs := numOfPrivateKeys
 	// dummyDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	
+
 	var txsForBenchmark []*TxVersion2
-	for txInd:=0;txInd<numOfTxs;txInd++{ 
+	for txInd:=0;txInd<numOfTxs;txInd++{
 		// pastCoins are coins we forcefully write into the dummyDB to simulate the db having OTAs in the past
 		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
 		pastCoins := make([]coin.Coin, numOfInputs)
@@ -897,7 +898,7 @@ func BenchmarkTxV2BatchVerify(b *testing.B){
 			currentTx := txsForBenchmark[chosenIndex]
 			currentTx.ValidateSanityData(nil,nil,nil,0)
 			currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
-			
+
 			batchContent = append(batchContent, currentTx)
 		}
 		batch := NewBatchTransaction(batchContent)
