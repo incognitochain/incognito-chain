@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/metadata"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // TODO: @lam
@@ -13,6 +14,8 @@ import (
 // 2. RETURN 1 STOP AUTO STAKE INSTRUCTION, NO-ERROR
 //	INPUT: 3 Transaction with Valid Stop Auto Stake Metadata (no duplicate committee publickey)
 // 3. COMBINE 2 cases above
+// REVIEW: @hung
+// No need to write test here, only func need to test is BuildReqActions of each metadata
 func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	type args struct {
 		transactions []metadata.Transaction

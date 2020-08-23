@@ -249,6 +249,13 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		txr          metadata.Transaction
 		beaconHeight uint64
 	}
+
+	txIsPrivacyError := &mocks.Transaction{}
+	txIsPrivacyError.On("IsPrivacy").Return(true)
+
+	txGetUniqueReceiverError := &mocks.Transaction{}
+	txGetUniqueReceiverError.On("IsPrivacy").Return(false)
+	txGetUniqueReceiverError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
 	tests := []struct {
 		name    string
 		fields  fields
@@ -258,17 +265,21 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "check txr.IsPrivacy error case",
-			fields:  fields{},
-			args:    args{},
+			name:   "check txr.IsPrivacy error case",
+			fields: fields{},
+			args: args{
+				txr: txIsPrivacyError,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
 		},
 		{
-			name:    "check txr.GetUniqueReceiver error case",
-			fields:  fields{},
-			args:    args{},
+			name:   "check txr.GetUniqueReceiver error case",
+			fields: fields{},
+			args: args{
+				txr: txGetUniqueReceiverError,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
