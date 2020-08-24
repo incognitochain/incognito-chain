@@ -3,6 +3,8 @@ package rpcservice
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -129,7 +131,17 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 		}
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outputCoins {
-			item = append(item, jsonresult.NewOutCoin(outCoin))
+			tmp := jsonresult.NewOutCoin(outCoin)
+			db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
+
+			idx, err := statedb.GetCommitmentIndex(db, tokenID, outCoin.GetCommitment().ToBytesS(), shardIDSender)
+			if err != nil{
+				return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+			}
+
+			tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
+
+			item = append(item, tmp)
 		}
 		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
 			result.Outputs[readonlyKeyStr] = item

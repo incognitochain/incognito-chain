@@ -259,6 +259,37 @@ func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []coin.Pl
 	return transaction.RandomCommitmentsProcess(param)
 }
 
+func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs int, shardID byte, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, error) {
+	db := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	lenOTA, err := statedb.GetOTACoinLength(db, *tokenID, shardID)
+	if err != nil || lenOTA == nil {
+		return nil, nil, nil, err
+	}
+
+	indices := make([]uint64, 0)
+	publicKeys := make([][]byte, 0)
+	commitments := make([][]byte, 0)
+	for i:=0;i<numOutputs;i++{
+		idx, _ := common.RandBigIntMaxRange(lenOTA)
+		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		coinDB := new(coin.CoinV2)
+		if err := coinDB.SetBytes(coinBytes); err != nil {
+			return nil, nil, nil, err
+		}
+		publicKey := coinDB.GetPublicKey()
+		commitment := coinDB.GetCommitment()
+
+		indices = append(indices, idx.Uint64())
+		publicKeys = append(publicKeys, publicKey.ToBytesS())
+		commitments = append(commitments, commitment.ToBytesS())
+	}
+
+	return indices, publicKeys, commitments, nil
+}
+
 func (blockchain *BlockChain) GetActiveShardNumber() int {
 	return blockchain.GetBeaconBestState().ActiveShards
 }

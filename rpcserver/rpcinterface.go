@@ -80,6 +80,7 @@ var HttpHandler = map[string]httpHandler{
 	listCommitments:                         (*HttpServer).handleListCommitments,
 	listCommitmentIndices:                   (*HttpServer).handleListCommitmentIndices,
 	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
+	randomCommitmentsAndPublicKeys:			 (*HttpServer).handleRandomCommitmentsAndPublicKeys,
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,

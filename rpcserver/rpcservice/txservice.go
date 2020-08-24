@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1478,6 +1478,20 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 	}
 	commitmentIndexs, myCommitmentIndexs, commitments := txService.BlockChain.RandomCommitmentsProcess(usableCoin, 0, shardIDSender, tokenID)
 	return commitmentIndexs, myCommitmentIndexs, commitments, nil
+}
+
+func (txService TxService) RandomCommitmentsAndPublicKeys(paymentAddressStr string, numOutputs int, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, *RPCError) {
+	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
+	if err != nil {
+		Logger.log.Debugf("handleRandomCommitmentsAndPublicKeys result: %+v, err: %+v", nil, err)
+		return nil, nil, nil, NewRPCError(UnexpectedError, err)
+	}
+
+	indices, publicKeys, commitments, err := txService.BlockChain.RandomCommitmentsAndPublicKeysProcess(numOutputs, shardIDSender, tokenID)
+	if err != nil{
+		return nil, nil, nil, NewRPCError(UnexpectedError, err)
+	}
+	return indices, publicKeys, commitments, nil
 }
 
 func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, transaction.TransactionToken, *RPCError) {

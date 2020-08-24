@@ -376,6 +376,51 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	return result, nil
 }
 
+// handleRandomCommitmentsAndPublicKey - returns a list of random commitments, public keys and indices for creating txver2
+func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
+	}
+
+	// #1: payment address
+	paymentAddressStr, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
+	}
+
+	// #2: Number of commitments
+	numOutputs, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of commitments is invalid"))
+	}
+
+	//#3 - tokenID - default PRV
+	tokenID := &common.Hash{}
+	err := tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
+	}
+	if len(arrayParams) > 2 {
+		tokenIDTemp, ok := arrayParams[2].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tokenID is invalid"))
+		}
+		tokenID, err = common.Hash{}.NewHashFromStr(tokenIDTemp)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
+	}
+
+	commitmentIndices, publicKeys, commitments, err2 := httpServer.txService.RandomCommitmentsAndPublicKeys(paymentAddressStr, int(numOutputs), tokenID)
+	if err2 != nil {
+		return nil, err2
+	}
+
+	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments)
+	return result, nil
+}
+
 // handleListSerialNumbers - return list all serialnumber in shard for token ID
 func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
