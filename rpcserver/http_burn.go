@@ -17,7 +17,15 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMetaV2, httpServer)
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningConfirmMeta
+	if onBeacon {
+		confirmMeta = metadata.BurningConfirmMetaV2
+	}
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
 // handleGetBurnProof returns a proof of a tx burning pETH
@@ -25,39 +33,51 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
-	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMetaV2, httpServer)
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningConfirmForDepositToSCMeta
+	if onBeacon {
+		confirmMeta = metadata.BurningConfirmForDepositToSCMetaV2
+	}
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
-func retrieveBurnProof(
-	params interface{},
-	closeChan <-chan struct{},
-	burningMetaType int,
-	httpServer *HttpServer,
-) (interface{}, *rpcservice.RPCError) {
+func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+		return false, 0, nil, errors.New("param must be an array at least 1 element")
 	}
 
 	txIDParam, ok := listParams[0].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx id invalid"))
+		return false, 0, nil, errors.New("Tx id invalid")
 	}
 
 	txID, err := common.Hash{}.NewHashFromStr(txIDParam)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		return false, 0, nil, err
 	}
 	// Get block height from txID
 	height, onBeacon, err := httpServer.blockService.GetBurningConfirm(*txID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
+		return false, 0, nil, fmt.Errorf("proof of tx not found")
 	}
+	return onBeacon, height, txID, nil
+}
 
+func retrieveBurnProof(
+	confirmMeta int,
+	onBeacon bool,
+	height uint64,
+	txID *common.Hash,
+	httpServer *HttpServer,
+) (interface{}, *rpcservice.RPCError) {
 	if !onBeacon {
-		return getBurnProofByHeight(burningMetaType, httpServer, height, txID)
+		return getBurnProofByHeight(confirmMeta, httpServer, height, txID)
 	}
-	return getBurnProofByHeightV2(burningMetaType, httpServer, height, txID)
+	return getBurnProofByHeightV2(confirmMeta, httpServer, height, txID)
 }
 
 func getBurnProofByHeightV2(

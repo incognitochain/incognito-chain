@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -95,6 +96,10 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	}
 	if !bytes.Equal(tx.GetTokenID()[:], bReq.TokenID[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
+	}
+
+	if shardViewRetriever.GetEpoch() >= chainRetriever.GetETHRemoveBridgeSigEpoch() && (bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta) {
+		return false, false, fmt.Errorf("metadata type %d is deprecated", bReq.Type)
 	}
 	return true, true, nil
 }

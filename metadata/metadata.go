@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -55,6 +56,7 @@ type MempoolRetriever interface {
 }
 
 type ChainRetriever interface {
+	GetETHRemoveBridgeSigEpoch() uint64
 	GetStakingAmountShard() uint64
 	GetCentralizedWebsitePaymentAddress(uint64) string
 	GetBeaconHeightBreakPointBurnAddr() uint64
@@ -79,6 +81,7 @@ type BeaconViewRetriever interface {
 }
 
 type ShardViewRetriever interface {
+	GetEpoch() uint64
 	GetBeaconHeight() uint64
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash

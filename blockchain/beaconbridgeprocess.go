@@ -258,7 +258,7 @@ func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, inst
 			continue
 		}
 
-		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v, meta type %d", blockHeight, inst, inst[0])
+		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v, meta type %v", blockHeight, inst, inst[0])
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
