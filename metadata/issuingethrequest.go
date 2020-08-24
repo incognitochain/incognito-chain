@@ -154,7 +154,7 @@ func (iReq IssuingETHRequest) ValidateMetadataByItself() bool {
 
 func (iReq IssuingETHRequest) Hash() *common.Hash {
 	record := iReq.BlockHash.String()
-	record += string(iReq.TxIndex)
+	record += fmt.Sprint(iReq.TxIndex)
 	proofStrs := iReq.ProofStrs
 	for _, proofStr := range proofStrs {
 		record += proofStr

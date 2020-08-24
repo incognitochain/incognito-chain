@@ -5,9 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -91,7 +93,7 @@ func (cReq ContractingRequest) Hash() *common.Hash {
 	record := cReq.MetadataBase.Hash().String()
 	record += cReq.BurnerAddress.String()
 	record += cReq.TokenID.String()
-	record += string(cReq.BurnedAmount)
+	record += fmt.Sprint(cReq.BurnedAmount)
 
 	// final hash
 	hash := common.HashH([]byte(record))

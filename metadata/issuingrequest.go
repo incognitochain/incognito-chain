@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -147,7 +148,7 @@ func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 func (iReq IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.TokenID.String()
-	record += string(iReq.DepositedAmount)
+	record += fmt.Sprint(iReq.DepositedAmount)
 	record += iReq.TokenName
 	record += iReq.MetadataBase.Hash().String()
 
