@@ -262,7 +262,7 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 1e18,
+		BCHeightBreakPointFixRandShardCM: 120000,
 	}
 	// END TESTNET-2
 
