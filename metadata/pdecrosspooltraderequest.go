@@ -125,7 +125,7 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		if pc.TokenIDToSellStr == common.PRVCoinID.String() {
-			return false, false, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token")
+			return false, false, errors.New("With custom token privacy tx, the tokenIDStr should not be PRV, but custom token")
 		}
 		tokenIDToSell, err := common.Hash{}.NewHashFromStr(pc.TokenIDToSellStr)
 		if err != nil {
@@ -134,15 +134,26 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		if !bytes.Equal(tx.GetTokenID()[:], tokenIDToSell[:]) {
 			return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id")
 		}
-		if !tx.IsFullBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-			return false, false, errors.New("Must send coins to burning address")
-		}
-		prvAmt, pTokenAmt := tx.GetFullTxValues()
-		if prvAmt != pc.TradingFee {
-			return false, false, errors.New("Trading fee should be equal to the burned prv amount")
-		}
-		if pTokenAmt != pc.SellAmount {
-			return false, false, errors.New("Sell amount should be equal to the burned pToken amount")
+
+		if pc.TradingFee == 0 {
+			if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+				return false, false, errors.New("Must send custom coin to burning address")
+			}
+			pTokenAmt := tx.CalculateTxValue()
+			if pTokenAmt != pc.SellAmount {
+				return false, false, errors.New("Sell amount should be equal to the burned pToken amount")
+			}
+		} else {
+			if !tx.IsFullBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+				return false, false, errors.New("Must send coins to burning address")
+			}
+			prvAmt, pTokenAmt := tx.GetFullTxValues()
+			if prvAmt != pc.TradingFee {
+				return false, false, errors.New("Trading fee should be equal to the burned prv amount")
+			}
+			if pTokenAmt != pc.SellAmount {
+				return false, false, errors.New("Sell amount should be equal to the burned pToken amount")
+			}
 		}
 	}
 

@@ -74,6 +74,7 @@ type Params struct {
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointFixRandShardCM uint64
 }
 
 type GenesisParams struct {
@@ -176,11 +177,12 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		ETHRemoveBridgeSigEpoch:   1,
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           1,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		ETHRemoveBridgeSigEpoch:          1,
+		BCHeightBreakPointFixRandShardCM: 2070000,
 	}
 	// END TESTNET
 
@@ -258,10 +260,11 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           1,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 1e18,
 	}
 	// END TESTNET-2
 
@@ -337,11 +340,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    559380,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		ETHRemoveBridgeSigEpoch:   1,
+
+		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           559380,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		ETHRemoveBridgeSigEpoch:          1,
+		BCHeightBreakPointFixRandShardCM: 1e18,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
