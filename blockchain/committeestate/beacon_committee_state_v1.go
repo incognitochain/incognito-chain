@@ -148,11 +148,6 @@ func (b *BeaconCommitteeStateV1) reset() {
 	b.stakingTx = make(map[string]common.Hash)
 }
 
-//ValidateCommitteeRootHashes :
-func (engine BeaconCommitteeEngineV1) ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error) {
-	panic("implement me")
-}
-
 //GetBeaconHeight :
 func (engine BeaconCommitteeEngineV1) GetBeaconHeight() uint64 {
 	return engine.beaconHeight
@@ -324,16 +319,6 @@ func (engine *BeaconCommitteeEngineV1) InitCommitteeState(env *BeaconCommitteeSt
 	for shardID := 0; shardID < env.ActiveShards; shardID++ {
 		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
 	}
-	//beaconCommitteeKeys, _ := incognitokey.CommitteeKeyListToString(b.beaconCommittee)
-	//for _, committee := range beaconCommitteeKeys {
-	//	b.stakingTx[committee] = common.HashH([]byte{0})
-	//}
-	//for _, v := range b.shardCommittee {
-	//	shardCommitteeKeys, _ := incognitokey.CommitteeKeyListToString(v)
-	//	for _, committee := range shardCommitteeKeys {
-	//		b.stakingTx[committee] = common.HashH([]byte{0})
-	//	}
-	//}
 }
 
 //UpdateCommitteeState :
