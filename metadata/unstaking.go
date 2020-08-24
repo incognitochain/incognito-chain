@@ -93,17 +93,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
 	}
 
-	// TODO: @tin unstake condition # stop auto stake, (stopautostake == false) do not effect unstake
-	autoStakingList := beaconViewRetriever.GetAutoStakingList()
-	ok = false
-	isAutoStaking := false
-	if isAutoStaking, ok = autoStakingList[unStakingMetadata.CommitteePublicKey]; !ok {
-		return false, NewMetadataTxError(UnStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", unStakingMetadata.CommitteePublicKey))
-	}
-	if !isAutoStaking {
-		return false, NewMetadataTxError(UnStakingRequestAlreadyStopError, fmt.Errorf("Auto Staking for Committee Public Key %+v already stop", unStakingMetadata.CommitteePublicKey))
-	}
-
 	return true, nil
 }
 
