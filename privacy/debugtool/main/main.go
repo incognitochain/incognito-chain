@@ -300,6 +300,19 @@ func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string
 	fmt.Println("========== GET LIST RANDOM COMMITMENT FINISH ==========")
 }
 
+func GetListRandomCommitmentsAndPublicKeys(tool *debugtool.DebugTool, paymentAddress, tokenID string, numOutputs int){
+	fmt.Println("========== GET LIST RANDOM COMMITMENTS AND PUBLIC KEYS ==========")
+
+	b, err := tool.GetRandomCommitmentsAndPublicKeys(tokenID, paymentAddress, numOutputs)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(b))
+
+	fmt.Println("========== GET LIST RANDOM COMMITMENTS AND PUBLIC KEYS FINISH ==========")
+}
+
 //Blockchain
 func GetBlockchainInfo(tool *debugtool.DebugTool){
 	fmt.Println("========== GET BLOCKCHAIN INFO ==========")
@@ -758,6 +771,43 @@ func main() {
 			}else{
 				sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
 			}
+		}
+
+		if args[0] == "cmtandpubkey"{
+			if len(args)<3{
+				fmt.Println("Need at least 3 arguments")
+				continue
+			}
+
+			//#1 - paymentAddress
+			paymentAddress := args[1]
+			if len(args[1]) < 2 {
+				idx, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				if idx > int64(len(privateKeys) - 1) {
+					fmt.Println("Privatekey index out of range")
+					continue
+				}
+				paymentAddress = privateKeyToPaymentAddress(privateKeyToPaymentAddress(privateKeys[idx]))
+			}
+
+			//#2 - numOutputs
+			numOutputs, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+
+			//#3- TokenID
+			tokenID := common.PRVIDStr
+			if len(args)>3{
+				tokenID = args[3]
+			}
+
+			GetListRandomCommitmentsAndPublicKeys(tool, paymentAddress, tokenID, int(numOutputs))
 		}
 	}
 }
