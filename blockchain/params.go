@@ -181,8 +181,8 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		ETHRemoveBridgeSigEpoch:          1,
 		BCHeightBreakPointFixRandShardCM: 2070000,
+		ETHRemoveBridgeSigEpoch:          1e18,
 	}
 	// END TESTNET
 
@@ -265,6 +265,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 1e18,
+		ETHRemoveBridgeSigEpoch:          1e18,
 	}
 	// END TESTNET-2
 
@@ -345,8 +346,8 @@ func init() {
 		ReplaceStakingTxHeight:           559380,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		ETHRemoveBridgeSigEpoch:          1,
 		BCHeightBreakPointFixRandShardCM: 1e18,
+		ETHRemoveBridgeSigEpoch:          1e18,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
