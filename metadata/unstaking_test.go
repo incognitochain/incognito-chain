@@ -194,27 +194,27 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 			want1:   false,
 			wantErr: true,
 		},
-		// {
-		// 	name:    "Transaction Is Privacy",
-		// 	fields:  fields{},
-		// 	args:    args{},
-		// 	want:    false,
-		// 	want1:   false,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Valid Input",
-		// 	fields: fields{
-		// 		MetadataBase: MetadataBase{
-		// 			Type: UnStakingMeta,
-		// 		},
-		// 		CommitteePublicKey: key1,
-		// 	},
-		// 	args:    args{},
-		// 	want:    true,
-		// 	want1:   true,
-		// 	wantErr: false,
-		// },
+		{
+			name:    "Transaction Is Privacy",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "Valid Input",
+			fields: fields{
+				MetadataBase: MetadataBase{
+					Type: UnStakingMeta,
+				},
+				CommitteePublicKey: key1,
+			},
+			args:    args{},
+			want:    true,
+			want1:   true,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
