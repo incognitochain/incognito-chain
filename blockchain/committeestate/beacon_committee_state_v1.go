@@ -3,6 +3,7 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,30 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
-
-type BeaconCommitteeStateEnvironment struct {
-	BeaconHeight                    uint64
-	BeaconHash                      common.Hash
-	ParamEpoch                      uint64
-	BeaconInstructions              [][]string
-	EpochBreakPointSwapNewKey       []uint64
-	RandomNumber                    int64
-	IsFoundRandomNumber             bool
-	IsBeaconRandomTime              bool
-	AssignOffset                    int
-	ActiveShards                    int
-	MinShardCommitteeSize           int
-	ConsensusStateDB                *statedb.StateDB
-	allCandidateSubstituteCommittee []string
-}
-
-type BeaconCommitteeStateHash struct {
-	BeaconCommitteeAndValidatorHash common.Hash
-	BeaconCandidateHash             common.Hash
-	ShardCandidateHash              common.Hash
-	ShardCommitteeAndValidatorHash  common.Hash
-	AutoStakeHash                   common.Hash
-}
 
 type BeaconCommitteeStateV1 struct {
 	beaconCommittee             []incognitokey.CommitteePublicKey
@@ -442,7 +419,17 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	return hashes, committeeChange, nil
 }
 
-func (b *BeaconCommitteeEngineV1) GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string) {
+func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([][]string, []string, map[byte][]string) {
+	candidates, _ := incognitokey.CommitteeKeyListToString(engine.beaconCommitteeStateV1.currentEpochShardCandidate)
+	numberOfPendingValidator := make(map[byte]int)
+	shardPendingValidator := engine.beaconCommitteeStateV1.shardSubstitute
+	for i := 0; i < activeShards; i++ {
+		if pendingValidators, ok := shardPendingValidator[byte(i)]; ok {
+			numberOfPendingValidator[byte(i)] = len(pendingValidators)
+		} else {
+			numberOfPendingValidator[byte(i)] = 0
+		}
+	}
 	assignedCandidates := make(map[byte][]string)
 	remainShardCandidates := []string{}
 	shuffledCandidate := shuffleShardCandidate(candidates, rand)
@@ -456,7 +443,24 @@ func (b *BeaconCommitteeEngineV1) GenerateAssignInstruction(candidates []string,
 			numberOfPendingValidator[shardID] += 1
 		}
 	}
-	return remainShardCandidates, assignedCandidates
+	var keys []int
+	for k := range assignedCandidates {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	instructions := [][]string{}
+	for _, key := range keys {
+		shardID := byte(key)
+		candidates := assignedCandidates[shardID]
+		Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
+		shardAssignInstruction := instruction.NewAssignInstructionWithValue(int(shardID), candidates)
+		instructions = append(instructions, shardAssignInstruction.ToString())
+	}
+	return instructions, remainShardCandidates, assignedCandidates
+}
+
+func (b *BeaconCommitteeEngineV1) GenerateShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
+	return [][]string{}, nil
 }
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(
@@ -532,7 +536,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
-				tempShardSubstitute, err := RemoveValidator(shardSubstituteStr, swapInstruction.InPublicKeys)
+				tempShardSubstitute, err := removeValidatorV1(shardSubstituteStr, swapInstruction.InPublicKeys)
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
@@ -555,7 +559,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
-				tempShardCommittees, err := RemoveValidator(shardCommitteeStr, swapInstruction.OutPublicKeys)
+				tempShardCommittees, err := removeValidatorV1(shardCommitteeStr, swapInstruction.OutPublicKeys)
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
@@ -590,7 +594,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
-				tempBeaconSubstitute, err := RemoveValidator(beaconSubstituteStr, swapInstruction.InPublicKeys)
+				tempBeaconSubstitute, err := removeValidatorV1(beaconSubstituteStr, swapInstruction.InPublicKeys)
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
@@ -613,7 +617,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}
-				tempBeaconCommittees, err := RemoveValidator(beaconCommitteeStrs, swapInstruction.OutPublicKeys)
+				tempBeaconCommittees, err := removeValidatorV1(beaconCommitteeStrs, swapInstruction.OutPublicKeys)
 				if err != nil {
 					return newBeaconCandidates, newShardCandidates, err
 				}

@@ -488,14 +488,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
-		//beaconSlashRootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetBeaconChainDatabase(), beaconHeight)
-		//if err != nil {
-		//	return instructions, shardPendingValidator, shardCommittee, err
-		//}
-		//beaconSlashStateDB, err := statedb.NewWithPrefixTrie(beaconSlashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		//if err != nil {
-		//	return instructions, shardPendingValidator, shardCommittee, err
-		//}
 		var err error
 		producersBlackList := make(map[string]uint8)
 
@@ -519,9 +511,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			}
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
-
-		// view.shardCommitteeEngine.ProcessInstructionFromShard()
-
 		//Here: @tin
 
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here

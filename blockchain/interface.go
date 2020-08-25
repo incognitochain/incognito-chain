@@ -102,7 +102,8 @@ type BeaconCommitteeEngine interface {
 	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash,
 		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
-	GenerateAssignInstruction(candidates []string, numberOfPendingValidator map[byte]int, rand int64, assignOffset int, activeShards int) ([]string, map[byte][]string)
+	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([][]string, []string, map[byte][]string)
+	GenerateShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) (instruction [][]string, err error)
 }
 
 //ShardCommitteeEngine :

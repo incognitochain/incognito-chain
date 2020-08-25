@@ -1,6 +1,7 @@
 package instruction
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,8 +25,10 @@ type SwapInstruction struct {
 	IsReplace                bool
 }
 
-func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int, punishedPublicKeys string, newRewardReceivers []string) *SwapInstruction {
-	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: punishedPublicKeys, NewRewardReceivers: newRewardReceivers}
+func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int, newRewardReceivers []string) *SwapInstruction {
+	producersBlackList := make(map[string]uint8)
+	badProducersWithPunishmentBytes, _ := json.Marshal(producersBlackList)
+	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: string(badProducersWithPunishmentBytes), NewRewardReceivers: newRewardReceivers}
 }
 
 func NewSwapInstruction() *SwapInstruction {

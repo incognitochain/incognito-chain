@@ -21,7 +21,6 @@ type ShardEnvBuilder interface {
 	BuildMinShardCommitteeSize(minShardCommitteeSize int) ShardEnvBuilder
 	BuildOffset(offset int) ShardEnvBuilder
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
-	BuildProducersBlackList(producersBlackList map[string]uint8) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
@@ -48,7 +47,6 @@ type ShardCommitteeStateEnvironment interface {
 	MinShardCommitteeSize() int
 	Offset() int
 	SwapOffset() int
-	ProducersBlackList() map[string]uint8
 	StakingTx() map[string]string
 	NumberOfFixedBlockValidators() int
 }
@@ -69,7 +67,6 @@ type shardCommitteeStateEnvironment struct {
 	minShardCommitteeSize        int
 	offset                       int
 	swapOffset                   int
-	producersBlackList           map[string]uint8
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
 }
@@ -159,12 +156,6 @@ func (env *shardCommitteeStateEnvironment) BuildSwapOffset(swapOffset int) Shard
 	return env
 }
 
-//BuildProducersBlackList :
-func (env *shardCommitteeStateEnvironment) BuildProducersBlackList(producersBlackList map[string]uint8) ShardEnvBuilder {
-	env.producersBlackList = producersBlackList
-	return env
-}
-
 //BuildStakingTx :
 func (env *shardCommitteeStateEnvironment) BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder {
 	env.stakingTx = stakingTx
@@ -246,11 +237,6 @@ func (env *shardCommitteeStateEnvironment) Offset() int {
 //SwapOffset :
 func (env *shardCommitteeStateEnvironment) SwapOffset() int {
 	return env.swapOffset
-}
-
-//ProducersBlackList :
-func (env *shardCommitteeStateEnvironment) ProducersBlackList() map[string]uint8 {
-	return env.producersBlackList
 }
 
 //StakingTx :

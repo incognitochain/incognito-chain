@@ -52,15 +52,13 @@ func isBadProducer(badProducers []string, producer string) bool {
 
 func CreateBeaconSwapActionForKeyListV2(
 	genesisParam *GenesisParams,
-	pendingValidator []string,
 	beaconCommittees []string,
 	minCommitteeSize int,
 	epoch uint64,
-) ([]string, []string, []string) {
-	newPendingValidator := pendingValidator
+) ([]string, []string) {
 	swapInstruction, newBeaconCommittees := GetBeaconSwapInstructionKeyListV2(genesisParam, epoch)
 	remainBeaconCommittees := beaconCommittees[minCommitteeSize:]
-	return swapInstruction, newPendingValidator, append(newBeaconCommittees, remainBeaconCommittees...)
+	return swapInstruction, append(newBeaconCommittees, remainBeaconCommittees...)
 }
 
 func swap(
@@ -116,9 +114,9 @@ func SwapValidator(
 	maxCommittee int,
 	minCommittee int,
 	offset int,
-	producersBlackList map[string]uint8,
 	swapOffset int,
 ) ([]string, []string, []string, []string, error) {
+	producersBlackList := make(map[string]uint8)
 	goodPendingValidators := filterValidators(pendingValidators, producersBlackList, false)
 	badPendingValidators := filterValidators(pendingValidators, producersBlackList, true)
 	currentBadProducers := filterValidators(currentValidators, producersBlackList, true)

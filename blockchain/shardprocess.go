@@ -155,8 +155,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, true, shardID); err != nil {
 			return err
 		}
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.ShardCommittee); err != nil {
-			Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), curView.ShardCommittee, err)
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.GetShardCommittee()); err != nil {
+			Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), curView.GetShardCommittee(), err)
 			return err
 		}
 	} else {
@@ -495,12 +495,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		}
 	}
 
-	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
-		false, int(curView.ShardID), shardCommittee, curView.BeaconHeight)
-	if err != nil {
-		return err
-	}
-
 	beaconInstructions, _, err = blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, curView.ShardID)
 	if err != nil {
@@ -509,7 +503,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 
 	env := committeestate.
 		NewShardEnvBuilder().
-		BuildProducersBlackList(producersBlackList).
 		BuildBeaconInstructions(beaconInstructions).
 		Build()
 
@@ -700,15 +693,6 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			}
 		}
 	}
-	listCommittees, err := incognitokey.CommitteeKeyListToString(shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.GetBeaconBestState().slashStateDB,
-		false, int(shardBestState.ShardID), listCommittees, shardBestState.BeaconHeight)
-	if err != nil {
-		return nil, nil, nil, err
-	}
 	//updateShardBestState best cross shard
 	for shardID, crossShardBlock := range shardBlock.Body.CrossTransactions {
 		shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
@@ -756,7 +740,6 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildNumberOfFixedBlockValidators(NumberOfFixedBlockValidators).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
-		BuildProducersBlackList(producersBlackList).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardID).
@@ -815,7 +798,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
-		BuildProducersBlackList(make(map[string]uint8)).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardBestState.ShardID).

@@ -92,7 +92,7 @@ func CreateSwapInstruction(
 	offset int,
 	swapOffset int,
 ) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, producersBlackList, swapOffset)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
 	if err != nil {
 		return nil, nil, nil, err
 	}

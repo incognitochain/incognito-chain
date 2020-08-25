@@ -8,8 +8,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // assignShardCandidate Assign Candidates Into Shard Pending Validator List
@@ -93,34 +91,6 @@ func isBadProducer(badProducers []string, producer string) bool {
 	return false
 }
 
-func CreateBeaconSwapActionForKeyListV2(
-	SelectBeaconNodeSerializedPubkeyV2 map[uint64][]string,
-	SelectBeaconNodeSerializedPaymentAddressV2 map[uint64][]string,
-	PreSelectBeaconNodeSerializedPubkey []string,
-	pendingValidator []string,
-	beaconCommittees []string,
-	minCommitteeSize int,
-	epoch uint64,
-) ([]string, []string, []string) {
-	newPendingValidator := pendingValidator
-	swapInstruction, newBeaconCommittees := GetBeaconSwapInstructionKeyListV2(SelectBeaconNodeSerializedPubkeyV2, SelectBeaconNodeSerializedPaymentAddressV2, PreSelectBeaconNodeSerializedPubkey, epoch)
-	remainBeaconCommittees := beaconCommittees[minCommitteeSize:]
-	return swapInstruction, newPendingValidator, append(newBeaconCommittees, remainBeaconCommittees...)
-}
-
-func GetBeaconSwapInstructionKeyListV2(
-	SelectBeaconNodeSerializedPubkeyV2 map[uint64][]string,
-	SelectBeaconNodeSerializedPaymentAddressV2 map[uint64][]string,
-	PreSelectBeaconNodeSerializedPubkey []string,
-	epoch uint64,
-) ([]string, []string) {
-	newCommittees := SelectBeaconNodeSerializedPubkeyV2[epoch]
-	newRewardReceivers := SelectBeaconNodeSerializedPaymentAddressV2[epoch]
-	oldCommittees := PreSelectBeaconNodeSerializedPubkey
-	beaconSwapInstructionKeyListV2 := []string{instruction.SWAP_ACTION, strings.Join(newCommittees, ","), strings.Join(oldCommittees, ","), "beacon", "", "", strings.Join(newRewardReceivers, ",")}
-	return beaconSwapInstructionKeyListV2, newCommittees
-}
-
 func swap(
 	badPendingValidators []string,
 	goodPendingValidators []string,
@@ -174,9 +144,9 @@ func SwapValidator(
 	maxCommittee int,
 	minCommittee int,
 	offset int,
-	producersBlackList map[string]uint8,
 	swapOffset int,
 ) ([]string, []string, []string, []string, error) {
+	producersBlackList := make(map[string]uint8)
 	goodPendingValidators := filterValidators(pendingValidators, producersBlackList, false)
 	badPendingValidators := filterValidators(pendingValidators, producersBlackList, true)
 	currentBadProducers := filterValidators(currentValidators, producersBlackList, true)
@@ -218,12 +188,12 @@ func SwapValidator(
 	return badPendingValidators, newProducers, swappedProducers, goodPendingValidators, nil
 }
 
-// RemoveValidator remove validator and return removed list
+// removeValidatorV1 remove validator and return removed list
 // return: #param1: validator list after remove
 // in parameter: #param1: list of full validator
 // in parameter: #param2: list of removed validator
 // removed validators list must be a subset of full validator list and it must be first in the list
-func RemoveValidator(validators []string, removedValidators []string) ([]string, error) {
+func removeValidatorV1(validators []string, removedValidators []string) ([]string, error) {
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if len(removedValidators) > len(validators) {
 		return validators, errors.New("trying to remove too many validators")
@@ -265,23 +235,4 @@ func ShuffleCandidate(candidates []incognitokey.CommitteePublicKey, rand int64) 
 	}
 	Logger.log.Debug("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil
-}
-
-//checkReturnStakingTxExistence : Check if there is any return staking transactions available
-// Preconditions: NULL
-// Input: transactionid and list transactions
-// Output: true or false
-func checkReturnStakingTxExistence(txID string, transactions []metadata.Transaction) bool {
-	for _, tx := range transactions {
-		if tx.GetMetadata() != nil {
-			if tx.GetMetadata().GetType() == metadata.ReturnStakingMeta {
-				if returnStakingMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata); ok {
-					if returnStakingMeta.TxID == txID {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
 }
