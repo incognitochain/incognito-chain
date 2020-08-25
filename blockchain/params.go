@@ -346,7 +346,7 @@ func init() {
 		ReplaceStakingTxHeight:           559380,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 1e18,
+		BCHeightBreakPointFixRandShardCM: 644000,
 		ETHRemoveBridgeSigEpoch:          1e18,
 	}
 	if IsTestNet {
