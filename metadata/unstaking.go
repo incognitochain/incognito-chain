@@ -97,16 +97,9 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 }
 
 // ValidateSanityData :
-// Have only one receiver
-// Have only one amount corresponding to receiver
-// Receiver Is Burning Address
 func (unStakingMetadata UnStakingMetadata) ValidateSanityData(
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if tx.IsPrivacy() {
-		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
-	}
-
 	if unStakingMetadata.Type != UnStakingMeta {
 		return false, false, errors.New("receiver amount should be zero")
 	}
@@ -117,6 +110,9 @@ func (unStakingMetadata UnStakingMetadata) ValidateSanityData(
 	}
 	if !CommitteePublicKey.CheckSanityData() {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
+	}
+	if tx.IsPrivacy() {
+		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
 	return true, true, nil
 }

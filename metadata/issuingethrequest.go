@@ -152,20 +152,20 @@ func (iReq IssuingETHRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (iReq IssuingETHRequest) Hash() *common.Hash {
-	record := iReq.BlockHash.String()
-	record += string(iReq.TxIndex)
-	proofStrs := iReq.ProofStrs
-	for _, proofStr := range proofStrs {
-		record += proofStr
-	}
-	record += iReq.MetadataBase.Hash().String()
-	record += iReq.IncTokenID.String()
+// func (iReq IssuingETHRequest) Hash() *common.Hash {
+// 	record := iReq.BlockHash.String()
+// 	record += string(iReq.TxIndex)
+// 	proofStrs := iReq.ProofStrs
+// 	for _, proofStr := range proofStrs {
+// 		record += proofStr
+// 	}
+// 	record += iReq.MetadataBase.Hash().String()
+// 	record += iReq.IncTokenID.String()
 
-	// final hash
-	hash := common.HashH([]byte(record))
-	return &hash
-}
+// 	// final hash
+// 	hash := common.HashH([]byte(record))
+// 	return &hash
+// }
 
 func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()

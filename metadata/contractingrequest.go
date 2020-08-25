@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -87,16 +88,16 @@ func (cReq ContractingRequest) ValidateMetadataByItself() bool {
 	return cReq.Type == ContractingRequestMeta
 }
 
-func (cReq ContractingRequest) Hash() *common.Hash {
-	record := cReq.MetadataBase.Hash().String()
-	record += cReq.BurnerAddress.String()
-	record += cReq.TokenID.String()
-	record += string(cReq.BurnedAmount)
+// func (cReq ContractingRequest) Hash() *common.Hash {
+// 	record := cReq.MetadataBase.Hash().String()
+// 	record += cReq.BurnerAddress.String()
+// 	record += cReq.TokenID.String()
+// 	record += string(cReq.BurnedAmount)
 
-	// final hash
-	hash := common.HashH([]byte(record))
-	return &hash
-}
+// 	// final hash
+// 	hash := common.HashH([]byte(record))
+// 	return &hash
+// }
 
 func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := map[string]interface{}{
