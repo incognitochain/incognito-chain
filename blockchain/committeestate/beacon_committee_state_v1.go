@@ -419,7 +419,7 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	return hashes, committeeChange, nil
 }
 
-func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([][]string, []string, map[byte][]string) {
+func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
 	candidates, _ := incognitokey.CommitteeKeyListToString(engine.beaconCommitteeStateV1.currentEpochShardCandidate)
 	numberOfPendingValidator := make(map[byte]int)
 	shardPendingValidator := engine.beaconCommitteeStateV1.shardSubstitute
@@ -448,19 +448,20 @@ func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, ass
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
-	instructions := [][]string{}
+	instructions := []*instruction.AssignInstruction{}
 	for _, key := range keys {
 		shardID := byte(key)
 		candidates := assignedCandidates[shardID]
 		Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
 		shardAssignInstruction := instruction.NewAssignInstructionWithValue(int(shardID), candidates)
-		instructions = append(instructions, shardAssignInstruction.ToString())
+		instructions = append(instructions, shardAssignInstruction)
 	}
 	return instructions, remainShardCandidates, assignedCandidates
 }
 
-func (b *BeaconCommitteeEngineV1) GenerateShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-	return [][]string{}, nil
+// GenerateAllShardSwapInstruction do nothing
+func (b *BeaconCommitteeEngineV1) GenerateAllShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapInstruction, []*instruction.AssignInstruction, error) {
+	return []*instruction.SwapInstruction{}, []*instruction.AssignInstruction{}, nil
 }
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(

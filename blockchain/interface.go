@@ -3,6 +3,7 @@ package blockchain
 import (
 	"context"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -102,8 +103,8 @@ type BeaconCommitteeEngine interface {
 	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash,
 		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
-	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([][]string, []string, map[byte][]string)
-	GenerateShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) (instruction [][]string, err error)
+	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
+	GenerateAllShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) (swapInstructions []*instruction.SwapInstruction, assignInstructions []*instruction.AssignInstruction, err error)
 }
 
 //ShardCommitteeEngine :

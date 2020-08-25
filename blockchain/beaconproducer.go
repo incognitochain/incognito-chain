@@ -481,7 +481,9 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
 			assignInstructions, _, _ := beaconBestState.beaconCommitteeEngine.GenerateAssignInstruction(randomNumber, blockchain.config.ChainParams.AssignOffset, beaconBestState.ActiveShards)
-			instructions = append(instructions, assignInstructions...)
+			for _, assignInstruction := range assignInstructions {
+				instructions = append(instructions, assignInstruction.ToString())
+			}
 		}
 	}
 	return instructions, nil

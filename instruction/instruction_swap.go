@@ -25,10 +25,10 @@ type SwapInstruction struct {
 	IsReplace                bool
 }
 
-func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int, newRewardReceivers []string) *SwapInstruction {
+func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int) *SwapInstruction {
 	producersBlackList := make(map[string]uint8)
 	badProducersWithPunishmentBytes, _ := json.Marshal(producersBlackList)
-	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: string(badProducersWithPunishmentBytes), NewRewardReceivers: newRewardReceivers}
+	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: string(badProducersWithPunishmentBytes), NewRewardReceivers: []string{}}
 }
 
 func NewSwapInstruction() *SwapInstruction {

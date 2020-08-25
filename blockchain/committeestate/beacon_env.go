@@ -21,6 +21,7 @@ type BeaconCommitteeStateEnvironment struct {
 	MinShardCommitteeSize           int
 	MinBeaconCommitteeSize          int
 	MaxBeaconCommitteeSize          int
+	MaxSwapOrAssign                 int
 	ConsensusStateDB                *statedb.StateDB
 	IsReplace                       bool
 	allCandidateSubstituteCommittee []string
