@@ -7,6 +7,7 @@ import (
 
 type BeaconCommitteeStateEnvironment struct {
 	BeaconHeight                    uint64
+	Epoch                           uint64
 	BeaconHash                      common.Hash
 	ParamEpoch                      uint64
 	BeaconInstructions              [][]string

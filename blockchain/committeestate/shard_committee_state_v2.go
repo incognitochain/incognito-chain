@@ -86,9 +86,14 @@ func (committeeState *ShardCommitteeStateV2) reset() {
 	committeeState.shardSubstitute = make([]incognitokey.CommitteePublicKey, 0)
 }
 
-//ValidateCommitteeRootHashes validate committee root hashes for checking if it's valid
-func (engine *ShardCommitteeEngineV2) ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error) {
-	panic("Not implemented yet")
+//GetShardCommittee get shard committees
+func (engine *ShardCommitteeEngineV2) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
+	return engine.shardCommitteeStateV2.shardCommittee
+}
+
+//GetShardPendingValidator get shard pending validators
+func (engine *ShardCommitteeEngineV2) GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
+	return engine.shardCommitteeStateV2.shardSubstitute
 }
 
 //Commit commit committee state change in uncommittedShardCommitteeStateV2 struct
@@ -129,46 +134,6 @@ func (engine *ShardCommitteeEngineV2) AbortUncommittedShardState() {
 	engine.uncommittedShardCommitteeStateV2.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
 	engine.uncommittedShardCommitteeStateV2.reset()
-}
-
-//UpdateCommitteeState update committeState from valid data before
-//	- call process instructions from beacon
-//	- check conditions for epoch timestamp
-//		+ process shard block instructions for key
-//			+ process shard block instructions normally
-//	- hash for checking commit later
-//	- Only call once in new or insert block process
-func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
-	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
-	engine.uncommittedShardCommitteeStateV2.mu.Lock()
-	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
-	engine.shardCommitteeStateV2.mu.RLock()
-	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
-	engine.shardCommitteeStateV2.mu.RUnlock()
-	newCommitteeState := engine.uncommittedShardCommitteeStateV2
-
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), NewCommitteeChange())
-
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 {
-		committeeChange, err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
-	} else {
-		committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
-	}
-
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	hashes, err := engine.generateUncommittedCommitteeHashes()
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	return hashes, committeeChange, nil
 }
 
 //InitCommitteeState init committee state at genesis block or anytime restore program
@@ -225,14 +190,56 @@ func (engine *ShardCommitteeEngineV2) InitCommitteeState(env ShardCommitteeState
 		newShardPendingValidator...)
 }
 
-//GetShardCommittee get shard committees
-func (engine *ShardCommitteeEngineV2) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
-	return engine.shardCommitteeStateV2.shardCommittee
+//UpdateCommitteeState update committeState from valid data before
+//	- call process instructions from beacon
+//	- check conditions for epoch timestamp
+//		+ process shard block instructions for key
+//			+ process shard block instructions normally
+//	- hash for checking commit later
+//	- Only call once in new or insert block process
+func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
+	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	engine.uncommittedShardCommitteeStateV2.mu.Lock()
+	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
+	engine.shardCommitteeStateV2.mu.RLock()
+	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
+	engine.shardCommitteeStateV2.mu.RUnlock()
+	newCommitteeState := engine.uncommittedShardCommitteeStateV2
+
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), NewCommitteeChange())
+
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+
+	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 {
+		committeeChange, err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
+	} else {
+		committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
+	}
+
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+
+	hashes, err := engine.generateUncommittedCommitteeHashes()
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+
+	return hashes, committeeChange, nil
 }
 
-//GetShardPendingValidator get shard pending validators
-func (engine *ShardCommitteeEngineV2) GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
-	return engine.shardCommitteeStateV2.shardSubstitute
+func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (
+	*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	//TODO: @hung
+	return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
+}
+
+func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
+	shardSubsitutes, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardSubstitute)
+	shardCommittees, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardCommittee)
+	return instruction.NewSwapInstruction(), shardSubsitutes, shardCommittees, nil
 }
 
 //generateUncommittedCommitteeHashes generate hashes relate to uncommitted committees of struct ShardCommitteeEngineV2

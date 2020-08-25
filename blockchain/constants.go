@@ -54,6 +54,7 @@ const (
 	MainnetOffset           = 4
 	MainnetSwapOffset       = 4
 	MainnetAssignOffset     = 8
+	MainnetMaxSwapOrAssign  = 10
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 22
@@ -83,8 +84,7 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
-
-	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -113,6 +113,7 @@ const (
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
+	TestnetMaxSwapOrAssign  = 1
 
 	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4

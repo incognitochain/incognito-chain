@@ -551,7 +551,7 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 	return bridgeTokenIDs, nil
 }
 
-func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
+func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithValue(
 	params *Params,
 	beaconInstructions [][]string,
 	isFoundRandomInstruction bool,
@@ -561,6 +561,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		BeaconHeight:              beaconBestState.BeaconHeight,
 		BeaconHash:                beaconBestState.BestBlockHash,
 		ParamEpoch:                params.Epoch,
+		Epoch:                     beaconBestState.Epoch,
 		BeaconInstructions:        beaconInstructions,
 		EpochBreakPointSwapNewKey: params.EpochBreakPointSwapNewKey,
 		AssignOffset:              params.AssignOffset,
@@ -573,12 +574,28 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
+func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
+	params *Params,
+) *committeestate.BeaconCommitteeStateEnvironment {
+	return &committeestate.BeaconCommitteeStateEnvironment{
+		BeaconHeight:          beaconBestState.BeaconHeight,
+		BeaconHash:            beaconBestState.BestBlockHash,
+		Epoch:                 beaconBestState.Epoch,
+		RandomNumber:          beaconBestState.CurrentRandomNumber,
+		ActiveShards:          beaconBestState.ActiveShards,
+		MinShardCommitteeSize: beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:      beaconBestState.consensusStateDB,
+		MaxSwapOrAssign:       params.MaxSwapOrAssign,
+	}
+}
+
 func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < activeShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate,
+		nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
 	beaconCurrentValidator := currentValidator[statedb.BeaconChainID]
 	beaconSubstituteValidator := substituteValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
@@ -591,8 +608,69 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 	for k, v := range substituteValidator {
 		shardSubstituteValidator[byte(k)] = v
 	}
-	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(beaconCurrentValidator, beaconSubstituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, shardCurrentValidator, shardSubstituteValidator, autoStaking, rewardReceivers, stakingTx)
-	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngine(beaconHeight, beaconHash, beaconCommitteeState)
+	beaconCommitteeState := committeestate.NewBeaconCommitteeStateV1WithValue(
+		beaconCurrentValidator,
+		beaconSubstituteValidator,
+		nextEpochShardCandidate,
+		currentEpochShardCandidate,
+		nextEpochBeaconCandidate,
+		currentEpochBeaconCandidate,
+		shardCurrentValidator,
+		shardSubstituteValidator,
+		autoStaking,
+		rewardReceivers,
+		stakingTx,
+	)
+	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV1(
+		beaconHeight, beaconHash, beaconCommitteeState)
+	return beaconCommitteeEngine
+}
+
+func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params) BeaconCommitteeEngine {
+	shardIDs := []int{statedb.BeaconChainID}
+	var numberOfAssignedCandidate int
+	numberOfRound := make(map[string]int)
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
+		shardIDs = append(shardIDs, i)
+	}
+	currentValidator, substituteValidator, nextEpochShardCandidate, _, _, _, rewardReceivers,
+		autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
+	shardCommonPool := nextEpochShardCandidate
+	beaconCommittee := currentValidator[statedb.BeaconChainID]
+	delete(currentValidator, statedb.BeaconChainID)
+	delete(substituteValidator, statedb.BeaconChainID)
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range currentValidator {
+		shardCommittee[byte(k)] = v
+	}
+	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range substituteValidator {
+		shardSubstitute[byte(k)] = v
+	}
+	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
+		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
+			shardCommonPool,
+			shardCommittee,
+			shardSubstitute,
+			params.MaxSwapOrAssign,
+		)
+	}
+	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidate,
+		autoStaking,
+		rewardReceivers,
+		stakingTx,
+		numberOfRound,
+	)
+	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV2(
+		beaconBestState.BeaconHeight,
+		beaconBestState.BestBlockHash,
+		beaconCommitteeStateV2,
+	)
 	return beaconCommitteeEngine
 }
 

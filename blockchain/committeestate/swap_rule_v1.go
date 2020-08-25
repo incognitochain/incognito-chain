@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"strings"
@@ -9,6 +10,29 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
+
+// createSwapInstruction creates swap inst and return new validator list
+// Return param:
+// #1: swap inst
+// #2: new pending validator list after swapped
+// #3: new committees after swapped
+// #4: error
+func createSwapInstruction(
+	pendingValidator []string,
+	commitees []string,
+	maxCommitteeSize int,
+	minCommitteeSize int,
+	shardID byte,
+	offset int,
+	swapOffset int,
+) (*instruction.SwapInstruction, []string, []string, error) {
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	swapInstruction := instruction.NewSwapInstructionWithValue(shardNewCommittees, shardSwapedCommittees, int(shardID))
+	return swapInstruction, newPendingValidator, newShardCommittees, nil
+}
 
 // assignShardCandidate Assign Candidates Into Shard Pending Validator List
 // Each Shard Pending Validator List has a limit

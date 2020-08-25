@@ -3,13 +3,13 @@ package blockchain
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"math/rand"
 	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -437,21 +437,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			instructions = append(instructions, tempSwapInstruction.ToString())
 		}
 	}
-	// Beacon normal swap
-	if newBeaconHeight%chainParamEpoch == 0 {
-		BeaconCommittee := beaconBestState.GetBeaconCommittee()
-		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
-		if err != nil {
-			Logger.log.Error(err)
-		}
-		if common.IndexOfUint64(newBeaconHeight/chainParamEpoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-			epoch := newBeaconHeight / chainParamEpoch
-			swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconCommitteeStr, beaconBestState.MinBeaconCommitteeSize, epoch)
-			instructions = append(instructions, swapBeaconInstructions)
-			beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
-			instructions = append(instructions, beaconRootInst)
-		}
-	}
 	// Stake
 	for _, stakeInstruction := range stakeInstructions {
 		instructions = append(instructions, stakeInstruction.ToString())
@@ -483,6 +468,31 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			assignInstructions, _, _ := beaconBestState.beaconCommitteeEngine.GenerateAssignInstruction(randomNumber, blockchain.config.ChainParams.AssignOffset, beaconBestState.ActiveShards)
 			for _, assignInstruction := range assignInstructions {
 				instructions = append(instructions, assignInstruction.ToString())
+			}
+		}
+	}
+	// Beacon normal swap
+	if newBeaconHeight%chainParamEpoch == 0 {
+		BeaconCommittee := beaconBestState.GetBeaconCommittee()
+		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		if common.IndexOfUint64(newBeaconHeight/chainParamEpoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
+			epoch := newBeaconHeight / chainParamEpoch
+			swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconCommitteeStr, beaconBestState.MinBeaconCommitteeSize, epoch)
+			instructions = append(instructions, swapBeaconInstructions)
+			beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
+			instructions = append(instructions, beaconRootInst)
+		} else {
+			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
+			env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
+			requestShardSwapInstructions, err := beaconBestState.beaconCommitteeEngine.GenerateAllRequestShardSwapInstruction(env)
+			if err != nil {
+				return [][]string{}, err
+			}
+			for _, requestShardSwapInstruction := range requestShardSwapInstructions {
+				instructions = append(instructions, requestShardSwapInstruction.ToString())
 			}
 		}
 	}

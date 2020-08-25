@@ -104,7 +104,7 @@ type BeaconCommitteeEngine interface {
 		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
-	GenerateAllShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) (swapInstructions []*instruction.SwapInstruction, assignInstructions []*instruction.AssignInstruction, err error)
+	GenerateAllRequestShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error)
 }
 
 //ShardCommitteeEngine :
@@ -114,9 +114,10 @@ type ShardCommitteeEngine interface {
 	UpdateCommitteeState(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.ShardCommitteeStateHash,
 		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env committeestate.ShardCommitteeStateEnvironment)
-	ValidateCommitteeRootHashes(rootHashes []common.Hash) (bool, error)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey
 	ProcessInstructionFromBeacon(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 	ProcessInstructionFromShard(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
+	GenerateSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
+	GenerateConfirmShardSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 }

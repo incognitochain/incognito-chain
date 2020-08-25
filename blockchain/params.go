@@ -55,6 +55,7 @@ type Params struct {
 	EthContractAddressStr            string // smart contract of ETH for bridge
 	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
+	MaxSwapOrAssign                  int
 	IncognitoDAOAddress              string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
@@ -74,6 +75,7 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
+	UpgradeCommitteeEngineV2Height   uint64
 }
 
 type GenesisParams struct {
@@ -139,6 +141,7 @@ func init() {
 		Offset:                           TestnetOffset,
 		AssignOffset:                     TestnetAssignOffset,
 		SwapOffset:                       TestnetSwapOffset,
+		MaxSwapOrAssign:                  TestnetMaxSwapOrAssign,
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
@@ -174,10 +177,11 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
+		EpochBreakPointSwapNewKey:      TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:         1,
+		IsBackup:                       false,
+		PreloadAddress:                 "",
+		UpgradeCommitteeEngineV2Height: 1,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -217,6 +221,7 @@ func init() {
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
 		AssignOffset:                     MainnetAssignOffset,
+		MaxSwapOrAssign:                  MainnetMaxSwapOrAssign,
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
@@ -252,10 +257,11 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    559380,
-		IsBackup:                  false,
-		PreloadAddress:            "",
+		EpochBreakPointSwapNewKey:      MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:         559380,
+		IsBackup:                       false,
+		PreloadAddress:                 "",
+		UpgradeCommitteeEngineV2Height: 1,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

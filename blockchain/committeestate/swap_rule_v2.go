@@ -8,18 +8,20 @@ import (
 	"sort"
 )
 
-// createSwapInstructionV2 create swap instruction and new substitutes list
+// createRequestShardSwapInstructionV2 create swap instruction and new substitutes list
 // return params
 // #1: swap instruction
 // #2: new substitute list
 // #3: error
-func createSwapInstructionV2(
+func createRequestShardSwapInstructionV2(
 	shardID byte,
 	substitutes []string,
 	committees []string,
 	maxSwapOffset int,
 	numberOfRound map[string]int,
-) (*instruction.SwapInstruction, []string, error) {
+	epoch uint64,
+	randomNumber int64,
+) (*instruction.RequestShardSwapInstruction, []string, error) {
 	newSubstitutes, _, swappedOutCommittees, swappInCommittees, err := swapV2(
 		substitutes,
 		committees,
@@ -27,14 +29,16 @@ func createSwapInstructionV2(
 		numberOfRound,
 	)
 	if err != nil {
-		return &instruction.SwapInstruction{}, []string{}, err
+		return &instruction.RequestShardSwapInstruction{}, []string{}, err
 	}
-	swapInstruction := instruction.NewSwapInstructionWithValue(
+	requestShardSwapInstruction := instruction.NewRequestShardSwapInstructionWithValue(
 		swappInCommittees,
 		swappedOutCommittees,
 		int(shardID),
+		epoch,
+		randomNumber,
 	)
-	return swapInstruction, newSubstitutes, nil
+	return requestShardSwapInstruction, newSubstitutes, nil
 }
 
 // removeValidatorV2 remove validator and return removed list

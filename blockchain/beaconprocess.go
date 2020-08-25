@@ -622,7 +622,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 		}
 	}
 
-	env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 	hashes, committeeChange, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
@@ -684,7 +684,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
-		NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams,
+		NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 			genesisBeaconBlock.Body.Instructions, false, false))
 
 	beaconBestState.Epoch = 1

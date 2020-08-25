@@ -37,7 +37,7 @@ type BeaconCommitteeEngineV1 struct {
 	uncommittedBeaconCommitteeStateV1 *BeaconCommitteeStateV1
 }
 
-func NewBeaconCommitteeEngine(beaconHeight uint64, beaconHash common.Hash, beaconCommitteeStateV1 *BeaconCommitteeStateV1) *BeaconCommitteeEngineV1 {
+func NewBeaconCommitteeEngineV1(beaconHeight uint64, beaconHash common.Hash, beaconCommitteeStateV1 *BeaconCommitteeStateV1) *BeaconCommitteeEngineV1 {
 	return &BeaconCommitteeEngineV1{
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,
@@ -460,8 +460,8 @@ func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, ass
 }
 
 // GenerateAllShardSwapInstruction do nothing
-func (b *BeaconCommitteeEngineV1) GenerateAllShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapInstruction, []*instruction.AssignInstruction, error) {
-	return []*instruction.SwapInstruction{}, []*instruction.AssignInstruction{}, nil
+func (b *BeaconCommitteeEngineV1) GenerateAllRequestShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error) {
+	return []*instruction.SwapInstruction{}, nil
 }
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(

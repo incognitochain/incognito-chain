@@ -188,7 +188,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams,
-		committeestate.NewBeaconCommitteeEngine(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
+		committeestate.NewBeaconCommitteeEngineV1(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1()))
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
