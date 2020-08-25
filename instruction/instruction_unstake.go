@@ -5,16 +5,31 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 //UnstakeInstruction : Hold and verify data for unstake action
 type UnstakeInstruction struct {
-	CommitteePublicKeys []string
+	CommitteePublicKeys       []string
+	CommitteePublicKeysStruct []incognitokey.CommitteePublicKey
 }
 
 //NewUnstakeInstructionWithValue : Constructor with value
 func NewUnstakeInstructionWithValue(committeePublicKeys []string) *UnstakeInstruction {
 	return &UnstakeInstruction{CommitteePublicKeys: committeePublicKeys}
+}
+
+func (unstakeInstruction *UnstakeInstruction) SetCommitteePublicKeys(publicKeys []string) error {
+	if publicKeys == nil {
+		return fmt.Errorf("Public key is null")
+	}
+	unstakeInstruction.CommitteePublicKeys = publicKeys
+	publicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return err
+	}
+	unstakeInstruction.CommitteePublicKeysStruct = publicKeyStructs
+	return nil
 }
 
 //NewUnstakeInstruction : Default constructor
@@ -45,20 +60,29 @@ func ValidateAndImportUnstakeInstructionFromString(instruction []string) (*Unsta
 //ImportUnstakeInstructionFromString : Import unstake instruction from string
 func ImportUnstakeInstructionFromString(instruction []string) *UnstakeInstruction {
 	unstakeInstruction := NewUnstakeInstruction()
-	if len(instruction[1]) > 0 {
-		committeePublicKeys := strings.Split(instruction[1], SPLITTER)
-		unstakeInstruction.CommitteePublicKeys = committeePublicKeys
+	if len(instruction) > 1 {
+		if len(instruction[1]) > 0 {
+			committeePublicKeys := strings.Split(instruction[1], SPLITTER)
+			unstakeInstruction.CommitteePublicKeys = committeePublicKeys
+		}
 	}
 	return unstakeInstruction
 }
 
 //ValidateUnstakeInstructionSanity : Validate unstake instruction data type
 func ValidateUnstakeInstructionSanity(instruction []string) error {
+	if instruction == nil {
+		return fmt.Errorf("Instruction is null")
+	}
 	if len(instruction) != 2 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != UNSTAKE_ACTION {
 		return fmt.Errorf("invalid stop auto stake action, %+v", instruction)
+	}
+	_, err := incognitokey.CommitteeBase58KeyListToStruct(strings.Split(instruction[1], SPLITTER))
+	if err != nil {
+		return err
 	}
 	return nil
 }

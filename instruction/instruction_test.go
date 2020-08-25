@@ -1,6 +1,7 @@
 package instruction
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -9,7 +10,33 @@ var key2 = "121VhftSAygpEJZ6i9jGkEqPGAXcmKffwMbzpwxnEfzJxen4oZKPukWAUBbqvV5xPnow
 var key3 = "121VhftSAygpEJZ6i9jGkGLcYhJBeaJTGY5aFjqQA2WwyxU69Utrviuy9AJ3ATkeEyigVGScQUZw22cD1HeFKiyASYAs82WEamujt3nefYA9FPhURBpRTn6jDmGKUdb4QNbs7HVCJkRRaL9aktg1yaQaZE8TJFg2UeE9tBqUdmvD8fy36aDCYM5W86jaTVCXeEJQWPxUunP2EEL3e283PJ8zqPeBkpoFvkvhB28Hk3oRDeCCTC7QhbaV18ayKeToYqAxoUMBBihanfA33ixeX1daeKpajLCgDZ6jrfphwdYwQbf7dMcZ2NVvQ1a5JUCTJUZypwgKRt8tnTAKCowt2L1KNGP4NJJZm61cfHAGbKRyG9QxCJgK2SdMKsKPVefZSc9LbVaB7VeBby5LHxvMoCD7bN7g1HYRp4BX9n1fZJUeEkVa"
 var key4 = "121VhftSAygpEJZ6i9jGkDjJj7e2cfgQvrLsPsmLhGMmGD9U9Knffa1MZAw79EijnpueVfTStN2VYt5jRqEr2DTjVqzUinwHVKWH4Tg4szHUntiBdWeqzNC4E8iiwC9Y2KtcRr3hBkpfqvyuBvchigatrigRvFVWu8H2RQqjvopLL51DQ4LFD87L9Zgj9HhasMeyr6f37yirs47JgtGs4BM7EhhpM5zD3TCsFabPphtwDKnfuLMaGzoAw5fM8zEXvdLMuohk96oayjdYothncdtZom17DxB1Mmw535eEjxBwz9ELoZRKk3LYiheSd4xGN9QsxrT2WnZCTd8B5QktARte5S91QYvRMixKC8UEuovQhXt8jMZNkq7CmMeXoybfYdmNaAHuqbY1QeUT2AgaqPho4ay3z5eeKRhnB28H18RGWQ1L"
 
+var txHash1 = "d368a4c2c199aa949b00c0d634b0d4a54853ab27c1ee21b3dfa08e33b395cd63"
+var txHash2 = "6a71a0c1f382492739614831866417900f888d23203cb8fd1ee0ad40e7b0b59e"
+var txHash3 = "dcef9d320572067b933364481b7669f2311b2d94bd83d585d32dc9252371704a"
+var txHash4 = "3b0e8bb7693c9a1313b4e1e0983a397739e69b7b4e82abfe8842f66b4d83b24b"
+
 var incKey1, incKey2, incKey3, incKey4 *incognitokey.CommitteePublicKey
+var incTxHash1, incTxHash2, incTxHash3, incTxHash4 *common.Hash
+
+func initTxHash() {
+	var err error
+	incTxHash1, err = common.Hash{}.NewHashFromStr(txHash1)
+	if err != nil {
+		panic(err)
+	}
+	incTxHash2, err = common.Hash{}.NewHashFromStr(txHash2)
+	if err != nil {
+		panic(err)
+	}
+	incTxHash3, err = common.Hash{}.NewHashFromStr(txHash3)
+	if err != nil {
+		panic(err)
+	}
+	incTxHash4, err = common.Hash{}.NewHashFromStr(txHash4)
+	if err != nil {
+		panic(err)
+	}
+}
 
 //initPublicKey init incognito public key for testing by base 58 string
 func initPublicKey() {

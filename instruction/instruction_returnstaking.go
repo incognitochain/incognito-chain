@@ -1,7 +1,9 @@
 package instruction
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -44,6 +46,9 @@ func (rsI *ReturnStakeIns) SetShardID(sID byte) error {
 }
 
 func (rsI *ReturnStakeIns) SetPublicKeys(publicKeys []string) (*ReturnStakeIns, error) {
+	if publicKeys == nil {
+		return nil, errors.New("Public Keys Are Null")
+	}
 	rsI.PublicKeys = publicKeys
 	publicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
 	if err != nil {
@@ -54,7 +59,18 @@ func (rsI *ReturnStakeIns) SetPublicKeys(publicKeys []string) (*ReturnStakeIns, 
 }
 
 func (rsI *ReturnStakeIns) SetStakingTXIDs(txIDs []string) (*ReturnStakeIns, error) {
+	if txIDs == nil {
+		return nil, errors.New("Tx Hashes Are Null")
+	}
 	rsI.StakingTXIDs = txIDs
+	rsI.StakingTxHashes = make([]common.Hash, len(txIDs))
+	for i, v := range rsI.StakingTXIDs {
+		temp, err := common.Hash{}.NewHashFromStr(v)
+		if err != nil {
+			return rsI, err
+		}
+		rsI.StakingTxHashes[i] = *temp
+	}
 	return rsI, nil
 }
 
@@ -143,11 +159,16 @@ func ValidateReturnStakingInstructionSanity(instruction []string) error {
 		return fmt.Errorf("invalid return staking action, %+v", instruction)
 	}
 	publicKeys := strings.Split(instruction[1], SPLITTER)
-	txStakes := strings.Split(instruction[3], SPLITTER)
-	for _, txStake := range txStakes {
-		_, err := common.Hash{}.NewHashFromStr(txStake)
+	_, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return err
+	}
+	txStakings := strings.Split(instruction[3], SPLITTER)
+	for _, txStaking := range txStakings {
+		_, err := common.Hash{}.NewHashFromStr(txStaking)
 		if err != nil {
-			return fmt.Errorf("invalid tx stake %+v", err)
+			log.Println("err:", err)
+			return fmt.Errorf("invalid tx return staking %+v", err)
 		}
 	}
 	percentRetunrsStr := strings.Split(instruction[4], SPLITTER)
@@ -159,14 +180,14 @@ func ValidateReturnStakingInstructionSanity(instruction []string) error {
 		}
 		percentReturns[i] = uint(tempPercent)
 	}
-	if len(publicKeys) != len(txStakes) {
-		return fmt.Errorf("invalid public key & tx stake length, %+v", instruction)
+	if len(publicKeys) != len(txStakings) {
+		return fmt.Errorf("invalid public key & tx staking txs length, %+v", instruction)
 	}
-	if len(percentReturns) != len(txStakes) {
-		return fmt.Errorf("invalid reward percentReturns & tx stake length, %+v", instruction)
+	if len(percentReturns) != len(txStakings) {
+		return fmt.Errorf("invalid reward percentReturns & tx stakings length, %+v", instruction)
 	}
 	if len(percentReturns) != len(publicKeys) {
-		return fmt.Errorf("invalid reward percentReturns & publicKeys length, %+v", instruction)
+		return fmt.Errorf("invalid reward percentReturns & public Keys length, %+v", instruction)
 	}
 	return nil
 }
