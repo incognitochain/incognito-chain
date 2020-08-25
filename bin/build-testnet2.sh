@@ -17,9 +17,8 @@ env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 ENV=testnet go build -ldflags '-w' -o 
 # Genesis committee
 cp ../keylist.json .
 
-# Replace committee
-cp ../keylist-v2.json .
-echo "[]"> ./keylist-v2.json
+# Replace committee TESTNET-2
+cp ../keylist-v2-testnet2.json ./keylist-v2.json
 
 cp ../sample-config.conf .
 
