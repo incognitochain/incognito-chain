@@ -89,6 +89,7 @@ const (
 	getBlockHeader                   = "getheader"
 	getCrossShardBlock               = "getcrossshardblock"
 	randomCommitments                = "randomcommitments"
+	randomCommitmentsAndPublicKeys   = "randomcommitmentsandpublickeys"
 	hasSerialNumbers                 = "hasserialnumbers"
 	hasSnDerivators                            = "hassnderivators"
 	listSnDerivators                           = "listsnderivators"
