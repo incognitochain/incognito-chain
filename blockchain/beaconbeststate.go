@@ -558,19 +558,20 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	isBeaconRandomTime bool,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	return &committeestate.BeaconCommitteeStateEnvironment{
-		BeaconHeight:              beaconBestState.BeaconHeight,
-		BeaconHash:                beaconBestState.BestBlockHash,
-		ParamEpoch:                params.Epoch,
-		Epoch:                     beaconBestState.Epoch,
-		BeaconInstructions:        beaconInstructions,
-		EpochBreakPointSwapNewKey: params.EpochBreakPointSwapNewKey,
-		AssignOffset:              params.AssignOffset,
-		RandomNumber:              beaconBestState.CurrentRandomNumber,
-		IsFoundRandomNumber:       isFoundRandomInstruction,
-		IsBeaconRandomTime:        isBeaconRandomTime,
-		ActiveShards:              beaconBestState.ActiveShards,
-		MinShardCommitteeSize:     beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:          beaconBestState.consensusStateDB,
+		BeaconHeight:                beaconBestState.BeaconHeight,
+		BeaconHash:                  beaconBestState.BestBlockHash,
+		ParamEpoch:                  params.Epoch,
+		Epoch:                       beaconBestState.Epoch,
+		BeaconInstructions:          beaconInstructions,
+		EpochBreakPointSwapNewKey:   params.EpochBreakPointSwapNewKey,
+		AssignOffset:                params.AssignOffset,
+		RandomNumber:                beaconBestState.CurrentRandomNumber,
+		IsFoundRandomNumber:         isFoundRandomInstruction,
+		IsBeaconRandomTime:          isBeaconRandomTime,
+		ActiveShards:                beaconBestState.ActiveShards,
+		MinShardCommitteeSize:       beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:            beaconBestState.consensusStateDB,
+		NumberOfFixedBlockValidator: NumberOfFixedBlockValidators,
 	}
 }
 
@@ -578,14 +579,15 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	params *Params,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	return &committeestate.BeaconCommitteeStateEnvironment{
-		BeaconHeight:          beaconBestState.BeaconHeight,
-		BeaconHash:            beaconBestState.BestBlockHash,
-		Epoch:                 beaconBestState.Epoch,
-		RandomNumber:          beaconBestState.CurrentRandomNumber,
-		ActiveShards:          beaconBestState.ActiveShards,
-		MinShardCommitteeSize: beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:      beaconBestState.consensusStateDB,
-		MaxSwapOrAssign:       params.MaxSwapOrAssign,
+		BeaconHeight:                beaconBestState.BeaconHeight,
+		BeaconHash:                  beaconBestState.BestBlockHash,
+		Epoch:                       beaconBestState.Epoch,
+		RandomNumber:                beaconBestState.CurrentRandomNumber,
+		ActiveShards:                beaconBestState.ActiveShards,
+		MinShardCommitteeSize:       beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:            beaconBestState.consensusStateDB,
+		MaxSwapOrAssign:             params.MaxSwapOrAssign,
+		NumberOfFixedBlockValidator: NumberOfFixedBlockValidators,
 	}
 }
 

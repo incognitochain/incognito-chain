@@ -204,8 +204,7 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 	return hashes, committeeChange, nil
 }
 
-func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (
-	*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, error) {
+func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []string, error) {
 	confirmShardSwapInstruction := instruction.NewConfirmShardSwapInstruction()
 	for _, beaconInstruction := range env.BeaconInstructions() {
 		if len(beaconInstruction) == 0 {
@@ -215,39 +214,35 @@ func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env Sh
 			requestShardSwapInstruction, err := instruction.ValidateAndImportRequestShardSwapInstructionFromString(beaconInstruction)
 			if err != nil {
 				// Return Error for debug purpose
-				return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, err
+				return &instruction.ConfirmShardSwapInstruction{}, []string{}, err
 			}
 			if byte(requestShardSwapInstruction.ChainID) == env.ShardID() {
 				confirmShardSwapInstruction = instruction.ConvertRequestToConfirmShardSwapInstruction(requestShardSwapInstruction)
 				shardCommittees, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardCommittee)
-				fixedProducerShardValidators := engine.shardCommitteeStateV2.shardCommittee[:env.NumberOfFixedBlockValidators()]
+				fixedProducerShardValidators := shardCommittees[:env.NumberOfFixedBlockValidators()]
 				shardCommittees = shardCommittees[env.NumberOfFixedBlockValidators():]
 				newShardCommittees, err := getNewShardCommittees(confirmShardSwapInstruction, shardCommittees)
 				if err != nil {
-					return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, err
+					return &instruction.ConfirmShardSwapInstruction{}, []string{}, err
 				}
 				newShardCommittees = append(fixedProducerShardValidators, newShardCommittees...)
 				return confirmShardSwapInstruction, newShardCommittees, nil
 			}
 		}
 	}
-	return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, nil
+	return &instruction.ConfirmShardSwapInstruction{}, []string{}, nil
 }
 
 func getNewShardCommittees(
 	confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction,
 	shardCommittees []string,
-) ([]incognitokey.CommitteePublicKey, error) {
+) ([]string, error) {
 	newShardCommittees, err := removeValidatorV2(shardCommittees, confirmShardSwapInstruction.OutPublicKeys)
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, err
+		return []string{}, err
 	}
 	newShardCommittees = append(newShardCommittees, confirmShardSwapInstruction.InPublicKeys...)
-	tempNewShardCommittees, err := incognitokey.CommitteeBase58KeyListToStruct(newShardCommittees)
-	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, err
-	}
-	return tempNewShardCommittees, nil
+	return newShardCommittees, nil
 }
 func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
 	shardSubsitutes, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardSubstitute)
@@ -296,10 +291,11 @@ func (s *ShardCommitteeStateV2) processShardBlockInstruction(
 			if err != nil {
 				return committeeChange, err
 			}
-			newShardCommittees, err := getNewShardCommittees(confirmShardSwapInstruction, shardCommittees)
+			tempNewShardCommittees, err := getNewShardCommittees(confirmShardSwapInstruction, shardCommittees)
 			if err != nil {
 				return committeeChange, err
 			}
+			newShardCommittees, _ := incognitokey.CommitteeBase58KeyListToStruct(tempNewShardCommittees)
 			s.shardCommittee = append(fixedProducerShardValidators, newShardCommittees...)
 			committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
 			committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.OutPublicKeyStructs...)

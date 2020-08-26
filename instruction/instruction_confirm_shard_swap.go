@@ -46,6 +46,9 @@ func (s *ConfirmShardSwapInstruction) ToString() []string {
 	return ConfirmShardSwapInstructionStr
 }
 
+func (s *ConfirmShardSwapInstruction) IsEmpty() bool {
+	return len(s.InPublicKeys) == 0 && len(s.OutPublicKeys) == 0
+}
 func (s *ConfirmShardSwapInstruction) SetInPublicKeys(inPublicKeys []string) (*ConfirmShardSwapInstruction, error) {
 	s.InPublicKeys = inPublicKeys
 	inPublicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(inPublicKeys)

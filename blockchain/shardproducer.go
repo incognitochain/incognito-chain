@@ -179,7 +179,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 
 	shardInstructions, _, _, err = blockchain.generateInstruction(curView, shardID,
-		beaconHeight, isOldBeaconHeight, beaconBlocks,
+		beaconHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
 		shardPendingValidatorStr, currentCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
@@ -470,13 +470,14 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 //	#4: error
 func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	shardID byte, beaconHeight uint64,
-	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock,
+	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock, beaconInstructions [][]string,
 	shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
-		instructions          = [][]string{}
-		bridgeSwapConfirmInst = []string{}
-		swapInstruction       = []string{}
-		err                   error
+		instructions                      = [][]string{}
+		bridgeSwapConfirmInst             = []string{}
+		swapOrConfirmShardSwapInstruction = []string{}
+		confirmShardSwapInstruction       = &instruction.ConfirmShardSwapInstruction{}
+		err                               error
 	)
 	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
@@ -497,7 +498,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		}
 		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-			swapInstruction, shardPendingValidator, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, backupShardCommittee, NumberOfFixedBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
+			swapOrConfirmShardSwapInstruction, shardPendingValidator, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, backupShardCommittee, NumberOfFixedBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
 		} else {
 			tempSwapInstruction := instruction.NewSwapInstruction()
 			env := committeestate.NewShardEnvBuilder().
@@ -512,15 +513,26 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				Logger.log.Error(err)
 				return instructions, shardPendingValidator, shardCommittee, err
 			}
-			swapInstruction = tempSwapInstruction.ToString()
+			swapOrConfirmShardSwapInstruction = tempSwapInstruction.ToString()
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
-
+		env := committeestate.NewShardEnvBuilder().
+			BuildBeaconInstructions(beaconInstructions).
+			BuildShardID(shardID).
+			BuildNumberOfFixedBlockValidators(NumberOfFixedBlockValidators).
+			Build()
+		confirmShardSwapInstruction, shardCommittee, err = view.shardCommitteeEngine.GenerateConfirmShardSwapInstruction(env)
+		if err != nil {
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		if !confirmShardSwapInstruction.IsEmpty() {
+			swapOrConfirmShardSwapInstruction = confirmShardSwapInstruction.ToString()
+		}
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
 		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
-		if shardID == bridgeID && committeeChanged(swapInstruction) {
+		if shardID == bridgeID && committeeChanged(swapOrConfirmShardSwapInstruction) {
 			blockHeight := view.ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
@@ -531,15 +543,14 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		}
 	}
 
-	if len(swapInstruction) > 0 {
-		instructions = append(instructions, swapInstruction)
+	if len(swapOrConfirmShardSwapInstruction) > 0 {
+		instructions = append(instructions, swapOrConfirmShardSwapInstruction)
 	}
 
 	if len(bridgeSwapConfirmInst) > 0 {
 		instructions = append(instructions, bridgeSwapConfirmInst)
 		Logger.log.Infof("Build bridge swap confirm inst: %s \n", bridgeSwapConfirmInst)
 	}
-	//TODO: @hung add confirm shard swap instruction
 	// Pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BridgeShardID)
 	if shardID == bridgeID {
@@ -768,7 +779,6 @@ func committeeChanged(swap []string) bool {
 	if len(swap) < 3 {
 		return false
 	}
-
 	in := swap[1]
 	out := swap[2]
 	return len(in) > 0 || len(out) > 0

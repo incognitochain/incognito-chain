@@ -530,9 +530,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
 	}
 
-	instructions, _, shardCommittee, err = blockchain.generateInstruction(curView,
-		shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight,
-		beaconBlocks, shardPendingValidatorStr, shardCommittee)
+	instructions, _, shardCommittee, err = blockchain.generateInstruction(curView, shardID,
+		shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
+		shardPendingValidatorStr, shardCommittee)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
 	}
