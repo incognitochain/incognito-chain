@@ -90,10 +90,10 @@ func privateKeyToPublicKey(privkey string) []byte {
 }
 
 func ConvertCoinVersion(tool *debugtool.DebugTool, privKey string) {
-	fmt.Println("CONVERT COIN")
+	fmt.Println("========== CONVERT COIN ==========")
 	b, _ := tool.SwitchCoinVersion(privKey)
 	fmt.Println(string(b))
-	fmt.Println("END CONVERT COIN")
+	fmt.Println("========== END CONVERT COIN ==========")
 }
 
 func ConvertTokenCoinVersion(tool *debugtool.DebugTool, privKey string, tokenID string) {
@@ -276,7 +276,7 @@ func sendRawTxPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentString
 
 func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string){
 	fmt.Println("========== GET LIST RANDOM COMMITMENTS ==========")
-	outCoins, err := tool.GetPlainOutputCoin(privKey, tokenID)
+	outCoins, _, err := tool.GetPlainOutputCoin(privKey, tokenID)
 	if err != nil {
 		panic(err)
 	}

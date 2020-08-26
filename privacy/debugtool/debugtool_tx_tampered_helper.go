@@ -1,10 +1,8 @@
 package debugtool
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -16,23 +14,19 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io/ioutil"
+	math2 "math"
 	"math/big"
 	"os"
 	"time"
 )
 
-// RandBytes generates random bytes with length
-func RandBytes(length int) []byte {
-	rbytes := make([]byte, length)
-	rand.Read(rbytes)
-	return rbytes
-}
-
+/*Common functions*/
 // RandIntInterval returns a random int in range [L; R]
 func RandIntInterval(L, R int) int {
 	length := R - L + 1
@@ -40,44 +34,7 @@ func RandIntInterval(L, R int) int {
 	return L + r
 }
 
-func ParseOutputCoins(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV1, error) {
-	outputCoins := []*coin.CoinV1{}
-	for _, pInfo := range paymentInfo {
-		sndOut := privacy.RandomScalar()
-		tmpCoin := new(coin.CoinV1)
-		tmpCoin.CoinDetails = new(coin.PlainCoinV1)
-		tmpCoin.CoinDetails.SetValue(pInfo.Amount)
-		if len(pInfo.Message) > 0 {
-			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
-				return nil, errors.New("size of info is too big")
-			}
-		}
-		tmpCoin.CoinDetails.SetInfo(pInfo.Message)
-
-		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
-		if err != nil {
-			return nil, errors.New("cannot parse public key")
-		}
-		tmpCoin.CoinDetails.SetPublicKey(PK)
-		tmpCoin.CoinDetails.SetSNDerivator(sndOut)
-		outputCoins = append(outputCoins, tmpCoin)
-	}
-	return outputCoins, nil
-}
-
-func ParseOutputCoinV2s(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV2, error) {
-	outputCoins := []*coin.CoinV2{}
-	for _, pInfo := range paymentInfo {
-		c, err := coin.NewCoinFromPaymentInfo(pInfo)
-		if err != nil {
-			return nil, err
-		}
-		outputCoins = append(outputCoins, c)
-	}
-	return outputCoins, nil
-}
-
-func ParseResponse(respondInBytes []byte) (*rpcserver.JsonResponse, error){
+func ParseResponse(respondInBytes []byte) (*rpcserver.JsonResponse, error) {
 	var respond rpcserver.JsonResponse
 	err := json.Unmarshal(respondInBytes, &respond)
 	if err != nil {
@@ -87,15 +44,38 @@ func ParseResponse(respondInBytes []byte) (*rpcserver.JsonResponse, error){
 	return &respond, nil
 }
 
-func CreateTxPrivacyInitParams(db *statedb.StateDB, keySet *incognitokey.KeySet, paymentAddress privacy.PaymentAddress, inputCoins []coin.PlainCoin, hasPrivacy bool, fee uint64, tokenID common.Hash) ([]*privacy.PaymentInfo, *transaction.TxPrivacyInitParams, error) {
+//To be refactored later
+func CreateTxPrivacyInitParams(db *statedb.StateDB, keySet *incognitokey.KeySet, paymentAddress privacy.PaymentAddress, inputCoins []coin.PlainCoin, hasPrivacy bool, fee, amount uint64, tokenID common.Hash) ([]*privacy.PaymentInfo, *transaction.TxPrivacyInitParams, error) {
 	//initialize payment info of input coins
 	paymentInfos := make([]*privacy.PaymentInfo, 1)
-	sumAmount := uint64(0)
-	for _, inputCoin := range inputCoins {
-		sumAmount += inputCoin.GetValue()
+
+	paymentInfos[0] = key.InitPaymentInfo(paymentAddress, amount, []byte("I want to change this world"))
+
+	//Calculate overbalance
+	sumOutputValue := uint64(0)
+	for _, p := range paymentInfos {
+		sumOutputValue += p.Amount
 	}
 
-	paymentInfos[0] = key.InitPaymentInfo(paymentAddress, sumAmount - fee, []byte("I want to change this world"))
+	// Calculate sum of all input coins' value
+	sumInputValue := uint64(0)
+	for _, coin := range inputCoins {
+		sumInputValue += coin.GetValue()
+	}
+
+	overBalance := sumInputValue - sumOutputValue - fee
+	if overBalance < 0 {
+		return nil, nil, errors.New("sumInputs less than sumOutputs + fee")
+	}
+
+	if overBalance > 0 {
+		paymentInfo := new(privacy.PaymentInfo)
+		paymentInfo.Amount = overBalance
+		paymentInfo.PaymentAddress = keySet.PaymentAddress
+		paymentInfo.Message = nil
+
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
 
 	//create privacyinitparam
 	txPrivacyInitParam := transaction.NewTxPrivacyInitParams(&keySet.PrivateKey,
@@ -118,6 +98,8 @@ func CreateCoinFromJSONOutcoin(jsonOutCoin jsonresult.OutCoin) (coin.PlainCoin, 
 	var info []byte
 	var err error
 	var idx *big.Int
+	var sharedRandom *operation.Scalar
+	var txRandom *coin.TxRandom
 
 	value, ok := math.ParseUint64(jsonOutCoin.Value)
 	if !ok {
@@ -192,14 +174,38 @@ func CreateCoinFromJSONOutcoin(jsonOutCoin jsonresult.OutCoin) (coin.PlainCoin, 
 		}
 	}
 
-	if len(jsonOutCoin.Index) == 0{
+	if len(jsonOutCoin.Index) == 0 {
 		idx = nil
-	}else{
+	} else {
 		idxInBytes, err := DecodeBase58Check(jsonOutCoin.Index)
 		if err != nil {
 			return nil, nil, err
 		}
 		idx = new(big.Int).SetBytes(idxInBytes)
+	}
+
+	if len(jsonOutCoin.SharedRandom) == 0 {
+		sharedRandom = nil
+	}else{
+		sharedRandomInBytes, err := DecodeBase58Check(jsonOutCoin.SharedRandom)
+		if err != nil {
+			return nil, nil, err
+		}
+		sharedRandom = new(operation.Scalar).FromBytesS(sharedRandomInBytes)
+	}
+
+	if len(jsonOutCoin.TxRandom) == 0 {
+		sharedRandom = nil
+	}else{
+		sharedRandomInBytes, err := DecodeBase58Check(jsonOutCoin.TxRandom)
+		if err != nil {
+			return nil, nil, err
+		}
+		txRandom = new(coin.TxRandom)
+		err = txRandom.SetBytes(sharedRandomInBytes)
+		if err != nil{
+			return nil, nil, err
+		}
 	}
 
 	switch jsonOutCoin.Version {
@@ -210,10 +216,10 @@ func CreateCoinFromJSONOutcoin(jsonOutCoin jsonresult.OutCoin) (coin.PlainCoin, 
 
 	case "2":
 		output = new(coin.CoinV2)
+		tmpOutput, _ := output.(*coin.CoinV2)
+		tmpOutput.SetTxRandom(txRandom)
+		tmpOutput.SetSharedRandom(sharedRandom)
 	}
-	//output = new(coin.PlainCoinV1)
-	//tmpOutput, _ := output.(*coin.PlainCoinV1)
-	//tmpOutput.SetSNDerivator(snd)
 
 	output.SetCommitment(cm)
 	output.SetValue(value)
@@ -225,32 +231,36 @@ func CreateCoinFromJSONOutcoin(jsonOutCoin jsonresult.OutCoin) (coin.PlainCoin, 
 	return output, idx, nil
 }
 
-func DivideCoins(coins []coin.PlainCoin) ([]coin.PlainCoin, []coin.PlainCoin){
+func DivideCoins(coins []coin.PlainCoin, listIndices []uint64) ([]coin.PlainCoin, []coin.PlainCoin, []uint64, []uint64) {
 	coinV1s := []coin.PlainCoin{}
 	coinV2s := []coin.PlainCoin{}
+	listIndicesV1 := []uint64{}
+	listIndicesV2 := []uint64{}
 
-	for _, coin := range coins{
-		if coin.GetVersion() == 1{
+	for i, coin := range coins {
+		if coin.GetVersion() == 1 {
 			coinV1s = append(coinV1s, coin)
-		}else{
+			listIndicesV1 = append(listIndicesV1, listIndices[i])
+		} else {
 			coinV2s = append(coinV2s, coin)
+			listIndicesV2 = append(listIndicesV2, listIndices[i])
 		}
 	}
 
-	return coinV1s, coinV2s
+	return coinV1s, coinV2s, listIndicesV1, listIndicesV2
 }
 
-func ChooseCoinsToSpend(coins []coin.PlainCoin, amount uint64, overbalanced bool) ([]coin.PlainCoin, error){
+func ChooseCoinsToSpend(coins []coin.PlainCoin, amount uint64, overbalanced bool) ([]coin.PlainCoin, error) {
 	sumValue := uint64(0)
 	res := []coin.PlainCoin{}
 	for _, coin := range coins {
 		sumValue += coin.GetValue()
 
-		if sumValue > amount{
+		if sumValue > amount {
 			res = append(res, coin)
 		}
 	}
-	if sumValue < amount && !overbalanced{
+	if sumValue < amount && !overbalanced {
 		return nil, errors.New("not enough coins to spend")
 	}
 
@@ -258,7 +268,7 @@ func ChooseCoinsToSpend(coins []coin.PlainCoin, amount uint64, overbalanced bool
 }
 
 func CreateSampleCoin(privKey privacy.PrivateKey, pubKey *privacy.Point, amount uint64, msg []byte, version int) (coin.Coin, error) {
-	if version == 1{
+	if version == 1 {
 		c := new(coin.PlainCoinV1).Init()
 
 		c.SetValue(amount)
@@ -281,7 +291,7 @@ func CreateSampleCoin(privKey privacy.PrivateKey, pubKey *privacy.Point, amount 
 		cOut.CoinDetails = c
 
 		return cOut, nil
-	}else{
+	} else {
 		c := new(coin.CoinV2).Init()
 
 		c.SetValue(amount)
@@ -349,11 +359,11 @@ func CreateAndSaveCoins(numCoins, numEquals int, privKey privacy.PrivateKey, pub
 		commitmentsToBeSaved = append(commitmentsToBeSaved, outCoin.GetCommitment().ToBytesS())
 		OTAToBeSaved = append(OTAToBeSaved, outCoin.GetPublicKey().ToBytesS())
 	}
-	if version == 1{
+	if version == 1 {
 		SNDToBeSaved := [][]byte{}
 		for _, outCoin := range outCoins {
 			tmpCoin, ok := outCoin.(*coin.CoinV1)
-			if !ok{
+			if !ok {
 				return nil, errors.New("cannot parse CoinV1")
 			}
 			SNDToBeSaved = append(SNDToBeSaved, tmpCoin.GetSNDerivator().ToBytesS())
@@ -373,14 +383,14 @@ func CreateAndSaveCoins(numCoins, numEquals int, privKey privacy.PrivateKey, pub
 		if err != nil {
 			return nil, err
 		}
-	}else{
+	} else {
 		err = statedb.StoreOTACoinsAndOnetimeAddresses(db, tokenID, 0, coinsToBeSaved, OTAToBeSaved, shardID)
 	}
 
 	return outCoins, nil
 }
 
-func InitDatabase() (*statedb.StateDB, error){
+func InitDatabase() (*statedb.StateDB, error) {
 	emptyRoot := common.HexToHash(common.HexEmptyRoot)
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
 	if err != nil {
@@ -396,48 +406,8 @@ func InitDatabase() (*statedb.StateDB, error){
 	return db, nil
 }
 
-func ParseIndicesAndCommitmentsFromJson(jsonRespondInBytes []byte)([]uint64, []uint64, []*operation.Point, error){
-	var jsonRespond rpcserver.JsonResponse
-	err := json.Unmarshal(jsonRespondInBytes, &jsonRespond)
-	if err != nil{
-		return nil, nil, nil, err
-	}
-
-	var msg json.RawMessage
-	err = json.Unmarshal(jsonRespond.Result, &msg)
-	if err != nil{
-		return nil, nil, nil, err
-	}
-
-	var result jsonresult.RandomCommitmentResult
-	err = json.Unmarshal(msg, &result)
-	if err != nil{
-		return nil, nil, nil, err
-	}
-
-	commitmentIndices := result.CommitmentIndices
-	myCommitmentIndices := result.MyCommitmentIndexs
-
-	commitments := make([]*operation.Point, len(result.Commitments))
-
-	for i, cm := range result.Commitments{
-		cmInbytes, err := DecodeBase58Check(cm)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		commitments[i], err = new(operation.Point).FromBytesS(cmInbytes)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-	}
-
-
-	return commitmentIndices, myCommitmentIndices, commitments, nil
-}
-
 func InitParam(tx metadata.Transaction, fee uint64, keySet *incognitokey.KeySet, version int8) {
-	if version == 1{
+	if version == 1 {
 		tmpTx, _ := tx.(*transaction.TxVersion1)
 		tmpTx.Fee = fee
 		tmpTx.Type = common.TxNormalType
@@ -448,7 +418,7 @@ func InitParam(tx metadata.Transaction, fee uint64, keySet *incognitokey.KeySet,
 		}
 		tmpTx.Version = version
 		tmpTx.Info = nil
-	}else{
+	} else {
 		tmpTx, _ := tx.(*transaction.TxVersion2)
 		tmpTx.Fee = fee
 		tmpTx.Type = common.TxNormalType
@@ -461,6 +431,146 @@ func InitParam(tx metadata.Transaction, fee uint64, keySet *incognitokey.KeySet,
 		tmpTx.Info = nil
 	}
 
+}
+
+func MarshalTransaction(tx metadata.Transaction) ([]byte, error) {
+	txBytes, err := json.Marshal(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := jsonresult.NewCreateTransactionResult(tx.Hash(), common.EmptyString, txBytes, 0)
+
+	base58Result := result.Base58CheckData
+	return []byte(base58Result), nil
+}
+
+func PrepareInputCoins(listCoins []coin.PlainCoin, amount uint64, listIndices []uint64, keySet *incognitokey.KeySet) ([]uint64, []coin.PlainCoin, error) {
+	coinsToSpend, err := ChooseCoinsToSpend(listCoins, amount, false)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	myListIndices := make([]uint64, len(coinsToSpend))
+	for i, c := range coinsToSpend {
+		for j, cV2 := range listCoins {
+			if operation.IsPointEqual(c.GetPublicKey(), cV2.GetPublicKey()) {
+				myListIndices[i] = listIndices[j]
+				break
+			}
+		}
+	}
+
+	if len(myListIndices) != len(coinsToSpend) {
+		return nil, nil, errors.New("cannot find input coin")
+	}
+
+	inputCoins := []coin.PlainCoin{}
+	if listCoins[0].GetVersion() == 1{
+		for i := 0; i < len(coinsToSpend); i++ {
+			tmpCoin := new(coin.PlainCoinV1)
+
+			err = tmpCoin.SetBytes(coinsToSpend[i].Bytes())
+			if err != nil {
+				return nil, nil, err
+			}
+
+			keyImage, err := tmpCoin.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
+			if err != nil {
+				return nil, nil, err
+			}
+			tmpCoin.SetKeyImage(keyImage)
+
+			inputCoins = append(inputCoins, tmpCoin)
+		}
+	}else{
+		for i := 0; i < len(coinsToSpend); i++ {
+			tmpCoinToSpend, ok := coinsToSpend[i].(*coin.CoinV2)
+			if !ok {
+				return nil, nil, errors.New("Must be coinV2")
+			}
+
+			tmpCoin := new(coin.CoinV2)
+			tmpCoin.SetVersion(2)
+			tmpCoin.SetCommitment(tmpCoinToSpend.GetCommitment())
+			tmpCoin.SetPublicKey(tmpCoinToSpend.GetPublicKey())
+			tmpCoin.SetRandomness(tmpCoinToSpend.GetRandomness())
+			tmpCoin.SetValue(tmpCoinToSpend.GetValue())
+			tmpCoin.SetSharedRandom(tmpCoinToSpend.GetSharedRandom())
+			tmpCoin.SetTxRandom(tmpCoinToSpend.GetTxRandom())
+			tmpCoin.SetKeyImage(tmpCoinToSpend.GetKeyImage())
+
+			inputCoins = append(inputCoins, tmpCoin)
+		}
+	}
+
+	return myListIndices, inputCoins, nil
+}
+
+
+//For txver1
+func ParseOutputCoinV1s(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV1, error) {
+	outputCoins := []*coin.CoinV1{}
+	for _, pInfo := range paymentInfo {
+		sndOut := privacy.RandomScalar()
+		tmpCoin := new(coin.CoinV1)
+		tmpCoin.CoinDetails = new(coin.PlainCoinV1)
+		tmpCoin.CoinDetails.SetValue(pInfo.Amount)
+		if len(pInfo.Message) > 0 {
+			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+				return nil, errors.New("size of info is too big")
+			}
+		}
+		tmpCoin.CoinDetails.SetInfo(pInfo.Message)
+
+		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
+		if err != nil {
+			return nil, errors.New("cannot parse public key")
+		}
+		tmpCoin.CoinDetails.SetPublicKey(PK)
+		tmpCoin.CoinDetails.SetSNDerivator(sndOut)
+		outputCoins = append(outputCoins, tmpCoin)
+	}
+	return outputCoins, nil
+}
+
+func ParseIndicesAndCommitmentsFromJson(jsonRespondInBytes []byte) ([]uint64, []uint64, []*operation.Point, error) {
+	var jsonRespond rpcserver.JsonResponse
+	err := json.Unmarshal(jsonRespondInBytes, &jsonRespond)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var msg json.RawMessage
+	err = json.Unmarshal(jsonRespond.Result, &msg)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var result jsonresult.RandomCommitmentResult
+	err = json.Unmarshal(msg, &result)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	commitmentIndices := result.CommitmentIndices
+	myCommitmentIndices := result.MyCommitmentIndexs
+
+	commitments := make([]*operation.Point, len(result.Commitments))
+
+	for i, cm := range result.Commitments {
+		cmInbytes, err := DecodeBase58Check(cm)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		commitments[i], err = new(operation.Point).FromBytesS(cmInbytes)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	return commitmentIndices, myCommitmentIndices, commitments, nil
 }
 
 func ProveAndSign(witness *zkp.PaymentWitness, paymentInfos []*privacy.PaymentInfo, tx *transaction.TxVersion1, keySet *incognitokey.KeySet) error {
@@ -477,13 +587,181 @@ func ProveAndSign(witness *zkp.PaymentWitness, paymentInfos []*privacy.PaymentIn
 	return nil
 }
 
+
+//For txver2
+func ParseOutputCoinV2s(paymentInfo []*privacy.PaymentInfo) ([]*coin.CoinV2, error) {
+	outputCoins := []*coin.CoinV2{}
+	for _, pInfo := range paymentInfo {
+		c, err := coin.NewCoinFromPaymentInfo(pInfo)
+		if err != nil {
+			return nil, err
+		}
+		outputCoins = append(outputCoins, c)
+	}
+	return outputCoins, nil
+}
+
+func CreatePrivKeyMlsag(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, senderSK *key.PrivateKey) ([]*operation.Scalar, error) {
+	sumRand := new(operation.Scalar).FromUint64(0)
+	for _, in := range inputCoins {
+		sumRand.Add(sumRand, in.GetRandomness())
+	}
+	for _, out := range outputCoins {
+		sumRand.Sub(sumRand, out.GetRandomness())
+	}
+
+	privKeyMlsag := make([]*operation.Scalar, len(inputCoins)+1)
+	for i := 0; i < len(inputCoins); i += 1 {
+		var err error
+		privKeyMlsag[i], err = inputCoins[i].ParsePrivateKeyOfCoin(*senderSK)
+		if err != nil {
+			return nil, err
+		}
+	}
+	privKeyMlsag[len(inputCoins)] = sumRand
+	return privKeyMlsag, nil
+}
+
+func GenerateMLSAGWithIndices(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, fee uint64, pi int, commitmentIndices []uint64, myIndices []uint64, commitments []*operation.Point, publicKeys []*operation.Point) (*mlsag.Ring, [][]*big.Int){
+	sumOutputsWithFee := CalculateSumOutputsWithFee(coin.CoinV2ArrayToCoinArray(outputCoins), fee)
+	ringSize := privacy.RingSize
+	indices := make([][]*big.Int, ringSize)
+	ring := make([][]*operation.Point, ringSize)
+
+	for i := 0; i < ringSize; i += 1 {
+		sumInputs := new(operation.Point).Identity()
+		sumInputs.Sub(sumInputs, sumOutputsWithFee)
+
+		row := make([]*operation.Point, len(inputCoins))
+		rowIndices := make([]*big.Int, len(inputCoins))
+		if i == pi {
+			for j := 0; j < len(inputCoins); j += 1 {
+				row[j] = inputCoins[j].GetPublicKey()
+				rowIndices[j] = new(big.Int).SetUint64(myIndices[j])
+				sumInputs.Add(sumInputs, inputCoins[j].GetCommitment())
+			}
+		} else {
+			for j := 0; j < len(inputCoins); j += 1 {
+				//r := common.RandInt() % len(commitmentIndices)
+				r := i*len(inputCoins)+j
+				rowIndices[j] = new(big.Int).SetUint64(commitmentIndices[r])
+				row[j] = publicKeys[r]
+				sumInputs.Add(sumInputs, commitments[r])
+			}
+		}
+		row = append(row, sumInputs)
+		ring[i] = row
+		indices[i] = rowIndices
+	}
+
+	return mlsag.NewRing(ring), indices
+}
+
+func CalculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
+	sumOutputsWithFee := new(operation.Point).Identity()
+	for i := 0; i < len(outputCoins); i += 1 {
+		sumOutputsWithFee.Add(sumOutputsWithFee, outputCoins[i].GetCommitment())
+	}
+	feeCommitment := new(operation.Point).ScalarMult(
+		operation.PedCom.G[operation.PedersenValueIndex],
+		new(operation.Scalar).FromUint64(fee),
+	)
+	sumOutputsWithFee.Add(sumOutputsWithFee, feeCommitment)
+	return sumOutputsWithFee
+}
+
+func ParseCommitmentsAndPublicKeysFromJson(jsonRespondInBytes []byte) ([]uint64, []*operation.Point, []*operation.Point, error) {
+	var jsonRespond rpcserver.JsonResponse
+	err := json.Unmarshal(jsonRespondInBytes, &jsonRespond)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var msg json.RawMessage
+	err = json.Unmarshal(jsonRespond.Result, &msg)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var result jsonresult.RandomCommitmentAndPublicKeyResult
+	err = json.Unmarshal(msg, &result)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	commitmentIndices := result.CommitmentIndices
+	publicKeys := make([]*operation.Point, len(result.PublicKeys))
+	commitments := make([]*operation.Point, len(result.Commitments))
+
+	if len(commitmentIndices) != len(publicKeys) || len(commitmentIndices) != len(commitments) || len(commitments) != len(publicKeys) {
+		return nil, nil, nil, errors.New("length mismatch!")
+	}
+
+	for i, cm := range result.Commitments {
+		cmInbytes, err := DecodeBase58Check(cm)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		pkInbytes, err := DecodeBase58Check(result.PublicKeys[i])
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		commitments[i], err = new(operation.Point).FromBytesS(cmInbytes)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		publicKeys[i], err = new(operation.Point).FromBytesS(pkInbytes)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	return commitmentIndices, publicKeys, commitments, nil
+}
+
+
+/*Debug tool functions*/
+//For txver1
+func (tool *DebugTool) InitTxVer1(tx *transaction.TxVersion1, keyWallet *wallet.KeyWallet, paymentString string, inputCoins []coin.PlainCoin, amount uint64, tokenIDString string) error {
+	senderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	keySet := &keyWallet.KeySet
+
+	fee := uint64(100)
+
+	walletReceiver, err := wallet.Base58CheckDeserialize(paymentString)
+	if err != nil {
+		return err
+	}
+
+	paymentInfos, _, err := CreateTxPrivacyInitParams(nil, keySet, walletReceiver.KeySet.PaymentAddress, inputCoins, true, fee, amount, common.PRVCoinID)
+	if err != nil {
+		return err
+	}
+	paymentInfos[0].Amount = amount - fee
+
+	InitParam(tx, fee, keySet, 1)
+
+	witness, err1 := tool.InitPaymentWitness(tokenIDString, senderPaymentAddress, inputCoins, paymentInfos, keySet, fee)
+	if err1 != nil {
+		return err1
+	}
+
+	err2 := ProveAndSign(witness, paymentInfos, tx, keySet)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
 func (this *DebugTool) GetRandomCommitment(tokenID, paymentAddress string, input []coin.PlainCoin) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
 
 	coins := []jsonresult.OutCoin{}
-	for _, outCoin := range input{
+	for _, outCoin := range input {
 		coin := jsonresult.NewOutCoin(outCoin)
 		coin.Info = "18WDn5zYiHy8kdFEtiVXsEGqhjeKJToeKoeNkh8ZZnRBagFG1b"
 		coins = append(coins, coin)
@@ -508,30 +786,6 @@ func (this *DebugTool) GetRandomCommitment(tokenID, paymentAddress string, input
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) GetRandomCommitmentsAndPublicKeys(tokenID, paymentAddress string, numOutputs int) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-
-	r := new(rpcserver.JsonRequest)
-	r.Id = ""
-	r.Jsonrpc = "1.0"
-	r.Method = "randomcommitmentsandpublickeys"
-
-	r.Params = []interface{}{paymentAddress, numOutputs, tokenID}
-
-	rInBytes, err := json.MarshalIndent(r, "\t", "\t")
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(rInBytes)
-
-	fmt.Println(query)
-	//return nil, nil
-	return this.SendPostRequestWithQuery(query)
-}
-
 func (tool *DebugTool) InitPaymentWitness(tokenIDString string, senderPaymentAddress string, inputCoins []coin.PlainCoin, paymentInfos []*privacy.PaymentInfo, keySet *incognitokey.KeySet, fee uint64) (*zkp.PaymentWitness, error) {
 	//Get random commitments to create one-of-many proofs
 	jsonRespondInBytes, err := tool.GetRandomCommitment(tokenIDString, senderPaymentAddress, inputCoins)
@@ -539,16 +793,12 @@ func (tool *DebugTool) InitPaymentWitness(tokenIDString string, senderPaymentAdd
 		return nil, err
 	}
 
-	fmt.Println(string(jsonRespondInBytes))
-
 	commitmentIndices, myCommitmentIndices, commitments, err := ParseIndicesAndCommitmentsFromJson(jsonRespondInBytes)
 	if err != nil {
 		return nil, err
 	}
 
-
-
-	outputCoins, err := ParseOutputCoins(paymentInfos)
+	outputCoins, err := ParseOutputCoinV1s(paymentInfos)
 	if err != nil {
 		return nil, err
 	}
@@ -574,161 +824,173 @@ func (tool *DebugTool) InitPaymentWitness(tokenIDString string, senderPaymentAdd
 	return witness, nil
 }
 
-func (tool *DebugTool) PrepareTransaction(privateKey string, tokenIDString string) (*wallet.KeyWallet, string, *operation.Point, []coin.PlainCoin, []coin.PlainCoin, error) {
-	listOutputCoins, err := tool.GetPlainOutputCoin(privateKey, tokenIDString)
+//For txver2
+func (tool *DebugTool) SignTransactionV2(tx *transaction.TxVersion2, tokenIDString string, senderPaymentAddress string, inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, fee uint64, listIndicesV2 []uint64, keySet *incognitokey.KeySet) error {
+	hashedMessage := tx.Hash()[:]
+
+	jsonRespondInBytes, err := tool.GetRandomCommitmentsAndPublicKeys(tokenIDString, senderPaymentAddress, 100*len(inputCoins))
 	if err != nil {
-		return nil, "", nil, nil, nil, err
+		return err
+	}
+
+	commitmentIndices, publicKeys, commitments, err := ParseCommitmentsAndPublicKeysFromJson(jsonRespondInBytes)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("BUGLOG2 InputCoin publicKey")
+	for i, inputCoin := range inputCoins{
+		fmt.Println(inputCoin.GetPublicKey(), listIndicesV2[i])
+	}
+
+	pi := common.RandInt() % privacy.RingSize
+	ring, indices := GenerateMLSAGWithIndices(inputCoins, outputCoins, fee, pi, commitmentIndices, listIndicesV2, commitments, publicKeys)
+
+	fmt.Println("BUGLOG2 ring")
+	for _, keys :=range ring.GetKeys(){
+		for _, keyImage := range keys{
+			fmt.Println("BUGLOG2", keyImage.ToBytesS())
+		}
+		fmt.Println("BUGLOG2\n")
+	}
+
+	fmt.Println("BUGLOG2 indices in Prove", indices)
+
+
+	txSigPubKey := new(transaction.TxSigPubKeyVer2)
+	txSigPubKey.Indexes = indices
+	tx.SigPubKey, err = txSigPubKey.Bytes()
+	if err != nil {
+		return err
+	}
+
+	privKeysMlsag, err := CreatePrivKeyMlsag(inputCoins, outputCoins, &keySet.PrivateKey)
+	if err != nil {
+		return err
+	}
+	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
+	sigPrivate, err := privacy.ArrayScalarToBytes(&privKeysMlsag)
+	if err != nil {
+		fmt.Println(sigPrivate)
+		return err
+	}
+
+	// Set Signature
+	mlsagSignature, err := sag.Sign(hashedMessage)
+	if err != nil {
+		return err
+	}
+
+	res, err := mlsag.Verify(mlsagSignature, ring, hashedMessage)
+	fmt.Println("Verify sig", res, err)
+
+	// inputCoins already hold keyImage so set to nil to reduce size
+	mlsagSignature.SetKeyImages(nil)
+	tx.Sig, err = mlsagSignature.ToBytes()
+	return nil
+}
+
+func (this *DebugTool) GetRandomCommitmentsAndPublicKeys(tokenID, paymentAddress string, numOutputs int) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	r := new(rpcserver.JsonRequest)
+	r.Id = ""
+	r.Jsonrpc = "1.0"
+	r.Method = "randomcommitmentsandpublickeys"
+
+	r.Params = []interface{}{paymentAddress, numOutputs, tokenID}
+
+	rInBytes, err := json.MarshalIndent(r, "\t", "\t")
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(rInBytes)
+	//return nil, nil
+	return this.SendPostRequestWithQuery(query)
+}
+
+//Common
+func (tool *DebugTool) PrepareTransaction(privateKey string, tokenIDString string) (*wallet.KeyWallet, string, *operation.Point, []coin.PlainCoin, []coin.PlainCoin, []uint64, []uint64, error) {
+	listOutputCoins, listIndices, err := tool.GetPlainOutputCoin(privateKey, tokenIDString)
+	if err != nil {
+		return nil, "", nil, nil, nil, nil, nil, err
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		return nil, "", nil, nil, nil, err
+		return nil, "", nil, nil, nil, nil, nil, err
 	}
 
 	keySet := &keyWallet.KeySet
 	err = keySet.InitFromPrivateKey(&keySet.PrivateKey)
 	if err != nil {
-		return nil, "", nil, nil, nil, err
+		return nil, "", nil, nil, nil, nil, nil, err
 	}
 
 	senderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	pubkey, err := new(privacy.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	if err != nil {
-		return nil, "", nil, nil, nil, err
+		return nil, "", nil, nil, nil, nil, nil, err
 	}
 
 	if err != nil {
-		return nil, "", nil, nil, nil, err
+		return nil, "", nil, nil, nil, nil, nil, err
 	}
 
-	coinV1s, coinV2s := DivideCoins(listOutputCoins)
-	return keyWallet, senderPaymentAddress, pubkey, coinV1s, coinV2s, nil
+	coinV1s, coinV2s, listIndicesV1, listIndicesV2 := DivideCoins(listOutputCoins, listIndices)
+	return keyWallet, senderPaymentAddress, pubkey, coinV1s, coinV2s, listIndicesV1, listIndicesV2, nil
 }
 
-func (tool *DebugTool) GetPlainOutputCoin(privateKey, tokenID string) ([]coin.PlainCoin, error) {
+func (tool *DebugTool) GetPlainOutputCoin(privateKey, tokenID string) ([]coin.PlainCoin, []uint64, error) {
 	outputCoins := []coin.PlainCoin{}
 	respondInBytes, err := tool.GetListUnspentOutputTokens(privateKey, tokenID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	respond, err := ParseResponse(respondInBytes)
-	if err !=nil{
-		return nil, err
+	if err != nil {
+		return nil, nil, err
 	}
 
 	var msg json.RawMessage
 	err = json.Unmarshal(respond.Result, &msg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var tmp jsonresult.ListOutputCoins
 	err = json.Unmarshal(msg, &tmp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	listOutputCoins := tmp.Outputs
-	listIndices := make([]*big.Int, 0)
+	listIndices := make([]uint64, 0)
 	for _, value := range listOutputCoins {
-		for _, outcoin := range value {
-			out, idx, err := CreateCoinFromJSONOutcoin(outcoin)
+		for _, outCoin := range value {
+			out, idx, err := CreateCoinFromJSONOutcoin(outCoin)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			outputCoins = append(outputCoins, out)
-			listIndices = append(listIndices, idx)
+			if out.GetVersion() == 2{
+				if idx == nil {
+					return nil, nil, errors.New("Coin must have index to proceed!")
+				}
+				listIndices = append(listIndices, idx.Uint64())
+			}else{
+				listIndices = append(listIndices, math2.MaxUint64) //Garbage value - we dont actually need it.
+			}
+
 		}
 	}
 
-	return outputCoins, nil
+	return outputCoins, listIndices, nil
 }
 
-func (tool *DebugTool) InitTxVer1(tx *transaction.TxVersion1, keyWallet *wallet.KeyWallet, paymentString string, inputCoins []coin.PlainCoin, amount uint64, tokenIDString string) error {
-	senderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	keySet := &keyWallet.KeySet
 
-	fee := uint64(100)
-
-	walletReceiver, err := wallet.Base58CheckDeserialize(paymentString)
-	if err != nil {
-		return err
-	}
-
-	paymentInfos, _, err := CreateTxPrivacyInitParams(nil, keySet, walletReceiver.KeySet.PaymentAddress, inputCoins, true, fee, common.PRVCoinID)
-	if err != nil {
-		return err
-	}
-	paymentInfos[0].Amount = amount - fee
-
-	InitParam(tx, fee, keySet, 1)
-
-	witness, err1 := tool.InitPaymentWitness(tokenIDString, senderPaymentAddress, inputCoins, paymentInfos, keySet, fee)
-	if err1 != nil {
-		return err1
-	}
-
-	err2 := ProveAndSign(witness, paymentInfos, tx, keySet)
-	if err2 != nil {
-		return err2
-	}
-	return nil
-}
-
-//func (tool *DebugTool) GenerateMLSAGWithIndices(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, fee uint64, pi int, commitmentIndices []uint64, myCommitmentIndices []uint64, commiments []*operation.Point) (*mlsag.Ring, [][]*big.Int, error){
-//	sumOutputsWithFee := CalculateSumOutputsWithFee(coin.CoinV2ArrayToCoinArray(outputCoins), fee)
-//	ringSize := privacy.RingSize
-//	indices := make([][]*big.Int, ringSize)
-//	ring := make([][]*operation.Point, ringSize)
-//
-//	for i := 0; i < ringSize; i += 1 {
-//		sumInputs := new(operation.Point).Identity()
-//		sumInputs.Sub(sumInputs, sumOutputsWithFee)
-//
-//		row := make([]*operation.Point, len(inputCoins))
-//		rowIndexes := make([]*big.Int, len(inputCoins))
-//		if i == pi {
-//			for j := 0; j < len(inputCoins); j += 1 {
-//				row[j] = inputCoins[j].GetPublicKey()
-//				rowIndexes[j] = new(big.Int).SetUint64(myCommitmentIndices[j])
-//				sumInputs.Add(sumInputs, inputCoins[j].GetCommitment())
-//			}
-//		} else {
-//			for j := 0; j < len(inputCoins); j += 1 {
-//				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-//				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
-//				if err != nil {
-//					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
-//					return nil, nil, err
-//				}
-//				coinDB := new(coin.CoinV2)
-//				if err := coinDB.SetBytes(coinBytes); err != nil {
-//					Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
-//					return nil, nil, err
-//				}
-//				row[j] = coinDB.GetPublicKey()
-//				sumInputs.Add(sumInputs, coinDB.GetCommitment())
-//			}
-//		}
-//		row = append(row, sumInputs)
-//		ring[i] = row
-//		indices[i] = rowIndexes
-//	}
-//
-//
-//}
-
-func CalculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point{
-	sumOutputsWithFee := new(operation.Point).Identity()
-	for i := 0; i < len(outputCoins); i += 1 {
-		sumOutputsWithFee.Add(sumOutputsWithFee, outputCoins[i].GetCommitment())
-	}
-	feeCommitment := new(operation.Point).ScalarMult(
-		operation.PedCom.G[operation.PedersenValueIndex],
-		new(operation.Scalar).FromUint64(fee),
-	)
-	sumOutputsWithFee.Add(sumOutputsWithFee, feeCommitment)
-	return sumOutputsWithFee
-}
