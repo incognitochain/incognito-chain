@@ -76,6 +76,7 @@ type BeaconViewRetriever interface {
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
+	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
 	GetBeaconConsensusStateDB() *statedb.StateDB
 }
 

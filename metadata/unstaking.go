@@ -63,7 +63,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
 	}
 
-	_, has, err := statedb.GetStakerInfo(beaconViewRetriever.GetBeaconConsensusStateDB(), requestedPublicKey)
+	_, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
 	if err != nil {
 		Logger.log.Error(err)
 		return false, NewMetadataTxError(UnStakingRequestGetStakerInfoError, err)
