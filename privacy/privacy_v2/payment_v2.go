@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
-	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
 
 type PaymentProofV2 struct {
@@ -34,6 +34,9 @@ func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 		res[i] = proof.outputCoins[i]
 	}
 	return res
+}
+func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
+	return proof.aggregatedRangeProof
 }
 
 func (proof *PaymentProofV2) SetInputCoins(v []coin.PlainCoin) error {
@@ -78,9 +81,8 @@ func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) error {
 	return nil
 }
 
-func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
-	return proof.aggregatedRangeProof
-}
+func (proof *PaymentProofV2) SetAggregatedRangeProof(aggregatedRangeProof *bulletproofs.AggregatedRangeProof){proof.aggregatedRangeProof = aggregatedRangeProof}
+
 
 func (proof *PaymentProofV2) Init() {
 	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
