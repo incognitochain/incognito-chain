@@ -144,17 +144,17 @@ func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 	return iReq.Type == IssuingRequestMeta
 }
 
-// func (iReq IssuingRequest) Hash() *common.Hash {
-// 	record := iReq.ReceiverAddress.String()
-// 	record += iReq.TokenID.String()
-// 	record += string(iReq.DepositedAmount)
-// 	record += iReq.TokenName
-// 	record += iReq.MetadataBase.Hash().String()
+func (iReq IssuingRequest) Hash() *common.Hash {
+	record := iReq.ReceiverAddress.String()
+	record += iReq.TokenID.String()
+	record += string(iReq.DepositedAmount)
+	record += iReq.TokenName
+	record += iReq.MetadataBase.Hash().String()
 
-// 	// final hash
-// 	hash := common.HashH([]byte(record))
-// 	return &hash
-// }
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
 
 func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	txReqID := *(tx.Hash())

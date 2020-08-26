@@ -628,3 +628,8 @@ func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, heigh
 	err := json.Unmarshal(data, bRH)
 	return bRH, err
 }
+
+//GetStakerInfo : Return staker info from statedb
+func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
+	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
+}

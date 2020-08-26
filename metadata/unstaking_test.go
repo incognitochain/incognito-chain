@@ -174,7 +174,14 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		key1: "12",
 	}
 
-	// stakingTxError := map[string]
+	stakingTxError := map[string]string{
+		"123": "12",
+	}
+
+	shardViewStakingTxError := supportShardView
+	shardViewStakingTxError.
+		On("GetShardStakingTx", 0, 100).
+		Return(stakingTxError, nil)
 
 	shardViewStakingTx := supportShardView
 	shardViewStakingTx.
@@ -309,7 +316,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			args: args{
 				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  shardViewStakingTx,
+				shardViewRetriever:  shardViewStakingTxError,
 			},
 			want:    false,
 			wantErr: true,
