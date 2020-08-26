@@ -1,12 +1,13 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"reflect"
 	"sort"
 	"strconv"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 var (
@@ -150,10 +151,10 @@ func TestAssignShardCandidate(t *testing.T) {
 // NOTICE: badPendingValidators is always empty
 // TESTCASE
 // 1. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset is zero
-// 2. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset > maxCommittee
+// 2. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset > maxCommittee -------- @hung ERROR offset > maxCommittee will return error
 // 3. Push all pending validator to producer list,NO-ERROR (maxCommittee - len(currentGoodProducers)) >= offset
 // 4. Push some pending validator to producer list and swap the remaining offset (maxCommittee - len(currentGoodProducers)) <= offset
-// 5. Only swap,NO-ERROR len(goodPendingValidators) < offset, (maxCommittee - len(currentGoodProducers)) == 0
+// 5. Only swap,NO-ERROR len(goodPendingValidators) < offset, (maxCommittee - len(currentGoodProducers)) == 0 -------- @hung ERROR offset > maxCommittee will return error
 // 6. Only swap,NO-ERROR len(goodPendingValidators) > offset, (maxCommittee - len(currentGoodProducers)) == 0
 func Test_swap(t *testing.T) {
 	type args struct {
@@ -173,7 +174,90 @@ func Test_swap(t *testing.T) {
 		want3   []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "swap case 1",
+			args: args{
+				goodPendingValidators: []string{"val12"},
+				currentGoodProducers:  []string{"val1", "val2", "val3"},
+				maxCommittee:          3,
+				offset:                0,
+			},
+			want:    []string{"val12"},
+			want1:   []string{"val1", "val2", "val3"},
+			want2:   nil,
+			want3:   []string{},
+			wantErr: false,
+		},
+		{
+			name: "swap case 2",
+			args: args{
+				goodPendingValidators: []string{"val12"},
+				currentGoodProducers:  []string{"val1", "val2", "val3"},
+				maxCommittee:          3,
+				offset:                4,
+			},
+			want:    []string{"val12"},
+			want1:   []string{"val1", "val2", "val3"},
+			want2:   nil,
+			want3:   []string{},
+			wantErr: true,
+		},
+		{
+			name: "swap case 3",
+			args: args{
+				goodPendingValidators: []string{"val12", "val22", "val32"},
+				currentGoodProducers:  []string{"val1", "val2", "val3"},
+				maxCommittee:          6,
+				offset:                3,
+			},
+			want:    []string{},
+			want1:   []string{"val1", "val2", "val3", "val12", "val22", "val32"},
+			want2:   nil,
+			want3:   []string{"val12", "val22", "val32"},
+			wantErr: false,
+		},
+		{
+			name: "swap case 4",
+			args: args{
+				goodPendingValidators: []string{"val12", "val22", "val32", "val42"},
+				currentGoodProducers:  []string{"val1", "val2", "val3"},
+				maxCommittee:          4,
+				offset:                3,
+			},
+			want:    []string{"val42"},
+			want1:   []string{"val3", "val12", "val22", "val32"},
+			want2:   []string{"val1", "val2"},
+			want3:   []string{"val12", "val22", "val32"},
+			wantErr: false,
+		},
+		{
+			name: "swap case 5",
+			args: args{
+				goodPendingValidators: []string{"val12", "val22", "val32"},
+				currentGoodProducers:  []string{"val1", "val2", "val3"},
+				maxCommittee:          3,
+				offset:                4,
+			},
+			want:    []string{"val12", "val22", "val32"},
+			want1:   []string{"val1", "val2", "val3"},
+			want2:   nil,
+			want3:   []string{},
+			wantErr: true,
+		},
+		{
+			name: "swap case 6",
+			args: args{
+				goodPendingValidators: []string{"val12", "val22", "val32", "val42"},
+				currentGoodProducers:  []string{"val1", "val2", "val3"},
+				maxCommittee:          3,
+				offset:                3,
+			},
+			want:    []string{"val42"},
+			want1:   []string{"val12", "val22", "val32"},
+			want2:   []string{"val1", "val2", "val3"},
+			want3:   []string{"val12", "val22", "val32"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -223,7 +307,54 @@ func TestSwapValidator(t *testing.T) {
 		want3   []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "swap case 1",
+			args: args{
+				pendingValidators: []string{"val12"},
+				currentValidators: []string{"val1", "val2", "val3"},
+				maxCommittee:      3,
+				minCommittee:      1,
+				offset:            1,
+				swapOffset:        1,
+			},
+			want:    []string{},
+			want1:   []string{"val2", "val3", "val12"},
+			want2:   []string{"val1"},
+			want3:   []string{"val12"},
+			wantErr: false,
+		},
+		{
+			name: "swap case 2",
+			args: args{
+				pendingValidators: []string{"val12"},
+				currentValidators: []string{"val1", "val2", "val3"},
+				maxCommittee:      3,
+				minCommittee:      1,
+				offset:            2,
+				swapOffset:        1,
+			},
+			want:    []string{},
+			want1:   []string{"val2", "val3", "val12"},
+			want2:   []string{"val1"},
+			want3:   []string{"val12"},
+			wantErr: false,
+		},
+		{
+			name: "swap case 3",
+			args: args{
+				pendingValidators: []string{"val12", "val22"},
+				currentValidators: []string{"val1", "val2", "val3"},
+				maxCommittee:      3,
+				minCommittee:      1,
+				offset:            1,
+				swapOffset:        1,
+			},
+			want:    []string{"val22"},
+			want1:   []string{"val2", "val3", "val12"},
+			want2:   []string{"val1"},
+			want3:   []string{"val12"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -263,7 +394,42 @@ func TestRemoveValidator(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "error case",
+			args: args{
+				validators:        []string{"val1", "val2", "val3"},
+				removedValidators: []string{"val1", "val2", "val3", "val4"},
+			},
+			want:    []string{"val1", "val2", "val3"},
+			wantErr: true,
+		},
+		{
+			name: "happy case 1",
+			args: args{
+				validators:        []string{"val1", "val2", "val3"},
+				removedValidators: []string{"val1"},
+			},
+			want:    []string{"val2", "val3"},
+			wantErr: false,
+		},
+		{
+			name: "happy case 2",
+			args: args{
+				validators:        []string{"val1", "val2", "val3"},
+				removedValidators: []string{"val2"},
+			},
+			want:    []string{"val1", "val3"},
+			wantErr: false,
+		},
+		{
+			name: "happy case 3",
+			args: args{
+				validators:        []string{"val1", "val2", "val3"},
+				removedValidators: []string{"val3"},
+			},
+			want:    []string{"val1", "val2"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

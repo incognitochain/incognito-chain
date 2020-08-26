@@ -202,6 +202,8 @@ func CreateBeaconSwapActionForKeyListV2(
 // #3 swapped out validator
 // #4 incoming validator
 // #5 error
+// REVIEW: @hung
+// - should check offset <= goodPendingValidators
 func swap(
 	badPendingValidators []string,
 	goodPendingValidators []string,

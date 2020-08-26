@@ -264,10 +264,19 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
 
 	bcrGetStakingAmountShardError := &mocks.BlockchainRetriever{}
-	bcrGetStakingAmountShardError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiipQxBdSVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
+	bcrGetStakingAmountShardError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
+	bcrGetStakingAmountShardError.On("GetStakingAmountShard").Return(uint64(1750000000000))
 	txGetStakingAmountShardError := &mocks.Transaction{}
 	txGetStakingAmountShardError.On("IsPrivacy").Return(false)
-	txGetStakingAmountShardError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+	txGetStakingAmountShardError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
+
+	txGetStakingAmountBeaconError := &mocks.Transaction{}
+	txGetStakingAmountBeaconError.On("IsPrivacy").Return(false)
+	txGetStakingAmountBeaconError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1750000000000))
+
+	txBase58CheckDeserialize2Error := &mocks.Transaction{}
+	txBase58CheckDeserialize2Error.On("IsPrivacy").Return(false)
+	txBase58CheckDeserialize2Error.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1750000000000))
 
 	tests := []struct {
 		name    string
@@ -286,7 +295,6 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			},
 			want:    false,
 			want1:   false,
-			want2:   errors.New("staking Transaction Is No Privacy Transaction"),
 			wantErr: true,
 		},
 		{
@@ -297,7 +305,6 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			},
 			want:    false,
 			want1:   false,
-			want2:   errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver"),
 			wantErr: true,
 		},
 		{
@@ -309,14 +316,12 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			},
 			want:    false,
 			want1:   false,
-			want2:   errors.New("burning address is invalid"),
 			wantErr: true,
 		},
 		{
 			name: "check wallet.bcr.GetStakingAmountShard() && Stake Shard error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{63},
-				StakingAmountShard: 1650000000000,
+				MetadataBase: metadata.MetadataBase{metadata.ShardStakingMeta},
 			},
 			args: args{
 				txr: txGetStakingAmountShardError,
@@ -324,48 +329,65 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			},
 			want:    false,
 			want1:   false,
-			want2:   errors.New("invalid Stake Shard Amount"),
 			wantErr: true,
 		},
 		{
 			name: "check wallet.bcr.GetStakingAmountShard() * 3 && Stake Beacon error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{64},
-				StakingAmountShard: 1750000000000,
+				MetadataBase: metadata.MetadataBase{metadata.BeaconStakingMeta},
 			},
 			args: args{
-				txr: txGetStakingAmountShardError,
+				txr: txGetStakingAmountBeaconError,
 				bcr: bcrGetStakingAmountShardError},
 			want:    false,
 			want1:   false,
-			want2:   errors.New("invalid Stake Beacon Amount"),
 			wantErr: true,
 		},
 		{
-			name:    "check wallet.Base58CheckDeserialize(funderPaymentAddress) error case",
-			fields:  fields{},
-			args:    args{},
+			name: "check wallet.Base58CheckDeserialize(funderPaymentAddress) error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gRpmgkqD4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+			},
+			args: args{
+				txr: txBase58CheckDeserialize2Error,
+				bcr: bcrGetStakingAmountShardError,
+			},
 			want:    false,
 			want1:   false,
-			want2:   errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet"),
 			wantErr: true,
 		},
 		{
-			name:    "check CommitteePublicKey.FromString error case",
-			fields:  fields{},
-			args:    args{},
+			name: "check CommitteePublicKey.FromString error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+				CommitteePublicKey:           invalidCommitteePublicKeys[0],
+			},
+			args: args{
+				txr: txBase58CheckDeserialize2Error,
+				bcr: bcrGetStakingAmountShardError,
+			},
 			want:    false,
 			want1:   false,
-			want2:   nil,
 			wantErr: true,
 		},
 		{
-			name:    "happy case",
-			fields:  fields{},
-			args:    args{},
+			name: "happy case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+				CommitteePublicKey:           validCommitteePublicKeys[0],
+			},
+			args: args{
+				txr: txBase58CheckDeserialize2Error,
+				bcr: bcrGetStakingAmountShardError,
+			},
 			want:    true,
 			want1:   true,
-			want2:   nil,
 			wantErr: false,
 		},
 	}
@@ -389,9 +411,6 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			}
 			if got1 != tt.want1 {
 				t.Errorf("ValidateSanityData() got1 = %v, want %v", got1, tt.want1)
-			}
-			if err.Error() != tt.want2.Error() {
-				t.Errorf("ValidateSanityData() err = %v, want %v", err, tt.want2)
 			}
 		})
 	}
