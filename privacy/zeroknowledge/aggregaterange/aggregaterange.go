@@ -25,6 +25,10 @@ type AggregatedRangeProof struct {
 	innerProductProof *InnerProductProof
 }
 
+func (proof AggregatedRangeProof) GetCmValues() []*privacy.Point {
+	return proof.cmsValue
+}
+
 func (proof AggregatedRangeProof) ValidateSanity() bool {
 	for i := 0; i < len(proof.cmsValue); i++ {
 		if !proof.cmsValue[i].PointValid() {

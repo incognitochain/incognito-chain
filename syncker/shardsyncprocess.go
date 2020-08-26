@@ -157,17 +157,13 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 					continue
 				}
 			}
-			bestHeight := s.Chain.GetBestViewHeight()
-			Logger.Infof("Syncker: Insert block %v from pool, validate with committee at height %v", blk.(common.BlockInterface).GetHeight(), bestHeight)
-			c := s.Chain.GetCommittee()
-			if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), c); err != nil {
-				Logger.Errorf("Validate Block %v with committee %v from bestviewheight %v got error %v", blk.(common.BlockInterface).GetHeight(), c, bestHeight, err)
-				return
-			}
+
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
+			//must validate this block when insert
 			if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
-				return
+				Logger.Error("Insert shard block from pool fail", blk.GetHeight(), blk.Hash(), err)
+				continue
 			}
 			s.shardPool.RemoveBlock(blk.Hash())
 		}
@@ -262,7 +258,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 					} else {
 						insertBlkCnt += successBlk
 						fmt.Printf("Syncker Insert %d shard %d block(from %d to %d) elaspse %f \n", successBlk, s.shardID, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
-						if successBlk >= len(blockBuffer) {
+						if successBlk >= len(blockBuffer) || successBlk == 0 {
 							break
 						}
 						blockBuffer = blockBuffer[successBlk:]
