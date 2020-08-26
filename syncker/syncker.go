@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -118,7 +117,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	synckerManager.BeaconSyncProcess.start()
 
 	wg := sync.WaitGroup{}
-	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
+	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
 		wg.Add(1)
 		go func(sid int, syncProc *ShardSyncProcess) {
@@ -198,8 +197,6 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 
 //Process incomming broadcast peerstate
 func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePeerState) {
-	//b, _ := json.Marshal(peerState)
-	//fmt.Println("SYNCKER: receive peer state", string(b))
 	//beacon
 	if peerState.Beacon.Height != 0 && synckerManager.BeaconSyncProcess != nil {
 		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- peerState
@@ -207,6 +204,8 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 	//shard
 	for sid, _ := range peerState.Shards {
 		if synckerManager.ShardSyncProcess[int(sid)] != nil {
+			// b, _ := json.Marshal(peerState)
+			// fmt.Println("[debugshard]: receive peer state", string(b))
 			synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
 		}
 
