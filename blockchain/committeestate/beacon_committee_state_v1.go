@@ -461,7 +461,7 @@ func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, ass
 
 // GenerateAllShardSwapInstruction do nothing
 func (b *BeaconCommitteeEngineV1) GenerateAllRequestShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error) {
-	return []*instruction.SwapInstruction{}, nil
+	return []*instruction.RequestShardSwapInstruction{}, nil
 }
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(
@@ -480,7 +480,7 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	} else {
 		newShardCandidates = append(newShardCandidates, stakeInstruction.PublicKeyStructs...)
 	}
-	err := statedb.StoreStakerInfo(
+	err := statedb.StoreStakerInfoV1(
 		env.ConsensusStateDB,
 		stakeInstruction.PublicKeyStructs,
 		b.rewardReceiver,
@@ -548,6 +548,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					return newBeaconCandidates, newShardCandidates, err
 				}
 				// add new public key to committees
+				//TODO: @hung fixed validator
 				committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], swapInstruction.InPublicKeyStructs...)
 				b.shardCommittee[shardID] = append(b.shardCommittee[shardID], swapInstruction.InPublicKeyStructs...)
 			}
@@ -679,7 +680,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.rewardReceiver[swapInstruction.InPublicKeyStructs[index].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[index]
 		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
 	}
-	err := statedb.StoreStakerInfo(
+	err := statedb.StoreStakerInfoV1(
 		env.ConsensusStateDB,
 		swapInstruction.InPublicKeyStructs,
 		b.rewardReceiver,
@@ -823,7 +824,7 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreStakerInfo(
+	err = statedb.StoreStakerInfoV1(
 		env.ConsensusStateDB,
 		stopAutoStakingIncognitoKey,
 		b.rewardReceiver,

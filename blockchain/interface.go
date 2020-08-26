@@ -115,9 +115,9 @@ type ShardCommitteeEngine interface {
 		*committeestate.CommitteeChange, error)
 	InitCommitteeState(env committeestate.ShardCommitteeStateEnvironment)
 	GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
-	GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
 	ProcessInstructionFromBeacon(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 	ProcessInstructionFromShard(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 	GenerateSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
-	GenerateConfirmShardSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
+	GenerateConfirmShardSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, error)
 }

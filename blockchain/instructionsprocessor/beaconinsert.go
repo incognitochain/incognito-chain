@@ -55,7 +55,7 @@ func insertInstructionsStopAutoStake(sDB *statedb.StateDB, ins instruction.Instr
 	for _, pk := range saI.PublicKeys {
 		asMap[pk] = true
 	}
-	return statedb.StoreStakerInfo(
+	return statedb.StoreStakerInfoV1(
 		sDB,
 		pkStructs,
 		map[string]privacy.PaymentAddress{}, //Empty map cuz we just update auto staking flag
@@ -77,7 +77,7 @@ func insertInstructionsStake(sDB *statedb.StateDB, ins instruction.Instruction) 
 		asMap[pk] = sI.AutoStakingFlag[i]
 		tsMap[pk] = sI.TxStakeHashes[i]
 	}
-	err := statedb.StoreStakerInfo(
+	err := statedb.StoreStakerInfoV1(
 		sDB,
 		sI.PublicKeyStructs,
 		rrMap,
@@ -174,7 +174,7 @@ func insertInstructionsStopAutoStakev2(sDB *statedb.StateDB, ins instruction.Ins
 	for _, pk := range saI.PublicKeys {
 		asMap[pk] = true
 	}
-	return statedb.StoreStakerInfo(
+	return statedb.StoreStakerInfoV1(
 		sDB,
 		pkStructs,
 		map[string]privacy.PaymentAddress{}, //Empty map cuz we just update auto staking flag
@@ -196,7 +196,7 @@ func insertInstructionsStakev2(sDB *statedb.StateDB, ins instruction.Instruction
 		asMap[pk] = sI.AutoStakingFlag[i]
 		tsMap[pk] = sI.TxStakeHashes[i]
 	}
-	err := statedb.StoreStakerInfo(
+	err := statedb.StoreStakerInfoV1(
 		sDB,
 		sI.PublicKeyStructs,
 		rrMap,

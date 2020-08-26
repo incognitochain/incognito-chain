@@ -130,3 +130,14 @@ func ValidateConfirmShardSwapInstructionSanity(instruction []string) error {
 	}
 	return nil
 }
+
+func ConvertRequestToConfirmShardSwapInstruction(requestInstruction *RequestShardSwapInstruction) *ConfirmShardSwapInstruction {
+	confirmShardSwapInstruction := NewConfirmShardSwapInstructionWithValue(
+		requestInstruction.InPublicKeys,
+		requestInstruction.OutPublicKeys,
+		requestInstruction.ChainID,
+		requestInstruction.Epoch,
+		requestInstruction.RandomNumber,
+	)
+	return confirmShardSwapInstruction
+}

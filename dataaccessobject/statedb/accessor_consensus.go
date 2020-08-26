@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -565,6 +564,7 @@ func storeStakerInfo(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
+	numberOfRound map[string]int,
 ) error {
 	for _, committee := range committees {
 		keyBytes, err := committee.RawBytes()
@@ -573,69 +573,51 @@ func storeStakerInfo(
 		}
 		key := GetStakerInfoKey(keyBytes)
 		committeeString, err := committee.ToBase58()
-		if err != nil {
-			return err
+		tempNumberOfRound, ok := numberOfRound[committeeString]
+		if !ok {
+			tempNumberOfRound = 0
 		}
-		value := NewStakerInfo()
-		has := false
-		value, has, err = stateDB.getStakerInfo(key)
-		if err != nil {
-			return err
-		}
-		autoStakingValue, ok := autoStaking[committeeString]
-		if !has {
-			if !ok {
-				return fmt.Errorf("auto staking of %+v not found", committeeString)
-			}
-			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
-			if !ok {
-				return fmt.Errorf("reward receiver of %+v not found", committeeString)
-			}
-			txStakingID, ok := stakingTx[committeeString]
-			if !ok {
-				return fmt.Errorf("txStakingID of %+v not found", committeeString)
-			}
-			value = NewStakerInfoWithValue(rewardReceiverPaymentAddress, autoStakingValue, txStakingID, 0)
-		} else {
-			if !ok {
-				// In this case, this committee is already storage in db, it just swap out of committee and rejoin waiting candidate without change autostaking param
-				continue
-			}
-			value.autoStaking = autoStakingValue
-			//Just for temporary fix
-			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
-			if ok {
-				//If ok, it mean old data will be rewrite
-				value.rewardReceiver = rewardReceiverPaymentAddress
-			}
-			txStakingID, ok := stakingTx[committeeString]
-			if ok {
-				value.txStakingID = txStakingID
-			}
-		}
+		value := NewStakerInfoWithValue(
+			rewardReceiver[committee.GetIncKeyBase58()],
+			autoStaking[committeeString],
+			stakingTx[committeeString],
+			tempNumberOfRound,
+		)
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
 			return err
-		}
-		// delete(autoStaking, committeeString)
-		if _, ok := stakingTx[committeeString]; ok {
-			delete(stakingTx, committeeString)
-		}
-		if _, ok := rewardReceiver[committee.GetIncKeyBase58()]; ok {
-			delete(stakingTx, committee.GetIncKeyBase58())
 		}
 	}
 	return nil
 }
 
-func StoreStakerInfo(
+func StoreStakerInfoV1(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 ) error {
-	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx)
+	numberOfRound := make(map[string]int)
+	for _, committee := range committees {
+		committeeString, err := committee.ToBase58()
+		if err != nil {
+			return err
+		}
+		numberOfRound[committeeString] = 0
+	}
+	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, numberOfRound)
+}
+
+func StoreStakerInfoV2(
+	stateDB *StateDB,
+	committees []incognitokey.CommitteePublicKey,
+	rewardReceiver map[string]privacy.PaymentAddress,
+	autoStaking map[string]bool,
+	stakingTx map[string]common.Hash,
+	numberOfRound map[string]int,
+) error {
+	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, numberOfRound)
 }
 
 func GetBeaconCommitteeEnterTime(

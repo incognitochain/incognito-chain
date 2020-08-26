@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"reflect"
 	"sort"
 )
 
@@ -42,20 +41,29 @@ func createRequestShardSwapInstructionV2(
 }
 
 // removeValidatorV2 remove validator and return removed list
-// return: #param1: validator list after remove
-// in parameter: #param1: list of full validator
-// in parameter: #param2: list of removed validator
-// removed validators list must be a subset of full validator list and it must be first in the list
+// return validator list after remove
+// parameter:
+// #1: list of full validator
+// #2: list of removed validator
 func removeValidatorV2(validators []string, removedValidators []string) ([]string, error) {
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	remainingValidators := []string{}
-	if len(removedValidators) > len(validators) {
-		return remainingValidators, fmt.Errorf("removed validator length %+v, bigger than current validator length %+v", removedValidators, validators)
+	for _, removedValidator := range removedValidators {
+		found := false
+		index := 0
+		for i, validator := range validators {
+			if validator == removedValidator {
+				found = true
+				index = i
+				break
+			}
+		}
+		if found {
+			validators = append(validators[:index], validators[index+1:]...)
+		} else {
+			return []string{}, fmt.Errorf("Try to removed validator %+v but not found in list %+v", removedValidator, validators)
+		}
 	}
-	if !reflect.DeepEqual(validators[:len(removedValidators)], removedValidators) {
-		return remainingValidators, fmt.Errorf("current validator %+v and removed validator %+v is not compatible", validators, removedValidators)
-	}
-	remainingValidators = validators[len(removedValidators):]
 	return remainingValidators, nil
 }
 

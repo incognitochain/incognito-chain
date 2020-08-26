@@ -128,7 +128,7 @@ func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.Committe
 
 func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardPendingValidator(byte(chain.shardID))...)
+	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardSubstitute(byte(chain.shardID))...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {

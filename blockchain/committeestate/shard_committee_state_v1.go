@@ -92,7 +92,7 @@ func (engine *ShardCommitteeEngineV1) GetShardCommittee(shardID byte) []incognit
 }
 
 //GetShardPendingValidator get shard pending validators
-func (engine *ShardCommitteeEngineV1) GetShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
+func (engine *ShardCommitteeEngineV1) GetShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV1.shardPendingValidator
 }
 
@@ -230,9 +230,8 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 	return hashes, committeeChange, nil
 }
 
-func (engine *ShardCommitteeEngineV1) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (
-	*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
+func (engine *ShardCommitteeEngineV1) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []incognitokey.CommitteePublicKey, error) {
+	return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, nil
 }
 
 func (engine *ShardCommitteeEngineV1) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {

@@ -202,7 +202,7 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 		}
 		res = append(res, valueBytes...)
 	}
-	for _, value := range shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID) {
+	for _, value := range shardBestState.shardCommitteeEngine.GetShardSubstitute(shardBestState.ShardID) {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
@@ -340,7 +340,7 @@ func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePub
 
 func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
 	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
-	return shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID)[id]
+	return shardBestState.shardCommitteeEngine.GetShardSubstitute(shardBestState.ShardID)[id]
 }
 
 func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
@@ -357,7 +357,7 @@ func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.Committ
 }
 
 func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.CommitteePublicKey {
-	return shardBestState.shardCommitteeEngine.GetShardPendingValidator(shardBestState.ShardID)
+	return shardBestState.shardCommitteeEngine.GetShardSubstitute(shardBestState.ShardID)
 }
 
 func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {

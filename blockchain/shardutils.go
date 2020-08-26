@@ -106,17 +106,15 @@ func CreateSwapInstruction(
 
 func CreateShardSwapActionForKeyListV2(
 	genesisParam *GenesisParams,
-	pendingValidator []string,
 	shardCommittees []string,
 	minCommitteeSize int,
 	activeShard int,
 	shardID byte,
 	epoch uint64,
 ) ([]string, []string, []string) {
-	newPendingValidator := pendingValidator
 	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
 	remainShardCommittees := shardCommittees[minCommitteeSize:]
-	return swapInstruction[shardID], newPendingValidator, append(newShardCommittees[shardID], remainShardCommittees...)
+	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
 }
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block

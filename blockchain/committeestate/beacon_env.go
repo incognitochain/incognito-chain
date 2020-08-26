@@ -25,6 +25,7 @@ type BeaconCommitteeStateEnvironment struct {
 	MaxSwapOrAssign                 int
 	ConsensusStateDB                *statedb.StateDB
 	IsReplace                       bool
+	NumberOfFixedBlockValidator     uint64
 	allCandidateSubstituteCommittee []string
 }
 
