@@ -24,6 +24,8 @@ type OutCoin struct {
 	Randomness           string `json:"Randomness"`
 	Value                string `json:"Value"`
 	Info                 string `json:"Info"`
+	SharedRandom		 string `json:"SharedRandom"`
+	TxRandom	         string	`json:"TxRandom"`
 }
 
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
