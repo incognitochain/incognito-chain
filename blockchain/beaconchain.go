@@ -195,7 +195,7 @@ func (chain *BeaconChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), false); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
