@@ -65,7 +65,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 
 	_, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
 	if err != nil {
-		Logger.log.Error(err)
 		return false, NewMetadataTxError(UnStakingRequestGetStakerInfoError, err)
 	}
 

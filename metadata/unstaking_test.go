@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -118,6 +121,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		MetadataBase: metadata.MetadataBase{
 			Type: metadata.UnStakingMeta,
 		},
+		CommitteePublicKey: key1,
 	}
 
 	stopAutoStakinggMetaData := &metadata.StopAutoStakingMetadata{
@@ -157,37 +161,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("GetStakerInfo", key1).
 		Return(nil, false, nil)
 
-	supportShardView := &mocks.ShardViewRetriever{}
-	supportShardView.
-		On("GetShardID").
-		Return(0)
-	supportShardView.
-		On("GetBeaconHeight").
-		Return(100)
-
-	shardViewGetStakingTxError := supportShardView
-	shardViewGetStakingTxError.
-		On("GetShardStakingTx", 0, 100).
-		Return(nil, errors.New("Get Shard Staking Error"))
-
-	stakingTx := map[string]string{
-		key1: "12",
-	}
-
-	stakingTxError := map[string]string{
-		"123": "12",
-	}
-
-	shardViewStakingTxError := supportShardView
-	shardViewStakingTxError.
-		On("GetShardStakingTx", 0, 100).
-		Return(stakingTxError, nil)
-
-	shardViewStakingTx := supportShardView
-	shardViewStakingTx.
-		On("GetShardStakingTx", 0, 100).
-		Return(stakingTx, nil)
-
 	beaconViewValidInput := &mocks.BeaconViewRetriever{}
 	beaconViewValidInput.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
@@ -195,6 +168,69 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	beaconViewValidInput.
 		On("GetStakerInfo", key1).
 		Return(nil, true, nil)
+
+	supportShardView := &mocks.ShardViewRetriever{}
+	supportShardView.
+		On("GetShardID").
+		Return(byte(0))
+	supportShardView.
+		On("GetBeaconHeight").
+		Return(uint64(100))
+
+	chainViewGetShardStakingError := &mocks.ChainRetriever{}
+	chainViewGetShardStakingError.
+		On("GetShardStakingTx", byte(0), uint64(100)).
+		Return(nil, errors.New("Get Shard Staking Error"))
+
+	stakingTxs := map[string]string{
+		key1: "12",
+	}
+
+	stakingTxError := map[string]string{
+		"123": "12",
+	}
+
+	stakingTxInvalidFormatKey := map[string]string{
+		key1: "xyz",
+	}
+
+	chainViewStakingTxError := &mocks.ChainRetriever{}
+	chainViewStakingTxError.
+		On("GetShardStakingTx", byte(0), uint64(100)).
+		Return(stakingTxError, nil)
+
+	chainViewStakingTx := &mocks.ChainRetriever{}
+	chainViewStakingTx.
+		On("GetShardStakingTx", byte(0), uint64(100)).
+		Return(stakingTxs, nil)
+
+	chainViewStakingTxInvalidFormatKey := &mocks.ChainRetriever{}
+	chainViewStakingTxInvalidFormatKey.
+		On("GetShardStakingTx", byte(0), uint64(100)).
+		Return(stakingTxInvalidFormatKey, nil)
+
+	hash, err := common.Hash{}.NewHashFromStr("12")
+	assert.Nil(t, err)
+
+	chainViewGetTransactionError := new(mocks.ChainRetriever)
+	*chainViewGetTransactionError = *chainViewStakingTx
+	chainViewGetTransactionError.
+		On("GetTransactionByHash", *hash).
+		Return(byte(0), common.Hash{}, uint64(0), int(0), nil, errors.New("Can't Get Transaction From Database"))
+
+	stakingTxErr := new(mocks.Transaction)
+	*stakingTxErr = *unstakingTx
+	stakingTxErr.On("GetSender").Return([]byte{2})
+
+	stakingTx := new(mocks.Transaction)
+	*stakingTx = *unstakingTx
+	stakingTx.On("GetSender").Return([]byte{1})
+
+	chainViewValidInput := new(mocks.ChainRetriever)
+	*chainViewValidInput = *chainViewStakingTx
+	chainViewValidInput.
+		On("GetTransactionByHash", *hash).
+		Return(byte(0), common.Hash{}, uint64(0), int(0), stakingTx, nil)
 
 	type fields struct {
 		MetadataBase       metadata.MetadataBase
@@ -300,7 +336,8 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			args: args{
 				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  shardViewGetStakingTxError,
+				shardViewRetriever:  supportShardView,
+				chainRetriever:      chainViewGetShardStakingError,
 			},
 			want:    false,
 			wantErr: true,
@@ -316,7 +353,8 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			args: args{
 				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  shardViewStakingTxError,
+				shardViewRetriever:  supportShardView,
+				chainRetriever:      chainViewStakingTxError,
 			},
 			want:    false,
 			wantErr: true,
@@ -332,56 +370,63 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			args: args{
 				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  shardViewStakingTx,
+				shardViewRetriever:  supportShardView,
+				chainRetriever:      chainViewStakingTxInvalidFormatKey,
 			},
 			want:    false,
 			wantErr: true,
 		},
-		// {
-		// 	name: "Can't Get Transaction By Hash",
-		// 	fields: fields{
-		// 		MetadataBase: metadata.MetadataBase{
-		// 			Type: metadata.UnStakingMeta,
-		// 		},
-		// 		CommitteePublicKey: key1,
-		// 	},
-		// 	args: args{
-		// 		tx:                  unstakingTx,
-		// 		beaconViewRetriever: beaconViewSubtituteCommitteesError,
-		// 	},
-		// 	want:    false,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Send Of Staking Tx From Staker Info != Sender Of Transaction From Database",
-		// 	fields: fields{
-		// 		MetadataBase: metadata.MetadataBase{
-		// 			Type: metadata.UnStakingMeta,
-		// 		},
-		// 		CommitteePublicKey: key1,
-		// 	},
-		// 	args: args{
-		// 		tx:                  unstakingTx,
-		// 		beaconViewRetriever: beaconViewSubtituteCommitteesError,
-		// 	},
-		// 	want:    false,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Valid Input",
-		// 	fields: fields{
-		// 		MetadataBase: metadata.MetadataBase{
-		// 			Type: metadata.UnStakingMeta,
-		// 		},
-		// 		CommitteePublicKey: key1,
-		// 	},
-		// 	args: args{
-		// 		tx:                  unstakingTx,
-		// 		beaconViewRetriever: beaconViewSubtituteCommitteesError,
-		// 	},
-		// 	want:    true,
-		// 	wantErr: false,
-		// },
+		{
+			name: "Can't Get Transaction By Hash",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					Type: metadata.UnStakingMeta,
+				},
+				CommitteePublicKey: key1,
+			},
+			args: args{
+				tx:                  unstakingTx,
+				beaconViewRetriever: beaconViewValidInput,
+				shardViewRetriever:  supportShardView,
+				chainRetriever:      chainViewGetTransactionError,
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "Send Of Staking Tx From Staker Info != Sender Of Transaction From Database",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					Type: metadata.UnStakingMeta,
+				},
+				CommitteePublicKey: key1,
+			},
+			args: args{
+				tx:                  stakingTxErr,
+				beaconViewRetriever: beaconViewValidInput,
+				shardViewRetriever:  supportShardView,
+				chainRetriever:      chainViewValidInput,
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "Valid Input",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					Type: metadata.UnStakingMeta,
+				},
+				CommitteePublicKey: key1,
+			},
+			args: args{
+				tx:                  stakingTx,
+				beaconViewRetriever: beaconViewValidInput,
+				shardViewRetriever:  supportShardView,
+				chainRetriever:      chainViewValidInput,
+			},
+			want:    true,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
