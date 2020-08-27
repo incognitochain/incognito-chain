@@ -219,7 +219,7 @@ func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
