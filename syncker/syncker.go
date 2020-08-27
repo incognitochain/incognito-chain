@@ -3,12 +3,12 @@ package syncker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 

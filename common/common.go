@@ -17,6 +17,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -532,4 +533,9 @@ func IndexOfUint64(target uint64, arr []uint64) int {
 		}
 	}
 	return -1
+}
+
+func GenUUID() string {
+	randUUID, _ := uuid.NewRandom()
+	return randUUID.String()
 }
