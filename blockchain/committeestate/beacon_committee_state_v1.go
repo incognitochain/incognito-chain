@@ -548,7 +548,6 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					return newBeaconCandidates, newShardCandidates, err
 				}
 				// add new public key to committees
-				//TODO: @hung fixed validator
 				committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], swapInstruction.InPublicKeyStructs...)
 				b.shardCommittee[shardID] = append(b.shardCommittee[shardID], swapInstruction.InPublicKeyStructs...)
 			}
