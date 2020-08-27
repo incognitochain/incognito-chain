@@ -16,7 +16,14 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, [][]string, error) {
-	newCommitteeChange := committeeChange
+
+	newCommitteeChange := &CommitteeChange{}
+
+	if committeeChange != nil {
+		newCommitteeChange = committeeChange
+	} else {
+		newCommitteeChange = NewCommitteeChange()
+	}
 
 	incurredInstructions := [][]string{}
 	returnStakerInfoPublicKeys := make(map[byte][]string)
@@ -39,7 +46,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[committeePublicKey]; ok {
 					b.autoStake[committeePublicKey] = false
-					committeeChange.Unstake = append(committeeChange.Unstake, committeePublicKey)
+					newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, committeePublicKey)
 				}
 			}
 		} else {
@@ -51,32 +58,29 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 			if _, ok := b.stakingTx[committeePublicKey]; ok {
 				delete(b.stakingTx, committeePublicKey)
 			}
-
 			committeePublicKeyStruct := incognitokey.CommitteePublicKey{}
 			err := committeePublicKeyStruct.FromBase58(committeePublicKey)
 			if err != nil {
-				return committeeChange, nil, err
+				return newCommitteeChange, nil, err
 			}
-
 			rewardReceiverKey := committeePublicKeyStruct.GetIncKeyBase58()
 			if _, ok := b.rewardReceiver[rewardReceiverKey]; ok {
 				delete(b.rewardReceiver, rewardReceiverKey)
 			}
 
-			//TODO: Scale by checking unstake instruction type later
-			newCommitteeChange.NextEpochShardCandidateRemoved =
-				append(newCommitteeChange.NextEpochShardCandidateRemoved, committeePublicKeyStruct)
-
 			indexCandidate := indexNextEpochShardCandidate[committeePublicKey]
 			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate[:indexCandidate], b.nextEpochShardCandidate[indexCandidate+1:]...)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, committeePublicKey)
-
 			if err != nil {
-				return committeeChange, nil, err
+				return newCommitteeChange, nil, err
 			}
 			if !has {
-				return committeeChange, nil, errors.New("Can't find staker info")
+				return newCommitteeChange, nil, errors.New("Can't find staker info")
 			}
+
+			newCommitteeChange.NextEpochShardCandidateRemoved =
+				append(newCommitteeChange.NextEpochShardCandidateRemoved, committeePublicKeyStruct)
+
 			returnStakerInfoPublicKeys[stakerInfo.ShardID()] =
 				append(returnStakerInfoPublicKeys[stakerInfo.ShardID()], committeePublicKey)
 			percentReturns[stakerInfo.ShardID()] =
@@ -171,7 +175,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *Committee
 
 	newCommitteeChange := committeeChange
 
-	unstakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.Unstake)
+	unstakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(newCommitteeChange.Unstake)
 	if err != nil {
 		return newCommitteeChange, err
 	}
@@ -182,5 +186,6 @@ func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *Committee
 		b.autoStake,
 		b.stakingTx,
 	)
+
 	return newCommitteeChange, err
 }

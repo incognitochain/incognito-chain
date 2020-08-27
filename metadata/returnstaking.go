@@ -61,11 +61,12 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, cha
 
 // pk: 32, tk: 32
 func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if len(sbsRes.StakerAddress.Pk) != 32 {
+
+	if len(sbsRes.StakerAddress.Pk) != common.PublicKeySize {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
 
-	if len(sbsRes.StakerAddress.Tk) != 32 {
+	if len(sbsRes.StakerAddress.Tk) != common.TransmissionKeySize {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
 

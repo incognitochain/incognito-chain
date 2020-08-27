@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
@@ -10,6 +12,9 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	[][]string, error) {
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	incurredInstructions := [][]string{}
+	if env == nil {
+		return incurredInstructions, errors.New("Environment Variable Is Null")
+	}
 	if len(env.BeaconInstructions) == 0 {
 		return incurredInstructions, nil
 	}
@@ -17,11 +22,11 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 
 	env.subtituteCandidates, err = newB.getSubtituteCandidates()
 	if err != nil {
-		return nil, err
+		return incurredInstructions, err
 	}
 	env.validators, err = newB.getValidators()
 	if err != nil {
-		return nil, err
+		return incurredInstructions, err
 	}
 	for _, inst := range env.BeaconInstructions {
 		switch inst[0] {
@@ -29,18 +34,18 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
-				return nil, err
+				return incurredInstructions, err
 			}
 			_, incurredInsFromUnstake, err :=
 				newB.processUnstakeInstruction(unstakeInstruction, env, nil)
 			if err != nil {
-				return nil, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
+				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
 			}
 			if incurredInsFromUnstake != nil {
 				incurredInstructions = append(incurredInstructions, incurredInsFromUnstake...)
 			}
 		}
 	}
-	engine.AbortUncommittedBeaconState()
+
 	return incurredInstructions, nil
 }
