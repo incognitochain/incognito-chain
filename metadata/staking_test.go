@@ -66,10 +66,6 @@ var (
 		"12S42qYc9pzsfWoxPZ21sVih7CGYMHNWX12SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX"}
 )
 
-// TODO: @lam
-// TESTCASE
-// 1. RETURN FALSE: NOT PASS CONDITION check StakingType
-// 2. RETURN TRUE: PASS CONDITION check StakingType
 func TestNewStakingMetadata(t *testing.T) {
 	type args struct {
 		stakingType                  int
@@ -126,13 +122,6 @@ func TestNewStakingMetadata(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// TESTCASE
-// 1. RETURN FALSE: NOT PASS CONDITION check Base58CheckDeserialize
-// 2. RETURN FALSE: NOT PASS CONDITION check IsInBase58ShortFormat
-// 3. RETURN FALSE: NOT PASS CONDITION check CommitteePublicKey.FromString
-// 4. RETURN FALSE: NOT PASS CONDITION check CommitteePublicKey.CheckSanityData
-// 5. RETURN TRUE: PASS ALL CONDITION
 func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
 		MetadataBase                 metadata.MetadataBase
@@ -225,17 +214,6 @@ func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// TESTCASE
-// 1. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.IsPrivacy
-// 2. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check txr.GetUniqueReceiver
-// 3. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize
-// 4. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.bcr.GetStakingAmountShard() && Stake Shard
-// 5. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.bcr.GetStakingAmountShard() * 3 && Stake Beacon
-// 6. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
-// 7. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check wallet.Base58CheckDeserialize(funderPaymentAddress)
-// 8. RETURN FALSE,FALSE,ERROR: NOT PASS CONDITION check CommitteePublicKey.FromString
-// 9. RETURN TRUE,TRUE,NO-ERROR : PASS ALL CONDITION
 func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	type fields struct {
 		MetadataBase                 metadata.MetadataBase
@@ -263,6 +241,12 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	txBase58CheckDeserializeError := &mocks.Transaction{}
 	txBase58CheckDeserializeError.On("IsPrivacy").Return(false)
 	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+
+	bcrBurningAddressPublicKeyError := &mocks.BlockchainRetriever{}
+	bcrBurningAddressPublicKeyError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
+	txBurningAddressPublicKeyError := &mocks.Transaction{}
+	txBurningAddressPublicKeyError.On("IsPrivacy").Return(false)
+	txBurningAddressPublicKeyError.On("GetUniqueReceiver").Return(true, []byte{0, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
 
 	bcrGetStakingAmountShardError := &mocks.BlockchainRetriever{}
 	bcrGetStakingAmountShardError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
@@ -320,6 +304,17 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:   "stake check burning address error",
+			fields: fields{},
+			args: args{
+				txr: txBurningAddressPublicKeyError,
+				bcr: bcrBurningAddressPublicKeyError,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
 			name: "check wallet.bcr.GetStakingAmountShard() && Stake Shard error case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{metadata.ShardStakingMeta},
@@ -350,6 +345,21 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
 				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gRpmgkqD4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+			},
+			args: args{
+				txr: txBase58CheckDeserialize2Error,
+				bcr: bcrGetStakingAmountShardError,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "check wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress) error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
+				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVaNomBK1yYC",
 			},
 			args: args{
 				txr: txBase58CheckDeserialize2Error,
@@ -417,12 +427,6 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// TESTCASE
-// 1. RETURN FALSE,ERROR: NOT PASS CONDITION check GetAllCommitteeValidatorCandidate
-// 2. RETURN FALSE,ERROR: NOT PASS CONDITION check incognitokey.CommitteeBase58KeyListToStruct
-// 3. RETURN FALSE,ERROR: len(tempStaker) == 0 after filter with
-// 4. RETURN TRUE,NO-ERROR: len(tempStaker) == 1 after filter
 func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)

@@ -199,7 +199,7 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "stopAutoStakingMetadata amount error",
+			name: "stopAutoStakingMetadata check burning address error",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{metadata.StopAutoStakingMeta},
 			},
