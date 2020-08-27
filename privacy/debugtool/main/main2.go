@@ -258,7 +258,7 @@ func sendRawTxNoPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentStri
 		paymentString = keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	}
-	b, _ := tool.SendTxNoPrivacyFake(privKey, tokenID, paymentString, txType, 1)
+	b, _ := tool.SendTxNoPrivacyFake(privKey, tokenID, paymentString, 1)
 	fmt.Println(string(b))
 	fmt.Println("========== FAKE TRANSACTION FINISH ==========")
 }
@@ -326,6 +326,19 @@ func GetShardIDFromPrivateKey(privateKey string) byte{
 	return common.GetShardIDFromLastByte(pubkey[len(pubkey)-1])
 }
 
+func PrintCommand(){
+	fmt.Println("Here are the commands\n")
+	fmt.Println("doublespend                --- create double spend transaction")
+	fmt.Println("dupinput                   --- create transaction with duplicate input")
+	fmt.Println("outgtin                    --- create transaction with sumOutput + fee > sumInput")
+	fmt.Println("doublespendtoken           --- create double spend token transaction")
+	fmt.Println("dupinputtoken              --- create token transaction with duplicate input")
+	fmt.Println("noprivacynosig             --- create transaction no privacy with no signature")
+	fmt.Println("createrawtampered          --- create tampered transaction by type")
+	fmt.Println("createrawtokentampered     --- create tampered token transaction by type")
+	fmt.Println("\nType help <command> for more parameter detail!\n")
+}
+
 //Comment the init function in blockchain/constants.go to run the debug tool.
 func main() {
 	privateKeys := []string{
@@ -358,7 +371,8 @@ func main() {
 	//	"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9",
 	//	"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
 
-	tool := new(debugtool.DebugTool).InitLocal("9334")
+	//tool := new(debugtool.DebugTool).InitLocal("9334")
+	tool := new(debugtool.DebugTool).InitTestnet()
 
 	//tool := new(debugtool.DebugTool).InitDevNet()
 	//InitToken(tool, privateKeys[0], "something")
@@ -586,6 +600,55 @@ func main() {
 			}
 			PDETradeToken(tool, privateKeys[index], args[2], args[3])
 		}
+
+		if args[0] == "help"{
+			if len(args) == 1{
+				PrintCommand()
+			}else{
+				switch args[1] {
+				case "doublespend":
+					fmt.Println("doublespend <indexFrom> <indexTo> <amount> <isPrivacy>\n")
+				case "dupinput":
+					fmt.Println("dupinput <indexFrom> <indexTo> <amount> <isPrivacy>\n")
+				case "outgtin":
+					fmt.Println("outgtin <indexFrom> <indexTo> <amount> <isPrivacy>\n")
+				case "doublespendtoken":
+					fmt.Println("doublespendtoken <indexFrom> <indexTo> <tokenID> <amount> <isPrivacy>\n")
+				case "dupinputtoken":
+					fmt.Println("dupinputtoken <indexFrom> <indexTo> <tokenID> <amount> <isPrivacy>\n")
+				case "noprivacynosig":
+					fmt.Println("noprivacynosig <indexFrom> <indexTo>\n")
+				case "createrawtampered":
+					fmt.Println("createrawtampered <txType> <privateKey> <paymentAddress>")
+					fmt.Println("txType:")
+					fmt.Println("\t 0: transaction without signature")
+					fmt.Println("\t 1: transaction with bulletproof's commitments tampered")
+					fmt.Println("\t 2: transaction with snProof tampered")
+					fmt.Println("\t 3: transaction with one-of-many proof tampered")
+
+					fmt.Println("privateKey     --- full private key or index")
+					fmt.Println("paymentAddress --- full payment address or index\n")
+
+				case "createrawtokentampered":
+					fmt.Println("createrawtokentampered <txType> <privateKey> <privateKey> <tokenID>")
+					fmt.Println("txType:")
+					fmt.Println("\t 0: transaction without signature")
+					fmt.Println("\t 1: transaction with bulletproof's commitments tampered")
+					fmt.Println("\t 2: transaction with snProof tampered")
+					fmt.Println("\t 3: transaction with one-of-many proof tampered")
+
+					fmt.Println("privateKey     --- full private key or index")
+					fmt.Println("paymentAddress --- full payment address or index\n")
+
+				default:
+					fmt.Println("command not found")
+					PrintCommand()
+				}
+			}
+
+
+		}
+
 		if args[0] == "doublespend" {
 			indexFrom, err := strconv.ParseInt(args[1], 10, 32)
 			if err != nil {
@@ -674,107 +737,121 @@ func main() {
 			}
 			DoCreateDuplicateInputTokenTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4], isPriv)
 		}
-		// if args[0] == "recvexiststoken"{
-		// 	if len(args) < 4 {
-		// 		panic("Not enough params for transfertoken")
-		// 	}
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoCreateReceiverExistsTokenTx(tool, privateKeys[indexFrom], args[2], args[3])
-		// }
 
-		if args[0] == "sendraw"{
-			/*
-			args[1] = 0/1 => non-privacy/privacy transaction
-			args[2]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
-			args[3]: sender index
-			args[4]: receiver address (index or full paymentAddress)
-			args[5]: tokenID (optional)
-			*/
-			if len(args) < 5 {
-				fmt.Println("Need at least 5 arguments")
-				// continue
-			}
-			flagPrivacy, err := strconv.ParseInt(args[1], 10, 32)
-			if err != nil{
-				fmt.Println(err)
-				// continue
+		if args[0] == "noprivacynosig"{
+			if len(args) < 3 {
+				panic("Need at least 3 arguments")
 			}
 
-			txType, err := strconv.ParseInt(args[2], 10, 32)
-			if err != nil{
-				fmt.Println(err)
-				// continue
-			}
-
-			idxSender, err := strconv.ParseInt(args[3], 10, 32)
-			if err != nil{
-				fmt.Println(err)
-				// continue
+			var privateKey string
+			if len(args[1]) < 2{
+				idxSender, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil{
+					panic(err)
+				}
+				privateKey = privateKeys[idxSender]
+			}else{
+				privateKey = args[1]
 			}
 
 			var paymentAddress string
-			if len(args[4]) < 3{
-				idxReceiver, err := strconv.ParseInt(args[4], 10, 32)
+			if len(args[2]) < 3{
+				idxReceiver, err := strconv.ParseInt(args[2], 10, 32)
 				if err != nil{
-					fmt.Println(err)
-					// continue
+					panic(err)
 				}
 				paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
 			}else{
-				paymentAddress = args[3]
+				paymentAddress = args[2]
 			}
 
 			tokenID := common.PRVIDStr
-			if len(args) > 5 {
-				tokenID = args[5]
-			}
 
-			if flagPrivacy == 0{
-				sendRawTxNoPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
-			}else{
-				sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			//sendRawTxPrivacy(tool, privateKey, tokenID, paymentAddress, txType)
+
+			b, err := tool.SendTxNoPrivacyFake(privateKey, tokenID, paymentAddress, 1)
+			if err!= nil{
+				panic(err)
 			}
+			fmt.Println(string(b))
 		}
 
-		if args[0] == "sendrawtoken"{
+		if args[0] == "createrawtampered"{
 			/*
-				args[1] = 0/1 => non-privacy/privacy transaction
-				args[2]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
-				args[3]: sender index
-				args[4]: receiver address (index or full paymentAddress)
-				args[5]: tokenID (optional)
+			args[1]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
+			args[2]: sender private key (index of full privatekey)
+			args[3]: receiver address (index or full paymentAddress)
 			*/
-			if len(args) < 5 {
-				fmt.Println("Need at least 5 arguments")
-				// continue
-			}
-			flagPrivacy, err := strconv.ParseInt(args[1], 10, 32)
-			if err != nil{
-				fmt.Println(err)
-				// continue
+			if len(args) < 4 {
+				panic("Need at least 4 arguments")
 			}
 
-			txType, err := strconv.ParseInt(args[2], 10, 32)
+			txType, err := strconv.ParseInt(args[1], 10, 32)
 			if err != nil{
-				fmt.Println(err)
-				// continue
+				panic(err)
 			}
 
-			idxSender, err := strconv.ParseInt(args[3], 10, 32)
-			if err != nil{
-				fmt.Println(err)
-				// continue
+			var privateKey string
+			if len(args[2]) < 2{
+				idxSender, err := strconv.ParseInt(args[2], 10, 32)
+				if err != nil{
+					panic(err)
+				}
+				privateKey = privateKeys[idxSender]
+			}else{
+				privateKey = args[2]
 			}
 
 			var paymentAddress string
-			if len(args[4]) < 3{
-				idxReceiver, err := strconv.ParseInt(args[4], 10, 32)
+			if len(args[3]) < 3{
+				idxReceiver, err := strconv.ParseInt(args[3], 10, 32)
 				if err != nil{
-					fmt.Println(err)
-					// continue
+					panic(err)
+				}
+				paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
+			}else{
+				paymentAddress = args[3]
+			}
+
+			tokenID := common.PRVIDStr
+
+			//sendRawTxPrivacy(tool, privateKey, tokenID, paymentAddress, txType)
+
+			b, err := tool.SendTxPrivacyFake(privateKey, tokenID, paymentAddress, txType, 1)
+			if err!= nil{
+				panic(err)
+			}
+			fmt.Println(string(b))
+
+		}
+
+		if args[0] == "createrawtokentampered"{
+			/*
+				args[1]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
+				args[2]: sender index
+				args[3]: receiver address (index or full paymentAddress)
+				args[4]: tokenID (optional)
+			*/
+			if len(args) < 5 {
+				panic("Need at least 5 arguments")
+				// continue
+			}
+
+			txType, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil{
+				panic(err)
+			}
+
+			idxSender, err := strconv.ParseInt(args[2], 10, 32)
+			if err != nil{
+				panic(err)
+			}
+
+			var paymentAddress string
+			if len(args[3]) < 3{
+				idxReceiver, err := strconv.ParseInt(args[3], 10, 32)
+				if err != nil{
+					panic(err)
 				}
 				paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
 			}else{
@@ -783,14 +860,14 @@ func main() {
 
 			tokenID := common.PRVIDStr
 			if len(args) > 5 {
-				tokenID = args[5]
+				tokenID = args[4]
 			}
-
-			if flagPrivacy == 0{
-				sendRawTxNoPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
-			}else{
-				sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			//sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
+			b, err := tool.SendTxPrivacyFake(privateKeys[idxSender], tokenID, paymentAddress, txType, 1)
+			if err != nil{
+				panic(err)
 			}
+			fmt.Println(string(b))
 		}
 
 		if args[0] == "cmtandpubkey"{
