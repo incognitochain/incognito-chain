@@ -29,6 +29,22 @@ func TestResignTxV1(txv1_generic metadata.Transaction){
 	}
 }
 
+func TestResignTxV1WithKey(txv1_generic metadata.Transaction, sk []byte){
+	txv1, ok := txv1_generic.(*TxVersion1)
+	if !ok{
+		panic("Error when casting")
+	}
+	txv1.sigPrivKey = sk
+	txv1.cachedHash = nil
+	txv1.SetSig(nil)
+	txv1.SetSigPubKey(nil)
+	err := txv1.sign()
+	if err!=nil{
+		// if it fails, something's wrong
+		fmt.Printf("Error when resigning : %v\n",err)
+	}
+}
+
 func (tx *TxVersion2) InitTestOldOTA(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*TxPrivacyInitParams)
 	if !ok {

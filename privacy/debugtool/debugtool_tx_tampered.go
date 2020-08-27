@@ -104,7 +104,7 @@ func (tool *DebugTool) CreateTxNoPrivacyWithoutSignature(privateKey, tokenIDStri
 }
 
 func (tool *DebugTool) CreateTxPrivacyWithoutSignature(privateKey, tokenIDString, paymentString string, version int8) ([]byte, error) {
-	b, err := tool.CreateRawTx(privateKey, paymentString, uint64(10000))
+	b, err := tool.CreateRawTx(privateKey, paymentString, uint64(10000), true)
 
 	tx := new(transaction.TxVersion1)
 	err = json.Unmarshal(b, &tx)
@@ -620,6 +620,7 @@ func (tool *DebugTool) SendTxPrivacyFake(privateKey, tokenIDString, paymentStrin
 }
 
 func (tool *DebugTool) CreateRawTxToken(privateKey, tokenIDString, paymentString string, amount uint64, isPrivacy bool) ([]byte, error) {
+	// fmt.Println("Hi i'm here")
 	query := fmt.Sprintf(`{
 		"id": 1,
 		"jsonrpc": "1.0",
@@ -630,7 +631,7 @@ func (tool *DebugTool) CreateRawTxToken(privateKey, tokenIDString, paymentString
 			10,
 			1,
 			{
-				"Privacy": %v,
+				"Privacy": true,
 				"TokenID": "%s",
 				"TokenName": "",
 				"TokenSymbol": "",
@@ -641,13 +642,17 @@ func (tool *DebugTool) CreateRawTxToken(privateKey, tokenIDString, paymentString
 					"%s": %d
 				}
 			}
-			]
-	}`, privateKey, isPrivacy, tokenIDString, paymentString, amount)
+		]
+	}`, privateKey, tokenIDString, paymentString, amount)
+	// fmt.Println("trying to send")
+	// fmt.Println(query)
 
 	respondInBytes, err := tool.SendPostRequestWithQuery(query)
 	if err != nil {
 		return nil, err
 	}
+	// fmt.Println(string(respondInBytes))
+
 
 	respond, err := ParseResponse(respondInBytes)
 	if err != nil {
@@ -680,7 +685,11 @@ func (tool *DebugTool) CreateRawTxToken(privateKey, tokenIDString, paymentString
 	return bytearrays, nil
 }
 
-func (tool *DebugTool) CreateRawTx(privateKey, paymentString string, amount uint64) ([]byte, error) {
+func (tool *DebugTool) CreateRawTx(privateKey, paymentString string, amount uint64, isPrivacy bool) ([]byte, error) {
+	privIndicator := "-1"
+	if isPrivacy{
+		privIndicator = "1"
+	}
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
 		"method": "createtransaction",
@@ -690,10 +699,10 @@ func (tool *DebugTool) CreateRawTx(privateKey, paymentString string, amount uint
 				"%s":%d
 			},
 			1,
-			1
+			%s
 		],
 		"id": 1
-	}`, privateKey, paymentString, amount)
+	}`, privateKey, paymentString, amount, privIndicator)
 
 	respondInBytes, err := tool.SendPostRequestWithQuery(query)
 	if err != nil {
