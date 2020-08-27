@@ -113,7 +113,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount {
+	if stopAutoStakingMetadata.Type != StopAutoStakingMeta || amount != StopAutoStakingAmount {
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
