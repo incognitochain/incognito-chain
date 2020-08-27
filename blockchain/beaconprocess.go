@@ -453,6 +453,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		tempInstruction = append(tempInstruction, incurredInstructions...)
 	}
 
+	// TODO: @tin duplicate code?
 	if len(unstakeInstructions) != 0 {
 		_, _, _, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 		if err != nil {

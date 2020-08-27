@@ -49,6 +49,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 
+	// TODO: @tin process data with unStakingMetadata from method receiver, no need to get from transaction
 	unStakeMetadata, ok := tx.GetMetadata().(*UnStakingMetadata)
 	if !ok {
 		return false, NewMetadataTxError(UnStakingRequestTypeAssertionError, fmt.Errorf("Expect *UnStakingMetadata type but get %+v", reflect.TypeOf(tx.GetMetadata())))

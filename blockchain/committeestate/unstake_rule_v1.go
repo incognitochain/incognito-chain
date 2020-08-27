@@ -16,7 +16,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, [][]string, error) {
-
+	// TODO: @tin make sure comitteeChange must be not nil before call this function, remove NewCommitteeChange() code
 	newCommitteeChange := &CommitteeChange{}
 
 	if committeeChange != nil {
@@ -41,8 +41,9 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	}
 
 	for _, committeePublicKey := range unstakeInstruction.CommitteePublicKeys {
-		if common.IndexOfStr(committeePublicKey, env.subtituteCandidates) == -1 {
-			if common.IndexOfStr(committeePublicKey, env.validators) != -1 {
+		if common.IndexOfStr(committeePublicKey, env.substituteCandidates) == -1 {
+			// TODO: @tin is it possible for one key to be not in any list?
+			if common.IndexOfStr(committeePublicKey, env.allSubstituteCommittees) != -1 {
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[committeePublicKey]; ok {
 					b.autoStake[committeePublicKey] = false

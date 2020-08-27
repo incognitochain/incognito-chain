@@ -103,7 +103,7 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{"123"},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					subtituteCandidates: []string{"123"},
+					substituteCandidates: []string{"123"},
 				},
 				committeeChange: &CommitteeChange{},
 			},
@@ -129,8 +129,8 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key2},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					subtituteCandidates: []string{key2},
-					ConsensusStateDB:    sDB,
+					substituteCandidates: []string{key2},
+					ConsensusStateDB:     sDB,
 				},
 				committeeChange: &CommitteeChange{},
 			},
@@ -157,8 +157,8 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					subtituteCandidates: []string{key},
-					ConsensusStateDB:    validSDB,
+					substituteCandidates: []string{key},
+					ConsensusStateDB:     validSDB,
 				},
 			},
 			want: &CommitteeChange{
@@ -185,7 +185,7 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					validators: []string{key},
+					allSubstituteCommittees: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
 			},

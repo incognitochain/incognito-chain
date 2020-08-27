@@ -10,6 +10,7 @@ import (
 func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[][]string, error) {
+	// TODO: @tin how uncommittedBeaconCommitteeStateV1 have data?
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	incurredInstructions := [][]string{}
 	if env == nil {
@@ -20,11 +21,11 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	}
 	var err error
 
-	env.subtituteCandidates, err = newB.getSubtituteCandidates()
+	env.substituteCandidates, err = newB.getSubtituteCandidates()
 	if err != nil {
 		return incurredInstructions, err
 	}
-	env.validators, err = newB.getValidators()
+	env.allSubstituteCommittees, err = newB.getValidators()
 	if err != nil {
 		return incurredInstructions, err
 	}

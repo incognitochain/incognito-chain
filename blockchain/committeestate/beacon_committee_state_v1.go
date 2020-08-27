@@ -26,8 +26,8 @@ type BeaconCommitteeStateEnvironment struct {
 	ActiveShards                    int
 	MinShardCommitteeSize           int
 	ConsensusStateDB                *statedb.StateDB
-	subtituteCandidates             []string
-	validators                      []string
+	substituteCandidates            []string
+	allSubstituteCommittees         []string
 	allCandidateSubstituteCommittee []string
 }
 
@@ -351,15 +351,15 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 	engine.beaconCommitteeStateV1.clone(engine.uncommittedBeaconCommitteeStateV1)
 	var err error
 	incurredInstructions := [][]string{}
-	env.subtituteCandidates, err = engine.beaconCommitteeStateV1.getSubtituteCandidates()
+	env.substituteCandidates, err = engine.beaconCommitteeStateV1.getSubtituteCandidates()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	env.validators, err = engine.beaconCommitteeStateV1.getValidators()
+	env.allSubstituteCommittees, err = engine.beaconCommitteeStateV1.getValidators()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	env.allCandidateSubstituteCommittee = append(env.subtituteCandidates, env.validators...)
+	env.allCandidateSubstituteCommittee = append(env.substituteCandidates, env.allSubstituteCommittees...)
 	engine.beaconCommitteeStateV1.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	committeeChange := NewCommitteeChange()
