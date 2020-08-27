@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
@@ -151,11 +152,11 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 }
 
 //Process incomming broadcast block
-func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
+func (synckerManager *SynckerManager) ReceiveBlock(ctx context.Context, blk interface{}, peerID string) {
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
 		beaconBlk := blk.(*blockchain.BeaconBlock)
-		fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
+		Logger.Infofc(ctx, "syncker: receive beacon block %d, blk hash %v \n", beaconBlk.GetHeight(), beaconBlk.Hash().String())
 		//create fake s2b pool peerstate
 		if synckerManager.BeaconSyncProcess != nil {
 			synckerManager.beaconPool.AddBlock(beaconBlk)
@@ -173,6 +174,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	case *blockchain.ShardBlock:
 
 		shardBlk := blk.(*blockchain.ShardBlock)
+		Logger.Infofc(ctx, "syncker: receive beacon block %d, blk hash %v \n", shardBlk.GetHeight(), shardBlk.Hash().String())
 		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
@@ -196,6 +198,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 		if synckerManager.S2BSyncProcess != nil {
 			synckerManager.s2bPool.AddBlock(s2bBlk)
 			//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
+			Logger.Infofc(ctx, "syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
 			//create fake s2b pool peerstate
 			synckerManager.S2BSyncProcess.s2bPeerStateCh <- &wire.MessagePeerState{
 				SenderID:          peerID,
@@ -207,7 +210,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	case *blockchain.CrossShardBlock:
 		csBlk := blk.(*blockchain.CrossShardBlock)
 		if synckerManager.CrossShardSyncProcess[int(csBlk.ToShardID)] != nil {
-			fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
+			Logger.Infofc(ctx, "crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
 			synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
 		}
 	}
@@ -346,14 +349,14 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(bestViewSha
 	missingBlocks := compareLists(s2bPoolLists, list)
 	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, _ := context.WithTimeout(Logger.NewContext(common.GenUUID()), 5*time.Second)
 		synckerManager.StreamMissingShardToBeaconBlock(ctx, missingBlocks)
-		//fmt.Println("debug finish stream missing s2b block")
-
 		s2bPoolLists = synckerManager.GetS2BBlocksForBeaconProducer(bestViewShardHash, list)
 		missingBlocks = compareLists(s2bPoolLists, list)
 		if len(missingBlocks) > 0 {
-			return nil, errors.New("Unable to sync required block in time")
+			err := errors.Errorf("Unable to sync required block in time")
+			Logger.Errorc(ctx, err)
+			return nil, err
 		}
 	}
 
@@ -368,7 +371,8 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(bestViewSha
 
 //Stream Missing ShardToBeacon Block
 func (synckerManager *SynckerManager) StreamMissingShardToBeaconBlock(ctx context.Context, missingBlock map[byte][]common.Hash) {
-	fmt.Println("debug stream missing s2b block", missingBlock)
+
+	Logger.Infofc(ctx, "debug stream missing s2b block, number of block missing: %v", len(missingBlock))
 	wg := sync.WaitGroup{}
 	for i, v := range missingBlock {
 		wg.Add(1)
@@ -380,7 +384,7 @@ func (synckerManager *SynckerManager) StreamMissingShardToBeaconBlock(ctx contex
 			}
 			ch, err := synckerManager.config.Node.RequestShardToBeaconBlocksByHashViaStream(ctx, "", int(sid), hashes)
 			if err != nil {
-				fmt.Println("Syncker: create channel fail")
+				Logger.Errorc(ctx, "Syncker: create channel fail")
 				return
 			}
 			//receive
@@ -406,7 +410,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, _ := context.WithTimeout(Logger.NewContext(common.GenUUID()), 5*time.Second)
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
 
@@ -415,7 +419,9 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 		missingBlocks = compareListsByHeight(crossShardPoolLists, list)
 
 		if len(missingBlocks) > 0 {
-			return nil, errors.New("Unable to sync required block in time")
+			err := errors.New("Unable to sync required block in time")
+			Logger.Errorc(ctx, err)
+			return nil, err
 		}
 	}
 
@@ -434,7 +440,7 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 		//fmt.Println("debug stream missing crossshard block", int(fromShard), int(toShard), missingHeight)
 		ch, err := synckerManager.config.Node.RequestCrossShardBlocksViaStream(ctx, "", int(fromShard), int(toShard), missingHeight)
 		if err != nil {
-			fmt.Println("Syncker: create channel fail")
+			Logger.Errorfc(ctx, "create channel fail, error: %v", err)
 			return
 		}
 		//receive
@@ -442,7 +448,7 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 			select {
 			case blk := <-ch:
 				if !isNil(blk) {
-					Logger.Infof("Receive crosshard block from shard %v ->  %v, hash %v", fromShard, toShard, blk.(common.BlockPoolInterface).Hash().String())
+					Logger.Infofc(ctx, "Receive crosshard block from shard %v ->  %v, hash %v", fromShard, toShard, blk.(common.BlockPoolInterface).Hash().String())
 					synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.BlockPoolInterface))
 				} else {
 					//Logger.Info("Block is nil, break stream")

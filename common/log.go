@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,6 +21,7 @@ import (
 // implementation of Logger is implemented by this package and can be created
 // by calling (*Backend).Logger.
 type Logger interface {
+	NewContext(uuid string) context.Context
 	// Tracef formats message according to format specifier and writes to
 	// to log with LevelTrace.
 	Tracef(format string, params ...interface{})
@@ -73,6 +75,22 @@ type Logger interface {
 
 	// SetLevel changes the logging level to the passed level.
 	SetLevel(level Level)
+
+	// Info formats message using the default formats for its operands
+	// and writes to log with LevelInfo.
+	Infoc(ctx context.Context, v ...interface{})
+
+	// Info formats message using the default formats for its operands
+	// and writes to log with LevelInfo.
+	Infofc(ctx context.Context, format string, params ...interface{})
+
+	// Errorf formats message according to format specifier and writes to
+	// to log with LevelError.
+	Errorfc(ctx context.Context, format string, params ...interface{})
+
+	// Error formats message using the default formats for its operands
+	// and writes to log with LevelError.
+	Errorc(ctx context.Context, v ...interface{})
 }
 
 // defaultFlags specifies changes to the default logger behavior.  It is set
@@ -89,6 +107,8 @@ const (
 	// Lshortfile modifies the logger output to include filename and line number
 	// of the logging callsite, e.g. main.go:123.  Overrides Llongfile.
 	Lshortfile
+
+	CTXID = "ctxID"
 )
 
 var (
@@ -506,6 +526,44 @@ func (l *slog) Infof(format string, args ...interface{}) {
 	}
 }
 
+func (l *slog) NewContext(uuid string) context.Context {
+	ctx := context.WithValue(context.Background(), CTXID, uuid)
+	return ctx
+}
+
+func (l *slog) Infoc(ctx context.Context, args ...interface{}) {
+	if l == nil {
+		return
+	}
+	lvl := l.Level()
+	if lvl <= LevelInfo {
+		if !l.disable {
+			ctxID := ctx.Value(CTXID)
+			if ctxStr, ok := ctxID.(string); ok {
+				args = append(args, ctxStr)
+			}
+			l.b.print("INF", l.tag, args...)
+		}
+	}
+}
+
+func (l *slog) Infofc(ctx context.Context, format string, params ...interface{}) {
+	if l == nil {
+		return
+	}
+	lvl := l.Level()
+	if lvl <= LevelInfo {
+		if !l.disable {
+			ctxID := ctx.Value(CTXID)
+			if ctxStr, ok := ctxID.(string); ok {
+				format += " %v"
+				params = append(params, ctxStr)
+			}
+			l.b.printf("INF", l.tag, format, params...)
+		}
+	}
+}
+
 // Warn formats message using the default formats for its operands, prepends
 // the prefix as necessary, and writes to log with LevelWarn.
 //
@@ -565,6 +623,47 @@ func (l *slog) Errorf(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelError {
 		if !l.disable {
+			l.b.printf("ERR", l.tag, format, args...)
+		}
+	}
+}
+
+// Error formats message using the default formats for its operands, prepends
+// the prefix as necessary, and writes to log with LevelError.
+//
+// This is part of the Logger interface implementation.
+func (l *slog) Errorc(ctx context.Context, args ...interface{}) {
+	if l == nil {
+		return
+	}
+	lvl := l.Level()
+	if lvl <= LevelError {
+		if !l.disable {
+			ctxID := ctx.Value(CTXID)
+			if ctxStr, ok := ctxID.(string); ok {
+				args = append(args, ctxStr)
+			}
+			l.b.print("ERR", l.tag, args...)
+		}
+	}
+}
+
+// Errorf formats message according to format specifier, prepends the prefix as
+// necessary, and writes to log with LevelError.
+//
+// This is part of the Logger interface implementation.
+func (l *slog) Errorfc(ctx context.Context, format string, args ...interface{}) {
+	if l == nil {
+		return
+	}
+	lvl := l.Level()
+	if lvl <= LevelError {
+		if !l.disable {
+			ctxID := ctx.Value(CTXID)
+			if ctxStr, ok := ctxID.(string); ok {
+				format += " %v"
+				args = append(args, ctxStr)
+			}
 			l.b.printf("ERR", l.tag, format, args...)
 		}
 	}

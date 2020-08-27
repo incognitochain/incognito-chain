@@ -930,29 +930,29 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 	// KeySetUser := serverObj.userKeySet
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlockShard:       serverObj.OnBlockShard,
-			OnBlockBeacon:      serverObj.OnBlockBeacon,
-			OnCrossShard:       serverObj.OnCrossShard,
-			OnShardToBeacon:    serverObj.OnShardToBeacon,
-			OnTx:               serverObj.OnTx,
-			OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
-			OnVersion:          serverObj.OnVersion,
-			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
-			OnGetBlockShard:    serverObj.OnGetBlockShard,
-			OnGetCrossShard:    serverObj.OnGetCrossShard,
-			OnGetShardToBeacon: serverObj.OnGetShardToBeacon,
-			OnVerAck:           serverObj.OnVerAck,
-			OnGetAddr:          serverObj.OnGetAddr,
-			OnAddr:             serverObj.OnAddr,
+			// OnBlockShard:       serverObj.OnBlockShard,
+			// OnBlockBeacon:      serverObj.OnBlockBeacon,
+			// OnCrossShard:       serverObj.OnCrossShard,
+			// OnShardToBeacon:    serverObj.OnShardToBeacon,
+			// OnTx:               serverObj.OnTx,
+			// OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
+			// OnVersion:          serverObj.OnVersion,
+			// OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
+			// OnGetBlockShard:    serverObj.OnGetBlockShard,
+			// OnGetCrossShard:    serverObj.OnGetCrossShard,
+			// OnGetShardToBeacon: serverObj.OnGetShardToBeacon,
+			// OnVerAck:           serverObj.OnVerAck,
+			// OnGetAddr:          serverObj.OnGetAddr,
+			// OnAddr:             serverObj.OnAddr,
 
-			//mubft
-			OnBFTMsg: serverObj.OnBFTMsg,
-			// OnInvalidBlock:  serverObj.OnInvalidBlock,
-			OnPeerState: serverObj.OnPeerState,
-			//
-			PushRawBytesToShard:  serverObj.PushRawBytesToShard,
-			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
-			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
+			// //mubft
+			// OnBFTMsg: serverObj.OnBFTMsg,
+			// // OnInvalidBlock:  serverObj.OnInvalidBlock,
+			// OnPeerState: serverObj.OnPeerState,
+			// //
+			// PushRawBytesToShard:  serverObj.PushRawBytesToShard,
+			// PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
+			// GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
 		MaxInPeers:      cfg.MaxInPeers,
 		MaxPeers:        cfg.MaxPeers,
@@ -967,7 +967,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
-func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
+func (serverObj *Server) OnBlockShard(ctx context.Context, p *peer.PeerConn,
 	msg *wire.MessageBlockShard) {
 	//Logger.log.Debug("Receive a new blockshard START")
 	//
@@ -976,10 +976,10 @@ func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new blockshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	go serverObj.syncker.ReceiveBlock(ctx, msg.Block, p.GetRemotePeerID().String())
 }
 
-func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
+func (serverObj *Server) OnBlockBeacon(ctx context.Context, p *peer.PeerConn,
 	msg *wire.MessageBlockBeacon) {
 
 	//Logger.log.Info("Receive a new blockbeacon START")
@@ -989,10 +989,10 @@ func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new blockbeacon END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	go serverObj.syncker.ReceiveBlock(ctx, msg.Block, p.GetRemotePeerID().String())
 }
 
-func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
+func (serverObj *Server) OnCrossShard(ctx context.Context, p *peer.PeerConn,
 	msg *wire.MessageCrossShard) {
 	//Logger.log.Debug("Receive a new crossshard START")
 	//
@@ -1001,10 +1001,10 @@ func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new crossshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	go serverObj.syncker.ReceiveBlock(ctx, msg.Block, p.GetRemotePeerID().String())
 }
 
-func (serverObj *Server) OnShardToBeacon(p *peer.PeerConn,
+func (serverObj *Server) OnShardToBeacon(ctx context.Context, p *peer.PeerConn,
 	msg *wire.MessageShardToBeacon) {
 	//Logger.log.Debug("Receive a new shardToBeacon START")
 	//
@@ -1013,10 +1013,10 @@ func (serverObj *Server) OnShardToBeacon(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new shardToBeacon END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	go serverObj.syncker.ReceiveBlock(ctx, msg.Block, p.GetRemotePeerID().String())
 }
 
-func (serverObj *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
+func (serverObj *Server) OnGetBlockBeacon(ctx context.Context, _ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
 	Logger.log.Debug("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueGetBlockBeacon(nil, msg, txProcessed)
@@ -1024,7 +1024,7 @@ func (serverObj *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGet
 
 	Logger.log.Debug("Receive a " + msg.MessageType() + " message END")
 }
-func (serverObj *Server) OnGetBlockShard(_ *peer.PeerConn, msg *wire.MessageGetBlockShard) {
+func (serverObj *Server) OnGetBlockShard(ctx context.Context, _ *peer.PeerConn, msg *wire.MessageGetBlockShard) {
 	Logger.log.Debug("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueGetBlockShard(nil, msg, txProcessed)
@@ -1033,14 +1033,14 @@ func (serverObj *Server) OnGetBlockShard(_ *peer.PeerConn, msg *wire.MessageGetB
 	Logger.log.Debug("Receive a " + msg.MessageType() + " message END")
 }
 
-func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetCrossShard) {
+func (serverObj *Server) OnGetCrossShard(ctx context.Context, _ *peer.PeerConn, msg *wire.MessageGetCrossShard) {
 	Logger.log.Debug("Receive a getcrossshard START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Debug("Receive a getcrossshard END")
 }
 
-func (serverObj *Server) OnGetShardToBeacon(_ *peer.PeerConn, msg *wire.MessageGetShardToBeacon) {
+func (serverObj *Server) OnGetShardToBeacon(ctx context.Context, _ *peer.PeerConn, msg *wire.MessageGetShardToBeacon) {
 	Logger.log.Debug("Receive a getshardtobeacon START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
@@ -1051,7 +1051,7 @@ func (serverObj *Server) OnGetShardToBeacon(_ *peer.PeerConn, msg *wire.MessageG
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
+func (serverObj *Server) OnTx(ctx context.Context, peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Debug("Receive a new transaction START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueTx(nil, msg, txProcessed)
@@ -1060,7 +1060,7 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Debug("Receive a new transaction END")
 }
 
-func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
+func (serverObj *Server) OnTxPrivacyToken(ctx context.Context, peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
 	Logger.log.Debug("Receive a new transaction(privacy token) START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
@@ -1074,7 +1074,7 @@ func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.Message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
 */
-func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
+func (serverObj *Server) OnVersion(ctx context.Context, peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	Logger.log.Debug("Receive version message START")
 
 	pbk := ""
@@ -1141,7 +1141,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 /*
 OnVerAck is invoked when a peer receives a version acknowlege message
 */
-func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
+func (serverObj *Server) OnVerAck(ctx context.Context, peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	Logger.log.Debug("Receive verack message START")
 
 	if msg.Valid {
@@ -1190,7 +1190,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 	Logger.log.Debug("Receive verack message END")
 }
 
-func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
+func (serverObj *Server) OnGetAddr(ctx context.Context, peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	Logger.log.Debug("Receive getaddr message START")
 
 	// send message for addr
@@ -1216,11 +1216,11 @@ func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGet
 	Logger.log.Debug("Receive getaddr message END")
 }
 
-func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
+func (serverObj *Server) OnAddr(ctx context.Context, peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	Logger.log.Debugf("Receive addr message %v", msg.RawPeers)
 }
 
-func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
+func (serverObj *Server) OnBFTMsg(ctx context.Context, p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
 	isRelayNodeForConsensus := cfg.Accelerator
@@ -1258,7 +1258,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg END")
 }
 
-func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
+func (serverObj *Server) OnPeerState(ctx context.Context, _ *peer.PeerConn, msg *wire.MessagePeerState) {
 	Logger.log.Debug("Receive a peerstate START")
 	//var txProcessed chan struct{}
 	//serverObj.netSync.QueueMessage(nil, msg, txProcessed)

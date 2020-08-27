@@ -204,7 +204,8 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), shouldValidate)
+	ctx := Logger.log.NewContext(common.GenUUID())
+	err := chain.Blockchain.InsertShardBlock(ctx, block.(*ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -219,7 +220,8 @@ func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
+	ctx := Logger.log.NewContext(common.GenUUID())
+	err := chain.Blockchain.InsertShardBlock(ctx, block.(*ShardBlock), false)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
