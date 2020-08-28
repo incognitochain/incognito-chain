@@ -351,7 +351,7 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 	engine.beaconCommitteeStateV1.clone(engine.uncommittedBeaconCommitteeStateV1)
 	var err error
 	incurredInstructions := [][]string{}
-	env.substituteCandidates, err = engine.beaconCommitteeStateV1.getSubtituteCandidates()
+	env.substituteCandidates, err = engine.beaconCommitteeStateV1.getSubstituteCandidates()
 	if err != nil {
 		return nil, nil, nil, err
 	}

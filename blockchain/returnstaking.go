@@ -303,7 +303,6 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						errorInstructions = append(errorInstructions, l)
 						continue
 					}
-					// TODO: @tin compare funder address and unstake public key, they must match before return staking amount
 					Logger.log.Info("SA: build salary tx", txMeta.FunderPaymentAddress, shardID)
 					paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 					if paymentShardID != shardID {

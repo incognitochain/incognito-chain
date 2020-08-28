@@ -21,7 +21,7 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	}
 	var err error
 
-	env.substituteCandidates, err = newB.getSubtituteCandidates()
+	env.substituteCandidates, err = newB.getSubstituteCandidates()
 	if err != nil {
 		return incurredInstructions, err
 	}

@@ -106,7 +106,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	return newCommitteeChange, incurredInstructions, nil
 }
 
-func (b *BeaconCommitteeStateV1) getSubtituteCandidates() ([]string, error) {
+func (b *BeaconCommitteeStateV1) getSubstituteCandidates() ([]string, error) {
 	commonPoolValidators := []string{}
 
 	candidateBeaconWaitingForNextRandom := b.nextEpochBeaconCandidate

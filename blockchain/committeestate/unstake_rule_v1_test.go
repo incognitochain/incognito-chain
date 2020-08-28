@@ -279,13 +279,13 @@ func TestBeaconCommitteeStateV1_getSubtituteCandidates(t *testing.T) {
 				stakingTx:                   tt.fields.stakingTx,
 				mu:                          tt.fields.mu,
 			}
-			got, err := b.getSubtituteCandidates()
+			got, err := b.getSubstituteCandidates()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeStateV1.getSubtituteCandidates() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BeaconCommitteeStateV1.getSubstituteCandidates() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeStateV1.getSubtituteCandidates() = %v, want %v", got, tt.want)
+				t.Errorf("BeaconCommitteeStateV1.getSubstituteCandidates() = %v, want %v", got, tt.want)
 			}
 		})
 	}
