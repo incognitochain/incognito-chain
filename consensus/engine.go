@@ -99,6 +99,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 	monitor.SetGlobalParam("Role", s.curringMiningState.role)
 	monitor.SetGlobalParam("Layer", s.curringMiningState.layer)
+	monitor.SetGlobalParam("ShardID", s.curringMiningState.chainID)
 
 	var miningProcess ConsensusInterface = nil
 	//TODO: optimize - if in pending start to listen propose block, but not vote
