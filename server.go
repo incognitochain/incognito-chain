@@ -302,7 +302,7 @@ func (serverObj *Server) NewServer(
 		},
 		BC: serverObj.blockChain,
 	}
-	monitor.SetBlockChainObj(serverObj.blockChain)
+
 	monitor.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
 	monitor.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
@@ -344,15 +344,10 @@ func (serverObj *Server) NewServer(
 	if err != nil {
 		return err
 	}
-	// //init beacon pol
-	// mempool.InitBeaconPool(serverObj.pusubManager, serverObj.blockChain)
-	// //init shard pool
-	// mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
-	// //init cross shard pool
-	// mempool.InitCrossShardPool(serverObj.crossShardPool, db, serverObj.blockChain)
 
-	// //init shard to beacon bool
-	// mempool.InitShardToBeaconPool()
+	//set bc obj for monitor
+	monitor.SetBlockChainObj(serverObj.blockChain)
+
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")

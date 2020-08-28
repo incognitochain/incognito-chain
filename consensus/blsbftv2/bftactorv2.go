@@ -358,6 +358,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
+		fmt.Println("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
 		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return

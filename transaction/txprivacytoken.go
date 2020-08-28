@@ -453,6 +453,11 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriev
 	}
 	// validate sanity for pToken
 
+	// check tokenID in TxPrivacyTokenData
+	if txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String() == common.PRVIDStr {
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("TokenID must not be equal PRVID"))
+	}
+
 	//result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.validateNormalTxSanityData()
 	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if err != nil {

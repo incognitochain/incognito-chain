@@ -198,7 +198,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
@@ -219,7 +219,7 @@ func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 	if err != nil {
 		Logger.log.Error(err)
 		return err

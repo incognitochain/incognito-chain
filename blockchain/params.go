@@ -73,6 +73,7 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
+	BCHeightBreakPointFixRandShardCM uint64
 }
 
 type GenesisParams struct {
@@ -92,14 +93,16 @@ type GenesisParams struct {
 }
 
 var ChainTestParam = Params{}
+var ChainTest2Param = Params{}
 var ChainMainParam = Params{}
 
 var genesisParamsTestnetNew *GenesisParams
+var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
 
-// FOR TESTNET
 func init() {
+	// FOR TESTNET
 	genesisParamsTestnetNew = &GenesisParams{
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
@@ -173,12 +176,96 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           1,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 2070000,
 	}
 	// END TESTNET
+
+	// FOR TESTNET-2
+	genesisParamsTestnet2New = &GenesisParams{
+		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
+		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
+		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
+		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeTestnetSerializedPaymentAddress,
+		SelectBeaconNodeSerializedPubkeyV2:          SelectBeaconNodeTestnetSerializedPubkeyV2,
+		SelectBeaconNodeSerializedPaymentAddressV2:  SelectBeaconNodeTestnetSerializedPaymentAddressV2,
+		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
+		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
+		//@Notice: InitTxsForBenchmark is for testing and testparams only
+		//InitialIncognito: IntegrationTestInitPRV,
+		InitialIncognito:   TestnetInitPRV,
+		ConsensusAlgorithm: common.BlsConsensus,
+	}
+	ChainTest2Param = Params{
+		Name:                   Testnet2Name,
+		Net:                    Testnet2,
+		DefaultPort:            Testnet2DefaultPort,
+		GenesisParams:          genesisParamsTestnet2New,
+		MaxShardCommitteeSize:  TestNet2ShardCommitteeSize,     //TestNetShardCommitteeSize,
+		MinShardCommitteeSize:  TestNet2MinShardCommitteeSize,  //TestNetShardCommitteeSize,
+		MaxBeaconCommitteeSize: TestNet2BeaconCommitteeSize,    //TestNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize: TestNet2MinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		StakingAmountShard:     TestNet2StakingAmountShard,
+		ActiveShards:           TestNet2ActiveShards,
+		// blockChain parameters
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		MinShardBlockInterval:            TestNet2MinShardBlkInterval,
+		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
+		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
+		MaxBeaconBlockCreation:           TestNet2MaxBeaconBlkCreation,
+		BasicReward:                      Testnet2BasicReward,
+		Epoch:                            Testnet2Epoch,
+		RandomTime:                       Testnet2RandomTime,
+		Offset:                           Testnet2Offset,
+		AssignOffset:                     Testnet2AssignOffset,
+		SwapOffset:                       Testnet2SwapOffset,
+		EthContractAddressStr:            Testnet2ETHContractAddressStr,
+		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
+		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
+		SlashLevels:                      []SlashLevel{
+			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
+		},
+		CheckForce:                     false,
+		ChainVersion:                   "version-chain-test-2.json",
+		ConsensusV2Epoch:               1e9,
+		BeaconHeightBreakPointBurnAddr: 1,
+		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
+		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
+		BTCDataFolderName:              Testnet2BTCDataFolderName,
+		BNBFullNodeProtocol:            Testnet2BNBFullNodeProtocol,
+		BNBFullNodeHost:                Testnet2BNBFullNodeHost,
+		BNBFullNodePort:                Testnet2BNBFullNodePort,
+		PortalFeederAddress:            Testnet2PortalFeeder,
+		PortalParams: map[uint64]PortalParams{
+			0: {
+				TimeOutCustodianReturnPubToken:       1 * time.Hour,
+				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutWaitingRedeemRequest:          10 * time.Minute,
+				MaxPercentLiquidatedCollateralAmount: 105,
+				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+				MinPercentCustodianRewards:           1,
+				MinLockCollateralAmountInEpoch:       5000 * 1e9, // 5000 prv
+				MinPercentLockedCollateral:           150,
+				TP120:                                120,
+				TP130:                                130,
+				MinPercentPortingFee:                 0.01,
+				MinPercentRedeemFee:                  0.01,
+			},
+		},
+		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           1,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 120000,
+	}
+	// END TESTNET-2
+
 	// FOR MAINNET
 	genesisParamsMainnetNew = &GenesisParams{
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeMainnetSerializedPubkey,
@@ -251,13 +338,19 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    559380,
-		IsBackup:                  false,
-		PreloadAddress:            "",
+
+		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:           559380,
+		IsBackup:                         false,
+		PreloadAddress:                   "",
+		BCHeightBreakPointFixRandShardCM: 644000,
 	}
 	if IsTestNet {
-		GenesisParam = genesisParamsTestnetNew
+		if !IsTestNet2 {
+			GenesisParam = genesisParamsTestnetNew
+		} else {
+			GenesisParam = genesisParamsTestnet2New
+		}
 	} else {
 		GenesisParam = genesisParamsMainnetNew
 	}
