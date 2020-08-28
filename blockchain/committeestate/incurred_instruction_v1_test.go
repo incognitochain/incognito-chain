@@ -83,10 +83,10 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 		{
 			name: "Subtitutes Candidates Public Key's Format Is Not Valid",
 			fields: fields{
-				beaconCommitteeStateV1: &BeaconCommitteeStateV1{},
-				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{
+				beaconCommitteeStateV1: &BeaconCommitteeStateV1{
 					nextEpochShardCandidate: []incognitokey.CommitteePublicKey{},
 				},
+				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{},
 			},
 			args:    args{},
 			want:    [][]string{},
@@ -95,10 +95,10 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 		{
 			name: "Validators Public Key's Format Is Not Valid",
 			fields: fields{
-				beaconCommitteeStateV1: &BeaconCommitteeStateV1{},
-				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{
-					currentEpochShardCandidate: []incognitokey.CommitteePublicKey{},
+				beaconCommitteeStateV1: &BeaconCommitteeStateV1{
+					nextEpochShardCandidate: []incognitokey.CommitteePublicKey{},
 				},
+				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{},
 			},
 			args:    args{},
 			want:    [][]string{},
@@ -107,10 +107,10 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 		{
 			name: "Invalid Unstake Instruction Format",
 			fields: fields{
-				beaconCommitteeStateV1: &BeaconCommitteeStateV1{},
-				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{
+				beaconCommitteeStateV1: &BeaconCommitteeStateV1{
 					currentEpochShardCandidate: []incognitokey.CommitteePublicKey{*incKey},
 				},
+				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{},
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
@@ -125,10 +125,10 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 		{
 			name: "Error In Processing Unstake Instruction",
 			fields: fields{
-				beaconCommitteeStateV1: &BeaconCommitteeStateV1{},
-				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{
+				beaconCommitteeStateV1: &BeaconCommitteeStateV1{
 					nextEpochShardCandidate: []incognitokey.CommitteePublicKey{*incKey2},
 				},
+				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{},
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
@@ -148,10 +148,10 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				beaconCommitteeStateV1: &BeaconCommitteeStateV1{},
-				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{
+				beaconCommitteeStateV1: &BeaconCommitteeStateV1{
 					nextEpochShardCandidate: []incognitokey.CommitteePublicKey{*incKey},
 				},
+				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{},
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{

@@ -11,6 +11,9 @@ import (
 
 //TestValidateAndImportAssignInstructionFromString ...
 func TestValidateAndImportAssignInstructionFromString(t *testing.T) {
+
+	initPublicKey()
+
 	type args struct {
 		instruction []string
 	}
@@ -49,14 +52,19 @@ func TestValidateAndImportAssignInstructionFromString(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// TODO: @tin fix this test
+			// TODO: @tin fix this test [solved - review]
 			name: "Valid Input",
 			args: args{
 				instruction: []string{ASSIGN_ACTION, strings.Join([]string{key1, key2, key3, key4}, SPLITTER), SHARD_INST, "0"},
 			},
 			want: &AssignInstruction{
-				ChainID:         0,
-				ShardCandidates: []string{key1, key2, key3, key4},
+				ChainID: 0,
+				ShardCandidates: []string{
+					key1, key2, key3, key4,
+				},
+				ShardCandidatesStruct: []incognitokey.CommitteePublicKey{
+					*incKey1, *incKey2, *incKey3, *incKey4,
+				},
 			},
 			wantErr: false,
 		},
@@ -74,9 +82,6 @@ func TestValidateAndImportAssignInstructionFromString(t *testing.T) {
 		})
 	}
 }
-
-//Assign instruction format:
-//["assign action", publickeys, shard or beacon chain, shard_id]
 
 func TestValidateAssignInstructionSanity(t *testing.T) {
 	type args struct {

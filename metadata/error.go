@@ -58,6 +58,7 @@ const (
 	UnStakingRequestNoAutoStakingAvaiableError
 	UnStakingRequestTypeAssertionError
 	UnStakingRequestAlreadyStopError
+	UnStakingRequestInvalidFormatRequestKey
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -104,7 +105,7 @@ var ErrCodeMessage = map[int]struct {
 	UnStakingRequestNoAutoStakingAvaiableError:            {-4105, "UnStaking Request No Auto Staking Available Error"},
 	UnStakingRequestTypeAssertionError:                    {-4106, "UnStaking Request Type Assertion Error"},
 	UnStakingRequestAlreadyStopError:                      {-4107, "UnStaking Request Already Stop Error"},
-
+	UnStakingRequestInvalidFormatRequestKey:               {-4108, "Unstaking Request Key Is Invalid Format"},
 	// -5xxx dev reward error
 	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
 

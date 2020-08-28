@@ -13,6 +13,9 @@ var (
 	ErrAssignInstruction = errors.New("assign instruction error")
 )
 
+//AssignInstruction :
+//Assign instruction format:
+// ["assign action", publickeys, shard or beacon chain, shard_id]
 type AssignInstruction struct {
 	ChainID               int
 	ShardCandidates       []string

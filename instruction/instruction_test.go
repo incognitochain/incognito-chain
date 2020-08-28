@@ -3,6 +3,8 @@ package instruction
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 var key1 = "121VhftSAygpEJZ6i9jGkEKLMQTKTiiHzeUfeuhpQCcLZtys8FazpWwytpHebkAwgCxvqgUUF13fcSMtp5dgV1YkbRMj3z42TW2EebzAaiGg2DkGPodckN2UsbqhVDibpMgJUHVkLXardemfLdgUqWGtymdxaaRyPM38BAZcLpo2pAjxKv5vG5Uh9zHMkn7ZHtdNHmBmhG8B46UeiGBXYTwhyMe9KGS83jCMPAoUwHhTEXj5qQh6586dHjVxwEkRzp7SKn9iG1FFWdJ97xEkP2ezAapNQ46quVrMggcHFvoZofs1xdd4o5vAmPKnPTZtGTKunFiTWGnpSG9L6r5QpcmapqvRrK5SiuFhNM5DqgzUeHBb7fTfoiWd2N29jkbTGSq8CPUSjx3zdLR9sZguvPdnAA8g25cFPGSZt8aEnFJoPRzM"
@@ -15,8 +17,14 @@ var txHash2 = "6a71a0c1f382492739614831866417900f888d23203cb8fd1ee0ad40e7b0b59e"
 var txHash3 = "dcef9d320572067b933364481b7669f2311b2d94bd83d585d32dc9252371704a"
 var txHash4 = "3b0e8bb7693c9a1313b4e1e0983a397739e69b7b4e82abfe8842f66b4d83b24b"
 
+var paymentAddress1 = "12Rtc3sbfHTTSqmS8efnhgb7Rc6ineoQCwJyX63MMRK4HF6JGo51GJp5rk25QfviU7GPjyptT9q3JguQmDEG3uKpPUDEY5CSUJtttfU"
+var paymentAddress2 = "12RuC7GdG1P89A5KjgrStACHjQj79Ka5fZNREbawP7rxfYQWzxqe3Yuq1saN6zAVJquZKKUJf9ZfddmKPJEb8ZZFWHDRnx6VBqRyuAd"
+var paymentAddress3 = "12RvMjD8h6L68j7AjM6stP5qwuZvFCBnQtXCdtKCypNxqgpT3yZ11d5upFz6y5autbmLdK3ip2UyyyjmVizzgj8ChRVsujiFeagcyVM"
+var paymentAddress4 = "12Rt5Zm9a3DxxmTPoui7aNkpcsV2yLyimRBjunXpocu8ky1pm7o8mn9EJBkpGNaSvGnWMpPPLABhqixUBAznjnWCAR9c8WKKJfsgq4J"
+
 var incKey1, incKey2, incKey3, incKey4 *incognitokey.CommitteePublicKey
 var incTxHash1, incTxHash2, incTxHash3, incTxHash4 *common.Hash
+var incPaymentAddress1, incPaymentAddress2, incPaymentAddress3, incPaymentAddress4 *privacy.PaymentAddress
 
 func initTxHash() {
 	var err error
@@ -64,4 +72,23 @@ func initPublicKey() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func initPaymentAddress() {
+	incPaymentAddress1 = new(privacy.PaymentAddress)
+	incPaymentAddress2 = new(privacy.PaymentAddress)
+	incPaymentAddress3 = new(privacy.PaymentAddress)
+	incPaymentAddress4 = new(privacy.PaymentAddress)
+
+	wl, _ := wallet.Base58CheckDeserialize(paymentAddress1)
+	*incPaymentAddress1 = wl.KeySet.PaymentAddress
+
+	w2, _ := wallet.Base58CheckDeserialize(paymentAddress2)
+	*incPaymentAddress2 = w2.KeySet.PaymentAddress
+
+	w3, _ := wallet.Base58CheckDeserialize(paymentAddress3)
+	*incPaymentAddress3 = w3.KeySet.PaymentAddress
+
+	w4, _ := wallet.Base58CheckDeserialize(paymentAddress4)
+	*incPaymentAddress4 = w4.KeySet.PaymentAddress
 }

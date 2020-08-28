@@ -64,7 +64,7 @@ func (logWriter) Write(p []byte) (n int, err error) {
 }
 
 func initLog() {
-	initLogRotator("unit-test-log/committee-state.log")
+	initLogRotator("./committee-state.log")
 	committeeStateLogger := common.NewBackend(logWriter{}).Logger("Committee State log ", false)
 	Logger.Init(committeeStateLogger)
 }

@@ -10,8 +10,11 @@ import (
 func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[][]string, error) {
-	// TODO: @tin how uncommittedBeaconCommitteeStateV1 have data?
-	newB := engine.uncommittedBeaconCommitteeStateV1
+	// TODO: @tin how uncommittedBeaconCommitteeStateV1 have data? [solved-review]
+	newB := NewBeaconCommitteeStateV1()
+	engine.beaconCommitteeStateV1.clone(newB)
+	committeeChange := NewCommitteeChange()
+
 	incurredInstructions := [][]string{}
 	if env == nil {
 		return incurredInstructions, errors.New("Environment Variable Is Null")
@@ -25,7 +28,7 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	if err != nil {
 		return incurredInstructions, err
 	}
-	env.allSubstituteCommittees, err = newB.getValidators()
+	env.allSubstituteCommittees, err = newB.getAllSubstituteCommittees()
 	if err != nil {
 		return incurredInstructions, err
 	}
@@ -38,7 +41,7 @@ func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 				return incurredInstructions, err
 			}
 			_, incurredInsFromUnstake, err :=
-				newB.processUnstakeInstruction(unstakeInstruction, env, nil)
+				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
 			if err != nil {
 				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
 			}
