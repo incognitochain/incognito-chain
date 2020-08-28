@@ -4,11 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	typesBNB "github.com/binance-chain/go-sdk/common/types"
+	"github.com/binance-chain/go-sdk/types/msg"
+	txBNB "github.com/binance-chain/go-sdk/types/tx"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/stretchr/testify/suite"
+	"github.com/tendermint/tendermint/types"
 	"io/ioutil"
 	"math"
 	"math/big"
@@ -27,7 +32,7 @@ type PortalTestSuite struct {
 	currentPortalStateForProcess  CurrentPortalState
 	sdb                           *statedb.StateDB
 	portalParams                  PortalParams
-	blockChain *BlockChain
+	blockChain                    *BlockChain
 }
 
 const USER1_INC_ADDRESS = "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC"
@@ -86,10 +91,10 @@ func (s *PortalTestSuite) SetupTest() {
 		MinPercentRedeemFee:                  0.01,
 	}
 	s.blockChain = &BlockChain{
-		config : Config{
+		config: Config{
 			ChainParams: &Params{
-				MinBeaconBlockInterval:           40 * time.Second,
-				Epoch: 100,
+				MinBeaconBlockInterval: 40 * time.Second,
+				Epoch:                  100,
 			},
 		},
 	}
@@ -126,16 +131,16 @@ func getUnlockAmount(totalLockedAmount uint64, totalPTokenAmount uint64, pTokenA
 	return amount.Uint64()
 }
 
-func (s*PortalTestSuite) TestGetLockedCollateralAmount() {
-	portingAmount := uint64(0.3*1e9)
+func (s *PortalTestSuite) TestGetLockedCollateralAmount() {
+	portingAmount := uint64(0.3 * 1e9)
 	tokenID := common.PortalBNBIDStr
 	percent := s.portalParams.MinPercentLockedCollateral
 	amount := getLockedCollateralAmount(portingAmount, tokenID, s.currentPortalStateForProducer.FinalExchangeRatesState, percent)
 	fmt.Println("Result from TestGetLockedCollateralAmount: ", amount)
 }
 
-func (s*PortalTestSuite) TestGetMinFee() {
-	amount := uint64(0.25*1e9)
+func (s *PortalTestSuite) TestGetMinFee() {
+	amount := uint64(0.25 * 1e9)
 	tokenID := common.PortalBTCIDStr
 	percent := s.portalParams.MinPercentPortingFee
 
@@ -143,33 +148,31 @@ func (s*PortalTestSuite) TestGetMinFee() {
 	fmt.Println("Result from TestGetMinFee: ", fee)
 }
 
-func (s*PortalTestSuite) TestGetUnlockAmount() {
+func (s *PortalTestSuite) TestGetUnlockAmount() {
 	totalLockedAmount := uint64(40000000000)
-	totalPTokenAmount := uint64(1*1e9)
-	pTokenAmount := uint64(0.3*1e9)
+	totalPTokenAmount := uint64(1 * 1e9)
+	pTokenAmount := uint64(0.3 * 1e9)
 
 	unlockAmount := getUnlockAmount(totalLockedAmount, totalPTokenAmount, pTokenAmount)
 	fmt.Println("Result from TestGetUnlockAmount: ", unlockAmount)
-
-	//liquidatedAmount :=
 }
 
-func (s*PortalTestSuite) TestExchangeRate() {
+func (s *PortalTestSuite) TestExchangeRate() {
 	s.currentPortalStateForProducer.FinalExchangeRatesState = statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000},
 			common.PortalBNBIDStr: {Amount: 40000000},
 			common.PortalBTCIDStr: {Amount: 10000000000},
 		})
-	amount := uint64(0.7*1e9)
+	amount := uint64(0.7 * 1e9)
 	tokenIDFrom := common.PortalBNBIDStr
-	tokenIDTo :=  common.PRVIDStr
+	tokenIDTo := common.PRVIDStr
 	convertAmount := exchangeRates(amount, tokenIDFrom, tokenIDTo, s.currentPortalStateForProducer.FinalExchangeRatesState)
-	convertAmount = convertAmount*120/100
+	convertAmount = convertAmount * 120 / 100
 	fmt.Println("Result from TestExchangeRate: ", convertAmount)
 }
 
-func cloneMap( m map[string]uint64) map[string]uint64 {
+func cloneMap(m map[string]uint64) map[string]uint64 {
 	if m == nil {
 		return nil
 	}
@@ -244,6 +247,109 @@ func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[strin
 	return newReqs
 }
 
+// buildBNBProofFromTxs build a bnb proof for unit tests
+func buildBNBProofFromTxs(blockHeight int64, txs *types.Txs, indexTx int) *bnb.BNBProof {
+	proof := txs.Proof(indexTx)
+
+	return &bnb.BNBProof{
+		Proof:       &proof,
+		BlockHeight: blockHeight,
+	}
+}
+
+func createSendMsg(fromAddr string, transferInfo map[string]int64) msg.SendMsg {
+	fromAccAddr, _ := typesBNB.AccAddressFromHex(fromAddr)
+
+	transfer := make([]msg.Transfer, 0)
+	totalAmountTransfer := int64(0)
+	for toAddrStr, amount := range transferInfo {
+		toAddr, _ := typesBNB.AccAddressFromHex(toAddrStr)
+		transfer = append(transfer, msg.Transfer{
+			ToAddr: toAddr,
+			Coins: typesBNB.Coins{
+				typesBNB.Coin{
+					Denom:  bnb.DenomBNB,
+					Amount: amount,
+				},
+			},
+		})
+		totalAmountTransfer += amount
+	}
+
+	fromCoins := typesBNB.Coins{
+		typesBNB.Coin{
+			Denom:  bnb.DenomBNB,
+			Amount: totalAmountTransfer,
+		},
+	}
+
+	sendMsg := msg.CreateSendMsg(fromAccAddr, fromCoins, transfer)
+	return sendMsg
+}
+
+func createTxs(fromAddr string, tranferInfo map[string]int64, memo string) *types.Txs {
+	// create SendMsg
+	sendMsg := createSendMsg(fromAddr, tranferInfo)
+
+	// create StdTx
+	stdTx := txBNB.NewStdTx([]msg.Msg{sendMsg}, []txBNB.StdSignature{}, memo, int64(0), []byte{})
+
+	txBytes, _ := types.GetCodec().MarshalBinaryLengthPrefixed(stdTx)
+	txs := &types.Txs{txBytes}
+	return txs
+}
+
+// createMemo create memo for porting tx or redeem tx
+// if custodianIncAddr is empty, create memo for porting
+func createMemo(id string, custodianIncAddr string) string {
+	type PortingMemoBNB struct {
+		PortingID string `json:"PortingID"`
+	}
+
+	type RedeemMemoBNB struct {
+		RedeemID                  string `json:"RedeemID"`
+		CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
+	}
+
+	memo := ""
+
+	if custodianIncAddr == "" {
+		memoPorting := PortingMemoBNB{PortingID: id}
+		memoPortingBytes, _ := json.Marshal(memoPorting)
+		memo = base64.StdEncoding.EncodeToString(memoPortingBytes)
+	} else {
+		memoRedeem := RedeemMemoBNB{RedeemID: id, CustodianIncognitoAddress: custodianIncAddr}
+		memoRedeemBytes, _ := json.Marshal(memoRedeem)
+		memoRedeemHash := common.HashB(memoRedeemBytes)
+		memo = base64.StdEncoding.EncodeToString(memoRedeemHash)
+	}
+
+	return memo
+}
+
+func buildBNBProof(blockHeight int64, fromAddr string, transferInfo map[string]int64, id string, msg string) (string, []byte) {
+	indexTx := 0
+
+	// build memo attach to tx
+	memo := createMemo(id, msg)
+
+	txs := createTxs(fromAddr, transferInfo, memo)
+
+	bnbProof := buildBNBProofFromTxs(blockHeight, txs, indexTx)
+	bnbProofBytes, _ := json.Marshal(bnbProof)
+	bnbProofStr := base64.StdEncoding.EncodeToString(bnbProofBytes)
+	rootHash := txs.Hash()
+
+	fmt.Println("Result from TestBuildBNBProof bnbProofStr: ", bnbProofStr)
+	fmt.Printf("Result from TestBuildBNBProof rootHash: %#v\n", txs.Hash())
+
+	return bnbProofStr, rootHash
+}
+
+func (s *PortalTestSuite) TestBuildBNBProof() {
+	//buildBNBProof()
+}
+
 func producerPortalInstructions(
 	blockchain *BlockChain,
 	beaconHeight uint64,
@@ -311,28 +417,6 @@ func producerPortalInstructions(
 		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
 			newInst, err = blockchain.buildInstructionsForLiquidationRedeemPTokenExchangeRates(
 				inst[1], shardID, metadata.PortalRedeemLiquidateExchangeRatesMeta, currentPortalState, beaconHeight, portalParams)
-
-			/*
-					//// portal reward
-				case strconv.Itoa(metadata.PortalRewardMeta):
-					newInst, err = blockchain.buildPortalRewardsInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-					// liquidation custodian run away
-				case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
-					newInst, err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-					// expired waiting porting request
-				case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
-					newInst, err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-					// total custodian reward instruction
-				case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
-					newInst, err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-					//liquidation exchange rates
-				case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
-					newInst, err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-			*/
 		}
 
 		if err != nil {
@@ -578,9 +662,9 @@ func buildPortalTopupCustodianAction(
 		MetadataBase: metadata.MetadataBase{
 			Type: metadata.PortalLiquidationCustodianDepositMetaV2,
 		},
-		IncogAddressStr:        incAddressStr,
-		PTokenId:               ptokenID,
-		DepositedAmount:        depositAmount,
+		IncogAddressStr:      incAddressStr,
+		PTokenId:             ptokenID,
+		DepositedAmount:      depositAmount,
 		FreeCollateralAmount: freeCollateralAmount,
 	}
 
@@ -832,7 +916,7 @@ type TestCaseRequestPorting struct {
 func buildRequestPortingActionsFromTcs(tcs []TestCaseRequestPorting, shardID byte) [][]string {
 	insts := [][]string{}
 
-	for i, tc := range tcs {
+	for _, tc := range tcs {
 		inst := buildPortalUserRegisterAction(
 			tc.portingID, tc.incAddressStr, tc.pTokenID, tc.portingAmount, tc.portingFee, shardID)
 		insts = append(insts, inst)
@@ -895,8 +979,8 @@ func (s *PortalTestSuite) TestPortingRequest() {
 			portingID:     "porting-bnb-1",
 			incAddressStr: "userIncAddress1",
 			pTokenID:      common.PortalBNBIDStr,
-			portingAmount: 1*1e9,
-			portingFee: 2000000,
+			portingAmount: 1 * 1e9,
+			portingFee:    2000000,
 		},
 		// invalid porting request with duplicate porting ID
 		{
@@ -904,7 +988,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 			incAddressStr: "userIncAddress2",
 			pTokenID:      common.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
-			portingFee: 2000000,
+			portingFee:    2000000,
 		},
 		// invalid porting request with invalid porting fee
 		{
@@ -912,7 +996,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 			incAddressStr: "userIncAddress2",
 			pTokenID:      common.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
-			portingFee: 1999999,
+			portingFee:    1999999,
 		},
 		// valid porting request with >0.01% porting fee
 		{
@@ -920,7 +1004,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 			incAddressStr: "userIncAddress2",
 			pTokenID:      common.PortalBTCIDStr,
 			portingAmount: 0.1 * 1e9,
-			portingFee: 100000001,
+			portingFee:    100000001,
 		},
 		// invalid porting request: custodians' collateral not enough for the porting amount
 		{
@@ -928,7 +1012,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 			incAddressStr: "userIncAddress3",
 			pTokenID:      common.PortalBTCIDStr,
 			portingAmount: 1 * 1e9,
-			portingFee: 1000000000,
+			portingFee:    1000000000,
 		},
 	}
 
@@ -1026,13 +1110,19 @@ type TestCaseRequestPtokens struct {
 	incAddressStr string
 	pTokenID      string
 	portingAmount uint64
-	portingProof    string
+
+	blockHeight  int64
+	transferInfo map[string]int64
+	portingProof string
+	rootHash     []byte
 }
 
 func buildRequestPtokensActionsFromTcs(tcs []TestCaseRequestPtokens, shardID byte) [][]string {
 	insts := [][]string{}
 
 	for _, tc := range tcs {
+		tc.portingProof, tc.rootHash = buildBNBProof(tc.blockHeight, "", tc.transferInfo, tc.portingID, "")
+
 		inst := buildPortalUserReqPTokenAction(
 			tc.portingID, tc.incAddressStr, tc.pTokenID, tc.portingAmount, tc.portingProof, shardID)
 		insts = append(insts, inst)
@@ -1114,7 +1204,7 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 			{
 				IncAddress:             "custodianIncAddress1",
 				RemoteAddress:          "bnbAddress1",
-				Amount:                 5*1e9,
+				Amount:                 5 * 1e9,
 				LockedAmountCollateral: 200000000000,
 			},
 		}, 2000000, 1000)
@@ -1127,7 +1217,7 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 			{
 				IncAddress:             "custodianIncAddress3",
 				RemoteAddress:          "btcAddress3",
-				Amount:                 0.25*1e9,
+				Amount:                 0.25 * 1e9,
 				LockedAmountCollateral: 5000000000000,
 			},
 		}, 250000000, 1020)
@@ -1145,119 +1235,49 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
 }
 
-//func (s *PortalTestSuite) TestRequestPtokens() {
-//	fmt.Println("Running TestRequestPtokens - beacon height 1002 ...")
-//	bc := s.blockChain
-//	beaconHeight := uint64(1002)
-//	shardID := byte(0)
-//	newMatchedRedeemReqIDs := []string{}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
-//
-//	s.SetupTestRequestPtokens()
-//
-//	// build test cases
-//	testcases := []TestCaseRequestPtokens{
-//		// valid request ptokens
-//		{
-//			portingID:     "porting-bnb-1",
-//			incAddressStr: "userIncAddress1",
-//			pTokenID:      common.PortalBNBIDStr,
-//			portingAmount: 1*1e9,
-//			portingProof: "",
-//		},
-//		// invalid request ptokens with invalid portingID
-//		{
-//			portingID:     "porting-bnb-2",
-//			incAddressStr: "userIncAddress2",
-//			pTokenID:      common.PortalBNBIDStr,
-//			portingAmount: 1 * 1e9,
-//			portingProof: "",
-//		},
-//		// invalid request ptokens with invalid porting proof
-//		{
-//			portingID:     "porting-bnb-1",
-//			incAddressStr: "userIncAddress1",
-//			pTokenID:      common.PortalBNBIDStr,
-//			portingAmount: 1 * 1e9,
-//			portingProof: "",
-//		},
-//	}
-//
-//	// build actions from testcases
-//	insts := buildRequestPtokensActionsFromTcs(testcases, shardID)
-//
-//	// producer instructions
-//	newInsts, err := producerPortalInstructions(
-//		bc, beaconHeight-1, insts, s.sdb, &s.currentPortalStateForProducer, s.portalParams, shardID, newMatchedRedeemReqIDs)
-//	s.Equal(nil, err)
-//
-//	// process new instructions
-//	err = processPortalInstructions(
-//		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
-//
-//	// check results
-//	s.Equal(3, len(newInsts))
-//	s.Equal(nil, err)
-//
-//
-//	// remain waiting porting request
-//	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
-//	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-//		"porting-btc-2", common.Hash{}, common.PortalBTCIDStr,
-//		"userIncAddress2", 0.1*1e9,
-//		[]*statedb.MatchingPortingCustodianDetail{
-//			{
-//				IncAddress:             "custodianIncAddress3",
-//				RemoteAddress:          "btcAddress3",
-//				Amount:                 0.1 * 1e9,
-//				LockedAmountCollateral: 2000000000000,
-//			},
-//		}, 100000001, beaconHeight)
-//
-//	s.Equal(1, len(s.currentPortalStateForProducer.WaitingPortingRequests))
-//	s.Equal(wPortingRequest2, s.currentPortalStateForProducer.WaitingPortingRequests[wPortingReqKey2])
-//
-//	// custodian state after requesting ptokens
-//	custodianKey1 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress1").String()
-//	custodianKey2 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress2").String()
-//	custodianKey3 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress3").String()
-//
-//	custodian1 := statedb.NewCustodianStateWithValue(
-//		"custodianIncAddress1", 7000*1e9, 6960000000000,
-//		map[string]uint64{
-//			common.PortalBNBIDStr: 1*1e9,
-//		},
-//		map[string]uint64{
-//			common.PortalBNBIDStr: 40000000000,
-//		},
-//		map[string]string{
-//			common.PortalBNBIDStr: "bnbAddress1",
-//			common.PortalBTCIDStr: "btcAddress1",
-//		}, map[string]uint64{})
-//
-//	custodian2 := statedb.NewCustodianStateWithValue(
-//		"custodianIncAddress2", 1000*1e9, 1000*1e9,
-//		nil, nil,
-//		map[string]string{
-//			common.PortalBNBIDStr: "bnbAddress2",
-//		}, map[string]uint64{})
-//
-//	custodian3 := statedb.NewCustodianStateWithValue(
-//		"custodianIncAddress3", 10000*1e9, 8000000000000,
-//		nil,
-//		map[string]uint64{
-//			common.PortalBTCIDStr: 2000000000000,
-//		},
-//		map[string]string{
-//			common.PortalBTCIDStr: "btcAddress3",
-//		}, map[string]uint64{})
-//
-//	s.Equal(custodian1, s.currentPortalStateForProducer.CustodianPoolState[custodianKey1])
-//	s.Equal(custodian2, s.currentPortalStateForProducer.CustodianPoolState[custodianKey2])
-//	s.Equal(custodian3, s.currentPortalStateForProducer.CustodianPoolState[custodianKey3])
-//
-//	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
-//}
+func (s *PortalTestSuite) TestRequestPtokens() {
+	fmt.Println("Running TestRequestPtokens - beacon height 1002 ...")
+	bc := s.blockChain
+	beaconHeight := uint64(1002)
+	shardID := byte(0)
+	newMatchedRedeemReqIDs := []string{}
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+
+	s.SetupTestRequestPtokens()
+
+	// build test cases
+	testcases := []TestCaseRequestPtokens{
+		// valid request ptokens
+		{
+			portingID:     "porting-bnb-1",
+			incAddressStr: USER1_INC_ADDRESS,
+			pTokenID:      common.PortalBNBIDStr,
+			portingAmount: 1 * 1e9,
+			blockHeight:   1000,
+			transferInfo: map[string]int64{
+				"bnbAddress1": 1e8,
+			},
+			portingProof: "",
+			rootHash:     nil,
+		},
+	}
+
+	// build actions from testcases
+	insts := buildRequestPtokensActionsFromTcs(testcases, shardID)
+
+	// producer instructions
+	newInsts, err := producerPortalInstructions(
+		bc, beaconHeight-1, insts, s.sdb, &s.currentPortalStateForProducer, s.portalParams, shardID, newMatchedRedeemReqIDs)
+	s.Equal(nil, err)
+
+	// process new instructions
+	err = processPortalInstructions(
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
+
+	// check results
+	s.Equal(1, len(newInsts))
+	s.Equal(nil, err)
+}
 
 /*
 	Feature 4: auto-liquidation: the custodians don't send back public token to the users
@@ -1286,7 +1306,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidation() {
 	custodian2 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress2", 1000*1e9, 960000000000,
 		map[string]uint64{
-			common.PortalBNBIDStr: 0.6*1e9,
+			common.PortalBNBIDStr: 0.6 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBNBIDStr: 40000000000,
@@ -1299,7 +1319,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidation() {
 	custodian3 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress3", 10000*1e9, 8000000000000,
 		map[string]uint64{
-			common.PortalBTCIDStr: 0.1*1e9,
+			common.PortalBTCIDStr: 0.1 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBTCIDStr: 2000000000000,
@@ -1482,7 +1502,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidationByExchangeRate() {
 			common.PRVIDStr:       {Amount: 1000000},
 			common.PortalBNBIDStr: {Amount: 40000000},
 			common.PortalBTCIDStr: {Amount: 10000000000},
-	})
+		})
 
 	s.currentPortalStateForProducer.FinalExchangeRatesState = finalExchangeRate
 	s.currentPortalStateForProcess.FinalExchangeRatesState = finalExchangeRate
@@ -1552,7 +1572,7 @@ func (s *PortalTestSuite) TestAutoLiquidationByExchangeRate() {
 	custodian3 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress3", 10000*1e9, 8000000000000,
 		map[string]uint64{
-			common.PortalBTCIDStr: 0.1*1e9,
+			common.PortalBTCIDStr: 0.1 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBTCIDStr: 2000000000000,
@@ -1577,7 +1597,7 @@ func (s *PortalTestSuite) TestAutoLiquidationByExchangeRate() {
 	rates := map[string]statedb.LiquidationPoolDetail{
 		common.PortalBNBIDStr: {
 			CollateralAmount: 28000000000,
-			PubTokenAmount:   0.7*1e9,
+			PubTokenAmount:   0.7 * 1e9,
 		},
 	}
 	liquidationPool := statedb.NewLiquidationPoolWithValue(rates)
@@ -1601,9 +1621,9 @@ func (s *PortalTestSuite) SetupTestTopupCustodian() {
 }
 
 type TestCaseTopupCustodian struct {
-	incAddressStr string
-	ptokenID string
-	depositAmount uint64
+	incAddressStr        string
+	ptokenID             string
+	depositAmount        uint64
 	freeCollateralAmount uint64
 }
 
@@ -1619,10 +1639,10 @@ func buildTopupCustodianActionsFromTcs(tcs []TestCaseTopupCustodian, shardID byt
 }
 
 type TestCaseTopupWaitingPorting struct {
-	incAddressStr string
-	portingID string
-	ptokenID string
-	depositAmount uint64
+	incAddressStr        string
+	portingID            string
+	ptokenID             string
+	depositAmount        uint64
 	freeCollateralAmount uint64
 }
 
@@ -1652,7 +1672,7 @@ func (s *PortalTestSuite) TestTopupCustodian() {
 		{
 			incAddressStr:        "custodianIncAddress2",
 			ptokenID:             common.PortalBNBIDStr,
-			depositAmount:        500*1e9,
+			depositAmount:        500 * 1e9,
 			freeCollateralAmount: 0,
 		},
 		// topup by using free collaterals
@@ -1660,7 +1680,7 @@ func (s *PortalTestSuite) TestTopupCustodian() {
 			incAddressStr:        "custodianIncAddress2",
 			ptokenID:             common.PortalBNBIDStr,
 			depositAmount:        0,
-			freeCollateralAmount: 500*1e9,
+			freeCollateralAmount: 500 * 1e9,
 		},
 	}
 
@@ -1672,19 +1692,18 @@ func (s *PortalTestSuite) TestTopupCustodian() {
 		// topup by burning more collaterals
 		{
 			incAddressStr:        "custodianIncAddress4",
-			portingID: "porting-bnb-1",
+			portingID:            "porting-bnb-1",
 			ptokenID:             common.PortalBNBIDStr,
-			depositAmount:        20*1e9,
+			depositAmount:        20 * 1e9,
 			freeCollateralAmount: 0,
-
 		},
 		// topup by using free collaterals
 		{
 			incAddressStr:        "custodianIncAddress4",
-			portingID: "porting-bnb-1",
+			portingID:            "porting-bnb-1",
 			ptokenID:             common.PortalBNBIDStr,
 			depositAmount:        0,
-			freeCollateralAmount: 50*1e9,
+			freeCollateralAmount: 50 * 1e9,
 		},
 	}
 
@@ -1739,7 +1758,7 @@ func (s *PortalTestSuite) TestTopupCustodian() {
 	custodian2 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress2", 1500*1e9, 460000000000,
 		map[string]uint64{
-			common.PortalBNBIDStr: 0.6*1e9,
+			common.PortalBNBIDStr: 0.6 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBNBIDStr: 1040000000000,
@@ -1752,7 +1771,7 @@ func (s *PortalTestSuite) TestTopupCustodian() {
 	custodian3 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress3", 10000*1e9, 8000000000000,
 		map[string]uint64{
-			common.PortalBTCIDStr: 0.1*1e9,
+			common.PortalBTCIDStr: 0.1 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBTCIDStr: 2000000000000,
@@ -1812,7 +1831,7 @@ func (s *PortalTestSuite) SetupTestPortingRequestExpired() {
 func (s *PortalTestSuite) TestPortingRequestExpired() {
 	fmt.Println("Running TestPortingRequestExpired - beacon height 3161 ...")
 	bc := s.blockChain
-	beaconHeight := uint64(3161)  // after 24 hours from requesting porting (bch = 100)
+	beaconHeight := uint64(3161) // after 24 hours from requesting porting (bch = 100)
 	//shardID := byte(0)
 	//newMatchedRedeemReqIDs := []string{}
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
@@ -1867,7 +1886,6 @@ func (s *PortalTestSuite) TestPortingRequestExpired() {
 		map[string]string{
 			common.PortalBTCIDStr: "btcAddress3",
 		}, map[string]uint64{})
-
 
 	s.Equal(custodian1, s.currentPortalStateForProducer.CustodianPoolState[custodianKey1])
 	s.Equal(custodian2, s.currentPortalStateForProducer.CustodianPoolState[custodianKey2])
@@ -1967,7 +1985,7 @@ func (s *PortalTestSuite) SetupTestCustodianRewards() {
 			{
 				IncAddress:             "custodianIncAddress1",
 				RemoteAddress:          "bnbAddress1",
-				Amount:                 5*1e9,
+				Amount:                 5 * 1e9,
 				LockedAmountCollateral: 200000000000,
 			},
 		}, 2000000, 900)
@@ -2015,12 +2033,12 @@ func (s *PortalTestSuite) SetupTestCustodianRewards() {
 func (s *PortalTestSuite) TestCustodianRewards() {
 	fmt.Println("Running TestCustodianRewards - beacon height 1000 ...")
 	bc := s.blockChain
-	beaconHeight := uint64(1000)  // after 24 hours from requesting porting (bch = 100)
+	beaconHeight := uint64(1000) // after 24 hours from requesting porting (bch = 100)
 	//shardID := byte(0)
 	newMatchedRedeemReqIDs := []string{"redeem-bnb-1"}
 	rewardForCustodianByEpoch := map[common.Hash]uint64{
-		common.PRVCoinID: 100000000000,      // 100 prv
-		common.Hash{1}: 200000,
+		common.PRVCoinID: 100000000000, // 100 prv
+		common.Hash{1}:   200000,
 	}
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 
@@ -2045,16 +2063,16 @@ func (s *PortalTestSuite) TestCustodianRewards() {
 	custodianKey3 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress3").String()
 
 	reward1 := map[string]uint64{
-		common.PRVIDStr: 12526040824,
+		common.PRVIDStr:         12526040824,
 		common.Hash{1}.String(): 25044,
 	}
 
 	reward2 := map[string]uint64{
-		common.PRVIDStr: 1202686106,
+		common.PRVIDStr:         1202686106,
 		common.Hash{1}.String(): 2401,
 	}
 	reward3 := map[string]uint64{
-		common.PRVIDStr: 86377873071,
+		common.PRVIDStr:         86377873071,
 		common.Hash{1}.String(): 172555,
 	}
 
