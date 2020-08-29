@@ -18,9 +18,9 @@ type UnStakingMetadata struct {
 
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(unStakingType int, committeePublicKey string) (*UnStakingMetadata, error) {
-	if unStakingType != UnStakingMeta {
-		return nil, errors.New("invalid stop staking type")
-	}
+	// if unStakingType != UnStakingMeta {
+	// 	return nil, errors.New("invalid unstaking type")
+	// }
 	metadataBase := NewMetadataBase(unStakingType)
 	return &UnStakingMetadata{
 		MetadataBase:       *metadataBase,
@@ -81,8 +81,19 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
 	}
 
-	if !bytes.Equal(stakingTx.GetSender(), []byte(requestedPublicKey)) {
-		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), []byte(requestedPublicKey)))
+	// committeePublicKey := incognitokey.CommitteePublicKey{}
+	// err = committeePublicKey.FromBase58(requestedPublicKey)
+	// if err != nil {
+	// 	return false, err
+	// }
+
+	// incPublicKey := committeePublicKey.GetIncKeyBase58()
+	// if !bytes.Equal(stakingTx.GetSender(), []byte(incPublicKey)) {
+	// 	return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), []byte(incPublicKey)))
+	// }
+
+	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
+		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
 	}
 
 	return true, nil
@@ -98,7 +109,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateSanityData(
 	}
 
 	if tx.IsPrivacy() {
-		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
+		return false, false, errors.New("Unstaking Request Transaction Is No Privacy Transaction")
 	}
 	return true, true, nil
 }
