@@ -302,6 +302,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
+				tx:                  stakingTx,
 				beaconViewRetriever: beaconViewValidInput,
 				chainRetriever:      chainViewSenderIsNotMatchTxSender,
 			},
@@ -317,6 +318,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
+				tx:                  stakingTx,
 				beaconViewRetriever: beaconViewValidInput,
 				chainRetriever:      chainViewValidInput,
 			},
