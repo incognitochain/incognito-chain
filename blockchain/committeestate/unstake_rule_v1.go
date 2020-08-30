@@ -16,14 +16,9 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, [][]string, error) {
-	// TODO: @tin make sure comitteeChange must be not nil before call this function, remove NewCommitteeChange() code
-	newCommitteeChange := &CommitteeChange{}
+	// TODO: @tin make sure comitteeChange must be not nil before call this function, remove NewCommitteeChange() code [solved - review]
 
-	if committeeChange != nil {
-		newCommitteeChange = committeeChange
-	} else {
-		newCommitteeChange = NewCommitteeChange()
-	}
+	newCommitteeChange := committeeChange
 
 	incurredInstructions := [][]string{}
 	returnStakerInfoPublicKeys := make(map[byte][]string)
@@ -51,7 +46,6 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 				}
 			}
 		} else {
-
 			if _, ok := b.autoStake[committeePublicKey]; ok {
 				delete(b.autoStake, committeePublicKey)
 			}
@@ -102,7 +96,6 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 			incurredInstructions = append(incurredInstructions, returnStakingIns.ToString())
 		}
 	}
-
 	return newCommitteeChange, incurredInstructions, nil
 }
 
@@ -125,7 +118,7 @@ func (b *BeaconCommitteeStateV1) getSubstituteCandidates() ([]string, error) {
 	return commonPoolValidators, nil
 }
 
-func (b *BeaconCommitteeStateV1) getValidators() ([]string, error) {
+func (b *BeaconCommitteeStateV1) getAllSubstituteCommittees() ([]string, error) {
 	validators := []string{}
 
 	for _, committee := range b.shardCommittee {

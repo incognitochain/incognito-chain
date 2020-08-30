@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -19,9 +18,9 @@ type UnStakingMetadata struct {
 
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(unStakingType int, committeePublicKey string) (*UnStakingMetadata, error) {
-	if unStakingType != UnStakingMeta {
-		return nil, errors.New("invalid stop staking type")
-	}
+	// if unStakingType != UnStakingMeta {
+	// 	return nil, errors.New("invalid unstaking type")
+	// }
 	metadataBase := NewMetadataBase(unStakingType)
 	return &UnStakingMetadata{
 		MetadataBase:       *metadataBase,
@@ -32,13 +31,16 @@ func NewUnStakingMetadata(unStakingType int, committeePublicKey string) (*UnStak
 //ValidateMetadataByItself Validate data format/type in unStakingMetadata
 func (unStakingMetadata *UnStakingMetadata) ValidateMetadataByItself() bool {
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
+	if unStakingMetadata.Type != UnStakingMeta {
+		return false
+	}
 	if err := CommitteePublicKey.FromString(unStakingMetadata.CommitteePublicKey); err != nil {
 		return false
 	}
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	return (unStakingMetadata.Type == UnStakingMeta)
+	return true
 }
 
 //ValidateTxWithBlockChain Validate Condition to Request Unstake With Blockchain
@@ -49,12 +51,9 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 
-	// TODO: @tin process data with unStakingMetadata from method receiver, no need to get from transaction
-	unStakeMetadata, ok := tx.GetMetadata().(*UnStakingMetadata)
-	if !ok {
-		return false, NewMetadataTxError(UnStakingRequestTypeAssertionError, fmt.Errorf("Expect *UnStakingMetadata type but get %+v", reflect.TypeOf(tx.GetMetadata())))
-	}
-	requestedPublicKey := unStakeMetadata.CommitteePublicKey
+	// TODO: @tin process data with unStakingMetadata from method receiver, no need to get from transaction [solved-review]
+
+	requestedPublicKey := unStakingMetadata.CommitteePublicKey
 	committees, err := beaconViewRetriever.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
 	if err != nil {
 		return false, NewMetadataTxError(UnStakingRequestNotInCommitteeListError, err)
@@ -64,7 +63,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
 	}
 
-	_, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+	stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
 	if err != nil {
 		return false, NewMetadataTxError(UnStakingRequestGetStakerInfoError, err)
 	}
@@ -73,24 +72,28 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, fmt.Errorf("Committee Publickey %+v has not staked yet", requestedPublicKey))
 	}
 
-	stakingTx, err := chainRetriever.GetShardStakingTx(shardViewRetriever.GetShardID(), shardViewRetriever.GetBeaconHeight())
-	if err != nil {
-		return false, NewMetadataTxError(UnStakingRequestNotInCommitteeListError, err)
+	if stakerInfo == nil {
+		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, fmt.Errorf("Committee Publickey %+v has not staked yet", requestedPublicKey))
 	}
-	if tempStakingTxHash, ok := stakingTx[requestedPublicKey]; ok {
-		stakingTxHash, err := common.Hash{}.NewHashFromStr(tempStakingTxHash)
-		if err != nil {
-			return false, err
-		}
-		_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(*stakingTxHash)
-		if err != nil {
-			return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
-		}
-		if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
-			return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), tx.GetSender()))
-		}
-	} else {
-		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
+
+	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakerInfo.TxStakingID())
+	if err != nil {
+		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
+	}
+
+	// committeePublicKey := incognitokey.CommitteePublicKey{}
+	// err = committeePublicKey.FromBase58(requestedPublicKey)
+	// if err != nil {
+	// 	return false, err
+	// }
+
+	// incPublicKey := committeePublicKey.GetIncKeyBase58()
+	// if !bytes.Equal(stakingTx.GetSender(), []byte(incPublicKey)) {
+	// 	return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), []byte(incPublicKey)))
+	// }
+
+	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
+		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
 	}
 
 	return true, nil
@@ -100,19 +103,13 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 func (unStakingMetadata UnStakingMetadata) ValidateSanityData(
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if unStakingMetadata.Type != UnStakingMeta {
-		return false, false, errors.New("receiver amount should be zero")
+
+	if !unStakingMetadata.ValidateMetadataByItself() {
+		return false, false, errors.New("Fail To Validate Metadata By Itself")
 	}
-	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	err := CommitteePublicKey.FromString(unStakingMetadata.CommitteePublicKey)
-	if err != nil {
-		return false, false, err
-	}
-	if !CommitteePublicKey.CheckSanityData() {
-		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
-	}
+
 	if tx.IsPrivacy() {
-		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
+		return false, false, errors.New("Unstaking Request Transaction Is No Privacy Transaction")
 	}
 	return true, true, nil
 }

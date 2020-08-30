@@ -950,9 +950,20 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
+
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
+
+	// if len(shardBlock.Body.Transactions) != 0 {
+	// 	Logger.log.Info("[unstake] processStoreShardBlock/Transactions: ", shardBlock.Body.Transactions)
+	// 	for _, v := range shardBlock.Body.Transactions {
+	// 		Logger.log.Info("[unstake] tx:", v)
+	// 		Logger.log.Info("[unstake] tx.Hash().String():", v.Hash().String())
+	// 		Logger.log.Info("[unstake] tx.GetType():", v.GetType())
+	// 		Logger.log.Info("[unstake] string(tx.GetSender()):", string(v.GetSender()))
+	// 	}
+	// }
 
 	for index, tx := range shardBlock.Body.Transactions {
 		if err := rawdbv2.StoreTransactionIndex(blockchain.GetShardChainDatabase(shardID), *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {

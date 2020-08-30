@@ -355,7 +355,7 @@ func (engine *BeaconCommitteeEngine) UpdateCommitteeState(env *BeaconCommitteeSt
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	env.allSubstituteCommittees, err = engine.beaconCommitteeStateV1.getValidators()
+	env.allSubstituteCommittees, err = engine.beaconCommitteeStateV1.getAllSubstituteCommittees()
 	if err != nil {
 		return nil, nil, nil, err
 	}

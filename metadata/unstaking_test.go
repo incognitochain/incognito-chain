@@ -6,13 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/metadata/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -117,24 +116,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 
 	subtitutePublicKeys := []string{key1}
 
-	unstakingMetaData := &metadata.UnStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.UnStakingMeta,
-		},
-		CommitteePublicKey: key1,
-	}
-
-	stopAutoStakinggMetaData := &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.StopAutoStakingMeta,
-		},
-	}
-
-	unstakingTx := &mocks.Transaction{}
-	unstakingTx.On("GetMetadata").Return(unstakingMetaData)
-	stopAutoStakingTx := &mocks.Transaction{}
-	stopAutoStakingTx.On("GetMetadata").Return(stopAutoStakinggMetaData)
-
 	beaconViewSubtituteCommitteesError := &mocks.BeaconViewRetriever{}
 	beaconViewSubtituteCommitteesError.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
@@ -161,73 +142,49 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("GetStakerInfo", key1).
 		Return(nil, false, nil)
 
+	beaconViewStakerInfoIsNull := &mocks.BeaconViewRetriever{}
+	beaconViewStakerInfoIsNull.
+		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
+		Return(subtitutePublicKeys, nil)
+	beaconViewStakerInfoIsNull.
+		On("GetStakerInfo", key1).
+		Return(nil, true, nil)
+
+	hash, err := common.Hash{}.NewHashFromStr("12")
+	assert.Nil(t, err)
+
+	stakerInfo := &statedb.StakerInfo{}
+	stakerInfo.SetTxStakingID(*hash)
+
 	beaconViewValidInput := &mocks.BeaconViewRetriever{}
 	beaconViewValidInput.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
 	beaconViewValidInput.
 		On("GetStakerInfo", key1).
-		Return(nil, true, nil)
+		Return(stakerInfo, true, nil)
 
-	supportShardView := &mocks.ShardViewRetriever{}
-	supportShardView.
-		On("GetShardID").
-		Return(byte(0))
-	supportShardView.
-		On("GetBeaconHeight").
-		Return(uint64(100))
+	stakingTxError := &mocks.Transaction{}
+	stakingTxError.
+		On("GetSender").
+		Return([]byte{1})
 
-	chainViewGetShardStakingError := &mocks.ChainRetriever{}
-	chainViewGetShardStakingError.
-		On("GetShardStakingTx", byte(0), uint64(100)).
-		Return(nil, errors.New("Get Shard Staking Error"))
+	stakingTx := &mocks.Transaction{}
+	stakingTx.
+		On("GetSender").
+		Return([]byte(key1))
 
-	stakingTxs := map[string]string{
-		key1: "12",
-	}
-
-	stakingTxError := map[string]string{
-		"123": "12",
-	}
-
-	stakingTxInvalidFormatKey := map[string]string{
-		key1: "xyz",
-	}
-
-	chainViewStakingTxError := &mocks.ChainRetriever{}
-	chainViewStakingTxError.
-		On("GetShardStakingTx", byte(0), uint64(100)).
-		Return(stakingTxError, nil)
-
-	chainViewStakingTx := &mocks.ChainRetriever{}
-	chainViewStakingTx.
-		On("GetShardStakingTx", byte(0), uint64(100)).
-		Return(stakingTxs, nil)
-
-	chainViewStakingTxInvalidFormatKey := &mocks.ChainRetriever{}
-	chainViewStakingTxInvalidFormatKey.
-		On("GetShardStakingTx", byte(0), uint64(100)).
-		Return(stakingTxInvalidFormatKey, nil)
-
-	hash, err := common.Hash{}.NewHashFromStr("12")
-	assert.Nil(t, err)
-
-	chainViewGetTransactionError := new(mocks.ChainRetriever)
-	*chainViewGetTransactionError = *chainViewStakingTx
-	chainViewGetTransactionError.
+	chainViewGetTxByHashError := &mocks.ChainRetriever{}
+	chainViewGetTxByHashError.
 		On("GetTransactionByHash", *hash).
 		Return(byte(0), common.Hash{}, uint64(0), int(0), nil, errors.New("Can't Get Transaction From Database"))
 
-	stakingTxErr := new(mocks.Transaction)
-	*stakingTxErr = *unstakingTx
-	stakingTxErr.On("GetSender").Return([]byte{2})
+	chainViewSenderIsNotMatchTxSender := &mocks.ChainRetriever{}
+	chainViewSenderIsNotMatchTxSender.
+		On("GetTransactionByHash", *hash).
+		Return(byte(0), common.Hash{}, uint64(0), int(0), stakingTxError, nil)
 
-	stakingTx := new(mocks.Transaction)
-	*stakingTx = *unstakingTx
-	stakingTx.On("GetSender").Return([]byte{1})
-
-	chainViewValidInput := new(mocks.ChainRetriever)
-	*chainViewValidInput = *chainViewStakingTx
+	chainViewValidInput := &mocks.ChainRetriever{}
 	chainViewValidInput.
 		On("GetTransactionByHash", *hash).
 		Return(byte(0), common.Hash{}, uint64(0), int(0), stakingTx, nil)
@@ -252,20 +209,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Invalid Type Metadata",
-			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.StopAutoStakingMeta,
-				},
-				CommitteePublicKey: key1,
-			},
-			args: args{
-				tx: stopAutoStakingTx,
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
 			name: "Get Subtitute Committees Public Key Error",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
@@ -274,7 +217,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewSubtituteCommitteesError,
 			},
 			want:    false,
@@ -289,7 +231,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewNotFoundSubtituteCommittees,
 			},
 			want:    false,
@@ -304,7 +245,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewGetStakerInfoError,
 			},
 			want:    false,
@@ -319,14 +259,13 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewNotFoundStakerInfo,
 			},
 			want:    false,
 			wantErr: true,
 		},
 		{
-			name: "Can't Get Shard Staking Tx From Staking Tx Hash Of Staker Info",
+			name: "Staker Info Is Null",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
 					Type: metadata.UnStakingMeta,
@@ -334,33 +273,13 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
-				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  supportShardView,
-				chainRetriever:      chainViewGetShardStakingError,
+				beaconViewRetriever: beaconViewStakerInfoIsNull,
 			},
 			want:    false,
 			wantErr: true,
 		},
 		{
-			name: "Can't Find Public Key In Staking Tx",
-			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
-				},
-				CommitteePublicKey: "123",
-			},
-			args: args{
-				tx:                  unstakingTx,
-				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  supportShardView,
-				chainRetriever:      chainViewStakingTxError,
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
-			name: "Format Of Staking Tx Hash Is Invalid",
+			name: "Can't Get Transaction By Hash With Staker Info's Transaction Hash",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
 					Type: metadata.UnStakingMeta,
@@ -368,16 +287,14 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  supportShardView,
-				chainRetriever:      chainViewStakingTxInvalidFormatKey,
+				chainRetriever:      chainViewGetTxByHashError,
 			},
 			want:    false,
 			wantErr: true,
 		},
 		{
-			name: "Can't Get Transaction By Hash",
+			name: "Sender Of Staking Tx From Staker Info != Requester Public Key",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
 					Type: metadata.UnStakingMeta,
@@ -385,27 +302,9 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey: key1,
 			},
 			args: args{
-				tx:                  unstakingTx,
+				tx:                  stakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  supportShardView,
-				chainRetriever:      chainViewGetTransactionError,
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
-			name: "Send Of Staking Tx From Staker Info != Sender Of Transaction From Database",
-			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
-				},
-				CommitteePublicKey: key1,
-			},
-			args: args{
-				tx:                  stakingTxErr,
-				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  supportShardView,
-				chainRetriever:      chainViewValidInput,
+				chainRetriever:      chainViewSenderIsNotMatchTxSender,
 			},
 			want:    false,
 			wantErr: true,
@@ -421,7 +320,6 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			args: args{
 				tx:                  stakingTx,
 				beaconViewRetriever: beaconViewValidInput,
-				shardViewRetriever:  supportShardView,
 				chainRetriever:      chainViewValidInput,
 			},
 			want:    true,

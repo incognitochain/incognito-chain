@@ -291,7 +291,7 @@ func TestBeaconCommitteeStateV1_getSubtituteCandidates(t *testing.T) {
 	}
 }
 
-func TestBeaconCommitteeStateV1_getValidators(t *testing.T) {
+func TestBeaconCommitteeStateV1_getAllSubstituteCommittees(t *testing.T) {
 
 	initPublicKey()
 
@@ -342,7 +342,7 @@ func TestBeaconCommitteeStateV1_getValidators(t *testing.T) {
 				stakingTx:                   tt.fields.stakingTx,
 				mu:                          tt.fields.mu,
 			}
-			got, err := b.getValidators()
+			got, err := b.getAllSubstituteCommittees()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV1.getValidators() error = %v, wantErr %v", err, tt.wantErr)
 				return
