@@ -16,15 +16,11 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, [][]string, error) {
-	// TODO: @tin make sure comitteeChange must be not nil before call this function, remove NewCommitteeChange() code [solved - review]
-
 	newCommitteeChange := committeeChange
-
 	incurredInstructions := [][]string{}
 	returnStakerInfoPublicKeys := make(map[byte][]string)
 	stakingTxs := make(map[byte][]string)
 	percentReturns := make(map[byte][]uint)
-
 	indexNextEpochShardCandidate := make(map[string]int)
 
 	for i, v := range b.nextEpochShardCandidate {

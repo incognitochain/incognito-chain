@@ -52,7 +52,6 @@ func TestValidateAndImportAssignInstructionFromString(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// TODO: @tin fix this test [solved - review]
 			name: "Valid Input",
 			args: args{
 				instruction: []string{ASSIGN_ACTION, strings.Join([]string{key1, key2, key3, key4}, SPLITTER), SHARD_INST, "0"},

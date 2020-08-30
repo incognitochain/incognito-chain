@@ -194,7 +194,6 @@ func TestValidateAndImportStakeInstructionFromString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO: @tin fix this test [solved-review]
 			got, err := ValidateAndImportStakeInstructionFromString(tt.args.instruction)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateAndImportStakeInstructionFromString() error = %v, wantErr %v", err, tt.wantErr)
@@ -358,7 +357,6 @@ func TestValidateStakeInstructionSanity(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO: @tin fix this test [solved - review]
 			if err := ValidateStakeInstructionSanity(tt.args.instruction); (err != nil) != tt.wantErr {
 				t.Errorf("ValidateStakeInstructionSanity() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -417,7 +415,6 @@ func TestImportStakeInstructionFromString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO: @tin fix this test [solved - review]
 			if got := ImportStakeInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ImportStakeInstructionFromString() = %v, want %v", got, tt.want)
 			}

@@ -51,8 +51,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 
-	// TODO: @tin process data with unStakingMetadata from method receiver, no need to get from transaction [solved-review]
-
 	requestedPublicKey := unStakingMetadata.CommitteePublicKey
 	committees, err := beaconViewRetriever.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
 	if err != nil {
@@ -67,11 +65,9 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	if err != nil {
 		return false, NewMetadataTxError(UnStakingRequestGetStakerInfoError, err)
 	}
-
 	if !has {
 		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, fmt.Errorf("Committee Publickey %+v has not staked yet", requestedPublicKey))
 	}
-
 	if stakerInfo == nil {
 		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, fmt.Errorf("Committee Publickey %+v has not staked yet", requestedPublicKey))
 	}
@@ -80,18 +76,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	if err != nil {
 		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
 	}
-
-	// committeePublicKey := incognitokey.CommitteePublicKey{}
-	// err = committeePublicKey.FromBase58(requestedPublicKey)
-	// if err != nil {
-	// 	return false, err
-	// }
-
-	// incPublicKey := committeePublicKey.GetIncKeyBase58()
-	// if !bytes.Equal(stakingTx.GetSender(), []byte(incPublicKey)) {
-	// 	return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), []byte(incPublicKey)))
-	// }
-
 	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
 		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
 	}

@@ -10,7 +10,6 @@ import (
 func (engine BeaconCommitteeEngine) BuildIncurredInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[][]string, error) {
-	// TODO: @tin how uncommittedBeaconCommitteeStateV1 have data? [solved-review]
 	newB := NewBeaconCommitteeStateV1()
 	engine.beaconCommitteeStateV1.clone(newB)
 	committeeChange := NewCommitteeChange()
