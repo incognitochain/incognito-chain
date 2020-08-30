@@ -115,9 +115,6 @@ func TestUtils(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// TESTCASE
-// Add 4 more cases, Result and Expected Result MUST BE PRE-CALCULATED Somewhere ELSE
 func TestShuffleShardCandidate(t *testing.T) {
 	candidates1 := candidates1
 	randomNumber1 := int64(1000)
@@ -170,9 +167,6 @@ func TestShuffleShardCandidate(t *testing.T) {
 	t.Log("Testcase 5 done")
 }
 
-// TODO: @lam
-// TESTCASE
-// Add 4 more cases, Result and Expected Result MUST BE PRE-CALCULATED Somewhere ELSE
 func TestAssignShardCandidate(t *testing.T) {
 	cloneNumberOfPendingValidatorMap := func(src map[byte]int) map[byte]int {
 		dst := make(map[byte]int)
@@ -268,15 +262,6 @@ func TestAssignShardCandidate(t *testing.T) {
 
 }
 
-// TODO: @lam
-// NOTICE: badPendingValidators is always empty
-// TESTCASE
-// 1. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset is zero
-// 2. RETURN SAME-RESULT-AS-INPUT,NO-ERROR check offset > maxCommittee -------- @hung ERROR offset > maxCommittee will return error
-// 3. Push all pending validator to producer list,NO-ERROR (maxCommittee - len(currentGoodProducers)) >= offset
-// 4. Push some pending validator to producer list and swap the remaining offset (maxCommittee - len(currentGoodProducers)) <= offset
-// 5. Only swap,NO-ERROR len(goodPendingValidators) < offset, (maxCommittee - len(currentGoodProducers)) == 0 -------- @hung ERROR offset > maxCommittee will return error
-// 6. Only swap,NO-ERROR len(goodPendingValidators) > offset, (maxCommittee - len(currentGoodProducers)) == 0
 func Test_swap(t *testing.T) {
 	type args struct {
 		badPendingValidators  []string
@@ -403,12 +388,6 @@ func Test_swap(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// NOTICE: badPendingValidators is always empty, ignore lines 283-304, code not reached in reality
-// TESTCASE
-// 1. Swap when currentValidator length reach maxCommittee len(currentGoodProducers) == maxCommittee, NO-ERROR
-// 2 Swap when currentValidator length reach maxCommittee and offset > goodPendingValidatorsLen, NO-ERROR
-// 3. Swap when currentValidator length reach maxCommittee and offset < goodPendingValidatorsLen, NO-ERROR
 func TestSwapValidator(t *testing.T) {
 	type args struct {
 		pendingValidators  []string
@@ -500,10 +479,6 @@ func TestSwapValidator(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// TESTCASE
-// 1. EMPTY-STRING-ARRAY,ERROR NOT PASS CONDITION len(removedValidators) > len(validators)
-// 2. 3 cases remove success
 func TestRemoveValidator(t *testing.T) {
 	type args struct {
 		validators        []string
