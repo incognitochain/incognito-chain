@@ -231,7 +231,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 }
 
 func (engine *ShardCommitteeEngineV1) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []string, error) {
-	return &instruction.ConfirmShardSwapInstruction{}, []incognitokey.CommitteePublicKey{}, nil
+	return &instruction.ConfirmShardSwapInstruction{}, []string{}, nil
 }
 
 func (engine *ShardCommitteeEngineV1) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {

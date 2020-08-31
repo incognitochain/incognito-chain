@@ -650,6 +650,7 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
+	// TODO: fetch random time height for numberOfAssignedCandidate
 	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
 			shardCommonPool,

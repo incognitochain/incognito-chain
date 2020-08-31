@@ -112,7 +112,7 @@ func CreateShardSwapActionForKeyListV2(
 	activeShard int,
 	shardID byte,
 	epoch uint64,
-) ([]string, []string, []string) {
+) ([]string, []string) {
 	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
 	remainShardCommittees := shardCommittees[minCommitteeSize:]
 	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)

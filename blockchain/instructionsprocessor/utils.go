@@ -68,7 +68,7 @@ func returnStakingFromIns(
 	error,
 ) {
 	stakeTxHash := &common.Hash{}
-	stakeTxHash, _ = stakeTxHash.NewHashFromStr(insStake.StakingTXID)
+	stakeTxHash, _ = stakeTxHash.NewHashFromStr(insStake.StakingTXIDs[0])
 	txStake, err := GetTxDataByHash(incDB, *stakeTxHash)
 	if err != nil {
 		//TODO find the correctly way to handle error here, panic or continue or do something else?
@@ -80,7 +80,7 @@ func returnStakingFromIns(
 	stakeAmount := txStake.CalculateTxValue()
 	returnStakingTx := new(transaction.Tx)
 	err = returnStakingTx.InitTxSalary(
-		stakeAmount*uint64(insStake.PercentReturn)/100,
+		stakeAmount*uint64(insStake.PercentReturns[0])/100,
 		&returnStakingMeta.StakerAddress,
 		producerPrivateKey,
 		txStateDB,

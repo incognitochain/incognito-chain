@@ -27,6 +27,8 @@ type BeaconCommitteeStateEnvironment struct {
 	IsReplace                       bool
 	NumberOfFixedBlockValidator     uint64
 	allCandidateSubstituteCommittee []string
+	substituteCandidates            []string
+	allSubstituteCommittees         []string
 }
 
 type BeaconCommitteeStateHash struct {

@@ -6,10 +6,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -104,7 +104,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
-		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
+		beaconBlock.Header.Height,
+		stakeInstructions, swapInstructions, stopAutoStakingInstructions, unstakingInstructions,
 		bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
 		blockchain.config.ChainParams.RandomTime, blockchain,
 	)
@@ -467,7 +468,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	swapInstructions map[byte][]*instruction.SwapInstruction,
 	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction,
 	unstakingInstructions []*instruction.UnstakeInstruction,
-	shardCandidates []incognitokey.CommitteePublicKey,
 	bridgeInstructions [][]string,
 	acceptedRewardInstructions [][]string,
 	chainParamEpoch uint64,
@@ -487,41 +487,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	for _, shardID := range keys {
 		for _, tempSwapInstruction := range swapInstructions[byte(shardID)] {
 			instructions = append(instructions, tempSwapInstruction.ToString())
-		}
-	}
-	// Beacon normal swap
-	if newBeaconHeight%chainParamEpoch == 0 {
-		BeaconPendingValidator := beaconBestState.GetBeaconPendingValidator()
-		beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(BeaconPendingValidator)
-		if err != nil {
-			return [][]string{}, err
-		}
-		BeaconCommittee := beaconBestState.GetBeaconCommittee()
-		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
-		if err != nil {
-			return [][]string{}, err
-		}
-		producersBlackList := make(map[string]uint8)
-		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(true, -1, beaconCommitteeStr)
-		badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
-		if err != nil {
-			Logger.log.Error(err)
-		}
-		if common.IndexOfUint64(newBeaconHeight/chainParamEpoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-			epoch := newBeaconHeight / chainParamEpoch
-			swapBeaconInstructions, _, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconPendingValidatorStr, beaconCommitteeStr, beaconBestState.MinBeaconCommitteeSize, epoch)
-			instructions = append(instructions, swapBeaconInstructions)
-			beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
-			instructions = append(instructions, beaconRootInst)
-		} else {
-			_, currentValidators, outPublicKeys, inPublicKeys, err := SwapValidator(beaconPendingValidatorStr, beaconCommitteeStr, beaconBestState.MaxBeaconCommitteeSize, beaconBestState.MinBeaconCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
-			if len(outPublicKeys) > 0 || len(inPublicKeys) > 0 && err == nil {
-				swapBeaconInstruction := instruction.NewSwapInstructionWithValue(inPublicKeys, outPublicKeys, instruction.BEACON_CHAIN_ID, string(badProducersWithPunishmentBytes), []string{})
-				instructions = append(instructions, swapBeaconInstruction.ToString())
-				// Generate instruction storing validators pubkey and send to bridge
-				beaconRootInst, _ := buildBeaconSwapConfirmInstruction(currentValidators, newBeaconHeight)
-				instructions = append(instructions, beaconRootInst)
-			}
 		}
 	}
 	// Stake

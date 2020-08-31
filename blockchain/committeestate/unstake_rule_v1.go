@@ -169,7 +169,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *Committee
 	if err != nil {
 		return newCommitteeChange, err
 	}
-	err = statedb.StoreStakerInfo(
+	err = statedb.StoreStakerInfoV1(
 		env.ConsensusStateDB,
 		unstakingIncognitoKey,
 		b.rewardReceiver,
