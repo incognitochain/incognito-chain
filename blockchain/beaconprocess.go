@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -68,10 +69,11 @@ CONTINUE_VERIFY:
 		return err
 	}
 	// Update best state with new block
-	newBestState, hashes, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
+
 	// Post verififcation: verify new beaconstate with corresponding block
 	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
 		return err
@@ -159,11 +161,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
-	newBestState, hashes, committeeChange, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+
+	newBestState, hashes, committeeChange, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
 	}
+
+	if len(incurredInstructions) != 0 {
+		err := curView.postProcessIncurredInstructions(incurredInstructions)
+		if err != nil {
+			return err
+		}
+	}
+
 	var err2 error
 	defer func() {
 		if err2 != nil {
@@ -268,6 +279,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 	for _, strs := range beaconBlock.Body.Instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
+
 	if hash, ok := verifyHashFromStringArray(tempInstructionArr, beaconBlock.Header.InstructionHash); !ok {
 		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", beaconBlock.Header.InstructionHash, hash))
 	}
@@ -286,6 +298,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 		return NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
 	root := GetKeccak256MerkleRoot(flattenInsts)
+
 	if !bytes.Equal(root, beaconBlock.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
 	}
@@ -324,10 +337,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	tempShardStates := make(map[byte][]types.ShardState)
 	stakeInstructions := []*instruction.StakeInstruction{}
 	validStakePublicKeys := []string{}
+	validUnstakePublicKeys := make(map[string]bool)
 	swapInstructions := make(map[byte][]*instruction.SwapInstruction)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
 	stopAutoStakeInstructions := []*instruction.StopAutoStakeInstruction{}
+	unstakeInstructions := []*instruction.UnstakeInstruction{}
 	statefulActionsByShardID := map[byte][][]string{}
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 
@@ -385,13 +400,16 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
+				tempShardState, stakeInstruction, tempValidStakePublicKeys,
+					swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction,
+					stopAutoStakingInstruction, unstakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys, validUnstakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
 				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
 				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				stopAutoStakeInstructions = append(stopAutoStakeInstructions, stopAutoStakingInstruction...)
+				unstakeInstructions = append(unstakeInstructions, unstakingInstruction...)
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 				// group stateful actions by shardID
 				_, found := statefulActionsByShardID[shardID]
@@ -411,14 +429,29 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,
 		stakeInstructions, swapInstructions, stopAutoStakeInstructions,
+		unstakeInstructions,
 		bridgeInstructions, acceptedBlockRewardInstructions,
 		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain)
 	if err != nil {
 		return err
 	}
+
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
+
+	beaconCommitteeStateEnv := committeestate.NewBeaconCommitteeStateEnvironment()
+	beaconCommitteeStateEnv.ConsensusStateDB = curView.consensusStateDB
+	beaconCommitteeStateEnv.BeaconInstructions = tempInstruction
+
+	incurredInstructions, err := curView.beaconCommitteeEngine.BuildIncurredInstructions(beaconCommitteeStateEnv)
+	if err != nil {
+		return NewBlockChainError(BuildIncurredInstructionError, err)
+	}
+	if len(incurredInstructions) != 0 {
+		tempInstruction = append(tempInstruction, incurredInstructions...)
+	}
+
 	tempInstructionArr := []string{}
 	for _, strs := range tempInstruction {
 		tempInstructionArr = append(tempInstructionArr, strs...)
@@ -558,11 +591,11 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	Update Beststate with new Block
 */
 func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
-	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, error) {
+	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(oldBestState); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	var chainParamEpoch = blockchain.config.ChainParams.Epoch
 	var randomTime = blockchain.config.ChainParams.RandomTime
@@ -602,7 +635,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
 			if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
-				return nil, nil, nil, NewBlockChainError(ProcessRandomInstructionError, err)
+				return nil, nil, nil, nil, NewBlockChainError(ProcessRandomInstructionError, err)
 			}
 			randomInstruction := instruction.ImportRandomInstructionFromString(inst)
 			beaconBestState.CurrentRandomNumber = randomInstruction.BtcNonce
@@ -624,14 +657,14 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
-	hashes, committeeChange, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
+	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
-		return nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
 
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
-	return beaconBestState, hashes, committeeChange, nil
+	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
 }
 
 func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *types.BeaconBlock, blockchain *BlockChain, db incdb.Database) error {

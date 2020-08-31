@@ -36,6 +36,8 @@ func NewReturnStakingMetaFromStakingTx(
 		Type: ReturnStakingMeta,
 	}
 	meta := txStake.GetMetadata()
+	// TODO: return nil is hard for debug, error should be return
+	// TODO: caller of this function should verify metadata type and only passed transaction hash into it
 	stakeMeta, ok := meta.(*StakingMetadata)
 	if !ok {
 		return nil
@@ -57,16 +59,26 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, cha
 	return true, nil
 }
 
+// pk: 32, tk: 32
 func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if len(sbsRes.StakerAddress.Pk) == 0 {
+
+	if len(sbsRes.StakerAddress.Pk) != common.PublicKeySize {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
-	if len(sbsRes.StakerAddress.Tk) == 0 {
+
+	if len(sbsRes.StakerAddress.Tk) != common.TransmissionKeySize {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
+
 	if sbsRes.TxID == "" {
 		return false, false, errors.New("Wrong request info's Tx staking")
 	}
+
+	_, err := common.Hash{}.NewHashFromStr(sbsRes.TxID)
+	if err != nil {
+		return false, false, errors.New("Wrong request info's Tx staking hash")
+	}
+
 	return false, true, nil
 }
 

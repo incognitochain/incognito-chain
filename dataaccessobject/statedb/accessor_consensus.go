@@ -694,3 +694,21 @@ func DeleteMembersAtShardPool(
 	}
 	return nil
 }
+
+//DeleteStakerInfo :
+// TODO: delete when unstake or swap out or return staking
+func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	return deleteStakerInfo(stateDB, stakers)
+}
+
+func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	for _, staker := range stakers {
+		keyBytes, err := staker.RawBytes()
+		if err != nil {
+			return err
+		}
+		key := GetStakerInfoKey(keyBytes)
+		stateDB.MarkDeleteStateObject(StakerObjectType, key)
+	}
+	return nil
+}

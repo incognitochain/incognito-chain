@@ -55,8 +55,14 @@ func (bP *BInsProcessor) BuildInstructionsFromTransactions(txs []metadata.Transa
 				//TODO
 				continue
 			}
-			//case metadata.UnstakingMeta
-			//TODO @tin
+		case metadata.UnStakingMeta:
+			unstakeIns, err := unstakeInsFromTx(
+				tx.GetSenderAddrLastByte(),
+				tx.GetMetadata())
+			if err != nil {
+				continue
+			}
+			res = append(res, unstakeIns)
 		}
 	}
 	for _, v := range stakeInsMap {
@@ -64,7 +70,7 @@ func (bP *BInsProcessor) BuildInstructionsFromTransactions(txs []metadata.Transa
 			res = append(res, v)
 		}
 	}
-	if len(stopIns.PublicKeys) != 0 {
+	if len(stopIns.CommitteePublicKeys) != 0 {
 		res = append(res, stopIns)
 	}
 	return nil

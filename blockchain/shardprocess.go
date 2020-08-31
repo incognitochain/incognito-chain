@@ -164,6 +164,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+
 	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	var err2 error
 	defer func() {
@@ -327,6 +328,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
 	}
+
 	if !isPreSign {
 		totalInstructions := []string{}
 		for _, value := range txInstructions {
@@ -503,6 +505,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 
 	env := committeestate.
 		NewShardEnvBuilder().
+		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
 		Build()
 
@@ -705,13 +708,11 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
-
 	beaconInstructions, stakingTx, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx.Set(stakePublicKey, txHash)
 	}
@@ -751,6 +752,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
+
 		return nil, nil, nil, NewBlockChainError(UpdateShardCommitteeStateError, err)
 	}
 	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)
@@ -930,9 +932,20 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
+
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
+
+	// if len(shardBlock.Body.Transactions) != 0 {
+	// 	Logger.log.Info("[unstake] processStoreShardBlock/Transactions: ", shardBlock.Body.Transactions)
+	// 	for _, v := range shardBlock.Body.Transactions {
+	// 		Logger.log.Info("[unstake] tx:", v)
+	// 		Logger.log.Info("[unstake] tx.Hash().String():", v.Hash().String())
+	// 		Logger.log.Info("[unstake] tx.GetType():", v.GetType())
+	// 		Logger.log.Info("[unstake] string(tx.GetSender()):", string(v.GetSender()))
+	// 	}
+	// }
 
 	for index, tx := range shardBlock.Body.Transactions {
 		if err := rawdbv2.StoreTransactionIndex(blockchain.GetShardChainDatabase(shardID), *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {

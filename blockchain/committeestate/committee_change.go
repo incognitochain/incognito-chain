@@ -25,6 +25,7 @@ type CommitteeChange struct {
 	BeaconCommitteeReplaced            [2][]incognitokey.CommitteePublicKey
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
+	Unstake                            []string
 }
 
 func NewCommitteeChange() *CommitteeChange {
