@@ -86,6 +86,7 @@ CONTINUE_VERIFY:
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Hash()
+	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	// if beaconBlock.GetHeight() == 2 {
 	// 	bcTmp = 0

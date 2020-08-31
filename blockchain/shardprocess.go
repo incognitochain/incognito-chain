@@ -575,8 +575,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Unable to get required crossShard blocks from pool in time"))
 	}
 	for sid, v := range crossShardBlksFromPool {
-		for _, b := range v {
+		heightList := make([]uint64, len(v))
+		for i, b := range v {
 			toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*types.CrossShardBlock))
+			heightList[i] = b.(*types.CrossShardBlock).GetHeight()
 		}
 		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardValidator from shard %v: %v", toShard, sid, heightList)
 
