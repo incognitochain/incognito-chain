@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/instruction"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"os"
-	"path/filepath"
 
 	"github.com/incognitochain/incognito-chain/syncker"
 
@@ -47,7 +48,7 @@ var (
 	rpcLogger              = backendLog.Logger("RPC log", false)
 	rpcServiceLogger       = backendLog.Logger("RPC service log", false)
 	rpcServiceBridgeLogger = backendLog.Logger("RPC service DeBridge log", false)
-	netsyncLogger          = backendLog.Logger("Netsync log", true)
+	netsyncLogger          = backendLog.Logger("Netsync log", false)
 	peerLogger             = backendLog.Logger("Peer log", true)
 	dbLogger               = backendLog.Logger("Database log", false)
 	dbmpLogger             = backendLog.Logger("Mempool Persistence DB log", false)

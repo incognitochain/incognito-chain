@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
 
@@ -95,6 +96,10 @@ func (s *Engine) WatchCommitteeChange() {
 			BFTProcess.Stop()
 		}
 	}
+
+	monitor.SetGlobalParam("Role", s.curringMiningState.role)
+	monitor.SetGlobalParam("Layer", s.curringMiningState.layer)
+	monitor.SetGlobalParam("ShardID", s.curringMiningState.chainID)
 
 	var miningProcess ConsensusInterface = nil
 	//TODO: optimize - if in pending start to listen propose block, but not vote

@@ -217,7 +217,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			time.AfterFunc(time.Second*2, s.insertBeaconBlockFromPool)
 		}
 	}()
-	Logger.Debugf("insertBeaconBlockFromPool Start")
+	//Logger.Debugf("insertBeaconBlockFromPool Start")
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.chain.GetAllViewHash() {
 		blks := s.beaconPool.GetBlockByPrevHash(viewHash)
@@ -225,7 +225,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			if blk == nil {
 				continue
 			}
-			Logger.Debugf("insertBeaconBlockFromPool blk %v %v", blk.GetHeight(), blk.Hash().String())
+			//Logger.Debugf("insertBeaconBlockFromPool blk %v %v", blk.GetHeight(), blk.Hash().String())
 			//if already insert and error, last time insert is < 10s then we skip
 			insertTime, ok := insertBeaconTimeCache.Get(viewHash.String())
 			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
@@ -240,14 +240,12 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 				}
 			}
 
-			Logger.Infof("Syncker: Insert beacon from pool %v", blk.(common.BlockInterface).GetHeight())
-			if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
-				return
-			}
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
+			//must validate this block when insert
 			if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
-				return
+				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
+				continue
 			}
 			s.beaconPool.RemoveBlock(blk.Hash())
 		}
@@ -337,7 +335,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 					} else {
 						insertBlkCnt += successBlk
 						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
-						if successBlk >= len(blockBuffer) {
+						if successBlk >= len(blockBuffer) || successBlk == 0 {
 							break
 						}
 						blockBuffer = blockBuffer[successBlk:]

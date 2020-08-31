@@ -70,7 +70,8 @@ const (
 	//board and proposal parameters
 	MainnetBasicReward = 1386666000 //1.386666 PRV
 	//MainETHContractAddressStr = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7" // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
-	MainETHContractAddressStr               = "0x3c8ec94213f09A1575f773470830124dfb40042e"                                                              // v3-main - mainnet
+	//MainETHContractAddressStr               = "0x3c8ec94213f09A1575f773470830124dfb40042e"                                                              // v3-main - mainnet
+	MainETHContractAddressStr               = "0x6CC3873C3ca91cf5500DaD8B1A2c620B4f20507c"                                                              // v4-main - mainnet
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
@@ -127,12 +128,7 @@ const (
 	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	TestnetBasicReward = 400000000 //40 mili PRV
-	//TestnetETHContractAddressStr            = "0x6e8CDB333ba1573Fffe195A545F3031Cff9Da008"
-	//TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
-	//TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
-	//TestnetETHContractAddressStr            = "0x79382223241799fc1706a85adf9df4231715A731"
-	//TestnetETHContractAddressStr            = "0x31F7293dEebCEd75d035De0843498D87B90a3eee"
+	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetETHContractAddressStr            = "0x98cD12B85Df38c621d37cD6222E262835a7E87B9"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
@@ -149,6 +145,48 @@ const (
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 )
 
+// CONSTANT for network TESTNET-2
+const (
+	Testnet2                 = 0x32
+	Testnet2Name             = "testnet-2"
+	Testnet2DefaultPort      = "9444"
+	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
+	Testnet2Epoch            = 100
+	Testnet2RandomTime       = 50
+	Testnet2Offset           = 1
+	Testnet2SwapOffset       = 1
+	Testnet2AssignOffset     = 2
+
+	TestNet2ShardCommitteeSize     = 32
+	TestNet2MinShardCommitteeSize  = 4
+	TestNet2BeaconCommitteeSize    = 4
+	TestNet2MinBeaconCommitteeSize = 4
+	TestNet2ActiveShards           = 8
+	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	TestNet2MinBeaconBlkInterval = 10 * time.Second //second
+	TestNet2MaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNet2MinShardBlkInterval  = 10 * time.Second //second
+	TestNet2MaxShardBlkCreation  = 6 * time.Second  //second
+
+	//board and proposal parameters
+	Testnet2BasicReward                      = 400000000 //40 mili PRV
+	Testnet2ETHContractAddressStr            = "0x4A4cC6451D8B8645bDeE96e6a0967b471eC286DD"
+	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
+	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
+	// relaying header chain
+	Testnet2BNBChainID        = "Binance-Chain-Ganges"
+	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
+	Testnet2BTCDataFolderName = "btcrelayingv9"
+
+	// BNB fullnode
+	Testnet2BNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
+	Testnet2BNBFullNodeProtocol = "https"
+	Testnet2BNBFullNodePort     = "443"
+	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+)
+
 // VARIABLE for testnet
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
 var PreSelectBeaconNodeTestnetSerializedPaymentAddress = []string{}
@@ -163,6 +201,7 @@ var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
 var IsTestNet = true
+var IsTestNet2 = false
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {

@@ -110,7 +110,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	//get view that block link to
-	preHash := beaconBlock.Header.PreviousBlockHash
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
 		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
@@ -130,6 +129,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
+
 	// Verify beaconBlock with previous best state
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
