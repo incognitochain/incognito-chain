@@ -37,7 +37,7 @@ func (s *ConfirmShardSwapInstruction) GetType() string {
 }
 
 func (s *ConfirmShardSwapInstruction) ToString() []string {
-	ConfirmShardSwapInstructionStr := []string{REQUEST_SHARD_SWAP_ACTION}
+	ConfirmShardSwapInstructionStr := []string{CONFIRM_SHARD_SWAP_ACTION}
 	ConfirmShardSwapInstructionStr = append(ConfirmShardSwapInstructionStr, strings.Join(s.InPublicKeys, SPLITTER))
 	ConfirmShardSwapInstructionStr = append(ConfirmShardSwapInstructionStr, strings.Join(s.OutPublicKeys, SPLITTER))
 	ConfirmShardSwapInstructionStr = append(ConfirmShardSwapInstructionStr, fmt.Sprintf("%v", s.ChainID))
