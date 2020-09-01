@@ -591,13 +591,15 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
-func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.StateDB, beaconHeight uint64, beaconHash common.Hash) BeaconCommitteeEngine {
+func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) BeaconCommitteeEngine {
+	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
-	for i := 0; i < activeShards; i++ {
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate,
-		nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+		nextEpochBeaconCandidate, currentEpochBeaconCandidate,
+		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCurrentValidator := currentValidator[statedb.BeaconChainID]
 	beaconSubstituteValidator := substituteValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
@@ -624,11 +626,12 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 		stakingTx,
 	)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV1(
-		beaconHeight, beaconHash, beaconCommitteeState)
+		beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, beaconCommitteeState)
 	return beaconCommitteeEngine
 }
 
 func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) BeaconCommitteeEngine {
+	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	var numberOfAssignedCandidate int
 	numberOfRound := make(map[string]int)
