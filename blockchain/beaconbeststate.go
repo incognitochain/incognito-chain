@@ -628,7 +628,7 @@ func InitBeaconCommitteeEngineV1(activeShards int, consensusStateDB *statedb.Sta
 	return beaconCommitteeEngine
 }
 
-func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params) BeaconCommitteeEngine {
+func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) BeaconCommitteeEngine {
 	shardIDs := []int{statedb.BeaconChainID}
 	var numberOfAssignedCandidate int
 	numberOfRound := make(map[string]int)
@@ -650,10 +650,33 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		shardSubstitute[byte(k)] = v
 	}
 	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
+		tempBeaconHeight := beaconBestState.BeaconHeight
+		for tempBeaconHeight%params.Epoch > params.RandomTime {
+			tempBeaconHeight--
+		}
+		tempRootHash, err := bc.GetBeaconConsensusRootHash(beaconBestState, tempBeaconHeight)
+		if err != nil {
+			panic(err)
+		}
+		dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
+		consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash, dbWarper)
+		snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
+			_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+		snapshotShardCommonPool := snapshotNextEpochShardCandidate
+		snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+		snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+		delete(snapshotCurrentValidator, statedb.BeaconChainID)
+		delete(snapshotSubstituteValidator, statedb.BeaconChainID)
+		for k, v := range snapshotCurrentValidator {
+			snapshotShardCommittee[byte(k)] = v
+		}
+		for k, v := range snapshotSubstituteValidator {
+			snapshotShardSubstitute[byte(k)] = v
+		}
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
-			shardCommonPool,
-			shardCommittee,
-			shardSubstitute,
+			snapshotShardCommonPool,
+			snapshotShardCommittee,
+			snapshotShardSubstitute,
 			params.MaxSwapOrAssign,
 		)
 	}
@@ -677,7 +700,7 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
+	bRH, e := blockchain.GetBeaconRootsHash(height)
 	if e != nil {
 		return common.Hash{}, e
 	}
@@ -686,14 +709,14 @@ func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *Beacon
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(beaconbestState.consensusStateDB.Copy(), height)
+	bRH, e := blockchain.GetBeaconRootsHash(height)
 	if e != nil {
 		return common.Hash{}, e
 	}
 	return bRH.FeatureStateDBRootHash, nil
 }
 
-func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, height uint64) (*BeaconRootHash, error) {
+func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash, error) {
 	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
 	if e != nil {
 		return nil, e
