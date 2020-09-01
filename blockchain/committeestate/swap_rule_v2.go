@@ -16,22 +16,22 @@ func createRequestShardSwapInstructionV2(
 	shardID byte,
 	substitutes []string,
 	committees []string,
-	maxSwapOffset int,
+	maxCommitteeSize int,
 	numberOfRound map[string]int,
 	epoch uint64,
 	randomNumber int64,
 ) (*instruction.RequestShardSwapInstruction, []string, error) {
-	newSubstitutes, _, swappedOutCommittees, swappInCommittees, err := swapV2(
+	newSubstitutes, _, swappedOutCommittees, swapInCommittees, err := swapV2(
 		substitutes,
 		committees,
-		maxSwapOffset,
+		maxCommitteeSize,
 		numberOfRound,
 	)
 	if err != nil {
 		return &instruction.RequestShardSwapInstruction{}, []string{}, err
 	}
 	requestShardSwapInstruction := instruction.NewRequestShardSwapInstructionWithValue(
-		swappInCommittees,
+		swapInCommittees,
 		swappedOutCommittees,
 		int(shardID),
 		epoch,
@@ -73,10 +73,11 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 // #1 new committees list
 // #3 swapped out committees list (removed from committees list
 // #4 swapped in committees list (new committees from substitutes list)
+// TODO: @hung rewrite, do swapoffset have another max-swapoffset parameter
 func swapV2(
 	substitutes []string,
 	committees []string,
-	maxSwapOffSet int,
+	maxCommitteeSize int,
 	numberOfRound map[string]int,
 ) ([]string, []string, []string, []string, error) {
 	// if swap offset = 0 then do nothing
@@ -86,16 +87,16 @@ func swapV2(
 		// return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")
 		return committees, substitutes, []string{}, []string{}, nil
 	}
-	// swap offset must be less than or equal to maxSwapOffSet
-	// maxSwapOffSet mainnet is 10 => swapOffset is <= 10
-	if swapOffset > maxSwapOffSet {
-		swapOffset = maxSwapOffSet
+	// swap offset must be less than or equal to maxCommitteeSize
+	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
+	if swapOffset > maxCommitteeSize {
+		swapOffset = maxCommitteeSize
 	}
 	// swapOffset must be less than or equal to substitutes length
 	if swapOffset > len(substitutes) {
 		swapOffset = len(substitutes)
 	}
-	vacantSlot := maxSwapOffSet - len(committees)
+	vacantSlot := maxCommitteeSize - len(committees)
 	// vacantSlot is greater than number of substitutes
 	if vacantSlot >= swapOffset {
 		swappedInCommittees := substitutes[:swapOffset]
@@ -104,12 +105,15 @@ func swapV2(
 		substitutes = substitutes[swapOffset:]
 		return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
 	} else {
-		// number of substitutes is greater than vacantSlot
-		// push substitutes into vacant slot in committee list until full
-		swappedInCommittees := substitutes[:vacantSlot]
-		substitutes = substitutes[vacantSlot:]
-		committees = append(committees, swappedInCommittees...)
-
+		// vacantSlot must be equal to or greater than 0
+		swappedInCommittees := []string{}
+		if vacantSlot == 0 {
+			// number of substitutes is greater than vacantSlot
+			// push substitutes into vacant slot in committee list until full
+			swappedInCommittees := substitutes[:vacantSlot]
+			substitutes = substitutes[vacantSlot:]
+			committees = append(committees, swappedInCommittees...)
+		}
 		swapOffsetAfterFillVacantSlot := swapOffset - vacantSlot
 		// swapped out committees: record swapped out committees
 		tryToSwappedOutCommittees := committees[:swapOffsetAfterFillVacantSlot]

@@ -21,7 +21,7 @@ func CreateGenesisBeaconBlock(
 	beaconAutoStaking := []string{}
 	txStakes := []string{}
 	for i := 0; i < len(genesisParams.PreSelectShardNodeSerializedPubkey); i++ {
-		shardAutoStaking = append(shardAutoStaking, "false")
+		shardAutoStaking = append(shardAutoStaking, "true")
 		txStakes = append(txStakes, "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d")
 	}
 	for i := 0; i < len(genesisParams.PreSelectBeaconNodeSerializedPubkey); i++ {

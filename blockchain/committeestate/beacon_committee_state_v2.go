@@ -17,8 +17,7 @@ import (
 )
 
 type BeaconCommitteeStateV2 struct {
-	beaconCommittee []incognitokey.CommitteePublicKey
-
+	beaconCommittee            []incognitokey.CommitteePublicKey
 	shardCommittee             map[byte][]incognitokey.CommitteePublicKey
 	shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
 	shardCommonPool            []incognitokey.CommitteePublicKey
@@ -85,6 +84,7 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	newB.reset()
 	newB.beaconCommittee = b.beaconCommittee
 	newB.shardCommonPool = b.shardCommonPool
+	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	for k, v := range b.shardCommittee {
 		newB.shardCommittee[k] = v
 	}
@@ -148,7 +148,7 @@ func (engine BeaconCommitteeEngineV2) GetCandidateBeaconWaitingForCurrentRandom(
 
 //GetCandidateShardWaitingForNextRandom :
 func (engine BeaconCommitteeEngineV2) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
-	return engine.finalBeaconCommitteeStateV2.shardCommonPool
+	return engine.finalBeaconCommitteeStateV2.shardCommonPool[engine.finalBeaconCommitteeStateV2.numberOfAssignedCandidates:]
 }
 
 //GetCandidateBeaconWaitingForNextRandom :
@@ -275,8 +275,6 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 		}
 		if inst[0] == instruction.STAKE_ACTION {
 			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
-			newBeaconCandidates := []incognitokey.CommitteePublicKey{}
-			newShardCandidates := []incognitokey.CommitteePublicKey{}
 			for index, candidate := range stakeInstruction.PublicKeyStructs {
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 				b.autoStake[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
@@ -327,8 +325,9 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			newB.shardCommonPool,
 			newB.shardCommittee,
 			newB.shardSubstitute,
-			env.MaxSwapOrAssign,
+			env.MaxCommitteeSize,
 		)
+		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newB.numberOfAssignedCandidates)
 	}
 
 	for _, inst := range env.BeaconInstructions {
@@ -354,6 +353,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			}
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
+			Logger.log.Infof("Block %+v, Committee Change %+v", env.BeaconHeight, committeeChange.ShardSubstituteAdded)
 		case instruction.CONFIRM_SHARD_SWAP_ACTION:
 			confirmShardSwapInstruction, err := instruction.ValidateAndImportConfirmShardSwapInstructionFromString(inst)
 			if err != nil {
@@ -395,13 +395,20 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllRequestShardSwapInstruction(en
 		committees := engine.finalBeaconCommitteeStateV2.shardCommittee[shardID]
 		committees = committees[env.NumberOfFixedBlockValidator:]
 		substitutes := engine.finalBeaconCommitteeStateV2.shardSubstitute[shardID]
+		if len(substitutes) == 0 {
+			continue
+		}
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
+		//TODO: @hung rewrite swapV2
+		// 1. don't create swap: len(substitutes) == 0 and len(slashedCommittee) == 0
+		// 2. create swap: len(substitutes) == 0 and len(slashedCommittee) > 0
+		// 3. create swap: len(substitutes) > 0 and len(slashedCommittee) == 0
 		requestShardSwapInstruction, _, err := createRequestShardSwapInstructionV2(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
-			env.MaxSwapOrAssign,
+			env.MaxCommitteeSize,
 			engine.finalBeaconCommitteeStateV2.numberOfRound,
 			env.Epoch,
 			env.RandomNumber,
@@ -424,15 +431,20 @@ func SnapshotShardCommonPoolV2(
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
 	maxAssignPerShard int,
 ) (numberOfAssignedCandidates int) {
-	for k, v := range shardSubstitute {
+	for k, v := range shardCommittee {
 		shardCommitteeSize := len(v)
-		shardCommitteeSize += len(shardCommittee[k])
+		shardCommitteeSize += len(shardSubstitute[k])
 		assignPerShard := shardCommitteeSize / MAX_SWAP_OR_ASSIGN_PERCENT
+		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, shardCommitteeSize %+v", k, shardCommitteeSize)
+		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, assignPerShard %+v", k, assignPerShard)
 		if assignPerShard > maxAssignPerShard {
 			assignPerShard = maxAssignPerShard
 		}
+		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, maxAssignPerShard %+v", k, maxAssignPerShard)
 		numberOfAssignedCandidates += assignPerShard
+		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
+	Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard Common Pool Size %+v", len(shardCommonPool))
 	if numberOfAssignedCandidates > len(shardCommonPool) {
 		numberOfAssignedCandidates = len(shardCommonPool)
 	}
@@ -491,7 +503,9 @@ func (b *BeaconCommitteeStateV2) processStopAutoStakeInstruction(
 func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 	rand int64, activeShards int, committeeChange *CommitteeChange) *CommitteeChange {
 	numberOfValidator := make([]int, activeShards)
+	Logger.log.Infof("processAssignWithRandomInstruction | shard common pool %+v", len(b.shardCommonPool))
 	candidates, _ := incognitokey.CommitteeKeyListToString(b.shardCommonPool[:b.numberOfAssignedCandidates])
+	Logger.log.Infof("processAssignWithRandomInstruction | candidates %+v", len(candidates))
 	for i := 0; i < activeShards; i++ {
 		numberOfValidator[byte(i)] += len(b.shardSubstitute[byte(i)])
 		numberOfValidator[byte(i)] += len(b.shardCommittee[byte(i)])
@@ -508,6 +522,8 @@ func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 	committeeChange.NextEpochShardCandidateRemoved = b.shardCommonPool[:b.numberOfAssignedCandidates]
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
+	Logger.log.Infof("processAssignWithRandomInstruction | shard common pool %+v", len(b.shardCommonPool))
+	Logger.log.Infof("processAssignWithRandomInstruction | candidates %+v", len(candidates))
 	return committeeChange
 }
 

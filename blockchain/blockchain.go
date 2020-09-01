@@ -160,10 +160,14 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
+	var committeeEngine ShardCommitteeEngine
+	if blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height >= 1 {
+		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
+	} else {
+		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
+	}
 
-	engine := committeestate.NewShardCommitteeEngine(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
-
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, engine)
+	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, committeeEngine)
 
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
@@ -500,7 +504,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
-		shardCommitteeEngine := InitShardCommitteeEngine(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+		var shardCommitteeEngine ShardCommitteeEngine
+		if v.BestBlock.Header.BeaconHeight >= blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height {
+			shardCommitteeEngine = InitShardCommitteeEngineV2(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+		} else {
+			shardCommitteeEngine = InitShardCommitteeEngineV1(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+		}
 		v.shardCommitteeEngine = shardCommitteeEngine
 		mapStakingTx, err := blockchain.GetShardStakingTx(v.ShardID, v.BeaconHeight)
 		if err != nil {

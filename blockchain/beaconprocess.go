@@ -628,7 +628,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if err != nil {
 		return nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
-
+	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 	return beaconBestState, hashes, committeeChange, nil

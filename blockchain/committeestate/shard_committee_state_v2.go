@@ -53,7 +53,7 @@ func NewShardCommitteeStateV2WithValue(shardCommittee, shardSubstitute []incogni
 	}
 }
 
-//NewShardCommitteeEngine is default constructor for ShardCommitteeEngineV2
+//NewShardCommitteeEngineV1 is default constructor for ShardCommitteeEngineV2
 //Output: pointer of ShardCommitteeEngineV2
 func NewShardCommitteeEngineV2(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV2 *ShardCommitteeStateV2) *ShardCommitteeEngineV2 {
@@ -211,6 +211,7 @@ func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env Sh
 			continue
 		}
 		if beaconInstruction[0] == instruction.REQUEST_SHARD_SWAP_ACTION {
+			Logger.log.Infof("GenerateConfirmShardSwapInstruction, shard height %+v, beacon height %+v", env.ShardHeight(), env.BeaconHeight())
 			requestShardSwapInstruction, err := instruction.ValidateAndImportRequestShardSwapInstructionFromString(beaconInstruction)
 			if err != nil {
 				// Return Error for debug purpose
@@ -226,6 +227,7 @@ func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env Sh
 					return &instruction.ConfirmShardSwapInstruction{}, []string{}, err
 				}
 				newShardCommittees = append(fixedProducerShardValidators, newShardCommittees...)
+				Logger.log.Infof("GenerateConfirmShardSwapInstruction, confirmShardSwapInstruction %+v ", confirmShardSwapInstruction)
 				return confirmShardSwapInstruction, newShardCommittees, nil
 			}
 		}

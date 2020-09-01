@@ -383,13 +383,13 @@ func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, 
 	return sRH, err
 }
 
-//InitShardCommitteeEngine : Init shard committee engine for every time restore process
+//InitShardCommitteeEngineV1 : Init shard committee engine for every time restore process
 //Pre-conditions: Already blocks, best view have been initialized before
 //Input:
 // + consensusStateDB: instance of statedb -> query shard committees and shard pending validators
 // + shardHeight, shardID, shardHash: Basic data for shard committee engine
 //Output: [Interface] ShardCommitteeEngine
-func InitShardCommitteeEngine(
+func InitShardCommitteeEngineV1(
 	consensusStateDB *statedb.StateDB,
 	shardHeight uint64,
 	shardID byte,
@@ -399,7 +399,28 @@ func InitShardCommitteeEngine(
 	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
 
 	shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
-	shardCommitteeEngine := committeestate.NewShardCommitteeEngine(shardHeight, shardHash, shardID, shardCommitteeState)
+	shardCommitteeEngine := committeestate.NewShardCommitteeEngineV1(shardHeight, shardHash, shardID, shardCommitteeState)
+
+	return shardCommitteeEngine
+}
+
+//InitShardCommitteeEngineV2 : Init shard committee engine for every time restore process
+//Pre-conditions: Already blocks, best view have been initialized before
+//Input:
+// + consensusStateDB: instance of statedb -> query shard committees and shard pending validators
+// + shardHeight, shardID, shardHash: Basic data for shard committee engine
+//Output: [Interface] ShardCommitteeEngine
+func InitShardCommitteeEngineV2(
+	consensusStateDB *statedb.StateDB,
+	shardHeight uint64,
+	shardID byte,
+	shardHash common.Hash) ShardCommitteeEngine {
+
+	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
+
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, shardPendingValidators)
+	shardCommitteeEngine := committeestate.NewShardCommitteeEngineV2(shardHeight, shardHash, shardID, shardCommitteeState)
 
 	return shardCommitteeEngine
 }
