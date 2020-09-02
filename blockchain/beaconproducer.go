@@ -247,6 +247,7 @@ func (blockchain *BlockChain) GetShardState(
 //	4. Bridge Instruction
 //	5. Accepted BlockReward Instruction
 //	6. StopAutoStakingInstruction
+// TODO: @hung get confirm_shard_swap instruction
 func (blockchain *BlockChain) GetShardStateFromBlock(
 	curView *BeaconBestState,
 	newBeaconHeight uint64,

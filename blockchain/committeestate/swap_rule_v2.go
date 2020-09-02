@@ -47,7 +47,6 @@ func createRequestShardSwapInstructionV2(
 // #2: list of removed validator
 func removeValidatorV2(validators []string, removedValidators []string) ([]string, error) {
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
-	remainingValidators := []string{}
 	for _, removedValidator := range removedValidators {
 		found := false
 		index := 0
@@ -64,7 +63,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 			return []string{}, fmt.Errorf("Try to removed validator %+v but not found in list %+v", removedValidator, validators)
 		}
 	}
-	return remainingValidators, nil
+	return validators, nil
 }
 
 // swapV2 swap substitute into committee
