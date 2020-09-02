@@ -505,7 +505,7 @@ func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 	rand int64, activeShards int, committeeChange *CommitteeChange) *CommitteeChange {
 	candidates, _ := incognitokey.CommitteeKeyListToString(b.shardCommonPool[:b.numberOfAssignedCandidates])
 	committeeChange = b.assign(candidates, rand, activeShards, committeeChange)
-	committeeChange.NextEpochShardCandidateRemoved = b.shardCommonPool[:b.numberOfAssignedCandidates]
+	committeeChange.NextEpochShardCandidateRemoved = append(committeeChange.NextEpochShardCandidateRemoved, b.shardCommonPool[:b.numberOfAssignedCandidates]...)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
 	return committeeChange
