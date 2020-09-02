@@ -322,12 +322,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 	rewardByEpochInstruction := [][]string{}
 	tempShardStates := make(map[byte][]types.ShardState)
-	stakeInstructions := []*instruction.StakeInstruction{}
+	shardInstruction := &shardInstruction{
+		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
+	}
 	validStakePublicKeys := []string{}
-	swapInstructions := make(map[byte][]*instruction.SwapInstruction)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
-	stopAutoStakeInstructions := []*instruction.StopAutoStakeInstruction{}
 	statefulActionsByShardID := map[byte][][]string{}
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 
@@ -385,13 +385,13 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
+				tempShardState, newShardInstruction, tempValidStakePublicKeys,
+					bridgeInstruction, acceptedBlockRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
+					curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
-				stakeInstructions = append(stakeInstructions, stakeInstruction...)
-				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
+				shardInstruction.add(newShardInstruction)
 				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
-				stopAutoStakeInstructions = append(stopAutoStakeInstructions, stopAutoStakingInstruction...)
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 				// group stateful actions by shardID
 				_, found := statefulActionsByShardID[shardID]
@@ -410,7 +410,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,
-		stakeInstructions, swapInstructions, stopAutoStakeInstructions,
+		shardInstruction,
 		bridgeInstructions, acceptedBlockRewardInstructions,
 		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain)
 	if err != nil {

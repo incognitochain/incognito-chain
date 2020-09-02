@@ -17,10 +17,11 @@ import (
 )
 
 type BeaconCommitteeStateV2 struct {
-	beaconCommittee            []incognitokey.CommitteePublicKey
-	shardCommittee             map[byte][]incognitokey.CommitteePublicKey
-	shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
-	shardCommonPool            []incognitokey.CommitteePublicKey
+	beaconCommittee []incognitokey.CommitteePublicKey
+	shardCommittee  map[byte][]incognitokey.CommitteePublicKey
+	shardSubstitute map[byte][]incognitokey.CommitteePublicKey
+	shardCommonPool []incognitokey.CommitteePublicKey
+	// TODO: @hung record already requested shard substitute/committee
 	numberOfAssignedCandidates int
 
 	autoStake      map[string]bool                   // committee public key => reward receiver payment address
@@ -551,8 +552,7 @@ func (b *BeaconCommitteeStateV2) processConfirmShardSwapInstruction(
 		}
 		// add new public key to committees
 		committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
-		fixedProducerShardValidators := b.shardCommittee[shardID][:env.NumberOfFixedBlockValidator]
-		b.shardCommittee[shardID] = append(fixedProducerShardValidators, confirmShardSwapInstruction.InPublicKeyStructs...)
+		b.shardCommittee[shardID] = append(b.shardCommittee[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
 	}
 	// delete out public key out of current committees
 	if len(confirmShardSwapInstruction.OutPublicKeys) > 0 {
