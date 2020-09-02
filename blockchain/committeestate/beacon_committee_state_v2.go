@@ -2,10 +2,11 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/pkg/errors"
 	"reflect"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain/instructionsprocessor"
 
@@ -352,6 +353,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 			}
+			//@tin here
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
 		case instruction.CONFIRM_SHARD_SWAP_ACTION:
@@ -359,6 +361,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+			//@tin here
 			committeeChange, err = newB.processConfirmShardSwapInstruction(
 				confirmShardSwapInstruction, env, committeeChange)
 			if err != nil {
@@ -506,10 +509,10 @@ func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], candidates...)
 		committeeChange.ShardSubstituteAdded[shardID] = candidates
 		for _, tempCandidate := range tempCandidates {
-			b.numberOfRound[tempCandidate] += 1
+			b.numberOfRound[tempCandidate]++
 		}
 	}
-	committeeChange.NextEpochShardCandidateRemoved = b.shardCommonPool[:b.numberOfAssignedCandidates]
+	committeeChange.NextEpochShardCandidateRemoved = b.shardCommonPool[:b.numberOfAssignedCandidates] //@tin current shard candidate removed?
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
 	return committeeChange
