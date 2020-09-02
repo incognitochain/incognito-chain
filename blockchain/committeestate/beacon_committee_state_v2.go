@@ -522,7 +522,7 @@ func (b *BeaconCommitteeStateV2) assign(
 	for shardID, tempCandidates := range assignedCandidates {
 		candidates, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], candidates...)
-		committeeChange.ShardSubstituteAdded[shardID] = candidates
+		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], candidates...)
 		for _, tempCandidate := range tempCandidates {
 			b.numberOfRound[tempCandidate] += 1
 		}
