@@ -376,7 +376,7 @@ func Test_swapV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2, got3, err := swapV2(tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffSet, tt.args.numberOfRound)
+			got, got1, got2, got3, err := swapV2(tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffSet)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("swapV2() error = %v, wantErr %v", err, tt.wantErr)
 				return
