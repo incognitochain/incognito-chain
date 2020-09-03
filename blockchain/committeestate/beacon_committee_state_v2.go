@@ -310,10 +310,24 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 // BeaconCommitteeStateV2
 func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
+	var err error
+	incurredInstructions := [][]string{}
+
 	engine.uncommittedBeaconCommitteeStateV2.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV2.mu.Unlock()
 
 	engine.finalBeaconCommitteeStateV2.mu.RLock()
+
+	env.unassignedCommonPool, err = engine.finalBeaconCommitteeStateV2.unassignedCommonPool()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	env.allSubstituteCommittees, err = engine.finalBeaconCommitteeStateV2.getAllSubstituteCommittees()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	env.allCandidateSubstituteCommittee = append(env.unassignedCommonPool, env.allSubstituteCommittees...)
+
 	engine.finalBeaconCommitteeStateV2.clone(engine.uncommittedBeaconCommitteeStateV2)
 	env.allCandidateSubstituteCommittee = engine.finalBeaconCommitteeStateV2.getAllCandidateSubstituteCommittee()
 	engine.finalBeaconCommitteeStateV2.mu.RUnlock()
@@ -374,10 +388,24 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 			}
 			committeeChange = newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
+		case instruction.UNSTAKE_ACTION:
+			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
+				continue
+			}
+			tempIncurredIns := [][]string{}
+			committeeChange, tempIncurredIns, err =
+				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			if tempIncurredIns != nil {
+				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
+			}
 		}
 	}
-
-	err := newB.processAutoStakingChange(committeeChange, env)
+	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
 		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}

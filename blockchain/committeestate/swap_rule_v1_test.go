@@ -96,7 +96,7 @@ func TestUtils(t *testing.T) {
 func TestShuffleShardCandidate(t *testing.T) {
 	shuffledCandiates := shuffleShardCandidate(candidates, randomNumber)
 	if !reflect.DeepEqual(shuffledCandiates, expectedShuffledCandidates) {
-		t.Fatalf("Expect shuffled candidates to be %+v \n but get %+v", priorityKeys, shuffledCandiates)
+		t.Fatalf("Expect shuffled unassignedCommonPool to be %+v \n but get %+v", priorityKeys, shuffledCandiates)
 	}
 }
 func TestAssignShardCandidate(t *testing.T) {

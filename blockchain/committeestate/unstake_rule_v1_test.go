@@ -103,7 +103,7 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{"123"},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					substituteCandidates: []string{"123"},
+					unassignedCommonPool: []string{"123"},
 				},
 				committeeChange: &CommitteeChange{},
 			},
@@ -129,7 +129,7 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key2},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					substituteCandidates: []string{key2},
+					unassignedCommonPool: []string{key2},
 					ConsensusStateDB:     sDB,
 				},
 				committeeChange: &CommitteeChange{},
@@ -157,7 +157,7 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					substituteCandidates: []string{key},
+					unassignedCommonPool: []string{key},
 					ConsensusStateDB:     validSDB,
 				},
 			},
@@ -281,11 +281,11 @@ func TestBeaconCommitteeStateV1_getSubtituteCandidates(t *testing.T) {
 			}
 			got, err := b.getSubstituteCandidates()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeStateV1.getSubstituteCandidates() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BeaconCommitteeStateV1.unassignedCommonPool() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeStateV1.getSubstituteCandidates() = %v, want %v", got, tt.want)
+				t.Errorf("BeaconCommitteeStateV1.unassignedCommonPool() = %v, want %v", got, tt.want)
 			}
 		})
 	}

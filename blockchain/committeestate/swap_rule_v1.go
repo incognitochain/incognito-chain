@@ -237,7 +237,7 @@ func removeValidatorV1(validators []string, removedValidators []string) ([]strin
 	return remainingValidators, nil
 }
 
-// Shuffle Candidate: suffer candidates with random number and return suffered list
+// Shuffle Candidate: suffer unassignedCommonPool with random number and return suffered list
 // Candidate Value Concatenate with Random Number
 // then Hash and Obtain Hash Value
 // Sort Hash Value Then Re-arrange Candidate corresponding to Hash Value

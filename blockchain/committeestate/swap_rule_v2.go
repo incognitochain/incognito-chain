@@ -128,7 +128,7 @@ func swapV2(
 	}
 }
 
-// assignShardCandidateV2 assign candidates into shard pool with random number
+// assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number
 func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 	total := 0
 	for _, v := range numberOfValidators {

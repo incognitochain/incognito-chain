@@ -11,7 +11,7 @@ import (
 
 //processUnstakeInstruction : process unstake instruction from beacon block
 
-func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
+func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	unstakeInstruction *instruction.UnstakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
@@ -22,8 +22,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	stakingTxs := make(map[byte][]string)
 	percentReturns := make(map[byte][]uint)
 	indexNextEpochShardCandidate := make(map[string]int)
-
-	for i, v := range b.nextEpochShardCandidate {
+	for i, v := range b.shardCommonPool {
 		key, err := v.ToBase58()
 		if err != nil {
 			return newCommitteeChange, nil, err
@@ -31,9 +30,8 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 		indexNextEpochShardCandidate[key] = i
 	}
 
-	for _, committeePublicKey := range unstakeInstruction.CommitteePublicKeys {
+	for index, committeePublicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(committeePublicKey, env.unassignedCommonPool) == -1 {
-			// TODO: @tin is it possible for one key to be not in any list?
 			if common.IndexOfStr(committeePublicKey, env.allSubstituteCommittees) != -1 {
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[committeePublicKey]; ok {
@@ -42,25 +40,12 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 				}
 			}
 		} else {
-			if _, ok := b.autoStake[committeePublicKey]; ok {
-				delete(b.autoStake, committeePublicKey)
-			}
-
-			if _, ok := b.stakingTx[committeePublicKey]; ok {
-				delete(b.stakingTx, committeePublicKey)
-			}
-			committeePublicKeyStruct := incognitokey.CommitteePublicKey{}
-			err := committeePublicKeyStruct.FromBase58(committeePublicKey)
-			if err != nil {
-				return newCommitteeChange, nil, err
-			}
-			rewardReceiverKey := committeePublicKeyStruct.GetIncKeyBase58()
-			if _, ok := b.rewardReceiver[rewardReceiverKey]; ok {
-				delete(b.rewardReceiver, rewardReceiverKey)
-			}
-
+			delete(b.autoStake, committeePublicKey)
+			delete(b.stakingTx, committeePublicKey)
+			delete(b.numberOfRound, committeePublicKey)
+			delete(b.rewardReceiver, unstakeInstruction.CommitteePublicKeysStruct[index].GetIncKeyBase58())
 			indexCandidate := indexNextEpochShardCandidate[committeePublicKey]
-			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate[:indexCandidate], b.nextEpochShardCandidate[indexCandidate+1:]...)
+			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, committeePublicKey)
 			if err != nil {
 				return newCommitteeChange, nil, err
@@ -70,7 +55,7 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 			}
 
 			newCommitteeChange.NextEpochShardCandidateRemoved =
-				append(newCommitteeChange.NextEpochShardCandidateRemoved, committeePublicKeyStruct)
+				append(newCommitteeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
 
 			returnStakerInfoPublicKeys[stakerInfo.ShardID()] =
 				append(returnStakerInfoPublicKeys[stakerInfo.ShardID()], committeePublicKey)
@@ -95,26 +80,17 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 	return newCommitteeChange, incurredInstructions, nil
 }
 
-func (b *BeaconCommitteeStateV1) getSubstituteCandidates() ([]string, error) {
+func (b *BeaconCommitteeStateV2) unassignedCommonPool() ([]string, error) {
 	commonPoolValidators := []string{}
-
-	candidateBeaconWaitingForNextRandom := b.nextEpochBeaconCandidate
-	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForNextRandom)
-	if err != nil {
-		return nil, err
-	}
-	commonPoolValidators = append(commonPoolValidators, candidateBeaconWaitingForNextRandomStr...)
-	candidateShardWaitingForNextRandom := b.nextEpochShardCandidate
-	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForNextRandom)
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	if err != nil {
 		return nil, err
 	}
 	commonPoolValidators = append(commonPoolValidators, candidateShardWaitingForNextRandomStr...)
-
 	return commonPoolValidators, nil
 }
 
-func (b *BeaconCommitteeStateV1) getAllSubstituteCommittees() ([]string, error) {
+func (b *BeaconCommitteeStateV2) getAllSubstituteCommittees() ([]string, error) {
 	validators := []string{}
 
 	for _, committee := range b.shardCommittee {
@@ -138,21 +114,7 @@ func (b *BeaconCommitteeStateV1) getAllSubstituteCommittees() ([]string, error) 
 		return nil, err
 	}
 	validators = append(validators, beaconCommitteeStr...)
-	beaconSubstitute := b.beaconSubstitute
-	beaconSubstituteStr, err := incognitokey.CommitteeKeyListToString(beaconSubstitute)
-	if err != nil {
-		return nil, err
-	}
-	validators = append(validators, beaconSubstituteStr...)
-
-	candidateBeaconWaitingForCurrentRandom := b.currentEpochBeaconCandidate
-	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForCurrentRandom)
-	if err != nil {
-		return nil, err
-	}
-	validators = append(validators, candidateBeaconWaitingForCurrentRandomStr...)
-	candidateShardWaitingForCurrentRandom := b.currentEpochShardCandidate
-	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForCurrentRandom)
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool[:b.numberOfAssignedCandidates])
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +123,7 @@ func (b *BeaconCommitteeStateV1) getAllSubstituteCommittees() ([]string, error) 
 	return validators, nil
 }
 
-func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
+func (b *BeaconCommitteeStateV2) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
 

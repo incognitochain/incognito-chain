@@ -311,7 +311,7 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	engine.beaconCommitteeStateV1.clone(engine.uncommittedBeaconCommitteeStateV1)
 	var err error
 	incurredInstructions := [][]string{}
-	env.substituteCandidates, err = engine.beaconCommitteeStateV1.getSubstituteCandidates()
+	env.unassignedCommonPool, err = engine.beaconCommitteeStateV1.getSubstituteCandidates()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -319,7 +319,7 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	env.allCandidateSubstituteCommittee = append(env.substituteCandidates, env.allSubstituteCommittees...)
+	env.allCandidateSubstituteCommittee = append(env.unassignedCommonPool, env.allSubstituteCommittees...)
 	engine.beaconCommitteeStateV1.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	committeeChange := NewCommitteeChange()
@@ -516,7 +516,7 @@ func (engine BeaconCommitteeEngineV1) BuildIncurredInstructions(
 	}
 	var err error
 
-	env.substituteCandidates, err = newB.getSubstituteCandidates()
+	env.unassignedCommonPool, err = newB.getSubstituteCandidates()
 	if err != nil {
 		return incurredInstructions, err
 	}

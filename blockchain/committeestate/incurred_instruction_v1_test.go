@@ -139,7 +139,7 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 						},
 					},
 					ConsensusStateDB:     sDB,
-					substituteCandidates: []string{key2},
+					unassignedCommonPool: []string{key2},
 				},
 			},
 			want:    [][]string{},
@@ -162,7 +162,7 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 						},
 					},
 					ConsensusStateDB:     sDB,
-					substituteCandidates: []string{key},
+					unassignedCommonPool: []string{key},
 				},
 			},
 			want: [][]string{
