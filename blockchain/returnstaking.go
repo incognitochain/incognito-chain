@@ -180,7 +180,8 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		beaconConsensusStateDB = nil
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == instruction.SWAP_ACTION || l[0] == instruction.CONFIRM_SHARD_SWAP_ACTION {
+			switch l[0] {
+			case instruction.SWAP_ACTION, instruction.CONFIRM_SHARD_SWAP_ACTION:
 				if beaconConsensusStateDB == nil {
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
 					if err != nil {

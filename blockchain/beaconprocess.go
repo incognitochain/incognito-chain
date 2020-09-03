@@ -342,10 +342,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	validUnstakePublicKeys := make(map[string]bool)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
-	unstakeInstructions := []*instruction.UnstakeInstruction{}
 	statefulActionsByShardID := map[byte][][]string{}
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
-
 	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
 
 	// Get Reward Instruction By Epoch
@@ -402,12 +400,11 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 			for _, shardBlock := range shardBlocks {
 				tempShardState, newShardInstruction, tempValidStakePublicKeys,
 					bridgeInstruction, acceptedBlockRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-					curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
+					curView, beaconBlock.Header.Height, shardBlock, shardID, false, validUnstakePublicKeys, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				shardInstruction.add(newShardInstruction)
 				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
-				unstakeInstructions = append(unstakeInstructions, unstakingInstruction...)
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 				// group stateful actions by shardID
 				_, found := statefulActionsByShardID[shardID]
@@ -425,9 +422,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
-	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,
-		shardInstruction,
-		unstakeInstructions,
+	tempInstruction, err := curView.GenerateInstruction(
+		beaconBlock.Header.Height, shardInstruction,
 		bridgeInstructions, acceptedBlockRewardInstructions,
 		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain)
 	if err != nil {

@@ -126,18 +126,18 @@ func swapV2(
 				backToSubstitutes = append(backToSubstitutes, tryToSwappedOutCommittee)
 			}
 		}
+		// un-queue committees:  start from index 0 to swapOffset - 1
+		committees = committees[swapOffset:]
+		// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
+		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
+		// en-queue new validator: from substitute list to committee list
+		committees = append(committees, substitutes[:swapOffsetAfterFillVacantSlot]...)
+		// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
+		substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
+		// en-queue some swapped out committees (if satisfy condition above)
+		substitutes = append(substitutes, backToSubstitutes...)
+		return substitutes, committees, swappedOutCommittees, swappedInCommittees, nil
 	}
-	// un-queue committees:  start from index 0 to swapOffset - 1
-	committees = committees[swapOffset:]
-	// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
-	swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
-	// en-queue new validator: from substitute list to committee list
-	committees = append(committees, substitutes[:swapOffsetAfterFillVacantSlot]...)
-	// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
-	substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
-	// en-queue some swapped out committees (if satisfy condition above)
-	substitutes = append(substitutes, backToSubstitutes...)
-	return substitutes, committees, swappedOutCommittees, swappedInCommittees, nil
 }
 
 // assignShardCandidateV2 assign candidates into shard pool with random number
