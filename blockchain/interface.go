@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -100,11 +101,15 @@ type BeaconCommitteeEngine interface {
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*committeestate.BeaconCommitteeStateHash) error
 	AbortUncommittedBeaconState()
-	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (*committeestate.BeaconCommitteeStateHash,
-		*committeestate.CommitteeChange, error)
+	UpdateCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) (
+		*committeestate.BeaconCommitteeStateHash,
+		*committeestate.CommitteeChange,
+		[][]string,
+		error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
 	GenerateAllRequestShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error)
+	BuildIncurredInstructions(env *committeestate.BeaconCommitteeStateEnvironment) ([][]string, error)
 }
 
 //ShardCommitteeEngine :

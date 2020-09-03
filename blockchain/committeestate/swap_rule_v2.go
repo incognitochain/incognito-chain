@@ -2,9 +2,10 @@ package committeestate
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"sort"
 )
 
 // createRequestShardSwapInstructionV2 create swap instruction and new substitutes list

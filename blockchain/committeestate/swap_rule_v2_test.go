@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 func Test_sortShardIDByIncreaseOrder(t *testing.T) {
@@ -221,6 +223,175 @@ func Test_assignShardCandidateV2(t *testing.T) {
 				if !reflect.DeepEqual(gotV, wantV) {
 					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
 				}
+			}
+		})
+	}
+}
+
+func Test_createRequestShardSwapInstructionV2(t *testing.T) {
+	type args struct {
+		shardID       byte
+		substitutes   []string
+		committees    []string
+		maxSwapOffset int
+		numberOfRound map[string]int
+		epoch         uint64
+		randomNumber  int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *instruction.RequestShardSwapInstruction
+		want1   []string
+		wantErr bool
+	}{
+		{},
+		{},
+		{},
+		{},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := createRequestShardSwapInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffset, tt.args.numberOfRound, tt.args.epoch, tt.args.randomNumber)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createRequestShardSwapInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("createRequestShardSwapInstructionV2() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("createRequestShardSwapInstructionV2() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_removeValidatorV2(t *testing.T) {
+	type args struct {
+		validators        []string
+		removedValidators []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "Remove validators not found in list validators",
+			args: args{
+				validators:        []string{key},
+				removedValidators: []string{key2},
+			},
+			wantErr: true,
+			want:    []string{},
+		},
+		{
+			name: "Valid Input",
+			args: args{
+				validators:        []string{key},
+				removedValidators: []string{key},
+			},
+			wantErr: false,
+			want:    []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := removeValidatorV2(tt.args.validators, tt.args.removedValidators)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("removeValidatorV2() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("removeValidatorV2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_swapV2(t *testing.T) {
+
+	initLog()
+	initPublicKey()
+
+	type args struct {
+		substitutes   []string
+		committees    []string
+		maxSwapOffSet int
+		numberOfRound map[string]int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		want1   []string
+		want2   []string
+		want3   []string
+		wantErr bool
+	}{
+		{
+			name: "Swap Offset == 0",
+			args: args{
+				substitutes:   []string{},
+				committees:    []string{},
+				maxSwapOffSet: 10,
+				numberOfRound: map[string]int{},
+			},
+			want:    []string{},
+			want1:   []string{},
+			want2:   []string{},
+			want3:   []string{},
+			wantErr: false,
+		},
+		{
+			name: "VacantSlot >= SwapOffset",
+			args: args{
+				substitutes:   []string{key, key},
+				committees:    []string{key2, key2},
+				maxSwapOffSet: 10,
+				numberOfRound: map[string]int{},
+			},
+			want:    []string{key2, key2, key},
+			want1:   []string{key},
+			want2:   []string{},
+			want3:   []string{key},
+			wantErr: false,
+		},
+		// {
+		// 	name: "Valid Input",
+		// 	args: args{
+		// 		substitutes:   []string{key, key},
+		// 		committees:    []string{key2, key2},
+		// 		maxSwapOffSet: 10,
+		// 		numberOfRound: map[string]int{},
+		// 	},
+		// 	want:    []string{},
+		// 	want1:   []string{},
+		// 	want2:   []string{},
+		// 	want3:   []string{},
+		// 	wantErr: true,
+		// },
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2, got3, err := swapV2(tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffSet)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("swapV2() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("swapV2() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("swapV2() got1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("swapV2() got2 = %v, want %v", got2, tt.want2)
+			}
+			if !reflect.DeepEqual(got3, tt.want3) {
+				t.Errorf("swapV2() got3 = %v, want %v", got3, tt.want3)
 			}
 		})
 	}

@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -576,10 +577,16 @@ func (blockchain *BlockChain) GetNodeMode() string {
 	return blockchain.config.NodeMode
 }
 
-func (blockchain *BlockChain) GetWantedShard() map[byte]struct{} {
+func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}
-	for _, sID := range blockchain.config.RelayShards {
-		res[sID] = struct{}{}
+	if isBeaconCommittee {
+		for sID := byte(0); sID < byte(blockchain.config.ChainParams.ActiveShards); sID++ {
+			res[sID] = struct{}{}
+		}
+	} else {
+		for _, sID := range blockchain.config.RelayShards {
+			res[sID] = struct{}{}
+		}
 	}
 	return res
 }

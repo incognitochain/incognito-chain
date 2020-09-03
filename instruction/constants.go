@@ -8,14 +8,14 @@ const (
 	STOP_AUTO_STAKE_ACTION    = "stopautostake"
 	SET_ACTION                = "set"
 	RETURN_ACTION             = "return"
+	UNSTAKE_ACTION            = "unstake"
 	REQUEST_SHARD_SWAP_ACTION = "requestshardswap"
 	CONFIRM_SHARD_SWAP_ACTION = "confirmshardswap"
-
-	SHARD_INST  = "shard"
-	BEACON_INST = "beacon"
-	SPLITTER    = ","
-	TRUE        = "true"
-	FALSE       = "false"
+	SHARD_INST                = "shard"
+	BEACON_INST               = "beacon"
+	SPLITTER                  = ","
+	TRUE                      = "true"
+	FALSE                     = "false"
 )
 
 const (
