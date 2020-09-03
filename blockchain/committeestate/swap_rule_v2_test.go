@@ -146,6 +146,15 @@ func Test_calculateCandidatePosition(t *testing.T) {
 			},
 			wantPos: 276,
 		},
+		{
+			name: "Temporary",
+			args: args{
+				candidate: key8,
+				rand:      800000,
+				total:     334,
+			},
+			wantPos: 81,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -157,6 +166,9 @@ func Test_calculateCandidatePosition(t *testing.T) {
 }
 
 func Test_assignShardCandidateV2(t *testing.T) {
+
+	initPublicKey()
+
 	type args struct {
 		candidates         []string
 		numberOfValidators []int
@@ -202,6 +214,142 @@ func Test_assignShardCandidateV2(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "8 Shards 1 Candidates (key) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]",
+			args: args{
+				candidates: []string{
+					key,
+				},
+				numberOfValidators: []int{
+					19, 54, 20, 2, 67, 81, 80, 11,
+				},
+				rand: 800000,
+			},
+			want: map[byte][]string{
+				0: {
+					key,
+				},
+			},
+		},
+		// {
+		// 	name: "8 Shards 1 Candidates (key2) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]", //@hung check for if there is any error
+		// 	args: args{
+		// 		candidates: []string{
+		// 			key2,
+		// 		},
+		// 		numberOfValidators: []int{
+		// 			19, 54, 20, 2, 67, 81, 80, 11,
+		// 		},
+		// 		rand: 800000,
+		// 	},
+		// 	want: map[byte][]string{
+		// 		6: {
+		// 			key2,
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "8 Shards 1 Candidates (key3) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]", //@hung check for if there is any error
+		// 	args: args{
+		// 		candidates: []string{
+		// 			key3,
+		// 		},
+		// 		numberOfValidators: []int{
+		// 			19, 54, 20, 2, 67, 81, 80, 11,
+		// 		},
+		// 		rand: 800000,
+		// 	},
+		// 	want: map[byte][]string{
+		// 		7: {
+		// 			key3,
+		// 		},
+		// 	},
+		// },
+		{
+			name: "8 Shards 1 Candidates (key4) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]",
+			args: args{
+				candidates: []string{
+					key4,
+				},
+				numberOfValidators: []int{
+					19, 54, 20, 2, 67, 81, 80, 11,
+				},
+				rand: 800000,
+			},
+			want: map[byte][]string{
+				2: {
+					key4,
+				},
+			},
+		},
+		{
+			name: "8 Shards 1 Candidates (key5) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]",
+			args: args{
+				candidates: []string{
+					key5,
+				},
+				numberOfValidators: []int{
+					19, 54, 20, 2, 67, 81, 80, 11,
+				},
+				rand: 800000,
+			},
+			want: map[byte][]string{
+				0: {
+					key5,
+				},
+			},
+		},
+		{
+			name: "8 Shards 1 Candidates (key6) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]", //@hung check for if there is any error
+			args: args{
+				candidates: []string{
+					key6,
+				},
+				numberOfValidators: []int{
+					19, 54, 20, 2, 67, 81, 80, 11,
+				},
+				rand: 800000,
+			},
+			want: map[byte][]string{
+				2: {
+					key6,
+				},
+			},
+		},
+		// {
+		// 	name: "8 Shards 1 Candidates (key7) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]", //@hung check for if there is any error
+		// 	args: args{
+		// 		candidates: []string{
+		// 			key7,
+		// 		},
+		// 		numberOfValidators: []int{
+		// 			19, 54, 20, 2, 67, 81, 80, 11,
+		// 		},
+		// 		rand: 800000,
+		// 	},
+		// 	want: map[byte][]string{
+		// 		3: {
+		// 			key7,
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "8 Shards 1 Candidates (key8) Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]", //@hung check for if there is any error
+		// 	args: args{
+		// 		candidates: []string{
+		// 			key8,
+		// 		},
+		// 		numberOfValidators: []int{
+		// 			19, 54, 20, 2, 67, 81, 80, 11,
+		// 		},
+		// 		rand: 800000,
+		// 	},
+		// 	want: map[byte][]string{
+		// 		2: {
+		// 			key8,
+		// 		},
+		// 	},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -376,7 +524,7 @@ func Test_swapV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2, got3, err := swapV2(tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffSet, tt.args.numberOfRound)
+			got, got1, got2, got3, err := swapV2(tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffSet)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("swapV2() error = %v, wantErr %v", err, tt.wantErr)
 				return
