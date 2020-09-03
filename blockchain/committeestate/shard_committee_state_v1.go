@@ -52,9 +52,9 @@ func NewShardCommitteeStateV1WithValue(shardCommittee, shardPendingValidator []i
 	}
 }
 
-//NewShardCommitteeEngine is default constructor for ShardCommitteeEngineV1
+//NewShardCommitteeEngineV1 is default constructor for ShardCommitteeEngineV1
 //Output: pointer of ShardCommitteeEngineV1
-func NewShardCommitteeEngine(shardHeight uint64,
+func NewShardCommitteeEngineV1(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV1 *ShardCommitteeStateV1) *ShardCommitteeEngineV1 {
 	return &ShardCommitteeEngineV1{
 		shardHeight:                      shardHeight,

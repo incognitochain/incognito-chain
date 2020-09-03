@@ -37,7 +37,7 @@ func (s *ConfirmShardSwapInstruction) GetType() string {
 }
 
 func (s *ConfirmShardSwapInstruction) ToString() []string {
-	ConfirmShardSwapInstructionStr := []string{REQUEST_SHARD_SWAP_ACTION}
+	ConfirmShardSwapInstructionStr := []string{CONFIRM_SHARD_SWAP_ACTION}
 	ConfirmShardSwapInstructionStr = append(ConfirmShardSwapInstructionStr, strings.Join(s.InPublicKeys, SPLITTER))
 	ConfirmShardSwapInstructionStr = append(ConfirmShardSwapInstructionStr, strings.Join(s.OutPublicKeys, SPLITTER))
 	ConfirmShardSwapInstructionStr = append(ConfirmShardSwapInstructionStr, fmt.Sprintf("%v", s.ChainID))
@@ -108,7 +108,7 @@ func ValidateConfirmShardSwapInstructionSanity(instruction []string) error {
 	if len(instruction) != 6 {
 		return fmt.Errorf("invalid instruction length %+v, %+v, expect %+v", len(instruction), instruction, 6)
 	}
-	if instruction[0] != REQUEST_SHARD_SWAP_ACTION {
+	if instruction[0] != CONFIRM_SHARD_SWAP_ACTION {
 		return fmt.Errorf("invalid ConfirmShardSwap action, %+v", instruction)
 	}
 	_, err1 := incognitokey.CommitteeBase58KeyListToStruct(strings.Split(instruction[1], ","))

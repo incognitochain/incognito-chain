@@ -14,6 +14,22 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
+type shardInstruction struct {
+	stakeInstructions            []*instruction.StakeInstruction
+	swapInstructions             map[byte][]*instruction.SwapInstruction
+	stopAutoStakeInstructions    []*instruction.StopAutoStakeInstruction
+	confirmShardSwapInstructions []*instruction.ConfirmShardSwapInstruction
+}
+
+func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruction) {
+	shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, newShardInstruction.stakeInstructions...)
+	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, newShardInstruction.stopAutoStakeInstructions...)
+	shardInstruction.confirmShardSwapInstructions = append(shardInstruction.confirmShardSwapInstructions, newShardInstruction.confirmShardSwapInstructions...)
+	for shardID, swapInstructions := range newShardInstruction.swapInstructions {
+		shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], swapInstructions...)
+	}
+}
+
 // NewBlockBeacon create new beacon block:
 // 1. Clone Current Best State
 // 2. Build Essential Header Data:
@@ -98,14 +114,12 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		}
 	}
 
-	tempShardState, stakeInstructions,
-		swapInstructions, bridgeInstructions, acceptedRewardInstructions,
-		stopAutoStakingInstructions, unstakingInstructions := blockchain.GetShardState(beaconBestState, rewardForCustodianByEpoch, portalParams)
+	tempShardState, shardInstruction, bridgeInstructions, acceptedRewardInstructions := blockchain.GetShardState(
+		beaconBestState, rewardForCustodianByEpoch, portalParams)
 
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
-		beaconBlock.Header.Height,
-		stakeInstructions, swapInstructions, stopAutoStakingInstructions, unstakingInstructions,
+		beaconBlock.Header.Height, shardInstruction,
 		bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
 		blockchain.config.ChainParams.RandomTime, blockchain,
 	)
@@ -194,14 +208,14 @@ func (blockchain *BlockChain) GetShardState(
 	beaconBestState *BeaconBestState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
-) (map[byte][]types.ShardState, []*instruction.StakeInstruction, map[byte][]*instruction.SwapInstruction, [][]string, [][]string, []*instruction.StopAutoStakeInstruction, []*instruction.UnstakeInstruction) {
+) (map[byte][]types.ShardState, *shardInstruction, [][]string, [][]string) {
 	shardStates := make(map[byte][]types.ShardState)
-	validStakeInstructions := []*instruction.StakeInstruction{}
+	shardInstruction := &shardInstruction{
+		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
+	}
 	validStakePublicKeys := []string{}
 	validUnstakePublicKeys := make(map[string]bool)
-	validStopAutoStakeInstructions := []*instruction.StopAutoStakeInstruction{}
 	validUnstakeInstructions := []*instruction.UnstakeInstruction{}
-	validSwapInstructions := make(map[byte][]*instruction.SwapInstruction)
 	//Get shard to beacon block from pool
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
 	keys := []int{}
@@ -222,21 +236,15 @@ func (blockchain *BlockChain) GetShardState(
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
 		for _, shardBlock := range shardBlocks {
-			shardState, validStakeInstruction,
-				tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction,
-				acceptedRewardInstruction, stopAutoStakingInstruction,
-				unstakeInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-				beaconBestState, beaconBestState.BeaconHeight+1,
-				shardBlock, shardID, true, validStakePublicKeys, validUnstakePublicKeys)
+			shardState, newShardInstruction, tempValidStakePublicKeys,
+				bridgeInstruction, acceptedRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
+				beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
-			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
-			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)
+			shardInstruction.add(newShardInstruction)
 			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
-			validStopAutoStakeInstructions = append(validStopAutoStakeInstructions, stopAutoStakingInstruction...)
 			validUnstakeInstructions = append(validUnstakeInstructions, unstakeInstruction...)
 			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
-
 			// group stateful actions by shardID
 			_, found := statefulActionsByShardID[shardID]
 			if !found {
@@ -250,7 +258,7 @@ func (blockchain *BlockChain) GetShardState(
 	// build stateful instructions
 	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
-	return shardStates, validStakeInstructions, validSwapInstructions, bridgeInstructions, acceptedRewardInstructions, validStopAutoStakeInstructions, validUnstakeInstructions
+	return shardStates, shardInstruction, bridgeInstructions, acceptedRewardInstructions
 }
 
 // GetShardStateFromBlock get state (information) from shard-to-beacon block
@@ -269,13 +277,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardID byte,
 	isProducer bool,
 	validStakePublicKeys []string,
+) (map[byte]types.ShardState, *shardInstruction, []string, [][]string, []string, [][]string) {
 	validUnstakePublicKeys map[string]bool,
-) (map[byte]types.ShardState, []*instruction.StakeInstruction, []string, map[byte][]*instruction.SwapInstruction, [][]string, []string, []*instruction.StopAutoStakeInstruction, []*instruction.UnstakeInstruction, [][]string) {
 	//Variable Declaration
 	shardStates := make(map[byte]types.ShardState)
-	stakeInstructions := []*instruction.StakeInstruction{}
-	swapInstructions := make(map[byte][]*instruction.SwapInstruction)
-	stopAutoStakingInstructions := []*instruction.StopAutoStakeInstruction{}
+	shardInstruction := &shardInstruction{
+		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
+	}
 	unstakingInstructions := []*instruction.UnstakeInstruction{}
 	stopAutoStakingInstructionsFromBlock := []*instruction.StopAutoStakeInstruction{}
 	stakeInstructionFromShardBlock := []*instruction.StakeInstruction{}
@@ -329,7 +337,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 					continue
 				}
 				tempSwapInstruction := instruction.ImportSwapInstructionFromString(inst)
-				swapInstructions[shardID] = append(swapInstructions[shardID], tempSwapInstruction)
+				shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], tempSwapInstruction)
 			}
 			if inst[0] == instruction.STOP_AUTO_STAKE_ACTION {
 				if err := instruction.ValidateStopAutoStakeInstructionSanity(inst); err != nil {
@@ -338,6 +346,14 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 				}
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
 				stopAutoStakingInstructionsFromBlock = append(stopAutoStakingInstructionsFromBlock, tempStopAutoStakeInstruction)
+			}
+			if inst[0] == instruction.CONFIRM_SHARD_SWAP_ACTION {
+				if err := instruction.ValidateConfirmShardSwapInstructionSanity(inst); err != nil {
+					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
+					continue
+				}
+				confirmShardSwapInstruction := instruction.ImportConfirmShardSwapInstructionFromString(inst)
+				shardInstruction.confirmShardSwapInstructions = append(shardInstruction.confirmShardSwapInstructions, confirmShardSwapInstruction)
 			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
@@ -352,7 +368,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	if len(stakeInstructionFromShardBlock) != 0 {
 		Logger.log.Info("Beacon Producer/ Process Stakers List ", stakeInstructionFromShardBlock)
 	}
-	if len(swapInstructions[shardID]) != 0 {
+	if len(shardInstruction.swapInstructions[shardID]) != 0 {
 		Logger.log.Info("Beacon Producer/ Process Stakers List ", swapInstructionFromShardBlock)
 	}
 	// Process Stake Instruction form Shard Block
@@ -389,12 +405,12 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	if len(stakeShardPublicKeys) > 0 {
 		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
 		tempStakeShardInstruction := instruction.NewStakeInstructionWithValue(stakeShardPublicKeys, instruction.SHARD_INST, stakeShardTx, stakeShardRewardReceiver, stakeShardAutoStaking)
-		stakeInstructions = append(stakeInstructions, tempStakeShardInstruction)
+		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, tempStakeShardInstruction)
 	}
 	if len(stakeBeaconPublicKeys) > 0 {
 		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeBeaconPublicKeys...)
 		tempStakeBeaconInstruction := instruction.NewStakeInstructionWithValue(stakeBeaconPublicKeys, instruction.BEACON_INST, stakeBeaconTx, stakeBeaconRewardReceiver, stakeBeaconAutoStaking)
-		stakeInstructions = append(stakeInstructions, tempStakeBeaconInstruction)
+		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, tempStakeBeaconInstruction)
 	}
 
 	allCommitteeValidatorCandidate := []string{}
@@ -414,7 +430,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	}
 	if len(stopAutoStakingPublicKeys) > 0 {
 		tempStopAutoStakeInstruction := instruction.NewStopAutoStakeInstructionWithValue(stopAutoStakingPublicKeys)
-		stopAutoStakingInstructions = append(stopAutoStakingInstructions, tempStopAutoStakeInstruction)
+		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, tempStopAutoStakeInstruction)
 	}
 
 	for _, unstakeInstruction := range unstakeInstructionFromShardBlock {
@@ -458,15 +474,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	// Collect stateful actions
 	statefulActions := blockchain.collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
-	return shardStates, stakeInstructions, tempValidStakePublicKeys, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions, unstakingInstructions, statefulActions
+	return shardStates, shardInstruction, tempValidStakePublicKeys, bridgeInstructions, acceptedRewardInstructions, statefulActions
 }
 
 //  GenerateInstruction generate instruction for new beacon block
 func (beaconBestState *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
-	stakeInstructions []*instruction.StakeInstruction,
-	swapInstructions map[byte][]*instruction.SwapInstruction,
-	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction,
+	shardInstruction *shardInstruction,
 	unstakingInstructions []*instruction.UnstakeInstruction,
 	bridgeInstructions [][]string,
 	acceptedRewardInstructions [][]string,
@@ -480,22 +494,26 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	//=======Swap
 	// Shard Swap: both abnormal or normal swap
 	var keys []int
-	for k := range swapInstructions {
+	for k := range shardInstruction.swapInstructions {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		for _, tempSwapInstruction := range swapInstructions[byte(shardID)] {
+		for _, tempSwapInstruction := range shardInstruction.swapInstructions[byte(shardID)] {
 			instructions = append(instructions, tempSwapInstruction.ToString())
 		}
 	}
 	// Stake
-	for _, stakeInstruction := range stakeInstructions {
+	for _, stakeInstruction := range shardInstruction.stakeInstructions {
 		instructions = append(instructions, stakeInstruction.ToString())
 	}
 	// Stop Auto Stake
-	for _, stopAutoStakeInstruction := range stopAutoStakeInstructions {
+	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
+	}
+	// Confirm shard swap instruction
+	for _, confirmShardSwapInstruction := range shardInstruction.confirmShardSwapInstructions {
+		instructions = append(instructions, confirmShardSwapInstruction.ToString())
 	}
 	// Unstake
 	for _, unstakeInstruction := range unstakingInstructions {

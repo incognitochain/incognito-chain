@@ -521,6 +521,8 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		env := committeestate.NewShardEnvBuilder().
 			BuildBeaconInstructions(beaconInstructions).
 			BuildShardID(shardID).
+			BuildShardHeight(view.ShardHeight).
+			BuildBeaconHeight(beaconHeight).
 			BuildNumberOfFixedBlockValidators(NumberOfFixedBlockValidators).
 			Build()
 		confirmShardSwapInstruction, shardCommittee, err = view.shardCommitteeEngine.GenerateConfirmShardSwapInstruction(env)

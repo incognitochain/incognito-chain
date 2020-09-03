@@ -22,10 +22,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		)
 	} else {
 		beaconCommitteeEngine = InitBeaconCommitteeEngineV1(
-			beaconBestState.ActiveShards,
-			beaconBestState.consensusStateDB,
-			beaconBestState.BeaconHeight,
-			beaconBestState.BestBlockHash,
+			beaconBestState,
 		)
 	}
 	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine

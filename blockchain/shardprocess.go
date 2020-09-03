@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -418,14 +417,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(BeaconBlockNotCompatibleError, fmt.Errorf("Expect beacon shardBlock hash to be %+v but get %+v", beaconHash.String(), newHash.String()))
 	}
 
-	// Swap instruction
-	for _, l := range shardBlock.Body.Instructions {
-		if l[0] == "swap" {
-			if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
-				return NewBlockChainError(SwapInstructionError, fmt.Errorf("invalid swap instruction %+v", l))
-			}
-		}
-	}
 	// Verify response transactions
 	instsForValidations := [][]string{}
 	instsForValidations = append(instsForValidations, shardBlock.Body.Instructions...)
