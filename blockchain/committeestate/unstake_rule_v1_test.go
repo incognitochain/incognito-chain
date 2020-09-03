@@ -49,7 +49,7 @@ func TestBeaconCommitteeStateV1_processUnstakeInstruction(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreStakerInfoV1(
 		validSDB,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{

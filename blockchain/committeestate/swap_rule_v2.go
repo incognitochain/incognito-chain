@@ -2,9 +2,10 @@ package committeestate
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"sort"
 )
 
 // createRequestShardSwapInstructionV2 create swap instruction and new substitutes list
@@ -103,37 +104,36 @@ func swapV2(
 		committees = append(committees, swappedInCommittees...)
 		substitutes = substitutes[swapOffset:]
 		return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
-	} else {
-		// number of substitutes is greater than vacantSlot
-		// push substitutes into vacant slot in committee list until full
-		swappedInCommittees := substitutes[:vacantSlot]
-		substitutes = substitutes[vacantSlot:]
-		committees = append(committees, swappedInCommittees...)
-
-		swapOffsetAfterFillVacantSlot := swapOffset - vacantSlot
-		// swapped out committees: record swapped out committees
-		tryToSwappedOutCommittees := committees[:swapOffsetAfterFillVacantSlot]
-		swappedOutCommittees := []string{}
-		backToSubstitutes := []string{}
-		for _, tryToSwappedOutCommittee := range tryToSwappedOutCommittees {
-			if numberOfRound[tryToSwappedOutCommittee] >= MAX_NUMBER_OF_ROUND {
-				swappedOutCommittees = append(swappedOutCommittees, tryToSwappedOutCommittee)
-			} else {
-				backToSubstitutes = append(backToSubstitutes, tryToSwappedOutCommittee)
-			}
-		}
-		// un-queue committees:  start from index 0 to swapOffset - 1
-		committees = committees[swapOffset:]
-		// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
-		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
-		// en-queue new validator: from substitute list to committee list
-		committees = append(committees, substitutes[:swapOffsetAfterFillVacantSlot]...)
-		// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
-		substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
-		// en-queue some swapped out committees (if satisfy condition above)
-		substitutes = append(substitutes, backToSubstitutes...)
-		return substitutes, committees, swappedOutCommittees, swappedInCommittees, nil
 	}
+	// number of substitutes is greater than vacantSlot
+	// push substitutes into vacant slot in committee list until full
+	swappedInCommittees := substitutes[:vacantSlot]
+	substitutes = substitutes[vacantSlot:]
+	committees = append(committees, swappedInCommittees...)
+
+	swapOffsetAfterFillVacantSlot := swapOffset - vacantSlot
+	// swapped out committees: record swapped out committees
+	tryToSwappedOutCommittees := committees[:swapOffsetAfterFillVacantSlot]
+	swappedOutCommittees := []string{}
+	backToSubstitutes := []string{}
+	for _, tryToSwappedOutCommittee := range tryToSwappedOutCommittees {
+		if numberOfRound[tryToSwappedOutCommittee] >= MAX_NUMBER_OF_ROUND {
+			swappedOutCommittees = append(swappedOutCommittees, tryToSwappedOutCommittee)
+		} else {
+			backToSubstitutes = append(backToSubstitutes, tryToSwappedOutCommittee)
+		}
+	}
+	// un-queue committees:  start from index 0 to swapOffset - 1
+	committees = committees[swapOffset:]
+	// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
+	swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
+	// en-queue new validator: from substitute list to committee list
+	committees = append(committees, substitutes[:swapOffsetAfterFillVacantSlot]...)
+	// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
+	substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
+	// en-queue some swapped out committees (if satisfy condition above)
+	substitutes = append(substitutes, backToSubstitutes...)
+	return substitutes, committees, swappedOutCommittees, swappedInCommittees, nil
 }
 
 // assignShardCandidateV2 assign candidates into shard pool with random number

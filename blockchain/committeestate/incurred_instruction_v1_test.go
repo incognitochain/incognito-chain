@@ -26,7 +26,7 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreStakerInfoV1(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
@@ -179,7 +179,7 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			engine := BeaconCommitteeEngine{
+			engine := BeaconCommitteeEngineV1{
 				beaconHeight:                      tt.fields.beaconHeight,
 				beaconHash:                        tt.fields.beaconHash,
 				beaconCommitteeStateV1:            tt.fields.beaconCommitteeStateV1,
@@ -188,11 +188,11 @@ func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {
 			got, err := engine.BuildIncurredInstructions(tt.args.env)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeEngine.BuildIncurredInstructions() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BeaconCommitteeEngineV1.BuildIncurredInstructions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeEngine.BuildIncurredInstructions() = %v, want %v", got, tt.want)
+				t.Errorf("BeaconCommitteeEngineV1.BuildIncurredInstructions() = %v, want %v", got, tt.want)
 			}
 		})
 	}
