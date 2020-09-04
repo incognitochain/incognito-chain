@@ -367,7 +367,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 			}
-			//@tin here
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
 			Logger.log.Infof("Block %+v, Committee Change %+v", env.BeaconHeight, committeeChange.ShardSubstituteAdded)
@@ -376,7 +375,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			//@tin here
 			committeeChange, err = newB.processConfirmShardSwapInstruction(
 				confirmShardSwapInstruction, env, committeeChange)
 			if err != nil {

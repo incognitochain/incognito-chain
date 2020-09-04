@@ -60,7 +60,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 		if found {
 			validators = append(validators[:index], validators[index+1:]...)
 		} else {
-			return []string{}, fmt.Errorf("Try to removed validator %+v but not found in list %+v", removedValidator, validators)
+			return []string{}, fmt.Errorf("Try to remove validator %+v but not found in list %+v", removedValidator, validators)
 		}
 	}
 	return validators, nil
