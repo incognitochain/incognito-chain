@@ -170,7 +170,7 @@ const (
 
 	//board and proposal parameters
 	Testnet2BasicReward                      = 400000000 //40 mili PRV
-	Testnet2ETHContractAddressStr            = "0x4A4cC6451D8B8645bDeE96e6a0967b471eC286DD"
+	Testnet2ETHContractAddressStr            = "0x7c7e371D1e25771f2242833C1A354dCE846f3ec8"
 	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
