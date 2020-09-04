@@ -265,7 +265,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
-		ETHRemoveBridgeSigEpoch:          1e18,
+		ETHRemoveBridgeSigEpoch:          2085,
 	}
 	// END TESTNET-2
 
