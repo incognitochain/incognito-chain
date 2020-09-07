@@ -2,6 +2,12 @@ package metadata_test
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -9,10 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/metadata/mocks"
 	"github.com/incognitochain/incognito-chain/trie"
-	"io/ioutil"
-	"os"
-	"reflect"
-	"testing"
 )
 
 var (
@@ -57,6 +59,10 @@ var (
 		"129pZpqYqYAA8wTAeDKuVwRthoBjNLUFm8FnLwUTkXddUqwShN9",
 		"12JqKehM24bfSkfv3FKGtzFw4seoJSJbbgAqaYtX3w6DjVuH8mb",
 	}
+	invalidCommitteePublicKeys = []string{"121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAnaeixKC3AdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7",
+		"1hm766APBSXcyDbNbPLbb65Hm2DkK35RJp1cwYx95mFExK3VAkE9qfzDJLTKTMiKbscm4zns5QuDpGS4yc5Hi994G1BVVE2hdLgoNJbvxXdbmsRdrwVCENVYJhYk2k1kci7b8ysb9nFXW8fUEJNsBtfQjtXQY7pEqngbwpEFuF45Kj8skjDriKp2Sc9TjxnPw4478dN4h4XYojPaiSo3sJpqJWDfcZ68DqSWuUAud5REAqeBT3sUiyJCpnfZ9Lp2Uk7M7Pc9CeuTZBVfV3M669zpPdErUgWf7VDYe5wujvcMLhqqjvJRe5WREYLjVni1H1d4qhcuzdbPdW8BC4b7xY2qRSBtiFav8tJt7iSdycTeTTsaYN1"}
+	invalidPaymentAddresses = []string{
+		"12S42qYc9pzsfWoxPZ21sVih7CGYMHNWX12SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX"}
 )
 
 // TODO: @lam
@@ -78,7 +84,32 @@ func TestNewStakingMetadata(t *testing.T) {
 		want    *metadata.StakingMetadata
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "check StakingType error case",
+			args: args{
+				stakingType:                  65,
+				funderPaymentAddress:         validPaymentAddresses[0],
+				rewardReceiverPaymentAddress: validPaymentAddresses[0],
+				stakingAmountShard:           1750000000000,
+				committeePublicKey:           validCommitteePublicKeys[0],
+				autoReStaking:                false,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "check StakingType success case",
+			args: args{
+				stakingType:                  63,
+				funderPaymentAddress:         validPaymentAddresses[0],
+				rewardReceiverPaymentAddress: validPaymentAddresses[0],
+				stakingAmountShard:           1750000000000,
+				committeePublicKey:           validCommitteePublicKeys[0],
+				autoReStaking:                false,
+			},
+			want:    &metadata.StakingMetadata{metadata.MetadataBase{63}, "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX", "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX", 1750000000000, false, "121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -115,7 +146,66 @@ func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "check Base58CheckDeserialize error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{63},
+				FunderPaymentAddress:         validPaymentAddresses[0],
+				RewardReceiverPaymentAddress: invalidPaymentAddresses[0],
+				StakingAmountShard:           1750000000000,
+				AutoReStaking:                false,
+				CommitteePublicKey:           validCommitteePublicKeys[0],
+			},
+			want: false,
+		},
+		{
+			name: "check IsInBase58ShortFormat error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{63},
+				FunderPaymentAddress:         validPaymentAddresses[0],
+				RewardReceiverPaymentAddress: validPaymentAddresses[0],
+				StakingAmountShard:           1750000000000,
+				AutoReStaking:                false,
+				CommitteePublicKey:           invalidCommitteePublicKeys[0],
+			},
+			want: false,
+		},
+		{
+			name: "check CommitteePublicKey.FromString error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{63},
+				FunderPaymentAddress:         validPaymentAddresses[0],
+				RewardReceiverPaymentAddress: validPaymentAddresses[0],
+				StakingAmountShard:           1750000000000,
+				AutoReStaking:                false,
+				CommitteePublicKey:           invalidCommitteePublicKeys[0],
+			},
+			want: false,
+		},
+		{
+			name: "check CommitteePublicKey.CheckSanityData error case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{63},
+				FunderPaymentAddress:         validPaymentAddresses[0],
+				RewardReceiverPaymentAddress: validPaymentAddresses[0],
+				StakingAmountShard:           1750000000000,
+				AutoReStaking:                false,
+				CommitteePublicKey:           invalidCommitteePublicKeys[1],
+			},
+			want: false,
+		},
+		{
+			name: "happy case",
+			fields: fields{
+				MetadataBase:                 metadata.MetadataBase{63},
+				FunderPaymentAddress:         validPaymentAddresses[0],
+				RewardReceiverPaymentAddress: validPaymentAddresses[0],
+				StakingAmountShard:           1750000000000,
+				AutoReStaking:                false,
+				CommitteePublicKey:           validCommitteePublicKeys[0],
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -167,7 +257,70 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		want1   bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "check txr.IsPrivacy error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "check txr.GetUniqueReceiver error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "check wallet.Base58CheckDeserialize error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "check wallet.bcr.GetStakingAmountShard() && Stake Shard error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "check wallet.bcr.GetStakingAmountShard() * 3 && Stake Beacon error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "check wallet.Base58CheckDeserialize(funderPaymentAddress) error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "check CommitteePublicKey.FromString error case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:    "happy case",
+			fields:  fields{},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -215,6 +368,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	getCommitteeErrorBlockChainRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			errors.New("get committee error"))
+
 	type fields struct {
 		MetadataBase                 metadata.MetadataBase
 		FunderPaymentAddress         string
@@ -299,6 +453,28 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			want:    false,
 			wantErr: true,
 		},
+
+		{
+			name: "CommitteeBase58KeyListToStruct error case",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					metadata.ShardStakingMeta,
+				},
+				FunderPaymentAddress:         validPaymentAddresses[0],
+				RewardReceiverPaymentAddress: validPaymentAddresses[0],
+				StakingAmountShard:           1750000000000,
+				AutoReStaking:                false,
+				CommitteePublicKey:           invalidCommitteePublicKeys[0],
+			},
+			args: args{
+				txr:     &mocks.Transaction{},
+				bcr:     happyCaseBlockChainRetriever,
+				b:       0,
+				stateDB: emptyStateDB,
+			},
+			want:    false,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -318,6 +494,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("ValidateTxWithBlockChain() got = %v, want %v", got, tt.want)
 			}
+			fmt.Println(err)
 		})
 	}
 }

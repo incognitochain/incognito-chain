@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // TODO: @lam
@@ -38,6 +39,27 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		want3  []incognitokey.CommitteePublicKey
 	}{
 		// TODO: Add test cases.
+		{
+			name:   "1",
+			fields: fields{},
+			want:   nil,
+		},
+		{
+			name:   "2",
+			fields: fields{},
+			want:   nil,
+		},
+		{
+			name:   "3",
+			fields: fields{},
+			want:   nil,
+		},
+		{
+			name:   "4",
+			fields: fields{},
+			want2:  nil,
+			want3:  nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,4 +82,23 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 			}
 		})
 	}
+}
+func _getCommitteeTestObject(testcase string) *committeeChange {
+	switch testcase {
+	case "1":
+	case "2":
+	case "3":
+	case "4":
+	}
+	return nil
+}
+
+func _getBlockChainTestObject(testcase string) *BlockChain {
+	switch testcase {
+	case "1":
+	case "2":
+	case "3":
+	case "4":
+	}
+	return nil
 }
