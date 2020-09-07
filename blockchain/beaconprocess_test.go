@@ -2,13 +2,14 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-// TODO: @lam
 // TESTCASE
 // 1. RETURN SHARD-CANDIDATES,NO-BEACON-CANDIDATES,NO-ERROR
 // 	INPUT: mock 1 stake shard instruction with 3 committee
@@ -21,8 +22,9 @@ import (
 // 	len(shardCandidates) != len(shardRewardReceivers) && len(shardRewardReceivers) != len(shardAutoReStaking)
 func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 	type fields struct {
-		AutoStaking            map[string]bool
-		RewardReceiver         map[string]string
+		AutoStaking            *MapStringBool
+		RewardReceiver         map[string]privacy.PaymentAddress
+		StakingTx              map[string]common.Hash
 		BeaconHeight           uint64
 		ShardCommittee         map[byte][]incognitokey.CommitteePublicKey
 		ShardPendingValidator  map[byte][]incognitokey.CommitteePublicKey
@@ -36,13 +38,7 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		autoStaking     map[string]bool
 	}
 
-	bc := &BlockChain{
-		// config: Config{
-		// 	ChainParams: &Params{
-		// 		Epoch: 2,
-		// 	},
-		// },
-	}
+	bc := &BlockChain{}
 
 	wantCandidate, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{"121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7"})
 	tests := []struct {
@@ -57,8 +53,9 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		{
 			name: "shard candidates only case",
 			fields: fields{
-				AutoStaking:    make(map[string]bool),
-				RewardReceiver: make(map[string]string),
+				AutoStaking:    NewMapStringBool(),
+				RewardReceiver: make(map[string]privacy.PaymentAddress),
+				StakingTx:      make(map[string]common.Hash),
 			},
 			args: args{
 				blockchain:      bc,
@@ -73,8 +70,9 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		{
 			name: "beacon candidates only case",
 			fields: fields{
-				AutoStaking:    make(map[string]bool),
-				RewardReceiver: make(map[string]string),
+				AutoStaking:    NewMapStringBool(),
+				RewardReceiver: make(map[string]privacy.PaymentAddress),
+				StakingTx:      make(map[string]common.Hash),
 			},
 			args: args{
 				blockchain:      bc,
@@ -88,8 +86,9 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		{
 			name: "error case",
 			fields: fields{
-				AutoStaking:    make(map[string]bool),
-				RewardReceiver: make(map[string]string),
+				AutoStaking:    NewMapStringBool(),
+				RewardReceiver: make(map[string]privacy.PaymentAddress),
+				StakingTx:      make(map[string]common.Hash),
 			},
 			args: args{
 				blockchain:      bc,
@@ -107,13 +106,14 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 			beaconBestState := &BeaconBestState{
 				AutoStaking:            tt.fields.AutoStaking,
 				RewardReceiver:         tt.fields.RewardReceiver,
+				StakingTx:              tt.fields.StakingTx,
 				BeaconHeight:           tt.fields.BeaconHeight,
 				ShardCommittee:         tt.fields.ShardCommittee,
 				ShardPendingValidator:  tt.fields.ShardPendingValidator,
 				BeaconCommittee:        tt.fields.BeaconCommittee,
 				BeaconPendingValidator: tt.fields.BeaconPendingValidator,
 			}
-			got, got1, got2, got3 := beaconBestState.processInstruction(tt.args.instruction, tt.args.blockchain, tt.args.committeeChange, tt.args.autoStaking)
+			got, got1, got2, got3 := beaconBestState.processInstruction(tt.args.instruction, tt.args.blockchain, tt.args.committeeChange)
 
 			if tt.want1 && got.Error() == tt.want.Error() {
 				t.Errorf("processInstruction() got = %v, want %v", got, tt.want)
