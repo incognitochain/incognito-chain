@@ -1779,7 +1779,6 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	const (
 		notmining = "notmining"
 		syncing   = "syncing"
-		ready     = "ready"
 		mining    = "mining"
 		pending   = "pending"
 		waiting   = "waiting"
@@ -1791,9 +1790,15 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 		//Beacon: chain = -1
 		role, chainID := serverObj.GetUserMiningState()
 		layer := ""
+
 		if chainID == -2 {
-			return notmining
+			if role == "" {
+				return notmining
+			} else {
+				return waiting
+			}
 		}
+
 		if chainID == -1 {
 			layer = common.BeaconRole
 		} else if chainID >= 0 {
@@ -1813,8 +1818,6 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 				return syncing
 			case common.PendingRole:
 				return pending
-			case common.WaitingRole:
-				return waiting
 			}
 		case common.ShardRole:
 			if chain != chainID {
@@ -1828,8 +1831,6 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 				return syncing
 			case common.PendingRole:
 				return pending
-			case common.WaitingRole:
-				return waiting
 			case common.SyncingRole:
 				return syncing
 			}
@@ -2329,7 +2330,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	//For Shard
 	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
 	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
-
+	shardCandidateFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCandidate()
 	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {
 		for _, v := range chain.GetCommittee() {
@@ -2357,6 +2358,13 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 				return common.SyncingRole, chain.GetShardID()
 			}
+		}
+	}
+
+	//if is waiting for assigning
+	for _, v := range shardCandidateFromBeaconView {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.WaitingRole, -2
 		}
 	}
 
