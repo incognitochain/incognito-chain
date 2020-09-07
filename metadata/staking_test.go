@@ -224,9 +224,11 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		CommitteePublicKey           string
 	}
 	type args struct {
-		bcr          metadata.BlockchainRetriever
-		txr          metadata.Transaction
-		beaconHeight uint64
+		chainRetriever  metadata.ChainRetriever
+		shardRetriever  metadata.ShardViewRetriever
+		beaconRetriever metadata.BeaconViewRetriever
+		beaconHeight    uint64
+		tx              metadata.Transaction
 	}
 
 	txIsPrivacyError := &mocks.Transaction{}
@@ -236,19 +238,19 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	txGetUniqueReceiverError.On("IsPrivacy").Return(false)
 	txGetUniqueReceiverError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
 
-	bcrBase58CheckDeserializeError := &mocks.BlockchainRetriever{}
+	bcrBase58CheckDeserializeError := &mocks.ChainRetriever{}
 	bcrBase58CheckDeserializeError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiipQxBdSVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 	txBase58CheckDeserializeError := &mocks.Transaction{}
 	txBase58CheckDeserializeError.On("IsPrivacy").Return(false)
 	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
 
-	bcrBurningAddressPublicKeyError := &mocks.BlockchainRetriever{}
+	bcrBurningAddressPublicKeyError := &mocks.ChainRetriever{}
 	bcrBurningAddressPublicKeyError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 	txBurningAddressPublicKeyError := &mocks.Transaction{}
 	txBurningAddressPublicKeyError.On("IsPrivacy").Return(false)
 	txBurningAddressPublicKeyError.On("GetUniqueReceiver").Return(true, []byte{0, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
 
-	bcrGetStakingAmountShardError := &mocks.BlockchainRetriever{}
+	bcrGetStakingAmountShardError := &mocks.ChainRetriever{}
 	bcrGetStakingAmountShardError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 	bcrGetStakingAmountShardError.On("GetStakingAmountShard").Return(uint64(1750000000000))
 	txGetStakingAmountShardError := &mocks.Transaction{}
@@ -273,20 +275,20 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "check txr.IsPrivacy error case",
+			name:   "check tx.IsPrivacy error case",
 			fields: fields{},
 			args: args{
-				txr: txIsPrivacyError,
+				tx: txIsPrivacyError,
 			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
 		},
 		{
-			name:   "check txr.GetUniqueReceiver error case",
+			name:   "check tx.GetUniqueReceiver error case",
 			fields: fields{},
 			args: args{
-				txr: txGetUniqueReceiverError,
+				tx: txGetUniqueReceiverError,
 			},
 			want:    false,
 			want1:   false,
@@ -296,8 +298,8 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			name:   "check wallet.Base58CheckDeserialize error case",
 			fields: fields{},
 			args: args{
-				txr: txBase58CheckDeserializeError,
-				bcr: bcrBase58CheckDeserializeError,
+				tx:             txBase58CheckDeserializeError,
+				chainRetriever: bcrBase58CheckDeserializeError,
 			},
 			want:    false,
 			want1:   false,
@@ -307,34 +309,34 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 			name:   "stake check burning address error",
 			fields: fields{},
 			args: args{
-				txr: txBurningAddressPublicKeyError,
-				bcr: bcrBurningAddressPublicKeyError,
+				tx:             txBurningAddressPublicKeyError,
+				chainRetriever: bcrBurningAddressPublicKeyError,
 			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
 		},
 		{
-			name: "check wallet.bcr.GetStakingAmountShard() && Stake Shard error case",
+			name: "check wallet.chainRetriever.GetStakingAmountShard() && Stake Shard error case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{metadata.ShardStakingMeta},
 			},
 			args: args{
-				txr: txGetStakingAmountShardError,
-				bcr: bcrGetStakingAmountShardError,
+				tx:             txGetStakingAmountShardError,
+				chainRetriever: bcrGetStakingAmountShardError,
 			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
 		},
 		{
-			name: "check wallet.bcr.GetStakingAmountShard() * 3 && Stake Beacon error case",
+			name: "check wallet.chainRetriever.GetStakingAmountShard() * 3 && Stake Beacon error case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{metadata.BeaconStakingMeta},
 			},
 			args: args{
-				txr: txGetStakingAmountBeaconError,
-				bcr: bcrGetStakingAmountShardError},
+				tx:             txGetStakingAmountBeaconError,
+				chainRetriever: bcrGetStakingAmountShardError},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -347,8 +349,8 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 			},
 			args: args{
-				txr: txBase58CheckDeserialize2Error,
-				bcr: bcrGetStakingAmountShardError,
+				tx:             txBase58CheckDeserialize2Error,
+				chainRetriever: bcrGetStakingAmountShardError,
 			},
 			want:    false,
 			want1:   false,
@@ -362,8 +364,8 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVaNomBK1yYC",
 			},
 			args: args{
-				txr: txBase58CheckDeserialize2Error,
-				bcr: bcrGetStakingAmountShardError,
+				tx:             txBase58CheckDeserialize2Error,
+				chainRetriever: bcrGetStakingAmountShardError,
 			},
 			want:    false,
 			want1:   false,
@@ -378,8 +380,8 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				CommitteePublicKey:           invalidCommitteePublicKeys[0],
 			},
 			args: args{
-				txr: txBase58CheckDeserialize2Error,
-				bcr: bcrGetStakingAmountShardError,
+				tx:             txBase58CheckDeserialize2Error,
+				chainRetriever: bcrGetStakingAmountShardError,
 			},
 			want:    false,
 			want1:   false,
@@ -394,8 +396,8 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				txr: txBase58CheckDeserialize2Error,
-				bcr: bcrGetStakingAmountShardError,
+				tx:             txBase58CheckDeserialize2Error,
+				chainRetriever: bcrGetStakingAmountShardError,
 			},
 			want:    true,
 			want1:   true,
@@ -412,7 +414,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}
-			got, got1, err := stakingMetadata.ValidateSanityData(tt.args.bcr, tt.args.txr, tt.args.beaconHeight)
+			got, got1, err := stakingMetadata.ValidateSanityData(tt.args.chainRetriever, tt.args.shardRetriever, tt.args.beaconRetriever, tt.args.beaconHeight, tt.args.tx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateSanityData() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -430,16 +432,16 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)
-	happyCaseBlockChainRetriever := &mocks.BlockchainRetriever{}
-	happyCaseBlockChainRetriever.On("GetAllCommitteeValidatorCandidate").
+	happyCaseBeaconRetriever := &mocks.BeaconViewRetriever{}
+	happyCaseBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			nil)
-	stakeAlreadyBlockChainRetriever := &mocks.BlockchainRetriever{}
-	stakeAlreadyBlockChainRetriever.On("GetAllCommitteeValidatorCandidate").
+	stakeAlreadyBeaconRetriever := &mocks.BeaconViewRetriever{}
+	stakeAlreadyBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{validCommitteePublicKeyStructs[0]}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			nil)
-	getCommitteeErrorBlockChainRetriever := &mocks.BlockchainRetriever{}
-	getCommitteeErrorBlockChainRetriever.On("GetAllCommitteeValidatorCandidate").
+	getCommitteeErrorBeaconRetriever := &mocks.BeaconViewRetriever{}
+	getCommitteeErrorBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			errors.New("get committee error"))
 
@@ -452,10 +454,12 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		CommitteePublicKey           string
 	}
 	type args struct {
-		txr     metadata.Transaction
-		bcr     metadata.BlockchainRetriever
-		b       byte
-		stateDB *statedb.StateDB
+		tx                  metadata.Transaction
+		chainRetriever      metadata.ChainRetriever
+		shardViewRetriever  metadata.ShardViewRetriever
+		beaconViewRetriever metadata.BeaconViewRetriever
+		b                   byte
+		stateDB             *statedb.StateDB
 	}
 	tests := []struct {
 		name    string
@@ -477,10 +481,10 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				txr:     &mocks.Transaction{},
-				bcr:     happyCaseBlockChainRetriever,
-				b:       0,
-				stateDB: emptyStateDB,
+				tx:                  &mocks.Transaction{},
+				beaconViewRetriever: happyCaseBeaconRetriever,
+				b:                   0,
+				stateDB:             emptyStateDB,
 			},
 			want:    true,
 			wantErr: false,
@@ -498,10 +502,10 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				txr:     &mocks.Transaction{},
-				bcr:     stakeAlreadyBlockChainRetriever,
-				b:       0,
-				stateDB: emptyStateDB,
+				tx:                  &mocks.Transaction{},
+				beaconViewRetriever: stakeAlreadyBeaconRetriever,
+				b:                   0,
+				stateDB:             emptyStateDB,
 			},
 			want:    false,
 			wantErr: true,
@@ -519,10 +523,10 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				txr:     &mocks.Transaction{},
-				bcr:     getCommitteeErrorBlockChainRetriever,
-				b:       0,
-				stateDB: emptyStateDB,
+				tx:                  &mocks.Transaction{},
+				beaconViewRetriever: getCommitteeErrorBeaconRetriever,
+				b:                   0,
+				stateDB:             emptyStateDB,
 			},
 			want:    false,
 			wantErr: true,
@@ -541,10 +545,10 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           invalidCommitteePublicKeys[0],
 			},
 			args: args{
-				txr:     &mocks.Transaction{},
-				bcr:     happyCaseBlockChainRetriever,
-				b:       0,
-				stateDB: emptyStateDB,
+				tx:                  &mocks.Transaction{},
+				beaconViewRetriever: happyCaseBeaconRetriever,
+				b:                   0,
+				stateDB:             emptyStateDB,
 			},
 			want:    false,
 			wantErr: true,
@@ -560,7 +564,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}
-			got, err := stakingMetadata.ValidateTxWithBlockChain(tt.args.txr, tt.args.bcr, tt.args.b, tt.args.stateDB)
+			got, err := stakingMetadata.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.b, tt.args.stateDB)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateTxWithBlockChain() error = %v, wantErr %v", err, tt.wantErr)
 				return
