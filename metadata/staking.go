@@ -46,7 +46,7 @@ func NewStakingMetadata(
 	}, nil
 }
 
-// TODO: REDUCE_CHECK:
+// TODO: @hung REDUCE_CHECK:
 //	+ no need to IsInBase58ShortFormat because error is already check below by FromString
 //	+ what IsInBase58ShortFormat does is the same as FromString does but for an array
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
@@ -100,7 +100,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 // Have only one receiver
 // Have only one amount corresponding to receiver
 // Receiver Is Burning Address
-// TODO: only one of these 2 combinations of 'true, true' and 'false, false' is return instead of 4 possible combinations -> only return true or false and error is enough
+// TODO: @hung only one of these 2 combinations of 'true, true' and 'false, false' is return instead of 4 possible combinations -> only return true or false and error is enough
 func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")

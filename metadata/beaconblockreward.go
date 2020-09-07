@@ -3,7 +3,6 @@ package metadata
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -97,7 +96,8 @@ func (sbsRes BeaconBlockSalaryRes) ValidateMetadataByItself() bool {
 
 func (sbsRes BeaconBlockSalaryRes) Hash() *common.Hash {
 	record := sbsRes.ProducerAddress.String()
-	record += fmt.Sprint(sbsRes.BeaconBlockHeight)
+	// TODO: @hung change to record += fmt.Sprint(sbsRes.BeaconBlockHeight)
+	record += string(sbsRes.BeaconBlockHeight)
 	record += sbsRes.InfoHash.String()
 
 	// final hash
