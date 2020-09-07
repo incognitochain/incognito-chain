@@ -107,6 +107,10 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 	// Receiver Is Burning Address
 	//
 */
+// REVIEW: @hung
+// - bcr.GetStakingAmountShard()*3, 3 should be set as a constants elsewhere (same for method GetBeaconStakeAmount of stakingMetadata - below) or implement a seperate method for Beacon, reason: easy to find and change
+// - only one of these 2 combinations of 'true, true' and 'false, false' is return instead of 4 possible combinations -> only return true or false and error is enough
+// - stakingMetadata.Type is ShardStakingMeta or BeaconStakingMeta before other
 func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
