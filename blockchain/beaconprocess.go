@@ -908,6 +908,12 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //  #2 random flag
 //  #3 new beacon candidate
 //  #4 new shard candidate
+//	REVIEW: @hung
+//	- Doesn't need a whole blockchain object as param, reasons:
+//		+ doesn't call any of methods provided by blockchain object.
+//		+ variables get from blockchain object are golang built-in types
+//		+ easier for functional testing
+//	-
 
 func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
