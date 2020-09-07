@@ -198,6 +198,10 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 }
 
 func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T) {
+
+	initLog()
+	initPublicKey()
+
 	type fields struct {
 		beaconCommittee            []incognitokey.CommitteePublicKey
 		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
@@ -221,12 +225,82 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 		args   args
 		want   *CommitteeChange
 	}{
-		// {
-		// 	name:   "Valid Input",
-		// 	fields: fields{},
-		// 	args:   args{},
-		// 	want:   &CommitteeChange{},
-		// },
+		{
+			name: "Valid Input",
+			fields: fields{
+				shardCommonPool: []incognitokey.CommitteePublicKey{
+					*incKey2,
+				},
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+						*incKey5,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey6,
+					},
+				},
+				numberOfAssignedCandidates: 1,
+				numberOfRound:              map[string]int{},
+			},
+			args: args{
+				rand:            10000,
+				activeShards:    2,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: &CommitteeChange{
+				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{
+					*incKey2,
+				},
+				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey2,
+						// *incKey3,
+						// *incKey4,
+					},
+					2: []incognitokey.CommitteePublicKey{},
+					3: []incognitokey.CommitteePublicKey{},
+					4: []incognitokey.CommitteePublicKey{},
+					5: []incognitokey.CommitteePublicKey{},
+					6: []incognitokey.CommitteePublicKey{},
+					7: []incognitokey.CommitteePublicKey{},
+				},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+					1: []incognitokey.CommitteePublicKey{},
+					2: []incognitokey.CommitteePublicKey{},
+					3: []incognitokey.CommitteePublicKey{},
+					4: []incognitokey.CommitteePublicKey{},
+					5: []incognitokey.CommitteePublicKey{},
+					6: []incognitokey.CommitteePublicKey{},
+					7: []incognitokey.CommitteePublicKey{},
+				},
+				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+					1: []incognitokey.CommitteePublicKey{},
+					2: []incognitokey.CommitteePublicKey{},
+					3: []incognitokey.CommitteePublicKey{},
+					4: []incognitokey.CommitteePublicKey{},
+					5: []incognitokey.CommitteePublicKey{},
+					6: []incognitokey.CommitteePublicKey{},
+					7: []incognitokey.CommitteePublicKey{},
+				},
+				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+					1: []incognitokey.CommitteePublicKey{},
+					2: []incognitokey.CommitteePublicKey{},
+					3: []incognitokey.CommitteePublicKey{},
+					4: []incognitokey.CommitteePublicKey{},
+					5: []incognitokey.CommitteePublicKey{},
+					6: []incognitokey.CommitteePublicKey{},
+					7: []incognitokey.CommitteePublicKey{},
+				},
+				ShardCommitteeReplaced: map[byte][2][]incognitokey.CommitteePublicKey{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -249,81 +323,76 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 	}
 }
 
-// func TestSnapshotShardCommonPoolV2(t *testing.T) {
-// 	type args struct {
-// 		shardCommonPool   []incognitokey.CommitteePublicKey
-// 		shardCommittee    map[byte][]incognitokey.CommitteePublicKey
-// 		shardSubstitute   map[byte][]incognitokey.CommitteePublicKey
-// 		maxAssignPerShard int
-// 	}
-// 	tests := []struct {
-// 		name                           string
-// 		args                           args
-// 		wantNumberOfAssignedCandidates int
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.maxAssignPerShard); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
-// 				t.Errorf("SnapshotShardCommonPoolV2() = %v, want %v", gotNumberOfAssignedCandidates, tt.wantNumberOfAssignedCandidates)
-// 			}
-// 		})
-// 	}
-// }
+func TestSnapshotShardCommonPoolV2(t *testing.T) {
 
-// func TestBeaconCommitteeStateV2_processConfirmShardSwapInstruction(t *testing.T) {
-// 	type fields struct {
-// 		beaconCommittee            []incognitokey.CommitteePublicKey
-// 		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
-// 		shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
-// 		shardCommonPool            []incognitokey.CommitteePublicKey
-// 		numberOfAssignedCandidates int
-// 		autoStake                  map[string]bool
-// 		rewardReceiver             map[string]privacy.PaymentAddress
-// 		stakingTx                  map[string]common.Hash
-// 		numberOfRound              map[string]int
-// 		mu                         *sync.RWMutex
-// 	}
-// 	type args struct {
-// 		confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction
-// 		env                         *BeaconCommitteeStateEnvironment
-// 		committeeChange             *CommitteeChange
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		fields  fields
-// 		args    args
-// 		want    *CommitteeChange
-// 		wantErr bool
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			b := &BeaconCommitteeStateV2{
-// 				beaconCommittee:            tt.fields.beaconCommittee,
-// 				shardCommittee:             tt.fields.shardCommittee,
-// 				shardSubstitute:            tt.fields.shardSubstitute,
-// 				shardCommonPool:            tt.fields.shardCommonPool,
-// 				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
-// 				autoStake:                  tt.fields.autoStake,
-// 				rewardReceiver:             tt.fields.rewardReceiver,
-// 				stakingTx:                  tt.fields.stakingTx,
-// 				numberOfRound:              tt.fields.numberOfRound,
-// 				mu:                         tt.fields.mu,
-// 			}
-// 			got, err := b.processConfirmShardSwapInstruction(tt.args.confirmShardSwapInstruction, tt.args.env, tt.args.committeeChange)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+	initPublicKey()
+	initLog()
+
+	type args struct {
+		shardCommonPool   []incognitokey.CommitteePublicKey
+		shardCommittee    map[byte][]incognitokey.CommitteePublicKey
+		shardSubstitute   map[byte][]incognitokey.CommitteePublicKey
+		maxAssignPerShard int
+	}
+	tests := []struct {
+		name                           string
+		args                           args
+		wantNumberOfAssignedCandidates int
+	}{
+		{
+			name: "maxAssignPerShard >= len(shardcommittes + subtitutes)",
+			args: args{
+				shardCommonPool: []incognitokey.CommitteePublicKey{
+					*incKey2,
+					*incKey3,
+					*incKey4,
+				},
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5, *incKey6,
+					},
+				},
+				maxAssignPerShard: 5,
+			},
+			wantNumberOfAssignedCandidates: 1,
+		},
+		{
+			name: "maxAssignPerShard < len(shardcommittes + subtitutes)",
+			args: args{
+				shardCommonPool: []incognitokey.CommitteePublicKey{
+					*incKey7,
+					*incKey8,
+				},
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+						*incKey2,
+						*incKey3,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey4, *incKey5, *incKey6,
+					},
+				},
+				maxAssignPerShard: 1,
+			},
+			wantNumberOfAssignedCandidates: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.maxAssignPerShard); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
+				t.Errorf("SnapshotShardCommonPoolV2() = %v, want %v", gotNumberOfAssignedCandidates, tt.wantNumberOfAssignedCandidates)
+			}
+		})
+	}
+}
 
 func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testing.T) {
 
@@ -459,55 +528,57 @@ func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testi
 	}
 }
 
-// func TestBeaconCommitteeStateV2_processConfirmShardSwapInstruction(t *testing.T) {
-// 	type fields struct {
-// 		beaconCommittee            []incognitokey.CommitteePublicKey
-// 		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
-// 		shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
-// 		shardCommonPool            []incognitokey.CommitteePublicKey
-// 		numberOfAssignedCandidates int
-// 		autoStake                  map[string]bool
-// 		rewardReceiver             map[string]privacy.PaymentAddress
-// 		stakingTx                  map[string]common.Hash
-// 		numberOfRound              map[string]int
-// 		mu                         *sync.RWMutex
-// 	}
-// 	type args struct {
-// 		confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction
-// 		env                         *BeaconCommitteeStateEnvironment
-// 		committeeChange             *CommitteeChange
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		fields  fields
-// 		args    args
-// 		want    *CommitteeChange
-// 		wantErr bool
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			b := &BeaconCommitteeStateV2{
-// 				beaconCommittee:            tt.fields.beaconCommittee,
-// 				shardCommittee:             tt.fields.shardCommittee,
-// 				shardSubstitute:            tt.fields.shardSubstitute,
-// 				shardCommonPool:            tt.fields.shardCommonPool,
-// 				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
-// 				autoStake:                  tt.fields.autoStake,
-// 				rewardReceiver:             tt.fields.rewardReceiver,
-// 				stakingTx:                  tt.fields.stakingTx,
-// 				numberOfRound:              tt.fields.numberOfRound,
-// 				mu:                         tt.fields.mu,
-// 			}
-// 			got, err := b.processConfirmShardSwapInstruction(tt.args.confirmShardSwapInstruction, tt.args.env, tt.args.committeeChange)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+func TestBeaconCommitteeStateV2_processConfirmShardSwapInstruction(t *testing.T) {
+	type fields struct {
+		beaconCommittee            []incognitokey.CommitteePublicKey
+		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
+		shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
+		shardCommonPool            []incognitokey.CommitteePublicKey
+		numberOfAssignedCandidates int
+		autoStake                  map[string]bool
+		rewardReceiver             map[string]privacy.PaymentAddress
+		stakingTx                  map[string]common.Hash
+		numberOfRound              map[string]int
+		mu                         *sync.RWMutex
+	}
+	type args struct {
+		confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction
+		env                         *BeaconCommitteeStateEnvironment
+		committeeChange             *CommitteeChange
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *CommitteeChange
+		wantErr bool
+	}{
+		// {},
+		// {},
+		// {},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV2{
+				beaconCommittee:            tt.fields.beaconCommittee,
+				shardCommittee:             tt.fields.shardCommittee,
+				shardSubstitute:            tt.fields.shardSubstitute,
+				shardCommonPool:            tt.fields.shardCommonPool,
+				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
+				autoStake:                  tt.fields.autoStake,
+				rewardReceiver:             tt.fields.rewardReceiver,
+				stakingTx:                  tt.fields.stakingTx,
+				numberOfRound:              tt.fields.numberOfRound,
+				mu:                         tt.fields.mu,
+			}
+			got, err := b.processConfirmShardSwapInstruction(tt.args.confirmShardSwapInstruction, tt.args.env, tt.args.committeeChange)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

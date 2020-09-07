@@ -447,8 +447,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllRequestShardSwapInstruction(en
 			return requestShardSwapInstructions, err
 		}
 		requestShardSwapInstructions = append(requestShardSwapInstructions, requestShardSwapInstruction)
-		fmt.Println("requestShardSwapInstruction:", requestShardSwapInstruction)
-		fmt.Println("requestShardSwapInstructions:", requestShardSwapInstructions)
 	}
 	return requestShardSwapInstructions, nil
 }
