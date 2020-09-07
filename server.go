@@ -1301,7 +1301,7 @@ func (serverObj *Server) GetNodeRole() string {
 	role, shardID := serverObj.GetUserMiningState()
 	switch shardID {
 	case -2:
-		return ""
+		return role
 	case -1:
 		return "BEACON_" + role
 	default:
