@@ -326,6 +326,9 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 // }
 
 func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testing.T) {
+
+	initPublicKey()
+
 	type fields struct {
 		beaconHeight                      uint64
 		beaconHash                        common.Hash
@@ -344,25 +347,70 @@ func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testi
 		wantErr bool
 	}{
 		{
-			name:    "len(subtitutes) == len(committeess) == 0",
-			fields:  fields{},
-			args:    args{},
+			name: "len(subtitutes) == len(committeess) == 0",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee:  map[byte][]incognitokey.CommitteePublicKey{},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					NumberOfFixedBlockValidator: 4,
+				},
+			},
 			want:    []*instruction.RequestShardSwapInstruction{},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name:    "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
-			fields:  fields{},
-			args:    args{},
+			name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey5, *incKey6},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					NumberOfFixedBlockValidator: 0,
+					Epoch:                       200,
+					RandomNumber:                10000,
+					MaxCommitteeSize:            5,
+				},
+			},
 			want:    []*instruction.RequestShardSwapInstruction{},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name:    "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
-			fields:  fields{},
-			args:    args{},
+			name: "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey5, *incKey6},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					NumberOfFixedBlockValidator: 0,
+					Epoch:                       200,
+					RandomNumber:                10000,
+					MaxCommitteeSize:            1,
+				},
+			},
 			want:    []*instruction.RequestShardSwapInstruction{},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

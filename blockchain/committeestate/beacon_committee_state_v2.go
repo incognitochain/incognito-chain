@@ -448,6 +448,7 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllRequestShardSwapInstruction(en
 		}
 		requestShardSwapInstructions = append(requestShardSwapInstructions, requestShardSwapInstruction)
 	}
+	fmt.Println(requestShardSwapInstructions)
 	return requestShardSwapInstructions, nil
 }
 
@@ -568,7 +569,7 @@ func (b *BeaconCommitteeStateV2) processConfirmShardSwapInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, error) {
-	//TODO: Duplicate processing?
+	//TODO: @hung Duplicate processing?
 	shardID := byte(confirmShardSwapInstruction.ChainID)
 	// delete in public key out of sharding pending validator list
 	if len(confirmShardSwapInstruction.InPublicKeys) > 0 {

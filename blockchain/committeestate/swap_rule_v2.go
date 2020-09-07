@@ -22,6 +22,7 @@ func createRequestShardSwapInstructionV2(
 	epoch uint64,
 	randomNumber int64,
 ) (*instruction.RequestShardSwapInstruction, []string, error) {
+	//TODO: @hung Not match with define of the swapV2 func
 	newSubstitutes, _, swappedOutCommittees, swapInCommittees, err := swapV2(
 		substitutes,
 		committees,
@@ -126,6 +127,7 @@ func swapV2(
 
 		return substitutes, committees, swappedOutCommittees, swappedInCommittees, nil
 	}
+	//TODO: @hung Return in 2 branches is different variables (substitutes, committees)
 }
 
 // assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number
