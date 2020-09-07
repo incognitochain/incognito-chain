@@ -82,6 +82,8 @@ func swapV2(
 	// if swap offset = 0 then do nothing
 	swapOffset := (len(substitutes) + len(committees)) / MAX_SWAP_OR_ASSIGN_PERCENT
 	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
+	// fmt.Println("substitutes:", substitutes)
+	// fmt.Println("committees:", committees)
 	if swapOffset == 0 {
 		// return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")
 		return committees, substitutes, []string{}, []string{}, nil
