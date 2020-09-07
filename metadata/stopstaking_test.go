@@ -1,10 +1,12 @@
 package metadata_test
 
 import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metadata/mocks"
 )
 
 // TODO: @lam
@@ -22,7 +24,25 @@ func TestNewStopAutoStakingMetadata(t *testing.T) {
 		want    *metadata.StopAutoStakingMetadata
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "check StakingType error",
+			args: args{
+				stopStakingType: metadata.BeaconStakingMeta,
+			},
+			wantErr: true,
+		},
+		{
+			name: "check StakingType success",
+			args: args{
+				stopStakingType:    metadata.StopAutoStakingMeta,
+				committeePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
+			},
+			want: &metadata.StopAutoStakingMetadata{
+				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -54,7 +74,41 @@ func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Base58CheckDeserialize error",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					metadata.StopAutoStakingMeta,
+				},
+				CommitteePublicKey: "blah",
+			},
+		},
+		{
+			name: "CheckSanityData error",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					metadata.StopAutoStakingMeta,
+				},
+				CommitteePublicKey: "1hm766APBSXcyDbNbPLbb65Hm2DkK35RJp1cwYx95mFExK3VAkE9qfzDJLTKTMiKbscm4zns5QuDpGS4yc5Hi994G1BVVE2hdLgoNJbvxXdbmsRdrwVCENVYJhYk2k1kci7b8ysb9nFXW8fUEJNsBtfQjtXQY7pEqngbwpEFuF45Kj8skjDriKp2Sc9TjxnPw4478dN4h4XYojPaiSo3sJpqJWDfcZ68DqSWuUAud5REAqeBT3sUiyJCpnfZ9Lp2Uk7M7Pc9CeuTZBVfV3M669zpPdErUgWf7VDYe5wujvcMLhqqjvJRe5WREYLjVni1H1d4qhcuzdbPdW8BC4b7xY2qRSBtiFav8tJt7iSdycTeTTsaYN1",
+			},
+		},
+		{
+			name: "stopAutoStakingMetadata error",
+			fields: fields{MetadataBase: metadata.MetadataBase{
+				metadata.ShardStakingMeta,
+			},
+				CommitteePublicKey: "blah"},
+		},
+		{
+			name: "happy case",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					metadata.StopAutoStakingMeta,
+				},
+				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,6 +141,29 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		txr          metadata.Transaction
 		beaconHeight uint64
 	}
+	txIsPrivacyError := &mocks.Transaction{}
+	txIsPrivacyError.On("IsPrivacy").Return(true)
+
+	txGetUniqueReceiverError := &mocks.Transaction{}
+	txGetUniqueReceiverError.On("IsPrivacy").Return(false)
+	txGetUniqueReceiverError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
+
+	bcrBase58CheckDeserializeError := &mocks.BlockchainRetriever{}
+	bcrBase58CheckDeserializeError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiipQxBdSVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
+	txBase58CheckDeserializeError := &mocks.Transaction{}
+	txBase58CheckDeserializeError.On("IsPrivacy").Return(false)
+	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+
+	txStopAutoStakingMetadataError := &mocks.Transaction{}
+	txStopAutoStakingMetadataError.On("IsPrivacy").Return(false)
+	txStopAutoStakingMetadataError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
+
+	bcrCommitteePublicKeyError := &mocks.BlockchainRetriever{}
+	bcrCommitteePublicKeyError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
+	txCommitteePublicKeyError := &mocks.Transaction{}
+	txCommitteePublicKeyError.On("IsPrivacy").Return(false)
+	txCommitteePublicKeyError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -95,7 +172,64 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		want1   bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "txr.IsPrivacy error",
+			args: args{
+				txr: txIsPrivacyError,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:   "check txr.GetUniqueReceiver error case",
+			fields: fields{},
+			args: args{
+				txr: txGetUniqueReceiverError,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name:   "check wallet.Base58CheckDeserialize error case",
+			fields: fields{},
+			args: args{
+				txr: txBase58CheckDeserializeError,
+				bcr: bcrBase58CheckDeserializeError,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "stopAutoStakingMetadata error",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{metadata.ShardStakingMeta},
+			},
+			args: args{
+				txr: txStopAutoStakingMetadataError,
+			},
+			wantErr: true,
+		},
+		{
+			name: "CommitteePublicKey.FromString error",
+			fields: fields{
+				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
+			},
+			args: args{
+				bcr: bcrCommitteePublicKeyError,
+				txr: txCommitteePublicKeyError,
+			},
+			wantErr: true,
+		},
+		{
+			name: "happy case", fields: fields{
+				MetadataBase: metadata.MetadataBase{metadata.StopAutoStakingMeta},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,7 +281,9 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

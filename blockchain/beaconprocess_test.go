@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -20,8 +21,13 @@ import (
 // 	len(shardCandidates) != len(shardRewardReceivers) && len(shardRewardReceivers) != len(shardAutoReStaking)
 func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 	type fields struct {
-		AutoStaking    map[string]bool
-		RewardReceiver map[string]string
+		AutoStaking            map[string]bool
+		RewardReceiver         map[string]string
+		BeaconHeight           uint64
+		ShardCommittee         map[byte][]incognitokey.CommitteePublicKey
+		ShardPendingValidator  map[byte][]incognitokey.CommitteePublicKey
+		BeaconCommittee        []incognitokey.CommitteePublicKey
+		BeaconPendingValidator []incognitokey.CommitteePublicKey
 	}
 	type args struct {
 		instruction     []string
@@ -29,6 +35,16 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		committeeChange *committeeChange
 		autoStaking     map[string]bool
 	}
+
+	bc := &BlockChain{
+		// config: Config{
+		// 	ChainParams: &Params{
+		// 		Epoch: 2,
+		// 	},
+		// },
+	}
+
+	wantCandidate, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{"121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7"})
 	tests := []struct {
 		name   string
 		fields fields
@@ -38,37 +54,68 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 		want2  []incognitokey.CommitteePublicKey
 		want3  []incognitokey.CommitteePublicKey
 	}{
-		// TODO: Add test cases.
 		{
-			name:   "1",
-			fields: fields{},
-			want:   nil,
+			name: "shard candidates only case",
+			fields: fields{
+				AutoStaking:    make(map[string]bool),
+				RewardReceiver: make(map[string]string),
+			},
+			args: args{
+				blockchain:      bc,
+				committeeChange: &committeeChange{},
+				instruction:     []string{"stake", "121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7", "shard", "0000000000000000000000000000000000000000000000000000000000000000", "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX", "false"},
+			},
+			want:  nil,
+			want1: false,
+			want2: []incognitokey.CommitteePublicKey{},
+			want3: wantCandidate,
 		},
 		{
-			name:   "2",
-			fields: fields{},
-			want:   nil,
+			name: "beacon candidates only case",
+			fields: fields{
+				AutoStaking:    make(map[string]bool),
+				RewardReceiver: make(map[string]string),
+			},
+			args: args{
+				blockchain:      bc,
+				committeeChange: &committeeChange{},
+				instruction:     []string{"stake", "121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7", "beacon", "0000000000000000000000000000000000000000000000000000000000000000", "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX", "false"},
+			},
+			want:  nil,
+			want2: wantCandidate,
+			want3: []incognitokey.CommitteePublicKey{},
 		},
 		{
-			name:   "3",
-			fields: fields{},
-			want:   nil,
-		},
-		{
-			name:   "4",
-			fields: fields{},
-			want2:  nil,
-			want3:  nil,
+			name: "error case",
+			fields: fields{
+				AutoStaking:    make(map[string]bool),
+				RewardReceiver: make(map[string]string),
+			},
+			args: args{
+				blockchain:      bc,
+				committeeChange: &committeeChange{},
+				instruction:     []string{"stake", "121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7,121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc", "beacon", "0000000000000000000000000000000000000000000000000000000000000000", "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX", "false"},
+			},
+			want:  NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (length %+v) and Beacon Reward Receiver (length %+v) and Beacon Auto ReStaking (lenght %+v) have equal length", 2, 1, 1)),
+			want1: false,
+			want2: []incognitokey.CommitteePublicKey{},
+			want3: []incognitokey.CommitteePublicKey{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			beaconBestState := &BeaconBestState{
-				AutoStaking:    tt.fields.AutoStaking,
-				RewardReceiver: tt.fields.RewardReceiver,
+				AutoStaking:            tt.fields.AutoStaking,
+				RewardReceiver:         tt.fields.RewardReceiver,
+				BeaconHeight:           tt.fields.BeaconHeight,
+				ShardCommittee:         tt.fields.ShardCommittee,
+				ShardPendingValidator:  tt.fields.ShardPendingValidator,
+				BeaconCommittee:        tt.fields.BeaconCommittee,
+				BeaconPendingValidator: tt.fields.BeaconPendingValidator,
 			}
 			got, got1, got2, got3 := beaconBestState.processInstruction(tt.args.instruction, tt.args.blockchain, tt.args.committeeChange, tt.args.autoStaking)
-			if !reflect.DeepEqual(got, tt.want) {
+
+			if tt.want1 && got.Error() == tt.want.Error() {
 				t.Errorf("processInstruction() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
@@ -82,23 +129,4 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 			}
 		})
 	}
-}
-func _getCommitteeTestObject(testcase string) *committeeChange {
-	switch testcase {
-	case "1":
-	case "2":
-	case "3":
-	case "4":
-	}
-	return nil
-}
-
-func _getBlockChainTestObject(testcase string) *BlockChain {
-	switch testcase {
-	case "1":
-	case "2":
-	case "3":
-	case "4":
-	}
-	return nil
 }
