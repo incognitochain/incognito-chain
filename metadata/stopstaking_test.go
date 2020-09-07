@@ -291,17 +291,6 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 	}
 }
 
-// TODO: @lam
-// TESTCASE
-// 1. RETURN FALSE,ERROR: NOT PASS CONDITION check GetAllCommitteeValidatorCandidateFlattenListFromDatabase
-// 2. RETURN FALSE,ERROR: NOT PASS CONDITION check (common.IndexOfStr(requestedPublicKey, committees) > -1)
-// 3. RETURN FALSE,ERROR: NOT PASS CONDITION check stakingTx[requestedPublicKey]
-// 4. RETURN FALSE,ERROR: NOT PASS CONDITION check common.Hash{}.NewHashFromStr()
-// 5. RETURN FALSE,ERROR: NOT PASS CONDITION check bcr.GetTransactionByHash()
-// 6. RETURN FALSE,ERROR: NOT PASS CONDITION check bytes.Equal(stakingTx.GetSender(), txr.GetSender())
-// 7. RETURN FALSE,ERROR: NOT PASS CONDITION check autoStakingList[stopStakingMetadata.CommitteePublicKey]
-// 8. RETURN FALSE,ERROR: NOT PASS CONDITION check !isAutoStaking
-// 9. RETURN TRUE,NO-ERROR: PASS ALL CONDITION
 func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	type fields struct {
 		MetadataBase       metadata.MetadataBase
