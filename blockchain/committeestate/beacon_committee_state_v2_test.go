@@ -221,7 +221,12 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 		args   args
 		want   *CommitteeChange
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			args:   args{},
+			want:   &CommitteeChange{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -338,7 +343,27 @@ func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testi
 		want    []*instruction.RequestShardSwapInstruction
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "len(subtitutes) == len(committeess) == 0",
+			fields:  fields{},
+			args:    args{},
+			want:    []*instruction.RequestShardSwapInstruction{},
+			wantErr: true,
+		},
+		{
+			name:    "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
+			fields:  fields{},
+			args:    args{},
+			want:    []*instruction.RequestShardSwapInstruction{},
+			wantErr: true,
+		},
+		{
+			name:    "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
+			fields:  fields{},
+			args:    args{},
+			want:    []*instruction.RequestShardSwapInstruction{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -360,3 +385,56 @@ func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testi
 		})
 	}
 }
+
+// func TestBeaconCommitteeStateV2_processConfirmShardSwapInstruction(t *testing.T) {
+// 	type fields struct {
+// 		beaconCommittee            []incognitokey.CommitteePublicKey
+// 		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
+// 		shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
+// 		shardCommonPool            []incognitokey.CommitteePublicKey
+// 		numberOfAssignedCandidates int
+// 		autoStake                  map[string]bool
+// 		rewardReceiver             map[string]privacy.PaymentAddress
+// 		stakingTx                  map[string]common.Hash
+// 		numberOfRound              map[string]int
+// 		mu                         *sync.RWMutex
+// 	}
+// 	type args struct {
+// 		confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction
+// 		env                         *BeaconCommitteeStateEnvironment
+// 		committeeChange             *CommitteeChange
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		fields  fields
+// 		args    args
+// 		want    *CommitteeChange
+// 		wantErr bool
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			b := &BeaconCommitteeStateV2{
+// 				beaconCommittee:            tt.fields.beaconCommittee,
+// 				shardCommittee:             tt.fields.shardCommittee,
+// 				shardSubstitute:            tt.fields.shardSubstitute,
+// 				shardCommonPool:            tt.fields.shardCommonPool,
+// 				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
+// 				autoStake:                  tt.fields.autoStake,
+// 				rewardReceiver:             tt.fields.rewardReceiver,
+// 				stakingTx:                  tt.fields.stakingTx,
+// 				numberOfRound:              tt.fields.numberOfRound,
+// 				mu:                         tt.fields.mu,
+// 			}
+// 			got, err := b.processConfirmShardSwapInstruction(tt.args.confirmShardSwapInstruction, tt.args.env, tt.args.committeeChange)
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("BeaconCommitteeStateV2.processConfirmShardSwapInstruction() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }

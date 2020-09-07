@@ -568,6 +568,7 @@ func (b *BeaconCommitteeStateV2) processConfirmShardSwapInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, error) {
+	//TODO: Duplicate processing?
 	shardID := byte(confirmShardSwapInstruction.ChainID)
 	// delete in public key out of sharding pending validator list
 	if len(confirmShardSwapInstruction.InPublicKeys) > 0 {
