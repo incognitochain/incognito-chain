@@ -358,6 +358,13 @@ func (c CoinV2) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
+	if c.assetTag != nil {
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
+		coinBytes = append(coinBytes, c.assetTag.ToBytesS()...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
 	return coinBytes
 }
 
@@ -424,6 +431,16 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 	c.amount, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV2 amount error: " + err.Error())
+	}
+	
+	if offset >=len(coinBytes){
+		// for parsing old serialization, which does not have assetTag field
+		c.assetTag = nil
+	}else{
+		c.assetTag, err = parsePointForSetBytes(&coinBytes, &offset)
+		if err != nil {
+			return errors.New("SetBytes CoinV2 assetTag error: " + err.Error())
+		}
 	}
 	return nil
 }
