@@ -24,6 +24,10 @@ func (blockchain *BlockChain) GetBeaconHeightBreakPointBurnAddr() uint64 {
 	return blockchain.config.ChainParams.BeaconHeightBreakPointBurnAddr
 }
 
+func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
+	return blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch
+}
+
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
 	if beaconHeight == 0 {

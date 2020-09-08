@@ -8,7 +8,6 @@ const (
 	IssuingRequestMeta     = 24
 	IssuingResponseMeta    = 25
 	ContractingRequestMeta = 26
-	BurningRequestMeta     = 27
 	IssuingETHRequestMeta  = 80
 	IssuingETHResponseMeta = 81
 
@@ -31,7 +30,10 @@ const (
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = 70
 	BridgeSwapConfirmMeta = 71
+	BurningRequestMeta    = 27
+	BurningRequestMetaV2  = 240
 	BurningConfirmMeta    = 72
+	BurningConfirmMetaV2  = 241
 
 	// pde
 	PDEContributionMeta                   = 90
@@ -88,8 +90,10 @@ const (
 	PortalTopUpWaitingPortingResponseMeta = 203
 
 	// incognito mode for smart contract
-	BurningForDepositToSCRequestMeta = 96
-	BurningConfirmForDepositToSCMeta = 97
+	BurningForDepositToSCRequestMeta   = 96
+	BurningForDepositToSCRequestMetaV2 = 242
+	BurningConfirmForDepositToSCMeta   = 97
+	BurningConfirmForDepositToSCMetaV2 = 243
 )
 
 var minerCreatedMetaTypes = []int{

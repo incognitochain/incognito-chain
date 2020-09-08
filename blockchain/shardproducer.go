@@ -574,7 +574,8 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
-		if shardID == bridgeID && committeeChanged(swapInstruction) {
+		epoch := beaconHeight / blockchain.config.ChainParams.Epoch
+		if shardID == bridgeID && committeeChanged(swapInstruction) && epoch < blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch { // Disable SwapConfirm inst after this epoch
 			blockHeight := view.ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
@@ -593,10 +594,10 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 	}
 	// Pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BridgeShardID)
-	if shardID == bridgeID {
+	if shardID == bridgeID { // Pick burning confirm inst for V1
 		prevBlock := view.BestBlock
 		height := view.ShardHeight + 1
-		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
+		confirmInsts := pickBurningConfirmInstructionV1(beaconBlocks, height)
 		if len(confirmInsts) > 0 {
 			bid := []uint64{}
 			for _, b := range beaconBlocks {
