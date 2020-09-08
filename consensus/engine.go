@@ -39,7 +39,11 @@ func (engine *Engine) GetUserLayer() (string, int) {
 }
 
 func (s *Engine) GetUserRole() (string, string, int) {
-	return s.curringMiningState.layer, s.curringMiningState.role, s.curringMiningState.chainID
+	layer := s.curringMiningState.layer
+	if s.curringMiningState.role == common.WaitingRole {
+		layer = "shard"
+	}
+	return layer, s.curringMiningState.role, s.curringMiningState.chainID
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -75,7 +79,7 @@ func (s *Engine) WatchCommitteeChange() {
 	s.curringMiningState.role = role
 
 	if chainID == -2 {
-		s.curringMiningState.role = ""
+		s.curringMiningState.role = role
 		s.curringMiningState.layer = ""
 		s.NotifyBeaconRole(false)
 		s.NotifyShardRole(-2)
