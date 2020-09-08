@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -108,7 +109,7 @@ type BeaconCommitteeEngine interface {
 		error)
 	InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment)
 	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
-	GenerateAllRequestShardSwapInstruction(env *committeestate.BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error)
+	GenerateAllSwapShardInstructions(env *committeestate.BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 	BuildIncurredInstructions(env *committeestate.BeaconCommitteeStateEnvironment) ([][]string, error)
 }
 
@@ -124,5 +125,4 @@ type ShardCommitteeEngine interface {
 	ProcessInstructionFromBeacon(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 	ProcessInstructionFromShard(env committeestate.ShardCommitteeStateEnvironment) (*committeestate.CommitteeChange, error)
 	GenerateSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
-	GenerateConfirmShardSwapInstruction(env committeestate.ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []string, error)
 }

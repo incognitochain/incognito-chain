@@ -1,6 +1,7 @@
 package instruction
 
 const (
+	SWAP_SHARD_ACTION         = "swapshard"
 	SWAP_ACTION               = "swap"
 	RANDOM_ACTION             = "random"
 	STAKE_ACTION              = "stake"
@@ -20,4 +21,12 @@ const (
 
 const (
 	BEACON_CHAIN_ID = -1
+)
+
+//Swap Instruction Sub Type
+const (
+	END_EPOCH = iota
+	SLASHING
+	INCREASE_COMMITTEES_SIZE
+	DECREASE_COMMITTEES_SIZE
 )

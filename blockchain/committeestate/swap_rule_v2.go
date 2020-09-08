@@ -8,20 +8,17 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-// createRequestShardSwapInstructionV2 create swap instruction and new substitutes list
+// createSwapShardInstructionV2 create swap instruction and new substitutes list
 // return params
 // #1: swap instruction
 // #2: new substitute list
 // #3: error
-func createRequestShardSwapInstructionV2(
+func createSwapShardInstructionV2(
 	shardID byte,
-	substitutes []string,
-	committees []string,
+	substitutes, committees []string,
 	maxCommitteeSize int,
 	numberOfRound map[string]int,
-	epoch uint64,
-	randomNumber int64,
-) (*instruction.RequestShardSwapInstruction, []string, error) {
+) (*instruction.SwapShardInstruction, []string, error) {
 	//TODO: @hung Not match with define of the swapV2 func
 	newSubstitutes, _, swappedOutCommittees, swapInCommittees, err := swapV2(
 		substitutes,
@@ -29,16 +26,17 @@ func createRequestShardSwapInstructionV2(
 		maxCommitteeSize,
 	)
 	if err != nil {
-		return &instruction.RequestShardSwapInstruction{}, []string{}, err
+		return &instruction.SwapShardInstruction{}, []string{}, err
 	}
-	requestShardSwapInstruction := instruction.NewRequestShardSwapInstructionWithValue(
+	//TODO: @tin restructure here
+	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
 		swapInCommittees,
 		swappedOutCommittees,
 		int(shardID),
-		epoch,
-		randomNumber,
+		0, //typeIns
+		0, //height
 	)
-	return requestShardSwapInstruction, newSubstitutes, nil
+	return swapShardInstruction, newSubstitutes, nil
 }
 
 // removeValidatorV2 remove validator and return removed list

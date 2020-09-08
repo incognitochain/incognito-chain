@@ -204,44 +204,10 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 	return hashes, committeeChange, nil
 }
 
-func (engine *ShardCommitteeEngineV2) GenerateConfirmShardSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.ConfirmShardSwapInstruction, []string, error) {
-	confirmShardSwapInstruction := instruction.NewConfirmShardSwapInstruction()
-	for _, beaconInstruction := range env.BeaconInstructions() {
-		if len(beaconInstruction) == 0 {
-			continue
-		}
-		if beaconInstruction[0] == instruction.REQUEST_SHARD_SWAP_ACTION {
-			Logger.log.Infof("GenerateConfirmShardSwapInstruction, shard height %+v, beacon height %+v", env.ShardHeight(), env.BeaconHeight())
-			requestShardSwapInstruction, err := instruction.ValidateAndImportRequestShardSwapInstructionFromString(beaconInstruction)
-			if err != nil {
-				// Return Error for debug purpose
-				return &instruction.ConfirmShardSwapInstruction{}, []string{}, err
-			}
-			if byte(requestShardSwapInstruction.ChainID) == env.ShardID() {
-				confirmShardSwapInstruction = instruction.ConvertRequestToConfirmShardSwapInstruction(requestShardSwapInstruction)
-				shardCommittees, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardCommittee)
-				newShardCommittees, err := getNewShardCommittees(confirmShardSwapInstruction, shardCommittees)
-				if err != nil {
-					return &instruction.ConfirmShardSwapInstruction{}, []string{}, err
-				}
-				Logger.log.Infof("GenerateConfirmShardSwapInstruction, confirmShardSwapInstruction %+v ", confirmShardSwapInstruction)
-				return confirmShardSwapInstruction, newShardCommittees, nil
-			}
-		}
-	}
-	return &instruction.ConfirmShardSwapInstruction{}, []string{}, nil
-}
-
 func getNewShardCommittees(
-	confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction,
 	shardCommittees []string,
 ) ([]string, error) {
-	newShardCommittees, err := removeValidatorV2(shardCommittees, confirmShardSwapInstruction.OutPublicKeys)
-	if err != nil {
-		return []string{}, err
-	}
-	newShardCommittees = append(newShardCommittees, confirmShardSwapInstruction.InPublicKeys...)
-	return newShardCommittees, nil
+	return shardCommittees, nil
 }
 func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
 	shardSubsitutes, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardSubstitute)
@@ -273,8 +239,8 @@ func (s *ShardCommitteeStateV2) processShardBlockInstruction(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 	var err error
-	shardID := env.ShardID()
-	shardCommittees, err := incognitokey.CommitteeKeyListToString(s.shardCommittee)
+	// shardID := env.ShardID()
+	// shardCommittees, err := incognitokey.CommitteeKeyListToString(s.shardCommittee)
 	if err != nil {
 		return nil, err
 	}
@@ -283,20 +249,10 @@ func (s *ShardCommitteeStateV2) processShardBlockInstruction(
 		if len(inst) == 0 {
 			continue
 		}
-		if inst[0] == instruction.CONFIRM_SHARD_SWAP_ACTION {
-			confirmShardSwapInstruction, err := instruction.ValidateAndImportConfirmShardSwapInstructionFromString(inst)
-			if err != nil {
-				return committeeChange, err
-			}
-			tempNewShardCommittees, err := getNewShardCommittees(confirmShardSwapInstruction, shardCommittees)
-			if err != nil {
-				return committeeChange, err
-			}
-			Logger.log.Infof("Shard ConfirmShardSwapInstruction, new shard committee %+v", tempNewShardCommittees)
-			s.shardCommittee, _ = incognitokey.CommitteeBase58KeyListToStruct(tempNewShardCommittees)
-			committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
-			committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], confirmShardSwapInstruction.OutPublicKeyStructs...)
-		}
+		// Logger.log.Infof("Shard ConfirmShardSwapInstruction, new shard committee %+v", tempNewShardCommittees)
+		// s.shardCommittee, _ = incognitokey.CommitteeBase58KeyListToStruct(tempNewShardCommittees)
+		// committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
+		// committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], confirmShardSwapInstruction.OutPublicKeyStructs...)
 	}
 	return committeeChange, nil
 }

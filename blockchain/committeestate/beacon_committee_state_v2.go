@@ -370,16 +370,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
 			Logger.log.Infof("Block %+v, Committee Change %+v", env.BeaconHeight, committeeChange.ShardSubstituteAdded)
-		case instruction.CONFIRM_SHARD_SWAP_ACTION:
-			confirmShardSwapInstruction, err := instruction.ValidateAndImportConfirmShardSwapInstructionFromString(inst)
-			if err != nil {
-				return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			committeeChange, err = newB.processConfirmShardSwapInstruction(
-				confirmShardSwapInstruction, env, committeeChange)
-			if err != nil {
-				return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
@@ -416,10 +406,10 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	return hashes, committeeChange, incuredInstructions, nil
 }
 
-// GenerateAllShardSwapInstruction generate swap instruction for all shard
+// GenerateAllSwapShardInstructions generate swap shard instructions for all shard
 // it also assigned swapped out committee back to substitute list if auto stake is true
-func (engine *BeaconCommitteeEngineV2) GenerateAllRequestShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error) {
-	requestShardSwapInstructions := []*instruction.RequestShardSwapInstruction{}
+func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error) {
+	swapShardInstructions := []*instruction.SwapShardInstruction{}
 	for i := 0; i < env.ActiveShards; i++ {
 		shardID := byte(i)
 		committees := engine.finalBeaconCommitteeStateV2.shardCommittee[shardID]
@@ -434,21 +424,19 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllRequestShardSwapInstruction(en
 		// 1. don't create swap: len(substitutes) == 0 and len(slashedCommittee) == 0
 		// 2. create swap: len(substitutes) == 0 and len(slashedCommittee) > 0
 		// 3. create swap: len(substitutes) > 0 and len(slashedCommittee) == 0
-		requestShardSwapInstruction, _, err := createRequestShardSwapInstructionV2(
+		swapShardInstruction, _, err := createSwapShardInstructionV2(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
 			env.MaxCommitteeSize,
 			engine.finalBeaconCommitteeStateV2.numberOfRound,
-			env.Epoch,
-			env.RandomNumber,
 		)
 		if err != nil {
-			return requestShardSwapInstructions, err
+			return swapShardInstructions, err
 		}
-		requestShardSwapInstructions = append(requestShardSwapInstructions, requestShardSwapInstruction)
+		swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 	}
-	return requestShardSwapInstructions, nil
+	return swapShardInstructions, nil
 }
 
 func (engine *BeaconCommitteeEngineV2) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
@@ -563,62 +551,7 @@ func (b *BeaconCommitteeStateV2) assign(
 	return committeeChange
 }
 
-func (b *BeaconCommitteeStateV2) processConfirmShardSwapInstruction(
-	confirmShardSwapInstruction *instruction.ConfirmShardSwapInstruction,
-	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
-) (*CommitteeChange, error) {
-	//TODO: @hung Duplicate processing?
-	shardID := byte(confirmShardSwapInstruction.ChainID)
-	// delete in public key out of sharding pending validator list
-	if len(confirmShardSwapInstruction.InPublicKeys) > 0 {
-		shardSubstituteStr, err := incognitokey.CommitteeKeyListToString(b.shardSubstitute[shardID])
-		if err != nil {
-			return committeeChange, err
-		}
-		tempShardSubstitute, err := removeValidatorV2(shardSubstituteStr, confirmShardSwapInstruction.InPublicKeys)
-		if err != nil {
-			return committeeChange, err
-		}
-		// update shard pending validator
-		committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
-		b.shardSubstitute[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(tempShardSubstitute)
-		if err != nil {
-			return committeeChange, err
-		}
-		// add new public key to committees
-		committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
-		b.shardCommittee[shardID] = append(b.shardCommittee[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
-	}
-	// delete out public key out of current committees
-	if len(confirmShardSwapInstruction.OutPublicKeys) > 0 {
-		shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(b.shardCommittee[shardID])
-		if err != nil {
-			return committeeChange, err
-		}
-		tempShardCommittees, err := removeValidatorV2(shardCommitteeStr, confirmShardSwapInstruction.OutPublicKeys)
-		if err != nil {
-			return committeeChange, err
-		}
-		// remove old public key in shard committee update shard committee
-		committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], confirmShardSwapInstruction.OutPublicKeyStructs...)
-		b.shardCommittee[shardID], err = incognitokey.CommitteeBase58KeyListToStruct(tempShardCommittees)
-		if err != nil {
-			return committeeChange, err
-		}
-		// check number of round staying in shard pool
-		committeeChange = b.processAfterSwap(
-			env,
-			confirmShardSwapInstruction.RandomNumber,
-			confirmShardSwapInstruction.OutPublicKeys,
-			confirmShardSwapInstruction.OutPublicKeyStructs,
-			byte(confirmShardSwapInstruction.ChainID),
-			committeeChange,
-		)
-	}
-	return committeeChange, nil
-}
-
+//TODO: @tin Use this function to build new swap rule
 // processAfterSwap process swapped out committee public key
 // if number of round is less than MAX_NUMBER_OF_ROUND go back to THAT shard pool, and increase number of round
 // if number of round is equal to or greater than MAX_NUMBER_OF_ROUND

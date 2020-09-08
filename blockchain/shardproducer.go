@@ -478,7 +478,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		instructions                      = [][]string{}
 		bridgeSwapConfirmInst             = []string{}
 		swapOrConfirmShardSwapInstruction = []string{}
-		confirmShardSwapInstruction       = &instruction.ConfirmShardSwapInstruction{}
 		err                               error
 	)
 	// if this beacon height has been seen already then DO NOT generate any more instruction
@@ -517,20 +516,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			}
 			swapOrConfirmShardSwapInstruction = tempSwapInstruction.ToString()
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
-		}
-		env := committeestate.NewShardEnvBuilder().
-			BuildBeaconInstructions(beaconInstructions).
-			BuildShardID(shardID).
-			BuildShardHeight(view.ShardHeight).
-			BuildBeaconHeight(beaconHeight).
-			BuildNumberOfFixedBlockValidators(NumberOfFixedBlockValidators).
-			Build()
-		confirmShardSwapInstruction, shardCommittee, err = view.shardCommitteeEngine.GenerateConfirmShardSwapInstruction(env)
-		if err != nil {
-			return instructions, shardPendingValidator, shardCommittee, err
-		}
-		if !confirmShardSwapInstruction.IsEmpty() {
-			swapOrConfirmShardSwapInstruction = confirmShardSwapInstruction.ToString()
 		}
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
 		// shardCommittee must include all producers and validators in the right order

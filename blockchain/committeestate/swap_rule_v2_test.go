@@ -545,7 +545,7 @@ func Test_swapV2(t *testing.T) {
 	}
 }
 
-func Test_createRequestShardSwapInstructionV2(t *testing.T) {
+func Test_createSwapShardInstructionV2(t *testing.T) {
 
 	initPublicKey()
 	initLog()
@@ -633,16 +633,16 @@ func Test_createRequestShardSwapInstructionV2(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			//TODO: @hung check these testcases
-			got, got1, err := createRequestShardSwapInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffset, tt.args.numberOfRound, tt.args.epoch, tt.args.randomNumber)
+			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffset, tt.args.numberOfRound, tt.args.epoch, tt.args.randomNumber)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("createRequestShardSwapInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("createSwapShardInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("createRequestShardSwapInstructionV2() got = %v, want %v", got, tt.want)
+				t.Errorf("createSwapShardInstructionV2() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("createRequestShardSwapInstructionV2() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("createSwapShardInstructionV2() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

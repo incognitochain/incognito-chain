@@ -15,18 +15,16 @@ import (
 )
 
 type shardInstruction struct {
-	stakeInstructions            []*instruction.StakeInstruction
-	unstakeInstructions          []*instruction.UnstakeInstruction
-	swapInstructions             map[byte][]*instruction.SwapInstruction
-	stopAutoStakeInstructions    []*instruction.StopAutoStakeInstruction
-	confirmShardSwapInstructions []*instruction.ConfirmShardSwapInstruction
+	stakeInstructions         []*instruction.StakeInstruction
+	unstakeInstructions       []*instruction.UnstakeInstruction
+	swapInstructions          map[byte][]*instruction.SwapInstruction
+	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
 }
 
 func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruction) {
 	shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, newShardInstruction.stakeInstructions...)
 	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, newShardInstruction.unstakeInstructions...)
 	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, newShardInstruction.stopAutoStakeInstructions...)
-	shardInstruction.confirmShardSwapInstructions = append(shardInstruction.confirmShardSwapInstructions, newShardInstruction.confirmShardSwapInstructions...)
 	for shardID, swapInstructions := range newShardInstruction.swapInstructions {
 		shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], swapInstructions...)
 	}
@@ -346,14 +344,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
 				stopAutoStakingInstructionsFromBlock = append(stopAutoStakingInstructionsFromBlock, tempStopAutoStakeInstruction)
 			}
-			if inst[0] == instruction.CONFIRM_SHARD_SWAP_ACTION {
-				if err := instruction.ValidateConfirmShardSwapInstructionSanity(inst); err != nil {
-					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
-					continue
-				}
-				confirmShardSwapInstruction := instruction.ImportConfirmShardSwapInstructionFromString(inst)
-				shardInstruction.confirmShardSwapInstructions = append(shardInstruction.confirmShardSwapInstructions, confirmShardSwapInstruction)
-			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
@@ -509,10 +499,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
 	}
-	// Confirm shard swap instruction
-	for _, confirmShardSwapInstruction := range shardInstruction.confirmShardSwapInstructions {
-		instructions = append(instructions, confirmShardSwapInstruction.ToString())
-	}
 	// Unstake
 	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
 		instructions = append(instructions, unstakeInstruction.ToString())
@@ -559,12 +545,12 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		} else {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
-			requestShardSwapInstructions, err := beaconBestState.beaconCommitteeEngine.GenerateAllRequestShardSwapInstruction(env)
+			swapShardInstructions, err := beaconBestState.beaconCommitteeEngine.GenerateAllSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}
-			for _, requestShardSwapInstruction := range requestShardSwapInstructions {
-				instructions = append(instructions, requestShardSwapInstruction.ToString())
+			for _, swapShardInstruction := range swapShardInstructions {
+				instructions = append(instructions, swapShardInstruction.ToString())
 			}
 		}
 	}

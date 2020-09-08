@@ -494,9 +494,10 @@ func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, ass
 	return instructions, remainShardCandidates, assignedCandidates
 }
 
-// GenerateAllShardSwapInstruction do nothing
-func (b *BeaconCommitteeEngineV1) GenerateAllRequestShardSwapInstruction(env *BeaconCommitteeStateEnvironment) ([]*instruction.RequestShardSwapInstruction, error) {
-	return []*instruction.RequestShardSwapInstruction{}, nil
+// GenerateAllSwapShardInstructions do nothing
+func (b *BeaconCommitteeEngineV1) GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) (
+	[]*instruction.SwapShardInstruction, error) {
+	return []*instruction.SwapShardInstruction{}, nil
 }
 
 //BuildIncurredInstructions : BuildIncurredInstruction from instructions
