@@ -80,6 +80,8 @@ type CoinV2 struct {
 	// amount = value
 	mask   *operation.Scalar
 	amount *operation.Scalar
+	// tag is nil unless confidential asset
+	assetTag *operation.Point
 }
 
 func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
@@ -185,6 +187,15 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		value := c.GetAmount().Sub(c.GetAmount(), hash)
 
 		commitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
+		// for `confidential asset` coin, we commit differently
+		if c.GetAssetTag() != nil{
+			com, err := ComputeCommitmentCA(c.GetAssetTag(), randomness, value)
+			if err!=nil{
+				err := errors.New("Cannot recompute commitment when decrypting")
+				return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+			}
+			commitment = com
+		}
 		if !operation.IsPointEqual(commitment, c.GetCommitment()) {
 			err := errors.New("Cannot Decrypt CoinV2: Commitment is not the same after decrypt")
 			return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
@@ -220,6 +231,11 @@ func (c CoinV2) IsEncrypted() bool {
 		return true
 	}
 	tempCommitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
+	if c.GetAssetTag() != nil{
+		// err is only for nil parameters, which we already checked, so here it is ignored
+		com, _ := c.ComputeCommitmentCA()
+		tempCommitment = com
+	}
 	return !operation.IsPointEqual(tempCommitment, c.commitment)
 }
 
@@ -231,6 +247,7 @@ func (c CoinV2) GetPublicKey() *operation.Point  { return c.publicKey }
 func (c CoinV2) GetCommitment() *operation.Point { return c.commitment }
 func (c CoinV2) GetKeyImage() *operation.Point { return c.keyImage }
 func (c CoinV2) GetInfo() []byte               { return c.info }
+func (c CoinV2) GetAssetTag() *operation.Point { return c.assetTag }
 func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
 		return 0
@@ -283,6 +300,8 @@ func (c *CoinV2) SetInfo(b []byte) {
 	c.info = make([]byte, len(b))
 	copy(c.info, b)
 }
+func (c *CoinV2) SetAssetTag(at *operation.Point)     { c.assetTag = at }
+
 func (c CoinV2) Bytes() []byte {
 	coinBytes := []byte{c.GetVersion()}
 	info := c.GetInfo()
