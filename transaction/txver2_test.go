@@ -37,7 +37,7 @@ var (
 	minInputs = 1
 
 	maxTries = 100
-	numOfLoops = 5000
+	numOfLoops = 2000
 )
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
@@ -278,7 +278,8 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
 		pastCoins := make([]coin.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 		for i, _ := range pastCoins {
-			tempCoin,err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
+			// tempCoin,err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
+			tempCoin, _, err := createUniqueOTACoinCA(paymentInfo[i%len(dummyPrivateKeys)], &common.PRVCoinID, dummyDB)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, false, tempCoin.IsEncrypted())
 
@@ -299,7 +300,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 
 		// use the db's interface to write our simulated pastCoins to the database
 		// we do need to re-format the data into bytes first
-		forceSaveCoins(dummyDB, pastCoins, 0, common.PRVCoinID, t)
+		forceSaveCoins(dummyDB, pastCoins, 0, common.ConfidentialAssetID, t)
 
 
 		// now we take some of those stored coins to use as TX input
@@ -330,6 +331,9 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// actually making the TX
 		// `Init` function will also create all necessary proofs and attach them to the TX
 		err = tx.Init(initializingParams)
+		if err != nil{
+			panic(err)
+		}
 		assert.Equal(t,nil,err)
 
 		// verify the TX
@@ -349,11 +353,11 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		testTxV2JsonMarshaler(tx, 25, dummyDB, t)
 
 		// testTxV2DeletedProof(tx, t)
-		// testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
-		// testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
-		// testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
-		// testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
-		// testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
+		testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
+		testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
+		testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
+		testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
+		testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
 	}
 }
 
