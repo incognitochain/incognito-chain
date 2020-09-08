@@ -73,7 +73,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 // #1 new committees list
 // #3 swapped out committees list (removed from committees list
 // #4 swapped in committees list (new committees from substitutes list)
-// TODO: @hung rewrite, do swapoffset have another max-swapoffset parameter
+// TODO: @tin rewrite, do swapoffset have another max-swapoffset parameter
 func swapV2(
 	substitutes []string,
 	committees []string,
