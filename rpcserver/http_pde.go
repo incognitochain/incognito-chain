@@ -46,6 +46,34 @@ type PDETrade struct {
 	BeaconHeight        uint64
 }
 
+type PDERefundedTradeV2 struct {
+	TraderAddressStr    string
+	TokenIDStr          string
+	ReceiveAmount       uint64
+	ShardID             byte
+	RequestedTxID       common.Hash
+	Status 							string
+	BeaconHeight 				uint64
+}
+
+type TradePath struct {
+	TokenIDToBuyStr string
+	ReceiveAmount uint64
+	SellAmount uint64
+	Token1IDStr string
+	Token2IDStr string
+}
+
+type PDEAcceptedTradeV2 struct {
+	TraderAddressStr    string
+	ShardID             byte
+	RequestedTxID       common.Hash
+	Status 							string
+	BeaconHeight 				uint64
+	TradePaths 					[]TradePath
+}
+
+
 type PDEContribution struct {
 	PDEContributionPairID string
 	ContributorAddressStr string
@@ -58,10 +86,12 @@ type PDEContribution struct {
 }
 
 type PDEInfoFromBeaconBlock struct {
-	PDEContributions []*PDEContribution `json:"PDEContributions"`
-	PDETrades        []*PDETrade        `json:"PDETrades"`
-	PDEWithdrawals   []*PDEWithdrawal   `json:"PDEWithdrawals"`
-	BeaconTimeStamp  int64              `json:"BeaconTimeStamp"`
+	PDEContributions 		[]*PDEContribution `json:"PDEContributions"`
+	PDETrades        		[]*PDETrade        `json:"PDETrades"`
+	PDEWithdrawals   		[]*PDEWithdrawal   `json:"PDEWithdrawals"`
+	PDEAcceptedTradesV2 []*PDEAcceptedTradeV2 `json:"PDEAcceptedTradesV2"`
+	PDERefundedTradesV2 []*PDERefundedTradeV2 `json:"PDERefundedTradesV2"`
+	BeaconTimeStamp  		int64              `json:"BeaconTimeStamp"`
 }
 
 type ConvertedPrice struct {
@@ -775,6 +805,79 @@ func parsePDETradeInst(inst []string, beaconHeight uint64) (*PDETrade, error) {
 	return nil, nil
 }
 
+func parsePDERefundedTradeV2Inst(inst []string, beaconHeight uint64) (*PDERefundedTradeV2, error) {
+	status := inst[2]
+	shardID, err := strconv.Atoi(inst[1])
+	if err != nil {
+		return nil, err
+	}
+
+	refundStatus := "fee-refund"
+	if status == common.PDECrossPoolTradeSellingTokenRefundChainStatus {
+		refundStatus = "selling-token-refund"
+	}
+
+	var pdeRefundCrossPoolTrade metadata.PDERefundCrossPoolTrade
+	err = json.Unmarshal([]byte(inst[3]), &pdeRefundCrossPoolTrade)
+	if err != nil {
+		return nil, err
+	}
+	return &PDERefundedTradeV2{
+		TraderAddressStr    : pdeRefundCrossPoolTrade.TraderAddressStr,
+		TokenIDStr         : pdeRefundCrossPoolTrade.TokenIDStr,
+		ReceiveAmount       : pdeRefundCrossPoolTrade.Amount,
+		ShardID             : byte(shardID),
+		RequestedTxID       : pdeRefundCrossPoolTrade.TxReqID,
+		Status: refundStatus,
+		BeaconHeight: beaconHeight,
+	}, nil
+}
+
+func parsePDEAcceptedTradeV2Inst(inst []string, beaconHeight uint64) (*PDEAcceptedTradeV2, error) {
+	shardID, err := strconv.Atoi(inst[1])
+	if err != nil {
+		return nil, err
+	}
+
+	var tradeAcceptedContents []metadata.PDECrossPoolTradeAcceptedContent
+	err = json.Unmarshal([]byte(inst[3]), &tradeAcceptedContents)
+	if err != nil {
+		return nil, err
+	}
+	if len(tradeAcceptedContents) == 0 {
+		return nil, nil
+	}
+
+	tradePaths := make([]TradePath, len(tradeAcceptedContents))
+	for idx, tradeContent := range tradeAcceptedContents {
+		tradePaths[idx] = TradePath{
+			TokenIDToBuyStr : tradeContent.TokenIDToBuyStr,
+			ReceiveAmount : tradeContent.ReceiveAmount,
+			Token1IDStr : tradeContent.Token1IDStr,
+			Token2IDStr : tradeContent.Token2IDStr,
+		}
+		tradePaths[idx].SellAmount = tradeContent.Token2PoolValueOperation.Value
+		if tradeContent.Token1PoolValueOperation.Operator == "+" {
+			tradePaths[idx].SellAmount = tradeContent.Token1PoolValueOperation.Value
+		}
+	}
+
+	receivingTokenIDStr := tradePaths[len(tradePaths)-1].TokenIDToBuyStr
+	sellingTokenIDStr := tradePaths[0].Token1IDStr
+	if sellingTokenIDStr == receivingTokenIDStr {
+		sellingTokenIDStr = tradePaths[0].Token2IDStr
+	}
+
+	return &PDEAcceptedTradeV2{
+		TraderAddressStr    : tradeAcceptedContents[0].TraderAddressStr,
+		ShardID         : byte(shardID),
+		RequestedTxID : tradeAcceptedContents[0].RequestedTxID,
+		Status : "accepted",
+		BeaconHeight : beaconHeight,
+		TradePaths : tradePaths,
+	}, nil
+}
+
 func parsePDEWithdrawalInst(inst []string, beaconHeight uint64) (*PDEWithdrawal, error) {
 	status := inst[2]
 	shardID, err := strconv.Atoi(inst[1])
@@ -837,6 +940,8 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 	pdeInfoFromBeaconBlock := PDEInfoFromBeaconBlock{
 		PDEContributions: []*PDEContribution{},
 		PDETrades:        []*PDETrade{},
+		PDEAcceptedTradesV2:        []*PDEAcceptedTradeV2{},
+		PDERefundedTradesV2:        []*PDERefundedTradeV2{},
 		PDEWithdrawals:   []*PDEWithdrawal{},
 		BeaconTimeStamp:  bcBlk.Header.Timestamp,
 	}
@@ -864,6 +969,21 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 				continue
 			}
 			pdeInfoFromBeaconBlock.PDEWithdrawals = append(pdeInfoFromBeaconBlock.PDEWithdrawals, pdeWithdrawal)
+
+		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+			if inst[2] == common.PDECrossPoolTradeAcceptedChainStatus {
+				acceptedTradeV2, err := parsePDEAcceptedTradeV2Inst(inst, bcHeight)
+				if err != nil || acceptedTradeV2 == nil {
+					continue
+				}
+				pdeInfoFromBeaconBlock.PDEAcceptedTradesV2 = append(pdeInfoFromBeaconBlock.PDEAcceptedTradesV2, acceptedTradeV2)
+			} else {
+				refundedTradeV2, err := parsePDERefundedTradeV2Inst(inst, bcHeight)
+				if err != nil || refundedTradeV2 == nil {
+					continue
+				}
+				pdeInfoFromBeaconBlock.PDERefundedTradesV2 = append(pdeInfoFromBeaconBlock.PDERefundedTradesV2, refundedTradeV2)
+			}
 		}
 	}
 	return pdeInfoFromBeaconBlock, nil
