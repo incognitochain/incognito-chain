@@ -105,7 +105,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	var err error
-	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host, pubsub.WithMaxMessageSize(common.MaxPSMsgSize))
+	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
 	if err != nil {
 		panic(err)
 	}
