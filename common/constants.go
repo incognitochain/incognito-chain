@@ -62,6 +62,8 @@ var (
 var (
 	PRVCoinID   = Hash{4} // To send PRV in custom token
 	PRVCoinName = "PRV"   // To send PRV in custom token
+	ConfidentialAssetID = Hash{5}
+	ConfidentialAssetName = "CA"
 )
 
 // CONSENSUS
