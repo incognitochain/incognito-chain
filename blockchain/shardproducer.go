@@ -51,6 +51,8 @@ import (
 //	3. Build Shard Block Essential Data for Header
 //	4. Update Cloned ShardBestState with New Shard Block
 //	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
+// REVIEW: @hung
+// - Possible reduction of return value for processInstructionFromBeacon
 func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int, proposer string, round int, start time.Time) (*ShardBlock, error) {
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
