@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"errors"
 	"math/big"
 
@@ -73,18 +74,18 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 	sumOutputAssetTagBlinders.Mul(sumOutputAssetTagBlinders, numOfInputs)
 
 	// 2 final elements in `private keys` for MLSAG
-	privKeyMlsag[len(inputCoins)] 	= sumRand
-	privKeyMlsag[len(inputCoins)+1] = new(operation.Scalar).Sub(sumInputAssetTagBlinders, sumOutputAssetTagBlinders)
+	privKeyMlsag[len(inputCoins)] = new(operation.Scalar).Sub(sumInputAssetTagBlinders, sumOutputAssetTagBlinders)
+	privKeyMlsag[len(inputCoins)+1] 	= sumRand
+	
 
 	return privKeyMlsag, nil
 }
-
 
 func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
 	// TODO : fork into newer function which adds a column for real/fake commitments to zero for CFA
 	// then edit flow in MLSAG package to handle 2 final columns instead of 1
 	
-	lenOTA, err := txDatabaseWrapper.getOTACoinLength(params.stateDB, *params.tokenID, shardID)
+	lenOTA, err := txDatabaseWrapper.getOTACoinLength(params.stateDB, common.ConfidentialAssetID, shardID)
 	if err != nil || lenOTA == nil {
 		Logger.Log.Errorf("Getting length of commitment error, either database length ota is empty or has error, error = %v", err)
 		return nil, nil, err
@@ -92,7 +93,6 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 	sumOutputsWithFee := calculateSumOutputsWithFee(coin.CoinV2ArrayToCoinArray(outputCoins), params.fee)
 	inCount := new(operation.Scalar).FromUint64(uint64(len(inputCoins)))
 	outCount := new(operation.Scalar).FromUint64(uint64(len(outputCoins)))
-	sumInputAssetTags := new(operation.Point).Identity()
 
 	sumOutputAssetTags := new(operation.Point).Identity()
 	for _, oc := range outputCoins{
@@ -105,6 +105,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 	for i := 0; i < ringSize; i += 1 {
 		sumInputs := new(operation.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
+		sumInputAssetTags := new(operation.Point).Identity()
 
 		row := make([]*operation.Point, len(inputCoins))
 		rowIndexes := make([]*big.Int, len(inputCoins))
@@ -112,7 +113,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
-				if rowIndexes[j], err = txDatabaseWrapper.getOTACoinIndex(params.stateDB, *params.tokenID, publicKeyBytes); err != nil {
+				if rowIndexes[j], err = txDatabaseWrapper.getOTACoinIndex(params.stateDB, common.ConfidentialAssetID, publicKeyBytes); err != nil {
 					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, err
 				}
@@ -126,7 +127,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
+				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, common.ConfidentialAssetID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
 					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
 					return nil, nil, err
@@ -143,8 +144,9 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 		}
 		sumInputAssetTags.ScalarMult(sumInputAssetTags, outCount)
 
-		row = append(row, sumInputs)
 		row = append(row, sumInputAssetTags.Sub(sumInputAssetTags, sumOutputAssetTags))
+		row = append(row, sumInputs)
+		
 		ring[i] = row
 		indexes[i] = rowIndexes
 	}
@@ -230,7 +232,7 @@ func (tx *TxVersion2) signCA(inp []coin.PlainCoin, out []*coin.CoinV2, outputSha
 	}
 
 	// Set Signature
-	mlsagSignature, err := sag.SignConfidentialAsset(hashedMessage)
+	mlsagSignature, err := sag.Sign(hashedMessage)
 	if err != nil {
 		Logger.Log.Errorf("Cannot signOnMessage mlsagSignature, error %v ", err)
 		return err
@@ -240,6 +242,99 @@ func (tx *TxVersion2) signCA(inp []coin.PlainCoin, out []*coin.CoinV2, outputSha
 	tx.Sig, err = mlsagSignature.ToBytes()
 
 	return err
+}
+
+func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags *operation.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
+	txSigPubKey := new(TxSigPubKeyVer2)
+	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
+		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
+		return nil, NewTransactionErr(UnexpectedError, errors.New(errStr))
+	}
+	indexes := txSigPubKey.Indexes
+	n := len(indexes)
+	if n == 0 {
+		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+	}
+
+	m := len(indexes[0])
+
+	ring := make([][]*operation.Point, n)
+	for i := 0; i < n; i += 1 {
+		sumCommitment := new(operation.Point).Identity()
+		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
+		sumAssetTags := new(operation.Point).Identity()
+		sumAssetTags.Sub(sumAssetTags, sumOutputAssetTags)
+		row := make([]*operation.Point, m+2)
+		for j := 0; j < m; j += 1 {
+			index := indexes[i][j]
+			randomCoinBytes, err := txDatabaseWrapper.getOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+			if err != nil {
+				Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
+				return nil, err
+			}
+			randomCoin := new(coin.CoinV2)
+			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
+				Logger.Log.Errorf("Set coin Byte error %v ", err)
+				return nil, err
+			}
+			row[j] = randomCoin.GetPublicKey()
+			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
+			sumAssetTags.Add(sumAssetTags, randomCoin.GetAssetTag())
+		}
+
+		row[m] 	 = new(operation.Point).Set(sumAssetTags)
+		row[m+1] = new(operation.Point).Set(sumCommitment)
+		ring[i] = row
+	}
+	return mlsag.NewRing(ring), nil
+}
+
+func (tx *TxVersion2) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
+	// check input transaction
+	if tx.Sig == nil || tx.SigPubKey == nil {
+		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be a signed one"))
+	}
+	var err error
+
+	// Reform Ring
+	sumOutputsWithFee := calculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
+	sumOutputAssetTags := new(operation.Point).Identity()
+	for _, oc := range tx.Proof.GetOutputCoins(){
+		output_specific, ok := oc.(*coin.CoinV2)
+		if !ok{
+			Logger.Log.Errorf("Error when casting coin as v2")
+			return false, errors.New("Error when casting coin as v2")
+		}
+		sumOutputAssetTags.Add(sumOutputAssetTags, output_specific.GetAssetTag())
+	}
+	inCount := new(operation.Scalar).FromUint64(uint64(len(tx.GetProof().GetInputCoins())))
+	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
+
+	ring, err := reconstructRingCA(tx.SigPubKey, sumOutputsWithFee, sumOutputAssetTags, transactionStateDB, shardID, tokenID)
+	if err != nil {
+		Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
+		return false, err
+	}
+
+	// Reform MLSAG Signature
+	inputCoins := tx.Proof.GetInputCoins()
+	keyImages := make([]*operation.Point, len(inputCoins)+2)
+	for i := 0; i < len(inputCoins); i += 1 {
+		if inputCoins[i].GetKeyImage()==nil {
+			Logger.Log.Errorf("Error when reconstructing mlsagSignature: missing keyImage")
+			return false, err
+		}
+		keyImages[i] = inputCoins[i].GetKeyImage()
+	}
+	// The last column is gone, so just fill in any value
+	keyImages[len(inputCoins)] = operation.RandomPoint()
+	keyImages[len(inputCoins)+1] = operation.RandomPoint()
+	mlsagSignature, err := getMLSAGSigFromTxSigAndKeyImages(tx.Sig, keyImages)
+	if err != nil {
+		return false, err
+	}
+
+	return mlsag.Verify(mlsagSignature, ring, tx.Hash()[:])
 }
 
 func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, *operation.Point, error) {
