@@ -32,6 +32,8 @@ const (
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
 	IncPubKeyB58Size = 51
+
+	MaxPSMsgSize = 1 << 22 //4Mb
 )
 
 // for exit code
