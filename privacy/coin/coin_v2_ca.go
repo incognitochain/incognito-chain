@@ -42,13 +42,15 @@ func ComputeAssetTagBlinder(sharedSecret *operation.Point, indexForShard uint32)
 
 // this should be an input coin
 func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point,error){
-	pk := new(operation.Scalar).FromBytesS(privateKey)
+	// sk := new(operation.Scalar).FromBytesS(privateKey)
+	var privViewKey []byte = key.GenerateReceivingKey(privateKey)[:]
+	sk := new(operation.Scalar).FromBytesS(privViewKey)
 	// this is g^SharedRandom, previously created by sender of the coin
 	sharedRanPoint, _, err := coin.GetTxRandomDetail()
 	if err != nil {
 		return nil, errors.New("cannot retrieve tx random detail")
 	}
-	sharedSecret := new(operation.Point).ScalarMult(sharedRanPoint, pk)
+	sharedSecret := new(operation.Point).ScalarMult(sharedRanPoint, sk)
 	return sharedSecret, nil
 }
 
