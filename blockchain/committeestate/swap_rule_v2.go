@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
@@ -18,6 +19,8 @@ func createSwapShardInstructionV2(
 	substitutes, committees []string,
 	maxCommitteeSize int,
 	numberOfRound map[string]int,
+	typeIns int,
+	height uint64,
 ) (*instruction.SwapShardInstruction, []string, error) {
 	//TODO: @hung Not match with define of the swapV2 func
 	newSubstitutes, _, swappedOutCommittees, swapInCommittees, err := swapV2(
@@ -28,13 +31,12 @@ func createSwapShardInstructionV2(
 	if err != nil {
 		return &instruction.SwapShardInstruction{}, []string{}, err
 	}
-	//TODO: @tin restructure here
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
 		swapInCommittees,
 		swappedOutCommittees,
 		int(shardID),
-		0, //typeIns
-		0, //height
+		typeIns,
+		height,
 	)
 	return swapShardInstruction, newSubstitutes, nil
 }
@@ -65,6 +67,40 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 	return validators, nil
 }
 
+// // swapV2 swap substitute into committee
+// // input: list subtitutes, committees and max_committee_sizes
+// // with len(committeess) <= max_committee_sizes
+// // return params
+// // #1 new committees list
+// // #2 remained substitutes list
+// // #3 swapped out committees list (removed from committees list)
+// // #4 swapped in committees list (new committees from substitutes list)
+// func swapCommitteesV2(
+// 	substitutes []string,
+// 	committees []string,
+// 	maxCommitteeSize int,
+// ) ([]string, []string, []string, []string, error) {
+// 	tempCommittees := committees
+// 	tempSubtitutes := substitutes
+// 	swappedInCommittees := []string{}
+// 	swappedOutCommittees := []string{}
+
+// 	if len(committees) == 0 {
+// 		if len(substitutes) == 0 {
+// 			Logger.log.Info("len(substitutes) == len(substitutes) == 0")
+// 			return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+// 		}
+// 	}
+
+// 	if len(tempCommittees) < maxCommitteeSize {
+
+// 	} else {
+
+// 	}
+
+// 	return []string{}, []string{}, []string{}, []string{}, nil
+// }
+
 // swapV2 swap substitute into committee
 // return params
 // #2 remained substitutes list
@@ -80,8 +116,6 @@ func swapV2(
 	// if swap offset = 0 then do nothing
 	swapOffset := (len(substitutes) + len(committees)) / MAX_SWAP_OR_ASSIGN_PERCENT
 	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
-	// fmt.Println("substitutes:", substitutes)
-	// fmt.Println("committees:", committees)
 	if swapOffset == 0 {
 		// return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")
 		return committees, substitutes, []string{}, []string{}, nil
@@ -203,4 +237,20 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 		m[v] = byte(i)
 	}
 	return m
+}
+
+//getLatestHeightByShardsState get highest height from list shard states
+// return 0 for empty list states
+// return uint > 0 heights for fork cases
+func getLatestHeightByShardsState(states []types.ShardState) uint64 {
+	if len(states) == 0 {
+		return 0
+	}
+	max := states[0].Height
+	for _, v := range states {
+		if v.Height > max {
+			max = v.Height
+		}
+	}
+	return max
 }

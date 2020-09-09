@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
@@ -29,6 +30,8 @@ type BeaconCommitteeStateEnvironment struct {
 	allCandidateSubstituteCommittee []string
 	unassignedCommonPool            []string
 	allSubstituteCommittees         []string
+	LatestShardsState               map[byte][]types.ShardState
+	SwapSubType                     uint
 }
 
 type BeaconCommitteeStateHash struct {

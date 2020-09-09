@@ -8,14 +8,15 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
+//SwapShardInstruction Shard Swap Instruction
 type SwapShardInstruction struct {
 	InPublicKeys        []string
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
 	OutPublicKeys       []string
 	OutPublicKeyStructs []incognitokey.CommitteePublicKey
-	ChainID             int
-	Height              uint64
-	Type                int
+	ChainID             int    // which shard
+	Height              uint64 // swap in which height
+	Type                int    // sub type of swap shard instruction
 }
 
 func NewSwapShardInstructionWithValue(

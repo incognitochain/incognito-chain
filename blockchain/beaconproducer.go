@@ -96,6 +96,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============Build body===================
 	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
+	latestShardBlockHeights := []string{}
 
 	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
@@ -122,6 +123,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		beaconBlock.Header.Height, shardInstruction,
 		bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
 		blockchain.config.ChainParams.RandomTime, blockchain,
+		tempShardState,
 	)
 	if err != nil {
 		return nil, err
@@ -466,7 +468,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	return shardStates, shardInstruction, tempValidStakePublicKeys, bridgeInstructions, acceptedRewardInstructions, statefulActions
 }
 
-//  GenerateInstruction generate instruction for new beacon block
+//GenerateInstruction generate instruction for new beacon block
 func (beaconBestState *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
 	shardInstruction *shardInstruction,
@@ -475,6 +477,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	chainParamEpoch uint64,
 	randomTime uint64,
 	blockchain *BlockChain,
+	shardsState map[byte][]types.ShardState,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	instructions = append(instructions, bridgeInstructions...)
@@ -545,6 +548,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		} else {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
+			env.LatestShardsState = shardsState
 			swapShardInstructions, err := beaconBestState.beaconCommitteeEngine.GenerateAllSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err

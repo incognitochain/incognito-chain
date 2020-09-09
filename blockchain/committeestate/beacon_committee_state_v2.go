@@ -391,6 +391,17 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if tempIncurredIns != nil {
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
+		case instruction.SWAP_SHARD_ACTION:
+			// Process swap shard action here
+			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
+				continue
+			}
+			committeeChange, err = newB.processSwapShardInstruction(swapShardInstruction, env, committeeChange)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 		}
 	}
 	err = newB.processAutoStakingChange(committeeChange, env)
@@ -408,7 +419,10 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 
 // GenerateAllSwapShardInstructions generate swap shard instructions for all shard
 // it also assigned swapped out committee back to substitute list if auto stake is true
-func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error) {
+// generate all swap shard instructions by only swap by the end of epoch (normally execution)
+func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
+	env *BeaconCommitteeStateEnvironment) (
+	[]*instruction.SwapShardInstruction, error) {
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
 	for i := 0; i < env.ActiveShards; i++ {
 		shardID := byte(i)
@@ -424,16 +438,25 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(env *Bea
 		// 1. don't create swap: len(substitutes) == 0 and len(slashedCommittee) == 0
 		// 2. create swap: len(substitutes) == 0 and len(slashedCommittee) > 0
 		// 3. create swap: len(substitutes) > 0 and len(slashedCommittee) == 0
+
+		latestHeight := getLatestHeightByShardsState(env.LatestShardsState[shardID])
+		if latestHeight == 0 {
+			continue
+		}
+
 		swapShardInstruction, _, err := createSwapShardInstructionV2(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
 			env.MaxCommitteeSize,
 			engine.finalBeaconCommitteeStateV2.numberOfRound,
+			instruction.SWAP_BY_END_EPOCH,
+			latestHeight+1,
 		)
 		if err != nil {
 			return swapShardInstructions, err
 		}
+
 		swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 	}
 	return swapShardInstructions, nil
@@ -551,6 +574,18 @@ func (b *BeaconCommitteeStateV2) assign(
 	return committeeChange
 }
 
+func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
+	swapShardInstruction *instruction.SwapShardInstruction,
+	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange) (*CommitteeChange, error) {
+
+	newCommitteeChange := committeeChange
+
+	//TODO: @tin add random number to env variable
+	// b.processAfterSwap(env, swapShardInstruction.OutPublicKeys)
+
+	return newCommitteeChange, nil
+}
+
 //TODO: @tin Use this function to build new swap rule
 // processAfterSwap process swapped out committee public key
 // if number of round is less than MAX_NUMBER_OF_ROUND go back to THAT shard pool, and increase number of round
@@ -559,7 +594,6 @@ func (b *BeaconCommitteeStateV2) assign(
 // - auto stake is true then using assignment rule v2 to assign this committee public key
 func (b *BeaconCommitteeStateV2) processAfterSwap(
 	env *BeaconCommitteeStateEnvironment,
-	randomNumber int64,
 	outPublicKeys []string,
 	outPublicKeyStructs []incognitokey.CommitteePublicKey,
 	shardID byte,
@@ -580,7 +614,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 	for _, index := range backToSubstitutesIndex {
 		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], outPublicKeyStructs[index])
 		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], outPublicKeyStructs[index])
-		b.numberOfRound[outPublicKeys[index]] += 1
+		b.numberOfRound[outPublicKeys[index]]++
 	}
 
 	for _, index := range swappedOutSubstitutesIndex {
@@ -603,7 +637,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 		}
 	}
 
-	committeeChange = b.assign(candidates, randomNumber, env.ActiveShards, committeeChange)
+	committeeChange = b.assign(candidates, env.RandomNumber, env.ActiveShards, committeeChange)
 
 	return committeeChange
 }
