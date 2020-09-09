@@ -16,9 +16,9 @@ func (coin *CoinV2) ComputeCommitmentCA() (*operation.Point,error){
 	if coin==nil || coin.GetRandomness()==nil || coin.GetAmount()==nil{
 		return nil, errors.New("missing arguments for committing")
 	}
-	gValue_immutable := operation.PedCom.G[operation.PedersenValueIndex]
-	commitment := new(operation.Point).ScalarMult(coin.GetAssetTag(),coin.GetRandomness())
-	commitment.Add(commitment,new(operation.Point).ScalarMult(gValue_immutable,coin.GetAmount()))
+	gRan_immutable := operation.PedCom.G[operation.PedersenRandomnessIndex]
+	commitment := new(operation.Point).ScalarMult(coin.GetAssetTag(),coin.GetAmount())
+	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan_immutable,coin.GetRandomness()))
 	return commitment,nil
 }
 
@@ -26,9 +26,9 @@ func ComputeCommitmentCA(assetTag *operation.Point, r, v *operation.Scalar) (*op
 	if assetTag==nil || r==nil || v==nil{
 		return nil, errors.New("missing arguments for committing to CA coin")
 	}
-	gValue_immutable := operation.PedCom.G[operation.PedersenValueIndex]
-	commitment := new(operation.Point).ScalarMult(assetTag,r)
-	commitment.Add(commitment,new(operation.Point).ScalarMult(gValue_immutable,v))
+	gRan_immutable := operation.PedCom.G[operation.PedersenRandomnessIndex]
+	commitment := new(operation.Point).ScalarMult(assetTag,v)
+	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan_immutable,r))
 	return commitment,nil
 }
 
@@ -68,7 +68,7 @@ func GenerateOTACoinAndSharedSecret(info *key.PaymentInfo, tokenID *common.Hash)
 	c.SetRandomness(operation.RandomScalar())
 	c.SetSharedRandom(operation.RandomScalar()) // r
 	c.SetInfo(info.Message)
-	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
+	// c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 
 	// If this is going to burning address then dont need to create ota
 	if wallet.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
@@ -105,8 +105,11 @@ func GenerateOTACoinAndSharedSecret(info *key.PaymentInfo, tokenID *common.Hash)
 				return nil, nil, errors.New("Cannot create coin without tokenID")
 			}
 			assetTag := operation.HashToPoint(tokenID[:])
-			assetTag.Add(assetTag,new(operation.Point).ScalarMultBase(blinder))
+			assetTag.Add(assetTag,new(operation.Point).ScalarMult(operation.PedCom.G[PedersenRandomnessIndex],blinder))
 			c.SetAssetTag(assetTag)
+			// fmt.Printf("Shared secret is %s\n", string(rK.MarshalText()))
+			// fmt.Printf("Blinder is %s\n", string(blinder.MarshalText()))
+			// fmt.Printf("Asset tag is %s\n", string(assetTag.MarshalText()))
 			com, err := c.ComputeCommitmentCA()
 			if err != nil{
 				return nil, nil, errors.New("Cannot compute commitment for confidential asset")
