@@ -12,6 +12,8 @@ type MatchingPortingCustodianDetail struct {
 	RemoteAddress          string
 	Amount                 uint64
 	LockedAmountCollateral uint64
+
+	LockedTokenCollaterals map[string]uint64 // PubTokenID
 }
 
 type WaitingPortingRequest struct {
@@ -23,6 +25,9 @@ type WaitingPortingRequest struct {
 	portingFee      uint64
 	beaconHeight    uint64
 	txReqID         common.Hash
+
+	shardHeight uint64
+	shardID byte
 }
 
 func (w *WaitingPortingRequest) BeaconHeight() uint64 {

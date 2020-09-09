@@ -17,6 +17,9 @@ type RedeemRequest struct {
 	redeemFee             uint64
 	beaconHeight          uint64
 	txReqID               common.Hash
+
+	shardHeight uint64
+	shardID byte
 }
 
 type MatchingRedeemCustodianDetail struct {

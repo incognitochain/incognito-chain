@@ -11,10 +11,14 @@ type CustodianState struct {
 	incognitoAddress       string
 	totalCollateral        uint64            // prv
 	freeCollateral         uint64            // prv
-	holdingPubTokens       map[string]uint64 // tokenID : amount
-	lockedAmountCollateral map[string]uint64 // tokenID : amount
-	remoteAddresses        map[string]string // tokenID : remote address
-	rewardAmount           map[string]uint64 // tokenID : amount
+	lockedAmountCollateral map[string]uint64 // ptokenID : amount
+	holdingPubTokens       map[string]uint64 // ptokenID : amount
+	remoteAddresses        map[string]string // ptokenID : remote address
+	rewardAmount           map[string]uint64 // ptokenID : amount
+
+	totalTokenCollaterals  map[string]uint64 // publicTokenID : amount
+	freeTokenCollaterals   map[string]uint64 // publicTokenID : amount
+	lockedTokenCollaterals map[string]map[string]uint64 // ptokenID: publicTokenID : amount
 }
 
 func (cs CustodianState) GetIncognitoAddress() string {
