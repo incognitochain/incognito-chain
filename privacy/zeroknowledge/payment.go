@@ -644,7 +644,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	return nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, boolParams map[string]bool) (bool, error) {
 	var sumInputValue, sumOutputValue uint64
 	sumInputValue = 0
 	sumOutputValue = 0
@@ -654,12 +654,30 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	cmShardIDSender := new(privacy.Point)
 	cmShardIDSender.ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromBytes([privacy.Ed25519KeySize]byte{senderShardID}))
 
+	isNewZKP, ok := boolParams["isNewZKP"]
+	if !ok {
+		isNewZKP = true
+	}
+
 	for i := 0; i < len(proof.inputCoins); i++ {
-		// Check input coins' Serial number is created from input coins' input and sender's spending key
-		valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
-		if !valid {
-			privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
+		if isNewZKP{
+			// Check input coins' Serial number is created from input coins' input and sender's spending key
+			valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
+			if !valid {
+				privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
+				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
+			}
+		}else{
+			// Check input coins' Serial number is created from input coins' input and sender's spending key
+			valid, err := proof.serialNumberNoPrivacyProof[i].VerifyOld(nil)
+			if !valid {
+				valid, err = proof.serialNumberNoPrivacyProof[i].Verify(nil)
+				if !valid{
+					privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
+				}
+			}
+
 		}
 
 		// Check input coins' cm is calculated correctly
@@ -733,7 +751,17 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, boolParams map[string]bool) (bool, error) {
+
+	isBatch, ok := boolParams["isBatch"]
+	if !ok {
+		isBatch = false
+	}
+	isNewZKP, ok := boolParams["isNewZKP"]
+	if !ok{
+		isNewZKP = true
+	}
+
 	// verify for input coins
 	cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
@@ -774,16 +802,37 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 		proof.oneOfManyProof[i].Statement.Commitments = commitments
 
-		valid, err := proof.oneOfManyProof[i].Verify()
-		if !valid {
-			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
-		}
-		// Verify for the Proof that input coins' serial number is derived from the committed derivator
-		valid, err = proof.serialNumberProof[i].Verify(nil)
-		if !valid {
-			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
+		if isNewZKP{
+			valid, err := proof.oneOfManyProof[i].Verify()
+			if !valid {
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+			}
+			// Verify for the Proof that input coins' serial number is derived from the committed derivator
+			valid, err = proof.serialNumberProof[i].Verify(nil)
+			if !valid {
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
+				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
+			}
+		}else{
+			valid, err := proof.oneOfManyProof[i].VerifyOld()
+			if !valid {
+				valid, err = proof.oneOfManyProof[i].Verify()
+				if !valid{
+					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				}
+			}
+			// Verify for the Proof that input coins' serial number is derived from the committed derivator
+			valid, err = proof.serialNumberProof[i].VerifyOld(nil)
+			if !valid {
+				valid, err = proof.serialNumberProof[i].Verify(nil)
+				if !valid{
+					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
+				}
+
+			}
 		}
 	}
 
@@ -800,7 +849,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
-	if isBatch == false {
+	if !isBatch {
 		valid, err := proof.aggregatedRangeProof.Verify()
 		if !valid {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
@@ -836,11 +885,16 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
-	// has no privacy
-	if !hasPrivacy {
-		return proof.verifyNoPrivacy(pubKey, fee, stateDB, shardID, tokenID)
+func (proof PaymentProof) Verify(boolParams map[string]bool, pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
 	}
 
-	return proof.verifyHasPrivacy(pubKey, fee, stateDB, shardID, tokenID, isBatch)
+	// has no privacy
+	if !hasPrivacy {
+		return proof.verifyNoPrivacy(pubKey, fee, stateDB, shardID, tokenID, boolParams)
+	}
+
+	return proof.verifyHasPrivacy(pubKey, fee, stateDB, shardID, tokenID, boolParams)
 }
