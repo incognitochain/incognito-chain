@@ -329,6 +329,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 			return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberPrivacyErr, err)
 		}
 		proof.serialNumberProof = append(proof.serialNumberProof, serialNumberProof)
+
 	}
 	var err error
 

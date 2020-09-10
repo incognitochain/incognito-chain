@@ -464,7 +464,12 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+// ValidateTransaction returns true if transaction is valid:
+// - Verify tx signature
+// - Verify the payment proof
+func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+	fmt.Printf("BUGLOG2 ========BEGIN VALIDATE NORMAL TRANSACTION TXHASH: %v=========\n", tx.Hash().String())
+	fmt.Println("BUGLOG2 boolParams", boolParams)
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	if tx.GetType() == common.TxRewardType {
@@ -486,6 +491,15 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 
 	if tx.GetType() == common.TxReturnStakingType {
 		return true, nil //
+	}
+
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+	isNewTransaction, ok := boolParams["isNewTransaction"]
+	if !ok {
+		isNewTransaction = false
 	}
 
 	if tx.Proof != nil {
@@ -534,7 +548,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 			}
 		}
 		// Verify the payment proof
-		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+		valid, err = tx.Proof.Verify(boolParams, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)
@@ -565,6 +579,8 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
 	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
+
+	fmt.Printf("BUGLOG2 ========FINISH VALIDATE NORMAL TRANSACTION TXHASH: %v=========\n", tx.Hash().String())
 
 	return true, nil
 }
@@ -1135,15 +1151,20 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 	return tx.validateNormalTxSanityData(chainRetriever, beaconHeight)
 }
 
-func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
+	ok, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 	if !ok {
 		return false, err
+	}
+
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
 	}
 	if tx.Metadata != nil {
 		if hasPrivacy {
@@ -1158,6 +1179,7 @@ func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.Sta
 	}
 	return true, nil
 }
+
 
 // GetMetadataType returns the type of underlying metadata if is existed
 func (tx Tx) GetMetadataType() int {

@@ -75,6 +75,7 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointFixRandShardCM uint64
+	BCHeightBreakPointNewZKP         uint64
 }
 
 type GenesisParams struct {
@@ -182,6 +183,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 2070000,
+		BCHeightBreakPointNewZKP:         2300000,
 		ETHRemoveBridgeSigEpoch:          21920,
 	}
 	// END TESTNET
@@ -265,6 +267,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
+		BCHeightBreakPointNewZKP:         260000,
 		ETHRemoveBridgeSigEpoch:          2085,
 	}
 	// END TESTNET-2
@@ -347,6 +350,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 644000,
+		BCHeightBreakPointNewZKP:         660000,
 		ETHRemoveBridgeSigEpoch:          1e18,
 	}
 	if IsTestNet {
