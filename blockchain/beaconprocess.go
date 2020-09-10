@@ -425,7 +425,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	tempInstruction, err := curView.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction,
 		bridgeInstructions, acceptedBlockRewardInstructions,
-		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain)
+		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain,
+		tempShardStates)
 	if err != nil {
 		return err
 	}

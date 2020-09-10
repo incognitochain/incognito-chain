@@ -21,12 +21,13 @@ func createSwapShardInstructionV2(
 	numberOfRound map[string]int,
 	typeIns int,
 	height uint64,
+	numberOfFixedValidators uint64,
 ) (*instruction.SwapShardInstruction, []string, error) {
-	//TODO: @hung Not match with define of the swapV2 func
-	newSubstitutes, _, swappedOutCommittees, swapInCommittees, err := swapV2(
+	_, newSubstitutes, swappedOutCommittees, swapInCommittees, err := swapCommitteesV2(
 		substitutes,
 		committees,
 		maxCommitteeSize,
+		numberOfFixedValidators,
 	)
 	if err != nil {
 		return &instruction.SwapShardInstruction{}, []string{}, err
@@ -67,39 +68,71 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 	return validators, nil
 }
 
-// // swapV2 swap substitute into committee
-// // input: list subtitutes, committees and max_committee_sizes
-// // with len(committeess) <= max_committee_sizes
-// // return params
-// // #1 new committees list
-// // #2 remained substitutes list
-// // #3 swapped out committees list (removed from committees list)
-// // #4 swapped in committees list (new committees from substitutes list)
-// func swapCommitteesV2(
-// 	substitutes []string,
-// 	committees []string,
-// 	maxCommitteeSize int,
-// ) ([]string, []string, []string, []string, error) {
-// 	tempCommittees := committees
-// 	tempSubtitutes := substitutes
-// 	swappedInCommittees := []string{}
-// 	swappedOutCommittees := []string{}
+//swapCommitteesV2
+// Input:
+// committees list, subtitutes list, max committee size, number of fixed validators
+// Output:
+// #1 new committees list
+// #2 remained substitutes list
+// #3 swapped out committees list (removed from committees list
+// #4 swapped in committees list (new committees from substitutes list)
+func swapCommitteesV2(
+	committees []string,
+	substitutes []string,
+	maxCommitteeSize int,
+	numberOfFixedValidators uint64,
+) ([]string, []string, []string, []string, error) {
+	swappedInCommittees := []string{}
+	swappedOutCommittees := []string{}
+	// if swap offset = 0 then do nothing
+	swapOffset := (len(substitutes) + len(committees)) / 3
+	if swapOffset == 0 {
+		return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+	}
+	// swap offset must be less than or equal to maxCommitteeSize
+	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
+	if swapOffset > maxCommitteeSize {
+		swapOffset = maxCommitteeSize
+	}
+	// swapOffset must be less than or equal to substitutes length
+	if swapOffset > len(substitutes) {
+		swapOffset = len(substitutes)
+	}
+	// vacantSlot must be equal to or greater than 0
+	vacantSlot := maxCommitteeSize - len(committees)
 
-// 	if len(committees) == 0 {
-// 		if len(substitutes) == 0 {
-// 			Logger.log.Info("len(substitutes) == len(substitutes) == 0")
-// 			return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
-// 		}
-// 	}
+	fixedValidators := committees[:numberOfFixedValidators]
+	committees = committees[numberOfFixedValidators:]
 
-// 	if len(tempCommittees) < maxCommitteeSize {
+	if vacantSlot >= swapOffset {
+		// vacantSlot is greater than number of swap offset
+		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffset]...)
+		committees = append(committees, swappedInCommittees...)
+		substitutes = substitutes[swapOffset:]
+	} else {
+		// vacantSlot is less than number of swap offset
+		// get new committee from substitute list for push in only
+		swappedInCommittees = append(swappedInCommittees, substitutes[:vacantSlot]...)
+		// un-queue substitutes if vacant slot > 0
+		substitutes = substitutes[vacantSlot:]
 
-// 	} else {
+		swapOffsetAfterFillVacantSlot := swapOffset - vacantSlot
 
-// 	}
+		// swapped out committees: record swapped out committees
+		swappedOutCommittees = append(swappedOutCommittees, committees[:swapOffsetAfterFillVacantSlot]...)
+		// un-queue committees:  start from index 0 to swapOffsetAfterFillVacantSlot - 1
+		committees = committees[swapOffsetAfterFillVacantSlot:]
+		// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
+		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
+		// en-queue new validator: from substitute list to committee list
+		committees = append(committees, swappedInCommittees...)
+		// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
+		substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
+	}
+	committees = append(fixedValidators, committees...)
 
-// 	return []string{}, []string{}, []string{}, []string{}, nil
-// }
+	return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+}
 
 // swapV2 swap substitute into committee
 // return params
@@ -107,7 +140,6 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 // #1 new committees list
 // #3 swapped out committees list (removed from committees list
 // #4 swapped in committees list (new committees from substitutes list)
-// TODO: @tin rewrite, do swapoffset have another max-swapoffset parameter
 func swapV2(
 	substitutes []string,
 	committees []string,

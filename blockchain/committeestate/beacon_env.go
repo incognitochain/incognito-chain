@@ -7,31 +7,32 @@ import (
 )
 
 type BeaconCommitteeStateEnvironment struct {
-	BeaconHeight                    uint64
-	Epoch                           uint64
-	BeaconHash                      common.Hash
-	ParamEpoch                      uint64
-	BeaconInstructions              [][]string
-	EpochBreakPointSwapNewKey       []uint64
-	RandomNumber                    int64
-	IsFoundRandomNumber             bool
-	IsBeaconRandomTime              bool
-	AssignOffset                    int
-	DefaultOffset                   int
-	SwapOffset                      int
-	ActiveShards                    int
-	MinShardCommitteeSize           int
-	MinBeaconCommitteeSize          int
-	MaxBeaconCommitteeSize          int
-	MaxCommitteeSize                int
-	ConsensusStateDB                *statedb.StateDB
-	IsReplace                       bool
-	NumberOfFixedBlockValidator     uint64
-	allCandidateSubstituteCommittee []string
-	unassignedCommonPool            []string
-	allSubstituteCommittees         []string
-	LatestShardsState               map[byte][]types.ShardState
-	SwapSubType                     uint
+	BeaconHeight                       uint64
+	Epoch                              uint64
+	BeaconHash                         common.Hash
+	ParamEpoch                         uint64
+	BeaconInstructions                 [][]string
+	EpochBreakPointSwapNewKey          []uint64
+	RandomNumber                       int64
+	IsFoundRandomNumber                bool
+	IsBeaconRandomTime                 bool
+	AssignOffset                       int
+	DefaultOffset                      int
+	SwapOffset                         int
+	ActiveShards                       int
+	MinShardCommitteeSize              int
+	MinBeaconCommitteeSize             int
+	MaxBeaconCommitteeSize             int
+	MaxCommitteeSize                   int
+	ConsensusStateDB                   *statedb.StateDB
+	IsReplace                          bool
+	NumberOfFixedBeaconBlockValidators uint64
+	NumberOfFixedShardBlockValidators  uint64
+	allCandidateSubstituteCommittee    []string
+	unassignedCommonPool               []string
+	allSubstituteCommittees            []string
+	LatestShardsState                  map[byte][]types.ShardState
+	SwapSubType                        uint
 }
 
 type BeaconCommitteeStateHash struct {

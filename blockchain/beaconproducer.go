@@ -96,7 +96,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============Build body===================
 	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
-	latestShardBlockHeights := []string{}
 
 	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
 		featureStateDB := curView.GetBeaconFeatureStateDB()

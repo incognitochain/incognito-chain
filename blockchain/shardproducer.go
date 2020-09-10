@@ -483,23 +483,23 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
 		backupShardCommittee := shardCommittee
-		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
-		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
+		fixedProducerShardValidators := shardCommittee[:NumberOfFixedShardBlockValidators]
+		shardCommittee = shardCommittee[NumberOfFixedShardBlockValidators:]
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
-		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedBlockValidators
+		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedShardBlockValidators
 		var minShardCommitteeSize int
-		if view.MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+		if view.MinShardCommitteeSize-NumberOfFixedShardBlockValidators < 0 {
 			minShardCommitteeSize = 0
 		} else {
-			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedBlockValidators
+			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedShardBlockValidators
 		}
 		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-			swapOrConfirmShardSwapInstruction, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, backupShardCommittee, NumberOfFixedBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
+			swapOrConfirmShardSwapInstruction, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, backupShardCommittee, NumberOfFixedShardBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
 		} else {
 			tempSwapInstruction := instruction.NewSwapInstruction()
 			env := committeestate.NewShardEnvBuilder().

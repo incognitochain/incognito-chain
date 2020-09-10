@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"sort"
 	"testing"
-
-	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 func Test_sortShardIDByIncreaseOrder(t *testing.T) {
@@ -495,6 +493,19 @@ func Test_swapV2(t *testing.T) {
 			wantErr: false,
 		},
 		// {
+		// 	name: "len(committees) < maxCommitteeSize && len(committees) + len(subtitutes) <= maxCommitteeSize",
+		// 	args: args{
+		// 		substitutes:      []string{key3, key4, key5},
+		// 		committees:       []string{key, key2},
+		// 		maxCommitteeSize: 5,
+		// 	},
+		// 	want:    []string{key, key2, key3, key4, key5},
+		// 	want1:   []string{},
+		// 	want2:   []string{},
+		// 	want3:   []string{key3, key4, key5},
+		// 	wantErr: false,
+		// },
+		// {
 		// 	name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
 		// 	args: args{
 		// 		substitutes:      []string{key5, key6},
@@ -545,105 +556,103 @@ func Test_swapV2(t *testing.T) {
 	}
 }
 
-func Test_createSwapShardInstructionV2(t *testing.T) {
+// func Test_createSwapShardInstructionV2(t *testing.T) {
 
-	initPublicKey()
-	initLog()
+// 	initPublicKey()
+// 	initLog()
 
-	type args struct {
-		shardID       byte
-		substitutes   []string
-		committees    []string
-		maxSwapOffset int
-		numberOfRound map[string]int
-		epoch         uint64
-		randomNumber  int64
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *instruction.RequestShardSwapInstruction
-		want1   []string
-		wantErr bool
-	}{
-		{
-			name: "len(subtitutes) == len(committeess) == 0",
-			args: args{
-				shardID:       0,
-				substitutes:   []string{},
-				committees:    []string{},
-				maxSwapOffset: 10,
-				numberOfRound: make(map[string]int),
-				epoch:         10,
-				randomNumber:  3000,
-			},
-			want: &instruction.RequestShardSwapInstruction{
-				InPublicKeys:  []string{},
-				OutPublicKeys: []string{},
-				ChainID:       0,
-				Epoch:         10,
-				RandomNumber:  3000,
-			},
-			want1:   []string{},
-			wantErr: false,
-		},
-		// {
-		// 	name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
-		// 	args: args{
-		// 		shardID:       0,
-		// 		substitutes:   []string{key5, key6},
-		// 		committees:    []string{key, key2, key3, key4},
-		// 		maxSwapOffset: 5,
-		// 		numberOfRound: make(map[string]int),
-		// 		epoch:         10,
-		// 		randomNumber:  3000,
-		// 	},
-		// 	want: &instruction.RequestShardSwapInstruction{
-		// 		InPublicKeys:  []string{key5, key6},
-		// 		OutPublicKeys: []string{key, key2},
-		// 		ChainID:       0,
-		// 		Epoch:         10,
-		// 		RandomNumber:  3000,
-		// 	},
-		// 	want1:   []string{},
-		// 	wantErr: false,
-		// },
-		// {
-		// 	name: "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
-		// 	args: args{
-		// 		shardID:       0,
-		// 		substitutes:   []string{key5, key6},
-		// 		committees:    []string{key, key2, key3, key4},
-		// 		maxSwapOffset: 1,
-		// 		numberOfRound: make(map[string]int),
-		// 		epoch:         10,
-		// 		randomNumber:  3000,
-		// 	},
-		// 	want: &instruction.RequestShardSwapInstruction{
-		// 		InPublicKeys:  []string{key5},
-		// 		OutPublicKeys: []string{key},
-		// 		ChainID:       0,
-		// 		Epoch:         10,
-		// 		RandomNumber:  3000,
-		// 	},
-		// 	want1:   []string{},
-		// 	wantErr: false,
-		// },
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			//TODO: @hung check these testcases
-			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffset, tt.args.numberOfRound, tt.args.epoch, tt.args.randomNumber)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("createSwapShardInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("createSwapShardInstructionV2() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("createSwapShardInstructionV2() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
+// 	type args struct {
+// 		shardID       byte
+// 		substitutes   []string
+// 		committees    []string
+// 		maxSwapOffset int
+// 		numberOfRound map[string]int
+// 		epoch         uint64
+// 		randomNumber  int64
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		args    args
+// 		want    *instruction.SwapShardInstruction
+// 		want1   []string
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "len(subtitutes) == len(committeess) == 0",
+// 			args: args{
+// 				shardID:       0,
+// 				substitutes:   []string{},
+// 				committees:    []string{},
+// 				maxSwapOffset: 10,
+// 				numberOfRound: make(map[string]int),
+// 				epoch:         10,
+// 				randomNumber:  3000,
+// 			},
+// 			want: &instruction.SwapShardInstruction{
+// 				InPublicKeys:  []string{},
+// 				OutPublicKeys: []string{},
+// 				ChainID:       0,
+// 			},
+// 			want1:   []string{},
+// 			wantErr: false,
+// 		},
+// 		// {
+// 		// 	name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
+// 		// 	args: args{
+// 		// 		shardID:       0,
+// 		// 		substitutes:   []string{key5, key6},
+// 		// 		committees:    []string{key, key2, key3, key4},
+// 		// 		maxSwapOffset: 5,
+// 		// 		numberOfRound: make(map[string]int),
+// 		// 		epoch:         10,
+// 		// 		randomNumber:  3000,
+// 		// 	},
+// 		// 	want: &instruction.RequestShardSwapInstruction{
+// 		// 		InPublicKeys:  []string{key5, key6},
+// 		// 		OutPublicKeys: []string{key, key2},
+// 		// 		ChainID:       0,
+// 		// 		Epoch:         10,
+// 		// 		RandomNumber:  3000,
+// 		// 	},
+// 		// 	want1:   []string{},
+// 		// 	wantErr: false,
+// 		// },
+// 		// {
+// 		// 	name: "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
+// 		// 	args: args{
+// 		// 		shardID:       0,
+// 		// 		substitutes:   []string{key5, key6},
+// 		// 		committees:    []string{key, key2, key3, key4},
+// 		// 		maxSwapOffset: 1,
+// 		// 		numberOfRound: make(map[string]int),
+// 		// 		epoch:         10,
+// 		// 		randomNumber:  3000,
+// 		// 	},
+// 		// 	want: &instruction.RequestShardSwapInstruction{
+// 		// 		InPublicKeys:  []string{key5},
+// 		// 		OutPublicKeys: []string{key},
+// 		// 		ChainID:       0,
+// 		// 		Epoch:         10,
+// 		// 		RandomNumber:  3000,
+// 		// 	},
+// 		// 	want1:   []string{},
+// 		// 	wantErr: false,
+// 		// },
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			//TODO: @hung check these testcases
+// 			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffset, tt.args.numberOfRound, tt.args.epoch, tt.args.randomNumber)
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("createSwapShardInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("createSwapShardInstructionV2() got = %v, want %v", got, tt.want)
+// 			}
+// 			if !reflect.DeepEqual(got1, tt.want1) {
+// 				t.Errorf("createSwapShardInstructionV2() got1 = %v, want %v", got1, tt.want1)
+// 			}
+// 		})
+// 	}
+// }
