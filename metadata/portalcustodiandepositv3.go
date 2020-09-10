@@ -13,6 +13,8 @@ import (
 	"strconv"
 )
 
+// TODO: tpp
+// TODO: tpp: need to add file http_portalv3.go
 // PortalCustodianDeposit - portal custodian deposit collateral (PRV)
 // metadata - custodian deposit - create normal tx with this metadata
 type PortalCustodianDepositV3 struct {

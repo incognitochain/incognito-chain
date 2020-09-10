@@ -258,6 +258,9 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
+
+	// TODO: tpp
+	// portal v3
 )
 
 const (

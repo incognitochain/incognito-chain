@@ -243,6 +243,9 @@ var HttpHandler = map[string]httpHandler{
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
 	// get committeeByHeight
+
+	// TODO: tpp
+	// portal v3
 }
 
 // Commands that are available to a limited user

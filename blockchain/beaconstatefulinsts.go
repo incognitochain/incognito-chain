@@ -13,6 +13,8 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
+// TODO: tpp
+
 // build instructions at beacon chain before syncing to shards
 func (blockchain *BlockChain) collectStatefulActions(
 	shardBlockInstructions [][]string,
