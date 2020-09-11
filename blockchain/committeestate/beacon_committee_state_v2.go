@@ -398,6 +398,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
+
 			committeeChange, err = newB.processSwapShardInstruction(swapShardInstruction, env, committeeChange)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -433,10 +434,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		}
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
-		//TODO: @hung rewrite swapV2
-		// 1. don't create swap: len(substitutes) == 0 and len(slashedCommittee) == 0
-		// 2. create swap: len(substitutes) == 0 and len(slashedCommittee) > 0
-		// 3. create swap: len(substitutes) > 0 and len(slashedCommittee) == 0
 
 		latestHeight := getLatestHeightByShardsState(env.LatestShardsState[shardID])
 		if latestHeight == 0 {
@@ -456,7 +453,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		if err != nil {
 			return swapShardInstructions, err
 		}
-
 		swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 	}
 	return swapShardInstructions, nil
@@ -622,42 +618,39 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	var err error
-
+	chainID := byte(swapShardInstruction.ChainID)
 	newCommitteeChange := committeeChange
-
-	//TODO: @tin add random number to env variable
-
 	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
 	tempSwapInPuclicKeys := swapShardInstruction.InPublicKeyStructs
+	tempCommittees := b.shardCommittee[chainID]
+	tempSubtitutes := b.shardSubstitute[chainID]
+	numberFixedValidators := env.NumberOfFixedShardBlockValidators
 
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
-		if !v.IsEqual(b.shardCommittee[byte(swapShardInstruction.ChainID)][0]) {
-			return newCommitteeChange, errors.New("Swap Out Not Valid Committee Public Key")
+		if !v.IsEqual(tempCommittees[numberFixedValidators]) {
+			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
-		b.shardCommittee[byte(swapShardInstruction.ChainID)] =
-			append(b.shardCommittee[byte(swapShardInstruction.ChainID)][:0],
-				b.shardCommittee[byte(swapShardInstruction.ChainID)][0+1:]...)
+		tempCommittees = append(tempCommittees[:numberFixedValidators], tempCommittees[numberFixedValidators+1:]...)
+		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
-	b.shardCommittee[byte(swapShardInstruction.ChainID)] =
-		append(b.shardCommittee[byte(swapShardInstruction.ChainID)],
-			tempSwapInPuclicKeys...)
+	tempCommittees = append(tempCommittees, tempSwapInPuclicKeys...)
+	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPuclicKeys...)
 
 	// process list shard pool
 	for _, v := range tempSwapInPuclicKeys {
-		if !v.IsEqual(b.shardSubstitute[byte(swapShardInstruction.ChainID)][0]) {
-			return newCommitteeChange, errors.New("Swap Out Not Valid Committee Public Key")
+		if !v.IsEqual(b.shardSubstitute[chainID][0]) {
+			return newCommitteeChange, errors.New("Swap Out Not Valid In List Subtitutes Public Key")
 		}
-		b.shardSubstitute[byte(swapShardInstruction.ChainID)] =
-			append(b.shardSubstitute[byte(swapShardInstruction.ChainID)][:0],
-				b.shardSubstitute[byte(swapShardInstruction.ChainID)][0+1:]...)
+		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
+		tempSubtitutes = append(tempSubtitutes[:0], tempSubtitutes[1:]...)
 	}
 
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, err = b.processAfterSwap(env,
 		swapShardInstruction.OutPublicKeys,
 		swapShardInstruction.OutPublicKeyStructs,
-		byte(swapShardInstruction.ChainID),
+		chainID,
 		newCommitteeChange,
 	)
 

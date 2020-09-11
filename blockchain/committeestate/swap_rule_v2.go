@@ -24,11 +24,12 @@ func createSwapShardInstructionV2(
 	numberOfFixedValidators uint64,
 ) (*instruction.SwapShardInstruction, []string, error) {
 	_, newSubstitutes, swappedOutCommittees, swapInCommittees, err := swapCommitteesV2(
-		substitutes,
 		committees,
+		substitutes,
 		maxCommitteeSize,
 		numberOfFixedValidators,
 	)
+
 	if err != nil {
 		return &instruction.SwapShardInstruction{}, []string{}, err
 	}
@@ -39,6 +40,7 @@ func createSwapShardInstructionV2(
 		typeIns,
 		height,
 	)
+
 	return swapShardInstruction, newSubstitutes, nil
 }
 

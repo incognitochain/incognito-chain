@@ -162,14 +162,14 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
 	var committeeEngine ShardCommitteeEngine
-	if blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height >= 1 {
+
+	if blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height == 1 {
 		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
 	} else {
 		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
 	}
 
 	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, committeeEngine)
-
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -182,6 +182,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	}
 	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
+
 	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, []*types.BeaconBlock{genesisBeaconBlock})
 	if err != nil {
 		return err
@@ -193,7 +194,8 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	var committeeEngine BeaconCommitteeEngine
-	if blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height >= 1 {
+
+	if blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height == 1 {
 		committeeEngine = committeestate.NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV2())
 	} else {
 		committeeEngine = committeestate.NewBeaconCommitteeEngineV1(1, initBlock.Header.Hash(), committeestate.NewBeaconCommitteeStateV1())
@@ -232,6 +234,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		RewardStateDBRootHash:    common.EmptyRoot,
 		SlashStateDBRootHash:     common.EmptyRoot,
 	}
+
 	initBeaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	if err := rawdbv2.StoreBeaconRootsHash(blockchain.GetBeaconChainDatabase(), initBlockHash, bRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
