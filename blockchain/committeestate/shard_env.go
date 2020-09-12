@@ -22,7 +22,7 @@ type ShardEnvBuilder interface {
 	BuildOffset(offset int) ShardEnvBuilder
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
-	BuildNumberOfFixedShardBlockValidators(int) ShardEnvBuilder
+	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -48,27 +48,27 @@ type ShardCommitteeStateEnvironment interface {
 	Offset() int
 	SwapOffset() int
 	StakingTx() map[string]string
-	NumberOfFixedShardBlockValidators() int
+	NumberOfFixedBlockValidators() int
 }
 
 //shardCommitteeStateEnvironment :
 type shardCommitteeStateEnvironment struct {
-	shardHeight                       uint64
-	shardBlockHash                    common.Hash
-	beaconBlockHash                   common.Hash
-	shardInstructions                 [][]string
-	beaconInstructions                [][]string
-	txs                               []metadata.Transaction
-	beaconHeight                      uint64
-	chainParamEpoch                   uint64
-	epochBreakPointSwapNewKey         []uint64
-	shardID                           byte
-	maxShardCommitteeSize             int
-	minShardCommitteeSize             int
-	offset                            int
-	swapOffset                        int
-	stakingTx                         map[string]string
-	numberOfFixedShardBlockValidators int
+	shardHeight                  uint64
+	shardBlockHash               common.Hash
+	beaconBlockHash              common.Hash
+	shardInstructions            [][]string
+	beaconInstructions           [][]string
+	txs                          []metadata.Transaction
+	beaconHeight                 uint64
+	chainParamEpoch              uint64
+	epochBreakPointSwapNewKey    []uint64
+	shardID                      byte
+	maxShardCommitteeSize        int
+	minShardCommitteeSize        int
+	offset                       int
+	swapOffset                   int
+	stakingTx                    map[string]string
+	numberOfFixedBlockValidators int
 }
 
 //BuildShardHeight :
@@ -162,9 +162,9 @@ func (env *shardCommitteeStateEnvironment) BuildStakingTx(stakingTx map[string]s
 	return env
 }
 
-func (env *shardCommitteeStateEnvironment) BuildNumberOfFixedShardBlockValidators(
-	NumberOfFixedShardBlockValidators int) ShardEnvBuilder {
-	env.numberOfFixedShardBlockValidators = NumberOfFixedShardBlockValidators
+func (env *shardCommitteeStateEnvironment) BuildNumberOfFixedBlockValidators(
+	numberOfFixedBlockValidators int) ShardEnvBuilder {
+	env.numberOfFixedBlockValidators = numberOfFixedBlockValidators
 	return env
 }
 
@@ -245,8 +245,8 @@ func (env *shardCommitteeStateEnvironment) StakingTx() map[string]string {
 	return env.stakingTx
 }
 
-func (env *shardCommitteeStateEnvironment) NumberOfFixedShardBlockValidators() int {
-	return env.numberOfFixedShardBlockValidators
+func (env *shardCommitteeStateEnvironment) NumberOfFixedBlockValidators() int {
+	return env.numberOfFixedBlockValidators
 }
 
 //Build :

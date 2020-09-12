@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/pkg/errors"
 )
 
 //ShardCommitteeStateHash
@@ -215,6 +216,41 @@ func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommittee
 	return instruction.NewSwapInstruction(), shardSubsitutes, shardCommittees, nil
 }
 
+// processSwapShardInstruction: process swap shard instruction
+func (s *ShardCommitteeStateV2) processSwapShardInstruction(
+	swapShardInstruction *instruction.SwapShardInstruction,
+	env ShardCommitteeStateEnvironment,
+	committeeChange *CommitteeChange) (*CommitteeChange, error) {
+
+	newCommitteeChange := committeeChange
+	chainID := byte(swapShardInstruction.ChainID)
+	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
+	tempSwapInPuclicKeys := swapShardInstruction.InPublicKeyStructs
+	numberFixedValidators := env.NumberOfFixedBlockValidators()
+
+	// process list shard committees
+	for _, v := range tempSwapOutPublicKeys {
+		if !v.IsEqual(s.shardCommittee[numberFixedValidators]) {
+			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
+		}
+		s.shardCommittee = append(s.shardCommittee[:numberFixedValidators], s.shardCommittee[numberFixedValidators+1:]...)
+		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
+	}
+	s.shardCommittee = append(s.shardCommittee, tempSwapInPuclicKeys...)
+	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPuclicKeys...)
+
+	// process list shard pool
+	for _, v := range tempSwapInPuclicKeys {
+		if !v.IsEqual(s.shardSubstitute[0]) {
+			return newCommitteeChange, errors.New("Swap Out Not Valid In List Subtitutes Public Key")
+		}
+		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
+		s.shardSubstitute = append(s.shardSubstitute[:0], s.shardSubstitute[1:]...)
+	}
+
+	return newCommitteeChange, nil
+}
+
 // processInstructionFromBeacon process instruction from beacon blocks
 //	- Get all subtitutes in shard
 //  - Loop over the list instructions:
@@ -222,10 +258,34 @@ func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommittee
 //	- Update shard subtitute added in committee change struct
 //	- Only call once in new or insert block process
 func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
-	listInstructions [][]string,
-	shardID byte,
+	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
-	return committeeChange, nil
+
+	newCommitteeChange := committeeChange
+
+	for _, inst := range env.BeaconInstructions() {
+		switch inst[0] {
+		case instruction.SWAP_SHARD_ACTION:
+			// Process swap shard action here
+			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
+				continue
+			}
+			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
+			if err != nil {
+				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+		case instruction.ASSIGN_ACTION:
+			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
+			if err == nil {
+				s.shardSubstitute = append(s.shardSubstitute, assignInstruction.ShardCandidatesStruct...)
+				newCommitteeChange.ShardSubstituteAdded[env.ShardID()] = append(newCommitteeChange.ShardSubstituteAdded[env.ShardID()], assignInstruction.ShardCandidatesStruct...)
+			}
+		}
+	}
+
+	return newCommitteeChange, nil
 }
 
 //processShardBlockInstruction process shard block instruction for sending to beacon
@@ -265,9 +325,7 @@ func (engine *ShardCommitteeEngineV2) ProcessInstructionFromBeacon(
 	engine.shardCommitteeStateV2.clone(newCommitteeState)
 	engine.shardCommitteeStateV2.mu.RUnlock()
 
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(
-		env.BeaconInstructions(),
-		env.ShardID(), NewCommitteeChange())
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env, NewCommitteeChange())
 
 	if err != nil {
 		return nil, err

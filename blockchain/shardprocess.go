@@ -498,6 +498,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		NewShardEnvBuilder().
 		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
+		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
 		Build()
 
 	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
@@ -729,7 +730,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
-		BuildNumberOfFixedShardBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
@@ -787,7 +788,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildChainParamEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
-		BuildNumberOfFixedShardBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).

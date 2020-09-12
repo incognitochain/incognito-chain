@@ -331,8 +331,8 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	if err != nil {
 		return nil, err
 	}
-	fixedProducerShardValidators := shardCommittee[:env.NumberOfFixedShardBlockValidators()]
-	shardCommittee = shardCommittee[env.NumberOfFixedShardBlockValidators():]
+	fixedProducerShardValidators := shardCommittee[:env.NumberOfFixedBlockValidators()]
+	shardCommittee = shardCommittee[env.NumberOfFixedBlockValidators():]
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(env.ShardInstructions()) != 0 {
@@ -343,12 +343,12 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(ins)
 		if err == nil {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			maxShardCommitteeSize := env.MaxShardCommitteeSize() - env.NumberOfFixedShardBlockValidators()
+			maxShardCommitteeSize := env.MaxShardCommitteeSize() - env.NumberOfFixedBlockValidators()
 			var minShardCommitteeSize int
-			if env.MinShardCommitteeSize()-env.NumberOfFixedShardBlockValidators() < 0 {
+			if env.MinShardCommitteeSize()-env.NumberOfFixedBlockValidators() < 0 {
 				minShardCommitteeSize = 0
 			} else {
-				minShardCommitteeSize = env.MinShardCommitteeSize() - env.NumberOfFixedShardBlockValidators()
+				minShardCommitteeSize = env.MinShardCommitteeSize() - env.NumberOfFixedBlockValidators()
 			}
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err =
 				SwapValidator(shardPendingValidator,
