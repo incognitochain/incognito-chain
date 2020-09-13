@@ -33,7 +33,6 @@ func (b *BeaconCommitteeStateV1) processUnstakeInstruction(
 
 	for _, committeePublicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(committeePublicKey, env.unassignedCommonPool) == -1 {
-			// TODO: @tin is it possible for one key to be not in any list?
 			if common.IndexOfStr(committeePublicKey, env.allSubstituteCommittees) != -1 {
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[committeePublicKey]; ok {

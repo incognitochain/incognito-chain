@@ -630,7 +630,7 @@ func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) BeaconCommitt
 		stakingTx,
 	)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV1(
-		beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, beaconCommitteeState)
+		beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, beaconCommitteeState, committeestate.NORMAL_VERSION)
 	return beaconCommitteeEngine
 }
 
@@ -707,6 +707,7 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		beaconBestState.BeaconHeight,
 		beaconBestState.BestBlockHash,
 		beaconCommitteeStateV2,
+		committeestate.SLASHING_VERSION,
 	)
 	return beaconCommitteeEngine
 }

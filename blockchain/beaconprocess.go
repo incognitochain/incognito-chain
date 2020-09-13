@@ -68,16 +68,39 @@ CONTINUE_VERIFY:
 	if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
 		return err
 	}
+	// c, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
+	// if curView.BeaconHeight >= 19 {
+	// 	Logger.log.Info("[swap-v2] shard committes in beacon view 0:", c)
+	// }
 	// Update best state with new block
 	newBestState, hashes, _, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
+	// c, _ = incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] shard committes in beacon view 1:", c)
+	// }
 
-	// Post verififcation: verify new beaconstate with corresponding block
-	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
-		return err
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish update beacon best state")
+	// }
+
+	if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+		// Post verififcation: verify new beaconstate with corresponding block
+		if err := newBestState.verifyPostProcessingBeaconBlockV2(beaconBlock, blockchain.config.RandomClient, hashes, blockchain.config.ChainParams.Epoch); err != nil {
+			return err
+		}
 	}
+	if curView.beaconCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
+		// Post verififcation: verify new beaconstate with corresponding block
+		if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
+			return err
+		}
+	}
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish verify post processing beacon block v2")
+	// }
 	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", beaconBlock.Header.Height, *beaconBlock.Hash())
 	return nil
 }
@@ -168,6 +191,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return err
 	}
 
+	if newBestState.BeaconHeight >= 20 {
+		Logger.log.Info("[swap-v2] Finish update beacon best state")
+	}
+
 	if len(incurredInstructions) != 0 {
 		err := curView.postProcessIncurredInstructions(incurredInstructions)
 		if err != nil {
@@ -181,29 +208,54 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 			newBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		}
 	}()
+
 	// updateNumOfBlocksByProducers updates number of blocks produced by producers
 	newBestState.updateNumOfBlocksByProducers(beaconBlock, blockchain.config.ChainParams.Epoch)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		// Post verification: verify new beacon best state with corresponding beacon block
-		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err2 != nil {
-			return err2
+		if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+			// Post verification: verify new beacon best state with corresponding beacon block
+			if err2 = newBestState.verifyPostProcessingBeaconBlockV2(beaconBlock, blockchain.config.RandomClient, hashes, blockchain.config.ChainParams.Epoch); err2 != nil {
+				return err2
+			}
+		}
+		if curView.beaconCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
+			// Post verification: verify new beacon best state with corresponding beacon block
+			if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err2 != nil {
+				return err2
+			}
 		}
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
+	if newBestState.BeaconHeight >= 20 {
+		Logger.log.Info("[swap-v2] Finish verifyPostProcessingBeaconBlockV2")
+	}
+	// Logger.log.Info("[swap-v2] Finish verifyPostProcessingBeaconBlockV2")
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
 	}
+	if newBestState.BeaconHeight >= 20 {
+		Logger.log.Info("[swap-v2] Finish Commit Beacon BestState")
+	}
+	// Logger.log.Info("[swap-v2] Finish Commit commitee state")
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
 	}
+	if newBestState.BeaconHeight >= 20 {
+		Logger.log.Info("[swap-v2] Finish Processing Store Beacon Block")
+	}
+	// Logger.log.Info("[swap-v2] Finish Process Store BeaconBlock")
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
+	if newBestState.BeaconHeight >= 20 {
+		Logger.log.Info("[swap-v2] Finish Insert New Beacon Block")
+	}
+	// Logger.log.Info("[swap-v2] Finish Insert New BeaconBlock")
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
@@ -582,6 +634,71 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	return nil
 }
 
+//  verifyPostProcessingBeaconBlockV2 verify block after update beacon best state
+//  - Validator root: BeaconCommittee + BeaconPendingValidator
+//  - Beacon Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
+//  - Shard Candidate root: CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
+//  - Shard Validator root: ShardCommittee + ShardPendingValidator
+//  - Random number if have in instruction
+func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlockV2(beaconBlock *types.BeaconBlock,
+	randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash, epoch uint64) error {
+	startTimeVerifyPostProcessingBeaconBlock := time.Now()
+	if !hashes.BeaconCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.BeaconCommitteeAndValidatorRoot) {
+		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
+	}
+	if !hashes.BeaconCandidateHash.IsEqual(&beaconBlock.Header.BeaconCandidateRoot) {
+		return NewBlockChainError(BeaconCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCandidateRoot, hashes.BeaconCandidateHash))
+	}
+
+	if !(beaconBestState.BeaconHeight%epoch == 0) {
+		if !hashes.ShardCandidateHash.IsEqual(&beaconBlock.Header.ShardCandidateRoot) {
+			return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
+		}
+		if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
+			return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
+		}
+	}
+
+	if false {
+		if !hashes.ShardCandidateHash.IsEqual(&beaconBlock.Header.ShardCandidateRoot) {
+			return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
+		}
+		if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
+			return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
+		}
+	}
+
+	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
+		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
+	}
+	if !TestRandom {
+		//COMMENT FOR TESTING
+		instructions := beaconBlock.Body.Instructions
+		for _, l := range instructions {
+			if l[0] == "random" {
+				startTime := time.Now()
+				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
+				nonce, err := strconv.Atoi(l[1])
+				if err != nil {
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				ok, err := randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
+				Logger.log.Infof("Verify Random number %+v", ok)
+				if err != nil {
+					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				if !ok {
+					return NewBlockChainError(RandomError, errors.New("Error verify random number"))
+				}
+			}
+		}
+	}
+	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
+	return nil
+}
+
 /*
 	Update Beststate with new Block
 */
@@ -654,7 +771,13 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
+		if beaconBestState.BeaconHeight >= 20 {
+			Logger.log.Infof("[swap-v2] UpdateCommitteeState Fail")
+		}
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+	}
+	if beaconBestState.BeaconHeight >= 20 {
+		Logger.log.Infof("[swap-v2] UpdateCommitteeState Success")
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)

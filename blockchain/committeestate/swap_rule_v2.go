@@ -87,10 +87,16 @@ func swapCommitteesV2(
 	swappedInCommittees := []string{}
 	swappedOutCommittees := []string{}
 	// if swap offset = 0 then do nothing
-	swapOffset := (len(substitutes) + len(committees)) / 3
+
+	rootCommittees := committees
+	committees = committees[numberOfFixedValidators:]
+	swapOffset := (len(substitutes) + len(committees)) / MAX_SWAP_OR_ASSIGN_PERCENT
+
+	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
 	if swapOffset == 0 {
-		return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+		return rootCommittees, substitutes, swappedOutCommittees, swappedInCommittees, nil
 	}
+
 	// swap offset must be less than or equal to maxCommitteeSize
 	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
 	if swapOffset > maxCommitteeSize {
@@ -102,9 +108,7 @@ func swapCommitteesV2(
 	}
 	// vacantSlot must be equal to or greater than 0
 	vacantSlot := maxCommitteeSize - len(committees)
-
 	fixedValidators := committees[:numberOfFixedValidators]
-	committees = committees[numberOfFixedValidators:]
 
 	if vacantSlot >= swapOffset {
 		// vacantSlot is greater than number of swap offset

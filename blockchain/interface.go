@@ -84,6 +84,7 @@ type Syncker interface {
 
 //BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
+	Version() uint
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey

@@ -272,16 +272,12 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
+			Logger.log.Info("[swap-v2] swapShardInstruction:", swapShardInstruction)
 			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
 			if err != nil {
 				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-		case instruction.ASSIGN_ACTION:
-			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
-			if err == nil {
-				s.shardSubstitute = append(s.shardSubstitute, assignInstruction.ShardCandidatesStruct...)
-				newCommitteeChange.ShardSubstituteAdded[env.ShardID()] = append(newCommitteeChange.ShardSubstituteAdded[env.ShardID()], assignInstruction.ShardCandidatesStruct...)
-			}
+			Logger.log.Info("[swap-v2] newCommitteeChange.ShardCommitteeAdded[env.ShardID()]:", newCommitteeChange.ShardCommitteeAdded[env.ShardID()])
 		}
 	}
 

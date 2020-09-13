@@ -35,14 +35,16 @@ type BeaconCommitteeEngineV1 struct {
 	beaconHash                        common.Hash
 	beaconCommitteeStateV1            *BeaconCommitteeStateV1
 	uncommittedBeaconCommitteeStateV1 *BeaconCommitteeStateV1
+	version                           uint
 }
 
-func NewBeaconCommitteeEngineV1(beaconHeight uint64, beaconHash common.Hash, beaconCommitteeStateV1 *BeaconCommitteeStateV1) *BeaconCommitteeEngineV1 {
+func NewBeaconCommitteeEngineV1(beaconHeight uint64, beaconHash common.Hash, beaconCommitteeStateV1 *BeaconCommitteeStateV1, version uint) *BeaconCommitteeEngineV1 {
 	return &BeaconCommitteeEngineV1{
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,
 		beaconCommitteeStateV1:            beaconCommitteeStateV1,
 		uncommittedBeaconCommitteeStateV1: NewBeaconCommitteeStateV1(),
+		version:                           version,
 	}
 }
 
@@ -127,6 +129,11 @@ func (b *BeaconCommitteeStateV1) reset() {
 	b.autoStake = make(map[string]bool)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
+}
+
+//Version :
+func (engine BeaconCommitteeEngineV1) Version() uint {
+	return engine.version
 }
 
 //GetBeaconHeight :

@@ -527,3 +527,213 @@ func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testi
 		})
 	}
 }
+
+func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
+
+	initPublicKey()
+	initLog()
+
+	type fields struct {
+		beaconCommittee            []incognitokey.CommitteePublicKey
+		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
+		shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
+		shardCommonPool            []incognitokey.CommitteePublicKey
+		numberOfAssignedCandidates int
+		autoStake                  map[string]bool
+		rewardReceiver             map[string]privacy.PaymentAddress
+		stakingTx                  map[string]common.Hash
+		numberOfRound              map[string]int
+		mu                         *sync.RWMutex
+	}
+	type args struct {
+		swapShardInstruction *instruction.SwapShardInstruction
+		env                  *BeaconCommitteeStateEnvironment
+		committeeChange      *CommitteeChange
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *CommitteeChange
+		wantErr bool
+	}{
+		{
+			name: "Swap Out Not Valid In List Committees Public Key",
+			fields: fields{
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey2, *incKey3, *incKey4,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				numberOfRound:  map[string]int{},
+				autoStake:      map[string]bool{},
+				rewardReceiver: map[string]privacy.PaymentAddress{},
+				stakingTx:      map[string]common.Hash{},
+			},
+			args: args{
+				swapShardInstruction: &instruction.SwapShardInstruction{
+					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey6,
+					},
+				},
+				env: &BeaconCommitteeStateEnvironment{},
+				committeeChange: &CommitteeChange{
+					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
+				},
+			},
+			want: &CommitteeChange{
+				ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
+				ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
+				ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Swap In Not Valid In List Subtitutes Public Key",
+			fields: fields{
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey2, *incKey3, *incKey4,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				numberOfRound:  map[string]int{},
+				autoStake:      map[string]bool{},
+				rewardReceiver: map[string]privacy.PaymentAddress{},
+				stakingTx:      map[string]common.Hash{},
+			},
+			args: args{
+				swapShardInstruction: &instruction.SwapShardInstruction{
+					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey6,
+					},
+				},
+				env: &BeaconCommitteeStateEnvironment{},
+				committeeChange: &CommitteeChange{
+					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
+				},
+			},
+			want: &CommitteeChange{
+				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+				},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+				},
+				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+				},
+				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+				},
+				ShardCommitteeReplaced: map[byte][2][]incognitokey.CommitteePublicKey{
+					// 0: []incognitokey.CommitteePublicKey{},
+				},
+				BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Valid Input",
+			fields: fields{
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey2, *incKey3, *incKey4,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				numberOfRound:  map[string]int{},
+				autoStake:      map[string]bool{},
+				rewardReceiver: map[string]privacy.PaymentAddress{},
+				stakingTx:      map[string]common.Hash{},
+			},
+			args: args{
+				swapShardInstruction: &instruction.SwapShardInstruction{
+					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+					OutPublicKeys: []string{key},
+				},
+				env: &BeaconCommitteeStateEnvironment{
+					NumberOfFixedShardBlockValidators: 0,
+				},
+				committeeChange: &CommitteeChange{
+					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
+				},
+			},
+			want: &CommitteeChange{
+				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV2{
+				beaconCommittee:            tt.fields.beaconCommittee,
+				shardCommittee:             tt.fields.shardCommittee,
+				shardSubstitute:            tt.fields.shardSubstitute,
+				shardCommonPool:            tt.fields.shardCommonPool,
+				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
+				autoStake:                  tt.fields.autoStake,
+				rewardReceiver:             tt.fields.rewardReceiver,
+				stakingTx:                  tt.fields.stakingTx,
+				numberOfRound:              tt.fields.numberOfRound,
+				mu:                         tt.fields.mu,
+			}
+			got, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

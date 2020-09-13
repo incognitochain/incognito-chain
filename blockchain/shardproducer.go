@@ -768,18 +768,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 				}
 				instructions = append(instructions, l)
 
-			case instruction.ASSIGN_ACTION:
-				//Only process swap shard action for that shard
-				chainID, err := strconv.Atoi(l[2])
-				if err != nil {
-					Logger.log.Infof("Fail to convert id to int %v", err)
-					continue
-				}
-				if byte(chainID) != shardID {
-					continue
-				}
-				instructions = append(instructions, l)
-
 			default:
 				instructions = append(instructions, l)
 				continue
