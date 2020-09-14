@@ -20,12 +20,12 @@ import (
 
 func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, outputSharedSecrets []*operation.Point, senderSK *key.PrivateKey) ([]*operation.Scalar, error) {
 	sumRand := new(operation.Scalar).FromUint64(0)
-	for _, in := range inputCoins {
-		sumRand.Add(sumRand, in.GetRandomness())
-	}
-	for _, out := range outputCoins {
-		sumRand.Sub(sumRand, out.GetRandomness())
-	}
+	// for _, in := range inputCoins {
+	// 	sumRand.Add(sumRand, in.GetRandomness())
+	// }
+	// for _, out := range outputCoins {
+	// 	sumRand.Sub(sumRand, out.GetRandomness())
+	// }
 
 	privKeyMlsag := make([]*operation.Scalar, len(inputCoins)+2)
 	sumInputAssetTagBlinders := new(operation.Scalar).FromUint64(0)
@@ -57,7 +57,16 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 			return nil, err
 		}
 		bl, err := coin.ComputeAssetTagBlinder(sharedSecret, indexForShard)
+		// fmt.Printf("Shared secret is %s\n", string(sharedSecret.MarshalText()))
+		// fmt.Printf("Blinder is %s\n", string(bl.MarshalText()))
+		// fmt.Printf("Asset tag is %s\n", string(inputCoin_specific.GetAssetTag().MarshalText()))
+		v := inputCoin_specific.GetAmount()
+		// fmt.Printf("Value is %d\n",v.ToUint64Little())
+		effectiveRCom := new(operation.Scalar).Mul(bl,v)
+		effectiveRCom.Add(effectiveRCom, inputCoin_specific.GetRandomness())
+
 		sumInputAssetTagBlinders.Add(sumInputAssetTagBlinders, bl)
+		sumRand.Add(sumRand, effectiveRCom)
 	}
 	sumInputAssetTagBlinders.Mul(sumInputAssetTagBlinders, numOfOutputs)
 
@@ -69,15 +78,23 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 			return nil, err
 		}
 		bl, err := coin.ComputeAssetTagBlinder(outputSharedSecrets[i], indexForShard)
+		// fmt.Printf("Shared secret is %s\n", string(outputSharedSecrets[i].MarshalText()))
+		// fmt.Printf("Blinder is %s\n", string(bl.MarshalText()))
+		// fmt.Printf("Asset tag is %s\n", string(oc.GetAssetTag().MarshalText()))
+		v := oc.GetAmount()
+		// fmt.Printf("Value is %d\n",v.ToUint64Little())
+		effectiveRCom := new(operation.Scalar).Mul(bl,v)
+		effectiveRCom.Add(effectiveRCom, oc.GetRandomness())
 		sumOutputAssetTagBlinders.Add(sumOutputAssetTagBlinders, bl)
+		sumRand.Sub(sumRand, effectiveRCom)
 	}
 	sumOutputAssetTagBlinders.Mul(sumOutputAssetTagBlinders, numOfInputs)
 
 	// 2 final elements in `private keys` for MLSAG
-	privKeyMlsag[len(inputCoins)] = new(operation.Scalar).Sub(sumInputAssetTagBlinders, sumOutputAssetTagBlinders)
-	privKeyMlsag[len(inputCoins)+1] 	= sumRand
-	
+	assetSum := new(operation.Scalar).Sub(sumInputAssetTagBlinders, sumOutputAssetTagBlinders)
 
+	privKeyMlsag[len(inputCoins)] 	= assetSum
+	privKeyMlsag[len(inputCoins)+1]	= sumRand
 	return privKeyMlsag, nil
 }
 
@@ -144,7 +161,8 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 		}
 		sumInputAssetTags.ScalarMult(sumInputAssetTags, outCount)
 
-		row = append(row, sumInputAssetTags.Sub(sumInputAssetTags, sumOutputAssetTags))
+		assetSum := new(operation.Point).Sub(sumInputAssetTags, sumOutputAssetTags)
+		row = append(row, assetSum)
 		row = append(row, sumInputs)
 		
 		ring[i] = row
@@ -157,6 +175,7 @@ func (tx *TxVersion2) proveCA(params *TxPrivacyInitParams) error {
 	var err error
 	var outputCoins 	[]*coin.CoinV2
 	var sharedSecrets 	[]*operation.Point
+	// fmt.Printf("tokenID is %v\n",params.tokenID)
 	for _,inf := range params.paymentInfo{
 		c, ss, err := createUniqueOTACoinCA(inf, params.tokenID, params.stateDB)
 		if err != nil {
@@ -171,7 +190,7 @@ func (tx *TxVersion2) proveCA(params *TxPrivacyInitParams) error {
 	// inputCoins is plainCoin because it may have coinV1 with coinV2
 	inputCoins := params.inputCoins
 
-	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, params.paymentInfo)
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, params.hasPrivacy, params.paymentInfo)
 	if err != nil {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
@@ -232,7 +251,7 @@ func (tx *TxVersion2) signCA(inp []coin.PlainCoin, out []*coin.CoinV2, outputSha
 	}
 
 	// Set Signature
-	mlsagSignature, err := sag.Sign(hashedMessage)
+	mlsagSignature, err := sag.SignConfidentialAsset(hashedMessage)
 	if err != nil {
 		Logger.Log.Errorf("Cannot signOnMessage mlsagSignature, error %v ", err)
 		return err
@@ -244,7 +263,7 @@ func (tx *TxVersion2) signCA(inp []coin.PlainCoin, out []*coin.CoinV2, outputSha
 	return err
 }
 
-func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags *operation.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
+func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags *operation.Point, numOfOutputs *operation.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
 	txSigPubKey := new(TxSigPubKeyVer2)
 	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
@@ -279,7 +298,8 @@ func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags 
 			}
 			row[j] = randomCoin.GetPublicKey()
 			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
-			sumAssetTags.Add(sumAssetTags, randomCoin.GetAssetTag())
+			temp := new(operation.Point).ScalarMult(randomCoin.GetAssetTag(), numOfOutputs)
+			sumAssetTags.Add(sumAssetTags, temp)
 		}
 
 		row[m] 	 = new(operation.Point).Set(sumAssetTags)
@@ -308,9 +328,11 @@ func (tx *TxVersion2) verifySigCA(transactionStateDB *statedb.StateDB, shardID b
 		sumOutputAssetTags.Add(sumOutputAssetTags, output_specific.GetAssetTag())
 	}
 	inCount := new(operation.Scalar).FromUint64(uint64(len(tx.GetProof().GetInputCoins())))
+	outCount := new(operation.Scalar).FromUint64(uint64(len(tx.GetProof().GetOutputCoins())))
 	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
 
-	ring, err := reconstructRingCA(tx.SigPubKey, sumOutputsWithFee, sumOutputAssetTags, transactionStateDB, shardID, tokenID)
+	// fmt.Printf("Token id is %v\n",tokenID)
+	ring, err := reconstructRingCA(tx.SigPubKey, sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB, shardID, tokenID)
 	if err != nil {
 		Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
@@ -334,7 +356,7 @@ func (tx *TxVersion2) verifySigCA(transactionStateDB *statedb.StateDB, shardID b
 		return false, err
 	}
 
-	return mlsag.Verify(mlsagSignature, ring, tx.Hash()[:])
+	return mlsag.VerifyConfidentialAsset(mlsagSignature, ring, tx.Hash()[:])
 }
 
 func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, *operation.Point, error) {
