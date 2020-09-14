@@ -399,8 +399,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
 	if err != nil {
-		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process"))
+		Logger.log.Error(err)
+		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
+
 	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
 		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
@@ -410,6 +412,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		Logger.log.Info(strs)
 		keys = append(keys, int(shardID))
 	}
+
 	sort.Ints(keys)
 	for _, v := range keys {
 		shardID := byte(v)
@@ -418,7 +421,16 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-			for _, shardBlock := range shardBlocks {
+			for i, shardBlock := range shardBlocks {
+				//check height in shardstate
+				if shardStates[i].Height != shardBlock.GetHeight() {
+					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block Height not correct: %v (expect %v)", shardID, shardStates[i].Height, shardBlock.GetHeight()))
+				}
+				//check hash in shardstate
+				if shardStates[i].Hash.String() != shardBlock.Hash().String() {
+					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block %v Hash not correct: %v (expect %v)", shardID, shardBlock.GetHeight(), shardStates[i].Hash.String(), shardBlock.Hash().String()))
+				}
+
 				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
