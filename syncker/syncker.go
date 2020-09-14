@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 )
 
 const MAX_S2B_BLOCK = 90
+const MAX_CROSSX_BLOCK = 10
 
 type SynckerManagerConfig struct {
 	Node       Server
@@ -214,25 +216,34 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 }
 
 //Get Crossshard Block for creating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte, limit map[byte][]uint64) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
 	beaconDB := synckerManager.config.Node.GetBeaconChainDatabase()
 	lastRequestCrossShard := synckerManager.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
+	bc := synckerManager.config.Blockchain
 	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
 		for {
 			if i == int(toShard) {
 				break
 			}
+
+			//if limit has 0 length, we should break now
+			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
+				break
+			}
+
 			requestHeight := lastRequestCrossShard[byte(i)]
 			nextCrossShardInfo := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
-			//Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 			if nextCrossShardInfo == nil {
 				break
 			}
 			if requestHeight == nextCrossShardInfo.NextCrossShardHeight {
 				break
 			}
+
+			Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
+
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
 			if err != nil {
@@ -241,14 +252,40 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 
 			beaconBlock := new(types.BeaconBlock)
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
+
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
-						res[byte(i)] = append(res[byte(i)], synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash))
+						//validate crossShardBlock before add to result
+						blkXShard := synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash)
+						beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), beaconBlock.GetHeight()-1)
+						if err != nil {
+							Logger.Error("Cannot get beacon consensus root hash from block ", beaconBlock.GetHeight()-1)
+							return nil
+						}
+						beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+						committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
+						err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(common.BlockInterface), committee)
+						if err != nil {
+							Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
+							return nil
+						}
+						//add to result list
+						res[byte(i)] = append(res[byte(i)], blkXShard)
+						//has block in pool, update request pointer
+						lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
 					}
-					lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
 					break
 				}
+			}
+
+			//cannot append crossshard for a shard (no block in pool, validate error) => break process for this shard
+			if requestHeight == lastRequestCrossShard[byte(i)] {
+				break
+			}
+
+			if len(res[byte(i)]) >= MAX_CROSSX_BLOCK {
+				break
 			}
 		}
 	}
@@ -257,7 +294,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 
 //Get Crossshard Block for validating shardblock block
 func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
-	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard)
+	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
 
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
@@ -266,7 +303,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
 
-		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard)
+		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
 		//Logger.Info("get crosshshard block for shard producer", crossShardPoolLists)
 		missingBlocks = compareListsByHeight(crossShardPoolLists, list)
 
@@ -274,6 +311,13 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 			return nil, errors.New("Unable to sync required block in time")
 		}
 	}
+
+	for sid, heights := range list {
+		if len(crossShardPoolLists[sid]) != len(heights) {
+			return nil, fmt.Errorf("CrossShard list not match sid:%v pool:%v producer:%v", sid, len(crossShardPoolLists[sid]), len(heights))
+		}
+	}
+
 	return crossShardPoolLists, nil
 }
 

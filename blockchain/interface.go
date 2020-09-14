@@ -76,7 +76,7 @@ type Highway interface {
 }
 
 type Syncker interface {
-	GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{}
+	GetCrossShardBlocksForShardProducer(toShard byte, list map[byte][]uint64) map[byte][]interface{}
 	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)

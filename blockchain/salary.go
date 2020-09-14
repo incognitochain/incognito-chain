@@ -19,7 +19,7 @@ import (
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
 	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
-	n := blkHeight / blockInYear
+	n := (blkHeight - 1) / blockInYear
 	reward := uint64(blockchain.config.ChainParams.BasicReward)
 	for ; n > 0; n-- {
 		reward *= 91
@@ -378,12 +378,11 @@ func splitReward(
 }
 
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
-	//31536000 =
-	return (365 * 24 * 60 * 60) / blockCreationTimeSeconds
+	return (365.25 * 24 * 60 * 60) / blockCreationTimeSeconds
 }
 
 func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
-	year := blockHeight / blkPerYear
+	year := (blockHeight - 1) / blkPerYear
 	if year > (UpperBoundPercentForIncDAO - LowerBoundPercentForIncDAO) {
 		return LowerBoundPercentForIncDAO
 	} else {

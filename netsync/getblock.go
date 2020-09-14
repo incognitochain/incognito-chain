@@ -314,7 +314,7 @@ func (netSync *NetSync) StreamBlockByHeight(
 	req *proto.BlockByHeightRequest,
 ) chan interface{} {
 	// Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
-	Logger.log.Infof("[stream] Netsync received request stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To)
+	Logger.log.Infof("[stream] Netsync received request stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v uuid %v", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To, req.UUID)
 	blkCh := make(chan interface{})
 	if !req.Specific {
 		if len(req.Heights) != 2 || req.Heights[1] < req.Heights[0] {
@@ -345,11 +345,10 @@ func (netSync *NetSync) streamBlkByHeight(
 		}
 		blk, err := netSync.GetBlockByHeight(req.Type, blkHeight, byte(req.From), byte(req.To))
 		if err != nil {
-			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v", err)
+			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v uuid %v", err, req.UUID)
 			break
 		}
 		blkCh <- blk
-		Logger.log.Infof("[stream] Netsync push block to channel")
 	}
 	close(blkCh)
 	return
@@ -359,7 +358,7 @@ func (netSync *NetSync) StreamBlockByHash(
 	fromPool bool,
 	req *proto.BlockByHashRequest,
 ) chan interface{} {
-	Logger.log.Infof("[stream] Netsync received request stream block type %v, hashes [%v..%v] len %v, from %v to %v", req.Type, req.Hashes[0], req.Hashes[len(req.Hashes)-1], len(req.Hashes), req.From, req.To)
+	Logger.log.Infof("[stream] Netsync received request stream block type %v, hashes [%v..%v] len %v, from %v to %v uuid %v", req.Type, req.Hashes[0], req.Hashes[len(req.Hashes)-1], len(req.Hashes), req.From, req.To, req.UUID)
 	blkCh := make(chan interface{})
 	go netSync.streamBlkByHash(req, blkCh)
 	return blkCh
@@ -374,11 +373,10 @@ func (netSync *NetSync) streamBlkByHash(
 		blkHash.SetBytes(blkHashByte)
 		blk, err := netSync.GetBlockByHash(req.Type, blkHash, byte(req.From), byte(req.To))
 		if err != nil {
-			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v", err)
+			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v, uuid %v", err, req.UUID)
 			break
 		}
 		blkCh <- blk
-		Logger.log.Infof("[stream] Netsync push block to channel")
 	}
 	close(blkCh)
 	return

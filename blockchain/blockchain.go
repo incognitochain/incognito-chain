@@ -671,3 +671,17 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	blockchain.beaconViewCache.Add(blockHash, beaconView)
 	return beaconView, err
 }
+
+// GetFixedRandomForShardIDCommitment returns the fixed randomness for shardID commitments
+// if bc height is greater than or equal to BCHeightBreakPointFixRandShardCM
+// otherwise, return nil
+func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointFixRandShardCM {
+		return privacy.FixedRandomnessShardID
+	}
+
+	return nil
+}

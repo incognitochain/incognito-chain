@@ -96,6 +96,7 @@ CONTINUE_VERIFY:
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Hash()
+	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	// if beaconBlock.GetHeight() == 2 {
 	// 	bcTmp = 0
@@ -120,7 +121,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	//get view that block link to
-	preHash := beaconBlock.Header.PreviousBlockHash
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
 		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
@@ -140,6 +140,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
+
 	// Verify beaconBlock with previous best state
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -415,8 +416,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
 	if err != nil {
-		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process"))
+		Logger.log.Error(err)
+		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
+
 	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
 		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
@@ -426,6 +429,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		Logger.log.Info(strs)
 		keys = append(keys, int(shardID))
 	}
+
 	sort.Ints(keys)
 	for _, v := range keys {
 		shardID := byte(v)
@@ -434,7 +438,14 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-			for _, shardBlock := range shardBlocks {
+			for i, shardBlock := range shardBlocks {
+				if shardStates[i].Height != shardBlock.GetHeight() {
+					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block Height not correct: %v (expect %v)", shardID, shardStates[i].Height, shardBlock.GetHeight()))
+				}
+				//check hash in shardstate
+				if shardStates[i].Hash.String() != shardBlock.Hash().String() {
+					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block %v Hash not correct: %v (expect %v)", shardID, shardBlock.GetHeight(), shardStates[i].Hash.String(), shardBlock.Hash().String()))
+				}
 				tempShardState, newShardInstruction, tempValidStakePublicKeys,
 					bridgeInstruction, acceptedBlockRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
 					curView, beaconBlock.Header.Height, shardBlock, shardID, false, validUnstakePublicKeys, validStakePublicKeys)
