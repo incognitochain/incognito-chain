@@ -206,7 +206,7 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
 		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetFinalView().GetHeight()
-		shardBlocks := []*ShardBlock{}
+		shardBlocks := []*types.ShardBlock{}
 		// limit maximum number of shard blocks for beacon producer
 		if finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
 			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
