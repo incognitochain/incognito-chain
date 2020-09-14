@@ -5,10 +5,11 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/pkg/errors"
 )
 
-var MyCommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
+var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
 
 func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.PedersenCommitment{
 	var result operation.PedersenCommitment
@@ -16,11 +17,23 @@ func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.Pe
 	for _, gen := range sch.G{
 		generators = append(generators, new(operation.Point).Set(gen))
 	}
+	result.G = generators
 	return result
 }
 
+func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point,error){
+	if coins==nil || len(coins)==0{
+		return nil, errors.New("Cannot get asset tag from empty input")
+	}
+	result := coins[0].GetAssetTag()
+	if result==nil{
+		return nil, errors.New("The coin does not have an asset tag")
+	}
+	return result, nil
+}
+
 func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*AggregatedRangeProof, error) {
-	MyCommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
+	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	proof := new(AggregatedRangeProof)
 	numValue := len(wit.values)
 	if numValue > privacy_util.MaxOutputCoin {
@@ -69,8 +82,8 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	} else {
 		alpha = operation.RandomScalar()
 		rho = operation.RandomScalar()
-		A.Add(A, new(operation.Point).ScalarMult(MyCommitmentScheme.G[operation.PedersenRandomnessIndex], alpha))
-		S.Add(S, new(operation.Point).ScalarMult(MyCommitmentScheme.G[operation.PedersenRandomnessIndex], rho))
+		A.Add(A, new(operation.Point).ScalarMult(CACommitmentScheme.G[operation.PedersenRandomnessIndex], alpha))
+		S.Add(S, new(operation.Point).ScalarMult(CACommitmentScheme.G[operation.PedersenRandomnessIndex], rho))
 		proof.a = A
 		proof.s = S
 	}
@@ -128,8 +141,8 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	// commitment to t1, t2
 	tau1 := operation.RandomScalar()
 	tau2 := operation.RandomScalar()
-	proof.t1 = MyCommitmentScheme.CommitAtIndex(t1, tau1, operation.PedersenValueIndex)
-	proof.t2 = MyCommitmentScheme.CommitAtIndex(t2, tau2, operation.PedersenValueIndex)
+	proof.t1 = CACommitmentScheme.CommitAtIndex(t1, tau1, operation.PedersenValueIndex)
+	proof.t2 = CACommitmentScheme.CommitAtIndex(t2, tau2, operation.PedersenValueIndex)
 
 	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
 	xSquare := new(operation.Scalar).Mul(x, x)
@@ -192,7 +205,7 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 }
 
 func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (bool, error) {
-	MyCommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
+	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
 		return false, errors.New("Must less than MaxOutputNumber")
@@ -225,9 +238,9 @@ func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (
 		return false, err
 	}
 
-	LHS := MyCommitmentScheme.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
+	LHS := CACommitmentScheme.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
 	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
-	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, MyCommitmentScheme.G[operation.PedersenValueIndex], x, proof.t1))
+	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, CACommitmentScheme.G[operation.PedersenValueIndex], x, proof.t1))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
@@ -247,7 +260,7 @@ func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (
 }
 
 func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Point) (bool, error) {
-	MyCommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
+	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
 		return false, errors.New("Must less than MaxOutputNumber")
@@ -278,9 +291,9 @@ func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Po
 	}
 
 	// Verify the first argument
-	LHS := MyCommitmentScheme.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
+	LHS := CACommitmentScheme.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
 	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
-	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, MyCommitmentScheme.G[operation.PedersenValueIndex], x, proof.t1))
+	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, CACommitmentScheme.G[operation.PedersenValueIndex], x, proof.t1))
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
 	if !operation.IsPointEqual(LHS, RHS) {
@@ -345,8 +358,8 @@ func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Po
 
 // func VerifyBatchUsingBase(proofs []*AggregatedRangeProof) (bool, error, int) {
 // 	maxExp := privacy_util.MaxExp
-// 	baseG := MyCommitmentScheme.G[operation.PedersenValueIndex]
-// 	baseH := MyCommitmentScheme.G[operation.PedersenRandomnessIndex]
+// 	baseG := CACommitmentScheme.G[operation.PedersenValueIndex]
+// 	baseH := CACommitmentScheme.G[operation.PedersenRandomnessIndex]
 
 // 	sum_tHat := new(operation.Scalar).FromUint64(0)
 // 	sum_tauX := new(operation.Scalar).FromUint64(0)
@@ -527,10 +540,19 @@ func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Po
 // 	return true, nil, -1
 // }
 
-// TODO
-func TransformWitnessToCAWitness(wit *AggregatedRangeWitness, assetTags []*operation.Point) (*AggregatedRangeWitness,error){
-	if len(assetTags)!=len(wit.values) || len(assetTags)!=len(wit.rands){
+func TransformWitnessToCAWitness(wit *AggregatedRangeWitness, assetTagBlinders []*operation.Scalar) (*AggregatedRangeWitness,error){
+	if len(assetTagBlinders)!=len(wit.values) || len(assetTagBlinders)!=len(wit.rands){
 		return nil, errors.New("Cannot transform witness. Parameter lengths mismatch")
 	}
-	return wit, nil
+	newRands := make([]*operation.Scalar, len(wit.values))
+
+	for i,_ := range wit.values{
+		temp := new(operation.Scalar).Sub(assetTagBlinders[i], assetTagBlinders[0])
+		temp.Mul(temp, new(operation.Scalar).FromUint64(wit.values[i]))
+		temp.Add(temp, wit.rands[i])
+		newRands[i] = temp
+	}
+	result := new(AggregatedRangeWitness)
+	result.Set(wit.values, newRands)
+	return result, nil
 }
