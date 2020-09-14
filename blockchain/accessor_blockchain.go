@@ -205,23 +205,29 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
-		finalizedShardHeight := blockchain.GetBestStateShard(shardID).ShardHeight
-		//_, finalizedShardHeight, err := blockchain.GetLatestFinalizedShardBlock(shardID)
-		//if err != nil {
-		//	Logger.log.Errorf("GetLatestFinalizedShardBlock shard %+v, error  %+v", shardID, err)
-		//	continue
-		//}
-		shardBlocks := []*types.ShardBlock{}
+		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetFinalView().GetHeight()
+		shardBlocks := []*ShardBlock{}
 		// limit maximum number of shard blocks for beacon producer
 		if finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
 			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
 		}
+		lastEpoch := uint64(0)
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
 			tempShardBlock, err := blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
 			if err != nil {
 				Logger.log.Errorf("GetFinalizedShardBlockByHeight shard %+v, error  %+v", shardID, err)
 				break
 			}
+
+			//only get shard block within epoch
+			if lastEpoch == 0 {
+				lastEpoch = tempShardBlock.GetCurrentEpoch() //update epoch of first block
+			} else {
+				if lastEpoch != tempShardBlock.GetCurrentEpoch() { //if next block have different epoch than break
+					break
+				}
+			}
+
 			shardBlocks = append(shardBlocks, tempShardBlock)
 		}
 		allShardBlocks[shardID] = shardBlocks
@@ -233,11 +239,21 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
 		shardBlocks := []*types.ShardBlock{}
+		lastEpoch := uint64(0)
 		for _, height := range requiredShardBlockHeight {
 			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
 			if err != nil {
-				return allRequireShardBlocks, err
+				return nil, err
 			}
+			//only get shard block within epoch
+			if lastEpoch == 0 {
+				lastEpoch = shardBlock.GetCurrentEpoch() //update epoch of first block
+			} else {
+				if lastEpoch != shardBlock.GetCurrentEpoch() { //if next block have different epoch than break
+					return nil, fmt.Errorf("Contain block in different epoch")
+				}
+			}
+
 			shardBlocks = append(shardBlocks, shardBlock)
 		}
 		allRequireShardBlocks[shardID] = shardBlocks
