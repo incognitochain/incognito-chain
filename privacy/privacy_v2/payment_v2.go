@@ -296,6 +296,7 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 		}
 
 		//re-compute the commitment if the output coin's address is the burning address
+		// burn TX cannot use confidential asset
 		if wallet.IsPublicKeyBurningAddress(outputCoins[i].GetPublicKey().ToBytesS()){
 			value := outputCoin.GetValue()
 			rand := outputCoin.GetRandomness()
@@ -308,14 +309,14 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	return true, nil
 }
 
-func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
+func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecrets []*operation.Point, hasPrivacy bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
 	var err error
 
 	proof := new(PaymentProofV2)
 	proof.SetVersion()
-	aggregateproof := new(bulletproofs.AggregatedRangeProof)
-	aggregateproof.Init()
-	proof.aggregatedRangeProof = aggregateproof
+	// aggregateproof := new(bulletproofs.AggregatedRangeProof)
+	// aggregateproof.Init()
+	// proof.aggregatedRangeProof = aggregateproof
 	if err = proof.SetInputCoins(inputCoins); err != nil {
 		Logger.Log.Errorf("Cannot set input coins in payment_v2 proof: err %v", err)
 		return nil, err
@@ -336,9 +337,44 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, hasPrivacy b
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
 	wit.Set(outputValues, outputRands)
-	proof.aggregatedRangeProof, err = wit.Prove()
-	if err != nil {
-		return nil, err
+	if hasPrivacy{
+		blinders := make([]*operation.Scalar, len(sharedSecrets))
+		for i, _ := range sharedSecrets{
+			_, indexForShard, err := outputCoins[i].GetTxRandomDetail()
+			blinders[i], err = coin.ComputeAssetTagBlinder(sharedSecrets[i], indexForShard)
+			if err != nil {
+				return nil, err
+			}
+		}
+		var err error
+		wit, err = bulletproofs.TransformWitnessToCAWitness(wit, blinders)
+		if err != nil {
+			return nil, err
+		}
+
+		theBase, err := bulletproofs.GetFirstAssetTag(outputCoins)
+		if err != nil {
+			return nil, err
+		}
+		proof.aggregatedRangeProof, err = wit.ProveUsingBase(theBase)
+
+		outputCommitments 	:= make([]*operation.Point, n)
+		for i := 0; i < n; i += 1 {
+			com, err := outputCoins[i].ComputeCommitmentCA()
+			if err!=nil{
+				return nil, err
+			}
+			outputCommitments[i] = com
+		}
+		proof.aggregatedRangeProof.SetCommitments(outputCommitments)
+		if err != nil {
+			return nil, err
+		}
+	}else{
+		proof.aggregatedRangeProof, err = wit.Prove()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// After Prove, we should hide all information in coin details.
@@ -386,8 +422,13 @@ func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
 			return false, errors.New("Coin & Proof Commitments mismatch")
 		}
 	}
+	// TODO : handle for batch
 	if isBatch == false {
-		valid, err := proof.aggregatedRangeProof.Verify()
+		theBase, err := bulletproofs.GetFirstAssetTag(proof.outputCoins)
+		if err != nil {
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
+		}
+		valid, err := proof.aggregatedRangeProof.VerifyUsingBase(theBase)
 		if !valid {
 			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF V2: Multi-range failed")
 			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
