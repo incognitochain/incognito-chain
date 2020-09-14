@@ -258,12 +258,7 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	//Get shard to beacon block from pool
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
 	keys := []int{}
-	for shardID, shardBlocks := range allShardBlocks {
-		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
-		for _, shardBlock := range shardBlocks {
-			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
-		}
-		Logger.log.Info(strs)
+	for shardID, _ := range allShardBlocks {
 		keys = append(keys, int(shardID))
 	}
 	sort.Ints(keys)
@@ -274,7 +269,9 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, re
 	for _, v := range keys {
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
+		Logger.log.Infof("Beacon Producer Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
 		for _, shardBlock := range shardBlocks {
+			Logger.log.Info("Add shard block in shardstate", shardID, "height", shardBlock.GetHeight(), shardBlock.Hash().String())
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)

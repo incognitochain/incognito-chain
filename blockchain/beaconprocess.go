@@ -404,15 +404,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 
 	keys := []int{}
-	for shardID, shardBlocks := range allShardBlocks {
-		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
-		for _, shardBlock := range shardBlocks {
-			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
-		}
-		Logger.log.Info(strs)
+	for shardID, _ := range allShardBlocks {
 		keys = append(keys, int(shardID))
 	}
-
 	sort.Ints(keys)
 	for _, v := range keys {
 		shardID := byte(v)
@@ -421,7 +415,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
+			Logger.log.Infof("Beacon Validator Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
 			for i, shardBlock := range shardBlocks {
+				Logger.log.Info("Add shard block in shardstate", shardID, "height", shardBlock.GetHeight(), shardBlock.Hash().String())
 				//check height in shardstate
 				if shardStates[i].Height != shardBlock.GetHeight() {
 					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block Height not correct: %v (expect %v)", shardID, shardStates[i].Height, shardBlock.GetHeight()))
@@ -450,6 +446,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		} else {
 			return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Expect to get more than %+v Shard Block but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
 		}
+
 	}
 	// build stateful instructions
 	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
