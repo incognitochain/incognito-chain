@@ -68,23 +68,11 @@ CONTINUE_VERIFY:
 	if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
 		return err
 	}
-	// c, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
-	// if curView.BeaconHeight >= 19 {
-	// 	Logger.log.Info("[swap-v2] shard committes in beacon view 0:", c)
-	// }
 	// Update best state with new block
 	newBestState, hashes, _, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
-	// c, _ = incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
-	// if newBestState.BeaconHeight >= 20 {
-	// 	Logger.log.Info("[swap-v2] shard committes in beacon view 1:", c)
-	// }
-
-	// if newBestState.BeaconHeight >= 20 {
-	// 	Logger.log.Info("[swap-v2] Finish update beacon best state")
-	// }
 
 	if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		// Post verififcation: verify new beaconstate with corresponding block
@@ -98,9 +86,6 @@ CONTINUE_VERIFY:
 			return err
 		}
 	}
-	// if newBestState.BeaconHeight >= 20 {
-	// 	Logger.log.Info("[swap-v2] Finish verify post processing beacon block v2")
-	// }
 	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", beaconBlock.Header.Height, *beaconBlock.Hash())
 	return nil
 }
@@ -191,9 +176,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return err
 	}
 
-	if newBestState.BeaconHeight >= 20 {
-		Logger.log.Info("[swap-v2] Finish update beacon best state")
-	}
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish update beacon best state")
+	// }
 
 	if len(incurredInstructions) != 0 {
 		err := curView.postProcessIncurredInstructions(incurredInstructions)
@@ -228,33 +213,33 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
-	if newBestState.BeaconHeight >= 20 {
-		Logger.log.Info("[swap-v2] Finish verifyPostProcessingBeaconBlockV2")
-	}
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish verifyPostProcessingBeaconBlockV2")
+	// }
 	// Logger.log.Info("[swap-v2] Finish verifyPostProcessingBeaconBlockV2")
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
 	}
-	if newBestState.BeaconHeight >= 20 {
-		Logger.log.Info("[swap-v2] Finish Commit Beacon BestState")
-	}
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish Commit Beacon BestState")
+	// }
 	// Logger.log.Info("[swap-v2] Finish Commit commitee state")
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
 	}
-	if newBestState.BeaconHeight >= 20 {
-		Logger.log.Info("[swap-v2] Finish Processing Store Beacon Block")
-	}
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish Processing Store Beacon Block")
+	// }
 	// Logger.log.Info("[swap-v2] Finish Process Store BeaconBlock")
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
-	if newBestState.BeaconHeight >= 20 {
-		Logger.log.Info("[swap-v2] Finish Insert New Beacon Block")
-	}
+	// if newBestState.BeaconHeight >= 20 {
+	// 	Logger.log.Info("[swap-v2] Finish Insert New Beacon Block")
+	// }
 	// Logger.log.Info("[swap-v2] Finish Insert New BeaconBlock")
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
@@ -771,13 +756,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
 	if err != nil {
-		if beaconBestState.BeaconHeight >= 20 {
-			Logger.log.Infof("[swap-v2] UpdateCommitteeState Fail")
-		}
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
-	}
-	if beaconBestState.BeaconHeight >= 20 {
-		Logger.log.Infof("[swap-v2] UpdateCommitteeState Success")
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)

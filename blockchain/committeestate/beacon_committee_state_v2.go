@@ -319,11 +319,10 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	var err error
 	incurredInstructions := [][]string{}
 
-	engine.uncommittedBeaconCommitteeStateV2.mu.Lock()
-	defer engine.uncommittedBeaconCommitteeStateV2.mu.Unlock()
-
+	// engine.uncommittedBeaconCommitteeStateV2.mu.Lock()
+	// defer engine.uncommittedBeaconCommitteeStateV2.mu.Unlock()
 	engine.finalBeaconCommitteeStateV2.mu.RLock()
-
+	engine.finalBeaconCommitteeStateV2.clone(engine.uncommittedBeaconCommitteeStateV2)
 	env.unassignedCommonPool, err = engine.finalBeaconCommitteeStateV2.unassignedCommonPool()
 	if err != nil {
 		return nil, nil, nil, err
@@ -333,11 +332,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		return nil, nil, nil, err
 	}
 	env.allCandidateSubstituteCommittee = append(env.unassignedCommonPool, env.allSubstituteCommittees...)
-
-	engine.finalBeaconCommitteeStateV2.clone(engine.uncommittedBeaconCommitteeStateV2)
-	env.allCandidateSubstituteCommittee = engine.finalBeaconCommitteeStateV2.getAllCandidateSubstituteCommittee()
+	// env.allCandidateSubstituteCommittee = engine.finalBeaconCommitteeStateV2.getAllCandidateSubstituteCommittee()
 	engine.finalBeaconCommitteeStateV2.mu.RUnlock()
-
 	newB := engine.uncommittedBeaconCommitteeStateV2
 	committeeChange := NewCommitteeChange()
 	incuredInstructions := [][]string{}
@@ -398,7 +394,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
 		case instruction.SWAP_SHARD_ACTION:
-			// Process swap shard action here
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
@@ -636,35 +631,11 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	rootCommitteeChange.clone(committeeChange)
 	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
 	tempSwapInPuclicKeys := swapShardInstruction.InPublicKeyStructs
-	// tempCommittees := b.shardCommittee[chainID]
-	// tempSubtitutes := b.shardSubstitute[chainID]
 	numberFixedValidators := env.NumberOfFixedShardBlockValidators
-
-	// c, _ := incognitokey.CommitteeKeyListToString(tempCommittees)
-	// s, _ := incognitokey.CommitteeKeyListToString(tempSubtitutes)
-	// Logger.log.Info("[swap-v2] committees:", c)
-	// Logger.log.Info("[swap-v2] subtitutes:", s)
 
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
 		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
-			//@tin : log here
-
-			// vKey, err := v.ToBase58()
-			// if err != nil {
-			// 	return newCommitteeChange, err
-			// }
-			// tKey, err := b.shardCommittee[chainID][numberFixedValidators].ToBase58()
-			// if err != nil {
-			// 	return newCommitteeChange, err
-			// }
-			// c, _ := incognitokey.CommitteeKeyListToString(b.shardCommittee[chainID])
-			// s, _ := incognitokey.CommitteeKeyListToString(b.shardSubstitute[chainID])
-			// Logger.log.Info("[swap-v2] committees:", c)
-			// Logger.log.Info("[swap-v2] subtitutes:", s)
-			// Logger.log.Info("[swap-v2] committee key:", tKey)
-			// Logger.log.Info("[swap-v2] swap out key:", vKey)
-
 			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
 		b.shardCommittee[chainID] =
@@ -692,15 +663,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		chainID,
 		newCommitteeChange,
 	)
-
-	// bs, _ := incognitokey.CommitteeKeyListToString(b.shardSubstitute[chainID])
-	// bc, _ := incognitokey.CommitteeKeyListToString(b.shardCommittee[chainID])
-	// c, _ := incognitokey.CommitteeKeyListToString(tempCommittees)
-	// s, _ := incognitokey.CommitteeKeyListToString(tempSubtitutes)
-	// Logger.log.Info("b.shardSubstitute[chainID]:", bs)
-	// Logger.log.Info("b.shardCommittee[chainID]:", bc)
-	// Logger.log.Info("tempCommittees:", c)
-	// Logger.log.Info("tempSubtitutes:", s)
 
 	return newCommitteeChange, err
 }
