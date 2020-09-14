@@ -97,13 +97,6 @@ func (e MempoolTxError) Error() string {
 	return fmt.Sprintf("%d: %s %+v", e.Code, e.Message, e.Err)
 }
 
-// txRuleError creates an underlying MempoolTxError with the given a set of
-// arguments and returns a RuleError that encapsulates it.
-//func (e *MempoolTxError) Init(key int, err error) {
-//	e.Code = ErrCodeMessage[key].Code
-//	e.Message = ErrCodeMessage[key].Message
-//	e.Err = errors.Wrap(err, e.Message)
-//}
 func NewMempoolTxError(key int, err error) *MempoolTxError {
 	return &MempoolTxError{
 		Code:    ErrCodeMessage[key].Code,
@@ -126,12 +119,4 @@ func (e *BlockPoolError) Init(key int, err error) {
 	e.Code = ErrCodeMessage[key].Code
 	e.Message = ErrCodeMessage[key].Message
 	e.Err = errors.Wrap(err, e.Message)
-}
-
-func NewBlockPoolError(key int, err error) *BlockPoolError {
-	return &BlockPoolError{
-		Code:    ErrCodeMessage[key].Code,
-		Message: ErrCodeMessage[key].Message,
-		Err:     errors.Wrap(err, ErrCodeMessage[key].Message),
-	}
 }
