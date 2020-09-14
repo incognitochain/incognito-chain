@@ -1035,7 +1035,11 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later
-	err := blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock)
+	metas := []string{ // Burning v1: sig on both beacon and bridge
+		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
+	}
+	err := blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock.Body.Instructions, shardBlock.Header.Height, metas)
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}

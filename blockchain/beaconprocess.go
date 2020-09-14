@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
@@ -890,7 +891,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //  #2 random flag
 //  #3 new beacon candidate
 //  #4 new shard candidate
-
+//	REVIEW: @hung
+//	- Doesn't need a whole blockchain object as param, reasons:
+//		+ doesn't call any of methods provided by blockchain object.
+//		+ variables get from blockchain object are golang built-in types
+//		+ easier for functional testing
 func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
@@ -1458,6 +1463,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
+	}
+	// Save result of BurningConfirm instruction to get proof later
+	metas := []string{ // Burning v2: sig on beacon only
+		strconv.Itoa(metadata.BurningConfirmMetaV2),
+		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
+	}
+	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
+		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
 
 	// execute, store Portal Instruction

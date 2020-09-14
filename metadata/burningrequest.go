@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -95,11 +97,18 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if !bytes.Equal(tx.GetTokenID()[:], bReq.TokenID[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
+
+	if shardViewRetriever.GetEpoch() >= chainRetriever.GetETHRemoveBridgeSigEpoch() && (bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta) {
+		return false, false, fmt.Errorf("metadata type %d is deprecated", bReq.Type)
+	}
+	if shardViewRetriever.GetEpoch() < chainRetriever.GetETHRemoveBridgeSigEpoch() && (bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2) {
+		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
+	}
 	return true, true, nil
 }
 
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta
+	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

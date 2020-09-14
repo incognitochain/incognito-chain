@@ -39,7 +39,11 @@ func (engine *Engine) GetUserLayer() (string, int) {
 }
 
 func (s *Engine) GetUserRole() (string, string, int) {
-	return s.curringMiningState.layer, s.curringMiningState.role, s.curringMiningState.chainID
+	layer := s.curringMiningState.layer
+	if s.curringMiningState.role == common.WaitingRole {
+		layer = "shard"
+	}
+	return layer, s.curringMiningState.role, s.curringMiningState.chainID
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -75,7 +79,7 @@ func (s *Engine) WatchCommitteeChange() {
 	s.curringMiningState.role = role
 
 	if chainID == -2 {
-		s.curringMiningState.role = ""
+		s.curringMiningState.role = role
 		s.curringMiningState.layer = ""
 		s.NotifyBeaconRole(false)
 		s.NotifyShardRole(-2)
@@ -99,6 +103,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 	monitor.SetGlobalParam("Role", s.curringMiningState.role)
 	monitor.SetGlobalParam("Layer", s.curringMiningState.layer)
+	monitor.SetGlobalParam("ShardID", s.curringMiningState.chainID)
 
 	var miningProcess ConsensusInterface = nil
 	//TODO: optimize - if in pending start to listen propose block, but not vote
