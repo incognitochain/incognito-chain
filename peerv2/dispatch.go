@@ -21,11 +21,6 @@ type Dispatcher struct {
 	CurrentHWPeerID    libp2p.ID
 }
 
-// Just for consensus v1
-func (d *Dispatcher) processStreamBlk(blktype byte, data []byte) error {
-	return nil
-}
-
 //TODO hy parse msg here
 // processInMessageString - this is sub-function of InMessageHandler
 // after receiving a good message from stream,
