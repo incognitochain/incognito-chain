@@ -155,10 +155,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	_, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
 
-	if curView.BeaconHeight == 19 {
-		panic(1)
-	}
-
 	// if curView.BeaconHeight == 19 {
 	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
 	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
@@ -172,15 +168,19 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
 
+	if curView.BeaconHeight == 19 {
+		committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
+		subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
+		Logger.log.Info("[swap-v2] bestview.committees 2:", committees)
+		Logger.log.Info("[swap-v2] bestview.subtitutes 2:", subtitutes)
+		ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
+		csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
+		Logger.log.Info("[swap-v2] curView.committees 2:", ccommittees)
+		Logger.log.Info("[swap-v2] curView.subtitutes 2:", csubtitutes)
+	}
+
 	// if curView.BeaconHeight == 19 {
-	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
-	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
-	// 	Logger.log.Info("[swap-v2] bestview.committees 2:", committees)
-	// 	Logger.log.Info("[swap-v2] bestview.subtitutes 2:", subtitutes)
-	// 	ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
-	// 	csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
-	// 	Logger.log.Info("[swap-v2] curView.committees 2:", ccommittees)
-	// 	Logger.log.Info("[swap-v2] curView.subtitutes 2:", csubtitutes)
+	// 	panic(1)
 	// }
 
 	if err != nil {

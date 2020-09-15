@@ -9,6 +9,7 @@ import (
 
 //BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
+	Clone() BeaconCommitteeEngine
 	Version() uint
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
@@ -41,6 +42,7 @@ type BeaconCommitteeEngine interface {
 
 //ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
+	// Clone() ShardCommitteeEngine
 	Commit(*ShardCommitteeStateHash) error
 	AbortUncommittedShardState()
 	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,

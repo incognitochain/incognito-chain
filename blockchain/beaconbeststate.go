@@ -395,7 +395,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
-	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine
+	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
 	return nil
 }
 

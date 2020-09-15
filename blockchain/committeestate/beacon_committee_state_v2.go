@@ -86,6 +86,14 @@ func NewBeaconCommitteeStateV2WithValue(
 func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	newB.reset()
 	newB.beaconCommittee = b.beaconCommittee
+	// if b.shardCommonPool == nil {
+	// 	Logger.log.Info("[swap-v2] 2")
+	// }
+	// if b.shardCommonPool != nil {
+	// 	for k, v := range b.shardCommonPool {
+	// 		newB.shardCommonPool[k] = v
+	// 	}
+	// }
 	newB.shardCommonPool = b.shardCommonPool
 	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	for k, v := range b.shardCommittee {
@@ -117,6 +125,23 @@ func (b *BeaconCommitteeStateV2) reset() {
 	b.numberOfRound = make(map[string]int)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
+}
+
+//Clone :
+func (engine *BeaconCommitteeEngineV2) Clone() BeaconCommitteeEngine {
+
+	finalCommitteeState := NewBeaconCommitteeStateV2()
+	engine.finalBeaconCommitteeStateV2.clone(finalCommitteeState)
+	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2()
+
+	res := NewBeaconCommitteeEngineV2(
+		engine.beaconHeight,
+		engine.beaconHash,
+		finalCommitteeState,
+		SLASHING_VERSION,
+	)
+
+	return res
 }
 
 //Version :
@@ -322,6 +347,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	// engine.uncommittedBeaconCommitteeStateV2.mu.Lock()
 	// defer engine.uncommittedBeaconCommitteeStateV2.mu.Unlock()
 	engine.finalBeaconCommitteeStateV2.mu.RLock()
+	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2()
 	engine.finalBeaconCommitteeStateV2.clone(engine.uncommittedBeaconCommitteeStateV2)
 	env.unassignedCommonPool, err = engine.finalBeaconCommitteeStateV2.unassignedCommonPool()
 	if err != nil {
@@ -332,9 +358,10 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		return nil, nil, nil, err
 	}
 	env.allCandidateSubstituteCommittee = append(env.unassignedCommonPool, env.allSubstituteCommittees...)
-	// env.allCandidateSubstituteCommittee = engine.finalBeaconCommitteeStateV2.getAllCandidateSubstituteCommittee()
 	engine.finalBeaconCommitteeStateV2.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV2
+	// Logger.log.Infof("[swap-v2] engine.uncommittedBeaconCommitteeStateV2 %p", engine.uncommittedBeaconCommitteeStateV2)
+	// Logger.log.Infof("[swap-v2] engine.finalBeaconCommitteeStateV2 %p", engine.finalBeaconCommitteeStateV2)
 	committeeChange := NewCommitteeChange()
 	incuredInstructions := [][]string{}
 	// snapshot shard common pool in beacon random time
@@ -394,6 +421,14 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
 		case instruction.SWAP_SHARD_ACTION:
+			// finalCommittees, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardCommittee[0])
+			// finalSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardSubstitute[0])
+			// latestCommittees, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardCommittee[0])
+			// latestSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardSubstitute[0])
+			// Logger.log.Info("[swap-v2] finalCommittees:", finalCommittees)
+			// Logger.log.Info("[swap-v2] finalSubtitutes:", finalSubtitutes)
+			// Logger.log.Info("[swap-v2] latestCommittees:", latestCommittees)
+			// Logger.log.Info("[swap-v2] latestSubtitutes:", latestSubtitutes)
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
@@ -404,6 +439,14 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+			// finalCommittees, _ = incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardCommittee[0])
+			// finalSubtitutes, _ = incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardSubstitute[0])
+			// latestCommittees, _ = incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardCommittee[0])
+			// latestSubtitutes, _ = incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardSubstitute[0])
+			// Logger.log.Info("[swap-v2] finalCommittees:", finalCommittees)
+			// Logger.log.Info("[swap-v2] finalSubtitutes:", finalSubtitutes)
+			// Logger.log.Info("[swap-v2] latestCommittees:", latestCommittees)
+			// Logger.log.Info("[swap-v2] latestSubtitutes:", latestSubtitutes)
 		}
 	}
 	err = newB.processAutoStakingChange(committeeChange, env)
@@ -416,14 +459,14 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	finalCommittees, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardCommittee[0])
-	finalSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardSubstitute[0])
-	latestCommittees, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardCommittee[0])
-	latestSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardSubstitute[0])
-	Logger.log.Info("[swap-v2] finalCommittees:", finalCommittees)
-	Logger.log.Info("[swap-v2] finalSubtitutes:", finalSubtitutes)
-	Logger.log.Info("[swap-v2] latestCommittees:", latestCommittees)
-	Logger.log.Info("[swap-v2] latestSubtitutes:", latestSubtitutes)
+	// finalCommittees, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardCommittee[0])
+	// finalSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardSubstitute[0])
+	// latestCommittees, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardCommittee[0])
+	// latestSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardSubstitute[0])
+	// Logger.log.Info("[swap-v2] finalCommittees:", finalCommittees)
+	// Logger.log.Info("[swap-v2] finalSubtitutes:", finalSubtitutes)
+	// Logger.log.Info("[swap-v2] latestCommittees:", latestCommittees)
+	// Logger.log.Info("[swap-v2] latestSubtitutes:", latestSubtitutes)
 
 	return hashes, committeeChange, incuredInstructions, nil
 }

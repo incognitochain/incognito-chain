@@ -131,6 +131,22 @@ func (b *BeaconCommitteeStateV1) reset() {
 	b.stakingTx = make(map[string]common.Hash)
 }
 
+//Clone :
+func (engine *BeaconCommitteeEngineV1) Clone() BeaconCommitteeEngine {
+	finalCommitteeState := NewBeaconCommitteeStateV1()
+	engine.beaconCommitteeStateV1.clone(finalCommitteeState)
+	engine.uncommittedBeaconCommitteeStateV1 = NewBeaconCommitteeStateV1()
+
+	res := NewBeaconCommitteeEngineV1(
+		engine.beaconHeight,
+		engine.beaconHash,
+		finalCommitteeState,
+		NORMAL_VERSION,
+	)
+
+	return res
+}
+
 //Version :
 func (engine BeaconCommitteeEngineV1) Version() uint {
 	return engine.version
