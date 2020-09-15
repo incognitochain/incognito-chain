@@ -70,7 +70,7 @@ type ShardBestState struct {
 	RewardStateDBRootHash      common.Hash
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
-	shardCommitteeEngine       ShardCommitteeEngine
+	shardCommitteeEngine       committeestate.ShardCommitteeEngine
 }
 
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
@@ -113,7 +113,7 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeEngine ShardCommitteeEngine) *ShardBestState {
+func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeEngine committeestate.ShardCommitteeEngine) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -393,7 +393,7 @@ func InitShardCommitteeEngineV1(
 	consensusStateDB *statedb.StateDB,
 	shardHeight uint64,
 	shardID byte,
-	shardHash common.Hash) ShardCommitteeEngine {
+	shardHash common.Hash) committeestate.ShardCommitteeEngine {
 
 	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
 	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
@@ -414,7 +414,7 @@ func InitShardCommitteeEngineV2(
 	consensusStateDB *statedb.StateDB,
 	shardHeight uint64,
 	shardID byte,
-	shardHash common.Hash) ShardCommitteeEngine {
+	shardHash common.Hash) committeestate.ShardCommitteeEngine {
 
 	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
 	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
@@ -426,6 +426,6 @@ func InitShardCommitteeEngineV2(
 }
 
 //ShardCommitteeEngine : getter of shardCommitteeEngine ...
-func (shardBestState *ShardBestState) ShardCommitteeEngine() ShardCommitteeEngine {
+func (shardBestState *ShardBestState) ShardCommitteeEngine() committeestate.ShardCommitteeEngine {
 	return shardBestState.shardCommitteeEngine
 }
