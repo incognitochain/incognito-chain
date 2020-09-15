@@ -566,3 +566,7 @@ func GetOneShardCommitteeEnterTime(
 	}
 	return list
 }
+
+func GetAllStaker(stateDB *StateDB, shardIDs []int) int {
+	return stateDB.getAllStaker(shardIDs)
+}

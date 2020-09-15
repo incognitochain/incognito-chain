@@ -258,6 +258,8 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
+
+	getTotalStaker = "gettotalstaker"
 )
 
 const (

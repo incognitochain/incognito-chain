@@ -243,6 +243,8 @@ var HttpHandler = map[string]httpHandler{
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
 	// get committeeByHeight
+
+	getTotalStaker: (*HttpServer).handleGetTotalStaker,
 }
 
 // Commands that are available to a limited user

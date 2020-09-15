@@ -124,6 +124,8 @@ const (
 	RestoreCandidateBeaconWaitingForNextRandom
 	RestoreCandidateShardWaitingForCurrentRandom
 	RestoreCandidateShardWaitingForNextRandom
+
+	GetTotalStakerError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -249,6 +251,7 @@ var ErrCodeMessage = map[int]struct {
 	RestoreCandidateShardWaitingForCurrentRandom:  {-12007, "Restore candidate shard waiting for current random"},
 	RestoreCandidateShardWaitingForNextRandom:     {-12008, "Restore candidate shard waiting for next random"},
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
+	GetTotalStakerError:                           {-12010, "Get total staker return error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
