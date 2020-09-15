@@ -2,8 +2,6 @@ package key
 
 import (
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/privacy"
-
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
@@ -140,7 +138,7 @@ func GenerateViewingKey(privateKey []byte) ViewingKey {
 }
 
 func GeneratePrivateOTAKey(privateKey []byte) PrivateOTAKey {
-	privateOTAKey := append(privateKey, []byte(privacy.CStringOTA)...)
+	privateOTAKey := append(privateKey, []byte(operation.CStringOTA)...)
 	privateOTAKey = operation.HashToScalar(privateOTAKey).ToBytesS()
 	return privateOTAKey
 }
