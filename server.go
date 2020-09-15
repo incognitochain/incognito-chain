@@ -963,7 +963,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	msg *wire.MessageBlockShard) {
-	Logger.log.Infof("[bcsyncshard] Receive a new blockshard START")
+	//Logger.log.Debug("[bcsyncshard] Receive a new blockshard START")
 	//
 	//var txProcessed chan struct{}
 	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
