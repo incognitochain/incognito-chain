@@ -18,7 +18,7 @@ const (
 	DefaultMaxBlkReqPerPeer       = 900
 	MinCommitteeSize              = 3 // min size to run bft
 	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 5
+	MAX_S2B_BLOCK                 = 30
 	MAX_BEACON_BLOCK              = 5
 	LowerBoundPercentForIncDAO    = 3
 	UpperBoundPercentForIncDAO    = 10
