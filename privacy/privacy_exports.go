@@ -26,6 +26,8 @@ var ErrCodeMessage = errhandler.ErrCodeMessage
 // Public Constants
 const (
 	CStringBurnAddress    = "burningaddress"
+	CStringAssetTag       = "assettag"
+	CStringOTA            = "onetimeaddress"
 	Ed25519KeySize        = operation.Ed25519KeySize
 	CStringBulletProof    = operation.CStringBulletProof
 	CommitmentRingSize    = privacy_util.CommitmentRingSize
