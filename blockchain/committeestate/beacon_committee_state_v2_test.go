@@ -532,6 +532,31 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	initPublicKey()
 	initLog()
+	initStateDB()
+
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+
+	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
+	rewardReceiverkey := incKey.GetIncKeyBase58()
+
+	hash, err := common.Hash{}.NewHashFromStr("123")
+	statedb.StoreStakerInfoV1(
+		sDB,
+		[]incognitokey.CommitteePublicKey{*incKey},
+		map[string]privacy.PaymentAddress{
+			rewardReceiverkey: paymentAddress,
+		},
+		map[string]bool{
+			key: true,
+		},
+		map[string]common.Hash{
+			key: *hash,
+		},
+	)
+
+	Logger.log.Info("key:", key)
+	Logger.log.Info("key5:", key5)
 
 	type fields struct {
 		beaconCommittee            []incognitokey.CommitteePublicKey
@@ -650,7 +675,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Valid Input",
+			name: "Valid Input [Back Directly To This Shard Pool]",
 			fields: fields{
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
@@ -662,7 +687,9 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						*incKey5,
 					},
 				},
-				numberOfRound:  map[string]int{},
+				numberOfRound: map[string]int{
+					key: 1,
+				},
 				autoStake:      map[string]bool{},
 				rewardReceiver: map[string]privacy.PaymentAddress{},
 				stakingTx:      map[string]common.Hash{},
@@ -679,6 +706,73 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidators: 0,
+				},
+				committeeChange: &CommitteeChange{
+					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
+				},
+			},
+			want: &CommitteeChange{
+				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid Input [Back To Common Pool And Re-assign]",
+			fields: fields{
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey2, *incKey3, *incKey4,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				numberOfRound: map[string]int{
+					key: 2,
+				},
+				autoStake:      map[string]bool{},
+				rewardReceiver: map[string]privacy.PaymentAddress{},
+				stakingTx:      map[string]common.Hash{},
+			},
+			args: args{
+				swapShardInstruction: &instruction.SwapShardInstruction{
+					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+					OutPublicKeys: []string{key},
+				},
+				env: &BeaconCommitteeStateEnvironment{
+					NumberOfFixedShardBlockValidators: 0,
+					ConsensusStateDB:                  sDB,
+					RandomNumber:                      5000,
+					ActiveShards:                      1,
 				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},

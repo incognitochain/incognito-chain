@@ -416,6 +416,15 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
+	finalCommittees, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardCommittee[0])
+	finalSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.finalBeaconCommitteeStateV2.shardSubstitute[0])
+	latestCommittees, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardCommittee[0])
+	latestSubtitutes, _ := incognitokey.CommitteeKeyListToString(engine.uncommittedBeaconCommitteeStateV2.shardSubstitute[0])
+	Logger.log.Info("[swap-v2] finalCommittees:", finalCommittees)
+	Logger.log.Info("[swap-v2] finalSubtitutes:", finalSubtitutes)
+	Logger.log.Info("[swap-v2] latestCommittees:", latestCommittees)
+	Logger.log.Info("[swap-v2] latestSubtitutes:", latestSubtitutes)
+
 	return hashes, committeeChange, incuredInstructions, nil
 }
 
@@ -621,9 +630,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange) (
 	*CommitteeChange, error) {
 
-	// newB := NewBeaconCommitteeStateV2()
-	// b.clone(newB)
-
 	var err error
 	chainID := byte(swapShardInstruction.ChainID)
 	newCommitteeChange := committeeChange
@@ -633,9 +639,20 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempSwapInPuclicKeys := swapShardInstruction.InPublicKeyStructs
 	numberFixedValidators := env.NumberOfFixedShardBlockValidators
 
+	// Logger.log.Info("[swap-v2] processSwapShardInstruction")
+
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
+
+		// cKey, _ := b.shardCommittee[chainID][numberFixedValidators].ToBase58()
+		// oKey, _ := v.ToBase58()
+
+		// Logger.log.Info("[swap-v2] swap out key 0:", oKey)
+		// Logger.log.Info("[swap-v2] committee key 0:", cKey)
+
 		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
+			// Logger.log.Info("[swap-v2] swap out key 1:", oKey)
+			// Logger.log.Info("[swap-v2] committee key 1:", cKey)
 			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
 		b.shardCommittee[chainID] =

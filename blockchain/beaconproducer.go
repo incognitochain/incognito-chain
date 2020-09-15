@@ -141,8 +141,48 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============End Build Body================
 	//============Update Beacon Best State================
 	// Process new block with beststate
+
+	// if curView.BeaconHeight == 19 {
+	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
+	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
+	// 	Logger.log.Info("[swap-v2] bestview.committees 0:", committees)
+	// 	Logger.log.Info("[swap-v2] bestview.subtitutes 0:", subtitutes)
+	// 	ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
+	// 	csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
+	// 	Logger.log.Info("[swap-v2] curView.committees 0:", ccommittees)
+	// 	Logger.log.Info("[swap-v2] curView.subtitutes 0:", csubtitutes)
+	// }
+
 	_, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+
+	if curView.BeaconHeight == 19 {
+		panic(1)
+	}
+
+	// if curView.BeaconHeight == 19 {
+	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
+	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
+	// 	Logger.log.Info("[swap-v2] bestview.committees 1:", committees)
+	// 	Logger.log.Info("[swap-v2] bestview.subtitutes 1:", subtitutes)
+	// 	ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
+	// 	csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
+	// 	Logger.log.Info("[swap-v2] curView.committees 1:", ccommittees)
+	// 	Logger.log.Info("[swap-v2] curView.subtitutes 1:", csubtitutes)
+	// }
+
 	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
+
+	// if curView.BeaconHeight == 19 {
+	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
+	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
+	// 	Logger.log.Info("[swap-v2] bestview.committees 2:", committees)
+	// 	Logger.log.Info("[swap-v2] bestview.subtitutes 2:", subtitutes)
+	// 	ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
+	// 	csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
+	// 	Logger.log.Info("[swap-v2] curView.committees 2:", ccommittees)
+	// 	Logger.log.Info("[swap-v2] curView.subtitutes 2:", csubtitutes)
+	// }
+
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +224,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
 	beaconBlock.Header.Timestamp = startTime
 	//============END Build Header Hash=========
+
 	return beaconBlock, nil
 }
 
