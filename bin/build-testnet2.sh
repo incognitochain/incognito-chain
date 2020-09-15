@@ -24,7 +24,7 @@ cp ../sample-config.conf .
 
 # Build docker and push
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
-docker build -f Dockerfile-2 --build-arg commit=$commit . -t incognitochain/incognito:${tag}
+docker build -f Dockerfile-2 --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag}
 
-docker push incognitochain/incognito:${tag} && echo "Commit: $commit"
+docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
 docker rmi -f $(docker images --filter "dangling=true" -q)
