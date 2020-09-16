@@ -194,7 +194,7 @@ func (tx *TxVersion2) proveWithMessage(params *TxPrivacyInitParams, hashedTokenM
 	// inputCoins is plainCoin because it may have coinV1 with coinV2
 	inputCoins := params.inputCoins
 
-	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, params.paymentInfo)
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, nil, false, params.paymentInfo)
 	if err != nil {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
@@ -443,6 +443,7 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 		return false, NewTransactionErr(VerifyTxSigFailError, err)
 	}else {
 		// validate for pToken
+		// TODO : decide which tokenID to put here when init, and when transfer
 		tokenID := txToken.TxTokenData.PropertyID
 		switch txToken.TxTokenData.Type {
 		case CustomTokenInit:
@@ -460,7 +461,7 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 				return validateConversionVer1ToVer2(txToken.TxTokenData.TxNormal, transactionStateDB, shardID, &tokenID)
 			} else {
 				resTxTokenData, err :=  txToken.TxTokenData.TxNormal.ValidateTransaction(
-					txToken.TxTokenData.TxNormal.IsPrivacy(),
+					true,
 					transactionStateDB, bridgeStateDB, shardID, &tokenID, isBatch, isNewTransaction)
 				if err!= nil{
 					return resTxTokenData, err
@@ -469,7 +470,7 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 				if txFeeProof == nil {
 					return resTxTokenData, nil
 				}
-				resTxFee, err := txFeeProof.Verify(true, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
+				resTxFee, err := txFeeProof.Verify(false, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
 				return resTxFee && resTxTokenData, err
 
 			}
