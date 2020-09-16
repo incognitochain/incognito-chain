@@ -27,7 +27,7 @@ type Validator struct {
 
 type Engine struct {
 	BFTProcess map[int]ConsensusInterface //chainID -> consensus
-	validators []Validator                //list of validator
+	validators []*Validator               //list of validator
 	version    map[int]int                //chainID -> version
 
 	consensusName string
@@ -36,14 +36,14 @@ type Engine struct {
 
 	//old code -> single process
 	//TODO: remove old code
-	userMiningPublicKeys map[string]*incognitokey.CommitteePublicKey
+	userMiningPublicKeys *incognitokey.CommitteePublicKey
 	userKeyListString    string
 	currentMiningProcess ConsensusInterface
 }
 
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
-		return validator.state.role, validator.state.layer, validator.state.chainID
+		return validator.state.layer, validator.state.role, validator.state.chainID
 	}
 	return "", "", -2
 }
@@ -61,13 +61,11 @@ func (s *Engine) WatchCommitteeChange() {
 
 	ValidatorGroup := make(map[int][]Validator)
 	for _, validator := range s.validators {
-		s.userMiningPublicKeys[common.BlsConsensus] = validator.miningKey.GetPublicKey()
+		s.userMiningPublicKeys = validator.miningKey.GetPublicKey()
 		s.userKeyListString = validator.privateSeed
-
 		role, chainID := s.config.Node.GetPubkeyMiningState(validator.miningKey.GetPublicKey())
 		if chainID == -1 {
 			validator.state = MiningState{role, "beacon", -1}
-			return
 		} else if chainID > -1 {
 			validator.state = MiningState{role, "shard", chainID}
 		} else {
@@ -80,7 +78,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 		//group all validator as committee by chainID
 		if role == common.CommitteeRole {
-			ValidatorGroup[chainID] = append(ValidatorGroup[chainID], validator)
+			ValidatorGroup[chainID] = append(ValidatorGroup[chainID], *validator)
 		}
 	}
 
@@ -124,8 +122,6 @@ func NewConsensusEngine() *Engine {
 		BFTProcess:    make(map[int]ConsensusInterface),
 		consensusName: common.BlsConsensus,
 		version:       make(map[int]int),
-
-		userMiningPublicKeys: make(map[string]*incognitokey.CommitteePublicKey),
 	}
 	return engine
 }
@@ -178,7 +174,7 @@ func (engine *Engine) Start() error {
 			panic(err)
 		}
 
-		engine.validators = []Validator{Validator{privateSeed: privateSeed, miningKey: *miningKey}}
+		engine.validators = []*Validator{&Validator{privateSeed: privateSeed, miningKey: *miningKey}}
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		//import validator keys : 'key1,key2'
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
@@ -187,7 +183,7 @@ func (engine *Engine) Start() error {
 			if err != nil {
 				panic(err)
 			}
-			engine.validators = []Validator{Validator{privateSeed: key, miningKey: *miningKey}}
+			engine.validators = []*Validator{&Validator{privateSeed: key, miningKey: *miningKey}}
 		}
 	}
 	engine.IsEnabled = 1

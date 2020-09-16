@@ -68,10 +68,7 @@ func (engine *Engine) GetMiningPublicKeyByConsensus(consensusName string) (publi
 }
 
 func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
-	if s.userMiningPublicKeys == nil || s.userMiningPublicKeys[s.consensusName] == nil {
-		return nil
-	}
-	return s.userMiningPublicKeys[s.consensusName]
+	return s.userMiningPublicKeys
 }
 
 func (s *Engine) GetNodeMiningPublicKeys() (userPks []*incognitokey.CommitteePublicKey) {
@@ -82,11 +79,7 @@ func (s *Engine) GetNodeMiningPublicKeys() (userPks []*incognitokey.CommitteePub
 }
 
 func (engine *Engine) GetAllMiningPublicKeys() []string {
-	var keys []string
-	for keyType, key := range engine.userMiningPublicKeys {
-		keys = append(keys, fmt.Sprintf("%v:%v", keyType, key.GetMiningKeyBase58(keyType)))
-	}
-	return keys
+	return []string{}
 }
 
 func (engine *Engine) SignDataWithCurrentMiningKey(
