@@ -126,7 +126,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 }
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateMetadataByItself() bool {
-	return redeemReq.Type == PortalRedeemLiquidateExchangeRatesMeta
+	return redeemReq.Type == PortalRedeemFromLiquidationPoolMeta
 }
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
@@ -150,7 +150,7 @@ func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transact
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRedeemLiquidateExchangeRatesMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalRedeemFromLiquidationPoolMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

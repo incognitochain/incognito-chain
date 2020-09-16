@@ -376,11 +376,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
-			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
+			case metadata.PortalRedeemFromLiquidationPoolMeta:
 				if len(l) >= 4 {
-					if l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+					if l[2] == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
 						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
-					} else if l[2] == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+					} else if l[2] == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
 						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 					}
 				}
@@ -393,12 +393,12 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: custodian deposit
-			case metadata.PortalLiquidationCustodianDepositMeta:
-				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+			case metadata.PortalCustodianTopupMeta:
+				if len(l) >= 4 && l[2] == common.PortalCustodianTopupRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalLiquidationCustodianDepositMetaV2:
-				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+			case metadata.PortalCustodianTopupMetaV2:
+				if len(l) >= 4 && l[2] == common.PortalCustodianTopupRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
 				}
 			//

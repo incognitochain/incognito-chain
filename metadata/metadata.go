@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -68,6 +67,8 @@ type ChainRetriever interface {
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
+	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
+	GetPortalETHContractAddrStr() string
 }
 
 type BeaconViewRetriever interface {

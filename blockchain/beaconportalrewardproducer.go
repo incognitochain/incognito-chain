@@ -241,6 +241,103 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	return rewardInsts, nil
 }
 
+
+/* =======
+Portal Custodian Request Withdraw Rewards Processor
+======= */
+
+type portalReqWithdrawRewardProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalReqWithdrawRewardProcessor) getActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalReqWithdrawRewardProcessor) putAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalReqWithdrawRewardProcessor) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
+	bc *BlockChain,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	portalParams PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalRequestWithdrawRewardAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	rejectInst := buildWithdrawPortalRewardInst(
+		actionData.Meta.CustodianAddressStr,
+		actionData.Meta.TokenID,
+		0,
+		actionData.Meta.Type,
+		shardID,
+		actionData.TxReqID,
+		common.PortalReqWithdrawRewardRejectedChainStatus,
+	)
+
+	if currentPortalState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Current Portal state is null.")
+		return [][]string{rejectInst}, nil
+	}
+	meta := actionData.Meta
+
+	keyCustodianState := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
+	keyCustodianStateStr := keyCustodianState.String()
+	custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
+	if custodian == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Not found custodian address in custodian pool.")
+		return [][]string{rejectInst}, nil
+	} else {
+		rewardAmounts := custodian.GetRewardAmount()
+		rewardAmount := rewardAmounts[actionData.Meta.TokenID.String()]
+
+		if rewardAmount <= 0 {
+			Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Reward amount of custodian %v is zero.", meta.CustodianAddressStr)
+			return [][]string{rejectInst}, nil
+		}
+
+		inst := buildWithdrawPortalRewardInst(
+			actionData.Meta.CustodianAddressStr,
+			actionData.Meta.TokenID,
+			rewardAmount,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqWithdrawRewardAcceptedChainStatus,
+		)
+
+		// update reward amount of custodian
+		updatedRewardAmount := custodian.GetRewardAmount()
+		updatedRewardAmount[actionData.Meta.TokenID.String()] = 0
+		currentPortalState.CustodianPoolState[keyCustodianStateStr].SetRewardAmount(updatedRewardAmount)
+		return [][]string{inst}, nil
+	}
+}
+
 // beacon build new instruction from instruction received from ShardToBeaconBlock
 func buildWithdrawPortalRewardInst(
 	custodianAddressStr string,
@@ -264,93 +361,5 @@ func buildWithdrawPortalRewardInst(
 		strconv.Itoa(int(shardID)),
 		status,
 		string(withdrawRewardContentBytes),
-	}
-}
-
-// buildInstructionsForCustodianDeposit builds instruction for custodian deposit action
-func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
-	contentStr string,
-	shardID byte,
-	metaType int,
-	currentPortalState *CurrentPortalState,
-	beaconHeight uint64,
-) ([][]string, error) {
-	// parse instruction
-	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian deposit action: %+v", err)
-		return [][]string{}, nil
-	}
-	var actionData metadata.PortalRequestWithdrawRewardAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action: %+v", err)
-		return [][]string{}, nil
-	}
-
-	if currentPortalState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Current Portal state is null.")
-		// need to refund collateral to custodian
-		inst := buildWithdrawPortalRewardInst(
-			actionData.Meta.CustodianAddressStr,
-			actionData.Meta.TokenID,
-			0,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqWithdrawRewardRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-	meta := actionData.Meta
-
-	keyCustodianState := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
-	keyCustodianStateStr := keyCustodianState.String()
-	custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
-	if custodian == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Not found custodian address in custodian pool.")
-		inst := buildWithdrawPortalRewardInst(
-			actionData.Meta.CustodianAddressStr,
-			actionData.Meta.TokenID,
-			0,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqWithdrawRewardRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	} else {
-		rewardAmounts := custodian.GetRewardAmount()
-		rewardAmount := rewardAmounts[actionData.Meta.TokenID.String()]
-
-		if rewardAmount <= 0 {
-			Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Reward amount of custodian %v is zero.", meta.CustodianAddressStr)
-			inst := buildWithdrawPortalRewardInst(
-				actionData.Meta.CustodianAddressStr,
-				actionData.Meta.TokenID,
-				0,
-				actionData.Meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqWithdrawRewardRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-
-		inst := buildWithdrawPortalRewardInst(
-			actionData.Meta.CustodianAddressStr,
-			actionData.Meta.TokenID,
-			rewardAmount,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqWithdrawRewardAcceptedChainStatus,
-		)
-
-		// update reward amount of custodian
-		updatedRewardAmount := custodian.GetRewardAmount()
-		updatedRewardAmount[actionData.Meta.TokenID.String()] = 0
-		currentPortalState.CustodianPoolState[keyCustodianStateStr].SetRewardAmount(updatedRewardAmount)
-		return [][]string{inst}, nil
 	}
 }

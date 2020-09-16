@@ -176,11 +176,11 @@ const (
 	PortalReqWithdrawRewardAcceptedStatus = 1
 	PortalReqWithdrawRewardRejectedStatus = 2
 
-	PortalRedeemLiquidateExchangeRatesSuccessStatus  = 1
-	PortalRedeemLiquidateExchangeRatesRejectedStatus = 2
+	PortalRedeemFromLiquidationPoolSuccessStatus  = 1
+	PortalRedeemFromLiquidationPoolRejectedStatus = 2
 
-	PortalLiquidationCustodianDepositSuccessStatus  = 1
-	PortalLiquidationCustodianDepositRejectedStatus = 2
+	PortalCustodianTopupSuccessStatus  = 1
+	PortalCustodianTopupRejectedStatus = 2
 
 	PortalExpiredPortingReqSuccessStatus = 1
 	PortalExpiredPortingReqFailedStatus  = 2
@@ -253,11 +253,11 @@ const (
 	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
 	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
 
-	PortalRedeemLiquidateExchangeRatesSuccessChainStatus  = "success"
-	PortalRedeemLiquidateExchangeRatesRejectedChainStatus = "rejected"
+	PortalRedeemFromLiquidationPoolSuccessChainStatus  = "success"
+	PortalRedeemFromLiquidationPoolRejectedChainStatus = "rejected"
 
-	PortalLiquidationCustodianDepositSuccessChainStatus  = "success"
-	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
+	PortalCustodianTopupSuccessChainStatus  = "success"
+	PortalCustodianTopupRejectedChainStatus = "rejected"
 
 	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
 	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"

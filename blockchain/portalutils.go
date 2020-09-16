@@ -220,7 +220,7 @@ func pickUpCustodians(
 		}
 	}
 
-	if remainPTokens  > 0 {
+	if remainPTokens > 0 {
 		Logger.log.Errorf("Not enough custodians for porting amount %v", metadata.RegisterAmount)
 		return nil, fmt.Errorf("Not enough custodians for porting amount %v", metadata.RegisterAmount)
 	}
@@ -1264,4 +1264,42 @@ func CalAmountTopUpWaitingPortings(
 	}
 
 	return result, nil
+}
+
+func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[string]*statedb.RedeemRequest {
+	newReqs := make(map[string]*statedb.RedeemRequest, len(redeemReqs))
+	for key, req := range redeemReqs {
+		newReqs[key] = statedb.NewRedeemRequestWithValue(
+			req.GetUniqueRedeemID(),
+			req.GetTokenID(),
+			req.GetRedeemerAddress(),
+			req.GetRedeemerRemoteAddress(),
+			req.GetRedeemAmount(),
+			req.GetCustodians(),
+			req.GetRedeemFee(),
+			req.GetBeaconHeight(),
+			req.GetTxReqID(),
+		)
+	}
+	return newReqs
+}
+
+func getNewMatchedRedeemReqIDs(
+	existRedeemReqs map[string]*statedb.RedeemRequest,
+	newRedeemReqs map[string]*statedb.RedeemRequest) []string {
+	newIDs := []string{}
+
+	m := map[string]bool{}
+	for _, req := range existRedeemReqs {
+		m[req.GetUniqueRedeemID()] = true
+	}
+
+	for _, req := range newRedeemReqs {
+		newID := req.GetUniqueRedeemID()
+		if m[newID] == false {
+			newIDs = append(newIDs, newID)
+		}
+	}
+
+	return newIDs
 }

@@ -113,7 +113,7 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 }
 
 func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateMetadataByItself() bool {
-	return custodianDeposit.Type == PortalLiquidationCustodianDepositMetaV2
+	return custodianDeposit.Type == PortalCustodianTopupMetaV2
 }
 
 func (custodianDeposit PortalLiquidationCustodianDepositV2) Hash() *common.Hash {
@@ -138,7 +138,7 @@ func (custodianDeposit *PortalLiquidationCustodianDepositV2) BuildReqActions(tx 
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalLiquidationCustodianDepositMetaV2), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalCustodianTopupMetaV2), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

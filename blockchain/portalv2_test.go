@@ -229,23 +229,23 @@ func cloneWPortingRequests(wPortingReqs map[string]*statedb.WaitingPortingReques
 	return newReqs
 }
 
-func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[string]*statedb.RedeemRequest {
-	newReqs := make(map[string]*statedb.RedeemRequest, len(redeemReqs))
-	for key, req := range redeemReqs {
-		newReqs[key] = statedb.NewRedeemRequestWithValue(
-			req.GetUniqueRedeemID(),
-			req.GetTokenID(),
-			req.GetRedeemerAddress(),
-			req.GetRedeemerRemoteAddress(),
-			req.GetRedeemAmount(),
-			req.GetCustodians(),
-			req.GetRedeemFee(),
-			req.GetBeaconHeight(),
-			req.GetTxReqID(),
-		)
-	}
-	return newReqs
-}
+//func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[string]*statedb.RedeemRequest {
+//	newReqs := make(map[string]*statedb.RedeemRequest, len(redeemReqs))
+//	for key, req := range redeemReqs {
+//		newReqs[key] = statedb.NewRedeemRequestWithValue(
+//			req.GetUniqueRedeemID(),
+//			req.GetTokenID(),
+//			req.GetRedeemerAddress(),
+//			req.GetRedeemerRemoteAddress(),
+//			req.GetRedeemAmount(),
+//			req.GetCustodians(),
+//			req.GetRedeemFee(),
+//			req.GetBeaconHeight(),
+//			req.GetTxReqID(),
+//		)
+//	}
+//	return newReqs
+//}
 
 // buildBNBProofFromTxs build a bnb proof for unit tests
 func buildBNBProofFromTxs(blockHeight int64, txs *types.Txs, indexTx int) *bnb.BNBProof {
@@ -406,7 +406,7 @@ func producerPortalInstructions(
 				inst[1], shardID, metadata.PortalCustodianWithdrawRequestMeta, currentPortalState, beaconHeight, portalParams)
 
 		// custodian top-up collaterals for holding public tokens
-		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMetaV2):
+		case strconv.Itoa(metadata.PortalCustodianTopupMetaV2):
 			newInst, err = blockchain.buildInstructionsForLiquidationCustodianDeposit(
 				inst[1], shardID, metadata.PortalCustodianWithdrawRequestMeta, currentPortalState, beaconHeight, portalParams)
 		// custodian top-up collaterals for waiting porting requests
@@ -414,9 +414,9 @@ func producerPortalInstructions(
 			newInst, err = blockchain.buildInstsForTopUpWaitingPorting(
 				inst[1], shardID, metadata.PortalTopUpWaitingPortingRequestMeta, currentPortalState, beaconHeight, portalParams)
 		// user redeem ptokens from liquidation pool to get PRV
-		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
+		case strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolMeta):
 			newInst, err = blockchain.buildInstructionsForLiquidationRedeemPTokenExchangeRates(
-				inst[1], shardID, metadata.PortalRedeemLiquidateExchangeRatesMeta, currentPortalState, beaconHeight, portalParams)
+				inst[1], shardID, metadata.PortalRedeemFromLiquidationPoolMeta, currentPortalState, beaconHeight, portalParams)
 		}
 
 		if err != nil {
@@ -460,13 +460,13 @@ func processPortalInstructions(
 		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
 			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation custodian deposit
-		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMetaV2):
+		case strconv.Itoa(metadata.PortalCustodianTopupMetaV2):
 			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//waiting porting top up
 		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta):
 			err = blockchain.processPortalTopUpWaitingPorting(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation user redeem
-		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
+		case strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolMeta):
 			err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		//custodian deposit
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
@@ -660,7 +660,7 @@ func buildPortalTopupCustodianAction(
 ) []string {
 	data := metadata.PortalLiquidationCustodianDepositV2{
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalLiquidationCustodianDepositMetaV2,
+			Type: metadata.PortalCustodianTopupMetaV2,
 		},
 		IncogAddressStr:      incAddressStr,
 		PTokenId:             ptokenID,
@@ -675,7 +675,7 @@ func buildPortalTopupCustodianAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalLiquidationCustodianDepositMetaV2), actionContentBase64Str}
+	return []string{strconv.Itoa(metadata.PortalCustodianTopupMetaV2), actionContentBase64Str}
 }
 
 func buildTopupWaitingPortingAction(

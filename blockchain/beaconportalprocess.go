@@ -10,9 +10,10 @@ import (
 )
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
-	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
-		return nil
-	}
+	//TODO: uncomment before push code
+	//if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
+	//	return nil
+	//}
 	beaconHeight := block.Header.Height - 1
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
 	if err != nil {
@@ -45,13 +46,13 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
 			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation custodian deposit
-		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMetaV2):
+		case strconv.Itoa(metadata.PortalCustodianTopupMetaV2):
 			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//waiting porting top up
 		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta):
 			err = blockchain.processPortalTopUpWaitingPorting(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation user redeem
-		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
+		case strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolMeta):
 			err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		//custodian deposit
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):

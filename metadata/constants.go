@@ -50,34 +50,37 @@ const (
 	PDETradingFeesDistributionMeta        = 209
 
 	// portal
-	PortalCustodianDepositMeta                      = 100
-	PortalUserRegisterMeta                          = 101
-	PortalUserRequestPTokenMeta                     = 102
-	PortalCustodianDepositResponseMeta              = 103
-	PortalUserRequestPTokenResponseMeta             = 104
-	PortalExchangeRatesMeta                         = 105
-	PortalRedeemRequestMeta                         = 106
-	PortalRedeemRequestResponseMeta                 = 107
-	PortalRequestUnlockCollateralMeta               = 108
-	PortalCustodianWithdrawRequestMeta              = 110
-	PortalCustodianWithdrawResponseMeta             = 111
-	PortalLiquidateCustodianMeta                    = 112
-	PortalLiquidateCustodianResponseMeta            = 113
-	PortalLiquidateTPExchangeRatesMeta              = 114
-	PortalExpiredWaitingPortingReqMeta              = 116
-	PortalRewardMeta                                = 117
-	PortalRequestWithdrawRewardMeta                 = 118
-	PortalRequestWithdrawRewardResponseMeta         = 119
-	PortalRedeemLiquidateExchangeRatesMeta          = 120
-	PortalRedeemLiquidateExchangeRatesResponseMeta  = 121
-	PortalLiquidationCustodianDepositMeta           = 122
-	PortalLiquidationCustodianDepositResponseMeta   = 123
-	PortalTotalRewardCustodianMeta                  = 124
-	PortalPortingResponseMeta                       = 125
-	PortalReqMatchingRedeemMeta                     = 126
-	PortalPickMoreCustodianForRedeemMeta            = 128
-	PortalLiquidationCustodianDepositMetaV2         = 129
-	PortalLiquidationCustodianDepositResponseMetaV2 = 130
+	PortalCustodianDepositMeta                  = 100
+	PortalUserRegisterMeta                      = 101
+	PortalUserRequestPTokenMeta                 = 102
+	PortalCustodianDepositResponseMeta          = 103
+	PortalUserRequestPTokenResponseMeta         = 104
+	PortalExchangeRatesMeta                     = 105
+	PortalRedeemRequestMeta                     = 106
+	PortalRedeemRequestResponseMeta             = 107
+	PortalRequestUnlockCollateralMeta           = 108
+	PortalCustodianWithdrawRequestMeta          = 110
+	PortalCustodianWithdrawResponseMeta         = 111
+	PortalLiquidateCustodianMeta                = 112
+	PortalLiquidateCustodianResponseMeta        = 113
+	PortalLiquidateTPExchangeRatesMeta          = 114
+	PortalExpiredWaitingPortingReqMeta          = 116
+	PortalRewardMeta                            = 117
+	PortalRequestWithdrawRewardMeta             = 118
+	PortalRequestWithdrawRewardResponseMeta     = 119
+	PortalRedeemFromLiquidationPoolMeta         = 120
+	PortalRedeemFromLiquidationPoolResponseMeta = 121
+	PortalCustodianTopupMeta                    = 122
+	PortalCustodianTopupResponseMeta            = 123
+	PortalTotalRewardCustodianMeta              = 124
+	PortalPortingResponseMeta                   = 125
+	PortalReqMatchingRedeemMeta                 = 126
+	PortalPickMoreCustodianForRedeemMeta        = 128
+	PortalCustodianTopupMetaV2                  = 129
+	PortalCustodianTopupResponseMetaV2          = 130
+
+	// Portal v3
+	PortalCustodianDepositMetaV3 = 131
 
 	//Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = 199
@@ -94,9 +97,6 @@ const (
 	BurningForDepositToSCRequestMetaV2 = 242
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
-
-	// Portal v3
-	PortalCustodianDepositMetaV3                      = 300
 )
 
 var minerCreatedMetaTypes = []int{
@@ -117,9 +117,9 @@ var minerCreatedMetaTypes = []int{
 	PortalCustodianWithdrawResponseMeta,
 	PortalLiquidateCustodianResponseMeta,
 	PortalRequestWithdrawRewardResponseMeta,
-	PortalRedeemLiquidateExchangeRatesResponseMeta,
-	PortalLiquidationCustodianDepositResponseMeta,
-	PortalLiquidationCustodianDepositResponseMetaV2,
+	PortalRedeemFromLiquidationPoolResponseMeta,
+	PortalCustodianTopupResponseMeta,
+	PortalCustodianTopupResponseMetaV2,
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 }

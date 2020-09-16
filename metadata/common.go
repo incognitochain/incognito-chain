@@ -115,17 +115,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalRequestWithdrawReward{}
 	case PortalRequestWithdrawRewardResponseMeta:
 		md = &PortalWithdrawRewardResponse{}
-	case PortalRedeemLiquidateExchangeRatesMeta:
+	case PortalRedeemFromLiquidationPoolMeta:
 		md = &PortalRedeemLiquidateExchangeRates{}
-	case PortalRedeemLiquidateExchangeRatesResponseMeta:
+	case PortalRedeemFromLiquidationPoolResponseMeta:
 		md = &PortalRedeemLiquidateExchangeRatesResponse{}
-	case PortalLiquidationCustodianDepositMetaV2:
+	case PortalCustodianTopupMetaV2:
 		md = &PortalLiquidationCustodianDepositV2{}
-	case PortalLiquidationCustodianDepositResponseMetaV2:
+	case PortalCustodianTopupResponseMetaV2:
 		md = &PortalLiquidationCustodianDepositResponseV2{}
-	case PortalLiquidationCustodianDepositMeta:
+	case PortalCustodianTopupMeta:
 		md = &PortalLiquidationCustodianDeposit{}
-	case PortalLiquidationCustodianDepositResponseMeta:
+	case PortalCustodianTopupResponseMeta:
 		md = &PortalLiquidationCustodianDepositResponse{}
 	case BurningForDepositToSCRequestMeta:
 		md = &BurningRequest{}
@@ -139,6 +139,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingRequest{}
 	case PortalTopUpWaitingPortingResponseMeta:
 		md = &PortalTopUpWaitingPortingResponse{}
+	case PortalCustodianDepositMetaV3:
+		md = &PortalCustodianDepositV3{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

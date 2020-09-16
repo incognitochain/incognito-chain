@@ -70,89 +70,6 @@ func buildTopPercentileExchangeRatesLiquidationInst(
 	}
 }
 
-func buildRedeemLiquidateExchangeRatesInst(
-	tokenID string,
-	redeemAmount uint64,
-	incAddressStr string,
-	totalPTokenReceived uint64,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-	status string,
-) []string {
-	redeemRequestContent := metadata.PortalRedeemLiquidateExchangeRatesContent{
-		TokenID:               tokenID,
-		RedeemAmount:          redeemAmount,
-		RedeemerIncAddressStr: incAddressStr,
-		TxReqID:               txReqID,
-		ShardID:               shardID,
-		TotalPTokenReceived:   totalPTokenReceived,
-	}
-	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(redeemRequestContentBytes),
-	}
-}
-
-func buildLiquidationCustodianDepositInst(
-	pTokenId string,
-	incogAddress string,
-	depositedAmount uint64,
-	freeCollateralAmount uint64,
-	status string,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-) []string {
-	redeemRequestContent := metadata.PortalLiquidationCustodianDepositContentV2{
-		PTokenId:             pTokenId,
-		IncogAddressStr:      incogAddress,
-		DepositedAmount:      depositedAmount,
-		FreeCollateralAmount: freeCollateralAmount,
-		TxReqID:              txReqID,
-		ShardID:              shardID,
-	}
-	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(redeemRequestContentBytes),
-	}
-}
-
-func buildTopUpWaitingPortingInst(
-	portingID string,
-	pTokenID string,
-	incogAddress string,
-	depositedAmount uint64,
-	freeCollateralAmount uint64,
-	status string,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-) []string {
-	topUpWaitingPortingReqContent := metadata.PortalTopUpWaitingPortingRequestContent{
-		PortingID:            portingID,
-		PTokenID:             pTokenID,
-		IncogAddressStr:      incogAddress,
-		DepositedAmount:      depositedAmount,
-		FreeCollateralAmount: freeCollateralAmount,
-		TxReqID:              txReqID,
-		ShardID:              shardID,
-	}
-	topUpWaitingPortingReqContentBytes, _ := json.Marshal(topUpWaitingPortingReqContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(topUpWaitingPortingReqContentBytes),
-	}
-}
-
 // checkAndBuildInstForCustodianLiquidation checks and builds liquidation instructions
 // when custodians didn't return public token to users after timeout
 func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
@@ -569,13 +486,67 @@ func buildInstForLiquidationTopPercentileExchangeRates(
 	return insts, nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchangeRates(
+
+/* =======
+Portal Redeem From Liquidation Pool Processor
+======= */
+
+type portalRedeemFromLiquidationPoolProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessor) getActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessor) putAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessor) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func buildRedeemFromLiquidationPoolInst(
+	tokenID string,
+	redeemAmount uint64,
+	incAddressStr string,
+	totalPTokenReceived uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	redeemRequestContent := metadata.PortalRedeemLiquidateExchangeRatesContent{
+		TokenID:               tokenID,
+		RedeemAmount:          redeemAmount,
+		RedeemerIncAddressStr: incAddressStr,
+		TxReqID:               txReqID,
+		ShardID:               shardID,
+		TotalPTokenReceived:   totalPTokenReceived,
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(redeemRequestContentBytes),
+	}
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessor) buildNewInsts(
+	bc *BlockChain,
 	contentStr string,
 	shardID byte,
-	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	portalParams PortalParams,
+	optionalData map[string]interface{},
 ) ([][]string, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -591,37 +562,28 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 	}
 
 	meta := actionData.Meta
+	rejectInst := buildRedeemFromLiquidationPoolInst(
+		meta.TokenID,
+		meta.RedeemAmount,
+		meta.RedeemerIncAddressStr,
+		0,
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
+	)
+
 	if currentPortalState == nil {
 		Logger.log.Warn("Current Portal state is null.")
 		// need to mint ptoken to user
-		inst := buildRedeemLiquidateExchangeRatesInst(
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			0,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	//get exchange rates
 	exchangeRatesState := currentPortalState.FinalExchangeRatesState
 	if exchangeRatesState == nil {
 		Logger.log.Errorf("exchange rates not found")
-		inst := buildRedeemLiquidateExchangeRatesInst(
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			0,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	//check redeem amount
@@ -630,67 +592,26 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 
 	if !ok {
 		Logger.log.Errorf("Liquidate exchange rates not found")
-		inst := buildRedeemLiquidateExchangeRatesInst(
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			0,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	liquidateByTokenID, ok := liquidateExchangeRates.Rates()[meta.TokenID]
 
 	if !ok {
 		Logger.log.Errorf("Liquidate exchange rates not found")
-		inst := buildRedeemLiquidateExchangeRatesInst(
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			0,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	totalPrv, err := calTotalLiquidationByExchangeRates(meta.RedeemAmount, liquidateByTokenID)
 
 	if err != nil {
 		Logger.log.Errorf("Calculate total liquidation error %v", err)
-		inst := buildRedeemLiquidateExchangeRatesInst(
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			0,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
-	//todo: review
 	if totalPrv > liquidateByTokenID.CollateralAmount || liquidateByTokenID.CollateralAmount <= 0 {
 		Logger.log.Errorf("amout free collateral not enough, need prv %v != hold amount free collateral %v", totalPrv, liquidateByTokenID.CollateralAmount)
-		inst := buildRedeemLiquidateExchangeRatesInst(
-			meta.TokenID,
-			meta.RedeemAmount,
-			meta.RedeemerIncAddressStr,
-			0,
-			meta.Type,
-			actionData.ShardID,
-			actionData.TxReqID,
-			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	liquidateExchangeRates.Rates()[meta.TokenID] = statedb.LiquidationPoolDetail{
@@ -700,7 +621,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 
 	currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 
-	inst := buildRedeemLiquidateExchangeRatesInst(
+	inst := buildRedeemFromLiquidationPoolInst(
 		meta.TokenID,
 		meta.RedeemAmount,
 		meta.RedeemerIncAddressStr,
@@ -708,18 +629,209 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationRedeemPTokenExchang
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus,
+		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 	)
 	return [][]string{inst}, nil
 }
 
-func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
+
+/* =======
+Portal Custodian Topup Processor
+======= */
+
+type portalCustodianTopupProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalCustodianTopupProcessor) getActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalCustodianTopupProcessor) putAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalCustodianTopupProcessor) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func buildLiquidationCustodianDepositInst(
+	pTokenId string,
+	incogAddress string,
+	depositedAmount uint64,
+	freeCollateralAmount uint64,
+	status string,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+) []string {
+	redeemRequestContent := metadata.PortalLiquidationCustodianDepositContentV2{
+		PTokenId:             pTokenId,
+		IncogAddressStr:      incogAddress,
+		DepositedAmount:      depositedAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+		TxReqID:              txReqID,
+		ShardID:              shardID,
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(redeemRequestContentBytes),
+	}
+}
+
+func (p *portalCustodianTopupProcessor) buildNewInsts(
+	bc *BlockChain,
 	contentStr string,
 	shardID byte,
-	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	portalParams PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal liquidation custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalLiquidationCustodianDepositActionV2
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal liquidation custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	meta := actionData.Meta
+	rejectInst := buildLiquidationCustodianDepositInst(
+		meta.PTokenId,
+		meta.IncogAddressStr,
+		meta.DepositedAmount,
+		meta.FreeCollateralAmount,
+		common.PortalCustodianTopupRejectedChainStatus,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+	)
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Current Portal state is null.")
+		return [][]string{rejectInst}, nil
+	}
+
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.IncogAddressStr)
+	custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
+	if !ok {
+		Logger.log.Errorf("Custodian not found")
+		return [][]string{rejectInst}, nil
+	}
+
+	lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+	if _, ok := lockedAmountCollateral[meta.PTokenId]; !ok {
+		Logger.log.Errorf("PToken not found")
+		return [][]string{rejectInst}, nil
+	}
+
+	totalHoldPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodian, meta.PTokenId)
+	if totalHoldPubTokenAmount <= 0 {
+		Logger.log.Errorf("Holding public token amount is zero, don't need to top up")
+		return [][]string{rejectInst}, nil
+	}
+
+	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
+		Logger.log.Errorf("Free collateral topup amount is greater than free collateral of custodian's state")
+		return [][]string{rejectInst}, nil
+	}
+	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
+	topUpAmt := meta.DepositedAmount
+	if meta.FreeCollateralAmount > 0 {
+		topUpAmt += meta.FreeCollateralAmount
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - meta.FreeCollateralAmount)
+	}
+	lockedAmountCollateral[meta.PTokenId] += topUpAmt
+	custodian.SetLockedAmountCollateral(lockedAmountCollateral)
+	currentPortalState.CustodianPoolState[custodianStateKey.String()] = custodian
+	inst := buildLiquidationCustodianDepositInst(
+		meta.PTokenId,
+		meta.IncogAddressStr,
+		meta.DepositedAmount,
+		meta.FreeCollateralAmount,
+		common.PortalCustodianTopupSuccessChainStatus,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+	)
+	return [][]string{inst}, nil
+}
+
+/* =======
+Portal Custodian Topup For Waiting Porting Request Processor
+======= */
+
+type portalTopupWaitingPortingReqProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalTopupWaitingPortingReqProcessor) getActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalTopupWaitingPortingReqProcessor) putAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalTopupWaitingPortingReqProcessor) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func buildTopUpWaitingPortingInst(
+	portingID string,
+	pTokenID string,
+	incogAddress string,
+	depositedAmount uint64,
+	freeCollateralAmount uint64,
+	status string,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+) []string {
+	topUpWaitingPortingReqContent := metadata.PortalTopUpWaitingPortingRequestContent{
+		PortingID:            portingID,
+		PTokenID:             pTokenID,
+		IncogAddressStr:      incogAddress,
+		DepositedAmount:      depositedAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+		TxReqID:              txReqID,
+		ShardID:              shardID,
+	}
+	topUpWaitingPortingReqContentBytes, _ := json.Marshal(topUpWaitingPortingReqContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(topUpWaitingPortingReqContentBytes),
+	}
+}
+
+func (p *portalTopupWaitingPortingReqProcessor) buildNewInsts(
+	bc *BlockChain,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	portalParams PortalParams,
+	optionalData map[string]interface{},
 ) ([][]string, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -735,72 +847,40 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 	}
 
 	meta := actionData.Meta
+	rejectInst := buildTopUpWaitingPortingInst(
+		meta.PortingID,
+		meta.PTokenID,
+		meta.IncogAddressStr,
+		meta.DepositedAmount,
+		meta.FreeCollateralAmount,
+		common.PortalTopUpWaitingPortingRejectedChainStatus,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+	)
+
 	if currentPortalState == nil {
 		Logger.log.Warn("Current Portal state is null.")
-		inst := buildTopUpWaitingPortingInst(
-			meta.PortingID,
-			meta.PTokenID,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalTopUpWaitingPortingRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.IncogAddressStr)
 	custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
 	if !ok {
 		Logger.log.Errorf("Custodian not found")
-		inst := buildTopUpWaitingPortingInst(
-			meta.PortingID,
-			meta.PTokenID,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalTopUpWaitingPortingRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	waitingPortingRequestKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(meta.PortingID)
 	waitingPortingReq, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()]
 	if !ok || waitingPortingReq == nil || waitingPortingReq.TokenID() != meta.PTokenID {
 		Logger.log.Errorf("Waiting porting request with portingID (%s) not found", meta.PortingID)
-		inst := buildTopUpWaitingPortingInst(
-			meta.PortingID,
-			meta.PTokenID,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalTopUpWaitingPortingRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
 		Logger.log.Errorf("Free collateral topup amount is greater than free collateral of custodian's state")
-		inst := buildTopUpWaitingPortingInst(
-			meta.PortingID,
-			meta.PTokenID,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalTopUpWaitingPortingRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
+		return [][]string{rejectInst}, nil
 	}
 	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
 	topUpAmt := meta.DepositedAmount
@@ -827,127 +907,6 @@ func (blockchain *BlockChain) buildInstsForTopUpWaitingPorting(
 		meta.DepositedAmount,
 		meta.FreeCollateralAmount,
 		common.PortalTopUpWaitingPortingSuccessChainStatus,
-		meta.Type,
-		shardID,
-		actionData.TxReqID,
-	)
-	return [][]string{inst}, nil
-}
-
-func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
-	contentStr string,
-	shardID byte,
-	metaType int,
-	currentPortalState *CurrentPortalState,
-	beaconHeight uint64,
-	portalParams PortalParams,
-) ([][]string, error) {
-	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal liquidation custodian deposit action: %+v", err)
-		return [][]string{}, nil
-	}
-	var actionData metadata.PortalLiquidationCustodianDepositActionV2
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal liquidation custodian deposit action: %+v", err)
-		return [][]string{}, nil
-	}
-
-	meta := actionData.Meta
-	if currentPortalState == nil {
-		Logger.log.Warn("Current Portal state is null.")
-		inst := buildLiquidationCustodianDepositInst(
-			meta.PTokenId,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
-	}
-
-	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.IncogAddressStr)
-	custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
-	if !ok {
-		Logger.log.Errorf("Custodian not found")
-		inst := buildLiquidationCustodianDepositInst(
-			meta.PTokenId,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
-	}
-
-	lockedAmountCollateral := custodian.GetLockedAmountCollateral()
-	if _, ok := lockedAmountCollateral[meta.PTokenId]; !ok {
-		Logger.log.Errorf("PToken not found")
-		inst := buildLiquidationCustodianDepositInst(
-			meta.PTokenId,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
-	}
-
-	totalHoldPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodian, meta.PTokenId)
-	if totalHoldPubTokenAmount <= 0 {
-		Logger.log.Errorf("Holding public token amount is zero, don't need to top up")
-		inst := buildLiquidationCustodianDepositInst(
-			meta.PTokenId,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
-	}
-
-	if meta.FreeCollateralAmount > custodian.GetFreeCollateral() {
-		Logger.log.Errorf("Free collateral topup amount is greater than free collateral of custodian's state")
-		inst := buildLiquidationCustodianDepositInst(
-			meta.PTokenId,
-			meta.IncogAddressStr,
-			meta.DepositedAmount,
-			meta.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-		return [][]string{inst}, nil
-	}
-	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
-	topUpAmt := meta.DepositedAmount
-	if meta.FreeCollateralAmount > 0 {
-		topUpAmt += meta.FreeCollateralAmount
-		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - meta.FreeCollateralAmount)
-	}
-	lockedAmountCollateral[meta.PTokenId] += topUpAmt
-	custodian.SetLockedAmountCollateral(lockedAmountCollateral)
-	currentPortalState.CustodianPoolState[custodianStateKey.String()] = custodian
-	inst := buildLiquidationCustodianDepositInst(
-		meta.PTokenId,
-		meta.IncogAddressStr,
-		meta.DepositedAmount,
-		meta.FreeCollateralAmount,
-		common.PortalLiquidationCustodianDepositSuccessChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,

@@ -23,6 +23,7 @@ type PortalParams struct {
 	TP130                                uint64
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
+	SupportedCollateralTokenIDs          []string
 }
 
 /*
@@ -75,6 +76,7 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointFixRandShardCM uint64
+	PortalETHContractAddressStr            string // smart contract of ETH for portal
 }
 
 type GenesisParams struct {
@@ -145,7 +147,7 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -175,6 +177,9 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
+				SupportedCollateralTokenIDs: []string{
+					common.EthAddrStr,
+				},
 			},
 		},
 		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
@@ -183,6 +188,7 @@ func init() {
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 2070000,
 		ETHRemoveBridgeSigEpoch:          21920,
+		PortalETHContractAddressStr: "",    // todo: update sc address
 	}
 	// END TESTNET
 
@@ -228,7 +234,7 @@ func init() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -258,6 +264,9 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
+				SupportedCollateralTokenIDs:          []string{
+					common.EthAddrStr,
+				},
 			},
 		},
 		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
@@ -266,6 +275,7 @@ func init() {
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
 		ETHRemoveBridgeSigEpoch:          2085,
+		PortalETHContractAddressStr: "",    // todo: update sc address
 	}
 	// END TESTNET-2
 
@@ -309,7 +319,7 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -339,6 +349,9 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
+				SupportedCollateralTokenIDs:          []string{
+					common.EthAddrStr,
+				},
 			},
 		},
 
@@ -348,6 +361,7 @@ func init() {
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 644000,
 		ETHRemoveBridgeSigEpoch:          1e18,
+		PortalETHContractAddressStr: "",    // todo: update sc address
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

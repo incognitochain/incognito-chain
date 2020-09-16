@@ -59,7 +59,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateSanityData(chainR
 
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalRedeemLiquidateExchangeRatesResponseMeta
+	return iRes.Type == PortalRedeemFromLiquidationPoolResponseMeta
 }
 
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) Hash() *common.Hash {
@@ -93,12 +93,12 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalRedeemLiquidateExchangeRatesMeta response instruction
+		if len(inst) < 4 { // this is not PortalRedeemFromLiquidationPoolMeta response instruction
 			continue
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalRedeemLiquidateExchangeRatesMeta) {
+			instMetaType != strconv.Itoa(PortalRedeemFromLiquidationPoolMeta) {
 			continue
 		}
 		instReqStatus := inst[2]
@@ -106,8 +106,8 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
 			continue
 		}
-		if (instReqStatus != common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus) &&
-			(instReqStatus != common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus) {
+		if (instReqStatus != common.PortalRedeemFromLiquidationPoolSuccessChainStatus) &&
+			(instReqStatus != common.PortalRedeemFromLiquidationPoolRejectedChainStatus) {
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
 			continue
 		}
@@ -162,7 +162,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 
 		mintedTokenID := common.PRVCoinID.String()
 		mintedAmount := totalPTokenReceived
-		if instReqStatus == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+		if instReqStatus == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
 			mintedTokenID = redeemReqContent.TokenID
 			mintedAmount = redeemAmountFromInst
 		}

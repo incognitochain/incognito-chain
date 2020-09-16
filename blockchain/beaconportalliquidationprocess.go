@@ -236,7 +236,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+	if reqStatus == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
 		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
 		liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
 
@@ -267,7 +267,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
 			actionData.RedeemAmount,
-			common.PortalRedeemLiquidateExchangeRatesSuccessStatus,
+			common.PortalRedeemFromLiquidationPoolSuccessStatus,
 			totalPrv,
 		)
 
@@ -304,13 +304,13 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 			}
 		}
 		updatingInfoByTokenID[*incTokenID] = updatingInfo
-	} else if reqStatus == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+	} else if reqStatus == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
 		redeem := metadata.NewRedeemLiquidateExchangeRatesStatus(
 			actionData.TxReqID,
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
 			actionData.RedeemAmount,
-			common.PortalRedeemLiquidateExchangeRatesRejectedStatus,
+			common.PortalRedeemFromLiquidationPoolRejectedStatus,
 			0,
 		)
 
@@ -488,7 +488,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 
 	depositStatus := instructions[2]
 
-	if depositStatus == common.PortalLiquidationCustodianDepositSuccessChainStatus {
+	if depositStatus == common.PortalCustodianTopupSuccessChainStatus {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
 		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
@@ -515,7 +515,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			actionData.PTokenId,
 			actionData.DepositedAmount,
 			actionData.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositSuccessStatus,
+			common.PortalCustodianTopupSuccessStatus,
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
@@ -531,14 +531,14 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit error %v", err)
 			return nil
 		}
-	} else if depositStatus == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+	} else if depositStatus == common.PortalCustodianTopupRejectedChainStatus {
 		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
 			actionData.DepositedAmount,
 			actionData.FreeCollateralAmount,
-			common.PortalLiquidationCustodianDepositRejectedStatus,
+			common.PortalCustodianTopupRejectedStatus,
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
@@ -661,7 +661,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 			return nil
 		}
 
-	} else if status == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+	} else if status == common.PortalCustodianTopupRejectedChainStatus {
 		// track expired waiting porting request status by portingID into DB
 		expiredPortingTrackData := metadata.PortalExpiredWaitingPortingReqStatus{
 			Status:               common.PortalExpiredPortingReqFailedStatus,

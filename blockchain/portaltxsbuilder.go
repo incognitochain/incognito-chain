@@ -78,7 +78,7 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 	}
 
 	meta := metadata.NewPortalTopUpWaitingPortingResponse(
-		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		common.PortalCustodianTopupRejectedChainStatus,
 		topUpInfo.TxReqID,
 		metadata.PortalTopUpWaitingPortingResponseMeta,
 	)
@@ -124,11 +124,11 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
-		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		common.PortalCustodianTopupRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalLiquidationCustodianDepositResponseMeta,
+		metadata.PortalCustodianTopupResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -174,11 +174,11 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponseV2(
-		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		common.PortalCustodianTopupRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalLiquidationCustodianDepositResponseMetaV2,
+		metadata.PortalCustodianTopupResponseMetaV2,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -360,13 +360,13 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus,
+		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TotalPTokenReceived,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -697,13 +697,13 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TotalPTokenReceived,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)

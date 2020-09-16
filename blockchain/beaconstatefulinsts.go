@@ -13,8 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-// TODO: tpp
-
 // build instructions at beacon chain before syncing to shards
 func (blockchain *BlockChain) collectStatefulActions(
 	shardBlockInstructions [][]string,
@@ -54,9 +52,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestUnlockCollateralMeta,
 			metadata.PortalLiquidateCustodianMeta,
 			metadata.PortalRequestWithdrawRewardMeta,
-			metadata.PortalRedeemLiquidateExchangeRatesMeta,
-			metadata.PortalLiquidationCustodianDepositMetaV2,
-			metadata.PortalLiquidationCustodianDepositResponseMeta,
+			metadata.PortalRedeemFromLiquidationPoolMeta,
+			metadata.PortalCustodianTopupMetaV2,
+			metadata.PortalCustodianTopupResponseMeta,
 			metadata.PortalReqMatchingRedeemMeta,
 			metadata.PortalTopUpWaitingPortingRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
@@ -119,20 +117,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pdeWithdrawalActionsByShardID := map[byte][][]string{}
 	pdeFeeWithdrawalActionsByShardID := map[byte][][]string{}
 
-	// portal instructions
-	portalCustodianDepositActionsByShardID := map[byte][][]string{}
-	portalUserReqPortingActionsByShardID := map[byte][][]string{}
-	portalUserReqPTokenActionsByShardID := map[byte][][]string{}
-	portalExchangeRatesActionsByShardID := map[byte][][]string{}
-	portalRedeemReqActionsByShardID := map[byte][][]string{}
-	portalCustodianWithdrawActionsByShardID := map[byte][][]string{}
-	portalReqUnlockCollateralActionsByShardID := map[byte][][]string{}
-	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
-	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
-	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
-	portalReqMatchingRedeemActionsByShardID := map[byte][][]string{}
-	portalTopUpWaitingPortingActionsByShardID := map[byte][][]string{}
-
 	var keys []int
 	for k := range statefulActionsByShardID {
 		keys = append(keys, int(k))
@@ -192,81 +176,32 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					shardID,
 				)
 			case metadata.PortalCustodianDepositMeta:
-				{
-					portalCustodianDepositActionsByShardID = groupPortalActionsByShardID(
-						portalCustodianDepositActionsByShardID,
-						action,
-						shardID,
-					)
-				}
-
+				pm.portalInstructions[metadata.PortalCustodianDepositMeta].putAction(action, shardID)
+			case metadata.PortalCustodianDepositMetaV3:
+				pm.portalInstructions[metadata.PortalCustodianDepositMetaV3].putAction(action, shardID)
 			case metadata.PortalUserRegisterMeta:
-				portalUserReqPortingActionsByShardID = groupPortalActionsByShardID(
-					portalUserReqPortingActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalUserRegisterMeta].putAction(action, shardID)
 			case metadata.PortalUserRequestPTokenMeta:
-				portalUserReqPTokenActionsByShardID = groupPortalActionsByShardID(
-					portalUserReqPTokenActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalUserRequestPTokenMeta].putAction(action, shardID)
 			case metadata.PortalExchangeRatesMeta:
-				portalExchangeRatesActionsByShardID = groupPortalActionsByShardID(
-					portalExchangeRatesActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalExchangeRatesMeta].putAction(action, shardID)
 			case metadata.PortalCustodianWithdrawRequestMeta:
-				portalCustodianWithdrawActionsByShardID = groupPortalActionsByShardID(
-					portalCustodianWithdrawActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalCustodianWithdrawRequestMeta].putAction(action, shardID)
 			case metadata.PortalRedeemRequestMeta:
-				portalRedeemReqActionsByShardID = groupPortalActionsByShardID(
-					portalRedeemReqActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalRedeemRequestMeta].putAction(action, shardID)
 			case metadata.PortalRequestUnlockCollateralMeta:
-				portalReqUnlockCollateralActionsByShardID = groupPortalActionsByShardID(
-					portalReqUnlockCollateralActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalRequestUnlockCollateralMeta].putAction(action, shardID)
 			case metadata.PortalRequestWithdrawRewardMeta:
-				portalReqWithdrawRewardActionsByShardID = groupPortalActionsByShardID(
-					portalReqWithdrawRewardActionsByShardID,
-					action,
-					shardID,
-				)
-
-			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
-				portalRedeemLiquidateExchangeRatesActionByShardID = groupPortalActionsByShardID(
-					portalRedeemLiquidateExchangeRatesActionByShardID,
-					action,
-					shardID,
-				)
-			case metadata.PortalLiquidationCustodianDepositMetaV2:
-				portalLiquidationCustodianDepositActionByShardID = groupPortalActionsByShardID(
-					portalLiquidationCustodianDepositActionByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalRequestWithdrawRewardMeta].putAction(action, shardID)
+			case metadata.PortalRedeemFromLiquidationPoolMeta:
+				pm.portalInstructions[metadata.PortalRedeemFromLiquidationPoolMeta].putAction(action, shardID)
+			case metadata.PortalCustodianTopupMetaV2:
+				pm.portalInstructions[metadata.PortalCustodianTopupMetaV2].putAction(action, shardID)
 			case metadata.PortalReqMatchingRedeemMeta:
-				portalReqMatchingRedeemActionsByShardID = groupPortalActionsByShardID(
-					portalReqMatchingRedeemActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalReqMatchingRedeemMeta].putAction(action, shardID)
 			case metadata.PortalTopUpWaitingPortingRequestMeta:
-				portalTopUpWaitingPortingActionsByShardID = groupPortalActionsByShardID(
-					portalTopUpWaitingPortingActionsByShardID,
-					action,
-					shardID,
-				)
+				pm.portalInstructions[metadata.PortalTopUpWaitingPortingRequestMeta].putAction(action, shardID)
+
 			case metadata.RelayingBNBHeaderMeta:
 				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -307,20 +242,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		stateDB,
 		beaconHeight-1,
 		currentPortalState,
-		portalCustodianDepositActionsByShardID,
-		portalUserReqPortingActionsByShardID,
-		portalUserReqPTokenActionsByShardID,
-		portalExchangeRatesActionsByShardID,
-		portalRedeemReqActionsByShardID,
-		portalCustodianWithdrawActionsByShardID,
-		portalReqUnlockCollateralActionsByShardID,
-		portalRedeemLiquidateExchangeRatesActionByShardID,
-		portalLiquidationCustodianDepositActionByShardID,
-		portalTopUpWaitingPortingActionsByShardID,
-		portalReqMatchingRedeemActionsByShardID,
-		portalReqWithdrawRewardActionsByShardID,
 		rewardForCustodianByEpoch,
 		portalParams,
+		pm,
 	)
 
 	if err != nil {
@@ -437,7 +361,7 @@ func categorizeNSortPDECrossPoolTradeInstsByFee(
 			}
 			tradeMeta := crossPoolTradeRequestAction.Meta
 			if (isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) && !isPoolPairExisting(beaconHeight, currentPDEState, tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr)) ||
-			(!isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) && (!isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToSellStr) || !isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToBuyStr))) {
+				(!isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) && (!isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToSellStr) || !isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToBuyStr))) {
 				untradableActions = append(untradableActions, crossPoolTradeRequestAction)
 				continue
 			}
@@ -690,42 +614,17 @@ func (blockchain *BlockChain) handlePDEInsts(
 	return instructions, nil
 }
 
-// Portal
-func groupPortalActionsByShardID(
-	portalActionsByShardID map[byte][][]string,
-	action []string,
-	shardID byte,
-) map[byte][][]string {
-	_, found := portalActionsByShardID[shardID]
-	if !found {
-		portalActionsByShardID[shardID] = [][]string{action}
-	} else {
-		portalActionsByShardID[shardID] = append(portalActionsByShardID[shardID], action)
-	}
-	return portalActionsByShardID
-}
-
 func (blockchain *BlockChain) handlePortalInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
-	portalCustodianDepositActionsByShardID map[byte][][]string,
-	portalUserRequestPortingActionsByShardID map[byte][][]string,
-	portalUserRequestPTokenActionsByShardID map[byte][][]string,
-	portalExchangeRatesActionsByShardID map[byte][][]string,
-	portalRedeemReqActionsByShardID map[byte][][]string,
-	portalCustodianWithdrawActionByShardID map[byte][][]string,
-	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
-	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
-	portalLiquidationCustodianDepositActionByShardID map[byte][][]string,
-	portalTopUpWaitingPortingActionsByShardID map[byte][][]string,
-	portalReqMatchingRedeemActionByShardID map[byte][][]string,
-	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
+	pm *portalManager,
 ) ([][]string, error) {
 	instructions := [][]string{}
-	newMatchedRedeemReqIDs := []string{}
+
+	oldMatchedRedeemRequests := cloneRedeemRequests(currentPortalState.MatchedRedeemRequests)
 
 	// auto-liquidation portal instructions
 	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
@@ -740,372 +639,51 @@ func (blockchain *BlockChain) handlePortalInsts(
 		instructions = append(instructions, portalLiquidationInsts...)
 	}
 
-	// handle portal custodian deposit inst
-	var custodianShardIDKeys []int
-	for k := range portalCustodianDepositActionsByShardID {
-		custodianShardIDKeys = append(custodianShardIDKeys, int(k))
+	// producer portal instructions for actions from shards
+	// sort metadata type map to make it consistent for every run
+	var metaTypes []int
+	for metaType := range pm.portalInstructions {
+		metaTypes = append(metaTypes, metaType)
 	}
+	sort.Ints(metaTypes)
+	for _, metaType := range metaTypes {
+		actions := pm.portalInstructions[metaType]
+		newInst, err := buildNewPortalInstsFromActions(
+			actions,
+			blockchain,
+			stateDB,
+			currentPortalState,
+			beaconHeight,
+			portalParams)
 
-	sort.Ints(custodianShardIDKeys)
-	for _, value := range custodianShardIDKeys {
-		shardID := byte(value)
-		actions := portalCustodianDepositActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForCustodianDeposit(
-				contentStr,
-				shardID,
-				metadata.PortalCustodianDepositMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
+		if err != nil {
+			Logger.log.Error(err)
 		}
-	}
-
-	// handle portal user request porting inst
-	var requestPortingShardIDKeys []int
-	for k := range portalUserRequestPortingActionsByShardID {
-		requestPortingShardIDKeys = append(requestPortingShardIDKeys, int(k))
-	}
-
-	sort.Ints(requestPortingShardIDKeys)
-	for _, value := range requestPortingShardIDKeys {
-		shardID := byte(value)
-		actions := portalUserRequestPortingActionsByShardID[shardID]
-
-		//check identity of porting request id
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPortingRequest(
-				stateDB,
-				contentStr,
-				shardID,
-				metadata.PortalUserRegisterMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-	// handle portal user request ptoken inst
-	var reqPTokenShardIDKeys []int
-	for k := range portalUserRequestPTokenActionsByShardID {
-		reqPTokenShardIDKeys = append(reqPTokenShardIDKeys, int(k))
-	}
-
-	sort.Ints(reqPTokenShardIDKeys)
-	for _, value := range reqPTokenShardIDKeys {
-		shardID := byte(value)
-		actions := portalUserRequestPTokenActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForReqPTokens(
-				stateDB,
-				contentStr,
-				shardID,
-				metadata.PortalUserRequestPTokenMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle portal redeem req inst
-	var redeemReqShardIDKeys []int
-	for k := range portalRedeemReqActionsByShardID {
-		redeemReqShardIDKeys = append(redeemReqShardIDKeys, int(k))
-	}
-
-	sort.Ints(redeemReqShardIDKeys)
-	for _, value := range redeemReqShardIDKeys {
-		shardID := byte(value)
-		actions := portalRedeemReqActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForRedeemRequest(
-				stateDB,
-				contentStr,
-				shardID,
-				metadata.PortalRedeemRequestMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	//handle portal exchange rates
-	var exchangeRatesShardIDKeys []int
-	for k := range portalExchangeRatesActionsByShardID {
-		exchangeRatesShardIDKeys = append(exchangeRatesShardIDKeys, int(k))
-	}
-
-	sort.Ints(exchangeRatesShardIDKeys)
-	for _, value := range exchangeRatesShardIDKeys {
-		shardID := byte(value)
-		actions := portalExchangeRatesActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForExchangeRates(
-				contentStr,
-				shardID,
-				metadata.PortalExchangeRatesMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	//handle portal custodian withdraw
-	var portalCustodianWithdrawShardIDKeys []int
-	for k := range portalCustodianWithdrawActionByShardID {
-		portalCustodianWithdrawShardIDKeys = append(portalCustodianWithdrawShardIDKeys, int(k))
-	}
-
-	sort.Ints(portalCustodianWithdrawShardIDKeys)
-	for _, value := range portalCustodianWithdrawShardIDKeys {
-		shardID := byte(value)
-		actions := portalCustodianWithdrawActionByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForCustodianWithdraw(
-				contentStr,
-				shardID,
-				metadata.PortalCustodianWithdrawRequestMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle portal req unlock collateral inst
-	var reqUnlockCollateralShardIDKeys []int
-	for k := range portalReqUnlockCollateralActionsByShardID {
-		reqUnlockCollateralShardIDKeys = append(reqUnlockCollateralShardIDKeys, int(k))
-	}
-
-	sort.Ints(reqUnlockCollateralShardIDKeys)
-	for _, value := range reqUnlockCollateralShardIDKeys {
-		shardID := byte(value)
-		actions := portalReqUnlockCollateralActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForReqUnlockCollateral(
-				stateDB,
-				contentStr,
-				shardID,
-				metadata.PortalRequestUnlockCollateralMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle liquidation user redeem ptoken  exchange rates
-	var redeemLiquidateExchangeRatesActionByShardIDKeys []int
-	for k := range portalRedeemLiquidateExchangeRatesActionByShardID {
-		redeemLiquidateExchangeRatesActionByShardIDKeys = append(redeemLiquidateExchangeRatesActionByShardIDKeys, int(k))
-	}
-
-	sort.Ints(redeemLiquidateExchangeRatesActionByShardIDKeys)
-	for _, value := range redeemLiquidateExchangeRatesActionByShardIDKeys {
-		shardID := byte(value)
-		actions := portalRedeemLiquidateExchangeRatesActionByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForLiquidationRedeemPTokenExchangeRates(
-				contentStr,
-				shardID,
-				metadata.PortalRedeemLiquidateExchangeRatesMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle portal  liquidation custodian deposit inst
-	var portalLiquidationCustodianDepositActionByShardIDKeys []int
-	for k := range portalLiquidationCustodianDepositActionByShardID {
-		portalLiquidationCustodianDepositActionByShardIDKeys = append(portalLiquidationCustodianDepositActionByShardIDKeys, int(k))
-	}
-
-	sort.Ints(portalLiquidationCustodianDepositActionByShardIDKeys)
-	for _, value := range portalLiquidationCustodianDepositActionByShardIDKeys {
-		shardID := byte(value)
-		actions := portalLiquidationCustodianDepositActionByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForLiquidationCustodianDeposit(
-				contentStr,
-				shardID,
-				metadata.PortalLiquidationCustodianDepositMetaV2,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle portal top up waiting porting inst
-	var portalTopUpWaitingPortingActionsByShardIDKeys []int
-	for k := range portalTopUpWaitingPortingActionsByShardID {
-		portalTopUpWaitingPortingActionsByShardIDKeys = append(portalTopUpWaitingPortingActionsByShardIDKeys, int(k))
-	}
-	sort.Ints(portalTopUpWaitingPortingActionsByShardIDKeys)
-	for _, value := range portalTopUpWaitingPortingActionsByShardIDKeys {
-		shardID := byte(value)
-		actions := portalTopUpWaitingPortingActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstsForTopUpWaitingPorting(
-				contentStr,
-				shardID,
-				metadata.PortalTopUpWaitingPortingRequestMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-			)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle portal req matching redeem inst
-	var reqMatchRedeemShardIDKeys []int
-	for k := range portalReqMatchingRedeemActionByShardID {
-		reqMatchRedeemShardIDKeys = append(reqMatchRedeemShardIDKeys, int(k))
-	}
-
-	sort.Ints(reqMatchRedeemShardIDKeys)
-	for _, value := range reqMatchRedeemShardIDKeys {
-		shardID := byte(value)
-		actions := portalReqMatchingRedeemActionByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			var newInst [][]string
-			newInst, newMatchedRedeemReqIDs, err = blockchain.buildInstructionsForReqMatchingRedeem(
-				stateDB,
-				contentStr,
-				shardID,
-				metadata.PortalReqMatchingRedeemMeta,
-				currentPortalState,
-				beaconHeight,
-				portalParams,
-				newMatchedRedeemReqIDs,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
 		}
 	}
 
 	// check and create instruction for picking more custodians for timeout waiting redeem requests
-	var timeOutRedeemReqInsts [][]string
-	timeOutRedeemReqInsts, newMatchedRedeemReqIDs, err = blockchain.checkAndPickMoreCustodianForWaitingRedeemRequest(
+	var pickCustodiansForRedeemReqInsts [][]string
+	pickCustodiansForRedeemReqInsts, err = blockchain.checkAndPickMoreCustodianForWaitingRedeemRequest(
 		beaconHeight,
 		currentPortalState,
-		newMatchedRedeemReqIDs,
 	)
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	if len(timeOutRedeemReqInsts) > 0 {
-		instructions = append(instructions, timeOutRedeemReqInsts...)
+	if len(pickCustodiansForRedeemReqInsts) > 0 {
+		instructions = append(instructions, pickCustodiansForRedeemReqInsts...)
 	}
+
+	// get new matched redeem request at beacon height
+	newMatchedRedeemReqIDs := getNewMatchedRedeemReqIDs(oldMatchedRedeemRequests, currentPortalState.MatchedRedeemRequests)
 
 	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
 	portalRewardsInsts, err := blockchain.handlePortalRewardInsts(
 		beaconHeight,
 		currentPortalState,
-		portalReqWithdrawRewardActionsByShardID,
 		rewardForCustodianByEpoch,
 		newMatchedRedeemReqIDs,
 	)
@@ -1118,21 +696,6 @@ func (blockchain *BlockChain) handlePortalInsts(
 	}
 
 	return instructions, nil
-}
-
-// Header relaying
-func groupRelayingActionsByShardID(
-	relayingActionsByShardID map[byte][][]string,
-	action []string,
-	shardID byte,
-) map[byte][][]string {
-	_, found := relayingActionsByShardID[shardID]
-	if !found {
-		relayingActionsByShardID[shardID] = [][]string{action}
-	} else {
-		relayingActionsByShardID[shardID] = append(relayingActionsByShardID[shardID], action)
-	}
-	return relayingActionsByShardID
 }
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
@@ -1178,12 +741,10 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 }
 
 // handlePortalRewardInsts
-// 1. Build instructions for request withdraw portal reward
-// 2. Build instructions portal reward for each beacon block
+// Build instructions portal reward for each beacon block
 func (blockchain *BlockChain) handlePortalRewardInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
-	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	newMatchedRedeemReqIDs []string,
 ) ([][]string, error) {
@@ -1198,28 +759,46 @@ func (blockchain *BlockChain) handlePortalRewardInsts(
 		instructions = append(instructions, portalRewardInsts...)
 	}
 
-	// handle portal request withdraw reward inst
+	return instructions, nil
+}
+
+func buildNewPortalInstsFromActions(
+	p portalInstructionProcessor,
+	bc *BlockChain,
+	stateDB *statedb.StateDB,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	portalParams PortalParams) ([][]string, error) {
+
+	instructions := [][]string{}
+	actions := p.getActions()
 	var shardIDKeys []int
-	for k := range portalReqWithdrawRewardActionsByShardID {
+	for k := range actions {
 		shardIDKeys = append(shardIDKeys, int(k))
 	}
 
 	sort.Ints(shardIDKeys)
 	for _, value := range shardIDKeys {
 		shardID := byte(value)
-		actions := portalReqWithdrawRewardActionsByShardID[shardID]
+		actions := actions[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForReqWithdrawPortalReward(
+			optionalData, err := p.prepareDataBeforeProcessing(stateDB, contentStr)
+			if err != nil {
+				Logger.log.Errorf("Error when preparing data before processing instruction %+v", err)
+				continue
+			}
+			newInst, err := p.buildNewInsts(
+				bc,
 				contentStr,
 				shardID,
-				metadata.PortalRequestWithdrawRewardMeta,
 				currentPortalState,
 				beaconHeight,
+				portalParams,
+				optionalData,
 			)
-
 			if err != nil {
-				Logger.log.Error(err)
+				Logger.log.Errorf("Error when building new instructions : %v", err)
 				continue
 			}
 			if len(newInst) > 0 {
