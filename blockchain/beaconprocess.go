@@ -911,10 +911,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	if len(instruction) < 1 {
 		return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}
-	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconBestState.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-	if err != nil {
-		return NewBlockChainError(DatabaseError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
-	}
+	beaconConsensusStateDB := beaconBestState.consensusStateDB.Copy()
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 	if instruction[0] == RandomAction {
 		temp, err := strconv.Atoi(instruction[1])
