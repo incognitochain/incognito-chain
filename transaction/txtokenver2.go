@@ -98,17 +98,20 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
 			txToken.TxTokenData.TxNormal = temp
 
+			theCoin, _ := txToken.TxTokenData.TxNormal.GetProof().GetOutputCoins()[0].(*coin.CoinV2)
+			theCoin.SetCommitment(new(operation.Point).Identity())
 			hashInitToken, err := txToken.TxTokenData.Hash()
 			if err != nil {
 				Logger.Log.Error(errors.New("can't hash this token data"))
 				return NewTransactionErr(UnexpectedError, err)
 			}
+			var plainTokenID *common.Hash
 			if params.tokenParams.Mintable {
 				propertyID, err := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 				if err != nil {
 					return NewTransactionErr(TokenIDInvalidError, err, propertyID.String())
 				}
-				txToken.TxTokenData.PropertyID = *propertyID
+				plainTokenID = propertyID
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
@@ -118,25 +121,42 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 					Logger.Log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
-				txToken.TxTokenData.SetPropertyID(newHashInitToken)
+				plainTokenID = &newHashInitToken
 				Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txToken.TxTokenData.PropertyID.String())
 			}
+			
+			// fmt.Printf("While init token, its ID is %s\n", plainTokenID.String())
+			// set the unblinded asset tag
+			assetTag := operation.HashToPoint(plainTokenID[:])
+			theCoin.SetAssetTag(assetTag)
+
+			// recompute commitment, defined by CA scheme
+			com, err := theCoin.ComputeCommitmentCA()
+			if err!=nil{
+				return NewTransactionErr(UnexpectedError, err)
+			}
+			theCoin.SetCommitment(com)
+
+			txToken.TxTokenData.SetPropertyID(*plainTokenID)
 		}
 	case CustomTokenTransfer:
 		{
 			handled = true
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
+			// propertyID, _ := common.TokenStringToHash(params.tokenParams.PropertyID)
+			// existed := txDatabaseWrapper.privacyTokenIDExisted(params.transactionStateDB, *propertyID)
+			// if !existed {
+			// 	if err := checkIsBridgeTokenID(params.bridgeStateDB, propertyID); err != nil {
+			// 		return err
+			// 	}
+			// }
+			// fmt.Printf("Confidential Asset Transfer! Token ID is %s\n", params.tokenParams.PropertyID)
 			propertyID, _ := common.TokenStringToHash(params.tokenParams.PropertyID)
-			existed := txDatabaseWrapper.privacyTokenIDExisted(params.transactionStateDB, *propertyID)
-			if !existed {
-				if err := checkIsBridgeTokenID(params.bridgeStateDB, propertyID); err != nil {
-					return err
-				}
-			}
+			dbFacingTokenID := common.ConfidentialAssetID
 			Logger.Log.Debugf("Token %+v wil be transfered with", propertyID)
 
-			txToken.TxTokenData.SetPropertyID(*propertyID)
+			// txToken.TxTokenData.SetPropertyID(*propertyID)
 			txParams := NewTxPrivacyInitParams(
 				params.senderKey,
 				params.tokenParams.Receiver,
@@ -153,6 +173,8 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
 			txToken.TxTokenData.TxNormal = txNormal
+			// tokenID is already hidden in asset tags in coin, here we use the umbrella ID
+			txToken.TxTokenData.SetPropertyID(dbFacingTokenID)
 		}
 	}
 	if !handled {
