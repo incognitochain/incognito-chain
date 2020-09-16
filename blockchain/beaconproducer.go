@@ -98,7 +98,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 
 	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
-		featureStateDB := curView.GetBeaconFeatureStateDB()
+		featureStateDB := beaconBestState.GetBeaconFeatureStateDB()
 		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return nil, NewBlockChainError(GetTotalLockedCollateralError, err)
@@ -108,7 +108,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
 			percentCustodianRewards = portalParams.MinPercentCustodianRewards
 		}
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(beaconBestState, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -142,46 +142,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============Update Beacon Best State================
 	// Process new block with beststate
 
-	// if curView.BeaconHeight == 19 {
-	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
-	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
-	// 	Logger.log.Info("[swap-v2] bestview.committees 0:", committees)
-	// 	Logger.log.Info("[swap-v2] bestview.subtitutes 0:", subtitutes)
-	// 	ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
-	// 	csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
-	// 	Logger.log.Info("[swap-v2] curView.committees 0:", ccommittees)
-	// 	Logger.log.Info("[swap-v2] curView.subtitutes 0:", csubtitutes)
-	// }
-
 	_, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
-
-	// if curView.BeaconHeight == 19 {
-	// 	committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
-	// 	subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
-	// 	Logger.log.Info("[swap-v2] bestview.committees 1:", committees)
-	// 	Logger.log.Info("[swap-v2] bestview.subtitutes 1:", subtitutes)
-	// 	ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
-	// 	csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
-	// 	Logger.log.Info("[swap-v2] curView.committees 1:", ccommittees)
-	// 	Logger.log.Info("[swap-v2] curView.subtitutes 1:", csubtitutes)
-	// }
-
 	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
-
-	if curView.BeaconHeight == 19 {
-		committees, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardCommittee()[0])
-		subtitutes, _ := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetShardSubstitute()[0])
-		Logger.log.Info("[swap-v2] bestview.committees 2:", committees)
-		Logger.log.Info("[swap-v2] bestview.subtitutes 2:", subtitutes)
-		ccommittees, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardCommittee()[0])
-		csubtitutes, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeEngine.GetShardSubstitute()[0])
-		Logger.log.Info("[swap-v2] curView.committees 2:", ccommittees)
-		Logger.log.Info("[swap-v2] curView.subtitutes 2:", csubtitutes)
-	}
-
-	// if curView.BeaconHeight == 19 {
-	// 	panic(1)
-	// }
 
 	if err != nil {
 		return nil, err

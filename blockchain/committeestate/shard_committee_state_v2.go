@@ -70,7 +70,6 @@ func NewShardCommitteeEngineV2(shardHeight uint64,
 //clone ShardCommitteeStateV2 to new instance
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.reset()
-
 	newCommitteeState.shardCommittee = make([]incognitokey.CommitteePublicKey, len(s.shardCommittee))
 	for i, v := range s.shardCommittee {
 		newCommitteeState.shardCommittee[i] = v
@@ -239,15 +238,6 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 	s.shardCommittee = append(s.shardCommittee, tempSwapInPuclicKeys...)
 	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPuclicKeys...)
 
-	// process list shard pool
-	for _, v := range tempSwapInPuclicKeys {
-		if !v.IsEqual(s.shardSubstitute[0]) {
-			return newCommitteeChange, errors.New("Swap Out Not Valid In List Subtitutes Public Key")
-		}
-		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
-		s.shardSubstitute = append(s.shardSubstitute[:0], s.shardSubstitute[1:]...)
-	}
-
 	return newCommitteeChange, nil
 }
 
@@ -275,9 +265,13 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 			Logger.log.Info("[swap-v2] swapShardInstruction:", swapShardInstruction)
 			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
 			if err != nil {
+				Logger.log.Info("[swap-v2] err:", err)
 				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			Logger.log.Info("[swap-v2] newCommitteeChange.ShardCommitteeAdded[env.ShardID()]:", newCommitteeChange.ShardCommitteeAdded[env.ShardID()])
+			for _, v := range newCommitteeChange.ShardCommitteeAdded[env.ShardID()] {
+				key, _ := v.ToBase58()
+				Logger.log.Info("[swap-v2] key:", key)
+			}
 		}
 	}
 

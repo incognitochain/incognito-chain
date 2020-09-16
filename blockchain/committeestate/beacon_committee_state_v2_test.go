@@ -514,7 +514,6 @@ func TestBeaconCommitteeEngineV2_GenerateAllRequestShardSwapInstruction(t *testi
 				beaconHash:                        tt.fields.beaconHash,
 				finalBeaconCommitteeStateV2:       tt.fields.finalBeaconCommitteeStateV2,
 				uncommittedBeaconCommitteeStateV2: tt.fields.uncommittedBeaconCommitteeStateV2,
-				insProcessor:                      tt.fields.insProcessor,
 			}
 			got, err := engine.GenerateAllSwapShardInstructions(tt.args.env)
 			if (err != nil) != tt.wantErr {
@@ -820,13 +819,148 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				numberOfRound:              tt.fields.numberOfRound,
 				mu:                         tt.fields.mu,
 			}
-			got, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange)
+			got, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange, b)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
+	hash, _ := common.Hash{}.NewHashFromStr("123")
+
+	initPublicKey()
+	initLog()
+
+	type fields struct {
+		beaconHeight                      uint64
+		beaconHash                        common.Hash
+		finalBeaconCommitteeStateV2       *BeaconCommitteeStateV2
+		uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
+		version                           uint
+	}
+	type args struct {
+		env *BeaconCommitteeStateEnvironment
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *BeaconCommitteeStateHash
+		want1   *CommitteeChange
+		want2   [][]string
+		wantErr bool
+	}{
+		{
+			name: "Process Swap Shard Instructions",
+			fields: fields{
+				beaconHeight: 5,
+				beaconHash:   *hash,
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey5,
+						},
+					},
+					mu:             &sync.RWMutex{},
+					autoStake:      map[string]bool{},
+					rewardReceiver: map[string]privacy.PaymentAddress{},
+					stakingTx:      map[string]common.Hash{},
+					numberOfRound:  map[string]int{},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey5,
+						},
+					},
+					mu:             &sync.RWMutex{},
+					autoStake:      map[string]bool{},
+					rewardReceiver: map[string]privacy.PaymentAddress{},
+					stakingTx:      map[string]common.Hash{},
+					numberOfRound:  map[string]int{},
+				},
+				version: SLASHING_VERSION,
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key5,
+							key,
+							"0",
+							"120",
+							"0",
+						},
+					},
+					RandomNumber: 5000,
+				},
+			},
+			want: &BeaconCommitteeStateHash{},
+			want1: &CommitteeChange{
+				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+			},
+			want2:   [][]string{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine := &BeaconCommitteeEngineV2{
+				beaconHeight:                      tt.fields.beaconHeight,
+				beaconHash:                        tt.fields.beaconHash,
+				finalBeaconCommitteeStateV2:       tt.fields.finalBeaconCommitteeStateV2,
+				uncommittedBeaconCommitteeStateV2: tt.fields.uncommittedBeaconCommitteeStateV2,
+				version:                           tt.fields.version,
+			}
+			_, _, got2, err := engine.UpdateCommitteeState(tt.args.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BeaconCommitteeEngineV2.UpdateCommitteeState() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			// if !reflect.DeepEqual(got, tt.want) {
+			// 	t.Errorf("BeaconCommitteeEngineV2.UpdateCommitteeState() got = %v, want %v", got, tt.want)
+			// }
+			// if !reflect.DeepEqual(got1, tt.want1) {
+			// 	t.Errorf("BeaconCommitteeEngineV2.UpdateCommitteeState() got1 = %v, want %v", got1, tt.want1)
+			// }
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("BeaconCommitteeEngineV2.UpdateCommitteeState() got2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}
