@@ -911,6 +911,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	if len(instruction) < 1 {
 		return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}
+	beaconConsensusStateDB := beaconBestState.consensusStateDB.Copy()
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 	if instruction[0] == RandomAction {
 		temp, err := strconv.Atoi(instruction[1])
@@ -1017,7 +1018,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						if len(outPublicKey) == 0 {
 							continue
 						}
-						stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+						stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
 						if err != nil {
 							panic(err)
 						}
@@ -1056,7 +1057,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 					beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, inPublickeyStructs...)
 				}
 				for _, outPublicKey := range outPublickeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}
@@ -1249,15 +1250,6 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 		if err != nil {
 			return NewBlockChainError(ProcessSalaryInstructionsError, err)
 		}
-		consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
-		if err != nil {
-			return err
-		}
-		err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-		if err != nil {
-			return err
-		}
-		beaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	}
 	return nil
 }
@@ -1277,15 +1269,6 @@ func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange
 	if err != nil {
 		return NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
-	consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-	if err != nil {
-		return err
-	}
-	beaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	for _, committeePublicKey := range stopAutoStakingIncognitoKey {
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.nextEpochBeaconCandidateAdded) > -1 {
 			continue
