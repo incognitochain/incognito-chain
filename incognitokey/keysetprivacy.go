@@ -19,6 +19,7 @@ type KeySet struct {
 	PrivateKey     key.PrivateKey
 	PaymentAddress key.PaymentAddress
 	ReadonlyKey    key.ViewingKey
+	OTAKey 		   key.OTAKey
 }
 
 // GenerateKey generates key set from seed in byte array
@@ -26,6 +27,7 @@ func (keySet *KeySet) GenerateKey(seed []byte) *KeySet {
 	keySet.PrivateKey = key.GeneratePrivateKey(seed)
 	keySet.PaymentAddress = key.GeneratePaymentAddress(keySet.PrivateKey[:])
 	keySet.ReadonlyKey = key.GenerateViewingKey(keySet.PrivateKey[:])
+	keySet.OTAKey = key.GenerateOTAKey(keySet.PrivateKey[:])
 	return keySet
 }
 
@@ -40,6 +42,7 @@ func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
 	keySet.PrivateKey = privateKey
 	keySet.PaymentAddress = key.GeneratePaymentAddress(keySet.PrivateKey[:])
 	keySet.ReadonlyKey = key.GenerateViewingKey(keySet.PrivateKey[:])
+	keySet.OTAKey = key.GenerateOTAKey(keySet.PrivateKey[:])
 	return nil
 }
 
@@ -54,6 +57,7 @@ func (keySet *KeySet) InitFromPrivateKey(privateKey *key.PrivateKey) error {
 	keySet.PrivateKey = *privateKey
 	keySet.PaymentAddress = key.GeneratePaymentAddress(keySet.PrivateKey[:])
 	keySet.ReadonlyKey = key.GenerateViewingKey(keySet.PrivateKey[:])
+	keySet.OTAKey = key.GenerateOTAKey(keySet.PrivateKey[:])
 
 	return nil
 }
@@ -107,6 +111,10 @@ func (keySet KeySet) GetPublicKeyInBase58CheckEncode() string {
 
 func (keySet KeySet) GetReadOnlyKeyInBase58CheckEncode() string {
 	return base58.Base58Check{}.Encode(keySet.ReadonlyKey.Rk, common.ZeroByte)
+}
+
+func (keySet KeySet) GetOTASecretKeyInBase58CheckEncode() string {
+	return base58.Base58Check{}.Encode(keySet.OTAKey.OTASecret, common.ZeroByte)
 }
 
 // SignDataInBase58CheckEncode receives data and
