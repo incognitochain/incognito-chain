@@ -911,6 +911,10 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	if len(instruction) < 1 {
 		return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconBestState.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return NewBlockChainError(DatabaseError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+	}
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 	if instruction[0] == RandomAction {
 		temp, err := strconv.Atoi(instruction[1])
@@ -1017,7 +1021,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						if len(outPublicKey) == 0 {
 							continue
 						}
-						stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+						stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
 						if err != nil {
 							panic(err)
 						}
@@ -1056,7 +1060,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 					beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, inPublickeyStructs...)
 				}
 				for _, outPublicKey := range outPublickeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}
