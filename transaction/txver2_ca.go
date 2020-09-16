@@ -18,7 +18,7 @@ import (
 
 
 
-func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, outputSharedSecrets []*operation.Point, senderSK *key.PrivateKey) ([]*operation.Scalar, error) {
+func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, outputSharedSecrets []*operation.Point, senderSK *key.PrivateKey, db *statedb.StateDB, shardID byte) ([]*operation.Scalar, error) {
 	sumRand := new(operation.Scalar).FromUint64(0)
 	// for _, in := range inputCoins {
 	// 	sumRand.Add(sumRand, in.GetRandomness())
@@ -50,13 +50,24 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 			Logger.Log.Errorf("Cannot recompute shared secret : %v", err)
 			return nil, err
 		}
+		tagExists, _ := statedb.HasCommitment(db, common.ConfidentialAssetID, inputCoin_specific.GetAssetTag().ToBytesS(), shardID)
+		if tagExists{
+			fmt.Println("An unblinded asset tag")
+		}
 
 		_, indexForShard, err := inputCoin_specific.GetTxRandomDetail()
 		if err != nil {
 			Logger.Log.Errorf("Cannot retrieve tx random detail : %v", err)
 			return nil, err
 		}
-		bl, err := coin.ComputeAssetTagBlinder(sharedSecret, indexForShard)
+		bl := new(operation.Scalar).FromUint64(0)
+		if !tagExists{
+			bl, err = coin.ComputeAssetTagBlinder(sharedSecret, indexForShard)
+			if err != nil {
+				return nil, err
+			}
+		}
+		
 		// fmt.Printf("Shared secret is %s\n", string(sharedSecret.MarshalText()))
 		// fmt.Printf("Blinder is %s\n", string(bl.MarshalText()))
 		// fmt.Printf("Asset tag is %s\n", string(inputCoin_specific.GetAssetTag().MarshalText()))
@@ -238,7 +249,7 @@ func (tx *TxVersion2) signCA(inp []coin.PlainCoin, out []*coin.CoinV2, outputSha
 	}
 
 	// Set sigPrivKey
-	privKeysMlsag, err := createPrivKeyMlsagCA(inp, out, outputSharedSecrets, params.senderSK)
+	privKeysMlsag, err := createPrivKeyMlsagCA(inp, out, outputSharedSecrets, params.senderSK, params.stateDB, shardID)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
 		return err
