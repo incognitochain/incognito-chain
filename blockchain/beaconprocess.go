@@ -1249,15 +1249,6 @@ func (beaconBestState *BeaconBestState) processSwapInstructionForKeyListV2(instr
 		if err != nil {
 			return NewBlockChainError(ProcessSalaryInstructionsError, err)
 		}
-		consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
-		if err != nil {
-			return err
-		}
-		err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-		if err != nil {
-			return err
-		}
-		beaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	}
 	return nil
 }
