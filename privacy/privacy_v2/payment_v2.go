@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
+	// "fmt"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
@@ -437,29 +437,56 @@ func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
 	return true, nil
 }
 
-func (proof PaymentProofV2) verifyHasNoPrivacy(fee uint64) (bool, error) {
-	sumInput, sumOutput := uint64(0), uint64(0)
-	for i := 0; i < len(proof.inputCoins); i += 1 {
-		if proof.inputCoins[i].IsEncrypted() {
-			return false, errors.New("Verify has no privacy should not have any coin encrypted")
-		}
-		sumInput += proof.inputCoins[i].GetValue()
+func (proof PaymentProofV2) verifyHasNoPrivacy(isBatch bool) (bool, error) {
+	cmsValues := proof.aggregatedRangeProof.GetCommitments()
+	if len(proof.GetOutputCoins())!=len(cmsValues){
+		return false, errors.New("Commitment length mismatch")
 	}
+	// Verify the proof that output values and sum of them do not exceed v_max
 	for i := 0; i < len(proof.outputCoins); i += 1 {
-		if proof.outputCoins[i].IsEncrypted() {
-			return false, errors.New("Verify has no privacy should not have any coin encrypted")
-		}
-		sumOutput += proof.outputCoins[i].GetValue()
-	}
-	tmpSum := sumOutput + fee
-	if tmpSum < sumOutput || tmpSum < fee {
-		return false, errors.New(fmt.Sprintf("Overflown sumOutput+fee: output value = %v, fee = %v, tmpSum = %v\n", sumOutput, fee, tmpSum))
-	}
 
-	if sumInput != tmpSum {
-		return false, errors.New("VerifyHasNo privacy has sum input different from sum output with fee")
+		if !proof.outputCoins[i].IsEncrypted() {
+			if wallet.IsPublicKeyBurningAddress(proof.outputCoins[i].GetPublicKey().ToBytesS()) {
+				continue
+			}
+			return false, errors.New("Verify has privacy should have every coin encrypted")
+		}
+		//check if output coins' commitment is the same as in the proof
+		if !operation.IsPointEqual(cmsValues[i], proof.outputCoins[i].GetCommitment()){
+			return false, errors.New("Coin & Proof Commitments mismatch")
+		}
+	}
+	if isBatch == false {
+		valid, err := proof.aggregatedRangeProof.Verify()
+		if !valid {
+			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF V2: Multi-range failed")
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
+		}
 	}
 	return true, nil
+
+	// sumInput, sumOutput := uint64(0), uint64(0)
+	// for i := 0; i < len(proof.inputCoins); i += 1 {
+	// 	if proof.inputCoins[i].IsEncrypted() {
+	// 		return false, errors.New("Verify has no privacy should not have any coin encrypted")
+	// 	}
+	// 	sumInput += proof.inputCoins[i].GetValue()
+	// }
+	// for i := 0; i < len(proof.outputCoins); i += 1 {
+	// 	if proof.outputCoins[i].IsEncrypted() {
+	// 		return false, errors.New("Verify has no privacy should not have any coin encrypted")
+	// 	}
+	// 	sumOutput += proof.outputCoins[i].GetValue()
+	// }
+	// tmpSum := sumOutput + fee
+	// if tmpSum < sumOutput || tmpSum < fee {
+	// 	return false, errors.New(fmt.Sprintf("Overflown sumOutput+fee: output value = %v, fee = %v, tmpSum = %v\n", sumOutput, fee, tmpSum))
+	// }
+
+	// if sumInput != tmpSum {
+	// 	return false, errors.New("VerifyHasNo privacy has sum input different from sum output with fee")
+	// }
+	// return true, nil
 }
 
 func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
@@ -474,5 +501,8 @@ func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee ui
 		dupMap[identifier] = true
 	}
 
+	if !hasPrivacy{
+		return proof.verifyHasNoPrivacy(isBatch)
+	}
 	return proof.verifyHasPrivacy(isBatch)
 }
