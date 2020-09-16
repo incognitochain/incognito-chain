@@ -42,12 +42,6 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 	return string(result), nil
 }
 
-func (e BLSBFT_V2) CreateValidationData(block common.BlockInterface) ValidationData {
-	var valData ValidationData
-	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes())
-	return valData
-}
-
 func ValidateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {

@@ -24,7 +24,7 @@ type BLSBFT_V2 struct {
 	ChainID  int
 	PeerID   string
 
-	UserKeySet   *signatureschemes2.MiningKey
+	UserKeySet   []signatureschemes2.MiningKey
 	BFTMessageCh chan wire.MessageBFT
 	isStarted    bool
 	StopCh       chan struct{}
@@ -182,42 +182,45 @@ func (e *BLSBFT_V2) Start() error {
 					Check for whether we should propose block
 				*/
 				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
-				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-
-				if newTimeSlot { //for logging
-					e.Logger.Info("")
-					e.Logger.Info("======================================================")
-					e.Logger.Info("")
-					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
-						e.Logger.Infof("TS: %v , PROPOSE BLOCK %v", common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1)
-					} else {
-						e.Logger.Infof("TS: %v , LISTEN BLOCK %v", common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1)
-					}
-				}
-
-				if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
-					//using block hash as key of best view -> check if this best view we propose or not
-					if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
-						e.proposeHistory.Add(fmt.Sprintf("%s%d", e.currentTimeSlot), 1)
-						//Proposer Rule: check propose block connected to bestview(longest chain rule 1) and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
-						sort.Slice(e.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
-							return e.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < e.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
-						})
-
-						var proposeBlock common.BlockInterface = nil
-						for _, v := range e.receiveBlockByHeight[bestView.GetHeight()+1] {
-							if v.isValid {
-								proposeBlock = v.block
-								break
-							}
-						}
-
-						if createdBlk, err := e.proposeBlock(proposerPk, proposeBlock); err != nil {
-							e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
-							e.Logger.Critical(err)
-
+				for _, userKey := range e.UserKeySet {
+					userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+					if newTimeSlot { //for logging
+						e.Logger.Info("")
+						e.Logger.Info("======================================================")
+						e.Logger.Info("")
+						if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
+							e.Logger.Infof("TS: %v , PROPOSE BLOCK %v", common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1)
 						} else {
-							e.Logger.Infof("proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
+							e.Logger.Infof("TS: %v , LISTEN BLOCK %v", common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1)
+						}
+					}
+
+					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
+						//using block hash as key of best view -> check if this best view we propose or not
+						if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
+							e.proposeHistory.Add(fmt.Sprintf("%s%d", e.currentTimeSlot), 1)
+							//Proposer Rule: check propose block connected to bestview(longest chain rule 1) and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
+							sort.Slice(e.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
+								return e.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < e.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
+							})
+
+							var proposeBlock common.BlockInterface = nil
+							for _, v := range e.receiveBlockByHeight[bestView.GetHeight()+1] {
+								if v.isValid {
+									proposeBlock = v.block
+									break
+								}
+							}
+
+							//proposerPk: which include mining pubkey + incokey
+							//userKey: only have minigkey
+							if createdBlk, err := e.proposeBlock(userKey, proposerPk, proposeBlock); err != nil {
+								e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
+								e.Logger.Critical(err)
+
+							} else {
+								e.Logger.Infof("proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
+							}
 						}
 					}
 				}
@@ -390,60 +393,60 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	}
 
 	//if valid then vote
-	var Vote = new(BFTVote)
-	bytelist := []blsmultisig.PublicKey{}
-	selfIdx := 0
-	userBLSPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-	for i, v := range e.Chain.GetBestView().GetCommittee() {
-		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
-			selfIdx = i
+	for _, userKey := range e.UserKeySet {
+		var Vote = new(BFTVote)
+		bytelist := []blsmultisig.PublicKey{}
+		selfIdx := 0
+		userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+		for i, v := range e.Chain.GetBestView().GetCommittee() {
+			if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
+				selfIdx = i
+			}
+			bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
 		}
-		bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
-	}
 
-	blsSig, err := e.UserKeySet.BLSSignData(v.block.Hash().GetBytes(), selfIdx, bytelist)
-	if err != nil {
-		e.Logger.Error(err)
-		return NewConsensusError(UnExpectedError, err)
-	}
-	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(v.block.GetInstructions()) {
-		bridgeSig, err = e.UserKeySet.BriSignData(v.block.Hash().GetBytes())
+		blsSig, err := userKey.BLSSignData(v.block.Hash().GetBytes(), selfIdx, bytelist)
 		if err != nil {
 			e.Logger.Error(err)
 			return NewConsensusError(UnExpectedError, err)
 		}
-	}
-	Vote.BLS = blsSig
-	Vote.BRI = bridgeSig
-	Vote.BlockHash = v.block.Hash().String()
+		bridgeSig := []byte{}
+		if metadata.HasBridgeInstructions(v.block.GetInstructions()) {
+			bridgeSig, err = userKey.BriSignData(v.block.Hash().GetBytes())
+			if err != nil {
+				e.Logger.Error(err)
+				return NewConsensusError(UnExpectedError, err)
+			}
+		}
+		Vote.BLS = blsSig
+		Vote.BRI = bridgeSig
+		Vote.BlockHash = v.block.Hash().String()
 
-	userPk := e.UserKeySet.GetPublicKey()
-	Vote.Validator = userPk.GetMiningKeyBase58(common.BlsConsensus)
-	Vote.PrevBlockHash = v.block.GetPrevHash().String()
-	err = Vote.signVote(e.UserKeySet)
-	if err != nil {
-		e.Logger.Error(err)
-		return NewConsensusError(UnExpectedError, err)
+		userPk := userKey.GetPublicKey()
+		Vote.Validator = userPk.GetMiningKeyBase58(common.BlsConsensus)
+		Vote.PrevBlockHash = v.block.GetPrevHash().String()
+		err = Vote.signVote(&userKey)
+		if err != nil {
+			e.Logger.Error(err)
+			return NewConsensusError(UnExpectedError, err)
+		}
+
+		msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, v.block.GetHeight())
+		if err != nil {
+			e.Logger.Error(err)
+			return NewConsensusError(UnExpectedError, err)
+		}
+
+		v.isValid = true
+		e.voteHistory[v.block.GetHeight()] = v.block
+		e.Logger.Info("sending vote...")
+		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
 
-	msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, v.block.GetHeight())
-	if err != nil {
-		e.Logger.Error(err)
-		return NewConsensusError(UnExpectedError, err)
-	}
-
-	v.isValid = true
-	e.voteHistory[v.block.GetHeight()] = v.block
-	e.Logger.Info("sending vote...")
-	go e.Node.PushMessageToChain(msg, e.Chain)
-	//go func() {
-	//	e.VoteMessageCh <- *Vote
-	//}()
 	return nil
 }
 
-func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, block common.BlockInterface) (common.BlockInterface, error) {
+func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, proposerPk incognitokey.CommitteePublicKey, block common.BlockInterface) (common.BlockInterface, error) {
 	time1 := time.Now()
 	b58Str, _ := proposerPk.ToBase58()
 	var err error
@@ -471,7 +474,8 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
 	}
 
-	validationData := e.CreateValidationData(block)
+	var validationData ValidationData
+	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
 	blockData, _ := json.Marshal(block)
