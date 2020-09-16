@@ -1277,15 +1277,6 @@ func (beaconBestState *BeaconBestState) processAutoStakingChange(committeeChange
 	if err != nil {
 		return NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
-	consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-	if err != nil {
-		return err
-	}
-	beaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	for _, committeePublicKey := range stopAutoStakingIncognitoKey {
 		if incognitokey.IndexOfCommitteeKey(committeePublicKey, committeeChange.nextEpochBeaconCandidateAdded) > -1 {
 			continue
