@@ -191,7 +191,7 @@ func (tx *TxVersion2) Init(paramsInterface interface{}) error {
 		return err
 	}
 
-	if err := tx.prove(params); err != nil {
+	if err := tx.proveCA(params); err != nil {
 		return err
 	}
 	return nil
@@ -289,7 +289,7 @@ func (tx *TxVersion2) prove(params *TxPrivacyInitParams) error {
 	// inputCoins is plainCoin because it may have coinV1 with coinV2
 	inputCoins := params.inputCoins
 
-	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, params.paymentInfo)
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, nil, params.hasPrivacy, params.paymentInfo)
 	if err != nil {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
@@ -451,7 +451,7 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	if tokenID, err = parseTokenID(tokenID); err != nil {
 		return false, err
 	}
-	if valid, err := tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction); !valid {
+	if valid, err := tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction); !valid {
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
@@ -637,7 +637,11 @@ func (tx TxVersion2) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetri
 }
 
 func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+	tid := tokenID
+	if hasPrivacy{
+		tid = &common.ConfidentialAssetID
+	}
+	return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tid, isBatch, isNewTransaction)
 }
 
 func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
