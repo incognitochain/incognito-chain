@@ -87,12 +87,12 @@ func (committeeState *ShardCommitteeStateV1) reset() {
 }
 
 //GetShardCommittee get shard committees
-func (engine *ShardCommitteeEngineV1) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
+func (engine *ShardCommitteeEngineV1) GetShardCommittee() []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV1.shardCommittee
 }
 
-//GetShardPendingValidator get shard pending validators
-func (engine *ShardCommitteeEngineV1) GetShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey {
+//GetShardSubstitute get shard pending validators
+func (engine *ShardCommitteeEngineV1) GetShardSubstitute() []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV1.shardPendingValidator
 }
 

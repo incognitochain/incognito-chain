@@ -53,9 +53,13 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 
 	curView := view.(*ShardBestState)
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
+	shardBestState := NewShardBestState()
+	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
+		return err
+	}
 
 	// fetch beacon blocks
-	previousBeaconHeight := curView.BeaconHeight
+	previousBeaconHeight := shardBestState.BeaconHeight
 	var checkBeaconUntilTimeout = func(ctx context.Context) error {
 		for {
 			select {
@@ -79,23 +83,36 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 		return err
 	}
 
+	// beaconHeight := shardBestState.BeaconHeight
+	// for _, v := range beaconBlocks {
+	// 	if v.GetHeight() > beaconHeight {
+	// 		beaconHeight = v.GetHeight()
+	// 	}
+	// }
+
+	// if beaconHeight <= shardBestState.BeaconHeight {
+	// 	Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
+	// 		beaconHeight, shardBestState.BeaconHeight)
+	// 	return nil
+	// }
+
 	//========Verify shardBlock only
-	if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, true); err != nil {
+	if err := blockchain.verifyPreProcessingShardBlock(shardBestState, shardBlock, beaconBlocks, shardID, true); err != nil {
 		return err
 	}
 	//========Verify shardBlock with previous best state
 
 	// Verify shardBlock with previous best state
 	// DO NOT verify agg signature in this function
-	if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, false, shardID); err != nil {
+	if err := shardBestState.verifyBestStateWithShardBlock(blockchain, shardBlock, false, shardID); err != nil {
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	newBeststate, hashes, _, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
+	newBeststate, hashes, _, err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks)
 	if err != nil {
 		return err
 	}
-	curView.shardCommitteeEngine.AbortUncommittedShardState()
+	shardBestState.shardCommitteeEngine.AbortUncommittedShardState()
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
 	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 		return err
@@ -626,7 +643,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	//verify producer via index
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID),
+		shardBestState.ShardProposerIdx, shardBestState.shardCommitteeEngine.GetShardCommittee(),
 		shardBestState.MinShardCommitteeSize); err != nil {
 		return err
 	}

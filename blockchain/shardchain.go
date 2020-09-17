@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -113,7 +114,7 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee(byte(chain.shardID))...)
+	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
 }
 
 func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
@@ -128,15 +129,15 @@ func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.Committe
 
 func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardSubstitute(byte(chain.shardID))...)
+	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardSubstitute()...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	return len(chain.GetBestState().shardCommitteeEngine.GetShardCommittee(byte(chain.shardID)))
+	return len(chain.GetBestState().shardCommitteeEngine.GetShardCommittee())
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.GetBestState().shardCommitteeEngine.GetShardCommittee(byte(chain.shardID)) {
+	for index, key := range chain.GetBestState().shardCommitteeEngine.GetShardCommittee() {
 		if key.GetMiningKeyBase58(chain.GetBestState().ConsensusAlgorithm) == pubkey {
 			return index
 		}

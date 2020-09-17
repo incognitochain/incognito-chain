@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/pkg/errors"
 )
 
 //ShardCommitteeStateHash
@@ -88,12 +87,12 @@ func (s *ShardCommitteeStateV2) reset() {
 }
 
 //GetShardCommittee get shard committees
-func (engine *ShardCommitteeEngineV2) GetShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
+func (engine *ShardCommitteeEngineV2) GetShardCommittee() []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV2.shardCommittee
 }
 
 //GetShardSubstitute get shard pending validators
-func (engine *ShardCommitteeEngineV2) GetShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey {
+func (engine *ShardCommitteeEngineV2) GetShardSubstitute() []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV2.shardSubstitute
 }
 
@@ -229,9 +228,6 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
-		if !v.IsEqual(s.shardCommittee[numberFixedValidators]) {
-			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
-		}
 		s.shardCommittee = append(s.shardCommittee[:numberFixedValidators], s.shardCommittee[numberFixedValidators+1:]...)
 		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
@@ -265,7 +261,6 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 			Logger.log.Info("[swap-v2] swapShardInstruction:", swapShardInstruction)
 			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
 			if err != nil {
-				Logger.log.Info("[swap-v2] err:", err)
 				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			for _, v := range newCommitteeChange.ShardCommitteeAdded[env.ShardID()] {

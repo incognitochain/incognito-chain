@@ -4,10 +4,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -195,14 +196,14 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 	proposerIdxBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(shardBestState.ShardProposerIdx))
 	res = append(res, proposerIdxBytes...)
-	for _, value := range shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID) {
+	for _, value := range shardBestState.shardCommitteeEngine.GetShardCommittee() {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
 		}
 		res = append(res, valueBytes...)
 	}
-	for _, value := range shardBestState.shardCommitteeEngine.GetShardSubstitute(shardBestState.ShardID) {
+	for _, value := range shardBestState.shardCommitteeEngine.GetShardSubstitute() {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
@@ -335,12 +336,12 @@ func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 
 func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID)...)
+	return append(result, shardBestState.shardCommitteeEngine.GetShardCommittee()...)
 }
 
 func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
 	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
-	return shardBestState.shardCommitteeEngine.GetShardSubstitute(shardBestState.ShardID)[id]
+	return shardBestState.shardCommitteeEngine.GetShardSubstitute()[id]
 }
 
 func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
@@ -353,11 +354,11 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 }
 
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return shardBestState.shardCommitteeEngine.GetShardCommittee(shardBestState.ShardID)
+	return shardBestState.shardCommitteeEngine.GetShardCommittee()
 }
 
 func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.CommitteePublicKey {
-	return shardBestState.shardCommitteeEngine.GetShardSubstitute(shardBestState.ShardID)
+	return shardBestState.shardCommitteeEngine.GetShardSubstitute()
 }
 
 func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
