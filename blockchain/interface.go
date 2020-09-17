@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -42,6 +43,7 @@ type ConsensusEngine interface {
 	ValidateProducerSig(block common.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
+	GetCurrentValidators() []*consensus.Validator
 	GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetUserRole() (string, string, int)
 	// CommitteeChange(chainName string)
@@ -63,7 +65,6 @@ type Server interface {
 	PushMessageGetBlockShardToBeaconBySpecificHeight(shardID byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 
 	PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-	PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	PushBlockToAll(block common.BlockInterface, isBeacon bool) error
 }

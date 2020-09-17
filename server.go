@@ -1695,25 +1695,15 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 
 }
 
-func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
-
-	return nil
-}
-
 func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	Logger.log.Debugf("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
-	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
-	// 	return errors.New("Not in committee, don't need to publish node state!")
-	// }
-
-	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	if userKey == "" {
+	validators := serverObj.consensusEngine.GetCurrentValidators()
+	if len(validators) == 0 {
 		return nil
 	}
 
-	monitor.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
@@ -1747,22 +1737,22 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
-	// if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
-	// 	msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
-	// }
+	for _, validator := range validators {
+		if validator.State.ChainID != -2 {
+			currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+			msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
 
-	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()
-	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
-	if err != nil {
-		return err
+			msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
+			Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+
+			if validator.State.ChainID == -1 {
+				serverObj.PushMessageToBeacon(msg, nil)
+			} else {
+				serverObj.PushMessageToShard(msg, byte(validator.State.ChainID), nil)
+			}
+		}
 	}
-	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-	Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
-	if err != nil {
-		return err
-	}
-	Logger.log.Debugf("Publish peerstate")
-	serverObj.PushMessageToAll(msg)
+
 	return nil
 }
 

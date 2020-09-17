@@ -73,7 +73,7 @@ func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
 
 func (s *Engine) GetNodeMiningPublicKeys() (userPks []*incognitokey.CommitteePublicKey) {
 	for _, v := range s.validators {
-		userPks = append(userPks, v.miningKey.GetPublicKey())
+		userPks = append(userPks, v.MiningKey.GetPublicKey())
 	}
 	return userPks
 }

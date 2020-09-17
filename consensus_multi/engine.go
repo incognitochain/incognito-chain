@@ -2,6 +2,7 @@ package consensus_multi
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 	"strings"
 	"time"
@@ -13,21 +14,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-type MiningState struct {
-	role    string
-	layer   string
-	chainID int
-}
-
-type Validator struct {
-	miningKey   signatureschemes2.MiningKey
-	privateSeed string
-	state       MiningState
-}
-
 type Engine struct {
 	BFTProcess map[int]ConsensusInterface //chainID -> consensus
-	validators []*Validator               //list of validator
+	validators []*consensus.Validator     //list of validator
 	version    map[int]int                //chainID -> version
 
 	consensusName string
@@ -43,9 +32,13 @@ type Engine struct {
 
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
-		return validator.state.layer, validator.state.role, validator.state.chainID
+		return validator.State.Layer, validator.State.Role, validator.State.ChainID
 	}
 	return "", "", -2
+}
+
+func (s *Engine) GetCurrentValidators() []*consensus.Validator {
+	return s.validators
 }
 
 func (s *Engine) WatchCommitteeChange() {
@@ -59,20 +52,21 @@ func (s *Engine) WatchCommitteeChange() {
 		return
 	}
 
-	ValidatorGroup := make(map[int][]Validator)
+	ValidatorGroup := make(map[int][]consensus.Validator)
 	for _, validator := range s.validators {
-		s.userMiningPublicKeys = validator.miningKey.GetPublicKey()
-		s.userKeyListString = validator.privateSeed
-		role, chainID := s.config.Node.GetPubkeyMiningState(validator.miningKey.GetPublicKey())
+		s.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
+		s.userKeyListString = validator.PrivateSeed
+		role, chainID := s.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
+		//Logger.Log.Info(validator.miningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
 		if chainID == -1 {
-			validator.state = MiningState{role, "beacon", -1}
+			validator.State = consensus.MiningState{role, "beacon", -1}
 		} else if chainID > -1 {
-			validator.state = MiningState{role, "shard", chainID}
+			validator.State = consensus.MiningState{role, "shard", chainID}
 		} else {
 			if role != "" {
-				validator.state = MiningState{role, "shard", -2}
+				validator.State = consensus.MiningState{role, "shard", -2}
 			} else {
-				validator.state = MiningState{role, "", -2}
+				validator.State = consensus.MiningState{role, "", -2}
 			}
 		}
 
@@ -107,7 +101,7 @@ func (s *Engine) WatchCommitteeChange() {
 		}
 		validatorMiningKey := []signatureschemes2.MiningKey{}
 		for _, validator := range validators {
-			validatorMiningKey = append(validatorMiningKey, validator.miningKey)
+			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
 		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
 		s.BFTProcess[chainID].Start()
@@ -174,16 +168,17 @@ func (engine *Engine) Start() error {
 			panic(err)
 		}
 
-		engine.validators = []*Validator{&Validator{privateSeed: privateSeed, miningKey: *miningKey}}
+		engine.validators = []*consensus.Validator{&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey}}
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		//import validator keys : 'key1,key2'
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
+		engine.validators = []*consensus.Validator{}
 		for _, key := range keys {
 			miningKey, err := GetMiningKeyFromPrivateSeed(key)
 			if err != nil {
 				panic(err)
 			}
-			engine.validators = []*Validator{&Validator{privateSeed: key, miningKey: *miningKey}}
+			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
 		}
 	}
 	engine.IsEnabled = 1
