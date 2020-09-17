@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/instruction"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -630,7 +632,7 @@ func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 		stakingTx,
 	)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV1(
-		beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, beaconCommitteeState, committeestate.NORMAL_VERSION)
+		beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, beaconCommitteeState)
 	return beaconCommitteeEngine
 }
 
@@ -692,6 +694,25 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			params.MaxSwapOrAssign,
 		)
 	}
+
+	//Recover swap shard instructions
+	swapShardInstructions := make(map[byte]*instruction.SwapShardInstruction)
+	if (beaconBestState.BeaconHeight+1)%params.Epoch == 0 {
+		//TODO: [WARNING] For release Beacon need to check this when fork
+		instructions := beaconBestState.GetBlock().GetInstructions()
+		for _, inst := range instructions {
+			switch inst[0] {
+			case instruction.SWAP_SHARD_ACTION:
+				swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+				if err != nil {
+					panic("Swap Shard Instruction is not valid format")
+				}
+				swapShardInstructions[byte(swapShardInstruction.ChainID)] = swapShardInstruction
+			}
+		}
+
+	}
+
 	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,
@@ -702,12 +723,12 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		rewardReceivers,
 		stakingTx,
 		numberOfRound,
+		swapShardInstructions,
 	)
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV2(
 		beaconBestState.BeaconHeight,
 		beaconBestState.BestBlockHash,
 		beaconCommitteeStateV2,
-		committeestate.SLASHING_VERSION,
 	)
 	return beaconCommitteeEngine
 }

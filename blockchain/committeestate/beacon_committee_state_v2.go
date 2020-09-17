@@ -21,6 +21,7 @@ type BeaconCommitteeStateV2 struct {
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey
 	shardCommonPool []incognitokey.CommitteePublicKey
 	// TODO: @hung record already requested shard substitute/committee
+	swapShardInstructions      map[byte]*instruction.SwapShardInstruction
 	numberOfAssignedCandidates int
 
 	autoStake      map[string]bool                   // committee public key => reward receiver payment address
@@ -36,22 +37,27 @@ type BeaconCommitteeEngineV2 struct {
 	beaconHash                        common.Hash
 	finalBeaconCommitteeStateV2       *BeaconCommitteeStateV2
 	uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
-	version                           uint
 }
 
-func NewBeaconCommitteeEngineV2(beaconHeight uint64, beaconHash common.Hash, finalBeaconCommitteeStateV2 *BeaconCommitteeStateV2, version uint) *BeaconCommitteeEngineV2 {
-	return &BeaconCommitteeEngineV2{beaconHeight: beaconHeight, beaconHash: beaconHash, finalBeaconCommitteeStateV2: finalBeaconCommitteeStateV2, uncommittedBeaconCommitteeStateV2: NewBeaconCommitteeStateV2(), version: version}
+func NewBeaconCommitteeEngineV2(beaconHeight uint64, beaconHash common.Hash, finalBeaconCommitteeStateV2 *BeaconCommitteeStateV2) *BeaconCommitteeEngineV2 {
+	return &BeaconCommitteeEngineV2{
+		beaconHeight:                      beaconHeight,
+		beaconHash:                        beaconHash,
+		finalBeaconCommitteeStateV2:       finalBeaconCommitteeStateV2,
+		uncommittedBeaconCommitteeStateV2: NewBeaconCommitteeStateV2(),
+	}
 }
 
 func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
-		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
-		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
-		autoStake:       make(map[string]bool),
-		rewardReceiver:  make(map[string]privacy.PaymentAddress),
-		stakingTx:       make(map[string]common.Hash),
-		numberOfRound:   make(map[string]int),
-		mu:              new(sync.RWMutex),
+		shardCommittee:        make(map[byte][]incognitokey.CommitteePublicKey),
+		shardSubstitute:       make(map[byte][]incognitokey.CommitteePublicKey),
+		autoStake:             make(map[string]bool),
+		rewardReceiver:        make(map[string]privacy.PaymentAddress),
+		stakingTx:             make(map[string]common.Hash),
+		numberOfRound:         make(map[string]int),
+		mu:                    new(sync.RWMutex),
+		swapShardInstructions: make(map[byte]*instruction.SwapShardInstruction),
 	}
 }
 
@@ -65,6 +71,7 @@ func NewBeaconCommitteeStateV2WithValue(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
 	numberOfRound map[string]int,
+	swapShardInstructions map[byte]*instruction.SwapShardInstruction,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommittee:            beaconCommittee,
@@ -103,6 +110,11 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 		}
 	}
 
+	for i, v := range b.swapShardInstructions {
+		newB.swapShardInstructions[i] = new(instruction.SwapShardInstruction)
+		*newB.swapShardInstructions[i] = *v
+	}
+
 	for k, v := range b.autoStake {
 		newB.autoStake[k] = v
 	}
@@ -129,6 +141,7 @@ func (b *BeaconCommitteeStateV2) reset() {
 	b.numberOfRound = make(map[string]int)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
+	b.swapShardInstructions = make(map[byte]*instruction.SwapShardInstruction)
 }
 
 //Clone :
@@ -142,15 +155,9 @@ func (engine *BeaconCommitteeEngineV2) Clone() BeaconCommitteeEngine {
 		engine.beaconHeight,
 		engine.beaconHash,
 		finalCommitteeState,
-		SLASHING_VERSION,
 	)
 
 	return res
-}
-
-//Version :
-func (engine BeaconCommitteeEngineV2) Version() uint {
-	return engine.version
 }
 
 //GetBeaconHeight :
@@ -424,16 +431,24 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
-			committeeChange, err = newB.
-				processSwapShardInstruction(swapShardInstruction, env, committeeChange, engine.finalBeaconCommitteeStateV2)
-			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
+			delete(newB.swapShardInstructions, byte(swapShardInstruction.ChainID))
+			newB.swapShardInstructions[byte(swapShardInstruction.ChainID)] = swapShardInstruction
 		}
 	}
 	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
 		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+
+	if env.BeaconHeight%env.ParamEpoch == 0 {
+		for _, v := range newB.swapShardInstructions {
+			committeeChange, err = newB.
+				processSwapShardInstruction(v, env, committeeChange)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			delete(newB.swapShardInstructions, byte(v.ChainID))
+		}
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -638,13 +653,11 @@ func (b *BeaconCommitteeStateV2) assign(
 	return committeeChange
 }
 
-//processSwapShardInstruction : update committee state with swap shard instruction
-// input swap shard instruction, beacon committee state environment, committee change are processing
-//
+//processSwapShardInstruction update committees state by swap shard instruction
+// Process single swap shard instruction for and update committee state
 func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
-	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
-	temp *BeaconCommitteeStateV2) (
+	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange) (
 	*CommitteeChange, error) {
 
 	var err error
@@ -683,7 +696,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		swapShardInstruction.OutPublicKeys,
 		swapShardInstruction.OutPublicKeyStructs,
 		chainID,
-		newCommitteeChange, temp,
+		newCommitteeChange,
 	)
 
 	return newCommitteeChange, err
@@ -699,7 +712,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 	outPublicKeys []string,
 	outPublicKeyStructs []incognitokey.CommitteePublicKey,
 	shardID byte,
-	committeeChange *CommitteeChange, temp *BeaconCommitteeStateV2,
+	committeeChange *CommitteeChange,
 ) (*CommitteeChange, error) {
 	backToSubstitutesIndex := []int{}
 	swappedOutSubstitutesIndex := []int{}

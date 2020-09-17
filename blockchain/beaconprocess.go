@@ -82,17 +82,9 @@ CONTINUE_VERIFY:
 		return err
 	}
 
-	if beaconBestState.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-		// Post verififcation: verify new beaconstate with corresponding block
-		if err := newBestState.verifyPostProcessingBeaconBlockV2(beaconBlock, blockchain.config.RandomClient, hashes, blockchain.config.ChainParams.Epoch); err != nil {
-			return err
-		}
-	}
-	if beaconBestState.beaconCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
-		// Post verififcation: verify new beaconstate with corresponding block
-		if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
-			return err
-		}
+	// Post verififcation: verify new beaconstate with corresponding block
+	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
+		return err
 	}
 
 	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", beaconBlock.Header.Height, *beaconBlock.Hash())
@@ -204,17 +196,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	newBestState.updateNumOfBlocksByProducers(beaconBlock, blockchain.config.ChainParams.Epoch)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-			// Post verification: verify new beacon best state with corresponding beacon block
-			if err2 = newBestState.verifyPostProcessingBeaconBlockV2(beaconBlock, blockchain.config.RandomClient, hashes, blockchain.config.ChainParams.Epoch); err2 != nil {
-				return err2
-			}
-		}
-		if curView.beaconCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
-			// Post verification: verify new beacon best state with corresponding beacon block
-			if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err2 != nil {
-				return err2
-			}
+		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err2 != nil {
+			return err2
 		}
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -592,71 +575,6 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
 	}
-	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
-		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
-	}
-	if !TestRandom {
-		//COMMENT FOR TESTING
-		instructions := beaconBlock.Body.Instructions
-		for _, l := range instructions {
-			if l[0] == "random" {
-				startTime := time.Now()
-				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-				nonce, err := strconv.Atoi(l[1])
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				ok, err := randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
-				Logger.log.Infof("Verify Random number %+v", ok)
-				if err != nil {
-					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				if !ok {
-					return NewBlockChainError(RandomError, errors.New("Error verify random number"))
-				}
-			}
-		}
-	}
-	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
-	return nil
-}
-
-//  verifyPostProcessingBeaconBlockV2 verify block after update beacon best state
-//  - Validator root: BeaconCommittee + BeaconPendingValidator
-//  - Beacon Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
-//  - Shard Candidate root: CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
-//  - Shard Validator root: ShardCommittee + ShardPendingValidator
-//  - Random number if have in instruction
-func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlockV2(beaconBlock *types.BeaconBlock,
-	randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash, epoch uint64) error {
-	startTimeVerifyPostProcessingBeaconBlock := time.Now()
-	if !hashes.BeaconCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.BeaconCommitteeAndValidatorRoot) {
-		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
-	}
-	if !hashes.BeaconCandidateHash.IsEqual(&beaconBlock.Header.BeaconCandidateRoot) {
-		return NewBlockChainError(BeaconCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCandidateRoot, hashes.BeaconCandidateHash))
-	}
-
-	if !(beaconBestState.BeaconHeight%epoch == 0) {
-		if !hashes.ShardCandidateHash.IsEqual(&beaconBlock.Header.ShardCandidateRoot) {
-			return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
-		}
-		if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
-			return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
-		}
-	}
-
-	if false {
-		if !hashes.ShardCandidateHash.IsEqual(&beaconBlock.Header.ShardCandidateRoot) {
-			return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
-		}
-		if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
-			return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
-		}
-	}
-
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
 	}

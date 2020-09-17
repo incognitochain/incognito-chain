@@ -70,7 +70,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 
 	currentPendingValidators := curView.GetShardPendingValidator()
-
 	currentCommitteePubKeys, err := incognitokey.
 		CommitteeKeyListToString(curView.GetCommittee())
 	if err != nil {

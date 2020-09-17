@@ -10,7 +10,6 @@ import (
 //BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
 	Clone() BeaconCommitteeEngine
-	Version() uint
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey

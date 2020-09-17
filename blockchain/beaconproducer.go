@@ -534,8 +534,10 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			}
 		}
 	}
-	// Beacon normal swap
-	if newBeaconHeight%chainParamEpoch == 0 {
+	//TODO: @tin
+	// Generate swap shard instruction at (block height + 1) %chainParamEpoch == 0
+	// Wait for block height %chainParamEpoch == 0 for Beacon normal swap
+	if (newBeaconHeight+1)%chainParamEpoch == 0 {
 		BeaconCommittee := beaconBestState.GetBeaconCommittee()
 		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
 		if err != nil {
