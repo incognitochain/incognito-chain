@@ -15,7 +15,6 @@ import (
 )
 
 type ConsensusData interface {
-	GetUserRole() (string, string, int)
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 }
 
