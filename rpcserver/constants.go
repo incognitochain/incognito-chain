@@ -258,6 +258,11 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
+
+	//multi-validators
+	getMultiValKeyState = "getmultivalkeystate"
+	addMultiValKey      = "addmultivakey"
+	setMultiValKeyLimit = "setmultivalkeylimit"
 )
 
 const (

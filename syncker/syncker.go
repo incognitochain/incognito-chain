@@ -119,12 +119,8 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	if !synckerManager.isEnabled || synckerManager.config == nil {
 		return
 	}
-	// role, chainID := synckerManager.config.Node.GetUserMiningState()
 
 	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
-	// if len(chainValidator) == 0 {
-	// 	return
-	// }
 
 	if beaconChain, ok := chainValidator[-1]; ok {
 		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
