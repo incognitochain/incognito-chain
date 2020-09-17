@@ -16,7 +16,7 @@ type Server interface {
 	GetUserMiningState() (role string, chainID int)
 
 	//network
-	PublishNodeState(userLayer string, shardID int) error
+	PublishNodeState() error
 	RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error)
 	RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error)
 	RequestShardToBeaconBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error)

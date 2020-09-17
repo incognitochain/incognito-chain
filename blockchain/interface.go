@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/common/consensus"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common/consensus"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
@@ -51,7 +52,7 @@ type ConsensusEngine interface {
 }
 
 type Server interface {
-	PublishNodeState(userLayer string, shardID int) error
+	PublishNodeState() error
 
 	PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error
 	PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error

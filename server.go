@@ -484,7 +484,7 @@ func (serverObj *Server) NewServer(
 
 	serverObj.connManager = connManager
 	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
-	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
+	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain, Consensus: serverObj.consensusEngine})
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -1695,7 +1695,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 
 }
 
-func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
+func (serverObj *Server) PublishNodeState() error {
 	Logger.log.Debugf("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
@@ -1716,38 +1716,38 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		bBestState.Hash(),
 	}
 
-	if userLayer != common.BeaconRole {
-		sBestState := serverObj.blockChain.GetBestStateShard(byte(shardID))
-		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = wire.ChainState{
-			sBestState.BestBlock.Header.Timestamp,
-			sBestState.ShardHeight,
-			sBestState.BestBlockHash,
-			sBestState.Hash(),
-		}
-	} else {
-		s2bMap := make(map[byte][]uint64)
-		for sID := 0; sID < serverObj.chainParams.ActiveShards; sID++ {
-			s2bMap[byte(sID)] = []uint64{serverObj.syncker.GetPoolLatestHeight(
-				syncker.S2BPoolType,
-				bBestState.BestShardHash[byte(sID)].String(),
-				sID,
-			)}
-		}
-		msg.(*wire.MessagePeerState).ShardToBeaconPool = s2bMap
-		Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
-	}
-
-	for _, validator := range chainValidator {
+	for chainID, validator := range chainValidator {
 		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
 		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
+
+		if chainID != -1 {
+			sBestState := serverObj.blockChain.GetBestStateShard(byte(chainID))
+			msg.(*wire.MessagePeerState).Shards[byte(chainID)] = wire.ChainState{
+				sBestState.BestBlock.Header.Timestamp,
+				sBestState.ShardHeight,
+				sBestState.BestBlockHash,
+				sBestState.Hash(),
+			}
+		} else {
+			s2bMap := make(map[byte][]uint64)
+			for sID := 0; sID < serverObj.chainParams.ActiveShards; sID++ {
+				s2bMap[byte(sID)] = []uint64{serverObj.syncker.GetPoolLatestHeight(
+					syncker.S2BPoolType,
+					bBestState.BestShardHash[byte(sID)].String(),
+					sID,
+				)}
+			}
+			msg.(*wire.MessagePeerState).ShardToBeaconPool = s2bMap
+			Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
+		}
+
 		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 		if validator.State.ChainID == -1 {
 			serverObj.PushMessageToBeacon(msg, nil)
 		} else {
 			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID), nil)
 		}
-
 	}
 
 	return nil
