@@ -1699,8 +1699,8 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	Logger.log.Debugf("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
-	validators := serverObj.consensusEngine.GetCurrentValidators()
-	if len(validators) == 0 {
+	chainValidator := serverObj.consensusEngine.GetOneValidatorForEachConsensusProcess()
+	if len(chainValidator) == 0 {
 		return nil
 	}
 
@@ -1737,20 +1737,17 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
-	for _, validator := range validators {
-		if validator.State.ChainID != -2 {
-			currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-			msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
-
-			msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-			Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
-
-			if validator.State.ChainID == -1 {
-				serverObj.PushMessageToBeacon(msg, nil)
-			} else {
-				serverObj.PushMessageToShard(msg, byte(validator.State.ChainID), nil)
-			}
+	for _, validator := range chainValidator {
+		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
+		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
+		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+		if validator.State.ChainID == -1 {
+			serverObj.PushMessageToBeacon(msg, nil)
+		} else {
+			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID), nil)
 		}
+
 	}
 
 	return nil

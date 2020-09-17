@@ -44,6 +44,7 @@ type ConsensusEngine interface {
 	ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
 	GetCurrentValidators() []*consensus.Validator
+	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 	GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetUserRole() (string, string, int)
 	// CommitteeChange(chainName string)

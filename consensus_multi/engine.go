@@ -41,6 +41,25 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 	return s.validators
 }
 
+func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
+	chainValidator := make(map[int]*consensus.Validator)
+	if len(s.validators) > 0 {
+		for _, validator := range s.validators {
+			if validator.State.ChainID != -2 {
+				_, ok := chainValidator[validator.State.ChainID]
+				if ok {
+					if chainValidator[validator.State.ChainID].State.Role == common.PendingRole {
+						chainValidator[validator.State.ChainID] = validator
+					}
+				} else {
+					chainValidator[validator.State.ChainID] = validator
+				}
+			}
+		}
+	}
+	return chainValidator
+}
+
 func (s *Engine) WatchCommitteeChange() {
 
 	defer func() {
