@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/privacy/key"
+	// "github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
@@ -17,8 +17,11 @@ import (
 )
 
 
-
-func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, outputSharedSecrets []*operation.Point, senderSK *key.PrivateKey, db *statedb.StateDB, shardID byte) ([]*operation.Scalar, error) {
+// for multi-CA : take in an array of tokenIDs
+func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, outputSharedSecrets []*operation.Point, params *TxPrivacyInitParams, shardID byte) ([]*operation.Scalar, error) {
+	senderSK := params.senderSK
+	// db := params.stateDB
+	tokenID := params.tokenID
 	sumRand := new(operation.Scalar).FromUint64(0)
 	// for _, in := range inputCoins {
 	// 	sumRand.Add(sumRand, in.GetRandomness())
@@ -50,9 +53,10 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 			Logger.Log.Errorf("Cannot recompute shared secret : %v", err)
 			return nil, err
 		}
-		tagExists, _ := statedb.HasCommitment(db, common.ConfidentialAssetID, inputCoin_specific.GetAssetTag().ToBytesS(), shardID)
-		if tagExists{
-			fmt.Println("An unblinded asset tag")
+		rehashed := operation.HashToPoint(tokenID[:])
+		isUnblinded := operation.IsPointEqual(rehashed, inputCoin_specific.GetAssetTag())
+		if isUnblinded{
+			Logger.Log.Warnf("Signing TX : processing an unblinded input coin")
 		}
 
 		_, indexForShard, err := inputCoin_specific.GetTxRandomDetail()
@@ -61,18 +65,18 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 			return nil, err
 		}
 		bl := new(operation.Scalar).FromUint64(0)
-		if !tagExists{
+		if !isUnblinded{
 			bl, err = coin.ComputeAssetTagBlinder(sharedSecret, indexForShard)
 			if err != nil {
 				return nil, err
 			}
 		}
 		
-		// fmt.Printf("Shared secret is %s\n", string(sharedSecret.MarshalText()))
-		// fmt.Printf("Blinder is %s\n", string(bl.MarshalText()))
-		// fmt.Printf("Asset tag is %s\n", string(inputCoin_specific.GetAssetTag().MarshalText()))
+		Logger.Log.Infof("CA-MLSAG : processing input asset tag %s\n", string(inputCoin_specific.GetAssetTag().MarshalText()))
+		Logger.Log.Debugf("Shared secret is %s\n", string(sharedSecret.MarshalText()))
+		Logger.Log.Debugf("Blinder is %s\n", string(bl.MarshalText()))
 		v := inputCoin_specific.GetAmount()
-		// fmt.Printf("Value is %d\n",v.ToUint64Little())
+		Logger.Log.Debugf("Value is %d\n",v.ToUint64Little())
 		effectiveRCom := new(operation.Scalar).Mul(bl,v)
 		effectiveRCom.Add(effectiveRCom, inputCoin_specific.GetRandomness())
 
@@ -89,11 +93,12 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 			return nil, err
 		}
 		bl, err := coin.ComputeAssetTagBlinder(outputSharedSecrets[i], indexForShard)
-		// fmt.Printf("Shared secret is %s\n", string(outputSharedSecrets[i].MarshalText()))
-		// fmt.Printf("Blinder is %s\n", string(bl.MarshalText()))
-		// fmt.Printf("Asset tag is %s\n", string(oc.GetAssetTag().MarshalText()))
+		Logger.Log.Infof("CA-MLSAG : processing output asset tag %s\n", string(oc.GetAssetTag().MarshalText()))
+		Logger.Log.Debugf("Shared secret is %s\n", string(outputSharedSecrets[i].MarshalText()))
+		Logger.Log.Debugf("Blinder is %s\n", string(bl.MarshalText()))
+		
 		v := oc.GetAmount()
-		// fmt.Printf("Value is %d\n",v.ToUint64Little())
+		Logger.Log.Debugf("Value is %d\n",v.ToUint64Little())
 		effectiveRCom := new(operation.Scalar).Mul(bl,v)
 		effectiveRCom.Add(effectiveRCom, oc.GetRandomness())
 		sumOutputAssetTagBlinders.Add(sumOutputAssetTagBlinders, bl)
@@ -249,7 +254,7 @@ func (tx *TxVersion2) signCA(inp []coin.PlainCoin, out []*coin.CoinV2, outputSha
 	}
 
 	// Set sigPrivKey
-	privKeysMlsag, err := createPrivKeyMlsagCA(inp, out, outputSharedSecrets, params.senderSK, params.stateDB, shardID)
+	privKeysMlsag, err := createPrivKeyMlsagCA(inp, out, outputSharedSecrets, params, shardID)
 	if err != nil {
 		Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
 		return err
