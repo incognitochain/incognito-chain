@@ -155,8 +155,6 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		statedb.StorePrivacyToken(dummyDB, *tx.GetTokenID(), tokenParam.PropertyName, tokenParam.PropertySymbol, statedb.InitToken, tokenParam.Mintable, tokenParam.Amount, []byte{}, *tx.Hash())
 
 		statedb.StoreCommitments(dummyDB, *tx.GetTokenID(), [][]byte{tokenOutputs[0].GetCommitment().ToBytesS()}, shardID)
-		tokenInitOutput, _ := tokenOutputs[0].(*coin.CoinV2)
-		statedb.StoreCommitments(dummyDB, common.ConfidentialAssetID, [][]byte{tokenInitOutput.GetAssetTag().ToBytesS()}, shardID)
 		// check it exists
 		exists = statedb.PrivacyTokenIDExisted(dummyDB, *tx.GetTokenID())
 		assert.Equal(t, true, exists)
@@ -197,12 +195,12 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		//	txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		//}
 		testTxTokenV2JsonMarshaler(tx2, 25, dummyDB, t)
-		fmt.Println("END TEST")
-		return
 
 		// the negative tests below are not compatible with confidential asset TX
 		testTxTokenV2DeletedProof(tx2, dummyDB, t)
 		testTxTokenV2InvalidFee(tx2, dummyDB, t)
+		fmt.Println("END TEST")
+		return
 		testTxTokenV2OneFakeOutput(tx2, dummyDB, paramToCreateTx2, t)
 		testTxTokenV2OneDoubleSpentInput(tx2, dummyDB, feeOutputBytesHacked, tokenOutputBytesHacked, t)
 
