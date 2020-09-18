@@ -31,11 +31,9 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
-	//A
-	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
-	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
-	ErrInvalidWaitingPortingRequestType    = "invalid waiting porting request type"
-	//B
+	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
+	ErrInvalidLiquidationExchangeRatesType    = "invalid liquidation exchange rates type"
+	ErrInvalidWaitingPortingRequestType       = "invalid waiting porting request type"
 	ErrInvalidPortalStatusStateType           = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
@@ -44,6 +42,7 @@ const (
 	ErrInvalidRewardFeatureStateType          = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType          = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                   = "invalid block hash type"
+	ErrInvalidPortalExternalTxStateType       = "invalid portal external tx state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -130,22 +129,9 @@ const (
 	GetBurningConfirmError
 
 	//portal
-	StoreCustodianDepositStateError
 	StoreCustodianStateError
 	StoreWaitingRedeemRequestError
 	StoreRedeemRequestStateError
-	TrackCustodianDepositError
-	TrackReqPTokenError
-	GetItemPortalByKeyError
-	GetItemPortalByKeyNotFound
-	GetCustodianDepositStatusError
-	StoreReqPTokenStatusError
-	GetReqPTokenStatusError
-	StoreRedeemRequestError
-	TrackRedeemReqByTxReqIDError
-	TrackReqUnlockCollateralByTxReqIDError
-	GetReqUnlockCollateralStatusError
-	TrackLiquidateCustodianError
 	StorePortalRewardError
 	StorePortalStatusError
 	StorePortalTxStatusError
@@ -206,9 +192,13 @@ const (
 	ResetAllFeatureRewardByTokenIDError
 	GetRewardFeatureAmountByTokenIDError
 
+	// Portal v3
+	IsPortalExternalTxHashSubmittedError
+	InsertPortalExternalTxHashSubmittedError
+
 	// PDEX v2
 	StorePDETradingFeeError
-	
+
 	InvalidStakerInfoTypeError
 )
 
@@ -331,6 +321,8 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalReqMatchingRedeemByTxIDStatusError:            {-14041, "Get req matching redeem request error"},
 	GetPortalTopupWaitingPortingStatusError:                {-14042, "Get custodian top up for waiting porting error"},
 	GetPortalRedeemRequestFromLiquidationByTxIDStatusError: {-14043, "Get portal redeem req from liquidation pool status error"},
+	IsPortalExternalTxHashSubmittedError:                   {-14044, "Portal check external tx hash submitted error"},
+	InsertPortalExternalTxHashSubmittedError:               {-14045, "Portal insert external tx hash submitted error"},
 
 	StoreRewardFeatureError:              {-15000, "Store reward feature state error"},
 	GetRewardFeatureError:                {-15001, "Get reward feature state error"},

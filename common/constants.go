@@ -193,6 +193,9 @@ const (
 
 	PortalTopUpWaitingPortingSuccessStatus  = 1
 	PortalTopUpWaitingPortingRejectedStatus = 2
+
+	PortalCustodianDepositV3AcceptedStatus = 1
+	PortalCustodianDepositV3RefundStatus   = 2
 )
 
 // PDE statuses for chain
@@ -270,6 +273,12 @@ const (
 
 	PortalTopUpWaitingPortingSuccessChainStatus  = "success"
 	PortalTopUpWaitingPortingRejectedChainStatus = "rejected"
+
+	// Portal v3
+	PortalCustodianDepositV3AcceptedChainStatus         = "accepted"
+	PortalCustodianDepositV3RefundChainStatus           = "refund"
+	PortalCustodianWithdrawRequestV3AcceptedChainStatus = "accepted"
+	PortalCustodianWithdrawRequestV3RejectedChainStatus = "rejected"
 )
 
 // Relaying header
@@ -293,6 +302,8 @@ var MinAmountPortalPToken = map[string]uint64{
 	PortalBTCIDStr: 10,
 	PortalBNBIDStr: 10,
 }
+
+const ETHChainName = "eth"
 
 const (
 	HexEmptyRoot = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"

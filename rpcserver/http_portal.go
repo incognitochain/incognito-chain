@@ -12,102 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"sort"
 )
-
-func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
-	}
-
-	// get meta data from params
-	data, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
-	}
-	incognitoAddress, ok := data["IncognitoAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress is invalid"))
-	}
-	remoteAddressesMap, ok := data["RemoteAddresses"].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses param is invalid"))
-	}
-	if len(remoteAddressesMap) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses must be at least one"))
-	}
-	remoteAddresses := make(map[string]string, 0)
-	tokenIDKeys := make([]string, 0)
-	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !common.IsPortalToken(pTokenID) {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
-		}
-		_, ok := remoteAddress.(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses is invalid"))
-		}
-		tokenIDKeys = append(tokenIDKeys, pTokenID)
-	}
-	sort.Strings(tokenIDKeys)
-	for _, pTokenID := range tokenIDKeys {
-		remoteAddresses[pTokenID] = remoteAddressesMap[pTokenID].(string)
-	}
-
-	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	meta, _ := metadata.NewPortalCustodianDeposit(
-		metadata.PortalCustodianDepositMeta,
-		incognitoAddress,
-		remoteAddresses,
-		depositedAmount,
-	)
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-	// HasPrivacyCoin param is always false
-	createRawTxParam.HasPrivacyCoin = false
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendTxWithCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithCustodianDeposit(params, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
-	return result, nil
-}
 
 func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -254,27 +159,6 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetPortalCustodianDepositStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
-	}
-	data, ok := arrayParams[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
-	}
-	depositTxID, ok := data["DepositTxID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param DepositTxID is invalid"))
-	}
-
-	status, err := httpServer.blockService.GetCustodianDepositStatus(depositTxID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianDepositError, err)
-	}
-	return status, nil
-}
-
 func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
@@ -382,73 +266,6 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithRedeemReq(params interfac
 	return sendResult, nil
 }
 
-func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	// get meta data from params
-	data, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-
-	paymentAddress, ok := data["PaymentAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PaymentAddress is invalid"))
-	}
-
-	amount, err := common.AssertAndConvertStrToNumber(data["Amount"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	meta, _ := metadata.NewPortalCustodianWithdrawRequest(
-		metadata.PortalCustodianWithdrawRequestMeta,
-		paymentAddress,
-		amount,
-	)
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendCustodianWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCustodianWithdrawRequest(params, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
@@ -535,29 +352,6 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithReqUnlockCollateral(param
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetCustodianWithdrawByTxId(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	// get meta data from params
-	data, ok := arrayParams[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
-	}
-
-	txId, ok := data["TxId"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata txId is invalid"))
-	}
-
-	result, err := httpServer.portal.GetCustodianWithdrawByTxId(txId)
-
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianWithdrawError, err)
-	}
-
 	return result, nil
 }
 

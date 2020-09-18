@@ -183,11 +183,11 @@ var HttpHandler = map[string]httpHandler{
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
 	// portal
-	createAndSendTxWithCustodianDeposit:           (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
-	createAndSendTxWithReqPToken:                  (*HttpServer).handleCreateAndSendTxWithReqPToken,
 	getPortalState:                                (*HttpServer).handleGetPortalState,
+	createAndSendTxWithCustodianDeposit:           (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
 	getPortalCustodianDepositStatus:               (*HttpServer).handleGetPortalCustodianDepositStatus,
 	createAndSendRegisterPortingPublicTokens:      (*HttpServer).handleCreateAndSendRegisterPortingPublicTokens,
+	createAndSendTxWithReqPToken:                  (*HttpServer).handleCreateAndSendTxWithReqPToken,
 	createAndSendPortalExchangeRates:              (*HttpServer).handleCreateAndSendPortalExchangeRates,
 	getPortalFinalExchangeRates:                   (*HttpServer).handleGetPortalFinalExchangeRates,
 	getPortalPortingRequestByKey:                  (*HttpServer).handleGetPortingRequestByKey,
@@ -199,8 +199,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithReqUnlockCollateral:        (*HttpServer).handleCreateAndSendTxWithReqUnlockCollateral,
 	getPortalReqUnlockCollateralStatus:            (*HttpServer).handleGetPortalReqUnlockCollateralStatus,
 	getPortalReqRedeemStatus:                      (*HttpServer).handleGetPortalReqRedeemStatus,
-	createAndSendCustodianWithdrawRequest:         (*HttpServer).handleCreateAndSendCustodianWithdrawRequest,
-	getCustodianWithdrawByTxId:                    (*HttpServer).handleGetCustodianWithdrawByTxId,
+	createAndSendCustodianWithdrawRequest:         (*HttpServer).handleCreateAndSendTxWithCustodianWithdrawRequest,
+	getCustodianWithdrawByTxId:                    (*HttpServer).handleGetCustodianWithdrawRequestStatusByTxId,
 	getCustodianLiquidationStatus:                 (*HttpServer).handleGetCustodianLiquidationStatus,
 	createAndSendTxWithReqWithdrawRewardPortal:    (*HttpServer).handleCreateAndSendTxWithReqWithdrawRewardPortal,
 	getLiquidationExchangeRatesPool:               (*HttpServer).handleGetLiquidationExchangeRatesPool,
@@ -217,6 +217,11 @@ var HttpHandler = map[string]httpHandler{
 	getAmountTopUpWaitingPorting:                  (*HttpServer).handleGetAmountTopUpWaitingPorting,
 	getPortalReqRedeemByTxIDStatus:                (*HttpServer).handleGetPortalReqRedeemByTxIDStatus,
 	getReqRedeemFromLiquidationPoolByTxIDStatus:   (*HttpServer).handleGetReqRedeemFromLiquidationPoolByTxIDStatus,
+	createAndSendTxWithCustodianDepositV3:         (*HttpServer).handleCreateAndSendTxWithCustodianDepositV3,
+	getPortalCustodianDepositStatusV3:             (*HttpServer).handleGetPortalCustodianDepositStatusV3,
+	checkPortalExternalHashSubmitted:              (*HttpServer).handleCheckPortalExternalHashSubmitted,
+	createAndSendTxWithCustodianWithdrawRequestV3: (*HttpServer).handleCreateAndSendTxWithCustodianWithdrawRequestV3,
+	getCustodianWithdrawRequestStatusV3ByTxId:     (*HttpServer).handleGetCustodianWithdrawRequestStatusV3ByTxId,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
@@ -243,9 +248,6 @@ var HttpHandler = map[string]httpHandler{
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
 	// get committeeByHeight
-
-	// TODO: tpp
-	// portal v3
 }
 
 // Commands that are available to a limited user

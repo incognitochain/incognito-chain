@@ -54,7 +54,7 @@ func (portal *PortalService) GetPortingRequestByByPortingId(portingId string) (j
 	return result, nil
 }
 
-func (portal *PortalService) GetCustodianWithdrawByTxId(txId string) (jsonresult.PortalCustodianWithdrawRequest, error) {
+func (portal *PortalService) GetCustodianWithdrawRequestStatusByTxId(txId string) (jsonresult.PortalCustodianWithdrawRequest, error) {
 	portalStateDB := portal.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	custodianWithdraw, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalCustodianWithdrawStatusPrefix(), []byte(txId))
 
@@ -244,4 +244,16 @@ func (portal *PortalService) GetLiquidateExchangeRatesPool(
 		Liquidation: liquidateExchangeRatesDetail,
 	}
 	return result, nil
+}
+
+func (portal *PortalService) GetCustodianWithdrawRequestStatusV3ByTxId(txId string) (metadata.CustodianWithdrawRequestStatusV3, error) {
+	var res metadata.CustodianWithdrawRequestStatusV3
+
+	portalStateDB := portal.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	statusBytes, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalCustodianWithdrawStatusPrefix(), []byte(txId))
+	if err != nil || statusBytes == nil || len(statusBytes) == 0 {
+		return res, NewRPCError(GetCustodianWithdrawError, err)
+	}
+	err = json.Unmarshal(statusBytes, &res)
+	return res, err
 }

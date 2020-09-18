@@ -81,6 +81,7 @@ const (
 
 	// Portal v3
 	PortalCustodianDepositMetaV3 = 131
+	PortalCustodianWithdrawRequestMetaV3          = 132
 
 	//Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = 199

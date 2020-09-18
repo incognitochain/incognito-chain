@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	eCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -20,6 +19,7 @@ import (
 // metadata - custodian deposit - create normal tx with this metadata
 type PortalCustodianDepositV3 struct {
 	MetadataBase
+	IncAddressStr    string
 	RemoteAddresses map[string]string // tokenID: remote address
 
 	// ETH proof
@@ -35,10 +35,10 @@ type PortalCustodianDepositActionV3 struct {
 	TxReqID common.Hash
 	ShardID byte
 
-	IncAddressStr    string
-	DepositAmount    uint64
-	ExternalTokenID  string // collateral TokenID
-	UniqExternalTxID []byte
+	//IncAddressStr    string
+	//DepositAmount    uint64
+	//ExternalTokenID  string // collateral TokenID
+	//UniqExternalTxID []byte
 }
 
 // PortalCustodianDepositContentV3 - Beacon builds a new instruction with this content after receiving a instruction from shard
@@ -66,13 +66,11 @@ type PortalCustodianDepositStatusV3 struct {
 
 func NewPortalCustodianDepositV3(
 	metaType int,
+	custodianIncAddr string,
 	remoteAddrs map[string]string,
 	blockHash eCommon.Hash,
 	txIndex uint,
 	proofStrs []string) (*PortalCustodianDepositV3, error) {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
 	custodianDepositMetaV3 := &PortalCustodianDepositV3{
 		MetadataBase: MetadataBase{
 			Type: metaType,
@@ -81,9 +79,72 @@ func NewPortalCustodianDepositV3(
 		BlockHash:       blockHash,
 		TxIndex:         txIndex,
 		ProofStrs:       proofStrs,
+		IncAddressStr: custodianIncAddr,
 	}
-	custodianDepositMetaV3.MetadataBase = metadataBase
 	return custodianDepositMetaV3, nil
+}
+
+func NewPortalCustodianDepositV3FromMap(
+	data map[string]interface{},
+) (*PortalCustodianDepositV3, error) {
+	incognitoAddress, ok := data["IncognitoAddress"].(string)
+	if !ok {
+		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata IncognitoAddress is invalid"))
+	}
+	remoteAddressesMap, ok := data["RemoteAddresses"].(map[string]interface{})
+	if !ok {
+		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata RemoteAddresses param is invalid"))
+	}
+	if len(remoteAddressesMap) < 1 {
+		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata RemoteAddresses must be at least one"))
+	}
+	remoteAddresses := make(map[string]string, 0)
+	tokenIDKeys := make([]string, 0)
+	for pTokenID, remoteAddress := range remoteAddressesMap {
+		if !common.IsPortalToken(pTokenID) {
+			return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata public token is not supported currently"))
+		}
+		_, ok := remoteAddress.(string)
+		if !ok {
+			return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata RemoteAddresses is invalid"))
+		}
+		tokenIDKeys = append(tokenIDKeys, pTokenID)
+	}
+	sort.Strings(tokenIDKeys)
+	for _, pTokenID := range tokenIDKeys {
+		remoteAddresses[pTokenID] = remoteAddressesMap[pTokenID].(string)
+	}
+
+	blockHashStr, ok := data["BlockHash"].(string)
+	if !ok {
+		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata BlockHash should be a string"))
+	}
+	blockHash := eCommon.HexToHash(blockHashStr)
+
+	txIndexFloat, ok := data["TxIndex"].(float64)
+	if !ok {
+		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata TxIndex should be a number"))
+	}
+	txIdx := uint(txIndexFloat)
+
+	proofsRaw, ok := data["ProofStrs"].([]interface{})
+	if !ok {
+		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata ProofStrs should be an array of string"))
+	}
+	proofStrs := []string{}
+	for _, item := range proofsRaw {
+		proofStrs = append(proofStrs, item.(string))
+	}
+
+	meta, _ := NewPortalCustodianDepositV3(
+		PortalCustodianDepositMetaV3,
+		incognitoAddress,
+		remoteAddresses,
+		blockHash,
+		txIdx,
+		proofStrs,
+	)
+	return meta, nil
 }
 
 func (custodianDeposit PortalCustodianDepositV3) ValidateTxWithBlockChain(
@@ -129,32 +190,32 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	if len(custodianDeposit.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("ProofStrs should be not empty"))
 	}
-	ethReceipt, err := custodianDeposit.verifyProofAndParseReceipt()
-	if err != nil {
-		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
-	}
-	if ethReceipt == nil {
-		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("The eth proof's receipt could not be null."))
-	}
-
-	logMap, err := PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, chainRetriever.GetPortalETHContractAddrStr(), "Deposit")
-	if err != nil {
-		Logger.log.Info("WARNING: an error occured while parsing log map from receipt: ", err)
-		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
-	}
-	if logMap == nil {
-		Logger.log.Info("WARNING: could not find log map out from receipt")
-		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("log map is nil"))
-	}
-
-	custodianIncAddr, externalTokenIDStr, amount, err := ParseInfoFromLogMap(logMap)
-	if err != nil {
-		Logger.log.Info("WARNING: an error occured while parsing info from log map: ", err)
-		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
-	}
+	//ethReceipt, err := custodianDeposit.verifyProofAndParseReceipt()
+	//if err != nil {
+	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
+	//}
+	//if ethReceipt == nil {
+	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("The eth proof's receipt could not be null."))
+	//}
+	//
+	//logMap, err := PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, chainRetriever.GetPortalETHContractAddrStr(), "Deposit")
+	//if err != nil {
+	//	Logger.log.Info("WARNING: an error occured while parsing log map from receipt: ", err)
+	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
+	//}
+	//if logMap == nil {
+	//	Logger.log.Info("WARNING: could not find log map out from receipt")
+	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("log map is nil"))
+	//}
+	//
+	//custodianIncAddr, externalTokenIDStr, amount, err := ParseInfoFromLogMap(logMap)
+	//if err != nil {
+	//	Logger.log.Info("WARNING: an error occured while parsing info from log map: ", err)
+	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
+	//}
 
 	// check sender's address
-	keyWallet, err := wallet.Base58CheckDeserialize(custodianIncAddr)
+	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncAddressStr)
 	if err != nil {
 		return false, false,
 			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("could not decode CustodianIncAddressStr"))
@@ -169,17 +230,17 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("custodian incognito address is not signer tx"))
 	}
 
-	// check externalTokenID should be one of supported collateral tokenIDs
-	if ok, err := common.SliceExists(chainRetriever.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenIDStr); !ok || err != nil {
-		return false, false,
-			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("external collateral tokenID is not supported on portal"))
-	}
-
-	// check deposit amount
-	if amount <= 0 {
-		return false, false,
-			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("amount should be greater than zero"))
-	}
+	//// check externalTokenID should be one of supported collateral tokenIDs
+	//if ok, err := common.SliceExists(chainRetriever.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenIDStr); !ok || err != nil {
+	//	return false, false,
+	//		NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("external collateral tokenID is not supported on portal"))
+	//}
+	//
+	//// check deposit amount
+	//if amount <= 0 {
+	//	return false, false,
+	//		NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("amount should be greater than zero"))
+	//}
 
 	return true, true, nil
 }
@@ -190,6 +251,7 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateMetadataByItself() bool
 
 func (custodianDeposit PortalCustodianDepositV3) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
+	record += custodianDeposit.IncAddressStr
 	tokenIDKeys := make([]string, 0)
 	for tokenID := range custodianDeposit.RemoteAddresses {
 		tokenIDKeys = append(tokenIDKeys, tokenID)
@@ -211,42 +273,10 @@ func (custodianDeposit PortalCustodianDepositV3) Hash() *common.Hash {
 }
 
 func (custodianDeposit *PortalCustodianDepositV3) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
-	ethReceipt, err := custodianDeposit.verifyProofAndParseReceipt()
-	if err != nil {
-		return [][]string{}, err
-	}
-	if ethReceipt == nil {
-		return [][]string{}, errors.New("The eth proof's receipt could not be null.")
-	}
-
-	logMap, err := PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, chainRetriever.GetPortalETHContractAddrStr(), "Deposit")
-	if err != nil {
-		Logger.log.Info("WARNING: an error occured while parsing log map from receipt: ", err)
-		return [][]string{}, err
-	}
-	if logMap == nil {
-		Logger.log.Info("WARNING: could not find log map out from receipt")
-		return [][]string{}, errors.New("log map is nil")
-	}
-
-	custodianIncAddr, externalTokenIDStr, amount, err := ParseInfoFromLogMap(logMap)
-	if err != nil {
-		Logger.log.Info("WARNING: an error occured while parsing info from log map: ", err)
-		return [][]string{}, err
-	}
-
-	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
-	// so must build unique eth tx as combination of block hash and tx index.
-	uniqExternalTxID := append(custodianDeposit.BlockHash[:], []byte(strconv.Itoa(int(custodianDeposit.TxIndex)))...)
-
 	actionContent := PortalCustodianDepositActionV3{
 		Meta:             *custodianDeposit,
 		TxReqID:          *tx.Hash(),
 		ShardID:          shardID,
-		IncAddressStr:    custodianIncAddr,
-		DepositAmount:    amount,
-		ExternalTokenID:  externalTokenIDStr,
-		UniqExternalTxID: uniqExternalTxID,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
@@ -259,10 +289,6 @@ func (custodianDeposit *PortalCustodianDepositV3) BuildReqActions(tx Transaction
 
 func (custodianDeposit *PortalCustodianDepositV3) CalculateSize() uint64 {
 	return calculateSize(custodianDeposit)
-}
-
-func (custodianDeposit *PortalCustodianDepositV3) verifyProofAndParseReceipt() (*types.Receipt, error) {
-	return verifyProofAndParseReceipt(custodianDeposit.BlockHash, custodianDeposit.TxIndex, custodianDeposit.ProofStrs)
 }
 
 // ParseInfoFromLogMap parse info from log map

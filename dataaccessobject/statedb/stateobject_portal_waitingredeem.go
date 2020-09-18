@@ -384,6 +384,6 @@ func (t RedeemRequestObject) IsDeleted() bool {
 
 // value is either default or nil
 func (t RedeemRequestObject) IsEmpty() bool {
-	temp := NewCustodianState()
+	temp := NewRedeemRequest()
 	return reflect.DeepEqual(temp, t.waitingRedeemRequest) || t.waitingRedeemRequest == nil
 }

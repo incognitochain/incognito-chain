@@ -235,6 +235,11 @@ const (
 	getAmountTopUpWaitingPorting                  = "getamounttopupwaitingporting"
 	getPortalReqRedeemByTxIDStatus                = "getreqredeemstatusbytxid"
 	getReqRedeemFromLiquidationPoolByTxIDStatus   = "getreqredeemfromliquidationpoolbytxidstatus"
+	createAndSendTxWithCustodianDepositV3         = "createandsendtxwithcustodiandepositv3"
+	getPortalCustodianDepositStatusV3             = "getportalcustodiandepositstatusv3"
+	checkPortalExternalHashSubmitted              = "checkportalexternalhashsubmitted"
+	createAndSendTxWithCustodianWithdrawRequestV3 = "createandsendtxwithcustodianwithdrawrequestv3"
+	getCustodianWithdrawRequestStatusV3ByTxId     = "getcustodianwithdrawrequeststatusv3"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

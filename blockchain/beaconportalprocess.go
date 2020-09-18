@@ -86,6 +86,8 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			err = blockchain.processPortalReqMatchingRedeem(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		case strconv.Itoa(metadata.PortalPickMoreCustodianForRedeemMeta):
 			err = blockchain.processPortalPickMoreCustodiansForTimeOutWaitingRedeemReq(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		case strconv.Itoa(metadata.PortalCustodianDepositMetaV3):
+			err = blockchain.processPortalCustodianDepositV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
@@ -154,29 +156,14 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 	depositStatus := instructions[2]
 	if depositStatus == common.PortalCustodianDepositAcceptedChainStatus {
-		keyCustodianState := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
-		keyCustodianStateStr := keyCustodianState.String()
-
-		newCustodian := new(statedb.CustodianState)
-		oldCustodianState := currentPortalState.CustodianPoolState[keyCustodianStateStr]
-		if oldCustodianState == nil {
-			// new custodian
-			newCustodian = statedb.NewCustodianStateWithValue(
-				actionData.IncogAddressStr, actionData.DepositedAmount, actionData.DepositedAmount,
-				nil, nil,
-				actionData.RemoteAddresses, nil)
-		} else {
-			// custodian deposited before
-			totalCollateral := oldCustodianState.GetTotalCollateral() + actionData.DepositedAmount
-			freeCollateral := oldCustodianState.GetFreeCollateral() + actionData.DepositedAmount
-			holdingPubTokens := oldCustodianState.GetHoldingPublicTokens()
-			lockedAmountCollateral := oldCustodianState.GetLockedAmountCollateral()
-			rewardAmount := oldCustodianState.GetRewardAmount()
-			remoteAddresses := actionData.RemoteAddresses
-			newCustodian = statedb.NewCustodianStateWithValue(actionData.IncogAddressStr, totalCollateral, freeCollateral,
-				holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
-		}
-		// update state of the custodian
+		// add custodian to custodian pool
+		newCustodian := addCustodianToPool(
+			currentPortalState.CustodianPoolState,
+			actionData.IncogAddressStr,
+			actionData.DepositedAmount,
+			common.PRVIDStr,
+			actionData.RemoteAddresses)
+		keyCustodianStateStr := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr).String()
 		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 
 		// store custodian deposit status into DB
@@ -823,6 +810,90 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalCustodianDepositV3(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData metadata.PortalCustodianDepositContentV3
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		return err
+	}
+
+	depositStatus := instructions[2]
+	if depositStatus == common.PortalCustodianDepositV3AcceptedChainStatus {
+		// add custodian to custodian pool
+		newCustodian := addCustodianToPool(
+			currentPortalState.CustodianPoolState,
+			actionData.IncAddressStr,
+			actionData.DepositAmount,
+			actionData.ExternalTokenID,
+			actionData.RemoteAddresses)
+		keyCustodianStateStr := statedb.GenerateCustodianStateObjectKey(actionData.IncAddressStr).String()
+		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
+
+		// store custodian deposit status into DB
+		custodianDepositTrackData := metadata.PortalCustodianDepositStatusV3{
+			Status:           common.PortalCustodianDepositV3AcceptedStatus,
+			IncAddressStr:    actionData.IncAddressStr,
+			RemoteAddresses:  actionData.RemoteAddresses,
+			DepositAmount:    actionData.DepositAmount,
+			ExternalTokenID:  actionData.ExternalTokenID,
+			UniqExternalTxID: actionData.UniqExternalTxID,
+		}
+		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
+		err = statedb.StoreCustodianDepositStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			custodianDepositDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			return nil
+		}
+
+		// store uniq external tx
+		err := statedb.InsertPortalExternalTxHashSubmitted(stateDB, actionData.UniqExternalTxID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
+			return nil
+		}
+	} else if depositStatus == common.PortalCustodianDepositV3RefundChainStatus {
+		// store custodian deposit status into DB
+		custodianDepositTrackData := metadata.PortalCustodianDepositStatusV3{
+			Status:           common.PortalCustodianDepositV3RefundStatus,
+			IncAddressStr:    actionData.IncAddressStr,
+			RemoteAddresses:  actionData.RemoteAddresses,
+			DepositAmount:    actionData.DepositAmount,
+			ExternalTokenID:  actionData.ExternalTokenID,
+			UniqExternalTxID: actionData.UniqExternalTxID,
+		}
+		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
+		err = statedb.StoreCustodianDepositStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			custodianDepositDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
 			return nil
 		}
 	}

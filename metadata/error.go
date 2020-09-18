@@ -54,6 +54,7 @@ const (
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError
 	PortalCustodianDepositV3ValidateSanityDataError
+	NewPortalCustodianDepositV3MetaFromMapError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -110,7 +111,8 @@ var ErrCodeMessage = map[int]struct {
 
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError: {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},
-	PortalCustodianDepositV3ValidateSanityDataError: {-9001, "Validate sanity data tx portal custodian deposit v3 error"},
+	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
+	NewPortalCustodianDepositV3MetaFromMapError:  {-9003, "New portal custodian deposit v3 metadata from map error"},
 }
 
 type MetadataTxError struct {

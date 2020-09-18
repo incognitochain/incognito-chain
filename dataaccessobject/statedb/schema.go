@@ -81,6 +81,8 @@ var (
 	rewardFeatureStatePrefix = []byte("rewardfeaturestate-")
 	// feature names
 	PortalRewardName = "portal"
+
+	portalEthTxPrefix =[]byte("portalethtx-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -371,6 +373,11 @@ func GetLockedCollateralStatePrefix() []byte {
 
 func GetRewardFeatureStatePrefix(epoch uint64) []byte {
 	h := common.HashH(append(rewardFeatureStatePrefix, []byte(fmt.Sprintf("%d-", epoch))...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPortalExternalTxPrefix() []byte {
+	h := common.HashH(portalEthTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

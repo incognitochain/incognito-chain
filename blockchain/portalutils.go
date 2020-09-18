@@ -1303,3 +1303,99 @@ func getNewMatchedRedeemReqIDs(
 
 	return newIDs
 }
+
+func addCustodianToPool(
+	custodianPool map[string]*statedb.CustodianState,
+	custodianIncAddr string,
+	depositAmount uint64,
+	collateralTokenID string,
+	remoteAddresses map[string]string,
+) *statedb.CustodianState {
+	keyCustodianState := statedb.GenerateCustodianStateObjectKey(custodianIncAddr)
+	keyCustodianStateStr := keyCustodianState.String()
+	existCustodian := custodianPool[keyCustodianStateStr]
+
+	// check collateral token ID
+	isPRVCollateral := collateralTokenID == common.PRVIDStr
+
+	// the custodian hasn't deposited before
+	newCustodian := statedb.NewCustodianState()
+	if existCustodian == nil {
+		newCustodian.SetIncognitoAddress(custodianIncAddr)
+		newCustodian.SetRemoteAddresses(remoteAddresses)
+
+		if isPRVCollateral {
+			newCustodian.SetTotalCollateral(depositAmount)
+			newCustodian.SetFreeCollateral(depositAmount)
+		} else {
+			totalTokenColaterals := map[string]uint64{
+				collateralTokenID: depositAmount,
+			}
+			newCustodian.SetTotalTokenCollaterals(totalTokenColaterals)
+			newCustodian.SetFreeTokenCollaterals(totalTokenColaterals)
+		}
+	} else {
+		newCustodian.SetIncognitoAddress(custodianIncAddr)
+		newCustodian.SetHoldingPublicTokens(existCustodian.GetHoldingPublicTokens())
+		newCustodian.SetLockedAmountCollateral(existCustodian.GetLockedAmountCollateral())
+		newCustodian.SetLockedTokenCollaterals(existCustodian.GetLockedTokenCollaterals())
+		newCustodian.SetRewardAmount(existCustodian.GetRewardAmount())
+
+		updateRemoteAddresses := existCustodian.GetRemoteAddresses()
+		if len(remoteAddresses) > 0 {
+			// if total collateral is zero, custodians are able to update remote addresses
+			if existCustodian.IsEmptyCollaterals() {
+				updateRemoteAddresses = remoteAddresses
+			} else {
+				sortedTokenIDs := make([]string, 0)
+				for tokenID := range remoteAddresses {
+					sortedTokenIDs = append(sortedTokenIDs, tokenID)
+				}
+
+				for _, tokenID := range sortedTokenIDs {
+					if updateRemoteAddresses[tokenID] != "" {
+						continue
+					}
+					updateRemoteAddresses[tokenID] = remoteAddresses[tokenID]
+				}
+			}
+		}
+		newCustodian.SetRemoteAddresses(updateRemoteAddresses)
+
+		if isPRVCollateral {
+			newCustodian.SetTotalCollateral(existCustodian.GetTotalCollateral() + depositAmount)
+			newCustodian.SetFreeCollateral(existCustodian.GetFreeCollateral() + depositAmount)
+			newCustodian.SetTotalTokenCollaterals(existCustodian.GetTotalTokenCollaterals())
+			newCustodian.SetFreeTokenCollaterals(existCustodian.GetFreeTokenCollaterals())
+		} else {
+			newCustodian.SetTotalCollateral(existCustodian.GetTotalCollateral())
+			newCustodian.SetFreeCollateral(existCustodian.GetFreeCollateral())
+
+			tmpTotalTokenCollaterals := existCustodian.GetTotalTokenCollaterals()
+			tmpTotalTokenCollaterals[collateralTokenID] += depositAmount
+			tmpFreeTokenCollaterals := existCustodian.GetFreeTokenCollaterals()
+			tmpFreeTokenCollaterals[collateralTokenID] += depositAmount
+			newCustodian.SetTotalTokenCollaterals(tmpTotalTokenCollaterals)
+			newCustodian.SetFreeTokenCollaterals(existCustodian.GetFreeTokenCollaterals())
+		}
+	}
+
+	return newCustodian
+}
+
+func UpdateCustodianStateAfterWithdrawCollateral(custodian *statedb.CustodianState, collateralTokenID string, amount uint64) *statedb.CustodianState {
+	if collateralTokenID == common.PRVIDStr {
+		custodian.SetTotalCollateral(custodian.GetTotalCollateral() - amount)
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - amount)
+	} else {
+		freeTokenCollaterals := custodian.GetFreeTokenCollaterals()
+		freeTokenCollaterals[collateralTokenID] -= amount
+		totalTokenCollaterals := custodian.GetTotalTokenCollaterals()
+		totalTokenCollaterals[collateralTokenID] -= amount
+
+		custodian.SetTotalTokenCollaterals(totalTokenCollaterals)
+		custodian.SetFreeTokenCollaterals(freeTokenCollaterals)
+	}
+
+	return custodian
+}

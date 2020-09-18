@@ -944,6 +944,22 @@ func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (
 	return &status, nil
 }
 
+func (blockService BlockService) GetCustodianDepositStatusV3(depositTxID string) (*metadata.PortalCustodianDepositStatusV3, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetCustodianDepositStatus(stateDB, depositTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalCustodianDepositStatusV3
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
 func (blockService BlockService) GetPortalReqPTokenStatus(reqTxID string) (*metadata.PortalRequestPTokensStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetRequestPTokenStatus(stateDB, reqTxID)
@@ -1150,4 +1166,32 @@ func (blockService BlockService) GetRewardFeatureByFeatureName(featureName strin
 	}
 
 	return data.GetTotalRewards(), nil
+}
+
+
+// ============================= Portal v3 ===============================
+func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]interface{}) (bool, error) {
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
+
+	// default is eth chain
+	chainName := common.ETHChainName
+	chainNameTmp, ok := data["ChainName"].(string)
+	if ok {
+		chainName = chainNameTmp
+	}
+
+	uniqExternalTx := metadata.GetUniqExternalTxID(chainName, blockHash, txIdx)
+	featureStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
+	return submitted, err
 }

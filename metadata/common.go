@@ -141,6 +141,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingResponse{}
 	case PortalCustodianDepositMetaV3:
 		md = &PortalCustodianDepositV3{}
+	case PortalCustodianWithdrawRequestMetaV3:
+		md = &PortalCustodianWithdrawRequestV3{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -171,4 +173,9 @@ func HasBridgeInstructions(instructions [][]string) bool {
 		}
 	}
 	return false
+}
+
+// todo:
+func ValidateRemoteAddress(chainName string, tokenID string, address string) (bool, error) {
+	return true, nil
 }

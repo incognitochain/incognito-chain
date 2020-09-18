@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
@@ -168,6 +169,9 @@ func StoreCustodianState(
 			cus.lockedAmountCollateral,
 			cus.remoteAddresses,
 			cus.rewardAmount,
+			cus.totalTokenCollaterals,
+			cus.freeTokenCollaterals,
+			cus.lockedTokenCollaterals,
 		)
 		err := stateDB.SetStateObject(CustodianStateObjectType, key, value)
 		if err != nil {
@@ -646,4 +650,31 @@ func GetAllRewardFeatureState(
 	}
 
 	return result, nil
+}
+
+//======================  Portal external tx (ETH tx)  ======================
+func InsertPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueEthTx []byte) error {
+	key := GenerateBridgeEthTxObjectKey(uniqueEthTx)
+	value := NewPortalExternalTxStateWithValue(uniqueEthTx)
+	err := stateDB.SetStateObject(PortalExternalTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(InsertPortalExternalTxHashSubmittedError, err)
+	}
+	return nil
+}
+
+// IsPortalExternalTxHashSubmitted returns true if eth tx hash was submitted to portal and otherwise
+func IsPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueEthTx []byte) (bool, error) {
+	key := GeneratePortalExternalTxObjectKey(uniqueEthTx)
+	ethTxState, has, err := stateDB.getPortalExternalTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsPortalExternalTxHashSubmittedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(ethTxState.UniqueExternalTx(), uniqueEthTx) != 0 {
+		panic("same key wrong value")
+	}
+	return has, nil
 }

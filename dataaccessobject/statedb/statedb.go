@@ -1624,3 +1624,15 @@ func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState,
 	}
 	return result, true, nil
 }
+
+// ================================= Portal ETH tx OBJECT =======================================
+func (stateDB *StateDB) getPortalExternalTxState(key common.Hash) (*PortalExternalTxState, bool, error) {
+	ethTxState, err := stateDB.getStateObject(PortalExternalTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ethTxState != nil {
+		return ethTxState.GetValue().(*PortalExternalTxState), true, nil
+	}
+	return NewPortalExternalTxState(), false, nil
+}
