@@ -211,6 +211,9 @@ func (engine *Engine) Start() error {
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		//import validator keys : 'key1,key2'
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
+		if len(keys) > engine.validatorsLimit {
+			panic("The max number of validator is reached")
+		}
 		engine.validators = []*consensus.Validator{}
 		for _, key := range keys {
 			miningKey, err := GetMiningKeyFromPrivateSeed(key)
