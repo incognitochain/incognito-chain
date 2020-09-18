@@ -83,18 +83,18 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 		return err
 	}
 
-	// beaconHeight := shardBestState.BeaconHeight
-	// for _, v := range beaconBlocks {
-	// 	if v.GetHeight() > beaconHeight {
-	// 		beaconHeight = v.GetHeight()
-	// 	}
-	// }
+	beaconHeight := shardBestState.BeaconHeight
+	for _, v := range beaconBlocks {
+		if v.GetHeight() > beaconHeight {
+			beaconHeight = v.GetHeight()
+		}
+	}
 
-	// if beaconHeight <= shardBestState.BeaconHeight {
-	// 	Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
-	// 		beaconHeight, shardBestState.BeaconHeight)
-	// 	return nil
-	// }
+	if beaconHeight <= shardBestState.BeaconHeight {
+		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
+			beaconHeight, shardBestState.BeaconHeight)
+		return errors.New("Waiting For Beacon Produce Block")
+	}
 
 	//========Verify shardBlock only
 	if err := blockchain.verifyPreProcessingShardBlock(shardBestState, shardBlock, beaconBlocks, shardID, true); err != nil {
@@ -156,6 +156,20 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
+
+	beaconHeight := curView.BeaconHeight
+	for _, v := range beaconBlocks {
+		if v.GetHeight() > beaconHeight {
+			beaconHeight = v.GetHeight()
+		}
+	}
+
+	if beaconHeight <= curView.BeaconHeight {
+		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
+			beaconHeight, curView.BeaconHeight)
+		return errors.New("Waiting For Beacon Produce Block")
+	}
+
 	if shouldValidate {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+vt \n", shardID, blockHeight, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false); err != nil {
@@ -516,12 +530,14 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildShardHeight(curView.ShardHeight).
 		Build()
 
 	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
 	if err != nil {
 		return err
 	}
+	curView.shardCommitteeEngine.AbortUncommittedShardState()
 
 	instructions := [][]string{}
 

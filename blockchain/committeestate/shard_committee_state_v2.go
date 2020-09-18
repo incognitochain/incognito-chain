@@ -186,9 +186,12 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 	engine.shardCommitteeStateV2.mu.RLock()
 	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
 	engine.shardCommitteeStateV2.mu.RUnlock()
-	var err error
+
 	newCommitteeState := engine.uncommittedShardCommitteeStateV2
-	committeeChange := NewCommitteeChange()
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env, NewCommitteeChange())
+	if err != nil {
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
 
 	committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
 	if err != nil {
@@ -248,7 +251,6 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
-
 	for _, inst := range env.BeaconInstructions() {
 		switch inst[0] {
 		case instruction.SWAP_SHARD_ACTION:
@@ -258,14 +260,17 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
-			Logger.log.Info("[swap-v2] swapShardInstruction:", swapShardInstruction)
+			Logger.log.Info("[swap-v2] env.ShardHeight():", env.ShardHeight())
+			Logger.log.Info("[swap-v2] swapShardInstruction.Height:", swapShardInstruction.Height)
+			if env.ShardHeight() > swapShardInstruction.Height {
+				Logger.log.
+					Errorf("[swap-v2] SKIP Swap Shard Committees [env.ShardHeight() > swapShardInstruction.Height] env.ShardHeight() %+v, swapShardInstruction.Height %+v",
+						env.ShardHeight(), swapShardInstruction.Height)
+				continue
+			}
 			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
 			if err != nil {
 				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			for _, v := range newCommitteeChange.ShardCommitteeAdded[env.ShardID()] {
-				key, _ := v.ToBase58()
-				Logger.log.Info("[swap-v2] key:", key)
 			}
 		}
 	}
@@ -305,13 +310,11 @@ func (s *ShardCommitteeStateV2) processShardBlockInstruction(
 //ProcessInstructionFromBeacon : process instrucction from beacon
 func (engine *ShardCommitteeEngineV2) ProcessInstructionFromBeacon(
 	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	newCommitteeState := &ShardCommitteeStateV2{}
 	engine.shardCommitteeStateV2.mu.RLock()
-	engine.shardCommitteeStateV2.clone(newCommitteeState)
+	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
 	engine.shardCommitteeStateV2.mu.RUnlock()
 
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env, NewCommitteeChange())
-
+	committeeChange, err := engine.uncommittedShardCommitteeStateV2.processInstructionFromBeacon(env, NewCommitteeChange())
 	if err != nil {
 		return nil, err
 	}

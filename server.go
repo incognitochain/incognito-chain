@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +17,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -2162,6 +2163,9 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 	return blockCh, nil
 }
 
+// GetUserMiningState get user mining state by latest beacon view
+//TODO: @tin custom here
+// Sync latest by beacon view
 func (s *Server) GetUserMiningState() (role string, chainID int) {
 	//TODO: check synker is in FewBlockBehind
 	userPk := s.consensusEngine.GetMiningPublicKeys()

@@ -819,7 +819,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				numberOfRound:              tt.fields.numberOfRound,
 				mu:                         tt.fields.mu,
 			}
-			got, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange, b)
+			got, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -946,7 +946,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 				beaconHash:                        tt.fields.beaconHash,
 				finalBeaconCommitteeStateV2:       tt.fields.finalBeaconCommitteeStateV2,
 				uncommittedBeaconCommitteeStateV2: tt.fields.uncommittedBeaconCommitteeStateV2,
-				version:                           tt.fields.version,
 			}
 			_, _, got2, err := engine.UpdateCommitteeState(tt.args.env)
 			if (err != nil) != tt.wantErr {

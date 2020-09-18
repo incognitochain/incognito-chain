@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -91,11 +92,13 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
-	// if beaconHeight <= shardBestState.BeaconHeight {
-	// 	Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
-	// 		beaconHeight, shardBestState.BeaconHeight)
-	// 	return nil, nil
-	// }
+	Logger.log.Info("[swap-v2] beaconHeight 0:", beaconHeight)
+	if beaconHeight <= shardBestState.BeaconHeight {
+		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
+			beaconHeight, shardBestState.BeaconHeight)
+		return nil, errors.New("Waiting For Beacon Produce Block")
+	}
+	Logger.log.Info("[swap-v2] beaconHeight 1:", beaconHeight)
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
 	if err != nil {
@@ -167,6 +170,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		BuildBeaconInstructions(beaconInstructions).
 		BuildShardID(shardBestState.ShardID).
 		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildShardHeight(shardBestState.ShardHeight).
 		Build()
 
 	committeeChange, err := shardBestState.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
@@ -229,10 +233,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks)
 	if err != nil {
 		return nil, err
-	}
-	if newShardBestState.BeaconHeight >= 19 {
-		committees, _ := incognitokey.CommitteeKeyListToString(newShardBestState.shardCommitteeEngine.GetShardCommittee())
-		Logger.log.Info("[swap-v2] committees:", committees)
 	}
 	shardBestState.shardCommitteeEngine.AbortUncommittedShardState()
 	//============Build Header=============
