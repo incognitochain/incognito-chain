@@ -1,7 +1,10 @@
 package rpcserver
 
 import (
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"encoding/json"
+	"errors"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
@@ -10,14 +13,50 @@ import (
 // setMultiValKeyLimit = "setmultivalkeylimit"
 
 func (httpServer *HttpServer) handleGetMultiValKeyState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.ConsensusEngine, *httpServer.config.ChainParams, httpServer.config.Server.IsEnableMining())
+	states := httpServer.config.ConsensusEngine.GetAllValidatorKeyState()
+	result, err := json.Marshal(states)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
 	return result, nil
 }
 func (httpServer *HttpServer) handleAddMultiValKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.ConsensusEngine, *httpServer.config.ChainParams, httpServer.config.Server.IsEnableMining())
-	return result, nil
+	var key string
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) > 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
+	}
+	if paramsArray[0] != nil {
+		strParam, ok := paramsArray[0].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
+		}
+		key = strParam
+	}
+	err := httpServer.config.ConsensusEngine.AddValidatorKey(key)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return "ok", nil
 }
 func (httpServer *HttpServer) handleSetMultiValKeyLimit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.ConsensusEngine, *httpServer.config.ChainParams, httpServer.config.Server.IsEnableMining())
-	return result, nil
+	var limit int
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) > 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
+	}
+	if paramsArray[0] != nil {
+		intParam, ok := paramsArray[0].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("limit param is invalid"))
+		}
+		limit = int(intParam)
+	}
+
+	err := httpServer.config.ConsensusEngine.SetValidatorKeyLimit(limit)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return "ok", nil
 }
