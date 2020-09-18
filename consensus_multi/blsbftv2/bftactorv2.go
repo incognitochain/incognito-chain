@@ -59,7 +59,7 @@ func (e BLSBFT_V2) IsStarted() bool {
 
 type ProposeBlockInfo struct {
 	block      common.BlockInterface
-	votes      map[string]BFTVote //pk->BFTVote
+	votes      map[string]*BFTVote //pk->BFTVote
 	isValid    bool
 	hasNewVote bool
 }
@@ -123,7 +123,7 @@ func (e *BLSBFT_V2) Start() error {
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					e.receiveBlockByHash[blkHash] = &ProposeBlockInfo{
 						block:      block,
-						votes:      make(map[string]BFTVote),
+						votes:      make(map[string]*BFTVote),
 						hasNewVote: false,
 					}
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
@@ -147,17 +147,17 @@ func (e *BLSBFT_V2) Start() error {
 				voteMsg.isValid = 0
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
-						b.votes[voteMsg.Validator] = voteMsg // store it
+						b.votes[voteMsg.Validator] = &voteMsg // store it
 						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 						b.hasNewVote = true
 					}
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = &ProposeBlockInfo{
-						votes:      make(map[string]BFTVote),
+						votes:      make(map[string]*BFTVote),
 						hasNewVote: true,
 					}
 					if _, ok := e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator]; !ok {
-						e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = voteMsg
+						e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
 						e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 					}
 				}
@@ -311,7 +311,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 
 	validVote := 0
 	errVote := 0
-	for _, vote := range v.votes {
+	for id, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.isValid == 0 {
 			for _, c := range view.GetCommittee() {
@@ -328,10 +328,10 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
 				panic(1)
-				vote.isValid = -1
+				v.votes[id].isValid = -1
 				errVote++
 			} else {
-				vote.isValid = 1
+				v.votes[id].isValid = 1
 				validVote++
 			}
 		}
