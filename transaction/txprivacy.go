@@ -468,11 +468,10 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
-	fmt.Printf("BUGLOG2 ========BEGIN VALIDATE NORMAL TRANSACTION TXHASH: %v=========\n", tx.Hash().String())
-	fmt.Println("BUGLOG2 boolParams", boolParams)
+	//fmt.Println("BUGLOG2 ValidateTransaction boolParams", boolParams)
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
-	if tx.GetType() == common.TxRewardType {
+	if tx.IsSalaryTx() {
 		return tx.ValidateTxSalary(transactionStateDB)
 	}
 
@@ -579,8 +578,6 @@ func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB
 	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
 	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
-
-	fmt.Printf("BUGLOG2 ========FINISH VALIDATE NORMAL TRANSACTION TXHASH: %v=========\n", tx.Hash().String())
 
 	return true, nil
 }

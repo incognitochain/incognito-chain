@@ -500,6 +500,9 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	if isSalaryTx {
 		return NewMempoolTxError(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 	}
+	if tx.GetType() == common.TxReturnStakingType{
+		return NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", txHash.String()))
+	}
 	// Condition 4: check fee PRV of tx
 	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
 	if !validFee {
