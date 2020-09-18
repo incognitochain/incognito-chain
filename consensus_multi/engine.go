@@ -41,6 +41,13 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 	return s.validators
 }
 
+func (s *Engine) GetOneValidator() *consensus.Validator {
+	if len(s.validators) > 0 {
+		return s.validators[0]
+	}
+	return nil
+}
+
 func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
 	chainValidator := make(map[int]*consensus.Validator)
 	if len(s.validators) > 0 {

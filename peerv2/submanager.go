@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/consensus"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,6 +16,7 @@ import (
 )
 
 type ConsensusData interface {
+	GetOneValidator() *consensus.Validator
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 }
 
@@ -117,8 +119,14 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	// Registering
 
 	if len(newRole) == 0 {
+		nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
+		validator := sub.consensusData.GetOneValidator()
+		if validator != nil {
+			nodePK = validator.MiningKey.GetPublicKeyBase58()
+		}
+
 		newTopics, _, err = sub.registerToProxy(
-			"",
+			nodePK,
 			"",
 			"",
 			shardIDs,
