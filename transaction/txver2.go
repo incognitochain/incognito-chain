@@ -190,9 +190,14 @@ func (tx *TxVersion2) Init(paramsInterface interface{}) error {
 	if check, err := tx.isNonPrivacyNonInput(params); check {
 		return err
 	}
-
-	if err := tx.proveCA(params); err != nil {
-		return err
+	if params.hasPrivacy{
+		if err := tx.proveCA(params); err != nil {
+			return err
+		}
+	}else{
+		if err := tx.prove(params); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -448,10 +453,16 @@ func (tx *TxVersion2) verifySig(transactionStateDB *statedb.StateDB, shardID byt
 
 func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var err error
+	var valid bool
 	if tokenID, err = parseTokenID(tokenID); err != nil {
 		return false, err
 	}
-	if valid, err := tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction); !valid {
+	if hasPrivacy{
+		valid, err = tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction)
+	}else{
+		valid, err = tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction)
+	}
+	if !valid {
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)

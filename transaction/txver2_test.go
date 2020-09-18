@@ -69,24 +69,23 @@ var (
 	dummyPrivateKeys []*key.PrivateKey
 	keySets []*incognitokey.KeySet
 	paymentInfo []*key.PaymentInfo
+	activeLogger common.Logger
+	inactiveLogger common.Logger
 )
 
 var _ = func() (_ struct{}) {
 // initialize a `test` db in the OS's tempdir
 // and with it, a db access wrapper that reads/writes our transactions
 	fmt.Println("This runs before init()!")
-	// numOfInputs = RandInt() % (maxInputs - minInputs + 1) + minInputs
-	// numOfOutputs = RandInt() % (maxInputs - minInputs + 1) + minInputs
-	// fmt.Printf("\n------------------TxVersion2 Verify Benchmark\n")
-	// fmt.Printf("Number of transactions : %d\n", 1)
-	// fmt.Printf("Number of inputs       : %d\n", numOfInputs)
-	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
+	testLogFile, err := os.OpenFile("test-log.txt",os.O_RDWR|os.O_CREATE, 0755)
+
+	inactiveLogger = common.NewBackend(nil).Logger("test", true)
+	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
+	activeLogger.SetLevel(common.LevelDebug)
 	privacy.LoggerV1.Init(common.NewBackend(nil).Logger("test", true))
 	privacy.LoggerV2.Init(common.NewBackend(nil).Logger("test", true))
-	// fmt.Println("And then")
-	// fmt.Println(privacy.LoggerV2)
-	// fmt.Println(privacy_v2.Logger)
-	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	// can switch between the 2 loggers to mute logs as one wishes
+	Logger.Init(activeLogger)
 	bulletproofs.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
 	if err != nil {
@@ -280,8 +279,8 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
 		pastCoins := make([]coin.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 		for i, _ := range pastCoins {
-			// tempCoin,err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
-			tempCoin, _, err := createUniqueOTACoinCA(paymentInfo[i%len(dummyPrivateKeys)], &common.PRVCoinID, dummyDB)
+			tempCoin,err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
+			// tempCoin, _, err := createUniqueOTACoinCA(paymentInfo[i%len(dummyPrivateKeys)], &common.PRVCoinID, dummyDB)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, false, tempCoin.IsEncrypted())
 
@@ -296,13 +295,13 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// since the function `tx.Init` takes output's paymentinfo and creates outputCoins inside of it, we only create the paymentinfo here
 		paymentInfoOut := make([]*key.PaymentInfo, len(dummyPrivateKeys))
 		for i, _ := range dummyPrivateKeys {
-			paymentInfoOut[i] = key.InitPaymentInfo(keySets[i].PaymentAddress,uint64(4000*numOfInputs),[]byte("test out"))
+			paymentInfoOut[i] = key.InitPaymentInfo(keySets[i].PaymentAddress,uint64(3000*numOfInputs),[]byte("test out"))
 			// fmt.Println(paymentInfo[i])
 		}
 
 		// use the db's interface to write our simulated pastCoins to the database
 		// we do need to re-format the data into bytes first
-		forceSaveCoins(dummyDB, pastCoins, 0, common.ConfidentialAssetID, t)
+		forceSaveCoins(dummyDB, pastCoins, 0, common.PRVCoinID, t)
 
 
 		// now we take some of those stored coins to use as TX input
@@ -322,7 +321,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 
 		initializingParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
 			paymentInfoOut,inputCoins,
-			sumIn-sumOut,true,
+			sumIn-sumOut,false,
 			dummyDB,
 			&common.PRVCoinID,
 			nil,
@@ -347,12 +346,16 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
 		// isValid,err = tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
-		isValid,err = tx.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
+		isValid,err = tx.ValidateTxByItself(false, dummyDB, nil, nil, shardID, true, nil, nil)
 		if err!=nil{
 			panic(err)
 		}
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
+		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		if err!=nil{
+			panic(err)
+		}
 
 		// first, test the json marshaller
 		testTxV2JsonMarshaler(tx, 2, dummyDB, t)
@@ -592,7 +595,7 @@ func testTxV2JsonMarshaler(tx *TxVersion2, count int, db *statedb.StateDB, t *te
 		if !isSane{
 			continue
 		}
-		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+		isSane, _ = txSpecific.ValidateTxByItself(false, db, nil, nil, shardID, false, nil, nil)
 		if !isSane{
 			continue
 		}
