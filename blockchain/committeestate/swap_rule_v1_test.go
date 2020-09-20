@@ -2,7 +2,6 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"

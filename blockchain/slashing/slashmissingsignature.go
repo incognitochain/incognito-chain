@@ -93,6 +93,10 @@ func NewSignatureCounterWithValue(missingSignature map[string]uint, rule []Penal
 	return &SignatureCounter{missingSignature: missingSignature, penalties: rule}
 }
 
+func NewSignatureCounterWithPenalties(penalties []Penalty) *SignatureCounter {
+	return &SignatureCounter{penalties: penalties}
+}
+
 func (s *SignatureCounter) AddMissingSignature(data string, committees []incognitokey.CommitteePublicKey) error {
 	validationData, err := blsbft.DecodeValidationData(data)
 	if err != nil {
