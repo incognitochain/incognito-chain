@@ -160,6 +160,11 @@ func (engine *BeaconCommitteeEngineV2) Clone() BeaconCommitteeEngine {
 	return res
 }
 
+//Version :
+func (engine BeaconCommitteeEngineV2) Version() uint {
+	return SLASHING_VERSION
+}
+
 //GetBeaconHeight :
 func (engine BeaconCommitteeEngineV2) GetBeaconHeight() uint64 {
 	return engine.beaconHeight
@@ -488,7 +493,7 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 			env.MaxCommitteeSize,
 			engine.finalBeaconCommitteeStateV2.numberOfRound,
 			instruction.SWAP_BY_END_EPOCH,
-			latestHeight+1,
+			latestHeight+4,
 			env.NumberOfFixedShardBlockValidators,
 		)
 		if err != nil {
@@ -728,9 +733,23 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 	}
 
 	for _, index := range backToSubstitutesIndex {
-		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], outPublicKeyStructs[index])
-		newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], outPublicKeyStructs[index])
-		b.numberOfRound[outPublicKeys[index]]++
+		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKeys[index])
+		if err != nil {
+			return newCommitteeChange, err
+		}
+		if !has {
+			return newCommitteeChange, errors.Errorf("Can not found info of this public key %v", outPublicKeys[index])
+		}
+		if stakerInfo.AutoStaking() {
+			b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], outPublicKeyStructs[index])
+			newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], outPublicKeyStructs[index])
+			b.numberOfRound[outPublicKeys[index]]++
+		} else {
+			delete(b.rewardReceiver, outPublicKeyStructs[index].GetIncKeyBase58())
+			delete(b.autoStake, outPublicKeys[index])
+			delete(b.numberOfRound, outPublicKeys[index])
+			delete(b.stakingTx, outPublicKeys[index])
+		}
 	}
 
 	for _, index := range swappedOutSubstitutesIndex {

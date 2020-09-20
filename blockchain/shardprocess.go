@@ -90,12 +90,6 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 		}
 	}
 
-	if beaconHeight <= shardBestState.BeaconHeight {
-		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
-			beaconHeight, shardBestState.BeaconHeight)
-		return errors.New("Waiting For Beacon Produce Block")
-	}
-
 	//========Verify shardBlock only
 	if err := blockchain.verifyPreProcessingShardBlock(shardBestState, shardBlock, beaconBlocks, shardID, true); err != nil {
 		return err
@@ -162,12 +156,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		if v.GetHeight() > beaconHeight {
 			beaconHeight = v.GetHeight()
 		}
-	}
-
-	if beaconHeight <= curView.BeaconHeight {
-		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
-			beaconHeight, curView.BeaconHeight)
-		return errors.New("Waiting For Beacon Produce Block")
 	}
 
 	if shouldValidate {

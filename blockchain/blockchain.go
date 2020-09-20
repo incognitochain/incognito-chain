@@ -515,7 +515,9 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
 		if v.BestBlock.Header.BeaconHeight >= blockchain.config.ChainParams.UpgradeCommitteeEngineV2Height {
-			shardCommitteeEngine = InitShardCommitteeEngineV2(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+			shardCommitteeEngine = InitShardCommitteeEngineV2(
+				v.consensusStateDB, v.ShardHeight, v.ShardID,
+				v.BestBlockHash, v.BeaconHeight, v.Epoch, blockchain)
 		} else {
 			shardCommitteeEngine = InitShardCommitteeEngineV1(v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}

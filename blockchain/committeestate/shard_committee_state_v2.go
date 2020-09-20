@@ -21,7 +21,8 @@ type ShardCommitteeStateHashV2 struct {
 type ShardCommitteeStateV2 struct {
 	shardCommittee []incognitokey.CommitteePublicKey
 	//TODO: @hung remove shard substitute
-	shardSubstitute []incognitokey.CommitteePublicKey
+	swapShardInstruction *instruction.SwapShardInstruction
+	shardSubstitute      []incognitokey.CommitteePublicKey
 
 	mu *sync.RWMutex
 }
@@ -45,11 +46,14 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 
 //NewShardCommitteeStateV2WithValue is constructor for ShardCommitteeStateV2 with value
 //Output: pointer of ShardCommitteeStateV2 struct with value
-func NewShardCommitteeStateV2WithValue(shardCommittee, shardSubstitute []incognitokey.CommitteePublicKey) *ShardCommitteeStateV2 {
+func NewShardCommitteeStateV2WithValue(
+	shardCommittee, shardSubstitute []incognitokey.CommitteePublicKey,
+	swapShardInstruction *instruction.SwapShardInstruction) *ShardCommitteeStateV2 {
 	return &ShardCommitteeStateV2{
-		shardCommittee:  shardCommittee,
-		shardSubstitute: shardSubstitute,
-		mu:              new(sync.RWMutex),
+		shardCommittee:       shardCommittee,
+		shardSubstitute:      shardSubstitute,
+		swapShardInstruction: swapShardInstruction,
+		mu:                   new(sync.RWMutex),
 	}
 }
 
@@ -84,6 +88,11 @@ func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 func (s *ShardCommitteeStateV2) reset() {
 	s.shardCommittee = make([]incognitokey.CommitteePublicKey, 0)
 	s.shardSubstitute = make([]incognitokey.CommitteePublicKey, 0)
+}
+
+//Version ...
+func (engine *ShardCommitteeEngineV2) Version() uint {
+	return SLASHING_VERSION
 }
 
 //GetShardCommittee get shard committees
@@ -251,6 +260,7 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
+	var err error
 	for _, inst := range env.BeaconInstructions() {
 		switch inst[0] {
 		case instruction.SWAP_SHARD_ACTION:
@@ -260,18 +270,18 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
-			Logger.log.Info("[swap-v2] env.ShardHeight():", env.ShardHeight())
-			Logger.log.Info("[swap-v2] swapShardInstruction.Height:", swapShardInstruction.Height)
-			if env.ShardHeight() > swapShardInstruction.Height {
-				Logger.log.
-					Errorf("[swap-v2] SKIP Swap Shard Committees [env.ShardHeight() > swapShardInstruction.Height] env.ShardHeight() %+v, swapShardInstruction.Height %+v",
-						env.ShardHeight(), swapShardInstruction.Height)
-				continue
-			}
-			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
+			s.swapShardInstruction = new(instruction.SwapShardInstruction)
+			*s.swapShardInstruction = *swapShardInstruction
+		}
+	}
+
+	if s.swapShardInstruction != nil {
+		if env.ShardHeight() == s.swapShardInstruction.Height {
+			newCommitteeChange, err = s.processSwapShardInstruction(s.swapShardInstruction, env, newCommitteeChange)
 			if err != nil {
 				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+			s.swapShardInstruction = nil
 		}
 	}
 

@@ -697,20 +697,27 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 
 	//Recover swap shard instructions
 	swapShardInstructions := make(map[byte]*instruction.SwapShardInstruction)
-	if (beaconBestState.BeaconHeight+1)%params.Epoch == 0 {
+	if (params.Epoch-(beaconBestState.BeaconHeight%params.Epoch)) <= 4 &&
+		(params.Epoch-(beaconBestState.BeaconHeight%params.Epoch)) > 0 {
 		//TODO: [WARNING] For release Beacon need to check this when fork
-		instructions := beaconBestState.GetBlock().GetInstructions()
-		for _, inst := range instructions {
-			switch inst[0] {
-			case instruction.SWAP_SHARD_ACTION:
-				swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
-				if err != nil {
-					panic("Swap Shard Instruction is not valid format")
+		Logger.log.Info("[swap-v2] params.Epoch:", params.Epoch)
+		Logger.log.Info("[swap-v2] beaconBestState.Epoch:", beaconBestState.Epoch)
+		beaconBlocks, err := bc.GetBeaconBlockByHeight((params.Epoch * beaconBestState.Epoch) - 4)
+		if err != nil {
+			panic(err)
+		}
+		for _, beaconBlock := range beaconBlocks {
+			for _, inst := range beaconBlock.GetInstructions() {
+				switch inst[0] {
+				case instruction.SWAP_SHARD_ACTION:
+					swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+					if err != nil {
+						panic(err)
+					}
+					swapShardInstructions[byte(swapShardInstruction.ChainID)] = swapShardInstruction
 				}
-				swapShardInstructions[byte(swapShardInstruction.ChainID)] = swapShardInstruction
 			}
 		}
-
 	}
 
 	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(

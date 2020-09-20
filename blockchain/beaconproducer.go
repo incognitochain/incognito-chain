@@ -117,10 +117,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	tempShardState, shardInstruction, bridgeInstructions, acceptedRewardInstructions := blockchain.GetShardState(
 		beaconBestState, rewardForCustodianByEpoch, portalParams)
 
-	for _, v := range tempShardState[0] {
-		Logger.log.Info("[swap-v2] tempShardState.height", v.Height)
-	}
-
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction,
@@ -540,7 +536,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	}
 	// Generate swap shard instruction at (block height + 1) %chainParamEpoch == 0
 	// Wait for block height %chainParamEpoch == 0 for Beacon normal swap
-	if (newBeaconHeight+1)%chainParamEpoch == 0 {
+	if (newBeaconHeight+4)%chainParamEpoch == 0 {
 		BeaconCommittee := beaconBestState.GetBeaconCommittee()
 		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
 		if err != nil {

@@ -8,6 +8,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/instruction"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -415,12 +417,38 @@ func InitShardCommitteeEngineV2(
 	consensusStateDB *statedb.StateDB,
 	shardHeight uint64,
 	shardID byte,
-	shardHash common.Hash) committeestate.ShardCommitteeEngine {
+	shardHash common.Hash,
+	beaconHeight uint64,
+	epoch uint64,
+	bc *BlockChain) committeestate.ShardCommitteeEngine {
 
 	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
 	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
 
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, shardPendingValidators)
+	var swapShardInstruction *instruction.SwapShardInstruction
+	epochConfig := bc.config.ChainParams.Epoch
+
+	if (epoch*epochConfig)-beaconHeight <= 4 && (epoch*epochConfig)-beaconHeight > 0 {
+		beaconBlocks, err := bc.GetBeaconBlockByHeight((epoch * epochConfig) - 4)
+		if err != nil {
+			panic(err)
+		}
+		for _, beaconBlock := range beaconBlocks {
+			for _, inst := range beaconBlock.GetInstructions() {
+				switch inst[0] {
+				case instruction.SWAP_SHARD_ACTION:
+					tempSwapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+					if err != nil {
+						panic(err)
+					}
+					swapShardInstruction = new(instruction.SwapShardInstruction)
+					*swapShardInstruction = *tempSwapShardInstruction
+				}
+			}
+		}
+	}
+
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, shardPendingValidators, swapShardInstruction)
 	shardCommitteeEngine := committeestate.NewShardCommitteeEngineV2(shardHeight, shardHash, shardID, shardCommitteeState)
 
 	return shardCommitteeEngine

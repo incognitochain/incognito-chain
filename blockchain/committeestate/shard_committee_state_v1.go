@@ -80,6 +80,11 @@ func (committeeState ShardCommitteeStateV1) clone(newCommitteeState *ShardCommit
 	}
 }
 
+//Version get version of engine
+func (engine *ShardCommitteeEngineV1) Version() uint {
+	return NORMAL_VERSION
+}
+
 //reset : reset ShardCommitteeStateV1 to default value
 func (committeeState *ShardCommitteeStateV1) reset() {
 	committeeState.shardCommittee = make([]incognitokey.CommitteePublicKey, 0)

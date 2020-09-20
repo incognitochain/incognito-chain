@@ -148,6 +148,11 @@ func (engine *BeaconCommitteeEngineV1) Clone() BeaconCommitteeEngine {
 	return res
 }
 
+//Version :
+func (engine BeaconCommitteeEngineV1) Version() uint {
+	return NORMAL_VERSION
+}
+
 //GetBeaconHeight :
 func (engine BeaconCommitteeEngineV1) GetBeaconHeight() uint64 {
 	return engine.beaconHeight

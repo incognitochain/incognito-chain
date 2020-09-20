@@ -92,13 +92,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
-	Logger.log.Info("[swap-v2] beaconHeight 0:", beaconHeight)
 	if beaconHeight <= shardBestState.BeaconHeight {
 		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
 			beaconHeight, shardBestState.BeaconHeight)
 		return nil, errors.New("Waiting For Beacon Produce Block")
 	}
-	Logger.log.Info("[swap-v2] beaconHeight 1:", beaconHeight)
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
 	if err != nil {
@@ -116,22 +114,29 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, err
 	}
+
 	epoch := beaconBlock.Header.Epoch
-	if epoch-shardBestState.Epoch >= 1 {
-		beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
-		newBeaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
-		if err != nil {
-			return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
+		if epoch-shardBestState.Epoch >= 1 {
+			//TODO: @tin check here
+			beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
+			newBeaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
+			if err != nil {
+				return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
+			}
+			copy(beaconHash[:], newBeaconHash.GetBytes())
+			epoch = shardBestState.Epoch + 1
 		}
-		copy(beaconHash[:], newBeaconHash.GetBytes())
-		epoch = shardBestState.Epoch + 1
 	}
+
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
+
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
+
 	// this  beacon height is already seen by shard best state
 	if beaconHeight == shardBestState.BeaconHeight {
 		isOldBeaconHeight = true
@@ -290,6 +295,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
 	newShardBlock.Header.Timestamp = start.Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
+
 	return newShardBlock, nil
 }
 
@@ -515,6 +521,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				BuildMaxShardCommitteeSize(maxShardCommitteeSize).
 				BuildMinShardCommitteeSize(minShardCommitteeSize).
 				BuildShardID(shardID).
+				BuildShardHeight(view.ShardHeight).
 				BuildOffset(blockchain.config.ChainParams.Offset).
 				BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
 				Build()
