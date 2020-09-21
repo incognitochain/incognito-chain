@@ -111,6 +111,7 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
 		assert.Equal(t, nil, err)
 
+		Logger.Init(inactiveLogger)
 		testTxTokenV2JsonMarshaler(tx, 25, dummyDB, t)
 		// someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, t)
 		// for _,theInvalidTx := range someInvalidTxs{
@@ -163,12 +164,14 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		assert.NotEqual(t, nil, err)
 		// add the coin. Tx creation should succeed  now
 		forceSaveCoins(dummyDB, tokenOutputs, 0, common.ConfidentialAssetID, t)
+		Logger.Init(activeLogger)
 		err = tx2.Init(paramToCreateTx2)
 		assert.Equal(t, nil, err)
 
 		msgCipherText = []byte("doing a transfer")
 		assert.Equal(t, true, bytes.Equal(msgCipherText, tx2.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()[0].GetInfo()))
 
+		Logger.Log.Warnf("Token Transfer")
 		isValidSanity, err = tx2.ValidateSanityData(nil, nil, nil, 0)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
@@ -199,13 +202,12 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		// the negative tests below are not compatible with confidential asset TX
 		testTxTokenV2DeletedProof(tx2, dummyDB, t)
 		testTxTokenV2InvalidFee(tx2, dummyDB, t)
-		fmt.Println("END TEST")
-		return
-		testTxTokenV2OneFakeOutput(tx2, dummyDB, paramToCreateTx2, t)
-		testTxTokenV2OneDoubleSpentInput(tx2, dummyDB, feeOutputBytesHacked, tokenOutputBytesHacked, t)
+		testTxTokenV2OneFakeOutput(tx2, dummyDB, paramToCreateTx2, *tx.GetTokenID(), t)
+		testTxTokenV2OneDoubleSpentInput(tx2, dummyDB, feeOutputBytesExtracted, tokenOutputBytesExtracted, tx.GetTokenID(), t)
 
-		testTxTokenV2Salary(tx.GetTokenID(), dummyDB, t)
-		testTxTokenV2TransferPRV(dummyDB, t)
+		// testTxTokenV2Salary(tx.GetTokenID(), dummyDB, t)
+		// this negative test below is deprecated by the CA spec
+		// testTxTokenV2TransferPRV(dummyDB, t)
 	}
 }
 
