@@ -32,7 +32,6 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 
 	privKeyMlsag := make([]*operation.Scalar, len(inputCoins)+2)
 	sumInputAssetTagBlinders := new(operation.Scalar).FromUint64(0)
-	// TODO : change to lcm div
 	numOfInputs := new(operation.Scalar).FromUint64(uint64(len(inputCoins)))
 	numOfOutputs := new(operation.Scalar).FromUint64(uint64(len(outputCoins)))
 	mySkBytes := (*senderSK)[:]
@@ -56,7 +55,7 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 		rehashed := operation.HashToPoint(tokenID[:])
 		isUnblinded := operation.IsPointEqual(rehashed, inputCoin_specific.GetAssetTag())
 		if isUnblinded{
-			Logger.Log.Warnf("Signing TX : processing an unblinded input coin")
+			Logger.Log.Infof("Signing TX : processing an unblinded input coin")
 		}
 
 		_, indexForShard, err := inputCoin_specific.GetTxRandomDetail()
@@ -108,6 +107,10 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 
 	// 2 final elements in `private keys` for MLSAG
 	assetSum := new(operation.Scalar).Sub(sumInputAssetTagBlinders, sumOutputAssetTagBlinders)
+	temp1 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], assetSum)
+	temp2 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], sumRand)
+
+	Logger.Log.Debugf("Last 2 private keys will correspond to points %s and %s\n", temp1.MarshalText(), temp2.MarshalText())
 
 	privKeyMlsag[len(inputCoins)] 	= assetSum
 	privKeyMlsag[len(inputCoins)+1]	= sumRand
@@ -180,6 +183,9 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 		assetSum := new(operation.Point).Sub(sumInputAssetTags, sumOutputAssetTags)
 		row = append(row, assetSum)
 		row = append(row, sumInputs)
+		if i==pi{
+			Logger.Log.Debugf("Last 2 columns in ring are %s and %s\n", assetSum.MarshalText(), sumInputs.MarshalText())
+		}
 		
 		ring[i] = row
 		indexes[i] = rowIndexes
@@ -378,6 +384,7 @@ func (tx *TxVersion2) verifySigCA(transactionStateDB *statedb.StateDB, shardID b
 func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, *operation.Point, error) {
 	for i:=coin.MAX_TRIES_OTA;i>0;i--{
 		c, sharedSecret, err := coin.GenerateOTACoinAndSharedSecret(paymentInfo, tokenID)
+		Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s\n", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
 		if err != nil {
 			Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
 			return nil, nil, err

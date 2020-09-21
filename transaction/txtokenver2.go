@@ -162,7 +162,7 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 				params.tokenParams.Receiver,
 				params.tokenParams.TokenInput,
 				params.tokenParams.Fee,
-				params.hasPrivacyToken,
+				true,
 				params.transactionStateDB,
 				propertyID,
 				nil,
@@ -518,7 +518,7 @@ func (txToken TxTokenVersion2) GetTxActualSize() uint64 {
 		sizeTx += 8 // Amount
 	}
 	meta := txToken.GetMetadata()
-	fmt.Println(meta)
+	// fmt.Println(meta)
 	if meta != nil {
 		sizeTx += meta.CalculateSize()
 	}
