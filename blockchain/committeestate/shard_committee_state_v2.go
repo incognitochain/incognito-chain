@@ -21,8 +21,7 @@ type ShardCommitteeStateHashV2 struct {
 type ShardCommitteeStateV2 struct {
 	shardCommittee []incognitokey.CommitteePublicKey
 	//TODO: @hung remove shard substitute
-	swapShardInstruction *instruction.SwapShardInstruction
-	shardSubstitute      []incognitokey.CommitteePublicKey
+	shardSubstitute []incognitokey.CommitteePublicKey
 
 	mu *sync.RWMutex
 }
@@ -48,12 +47,11 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 //Output: pointer of ShardCommitteeStateV2 struct with value
 func NewShardCommitteeStateV2WithValue(
 	shardCommittee, shardSubstitute []incognitokey.CommitteePublicKey,
-	swapShardInstruction *instruction.SwapShardInstruction) *ShardCommitteeStateV2 {
+) *ShardCommitteeStateV2 {
 	return &ShardCommitteeStateV2{
-		shardCommittee:       shardCommittee,
-		shardSubstitute:      shardSubstitute,
-		swapShardInstruction: swapShardInstruction,
-		mu:                   new(sync.RWMutex),
+		shardCommittee:  shardCommittee,
+		shardSubstitute: shardSubstitute,
+		mu:              new(sync.RWMutex),
 	}
 }
 
@@ -260,31 +258,6 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
-	var err error
-	for _, inst := range env.BeaconInstructions() {
-		switch inst[0] {
-		case instruction.SWAP_SHARD_ACTION:
-			// Process swap shard action here
-			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
-				continue
-			}
-			s.swapShardInstruction = new(instruction.SwapShardInstruction)
-			*s.swapShardInstruction = *swapShardInstruction
-		}
-	}
-
-	if s.swapShardInstruction != nil {
-		if env.ShardHeight() == s.swapShardInstruction.Height {
-			newCommitteeChange, err = s.processSwapShardInstruction(s.swapShardInstruction, env, newCommitteeChange)
-			if err != nil {
-				return newCommitteeChange, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			s.swapShardInstruction = nil
-		}
-	}
-
 	return newCommitteeChange, nil
 }
 

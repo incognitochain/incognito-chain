@@ -14,7 +14,6 @@ func TestSwapShardInstruction_ToString(t *testing.T) {
 		OutPublicKeys       []string
 		OutPublicKeyStructs []incognitokey.CommitteePublicKey
 		ChainID             int
-		Height              uint64
 		Type                int
 	}
 	tests := []struct {
@@ -32,7 +31,6 @@ func TestSwapShardInstruction_ToString(t *testing.T) {
 				OutPublicKeys:       tt.fields.OutPublicKeys,
 				OutPublicKeyStructs: tt.fields.OutPublicKeyStructs,
 				ChainID:             tt.fields.ChainID,
-				Height:              tt.fields.Height,
 				Type:                tt.fields.Type,
 			}
 			if got := s.ToString(); !reflect.DeepEqual(got, tt.want) {
@@ -72,7 +70,6 @@ func TestSwapShardInstruction_SetInPublicKeys(t *testing.T) {
 				OutPublicKeys:       tt.fields.OutPublicKeys,
 				OutPublicKeyStructs: tt.fields.OutPublicKeyStructs,
 				ChainID:             tt.fields.ChainID,
-				Height:              tt.fields.Height,
 				Type:                tt.fields.Type,
 			}
 			got, err := s.SetInPublicKeys(tt.args.inPublicKeys)
@@ -117,7 +114,6 @@ func TestSwapShardInstruction_SetOutPublicKeys(t *testing.T) {
 				OutPublicKeys:       tt.fields.OutPublicKeys,
 				OutPublicKeyStructs: tt.fields.OutPublicKeyStructs,
 				ChainID:             tt.fields.ChainID,
-				Height:              tt.fields.Height,
 				Type:                tt.fields.Type,
 			}
 			got, err := s.SetOutPublicKeys(tt.args.outPublicKeys)

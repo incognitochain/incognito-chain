@@ -20,7 +20,6 @@ func createSwapShardInstructionV2(
 	maxCommitteeSize int,
 	numberOfRound map[string]int,
 	typeIns int,
-	height uint64,
 	numberOfFixedValidators uint64,
 ) (*instruction.SwapShardInstruction, []string, error) {
 	_, newSubstitutes, swappedOutCommittees, swapInCommittees, err := swapCommitteesV2(
@@ -38,7 +37,6 @@ func createSwapShardInstructionV2(
 		swappedOutCommittees,
 		int(shardID),
 		typeIns,
-		height,
 	)
 
 	return swapShardInstruction, newSubstitutes, nil

@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/instruction"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -695,31 +693,6 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		)
 	}
 
-	//Recover swap shard instructions
-	swapShardInstructions := make(map[byte]*instruction.SwapShardInstruction)
-	if (params.Epoch-(beaconBestState.BeaconHeight%params.Epoch)) <= 4 &&
-		(params.Epoch-(beaconBestState.BeaconHeight%params.Epoch)) > 0 {
-		//TODO: [WARNING] For release Beacon need to check this when fork
-		Logger.log.Info("[swap-v2] params.Epoch:", params.Epoch)
-		Logger.log.Info("[swap-v2] beaconBestState.Epoch:", beaconBestState.Epoch)
-		beaconBlocks, err := bc.GetBeaconBlockByHeight((params.Epoch * beaconBestState.Epoch) - 4)
-		if err != nil {
-			panic(err)
-		}
-		for _, beaconBlock := range beaconBlocks {
-			for _, inst := range beaconBlock.GetInstructions() {
-				switch inst[0] {
-				case instruction.SWAP_SHARD_ACTION:
-					swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
-					if err != nil {
-						panic(err)
-					}
-					swapShardInstructions[byte(swapShardInstruction.ChainID)] = swapShardInstruction
-				}
-			}
-		}
-	}
-
 	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,
@@ -730,8 +703,8 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		rewardReceivers,
 		stakingTx,
 		numberOfRound,
-		swapShardInstructions,
 	)
+
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV2(
 		beaconBestState.BeaconHeight,
 		beaconBestState.BestBlockHash,

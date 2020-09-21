@@ -14,19 +14,17 @@ type SwapShardInstruction struct {
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
 	OutPublicKeys       []string
 	OutPublicKeyStructs []incognitokey.CommitteePublicKey
-	ChainID             int    // which shard
-	Height              uint64 // swap in which height
-	Type                int    // sub type of swap shard instruction
+	ChainID             int // which shard
+	Type                int // sub type of swap shard instruction
 }
 
 func NewSwapShardInstructionWithValue(
 	inPublicKeys, outPublicKeys []string,
-	chainID, typeIns int, height uint64) *SwapShardInstruction {
+	chainID, typeIns int) *SwapShardInstruction {
 	return &SwapShardInstruction{
 		InPublicKeys:  inPublicKeys,
 		OutPublicKeys: outPublicKeys,
 		ChainID:       chainID,
-		Height:        height,
 		Type:          typeIns,
 	}
 }
@@ -44,7 +42,6 @@ func (s *SwapShardInstruction) ToString() []string {
 	SwapShardInstructionStr = append(SwapShardInstructionStr, strings.Join(s.InPublicKeys, SPLITTER))
 	SwapShardInstructionStr = append(SwapShardInstructionStr, strings.Join(s.OutPublicKeys, SPLITTER))
 	SwapShardInstructionStr = append(SwapShardInstructionStr, fmt.Sprintf("%v", s.ChainID))
-	SwapShardInstructionStr = append(SwapShardInstructionStr, fmt.Sprintf("%v", s.Height))
 	SwapShardInstructionStr = append(SwapShardInstructionStr, fmt.Sprintf("%v", s.Type))
 	return SwapShardInstructionStr
 }
@@ -100,8 +97,7 @@ func ImportSwapShardInstructionFromString(instruction []string) *SwapShardInstru
 	}
 	swapShardInstruction, _ = swapShardInstruction.SetOutPublicKeys(outPublicKey)
 	swapShardInstruction.ChainID, _ = strconv.Atoi(instruction[3])
-	swapShardInstruction.Height, _ = strconv.ParseUint(instruction[4], 10, 64)
-	swapShardInstruction.Type, _ = strconv.Atoi(instruction[5])
+	swapShardInstruction.Type, _ = strconv.Atoi(instruction[4])
 
 	return swapShardInstruction
 }
@@ -128,11 +124,7 @@ func ValidateSwapShardInstructionSanity(instruction []string) error {
 	if err3 != nil {
 		return fmt.Errorf("invalid SwapShard chainID, %+v, %+v", err3, instruction)
 	}
-	_, err4 := strconv.ParseUint(instruction[4], 10, 64)
-	if err4 != nil {
-		return fmt.Errorf("invalid RequestShardSwap height, %+v, %+v", err4, instruction)
-	}
-	_, err5 := strconv.ParseInt(instruction[5], 10, 64)
+	_, err5 := strconv.ParseInt(instruction[4], 10, 64)
 	if err5 != nil {
 		return fmt.Errorf("invalid RequestShardSwap type, %+v, %+v", err5, instruction)
 	}

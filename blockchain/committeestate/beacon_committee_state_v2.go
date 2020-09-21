@@ -21,7 +21,6 @@ type BeaconCommitteeStateV2 struct {
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey
 	shardCommonPool []incognitokey.CommitteePublicKey
 	// TODO: @hung record already requested shard substitute/committee
-	swapShardInstructions      map[byte]*instruction.SwapShardInstruction
 	numberOfAssignedCandidates int
 
 	autoStake      map[string]bool                   // committee public key => reward receiver payment address
@@ -50,14 +49,13 @@ func NewBeaconCommitteeEngineV2(beaconHeight uint64, beaconHash common.Hash, fin
 
 func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
-		shardCommittee:        make(map[byte][]incognitokey.CommitteePublicKey),
-		shardSubstitute:       make(map[byte][]incognitokey.CommitteePublicKey),
-		autoStake:             make(map[string]bool),
-		rewardReceiver:        make(map[string]privacy.PaymentAddress),
-		stakingTx:             make(map[string]common.Hash),
-		numberOfRound:         make(map[string]int),
-		mu:                    new(sync.RWMutex),
-		swapShardInstructions: make(map[byte]*instruction.SwapShardInstruction),
+		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
+		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
+		autoStake:       make(map[string]bool),
+		rewardReceiver:  make(map[string]privacy.PaymentAddress),
+		stakingTx:       make(map[string]common.Hash),
+		numberOfRound:   make(map[string]int),
+		mu:              new(sync.RWMutex),
 	}
 }
 
@@ -71,7 +69,6 @@ func NewBeaconCommitteeStateV2WithValue(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
 	numberOfRound map[string]int,
-	swapShardInstructions map[byte]*instruction.SwapShardInstruction,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommittee:            beaconCommittee,
@@ -110,11 +107,6 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 		}
 	}
 
-	for i, v := range b.swapShardInstructions {
-		newB.swapShardInstructions[i] = new(instruction.SwapShardInstruction)
-		*newB.swapShardInstructions[i] = *v
-	}
-
 	for k, v := range b.autoStake {
 		newB.autoStake[k] = v
 	}
@@ -141,7 +133,6 @@ func (b *BeaconCommitteeStateV2) reset() {
 	b.numberOfRound = make(map[string]int)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
-	b.swapShardInstructions = make(map[byte]*instruction.SwapShardInstruction)
 }
 
 //Clone :
@@ -436,24 +427,16 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
-			delete(newB.swapShardInstructions, byte(swapShardInstruction.ChainID))
-			newB.swapShardInstructions[byte(swapShardInstruction.ChainID)] = swapShardInstruction
+			committeeChange, err = newB.
+				processSwapShardInstruction(swapShardInstruction, env, committeeChange)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 		}
 	}
 	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
 		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	if env.BeaconHeight%env.ParamEpoch == 0 {
-		for _, v := range newB.swapShardInstructions {
-			committeeChange, err = newB.
-				processSwapShardInstruction(v, env, committeeChange)
-			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			delete(newB.swapShardInstructions, byte(v.ChainID))
-		}
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -493,7 +476,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 			env.MaxCommitteeSize,
 			engine.finalBeaconCommitteeStateV2.numberOfRound,
 			instruction.SWAP_BY_END_EPOCH,
-			latestHeight+4,
 			env.NumberOfFixedShardBlockValidators,
 		)
 		if err != nil {
