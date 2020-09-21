@@ -1,1 +1,1 @@
-[Portal Spec](https://github.com/incognitochain/incognito-chain/blob/dev/master/specs/portal.md)
+[Portal Spec](https://github.com/incognitochain/incognito-chain/blob/master/specs/portal.md)
