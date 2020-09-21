@@ -77,7 +77,7 @@ var _ = func() (_ struct{}) {
 // initialize a `test` db in the OS's tempdir
 // and with it, a db access wrapper that reads/writes our transactions
 	fmt.Println("This runs before init()!")
-	testLogFile, err := os.OpenFile("test-log.txt",os.O_RDWR|os.O_CREATE, 0755)
+	testLogFile, err := os.OpenFile("test-log.txt",os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755)
 
 	inactiveLogger = common.NewBackend(nil).Logger("test", true)
 	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
