@@ -637,6 +637,7 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, par
 	var outputCoins []*coin.CoinV2
 	// pre-sign, we need unconcealed outputs
 	// so receiver privatekeys here are for simulation
+	var sharedSecrets []*operation.Point
 	for ind, c := range outputCoinsGeneric {
 		var dk *incognitokey.KeySet
 		if len(decryptingKeys) != len(outputCoinsGeneric) {
@@ -644,9 +645,16 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, par
 		} else {
 			dk = decryptingKeys[ind]
 		}
+		mySkBytes := dk.PrivateKey[:]
 		cv2 := &coin.CoinV2{}
 		cv2.SetBytes(c.Bytes())
 		cv2.Decrypt(dk)
+		sharedSecret, err := cv2.RecomputeSharedSecret(mySkBytes)
+		if err!=nil{
+			fmt.Println("TEST : Cannot compute shared secret")
+			panic("END")
+		}
+		sharedSecrets = append(sharedSecrets, sharedSecret)
 		// fmt.Printf("Value is %d\n",cv2.GetValue())
 		cv2.SetKeyImage(nil)
 		outputCoins = append(outputCoins, cv2)
@@ -668,7 +676,14 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, par
 		message = temp[:]
 	}
 
-	err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
+	if params.hasPrivacy{
+		Logger.Log.Warnf("Re-sign a CA transaction")
+		err = tx.signCA(inputCoins, outputCoins, sharedSecrets, params, message[:])
+	}else{
+		Logger.Log.Warnf("Re-sign a non-CA transaction")
+		err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
+	}
+
 	jsb, _ := json.MarshalIndent(tx, "", "\t")
 	_ = jsb
 	// fmt.Printf("Rehashed : %s\n => %v, %v\n", string(jsb), tx.Hash(), txTokenDataHash[:])
