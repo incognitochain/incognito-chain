@@ -93,7 +93,7 @@ type RpcServerConfig struct {
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 		GetAllValidatorKeyState() map[string]consensus.MiningState
 		AddValidatorKey(key string) error
-		SetValidatorKeyLimit(newLimit int) error
+		// SetValidatorKeyLimit(newLimit int) error
 	}
 	TxMemPool                   *mempool.TxPool
 	RPCMaxClients               int

@@ -483,7 +483,7 @@ func (serverObj *Server) NewServer(
 	})
 
 	serverObj.connManager = connManager
-	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
+	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, ValidatorsLimit: cfg.ValidatorLimit, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
 	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain, Consensus: serverObj.consensusEngine})
 
 	// Start up persistent peers.
