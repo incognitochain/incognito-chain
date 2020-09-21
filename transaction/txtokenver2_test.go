@@ -429,7 +429,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	}
 }
 
-func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, t *testing.T) (*TxTokenParams, *TokenParam) {
+func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, specifiedTokenID *common.Hash, t *testing.T) (*TxTokenParams, *TokenParam) {
 	transferAmount := uint64(69)
 	msgCipherText := []byte("doing a transfer")
 	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: transferAmount, Message: msgCipherText}}
@@ -440,20 +440,22 @@ func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateD
 	tokenCoinsToTransfer := make([]coin.PlainCoin, 0)
 	for _, c := range feeOutputs {
 		pc, _ := c.Decrypt(keySets[0])
-		// s,_ := json.Marshal(pc.(*coin.CoinV2))
 		fmt.Printf("Tx Fee : %x has received %d in PRV\n", pc.GetPublicKey().ToBytesS(), pc.GetValue())
 		prvCoinsToPayTransfer = append(prvCoinsToPayTransfer, pc)
 	}
 	for _, c := range tokenOutputs {
 		pc, err := c.Decrypt(keySets[0])
-		// s,_ := json.Marshal(pc.(*coin.CoinV2))
 		fmt.Printf("Tx Token : %x has received %d in token T1\n", pc.GetPublicKey().ToBytesS(), pc.GetValue())
+		// cv2, _ := pc.(*coin.CoinV2)
 		assert.Equal(t, nil, err)
 		tokenCoinsToTransfer = append(tokenCoinsToTransfer, pc)
 	}
-	// // token param for transfer token
+	// token param for transfer token
+	if specifiedTokenID==nil{
+		specifiedTokenID = txTokenInit.GetTokenID()
+	}
 	tokenParam2 := &TokenParam{
-		PropertyID:     txTokenInit.GetTokenID().String(),
+		PropertyID:     specifiedTokenID.String(),
 		PropertyName:   "Token 1",
 		PropertySymbol: "T1",
 		Amount:         transferAmount,
@@ -586,7 +588,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			params.tokenParams.Receiver,
 			params.tokenParams.TokenInput,
 			params.tokenParams.Fee,
-			params.hasPrivacyToken,
+			hasPrivacyForToken,
 			params.transactionStateDB,
 			propertyID,
 			nil,
@@ -598,7 +600,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			params.paymentInfo,
 			params.inputCoin,
 			params.feeNativeCoin,
-			params.hasPrivacyCoin,
+			hasPrivacyForPRV,
 			params.transactionStateDB,
 			&common.PRVCoinID,
 			params.metaData,
