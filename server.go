@@ -398,6 +398,7 @@ func (serverObj *Server) NewServer(
 	}
 
 	serverObj.memPool.Init(&mempool.Config{
+		ConsensusEngine:   serverObj.consensusEngine,
 		BlockChain:        serverObj.blockChain,
 		DataBase:          serverObj.dataBase,
 		ChainParams:       chainParams,

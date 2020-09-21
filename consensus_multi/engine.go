@@ -268,3 +268,7 @@ func (engine *Engine) AddValidatorKey(key string) error {
 // 	engine.config.Blockchain.GetBeaconChainDatabase().Put([]byte("CONSENSUSKEYLIMIT"), []byte(newLimitBytes))
 // 	return nil
 // }
+
+func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
+	return engine.BFTProcess[int(shardID)].IsStarted()
+}
