@@ -36,7 +36,7 @@ import (
 // 	return
 // }()
 var (
-	hasPrivacyForPRV   bool = true
+	hasPrivacyForPRV   bool = false
 	hasPrivacyForToken bool = true
 	shardID            byte = byte(0)
 )
@@ -138,11 +138,11 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		feeOutputs := tx.GetTxBase().GetProof().GetOutputCoins()
 		forceSaveCoins(dummyDB, feeOutputs, 0, common.PRVCoinID, t)
 
-		feeOutputBytesHacked := feeOutputs[0].Bytes()
-		tokenOutputBytesHacked := tokenOutputs[0].Bytes()
+		feeOutputBytesExtracted := feeOutputs[0].Bytes()
+		tokenOutputBytesExtracted := tokenOutputs[0].Bytes()
 
 		// tx token transfer
-		paramToCreateTx2, tokenParam2 := getParamForTxTokenTransfer(tx, dummyDB, t)
+		paramToCreateTx2, tokenParam2 := getParamForTxTokenTransfer(tx, dummyDB, nil, t)
 		_ = tokenParam2
 		tx2 := &TxTokenVersion2{}
 
@@ -177,7 +177,7 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		// before the token init tx is written into db, this should not pass
-		isValidTxItself, err = tx2.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, false, nil, nil)
+		isValidTxItself, err = tx2.ValidateTxByItself(hasPrivacyForToken, dummyDB, nil, nil, shardID, false, nil, nil)
 		assert.Equal(t, true, isValidTxItself)
 		assert.Equal(t, nil, err)
 
@@ -290,7 +290,7 @@ func testTxTokenV2InvalidFee(txv2 *TxTokenVersion2, db *statedb.StateDB, t *test
 	assert.Equal(t, true, isValidTxItself)
 }
 
-func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, params *TxTokenParams, t *testing.T) {
+func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, params *TxTokenParams, fakingTokenID common.Hash, t *testing.T) {
 	// tid,err := common.Hash{}.NewHashFromStr(common.PRVCoinID.String())
 	// txPrivacyParams := NewTxPrivacyInitParams(
 	// 	params.senderKey, params.paymentInfo, params.inputCoin, params.feeNativeCoin,
@@ -332,7 +332,8 @@ func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, para
 	assert.Equal(t, true, ok)
 	payInf := &privacy.PaymentInfo{PaymentAddress: keySets[0].PaymentAddress, Amount: uint64(69), Message: []byte("doing a transfer")}
 	// totally fresh OTA of the same amount, meant for the same PaymentAddress
-	newCoin, err := coin.NewCoinFromPaymentInfo(payInf)
+	// newCoin, err := coin.NewCoinFromPaymentInfo(payInf)
+	newCoin, _, err := createUniqueOTACoinCA(payInf, &fakingTokenID, db)
 	assert.Equal(t, nil, err)
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
 	theProofSpecific, ok := theProof.(*privacy.ProofV2)
@@ -360,27 +361,28 @@ func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, para
 
 // happens after txTransfer in test
 // we create a second transfer, then try to reuse fee input / token input
-func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.StateDB, feeOutputBytesHacked, tokenOutputBytesHacked []byte, t *testing.T) {
+func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.StateDB, feeOutputBytesExtracted, tokenOutputBytesExtracted []byte, tokenIDExtracted *common.Hash, t *testing.T) {
 	// save both fee&token outputs from previous tx
 	otaBytes := [][]byte{tokenTx.GetTxTokenData().TxNormal.GetProof().GetInputCoins()[0].GetKeyImage().ToBytesS()}
-	statedb.StoreSerialNumbers(db, *tokenTx.GetTokenID(), otaBytes, 0)
+	statedb.StoreSerialNumbers(db, common.ConfidentialAssetID, otaBytes, 0)
 	otaBytes = [][]byte{tokenTx.GetTxBase().GetProof().GetInputCoins()[0].GetKeyImage().ToBytesS()}
 	statedb.StoreSerialNumbers(db, common.PRVCoinID, otaBytes, 0)
 
 	tokenOutputs := tokenTx.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()
 	feeOutputs := tokenTx.GetTxBase().GetProof().GetOutputCoins()
 	forceSaveCoins(db, feeOutputs, 0, common.PRVCoinID, t)
-	forceSaveCoins(db, tokenOutputs, 0, *tokenTx.GetTokenID(), t)
+	forceSaveCoins(db, tokenOutputs, 0, common.ConfidentialAssetID, t)
 
 	// firstly, using the output coins to create new tx should be successful
-	pr, _ := getParamForTxTokenTransfer(tokenTx, db, t)
+	Logger.Log.Debugf("TEST : Creating double-spending tx for token %s\n", tokenIDExtracted.String())
+	pr, _ := getParamForTxTokenTransfer(tokenTx, db, tokenIDExtracted, t)
 	tx := &TxTokenVersion2{}
 	err := tx.Init(pr)
 	assert.Equal(t, nil, err)
 	isValidSanity, err := tx.ValidateSanityData(nil, nil, nil, 0)
 	assert.Equal(t, true, isValidSanity)
 	assert.Equal(t, nil, err)
-	isValidTxItself, err := tx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	isValidTxItself, err := tx.ValidateTxByItself(hasPrivacyForToken, db, nil, nil, shardID, false, nil, nil)
 	assert.Equal(t, true, isValidTxItself)
 	assert.Equal(t, nil, err)
 	err = tx.ValidateTxWithBlockChain(nil, nil, nil, 0, db)
@@ -388,7 +390,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 
 	// now we try to swap in a used input for txfee
 	doubleSpendingFeeInput := &coin.CoinV2{}
-	doubleSpendingFeeInput.SetBytes(feeOutputBytesHacked)
+	doubleSpendingFeeInput.SetBytes(feeOutputBytesExtracted)
 	pc, _ := doubleSpendingFeeInput.Decrypt(keySets[0])
 	pr.inputCoin = []coin.PlainCoin{pc}
 	tx = &TxTokenVersion2{}
@@ -406,7 +408,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 
 	// now we try to swap in a used token input
 	doubleSpendingTokenInput := &coin.CoinV2{}
-	doubleSpendingTokenInput.SetBytes(tokenOutputBytesHacked)
+	doubleSpendingTokenInput.SetBytes(tokenOutputBytesExtracted)
 	pc, _ = doubleSpendingTokenInput.Decrypt(keySets[0])
 	pr.tokenParams.TokenInput = []coin.PlainCoin{pc}
 	tx = &TxTokenVersion2{}
