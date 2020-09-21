@@ -18,6 +18,7 @@ const (
 	ErrUpdateShardCommitteeState
 	ErrGenerateShardCommitteeStateHash
 	ErrBuildIncurredInstruction
+	ErrUpdateCommitteeStateByBeacon
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -38,6 +39,8 @@ var ErrCodeMessage = map[int]struct {
 	ErrGenerateShardCommitteeStateHash: {-3002, " generate shard committee state root hash"},
 
 	ErrBuildIncurredInstruction: {-4000, "Build Incurred Instruction Error"},
+
+	ErrUpdateCommitteeStateByBeacon: {-5000, "Update Committee State By Beacon Error"},
 }
 
 type CommitteeStateError struct {

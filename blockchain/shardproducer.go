@@ -77,12 +77,36 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, err
 	}
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", shardBestState.ShardHeight+1)
-
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	currentCommitteePubKeys, err := incognitokey.
-		CommitteeKeyListToString(shardBestState.GetCommittee())
+		CommitteeKeyListToString(shardBestState.GetShardCommittee())
 	if err != nil {
 		return nil, err
+	}
+
+	if shardBestState.shardCommitteeEngine.Version() != committeestate.NORMAL_VERSION {
+		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+		newCommittees := beaconFinalView.GetShardCommittee()[shardID]
+
+		newCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newCommittees)
+		if err != nil {
+			return nil, err
+		}
+
+		env := committeestate.
+			NewShardEnvBuilder().
+			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
+			Build()
+
+		hashes, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
+		if err != nil {
+			return nil, err
+		}
+
+		err = shardBestState.shardCommitteeEngine.Commit(hashes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	//==========Fetch Beacon Blocks============

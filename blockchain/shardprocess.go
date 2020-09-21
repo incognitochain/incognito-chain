@@ -58,6 +58,31 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 		return err
 	}
 
+	if shardBestState.shardCommitteeEngine.Version() != committeestate.NORMAL_VERSION {
+		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+		newCommittees := beaconFinalView.GetShardCommittee()[shardID]
+
+		newCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newCommittees)
+		if err != nil {
+			return err
+		}
+
+		env := committeestate.
+			NewShardEnvBuilder().
+			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
+			Build()
+
+		hashes, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
+		if err != nil {
+			return err
+		}
+
+		err = shardBestState.shardCommitteeEngine.Commit(hashes)
+		if err != nil {
+			return err
+		}
+	}
+
 	// fetch beacon blocks
 	previousBeaconHeight := shardBestState.BeaconHeight
 	var checkBeaconUntilTimeout = func(ctx context.Context) error {
@@ -140,6 +165,31 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
 	curView := preView.(*ShardBestState)
+
+	if curView.shardCommitteeEngine.Version() != committeestate.NORMAL_VERSION {
+		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+		newCommittees := beaconFinalView.GetShardCommittee()[shardID]
+
+		newCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newCommittees)
+		if err != nil {
+			return err
+		}
+
+		env := committeestate.
+			NewShardEnvBuilder().
+			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
+			Build()
+
+		hashes, err := curView.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
+		if err != nil {
+			return err
+		}
+
+		err = curView.shardCommitteeEngine.Commit(hashes)
+		if err != nil {
+			return err
+		}
+	}
 
 	if blockHeight != curView.ShardHeight+1 {
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomming block height %+v", curView.ShardHeight, blockHeight))

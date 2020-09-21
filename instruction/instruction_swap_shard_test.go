@@ -21,7 +21,26 @@ func TestSwapShardInstruction_ToString(t *testing.T) {
 		fields fields
 		want   []string
 	}{
-		{},
+		{
+			name: "Valid Input",
+			fields: fields{
+				InPublicKeys: []string{
+					"key1", "key2", "key3", "key4",
+				},
+				OutPublicKeys: []string{
+					"key1", "key2", "key3", "key4",
+				},
+				ChainID: 0,
+				Type:    SWAP_BY_END_EPOCH,
+			},
+			want: []string{
+				SWAP_SHARD_ACTION,
+				"key1,key2,key3,key4",
+				"key1,key2,key3,key4",
+				"0",
+				"0",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -41,6 +60,9 @@ func TestSwapShardInstruction_ToString(t *testing.T) {
 }
 
 func TestSwapShardInstruction_SetInPublicKeys(t *testing.T) {
+
+	initPublicKey()
+
 	type fields struct {
 		InPublicKeys        []string
 		InPublicKeyStructs  []incognitokey.CommitteePublicKey
@@ -60,7 +82,35 @@ func TestSwapShardInstruction_SetInPublicKeys(t *testing.T) {
 		want    *SwapShardInstruction
 		wantErr bool
 	}{
-		{},
+		{
+			name:   "Invalid Format Public Key",
+			fields: fields{},
+			args: args{
+				inPublicKeys: []string{
+					"key1", "key2", "key3",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			args: args{
+				inPublicKeys: []string{
+					key1, key2, key3, key4,
+				},
+			},
+			want: &SwapShardInstruction{
+				InPublicKeys: []string{
+					key1, key2, key3, key4,
+				},
+				InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+					*incKey1, *incKey2, *incKey3, *incKey4,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,7 +154,35 @@ func TestSwapShardInstruction_SetOutPublicKeys(t *testing.T) {
 		want    *SwapShardInstruction
 		wantErr bool
 	}{
-		{},
+		{
+			name:   "Invalid Format Public Key",
+			fields: fields{},
+			args: args{
+				outPublicKeys: []string{
+					"key1", "key2", "key3",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			args: args{
+				outPublicKeys: []string{
+					key1, key2, key3, key4,
+				},
+			},
+			want: &SwapShardInstruction{
+				OutPublicKeys: []string{
+					key1, key2, key3, key4,
+				},
+				OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+					*incKey1, *incKey2, *incKey3, *incKey4,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -106,7 +106,7 @@ func ImportSwapShardInstructionFromString(instruction []string) *SwapShardInstru
 // new reward receiver only present in replace committee
 // beaconproducer.go: 356 - 367
 func ValidateSwapShardInstructionSanity(instruction []string) error {
-	if len(instruction) != 6 {
+	if len(instruction) != 5 {
 		return fmt.Errorf("invalid instruction length %+v, %+v, expect %+v", len(instruction), instruction, 6)
 	}
 	if instruction[0] != SWAP_SHARD_ACTION {

@@ -344,3 +344,26 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 		ShardSubstituteHash: substituteHash,
 	}, nil
 }
+
+//UpdateCommitteeStateByBeacon ...
+func (engine *ShardCommitteeEngineV2) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, error) {
+	engine.uncommittedShardCommitteeStateV2.mu.Lock()
+	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
+	engine.shardCommitteeStateV2.mu.RLock()
+	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
+	engine.shardCommitteeStateV2.mu.RUnlock()
+
+	newCommitteeState := engine.uncommittedShardCommitteeStateV2
+	newCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(env.UpdatedCommitteesByBeacon())
+	if err != nil {
+		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+	newCommitteeState.shardCommittee = newCommitteePublicKey
+
+	hashes, err := engine.generateUncommittedCommitteeHashes()
+	if err != nil {
+		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	}
+
+	return hashes, nil
+}

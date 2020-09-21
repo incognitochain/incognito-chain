@@ -492,3 +492,8 @@ func (engine *ShardCommitteeEngineV1) ProcessInstructionFromBeacon(
 func (engine *ShardCommitteeEngineV1) ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
 	return nil, nil
 }
+
+//UpdateCommitteeStateByBeacon ...
+func (engine *ShardCommitteeEngineV1) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, error) {
+	return nil, nil
+}
