@@ -81,7 +81,7 @@ func (tx *TxVersion2) InitTestOldOTA(paramsInterface interface{}) error {
 	clonedPK.FromBytes(inputCoins[0].GetPublicKey().ToBytes())
 	outputCoins[0].SetPublicKey(clonedPK)
 
-	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, params.paymentInfo)
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, nil, params.hasPrivacy, params.paymentInfo)
 	if err != nil {
 		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err

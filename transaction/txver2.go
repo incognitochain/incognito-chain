@@ -457,12 +457,23 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	if tokenID, err = parseTokenID(tokenID); err != nil {
 		return false, err
 	}
-	if hasPrivacy{
+	proofAsV2, ok := tx.GetProof().(*privacy_v2.PaymentProofV2)
+	if !ok{
+		Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have proofs of any other version - %v", tx.Hash().String(), err)
+		return false, NewTransactionErr(UnexpectedError, err)
+	}
+	isConfAsset, err := proofAsV2.IsConfidentialAsset()
+	if err!=nil{
+		Logger.Log.Errorf("Error in tx %s : proof is invalid due to inconsistent asset tags - %v", tx.Hash().String(), err)
+		return false, NewTransactionErr(VerifyTxSigFailError, err)
+	}
+	if isConfAsset{
 		valid, err = tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}else{
 		valid, err = tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}
 	if !valid {
+		// fmt.Printf("Fail with CA = %v and tokenID = %s\n", isConfAsset, tokenID.String())
 		if err != nil {
 			Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
@@ -471,7 +482,7 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String()))
 	}
 
-	if valid, err := tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil); !valid {
+	if valid, err := tx.Proof.Verify(isConfAsset, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil); !valid {
 		if err != nil {
 			Logger.Log.Error(err)
 		}
@@ -648,11 +659,11 @@ func (tx TxVersion2) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetri
 }
 
 func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	tid := tokenID
-	if hasPrivacy{
-		tid = &common.ConfidentialAssetID
-	}
-	return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tid, isBatch, isNewTransaction)
+	// tid := tokenID
+	// if hasPrivacy{
+	// 	tid = &common.ConfidentialAssetID
+	// }
+	return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
 func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {

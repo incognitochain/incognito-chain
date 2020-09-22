@@ -338,6 +338,8 @@ func (tx *TxVersion2) verifySigCA(transactionStateDB *statedb.StateDB, shardID b
 	}
 	var err error
 
+	// confidential asset TX always use umbrella ID to verify
+	tokenID = &common.ConfidentialAssetID
 	// Reform Ring
 	sumOutputsWithFee := calculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
 	sumOutputAssetTags := new(operation.Point).Identity()
