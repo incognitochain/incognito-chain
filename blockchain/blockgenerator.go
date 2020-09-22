@@ -74,7 +74,7 @@ func (blockGenerator *BlockGenerator) GetPendingTxsV2(shardID byte) []metadata.T
 	pendingTxs := []metadata.Transaction{}
 	for _, tx := range blockGenerator.PendingTxs {
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if txShardID != shardID {
+		if shardID != 255 && txShardID != shardID {
 			continue
 		}
 		pendingTxs = append(pendingTxs, tx)
