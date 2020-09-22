@@ -262,6 +262,41 @@ func (proof *PaymentProofV2) IsPrivacy() bool {
 	return proof.GetOutputCoins()[0].IsEncrypted()
 }
 
+// error means the proof is invalid altogether. After this function returns, we will need to check error first
+func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error){
+	// asset tag consistency check
+	assetTagCount := 0
+	inputCoins := proof.GetInputCoins()
+	for _,c := range inputCoins{
+		coin_specific, ok := c.(*coin.CoinV2)
+		if !ok{
+			Logger.Log.Errorf("Cannot cast a coin to v2 : %v",c.Bytes())
+			return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Casting error : CoinV2"))
+		}
+		if coin_specific.GetAssetTag()!=nil{
+			assetTagCount += 1
+		}
+	}
+	outputCoins := proof.GetOutputCoins()
+	for _,c := range outputCoins{
+		coin_specific, ok := c.(*coin.CoinV2)
+		if !ok{
+			Logger.Log.Errorf("Cannot cast a coin to v2 : %v", c.Bytes())
+			return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Casting error : CoinV2"))
+		}
+		if coin_specific.GetAssetTag()!=nil{
+			assetTagCount += 1
+		}
+	}
+	
+	if assetTagCount==len(inputCoins)+len(outputCoins){
+		return true, nil
+	}else if assetTagCount==0{
+		return false, nil		
+	}
+	return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Error : TX contains both confidential asset & non-CA coins"))
+}
+
 func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	if len(proof.GetInputCoins()) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
