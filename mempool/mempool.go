@@ -72,12 +72,12 @@ type TxPool struct {
 	requestStopStakingMtx     sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
 	CRemoveTxs                chan<- metadata.Transaction // channel to deliver txs to block gen
-	RoleInCommittees          int                         //Current Role of Node
-	roleMtx                   sync.RWMutex
-	ScanTime                  time.Duration
-	IsBlockGenStarted         bool
-	IsUnlockMempool           bool
-	ReplaceFeeRatio           float64
+	// RoleInCommittees          int                         //Current Role of Node
+	roleMtx           sync.RWMutex
+	ScanTime          time.Duration
+	IsBlockGenStarted bool
+	IsUnlockMempool   bool
+	ReplaceFeeRatio   float64
 
 	//for testing
 	IsTest       bool
@@ -749,7 +749,7 @@ func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
-	if tp.RoleInCommittees > -1 && tp.config.ConsensusEngine.IsCommitteeInShard(senderShardID) {
+	if tp.config.ConsensusEngine.IsCommitteeInShard(senderShardID) {
 		tp.roleMtx.RUnlock()
 		return true
 	} else {
