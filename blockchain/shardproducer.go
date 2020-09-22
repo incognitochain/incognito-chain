@@ -95,10 +95,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 
 		env := committeestate.
 			NewShardEnvBuilder().
+			BuildShardID(shardBestState.ShardID).
 			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
 			Build()
 
-		hashes, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
+		hashes, _, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
 		if err != nil {
 			return nil, err
 		}
@@ -259,7 +260,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks)
+	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, committeeChange)
 	if err != nil {
 		return nil, err
 	}

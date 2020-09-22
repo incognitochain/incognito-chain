@@ -203,7 +203,7 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 //	- hash for checking commit later
 //	- Only call once in new or insert block process
 func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
-	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	env ShardCommitteeStateEnvironment, oldcommitteeChange *CommitteeChange) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.shardCommitteeStateV1.mu.RLock()
@@ -211,7 +211,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 	engine.shardCommitteeStateV1.mu.RUnlock()
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), NewCommitteeChange())
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), oldcommitteeChange)
 
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -494,6 +494,6 @@ func (engine *ShardCommitteeEngineV1) ProcessInstructionFromShard(env ShardCommi
 }
 
 //UpdateCommitteeStateByBeacon ...
-func (engine *ShardCommitteeEngineV1) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, error) {
-	return nil, nil
+func (engine *ShardCommitteeEngineV1) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	return nil, nil, nil
 }

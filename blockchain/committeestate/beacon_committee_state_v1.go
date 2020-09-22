@@ -939,3 +939,8 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 	)
 	return nil
 }
+
+//HasSwappedCommittees ...
+func (b *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
+	return false, nil
+}

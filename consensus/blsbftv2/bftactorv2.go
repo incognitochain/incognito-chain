@@ -17,11 +17,12 @@ import (
 )
 
 type BLSBFT_V2 struct {
-	Chain    ChainInterface
-	Node     NodeInterface
-	ChainKey string
-	ChainID  int
-	PeerID   string
+	CommitteeChain CommitteeChainHandler
+	Chain          ChainInterface
+	Node           NodeInterface
+	ChainKey       string
+	ChainID        int
+	PeerID         string
 
 	UserKeySet   *MiningKey
 	BFTMessageCh chan wire.MessageBFT
@@ -174,13 +175,18 @@ func (e *BLSBFT_V2) Start() error {
 
 				}
 
+				proposerPk := incognitokey.CommitteePublicKey{}
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
+				if e.ChainID != -1 {
+					proposerPk = e.CommitteeChain.GetProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, 2)
+				} else {
+					proposerPk = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+				}
 
 				/*
 					Check for whether we should propose block
 				*/
-				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 
 				if newTimeSlot { //for logging
@@ -272,13 +278,14 @@ func (e *BLSBFT_V2) Start() error {
 	return nil
 }
 
-func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V2 {
+func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V2 {
 	var newInstance = new(BLSBFT_V2)
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
 	newInstance.ChainID = chainID
 	newInstance.Node = node
 	newInstance.Logger = logger
+	newInstance.CommitteeChain = committeeChain
 	return newInstance
 }
 

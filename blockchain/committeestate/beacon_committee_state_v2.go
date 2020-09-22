@@ -3,6 +3,7 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -859,4 +860,19 @@ func (b *BeaconCommitteeStateV2) processAutoStakingChange(committeeChange *Commi
 		b.numberOfRound,
 	)
 	return nil
+}
+
+//HasSwappedCommittees ...
+func (engine *BeaconCommitteeEngineV2) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
+	if env.BeaconHeight%env.ParamEpoch == 0 {
+		for _, inst := range env.BeaconInstructions {
+			switch inst[0] {
+			case instruction.SWAP_SHARD_ACTION:
+				if inst[3] == strconv.Itoa(int(env.ShardID)) {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
 }

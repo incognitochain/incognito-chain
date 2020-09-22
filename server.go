@@ -2185,9 +2185,11 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		}
 	}
 
+	beaconFinalView := s.blockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+
 	//For Shard
-	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
-	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
+	shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
+	shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 
 	//check if in committee or pending committee in beacon
 	for _, chain := range s.blockChain.ShardChain {

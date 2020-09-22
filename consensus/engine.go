@@ -2,9 +2,10 @@ package consensus
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
@@ -158,15 +159,25 @@ func NewConsensusEngine() *Engine {
 func (engine *Engine) initProcess(chainID int, chainName string) {
 	if engine.version == 1 {
 		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID, engine.config.Node, Logger.Log)
 		} else {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				chainName, chainID, engine.config.Node, Logger.Log)
 		}
 	} else {
 		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft2.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				engine.config.Blockchain.BeaconChain, chainName,
+				chainID, engine.config.Node, Logger.Log)
 		} else {
-			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft2.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID, engine.config.Node, Logger.Log)
 		}
 	}
 }

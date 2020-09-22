@@ -69,10 +69,11 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 
 		env := committeestate.
 			NewShardEnvBuilder().
+			BuildShardID(shardBestState.ShardID).
 			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
 			Build()
 
-		hashes, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
+		hashes, _, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
 		if err != nil {
 			return err
 		}
@@ -116,7 +117,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 	}
 
 	//========Verify shardBlock only
-	if err := blockchain.verifyPreProcessingShardBlock(shardBestState, shardBlock, beaconBlocks, shardID, true); err != nil {
+	if err := blockchain.verifyPreProcessingShardBlock(
+		shardBestState, shardBlock, beaconBlocks,
+		shardID, true); err != nil {
 		return err
 	}
 	//========Verify shardBlock with previous best state
@@ -127,7 +130,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	newBeststate, hashes, _, err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks)
+	newBeststate, hashes, _, err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks, nil)
 	if err != nil {
 		return err
 	}
@@ -166,6 +169,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 	curView := preView.(*ShardBestState)
 
+	committeeChange := committeestate.NewCommitteeChange()
+	hashes := &committeestate.ShardCommitteeStateHash{}
+
 	if curView.shardCommitteeEngine.Version() != committeestate.NORMAL_VERSION {
 		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 		newCommittees := beaconFinalView.GetShardCommittee()[shardID]
@@ -177,10 +183,11 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 		env := committeestate.
 			NewShardEnvBuilder().
+			BuildShardID(curView.ShardID).
 			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
 			Build()
 
-		hashes, err := curView.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
+		hashes, committeeChange, err = curView.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
 		if err != nil {
 			return err
 		}
@@ -189,6 +196,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		if err != nil {
 			return err
 		}
+
 	}
 
 	if blockHeight != curView.ShardHeight+1 {
@@ -233,7 +241,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
-	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks)
+	newBestState := curView
+	newBestState, hashes, committeeChange, err = curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committeeChange)
 	var err2 error
 	defer func() {
 		if err2 != nil {
@@ -731,7 +740,8 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 //	- Execute swap instruction, swap pending validator and committee (if exist)
 func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	shardBlock *types.ShardBlock,
-	beaconBlocks []*types.BeaconBlock) (
+	beaconBlocks []*types.BeaconBlock,
+	oldCommitteeChange *committeestate.CommitteeChange) (
 	*ShardBestState, *committeestate.ShardCommitteeStateHash, *committeestate.CommitteeChange, error) {
 	var (
 		err     error
@@ -817,7 +827,11 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildShardInstructions(shardBlock.Body.Instructions).
 		Build()
 
-	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)
+	if oldCommitteeChange == nil {
+		oldCommitteeChange = committeestate.NewCommitteeChange()
+	}
+
+	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env, oldCommitteeChange)
 	if err != nil {
 
 		return nil, nil, nil, NewBlockChainError(UpdateShardCommitteeStateError, err)
