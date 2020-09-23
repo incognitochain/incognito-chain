@@ -175,6 +175,22 @@ func HasBridgeInstructions(instructions [][]string) bool {
 	return false
 }
 
+
+// TODO: add more meta data types
+var portalMetas = []string{
+	strconv.Itoa(PortalCustodianWithdrawRequestMetaV3),
+}
+func HasPortalInstructions(instructions [][]string) bool {
+	for _, inst := range instructions {
+		for _, meta := range portalMetas {
+			if len(inst) > 0 && inst[0] == meta {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // todo:
 func ValidateRemoteAddress(chainName string, tokenID string, address string) (bool, error) {
 	return true, nil

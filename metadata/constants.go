@@ -80,8 +80,11 @@ const (
 	PortalCustodianTopupResponseMetaV2          = 130
 
 	// Portal v3
-	PortalCustodianDepositMetaV3 = 131
-	PortalCustodianWithdrawRequestMetaV3          = 132
+	PortalCustodianDepositMetaV3         = 131
+	PortalCustodianWithdrawRequestMetaV3 = 132
+
+	// Incognito => Ethereum's SC for portal
+	PortalCustodianWithdrawConfirmMetaV3 = 170
 
 	//Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = 199

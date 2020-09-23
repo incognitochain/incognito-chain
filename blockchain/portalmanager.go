@@ -88,7 +88,11 @@ func NewPortalManager() *portalManager {
 				actions: map[byte][][]string{},
 			},
 		},
-
+		metadata.PortalCustodianWithdrawRequestMetaV3: &portalRequestWithdrawCollateralProcessorV3{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
 		metadata.PortalUserRegisterMeta: &portalPortingRequestProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
