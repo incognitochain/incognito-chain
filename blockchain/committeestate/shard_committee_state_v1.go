@@ -80,9 +80,24 @@ func (committeeState ShardCommitteeStateV1) clone(newCommitteeState *ShardCommit
 	}
 }
 
+//Clone ...
+func (engine *ShardCommitteeEngineV1) Clone() ShardCommitteeEngine {
+	finalCommitteeState := NewShardCommitteeStateV1()
+	engine.shardCommitteeStateV1.clone(finalCommitteeState)
+	engine.uncommittedShardCommitteeStateV1 = NewShardCommitteeStateV1()
+
+	res := NewShardCommitteeEngineV1(
+		engine.shardHeight,
+		engine.shardHash,
+		engine.shardID,
+		finalCommitteeState,
+	)
+	return res
+}
+
 //Version get version of engine
 func (engine *ShardCommitteeEngineV1) Version() uint {
-	return NORMAL_VERSION
+	return SELF_SWAP_SHARD_VERSION
 }
 
 //reset : reset ShardCommitteeStateV1 to default value
@@ -203,7 +218,7 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 //	- hash for checking commit later
 //	- Only call once in new or insert block process
 func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
-	env ShardCommitteeStateEnvironment, oldcommitteeChange *CommitteeChange) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	engine.uncommittedShardCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV1.mu.Unlock()
 	engine.shardCommitteeStateV1.mu.RLock()
@@ -211,7 +226,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 	engine.shardCommitteeStateV1.mu.RUnlock()
 	newCommitteeState := engine.uncommittedShardCommitteeStateV1
 
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), oldcommitteeChange)
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env.BeaconInstructions(), env.ShardID(), NewCommitteeChange())
 
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -491,9 +506,4 @@ func (engine *ShardCommitteeEngineV1) ProcessInstructionFromBeacon(
 //ProcessInstructionFromShard :
 func (engine *ShardCommitteeEngineV1) ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
 	return nil, nil
-}
-
-//UpdateCommitteeStateByBeacon ...
-func (engine *ShardCommitteeEngineV1) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
-	return nil, nil, nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
@@ -273,20 +272,4 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 		m[v] = byte(i)
 	}
 	return m
-}
-
-//getLatestHeightByShardsState get highest height from list shard states
-// return 0 for empty list states
-// return uint > 0 heights for fork cases
-func getLatestHeightByShardsState(states []types.ShardState) uint64 {
-	if len(states) == 0 {
-		return 0
-	}
-	max := states[0].Height
-	for _, v := range states {
-		if v.Height > max {
-			max = v.Height
-		}
-	}
-	return max
 }

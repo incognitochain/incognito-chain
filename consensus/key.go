@@ -138,9 +138,9 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 
 func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
 
-	//check producer,proposer,agg sig with this version
-	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == 1 {
+		//check producer,proposer,agg sig with this version
+		producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
 			return fmt.Errorf("Cannot base58 a committee")
@@ -156,6 +156,11 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
+			// Logger.Log.Info("[swap-v2] minCommitteeSize:", minCommitteeSize)
+			// Logger.Log.Info("[swap-v2] producer:", producer)
+			// Logger.Log.Info("[swap-v2] produceTime:", produceTime)
+			// Logger.Log.Info("[swap-v2] tempProducerID:", tempProducerID)
+			// Logger.Log.Info("[swap-v2] b58Str:", b58Str)
 			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producer)
 		}
 

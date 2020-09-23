@@ -44,10 +44,10 @@ type BeaconCommitteeEngine interface {
 //ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
 	Version() uint
-	// Clone() ShardCommitteeEngine
+	Clone() ShardCommitteeEngine
 	Commit(*ShardCommitteeStateHash) error
 	AbortUncommittedShardState()
-	UpdateCommitteeState(env ShardCommitteeStateEnvironment, committeeChange *CommitteeChange) (*ShardCommitteeStateHash,
+	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
 		*CommitteeChange, error)
 	InitCommitteeState(env ShardCommitteeStateEnvironment)
 	GetShardCommittee() []incognitokey.CommitteePublicKey
@@ -55,5 +55,4 @@ type ShardCommitteeEngine interface {
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
-	UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) // WARNING: This function can only be use for update committees by beacon
 }

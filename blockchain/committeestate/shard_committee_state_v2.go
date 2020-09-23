@@ -68,6 +68,21 @@ func NewShardCommitteeEngineV2(shardHeight uint64,
 	}
 }
 
+//Clone ...
+func (engine *ShardCommitteeEngineV2) Clone() ShardCommitteeEngine {
+	finalCommitteeState := NewShardCommitteeStateV2()
+	engine.shardCommitteeStateV2.clone(finalCommitteeState)
+	engine.uncommittedShardCommitteeStateV2 = NewShardCommitteeStateV2()
+
+	res := NewShardCommitteeEngineV2(
+		engine.shardHeight,
+		engine.shardHash,
+		engine.shardID,
+		finalCommitteeState,
+	)
+	return res
+}
+
 //clone ShardCommitteeStateV2 to new instance
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.reset()
@@ -187,7 +202,7 @@ func (engine *ShardCommitteeEngineV2) InitCommitteeState(env ShardCommitteeState
 //	- hash for checking commit later
 //	- Only call once in new or insert block process
 func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
-	env ShardCommitteeStateEnvironment, oldcommitteeChange *CommitteeChange) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	engine.uncommittedShardCommitteeStateV2.mu.Lock()
 	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
 	engine.shardCommitteeStateV2.mu.RLock()
@@ -196,7 +211,7 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 
 	newCommitteeState := engine.uncommittedShardCommitteeStateV2
 
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env, oldcommitteeChange)
+	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env, NewCommitteeChange())
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
@@ -259,6 +274,23 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
+
+	for _, inst := range env.BeaconInstructions() {
+		switch inst[0] {
+		case instruction.SWAP_SHARD_ACTION:
+			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Infof("SHARD %v | Skip validate swap shard instruction err = %v\n", env.ShardID(), err)
+				continue
+			}
+			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
+			if err != nil {
+				Logger.log.Infof("SHARD %v | Proccess swap shard instruction err = %v\n", env.ShardID(), err)
+				continue
+			}
+		}
+	}
+
 	return newCommitteeChange, nil
 }
 
@@ -344,60 +376,4 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 		ShardCommitteeHash:  committeeHash,
 		ShardSubstituteHash: substituteHash,
 	}, nil
-}
-
-//UpdateCommitteeStateByBeacon ...
-func (engine *ShardCommitteeEngineV2) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (
-	*ShardCommitteeStateHash, *CommitteeChange, error) {
-	engine.uncommittedShardCommitteeStateV2.mu.Lock()
-	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
-	engine.shardCommitteeStateV2.mu.RLock()
-	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
-	engine.shardCommitteeStateV2.mu.RUnlock()
-
-	newCommitteeChange := NewCommitteeChange()
-
-	newCommitteeState := engine.uncommittedShardCommitteeStateV2
-	newCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(env.UpdatedCommitteesByBeacon())
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeStateByBeacon, err)
-	}
-
-	oldCommittees := newCommitteeState.shardCommittee
-	tempOldCommittees := make(map[string]bool)
-	tempNewCommittees := make(map[string]bool)
-	for _, v := range oldCommittees {
-		key, err := v.ToBase58()
-		if err != nil {
-			return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeStateByBeacon, err)
-		}
-		tempOldCommittees[key] = true
-	}
-	for _, v := range env.UpdatedCommitteesByBeacon() {
-		tempNewCommittees[v] = true
-	}
-	for _, v := range oldCommittees {
-		key, err := v.ToBase58()
-		if err != nil {
-			return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeStateByBeacon, err)
-		}
-		if !tempNewCommittees[key] {
-			newCommitteeChange.ShardCommitteeRemoved[env.ShardID()] =
-				append(newCommitteeChange.ShardCommitteeRemoved[env.ShardID()], v)
-		}
-	}
-	for i, v := range env.UpdatedCommitteesByBeacon() {
-		if !tempOldCommittees[v] {
-			newCommitteeChange.ShardCommitteeAdded[env.ShardID()] =
-				append(newCommitteeChange.ShardCommitteeAdded[env.ShardID()], newCommitteePublicKey[i])
-		}
-	}
-
-	newCommitteeState.shardCommittee = newCommitteePublicKey
-	hashes, err := engine.generateUncommittedCommitteeHashes()
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeStateByBeacon, err)
-	}
-
-	return hashes, newCommitteeChange, nil
 }

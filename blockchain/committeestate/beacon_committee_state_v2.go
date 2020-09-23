@@ -465,11 +465,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		latestHeight := getLatestHeightByShardsState(env.LatestShardsState[shardID])
-		if latestHeight == 0 {
-			continue
-		}
-
 		swapShardInstruction, _, err := createSwapShardInstructionV2(
 			shardID,
 			tempSubstitutes,

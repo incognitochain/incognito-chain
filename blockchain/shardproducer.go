@@ -84,27 +84,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, err
 	}
 
-	if shardBestState.shardCommitteeEngine.Version() != committeestate.NORMAL_VERSION {
+	if shardBestState.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
-		newCommittees := beaconFinalView.GetShardCommittee()[shardID]
-
-		newCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newCommittees)
-		if err != nil {
-			return nil, err
-		}
-
-		env := committeestate.
-			NewShardEnvBuilder().
-			BuildShardID(shardBestState.ShardID).
-			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
-			Build()
-
-		hashes, _, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
-		if err != nil {
-			return nil, err
-		}
-
-		err = shardBestState.shardCommitteeEngine.Commit(hashes)
+		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(beaconFinalView.GetShardCommittee()[shardBestState.ShardID])
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +123,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 
 	epoch := beaconBlock.Header.Epoch
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if epoch-shardBestState.Epoch >= 1 {
 			//TODO: @tin check here
 			beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
@@ -260,7 +242,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, committeeChange)
+	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks)
 	if err != nil {
 		return nil, err
 	}
