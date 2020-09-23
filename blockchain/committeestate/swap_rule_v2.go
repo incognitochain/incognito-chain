@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
@@ -18,7 +17,6 @@ func createSwapShardInstructionV2(
 	shardID byte,
 	substitutes, committees []string,
 	maxCommitteeSize int,
-	numberOfRound map[string]int,
 	typeIns int,
 	numberOfFixedValidators uint64,
 ) (*instruction.SwapShardInstruction, []string, error) {
@@ -138,68 +136,6 @@ func swapCommitteesV2(
 	return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
 }
 
-// swapV2 swap substitute into committee
-// return params
-// #2 remained substitutes list
-// #1 new committees list
-// #3 swapped out committees list (removed from committees list
-// #4 swapped in committees list (new committees from substitutes list)
-func swapV2(
-	substitutes []string,
-	committees []string,
-	maxCommitteeSize int,
-) ([]string, []string, []string, []string, error) {
-	// if swap offset = 0 then do nothing
-	swapOffset := (len(substitutes) + len(committees)) / MAX_SWAP_OR_ASSIGN_PERCENT
-	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
-	if swapOffset == 0 {
-		// return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")
-		return committees, substitutes, []string{}, []string{}, nil
-	}
-	// swap offset must be less than or equal to maxCommitteeSize
-	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
-	if swapOffset > maxCommitteeSize {
-		swapOffset = maxCommitteeSize
-	}
-	// swapOffset must be less than or equal to substitutes length
-	if swapOffset > len(substitutes) {
-		swapOffset = len(substitutes)
-	}
-	swappedInCommittees := []string{}
-	swappedOutCommittees := []string{}
-	// vacantSlot must be equal to or greater than 0
-	vacantSlot := maxCommitteeSize - len(committees)
-	if vacantSlot >= swapOffset {
-		// vacantSlot is greater than number of swap offset
-		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffset]...)
-		committees = append(committees, swappedInCommittees...)
-		substitutes = substitutes[swapOffset:]
-		return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
-	} else {
-		// vacantSlot is less than number of swap offset
-		// get new committee from substitute list for push in only
-		swappedInCommittees = append(swappedInCommittees, substitutes[:vacantSlot]...)
-		// un-queue substitutes if vacant slot > 0
-		substitutes = substitutes[vacantSlot:]
-
-		swapOffsetAfterFillVacantSlot := swapOffset - vacantSlot
-
-		// swapped out committees: record swapped out committees
-		swappedOutCommittees = append(swappedOutCommittees, committees[:swapOffsetAfterFillVacantSlot]...)
-		// un-queue committees:  start from index 0 to swapOffsetAfterFillVacantSlot - 1
-		committees = committees[swapOffsetAfterFillVacantSlot:]
-		// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
-		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
-		// en-queue new validator: from substitute list to committee list
-		committees = append(committees, swappedInCommittees...)
-		// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
-		substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
-
-		return substitutes, committees, swappedOutCommittees, swappedInCommittees, nil
-	}
-	//TODO: @hung Return in 2 branches is different variables (substitutes, committees)
-}
-
 // assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number
 func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 	total := 0
@@ -273,20 +209,4 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 		m[v] = byte(i)
 	}
 	return m
-}
-
-//getLatestHeightByShardsState get highest height from list shard states
-// return 0 for empty list states
-// return uint > 0 heights for fork cases
-func getLatestHeightByShardsState(states []types.ShardState) uint64 {
-	if len(states) == 0 {
-		return 0
-	}
-	max := states[0].Height
-	for _, v := range states {
-		if v.Height > max {
-			max = v.Height
-		}
-	}
-	return max
 }

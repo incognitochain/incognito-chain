@@ -7,14 +7,16 @@ import (
 	"testing"
 )
 
-// TODO: @tin write unit test
 func Test_createSwapShardInstructionV2(t *testing.T) {
+
+	initLog()
+	initPublicKey()
+
 	type args struct {
 		shardID                 byte
 		substitutes             []string
 		committees              []string
 		maxCommitteeSize        int
-		numberOfRound           map[string]int
 		typeIns                 int
 		numberOfFixedValidators uint64
 	}
@@ -25,11 +27,120 @@ func Test_createSwapShardInstructionV2(t *testing.T) {
 		want1   []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "len(subtitutes) == len(committeess) == 0",
+			args: args{
+				shardID:                 0,
+				substitutes:             []string{},
+				committees:              []string{},
+				maxCommitteeSize:        6,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 0,
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{},
+				[]string{},
+				int(0),
+				instruction.SWAP_BY_END_EPOCH),
+			want1:   []string{},
+			wantErr: false,
+		},
+		{
+			name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize && <= len(substitute), no vacant slot",
+			args: args{
+				shardID:                 0,
+				substitutes:             []string{key5, key6},
+				committees:              []string{key, key2, key3, key4},
+				maxCommitteeSize:        4,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 0,
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{key5, key6},
+				[]string{key, key2},
+				int(0),
+				instruction.SWAP_BY_END_EPOCH),
+			want1:   []string{},
+			wantErr: false,
+		},
+		{
+			name: "int((len(committees) + len(subtitutes)) / 3) <= maxCommitteeSize && <= len(substitute), one vacant slot",
+			args: args{
+				shardID:                 0,
+				substitutes:             []string{key5, key6},
+				committees:              []string{key, key2, key3, key4},
+				maxCommitteeSize:        5,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 0,
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{key5, key6},
+				[]string{key},
+				int(0),
+				instruction.SWAP_BY_END_EPOCH),
+			want1:   []string{},
+			wantErr: false,
+		},
+		{
+			name: "int((len(committees) + len(subtitutes)) / 3) > maxCommitteeSize && <= len(substitute)",
+			args: args{
+				shardID:                 0,
+				substitutes:             []string{key5, key6, key7, key8, key9, key10, key11, key12},
+				committees:              []string{key, key2, key3, key4},
+				maxCommitteeSize:        4,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 0,
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{key5, key6, key7, key8},
+				[]string{key, key2, key3, key4},
+				int(0),
+				instruction.SWAP_BY_END_EPOCH),
+			want1: []string{
+				key9, key10, key11, key12,
+			},
+			wantErr: false,
+		},
+		{
+			name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize && > len(substitute), with NO vacant slot",
+			args: args{
+				shardID:                 0,
+				substitutes:             []string{key10, key11, key12},
+				committees:              []string{key, key2, key3, key4, key5, key6, key7, key8, key9},
+				maxCommitteeSize:        9,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 0,
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{key10, key11, key12},
+				[]string{key, key2, key3},
+				int(0),
+				instruction.SWAP_BY_END_EPOCH),
+			want1:   []string{},
+			wantErr: false,
+		},
+		{
+			name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize && > len(substitute), with vacant slot",
+			args: args{
+				shardID:                 0,
+				substitutes:             []string{key10, key11, key12},
+				committees:              []string{key, key2, key3, key4, key5, key6, key7, key8, key9},
+				maxCommitteeSize:        11,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 0,
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{key10, key11, key12},
+				[]string{key},
+				int(0),
+				instruction.SWAP_BY_END_EPOCH),
+			want1:   []string{},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxCommitteeSize, tt.args.numberOfRound, tt.args.typeIns, tt.args.numberOfFixedValidators)
+			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createSwapShardInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -497,203 +608,6 @@ func Test_removeValidatorV2(t *testing.T) {
 		})
 	}
 }
-
-func Test_swapV2(t *testing.T) {
-
-	initLog()
-	initPublicKey()
-
-	type args struct {
-		substitutes      []string
-		committees       []string
-		maxCommitteeSize int
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []string
-		want1   []string
-		want2   []string
-		want3   []string
-		wantErr bool
-	}{
-		{
-			name: "Swap Offset == 0",
-			args: args{
-				substitutes:      []string{},
-				committees:       []string{},
-				maxCommitteeSize: 10,
-			},
-			want:    []string{},
-			want1:   []string{},
-			want2:   []string{},
-			want3:   []string{},
-			wantErr: false,
-		},
-		// {
-		// 	name: "len(committees) < maxCommitteeSize && len(committees) + len(subtitutes) <= maxCommitteeSize",
-		// 	args: args{
-		// 		substitutes:      []string{key3, key4, key5},
-		// 		committees:       []string{key, key2},
-		// 		maxCommitteeSize: 5,
-		// 	},
-		// 	want:    []string{key, key2, key3, key4, key5},
-		// 	want1:   []string{},
-		// 	want2:   []string{},
-		// 	want3:   []string{key3, key4, key5},
-		// 	wantErr: false,
-		// },
-		// {
-		// 	name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
-		// 	args: args{
-		// 		substitutes:      []string{key5, key6},
-		// 		committees:       []string{key, key2, key3, key4},
-		// 		maxCommitteeSize: 5,
-		// 	},
-		// 	want:    []string{key3, key4, key5, key6},
-		// 	want1:   []string{key, key2},
-		// 	want2:   []string{key, key2},
-		// 	want3:   []string{key5, key6},
-		// 	wantErr: false,
-		// },
-		// {
-		// 	name: "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
-		// 	args: args{
-		// 		substitutes:      []string{key5, key6},
-		// 		committees:       []string{key, key2, key3, key4},
-		// 		maxCommitteeSize: 1,
-		// 	},
-		// 	want:    []string{key2, key3, key4, key5},
-		// 	want1:   []string{key6, key},
-		// 	want2:   []string{key},
-		// 	want3:   []string{key5},
-		// 	wantErr: false,
-		// },
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			//TODO: @hung check these tescases
-			got, got1, got2, got3, err := swapV2(tt.args.substitutes, tt.args.committees, tt.args.maxCommitteeSize)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("swapV2() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("swapV2() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("swapV2() got1 = %v, want %v", got1, tt.want1)
-			}
-			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("swapV2() got2 = %v, want %v", got2, tt.want2)
-			}
-			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("swapV2() got3 = %v, want %v", got3, tt.want3)
-			}
-		})
-	}
-}
-
-// func Test_createSwapShardInstructionV2(t *testing.T) {
-
-// 	initPublicKey()
-// 	initLog()
-
-// 	type args struct {
-// 		shardID       byte
-// 		substitutes   []string
-// 		committees    []string
-// 		maxSwapOffset int
-// 		numberOfRound map[string]int
-// 		epoch         uint64
-// 		randomNumber  int64
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    *instruction.SwapShardInstruction
-// 		want1   []string
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "len(subtitutes) == len(committeess) == 0",
-// 			args: args{
-// 				shardID:       0,
-// 				substitutes:   []string{},
-// 				committees:    []string{},
-// 				maxSwapOffset: 10,
-// 				numberOfRound: make(map[string]int),
-// 				epoch:         10,
-// 				randomNumber:  3000,
-// 			},
-// 			want: &instruction.SwapShardInstruction{
-// 				InPublicKeys:  []string{},
-// 				OutPublicKeys: []string{},
-// 				ChainID:       0,
-// 			},
-// 			want1:   []string{},
-// 			wantErr: false,
-// 		},
-// 		// {
-// 		// 	name: "int((len(committees) + len(subtitutes)) / 3) < maxCommitteeSize",
-// 		// 	args: args{
-// 		// 		shardID:       0,
-// 		// 		substitutes:   []string{key5, key6},
-// 		// 		committees:    []string{key, key2, key3, key4},
-// 		// 		maxSwapOffset: 5,
-// 		// 		numberOfRound: make(map[string]int),
-// 		// 		epoch:         10,
-// 		// 		randomNumber:  3000,
-// 		// 	},
-// 		// 	want: &instruction.RequestShardSwapInstruction{
-// 		// 		InPublicKeys:  []string{key5, key6},
-// 		// 		OutPublicKeys: []string{key, key2},
-// 		// 		ChainID:       0,
-// 		// 		Epoch:         10,
-// 		// 		RandomNumber:  3000,
-// 		// 	},
-// 		// 	want1:   []string{},
-// 		// 	wantErr: false,
-// 		// },
-// 		// {
-// 		// 	name: "int((len(committees) + len(subtitutes)) / 3) >= maxCommitteeSize",
-// 		// 	args: args{
-// 		// 		shardID:       0,
-// 		// 		substitutes:   []string{key5, key6},
-// 		// 		committees:    []string{key, key2, key3, key4},
-// 		// 		maxSwapOffset: 1,
-// 		// 		numberOfRound: make(map[string]int),
-// 		// 		epoch:         10,
-// 		// 		randomNumber:  3000,
-// 		// 	},
-// 		// 	want: &instruction.RequestShardSwapInstruction{
-// 		// 		InPublicKeys:  []string{key5},
-// 		// 		OutPublicKeys: []string{key},
-// 		// 		ChainID:       0,
-// 		// 		Epoch:         10,
-// 		// 		RandomNumber:  3000,
-// 		// 	},
-// 		// 	want1:   []string{},
-// 		// 	wantErr: false,
-// 		// },
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			//TODO: @hung check these testcases
-// 			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxSwapOffset, tt.args.numberOfRound, tt.args.epoch, tt.args.randomNumber)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("createSwapShardInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("createSwapShardInstructionV2() got = %v, want %v", got, tt.want)
-// 			}
-// 			if !reflect.DeepEqual(got1, tt.want1) {
-// 				t.Errorf("createSwapShardInstructionV2() got1 = %v, want %v", got1, tt.want1)
-// 			}
-// 		})
-// 	}
-// }
 
 func Test_swapCommitteesV2(t *testing.T) {
 
