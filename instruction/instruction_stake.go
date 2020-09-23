@@ -2,13 +2,17 @@ package instruction
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strings"
 )
 
+//StakeInstruction :
+//StakeInstruction Format:
+// ["STAKE_ACTION", list_public_keys, chain or beacon, list_txs, list_reward_addresses, list_autostaking_status(boolean)]
 type StakeInstruction struct {
 	PublicKeys            []string
 	PublicKeyStructs      []incognitokey.CommitteePublicKey

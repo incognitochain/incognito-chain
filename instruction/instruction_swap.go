@@ -1,6 +1,7 @@
 package instruction
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+//SwapInstruction :
+//Swap instruction format:
+//["swap-action", list-keys-in, list-keys-out, shard or beacon chain, shard_id(optional), "punished public key", "new reward receivers"]
 type SwapInstruction struct {
 	InPublicKeys        []string
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
@@ -24,8 +28,10 @@ type SwapInstruction struct {
 	IsReplace                bool
 }
 
-func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int, punishedPublicKeys string, newRewardReceivers []string) *SwapInstruction {
-	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: punishedPublicKeys, NewRewardReceivers: newRewardReceivers}
+func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int) *SwapInstruction {
+	producersBlackList := make(map[string]uint8)
+	badProducersWithPunishmentBytes, _ := json.Marshal(producersBlackList)
+	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: string(badProducersWithPunishmentBytes), NewRewardReceivers: []string{}}
 }
 
 func NewSwapInstruction() *SwapInstruction {
@@ -164,15 +170,14 @@ func ValidateSwapInstructionSanity(instruction []string) error {
 	if len(instruction) == 6 {
 		if instruction[3] != SHARD_INST {
 			return fmt.Errorf("invalid swap shard instruction, %+v", instruction)
-		} else {
-			_, err := strconv.Atoi(instruction[4])
-			if err != nil {
-				return fmt.Errorf("invalid swap shard id, %+v, %+v", err, instruction)
-			}
+		}
+		_, err := strconv.Atoi(instruction[4])
+		if err != nil {
+			return fmt.Errorf("invalid swap shard id, %+v, %+v", err, instruction)
 		}
 	}
 	if len(instruction) == 7 {
-		for _, v := range strings.Split(instruction[7], ",") {
+		for _, v := range strings.Split(instruction[6], ",") {
 			_, err := wallet.Base58CheckDeserialize(v)
 			if err != nil {
 				return fmt.Errorf("invalid privacy payment address %+v", err)

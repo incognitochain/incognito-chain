@@ -205,7 +205,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
+	err = StoreStakerInfoV1(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
