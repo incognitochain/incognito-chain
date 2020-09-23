@@ -40,10 +40,10 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				}
 			}
 		} else {
-			delete(b.autoStake, committeePublicKey)
-			delete(b.stakingTx, committeePublicKey)
-			delete(b.numberOfRound, committeePublicKey)
-			delete(b.rewardReceiver, unstakeInstruction.CommitteePublicKeysStruct[index].GetIncKeyBase58())
+			err := b.deleteStakerInfo(unstakeInstruction.CommitteePublicKeysStruct[index], env.ConsensusStateDB)
+			if err != nil {
+				return newCommitteeChange, nil, err
+			}
 			indexCandidate := indexNextEpochShardCandidate[committeePublicKey]
 			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, committeePublicKey)
