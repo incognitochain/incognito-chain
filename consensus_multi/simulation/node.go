@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -135,7 +136,12 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 }
 
 func (s *Node) RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error) {
-	fmt.Println("RequestMissingViewViaStream from ", peerID, hashes)
+	str := []string{}
+	for _, h := range hashes {
+		pH, _ := common.Hash{}.NewHash(h)
+		str = append(str, pH.String())
+	}
+	fmt.Println("RequestMissingViewViaStream from ", peerID, strings.Join(str, ","))
 	return nil
 }
 
@@ -144,9 +150,6 @@ func (s *Node) GetSelfPeerID() libp2p.ID {
 }
 
 func (s *Node) Start() {
+	fmt.Printf("Node %s log is %s, peerID: %v \n", s.id, fmt.Sprintf("log%s.log", s.id), libp2p.ID(s.id))
 	s.consensusEngine.Start()
-}
-
-func main() {
-
 }

@@ -62,32 +62,25 @@ func Test_Main4BeaconCommittee(t *testing.T) {
 		GetSimulation().scenario.voteComm[timeslot][fmt.Sprintf("%d", int(int(startTimeSlot)+nodeID)%len(committee))] = scenario
 	}
 
-	for _, v := range nodeList {
-		v.consensusEngine.Logger.Info("\n\n")
-		v.consensusEngine.Logger.Info("===============================")
-		v.consensusEngine.Logger.Info("\n\n")
-		fmt.Printf("Node %s log is %s\n", v.id, fmt.Sprintf("log%s.log", v.id))
-	}
-
 	/*
 		START YOUR SIMULATION HERE
 	*/
 	timeslot := setTimeSlot(1) //normal communication, full connect by default
 
-	//timeslot = setTimeSlot(2)
-	//setProposeCommunication(timeslot, 1, []int{0, 0, 0, 1})
-	//setVoteCommunication(timeslot, 3, []int{0, 1, 0, 0})
-	////
-	//timeslot = setTimeSlot(3)
-	//setVoteCommunication(timeslot, 0, []int{0, 0, 0, 0})
-	//setVoteCommunication(timeslot, 1, []int{1, 0, 0, 0})
-	//setVoteCommunication(timeslot, 2, []int{1, 0, 0, 0})
-	//setVoteCommunication(timeslot, 3, []int{1, 0, 0, 0})
-	////
-	//timeslot = setTimeSlot(4)
-	//setVoteCommunication(timeslot, 1, []int{0, 1, 1, 1})
-	//setVoteCommunication(timeslot, 2, []int{0, 1, 1, 1})
-	//setVoteCommunication(timeslot, 3, []int{0, 1, 1, 1})
+	timeslot = setTimeSlot(2)
+	setProposeCommunication(timeslot, 1, []int{0, 0, 0, 1})
+	setVoteCommunication(timeslot, 3, []int{0, 1, 0, 0})
+	//
+	timeslot = setTimeSlot(3)
+	setVoteCommunication(timeslot, 0, []int{0, 0, 0, 0})
+	setVoteCommunication(timeslot, 1, []int{1, 0, 0, 0})
+	setVoteCommunication(timeslot, 2, []int{1, 0, 0, 0})
+	setVoteCommunication(timeslot, 3, []int{1, 0, 0, 0})
+	//
+	timeslot = setTimeSlot(4)
+	setVoteCommunication(timeslot, 1, []int{0, 1, 1, 1})
+	setVoteCommunication(timeslot, 2, []int{0, 1, 1, 1})
+	setVoteCommunication(timeslot, 3, []int{0, 1, 1, 1})
 
 	timeslot = setTimeSlot(50) //normal cimmunication
 	setProposeCommunication(timeslot, 1, []int{1, 1, 1, 1})
