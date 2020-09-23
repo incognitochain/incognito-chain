@@ -240,6 +240,9 @@ var HttpHandler = map[string]httpHandler{
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
 	// get committeeByHeight
+
+	// unstake
+	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 }
 
 // Commands that are available to a limited user

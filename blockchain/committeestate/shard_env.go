@@ -21,9 +21,9 @@ type ShardEnvBuilder interface {
 	BuildMinShardCommitteeSize(minShardCommitteeSize int) ShardEnvBuilder
 	BuildOffset(offset int) ShardEnvBuilder
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
-	BuildProducersBlackList(producersBlackList map[string]uint8) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
+	BuildUpdatedCommitteesByBeacon([]string) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -48,9 +48,9 @@ type ShardCommitteeStateEnvironment interface {
 	MinShardCommitteeSize() int
 	Offset() int
 	SwapOffset() int
-	ProducersBlackList() map[string]uint8
 	StakingTx() map[string]string
 	NumberOfFixedBlockValidators() int
+	UpdatedCommitteesByBeacon() []string
 }
 
 //shardCommitteeStateEnvironment :
@@ -69,9 +69,15 @@ type shardCommitteeStateEnvironment struct {
 	minShardCommitteeSize        int
 	offset                       int
 	swapOffset                   int
-	producersBlackList           map[string]uint8
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
+	updatedCommitteesByBeacon    []string
+}
+
+//BuildShardHeight :
+func (env *shardCommitteeStateEnvironment) BuildUpdatedCommitteesByBeacon(committees []string) ShardEnvBuilder {
+	env.updatedCommitteesByBeacon = committees
+	return env
 }
 
 //BuildShardHeight :
@@ -159,19 +165,14 @@ func (env *shardCommitteeStateEnvironment) BuildSwapOffset(swapOffset int) Shard
 	return env
 }
 
-//BuildProducersBlackList :
-func (env *shardCommitteeStateEnvironment) BuildProducersBlackList(producersBlackList map[string]uint8) ShardEnvBuilder {
-	env.producersBlackList = producersBlackList
-	return env
-}
-
 //BuildStakingTx :
 func (env *shardCommitteeStateEnvironment) BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder {
 	env.stakingTx = stakingTx
 	return env
 }
 
-func (env *shardCommitteeStateEnvironment) BuildNumberOfFixedBlockValidators(numberOfFixedBlockValidators int) ShardEnvBuilder {
+func (env *shardCommitteeStateEnvironment) BuildNumberOfFixedBlockValidators(
+	numberOfFixedBlockValidators int) ShardEnvBuilder {
 	env.numberOfFixedBlockValidators = numberOfFixedBlockValidators
 	return env
 }
@@ -248,11 +249,6 @@ func (env *shardCommitteeStateEnvironment) SwapOffset() int {
 	return env.swapOffset
 }
 
-//ProducersBlackList :
-func (env *shardCommitteeStateEnvironment) ProducersBlackList() map[string]uint8 {
-	return env.producersBlackList
-}
-
 //StakingTx :
 func (env *shardCommitteeStateEnvironment) StakingTx() map[string]string {
 	return env.stakingTx
@@ -260,6 +256,10 @@ func (env *shardCommitteeStateEnvironment) StakingTx() map[string]string {
 
 func (env *shardCommitteeStateEnvironment) NumberOfFixedBlockValidators() int {
 	return env.numberOfFixedBlockValidators
+}
+
+func (env *shardCommitteeStateEnvironment) UpdatedCommitteesByBeacon() []string {
+	return env.updatedCommitteesByBeacon
 }
 
 //Build :

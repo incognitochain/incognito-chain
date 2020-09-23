@@ -24,7 +24,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		if len(inst) < 2 {
 			continue
 		}
-		if inst[0] == instruction.SET_ACTION || inst[0] == instruction.STAKE_ACTION || inst[0] == instruction.SWAP_ACTION || inst[0] == instruction.RANDOM_ACTION || inst[0] == instruction.ASSIGN_ACTION {
+		if instruction.IsConsensusInstruction(inst[0]) {
 			continue
 		}
 
@@ -436,7 +436,7 @@ func categorizeNSortPDECrossPoolTradeInstsByFee(
 			}
 			tradeMeta := crossPoolTradeRequestAction.Meta
 			if (isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) && !isPoolPairExisting(beaconHeight, currentPDEState, tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr)) ||
-			(!isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) && (!isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToSellStr) || !isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToBuyStr))) {
+				(!isTradingFairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) && (!isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToSellStr) || !isPoolPairExisting(beaconHeight, currentPDEState, prvIDStr, tradeMeta.TokenIDToBuyStr))) {
 				untradableActions = append(untradableActions, crossPoolTradeRequestAction)
 				continue
 			}

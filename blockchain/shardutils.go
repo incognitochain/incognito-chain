@@ -3,11 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -92,7 +93,7 @@ func CreateSwapInstruction(
 	offset int,
 	swapOffset int,
 ) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, producersBlackList, swapOffset)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -106,17 +107,15 @@ func CreateSwapInstruction(
 
 func CreateShardSwapActionForKeyListV2(
 	genesisParam *GenesisParams,
-	pendingValidator []string,
 	shardCommittees []string,
 	minCommitteeSize int,
 	activeShard int,
 	shardID byte,
 	epoch uint64,
-) ([]string, []string, []string) {
-	newPendingValidator := pendingValidator
+) ([]string, []string) {
 	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
 	remainShardCommittees := shardCommittees[minCommitteeSize:]
-	return swapInstruction[shardID], newPendingValidator, append(newShardCommittees[shardID], remainShardCommittees...)
+	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
 }
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
@@ -125,6 +124,8 @@ func CreateShardSwapActionForKeyListV2(
 //	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
 // Stop Auto Staking:
 //	["stopautostaking" "pubkey1,pubkey2,..."]
+// Unstake:
+//  ["unstake", "pubkey1,pubkey2,..."]
 func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
@@ -136,6 +137,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	stakeShardAutoStaking := []string{}
 	stakeBeaconAutoStaking := []string{}
 	stopAutoStaking := []string{}
+	unstaking := []string{}
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
@@ -182,6 +184,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 				}
 				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
 			}
+		case metadata.UnStakingMeta:
+			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
 		}
 	}
 	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
@@ -211,6 +219,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
 		// ["stopautostaking" "pubkey1,pubkey2,..."]
 		inst := []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	if !reflect.DeepEqual(unstaking, []string{}) {
+		// ["unstake" "pubkey1,pubkey2,..."]
+		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
 	return instructions, nil

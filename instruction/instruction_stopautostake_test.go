@@ -112,7 +112,7 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1}, SPLITTER)},
 			},
 			want: &StopAutoStakeInstruction{
-				PublicKeys: []string{key1},
+				CommitteePublicKeys: []string{key1},
 			},
 		},
 		{
@@ -121,7 +121,7 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1, key2, key3}, SPLITTER)},
 			},
 			want: &StopAutoStakeInstruction{
-				PublicKeys: []string{key1, key2, key3},
+				CommitteePublicKeys: []string{key1, key2, key3},
 			},
 		},
 	}
@@ -147,7 +147,7 @@ func TestStopAutoStakeInstruction_ToString(t *testing.T) {
 			name: "One stop auto stake instruction",
 			args: args{
 				instruction: &StopAutoStakeInstruction{
-					PublicKeys: []string{key1},
+					CommitteePublicKeys: []string{key1},
 				},
 			},
 			want: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1}, SPLITTER)},
@@ -156,7 +156,7 @@ func TestStopAutoStakeInstruction_ToString(t *testing.T) {
 			name: "Many keys",
 			args: args{
 				instruction: &StopAutoStakeInstruction{
-					PublicKeys: []string{key1, key2, key3},
+					CommitteePublicKeys: []string{key1, key2, key3},
 				},
 			},
 			want: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1, key2, key3}, SPLITTER)},

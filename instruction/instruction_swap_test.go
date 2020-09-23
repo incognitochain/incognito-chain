@@ -5,13 +5,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/privacy"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-//Swap instruction format:
-//["swap-action", list-keys-in, list-keys-out, shard or beacon chain, shard_id(optional), "punished public key", "new reward receivers"]
-
 func TestValidateSwapInstructionSanity(t *testing.T) {
+
+	initPublicKey()
+	initPaymentAddress()
+
 	type args struct {
 		instruction []string
 	}
@@ -116,8 +119,9 @@ func TestValidateSwapInstructionSanity(t *testing.T) {
 					strings.Join([]string{key3, key4}, SPLITTER),
 					SHARD_INST,
 					"0",
-					"punished public keys",
-					"new reward receivers"},
+					"",
+					strings.Join([]string{paymentAddress3, paymentAddress4}, SPLITTER),
+				},
 			},
 			wantErr: false,
 		},
@@ -134,6 +138,7 @@ func TestValidateSwapInstructionSanity(t *testing.T) {
 func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 
 	initPublicKey()
+	initPaymentAddress()
 
 	type args struct {
 		instruction []string
@@ -232,7 +237,7 @@ func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Valid Input_shard",
+			name: "Valid Input Shard",
 			args: args{
 				instruction: []string{
 					SWAP_ACTION,
@@ -240,8 +245,8 @@ func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 					strings.Join([]string{key3, key4}, SPLITTER),
 					SHARD_INST,
 					"0",
-					"punished public keys",
-					strings.Join([]string{key3, key4}, SPLITTER)},
+					"",
+					strings.Join([]string{paymentAddress3, paymentAddress4}, SPLITTER)},
 			},
 			want: &SwapInstruction{
 				InPublicKeys:  []string{key1, key2},
@@ -255,23 +260,26 @@ func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 					*incKey4,
 				},
 				ChainID:            0,
-				PunishedPublicKeys: "punished public keys",
-				NewRewardReceivers: []string{key3, key4},
-				IsReplace:          true,
+				PunishedPublicKeys: "",
+				NewRewardReceivers: []string{paymentAddress3, paymentAddress4},
+				NewRewardReceiverStructs: []privacy.PaymentAddress{
+					*incPaymentAddress3, *incPaymentAddress4,
+				},
+				IsReplace: true,
 			},
 			wantErr: false,
 		},
 		{
-			name: "Valid Input_beacon",
+			name: "Valid Input Beacon",
 			args: args{
 				instruction: []string{
 					SWAP_ACTION,
 					strings.Join([]string{key1, key2}, SPLITTER),
 					strings.Join([]string{key3, key4}, SPLITTER),
 					BEACON_INST,
-					"punished public keys",
 					"",
-					strings.Join([]string{key3, key4}, SPLITTER)},
+					"",
+					strings.Join([]string{paymentAddress3, paymentAddress4}, SPLITTER)},
 			},
 			want: &SwapInstruction{
 				InPublicKeys:  []string{key1, key2},
@@ -285,9 +293,12 @@ func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 					*incKey4,
 				},
 				ChainID:            -1,
-				PunishedPublicKeys: "punished public keys",
-				NewRewardReceivers: []string{key3, key4},
-				IsReplace:          true,
+				PunishedPublicKeys: "",
+				NewRewardReceivers: []string{paymentAddress3, paymentAddress4},
+				NewRewardReceiverStructs: []privacy.PaymentAddress{
+					*incPaymentAddress3, *incPaymentAddress4,
+				},
+				IsReplace: true,
 			},
 			wantErr: false,
 		},
@@ -299,7 +310,6 @@ func TestValidateAndImportSwapInstructionFromString(t *testing.T) {
 				t.Errorf("ValidateAndImportSwapInstructionFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ValidateAndImportSwapInstructionFromString() = %v, want %v", got, tt.want)
 			}

@@ -180,6 +180,8 @@ const (
 	ResponsedTransactionFromBeaconInstructionsError
 	UpdateBeaconCommitteeStateError
 	UpdateShardCommitteeStateError
+	BuildIncurredInstructionError
+	ReturnStakingInstructionHandlerError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -345,6 +347,8 @@ var ErrCodeMessage = map[int]struct {
 	GetShardBlockByHashError:                          {-1156, "Get Shard Block By Hash Error"},
 	ProcessInstructionFromBeaconError:                 {-1157, "Process Instruction From Beacon Error"},
 	ShardStakingTxRootHashError:                       {-1158, "Build Shard StakingTX error"},
+	BuildIncurredInstructionError:                     {-1159, "Build Incurred Instructions error"},
+	ReturnStakingInstructionHandlerError:              {-1160, "Return Staking Instruction Handler error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},

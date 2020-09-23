@@ -6,11 +6,11 @@ import (
 )
 
 type StopAutoStakeInstruction struct {
-	PublicKeys []string
+	CommitteePublicKeys []string
 }
 
 func NewStopAutoStakeInstructionWithValue(publicKeys []string) *StopAutoStakeInstruction {
-	return &StopAutoStakeInstruction{PublicKeys: publicKeys}
+	return &StopAutoStakeInstruction{CommitteePublicKeys: publicKeys}
 }
 
 func NewStopAutoStakeInstruction() *StopAutoStakeInstruction {
@@ -23,7 +23,7 @@ func (s *StopAutoStakeInstruction) GetType() string {
 
 func (s *StopAutoStakeInstruction) ToString() []string {
 	stopAutoStakeInstructionStr := []string{STOP_AUTO_STAKE_ACTION}
-	stopAutoStakeInstructionStr = append(stopAutoStakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
+	stopAutoStakeInstructionStr = append(stopAutoStakeInstructionStr, strings.Join(s.CommitteePublicKeys, SPLITTER))
 	return stopAutoStakeInstructionStr
 }
 
@@ -38,7 +38,7 @@ func ImportStopAutoStakeInstructionFromString(instruction []string) *StopAutoSta
 	stopAutoStakeInstruction := NewStopAutoStakeInstruction()
 	if len(instruction[1]) > 0 {
 		publicKeys := strings.Split(instruction[1], SPLITTER)
-		stopAutoStakeInstruction.PublicKeys = publicKeys
+		stopAutoStakeInstruction.CommitteePublicKeys = publicKeys
 	}
 	return stopAutoStakeInstruction
 }

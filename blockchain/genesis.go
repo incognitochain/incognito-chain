@@ -1,13 +1,14 @@
 package blockchain
 
 import (
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func CreateGenesisBeaconBlock(

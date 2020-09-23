@@ -66,6 +66,12 @@ const (
 	CurrentEpochBeaconCandidate
 	SubstituteValidator
 	CurrentValidator
+	CommonBeaconPool
+	CommonShardPool
+	BeaconPool
+	ShardPool
+	BeaconCommittee
+	ShardCommittee
 )
 const (
 	BeaconChainID    = -1
