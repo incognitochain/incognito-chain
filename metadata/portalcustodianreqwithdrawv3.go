@@ -39,6 +39,7 @@ type CustodianWithdrawRequestStatusV3 struct {
 	CustodianExternalAddress string
 	ExternalTokenID          string // collateral token ID
 	Amount                   uint64
+	TxReqID                  common.Hash
 	Status                   int
 }
 
@@ -47,12 +48,14 @@ func NewCustodianWithdrawRequestStatusV3(
 	cusExternalAddress string,
 	externalTokenID string,
 	amount uint64,
+	txReqID common.Hash,
 	status int) *CustodianWithdrawRequestStatusV3 {
 	return &CustodianWithdrawRequestStatusV3{
 		CustodianIncAddress:      cusIncAddress,
 		CustodianExternalAddress: cusExternalAddress,
 		ExternalTokenID:          externalTokenID,
 		Amount:                   amount,
+		TxReqID:                  txReqID,
 		Status:                   status,
 	}
 }

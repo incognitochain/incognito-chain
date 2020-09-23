@@ -89,7 +89,11 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		case strconv.Itoa(metadata.PortalCustodianDepositMetaV3):
 			err = blockchain.processPortalCustodianDepositV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3):
-			err = blockchain.processPortalCustodianWithdrawRequestV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+			err = blockchain.processPortalCustodianWithdrawRequestRejectedV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+
+		// for Portal smart contract
+		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
+			err = blockchain.processPortalCustodianWithdrawConfirmV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
@@ -236,10 +240,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	uniquePortingID := portingRequestContent.UniqueRegisterId
 	txReqID := portingRequestContent.TxReqID
 	tokenID := portingRequestContent.PTokenId
-
 	porterAddress := portingRequestContent.IncogAddressStr
 	amount := portingRequestContent.RegisterAmount
-
 	custodiansDetail := portingRequestContent.Custodian
 	portingFee := portingRequestContent.PortingFee
 
@@ -883,7 +885,7 @@ func (blockchain *BlockChain) processPortalCustodianDepositV3(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalCustodianWithdrawRequestV3(
+func (blockchain *BlockChain) processPortalCustodianWithdrawRequestRejectedV3(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -910,70 +912,85 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequestV3(
 	amount := custodianWithdrawRequestContent.Amount
 	externalAddress := custodianWithdrawRequestContent.CustodianExternalAddress
 	externalTokenID := custodianWithdrawRequestContent.ExternalTokenID
-	txHash := custodianWithdrawRequestContent.TxReqID.String()
+	txHash := custodianWithdrawRequestContent.TxReqID
 
-	switch reqStatus {
-	case common.PortalCustodianWithdrawRequestV3AcceptedChainStatus:
-		//save transaction
-		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatusV3(
-			paymentAddress,
-			externalAddress,
-			externalTokenID,
-			amount,
-			common.PortalCustodianWithdrawReqV3AcceptedStatus,
-		)
+	if reqStatus != common.PortalCustodianWithdrawRequestV3RejectedChainStatus {
+		Logger.log.Errorf("ERROR: Invalid req status", reqStatus)
+		return nil
+	}
 
-		custodianKey := statedb.GenerateCustodianStateObjectKey(paymentAddress)
-		custodianKeyStr := custodianKey.String()
-		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
+	// store req Tx
+	newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatusV3(
+		paymentAddress,
+		externalAddress,
+		externalTokenID,
+		amount,
+		txHash,
+		common.PortalCustodianWithdrawReqV3RejectStatus,
+	)
 
-		if !ok {
-			Logger.log.Errorf("ERROR: Custodian not found")
-			return nil
-		}
-
-		//check free collateral
-		if amount > custodian.GetFreeTokenCollaterals()[externalTokenID] {
-			Logger.log.Errorf("ERROR: Free collateral is not enough to withdraw")
-			return nil
-		}
-
-		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-		err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
-			portalStateDB,
-			txHash,
-			contentStatusBytes,
-		)
-
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
-			return nil
-		}
-
-		updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, externalTokenID, amount)
-		currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
-
-	case common.PortalCustodianWithdrawRequestV3RejectedChainStatus:
-		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatusV3(
-			paymentAddress,
-			externalAddress,
-			externalTokenID,
-			amount,
-			common.PortalCustodianWithdrawReqV3RejectStatus,
-		)
-
-		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-		err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
-			portalStateDB,
-			txHash,
-			contentStatusBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
-			return nil
-		}
+	contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
+	err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
+		portalStateDB,
+		txHash.String(),
+		contentStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
+		return nil
 	}
 
 	return nil
 }
 
+func (blockchain *BlockChain) processPortalCustodianWithdrawConfirmV3(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 7 {
+		Logger.log.Errorf("Portal custodian withdraw confirm v3 should have len = 7")
+		return nil // skip the instruction
+	}
+
+	status, err := buildPortalCustodianWithdrawStatusFromConfirmInstV3(instructions)
+	if err != nil {
+		Logger.log.Errorf("ERROR: when build portal custodian withdraw status v3 from confirm instruction")
+		return nil
+	}
+	custodianKeyStr := statedb.GenerateCustodianStateObjectKey(status.CustodianIncAddress).String()
+	custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
+	if !ok {
+		Logger.log.Errorf("ERROR: Custodian not found")
+		return nil
+	}
+
+	//check free collateral
+	if status.Amount > custodian.GetFreeTokenCollaterals()[status.ExternalTokenID] {
+		Logger.log.Errorf("ERROR: Free collateral is not enough to withdraw")
+		return nil
+	}
+
+	contentStatusBytes, _ := json.Marshal(status)
+	err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
+		portalStateDB,
+		status.TxReqID.String(),
+		contentStatusBytes,
+	)
+
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
+		return nil
+	}
+
+	updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, status.ExternalTokenID, status.Amount)
+	currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
+
+	return nil
+}

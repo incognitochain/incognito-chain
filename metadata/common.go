@@ -178,7 +178,7 @@ func HasBridgeInstructions(instructions [][]string) bool {
 
 // TODO: add more meta data types
 var portalMetas = []string{
-	strconv.Itoa(PortalCustodianWithdrawRequestMetaV3),
+	strconv.Itoa(PortalCustodianWithdrawConfirmMetaV3),
 }
 func HasPortalInstructions(instructions [][]string) bool {
 	for _, inst := range instructions {
