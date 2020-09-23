@@ -69,6 +69,7 @@ type Params struct {
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
 	PortalParams                     map[uint64]PortalParams
+	PortalTokens                     map[string]PortalTokenProcessor
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
 	IsBackup                         bool
@@ -76,7 +77,7 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointFixRandShardCM uint64
-	PortalETHContractAddressStr            string // smart contract of ETH for portal
+	PortalETHContractAddressStr      string // smart contract of ETH for portal
 }
 
 type GenesisParams struct {
@@ -103,6 +104,36 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
+
+func initPortalTokensForTestNet() map[string]PortalTokenProcessor {
+	return map[string]PortalTokenProcessor{
+		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
+			&PortalToken{
+				ChainID: TestnetBTCChainID,
+			},
+		},
+		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
+			&PortalToken{
+				ChainID: TestnetBNBChainID,
+			},
+		},
+	}
+}
+
+func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
+	return map[string]PortalTokenProcessor{
+		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
+			&PortalToken{
+				ChainID: MainnetBTCChainID,
+			},
+		},
+		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
+			&PortalToken{
+				ChainID: MainnetBNBChainID,
+			},
+		},
+	}
+}
 
 func init() {
 	// FOR TESTNET
@@ -165,8 +196,8 @@ func init() {
 		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutCustodianReturnPubToken:       15 * time.Hour,
+				TimeOutWaitingPortingRequest:         15 * time.Hour,
 				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
@@ -182,13 +213,14 @@ func init() {
 				},
 			},
 		},
+		PortalTokens:                     initPortalTokensForTestNet(),
 		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 2070000,
 		ETHRemoveBridgeSigEpoch:          21920,
-		PortalETHContractAddressStr: "",    // todo: update sc address
+		PortalETHContractAddressStr:      "", // todo: update sc address
 	}
 	// END TESTNET
 
@@ -264,18 +296,19 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs:          []string{
+				SupportedCollateralTokenIDs: []string{
 					common.EthAddrStr,
 				},
 			},
 		},
+		PortalTokens:                     initPortalTokensForTestNet(),
 		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
 		ETHRemoveBridgeSigEpoch:          2085,
-		PortalETHContractAddressStr: "",    // todo: update sc address
+		PortalETHContractAddressStr:      "", // todo: update sc address
 	}
 	// END TESTNET-2
 
@@ -349,19 +382,19 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs:          []string{
+				SupportedCollateralTokenIDs: []string{
 					common.EthAddrStr,
 				},
 			},
 		},
-
+		PortalTokens:                     initPortalTokensForMainNet(),
 		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:           559380,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 644000,
 		ETHRemoveBridgeSigEpoch:          1e18,
-		PortalETHContractAddressStr: "",    // todo: update sc address
+		PortalETHContractAddressStr:      "", // todo: update sc address
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

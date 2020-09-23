@@ -308,7 +308,7 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 	}
 
 	meta := metadata.NewPortalCustodianWithdrawResponse(
-		common.PortalCustodianWithdrawRequestAcceptedStatus,
+		common.PortalCustodianWithdrawRequestAcceptedChainStatus,
 		custodianWithdrawRequest.TxReqID,
 		custodianWithdrawRequest.PaymentAddress,
 		custodianWithdrawRequest.Amount,

@@ -368,7 +368,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 				//custodian withdraw
 			case metadata.PortalCustodianWithdrawRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
+				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRedeemRequestMeta:

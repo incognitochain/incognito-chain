@@ -131,7 +131,7 @@ func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingRequestId is invalid"))
 	}
 
-	result, err := httpServer.portal.GetPortingRequestByByKey(txHash)
+	result, err := httpServer.portal.GetPortingRequestByByTxID(txHash)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestError, err)

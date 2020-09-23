@@ -198,7 +198,7 @@ func (p *portalRequestWithdrawCollateralProcessor) buildNewInsts(
 	rejectInst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestRejectedStatus,
+		common.PortalCustodianWithdrawRequestRejectedChainStatus,
 		actionData.Meta.PaymentAddress,
 		actionData.Meta.Amount,
 		0,
@@ -234,7 +234,7 @@ func (p *portalRequestWithdrawCollateralProcessor) buildNewInsts(
 	inst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestAcceptedStatus,
+		common.PortalCustodianWithdrawRequestAcceptedChainStatus,
 		actionData.Meta.PaymentAddress,
 		actionData.Meta.Amount,
 		remainFreeCollateral,

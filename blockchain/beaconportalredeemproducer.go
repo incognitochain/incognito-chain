@@ -1,16 +1,12 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 	"strconv"
@@ -589,293 +585,80 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 	}
 
 	// check redeem amount of matching custodian
-	amountMatchingCustodian := uint64(0)
-	isFoundCustodian := false
+	matchedCustodian := new(statedb.MatchingRedeemCustodianDetail)
 	for _, cus := range matchedRedeemRequest.GetCustodians() {
 		if cus.GetIncognitoAddress() == meta.CustodianAddressStr {
-			amountMatchingCustodian = cus.GetAmount()
-			isFoundCustodian = true
+			matchedCustodian = cus
 			break
 		}
 	}
-
-	if !isFoundCustodian {
+	if matchedCustodian.GetIncognitoAddress() == "" {
 		Logger.log.Errorf("Custodian address %v is not in redeemID req %v", meta.CustodianAddressStr, meta.UniqueRedeemID)
 		return [][]string{rejectInst}, nil
 	}
 
-	if meta.RedeemAmount != amountMatchingCustodian {
+	if meta.RedeemAmount != matchedCustodian.GetAmount() {
 		Logger.log.Errorf("RedeemAmount is not correct in redeemID req")
 		return [][]string{rejectInst}, nil
 	}
 
-	// validate proof and memo in tx
-	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain := bc.config.BTCChain
-		if btcChain == nil {
-			Logger.log.Error("BTC relaying chain should not be null")
-			return [][]string{rejectInst}, nil
-		}
-		// parse PortingProof in meta
-		btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(meta.RedeemProof)
-		if err != nil {
-			Logger.log.Errorf("PortingProof is invalid %v\n", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
-		if !isValid || err != nil {
-			Logger.log.Errorf("Verify btcTxProof failed %v", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		// extract attached message from txOut's OP_RETURN
-		btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-		if err != nil {
-			Logger.log.Errorf("Could not extract message from btc proof with error: ", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		rawMsg := fmt.Sprintf("%s%s", meta.UniqueRedeemID, meta.CustodianAddressStr)
-		encodedMsg := btcrelaying.HashAndEncodeBase58(rawMsg)
-		if btcAttachedMsg != encodedMsg {
-			Logger.log.Errorf("The hash of combination of UniqueRedeemID(%s) and CustodianAddressStr(%s) is not matched to tx's attached message", meta.UniqueRedeemID, meta.CustodianAddressStr)
-			return [][]string{rejectInst}, nil
-		}
-
-		// check whether amount transfer in txBNB is equal redeem amount or not
-		// check receiver and amount in tx
-		// get list matching custodians in matchedRedeemRequest
-
-		outputs := btcTxProof.BTCTx.TxOut
-		remoteAddressNeedToBeTransfer := matchedRedeemRequest.GetRedeemerRemoteAddress()
-		amountNeedToBeTransfer := meta.RedeemAmount
-		amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
-
-		isChecked := false
-		for _, out := range outputs {
-			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-			if err != nil {
-				Logger.log.Warnf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-				continue
-			}
-			if addrStr != remoteAddressNeedToBeTransfer {
-				continue
-			}
-			if out.Value < amountNeedToBeTransferInBTC {
-				Logger.log.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
-				return [][]string{rejectInst}, nil
-			} else {
-				isChecked = true
-				break
-			}
-		}
-
-		if !isChecked {
-			Logger.log.Error("BTC-TxProof is invalid")
-			return [][]string{rejectInst}, nil
-		}
-
-		// calculate unlock amount
-		custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
-		custodianStateKeyStr := custodianStateKey.String()
-		unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
-		if err != nil {
-			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		// update custodian state (FreeCollateral, LockedAmountCollateral)
-		err = updateCustodianStateAfterReqUnlockCollateral(
-			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			unlockAmount, meta.TokenID)
-		if err != nil {
-			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while removing custodian %v from matching custodians", meta.CustodianAddressStr)
-			return [][]string{rejectInst}, nil
-		}
-		currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].SetCustodians(updatedCustodians)
-
-		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
-		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians()) == 0 {
-			deleteMatchedRedeemRequest(currentPortalState, keyMatchedRedeemRequestStr)
-		}
-
-		inst := buildReqUnlockCollateralInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.CustodianAddressStr,
-			meta.RedeemAmount,
-			unlockAmount,
-			meta.RedeemProof,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqUnlockCollateralAcceptedChainStatus,
-		)
-
-		return [][]string{inst}, nil
-
-	} else if meta.TokenID == common.PortalBNBIDStr {
-		// parse PortingProof in meta
-		txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.RedeemProof)
-		if err != nil {
-			Logger.log.Errorf("RedeemProof is invalid %v\n", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		// check minimum confirmations block of bnb proof
-		latestBNBBlockHeight, err2 := bc.GetLatestBNBBlkHeight()
-		if err2 != nil {
-			Logger.log.Errorf("Can not get latest relaying bnb block height %v\n", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		if latestBNBBlockHeight < txProofBNB.BlockHeight+bnb.MinConfirmationsBlock {
-			Logger.log.Errorf("Not enough min bnb confirmations block %v, latestBNBBlockHeight %v - txProofBNB.BlockHeight %v\n",
-				bnb.MinConfirmationsBlock, latestBNBBlockHeight, txProofBNB.BlockHeight)
-			return [][]string{rejectInst}, nil
-		}
-
-		dataHash, err2 := bc.GetBNBDataHash(txProofBNB.BlockHeight)
-		if err2 != nil {
-			Logger.log.Errorf("Error when get data hash in blockHeight %v - %v\n",
-				txProofBNB.BlockHeight, err2)
-			return [][]string{rejectInst}, nil
-		}
-
-		isValid, err := txProofBNB.Verify(dataHash)
-		if !isValid || err != nil {
-			Logger.log.Errorf("Verify txProofBNB failed %v", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		// parse Tx from Data in txProofBNB
-		txBNB, err := bnb.ParseTxFromData(txProofBNB.Proof.Data)
-		if err != nil {
-			Logger.log.Errorf("Data in RedeemProof is invalid %v", err)
-			return [][]string{rejectInst}, nil
-		}
-
-		// check memo attach redeemID req (compare hash memo)
-		memo := txBNB.Memo
-		memoHashBytes, err2 := base64.StdEncoding.DecodeString(memo)
-		if err2 != nil {
-			Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
-			return [][]string{rejectInst}, nil
-		}
-
-		expectedRedeemMemo := RedeemMemoBNB{
-			RedeemID:                  redeemID,
-			CustodianIncognitoAddress: meta.CustodianAddressStr}
-		expectedRedeemMemoBytes, _ := json.Marshal(expectedRedeemMemo)
-		expectedRedeemMemoHashBytes := common.HashB(expectedRedeemMemoBytes)
-
-		if !bytes.Equal(memoHashBytes, expectedRedeemMemoHashBytes) {
-			Logger.log.Errorf("Memo redeem is invalid")
-			return [][]string{rejectInst}, nil
-		}
-
-		// check whether amount transfer in txBNB is equal redeem amount or not
-		// check receiver and amount in tx
-		// get list matching custodians in matchedRedeemRequest
-
-		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
-
-		remoteAddressNeedToBeTransfer := matchedRedeemRequest.GetRedeemerRemoteAddress()
-		amountNeedToBeTransfer := meta.RedeemAmount
-		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
-
-		isChecked := false
-		for _, out := range outputs {
-			addr, _ := bnb.GetAccAddressString(&out.Address, bc.config.ChainParams.BNBRelayingHeaderChainID)
-			if addr != remoteAddressNeedToBeTransfer {
-				continue
-			}
-
-			// calculate amount that was transferred to custodian's remote address
-			amountTransfer := int64(0)
-			for _, coin := range out.Coins {
-				if coin.Denom == bnb.DenomBNB {
-					amountTransfer += coin.Amount
-					// note: log error for debug
-					Logger.log.Infof("TxProof-BNB coin.Amount %d",
-						coin.Amount)
-				}
-			}
-			if amountTransfer < amountNeedToBeTransferInBNB {
-				Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
-					addr, amountNeedToBeTransferInBNB, amountTransfer)
-				return [][]string{rejectInst}, nil
-			} else {
-				isChecked = true
-				break
-			}
-		}
-
-		if !isChecked {
-			Logger.log.Errorf("TxProof-BNB is invalid - Receiver address is invalid, expected %v",
-				remoteAddressNeedToBeTransfer)
-			return [][]string{rejectInst}, nil
-		}
-
-		// calculate unlock amount
-		custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
-		custodianStateKeyStr := custodianStateKey.String()
-		unlockAmount, err2 := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
-		if err2 != nil {
-			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err2)
-			return [][]string{rejectInst}, nil
-		}
-
-		// update custodian state (FreeCollateral, LockedAmountCollateral)
-		err2 = updateCustodianStateAfterReqUnlockCollateral(
-			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			unlockAmount, meta.TokenID)
-		if err2 != nil {
-			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err2)
-			return [][]string{rejectInst}, nil
-		}
-
-		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		updatedCustodians, err2 := removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
-		if err2 != nil {
-			Logger.log.Errorf("Error when removing custodian from matching redeem custodians %v", err2)
-			return [][]string{rejectInst}, nil
-		}
-		currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].SetCustodians(updatedCustodians)
-
-		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
-		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians()) == 0 {
-			deleteMatchedRedeemRequest(currentPortalState, keyMatchedRedeemRequestStr)
-		}
-
-		inst := buildReqUnlockCollateralInst(
-			meta.UniqueRedeemID,
-			meta.TokenID,
-			meta.CustodianAddressStr,
-			meta.RedeemAmount,
-			unlockAmount,
-			meta.RedeemProof,
-			meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.PortalReqUnlockCollateralAcceptedChainStatus,
-		)
-
-		return [][]string{inst}, nil
-	} else {
-		Logger.log.Errorf("TokenID is not supported currently on Portal")
+	portalTokenProcessor := bc.config.ChainParams.PortalTokens[meta.TokenID]
+	if portalTokenProcessor == nil {
+		Logger.log.Errorf("TokenID %v is not supported currently on Portal", meta.TokenID)
 		return [][]string{rejectInst}, nil
 	}
+
+	isValid, err := portalTokenProcessor.ParseAndVerifyProofForRedeem(meta.RedeemProof, matchedRedeemRequest, bc, matchedCustodian)
+	if !isValid || err != nil {
+		Logger.log.Error("Parse and verify redeem proof failed: %v", err)
+		return [][]string{rejectInst}, nil
+	}
+
+	// calculate unlock amount
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
+	custodianStateKeyStr := custodianStateKey.String()
+	unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
+	if err != nil {
+		Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
+		return [][]string{rejectInst}, nil
+	}
+
+	// update custodian state (FreeCollateral, LockedAmountCollateral)
+	err = updateCustodianStateAfterReqUnlockCollateral(
+		currentPortalState.CustodianPoolState[custodianStateKeyStr],
+		unlockAmount, meta.TokenID)
+	if err != nil {
+		Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
+		return [][]string{rejectInst}, nil
+	}
+
+	// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
+	updatedCustodians, err := removeCustodianFromMatchingRedeemCustodians(
+		currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while removing custodian %v from matching custodians", meta.CustodianAddressStr)
+		return [][]string{rejectInst}, nil
+	}
+	currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].SetCustodians(updatedCustodians)
+
+	// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
+	// when list matchingCustodianDetail is empty
+	if len(currentPortalState.MatchedRedeemRequests[keyMatchedRedeemRequestStr].GetCustodians()) == 0 {
+		deleteMatchedRedeemRequest(currentPortalState, keyMatchedRedeemRequestStr)
+	}
+
+	inst := buildReqUnlockCollateralInst(
+		meta.UniqueRedeemID,
+		meta.TokenID,
+		meta.CustodianAddressStr,
+		meta.RedeemAmount,
+		unlockAmount,
+		meta.RedeemProof,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+		common.PortalReqUnlockCollateralAcceptedChainStatus,
+	)
+
+	return [][]string{inst}, nil
 }

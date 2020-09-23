@@ -50,6 +50,7 @@ var (
 	portalPortingRequestStatusPrefix              = []byte("portalportingrequeststatus-")
 	portalPortingRequestTxStatusPrefix            = []byte("portalportingrequesttxstatus-")
 	portalCustodianWithdrawStatusPrefix           = []byte("portalcustodianwithdrawstatus-")
+	portalCustodianWithdrawStatusPrefixV3           = []byte("portalcustodianwithdrawstatusv3-")
 	portalLiquidationTpExchangeRatesStatusPrefix  = []byte("portalliquidationtpexchangeratesstatus-")
 	portalLiquidationExchangeRatesPoolPrefix      = []byte("portalliquidationexchangeratespool-")
 	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
@@ -62,6 +63,7 @@ var (
 
 	portalStatusPrefix                           = []byte("portalstatus-")
 	portalCustodianDepositStatusPrefix           = []byte("custodiandeposit-")
+	portalCustodianDepositStatusPrefixV3           = []byte("custodiandepositv3-")
 	portalRequestPTokenStatusPrefix              = []byte("requestptoken-")
 	portalRedeemRequestStatusPrefix              = []byte("redeemrequest-")
 	portalRedeemRequestStatusByTxReqIDPrefix     = []byte("redeemrequestbytxid-")
@@ -315,6 +317,10 @@ func PortalCustodianWithdrawStatusPrefix() []byte {
 	return portalCustodianWithdrawStatusPrefix
 }
 
+func PortalCustodianWithdrawStatusPrefixV3() []byte {
+	return portalCustodianWithdrawStatusPrefixV3
+}
+
 func PortalLiquidationTpExchangeRatesStatusPrefix() []byte {
 	return portalLiquidationTpExchangeRatesStatusPrefix
 }
@@ -383,6 +389,10 @@ func GetPortalExternalTxPrefix() []byte {
 
 func PortalCustodianDepositStatusPrefix() []byte {
 	return portalCustodianDepositStatusPrefix
+}
+
+func PortalCustodianDepositStatusPrefixV3() []byte {
+	return portalCustodianDepositStatusPrefixV3
 }
 
 func PortalRequestPTokenStatusPrefix() []byte {

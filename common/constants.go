@@ -196,6 +196,9 @@ const (
 
 	PortalCustodianDepositV3AcceptedStatus = 1
 	PortalCustodianDepositV3RefundStatus   = 2
+
+	PortalCustodianWithdrawReqV3AcceptedStatus = 1
+	PortalCustodianWithdrawReqV3RejectStatus   = 2
 )
 
 // PDE statuses for chain
@@ -241,8 +244,8 @@ const (
 	PortalRedeemRequestRejectedChainStatus           = "rejected"
 	PortalRedeemReqCancelledByLiquidationChainStatus = "cancelled"
 
-	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
-	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
+	PortalCustodianWithdrawRequestAcceptedChainStatus = "accepted"
+	PortalCustodianWithdrawRequestRejectedChainStatus = "rejected"
 
 	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
 	PortalReqUnlockCollateralRejectedChainStatus = "rejected"

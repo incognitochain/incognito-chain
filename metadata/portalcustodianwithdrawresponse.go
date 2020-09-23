@@ -95,7 +95,7 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 
 		instDepositStatus := inst[2]
 		if instDepositStatus != responseMeta.RequestStatus ||
-			(instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedStatus) {
+			(instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedChainStatus) {
 			continue
 		}
 

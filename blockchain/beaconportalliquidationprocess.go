@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -161,46 +160,34 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(
 			Logger.log.Infof("end update liquidation %#v", currentPortalState)
 
 			//save db
-			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-			newTPKey := beaconHeightBytes
-			newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
 			newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
 				custodianState.GetIncognitoAddress(),
 				common.PortalLiquidationTPExchangeRatesSuccessStatus,
 				detectTp,
 			)
-
 			contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
-			err = statedb.TrackPortalStateStatusMultiple(
+			err = statedb.StoreLiquidationByExchangeRateStatus(
 				portalStateDB,
-				statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
-				newTPKey,
-				contentStatusBytes,
 				beaconHeight,
-			)
-
+				custodianState.GetIncognitoAddress(),
+				contentStatusBytes)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
 				return nil
 			}
 		}
 	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
-		beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-		newTPKey := beaconHeightBytes
-		newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
 		newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
 			custodianState.GetIncognitoAddress(),
 			common.PortalLiquidationTPExchangeRatesFailedStatus,
 			nil,
 		)
 		contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StoreLiquidationByExchangeRateStatus(
 			portalStateDB,
-			statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
-			newTPKey,
-			contentStatusBytes,
 			beaconHeight,
-		)
+			custodianState.GetIncognitoAddress(),
+			contentStatusBytes)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
@@ -272,12 +259,10 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 		)
 
 		contentStatusBytes, _ := json.Marshal(redeem)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StoreRedeemRequestFromLiquidationPoolByTxIDStatus(
 			portalStateDB,
-			statedb.PortalLiquidationRedeemRequestStatusPrefix(),
-			[]byte(actionData.TxReqID.String()),
+			actionData.TxReqID.String(),
 			contentStatusBytes,
-			beaconHeight,
 		)
 
 		if err != nil {
@@ -315,12 +300,10 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(
 		)
 
 		contentStatusBytes, _ := json.Marshal(redeem)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StoreRedeemRequestFromLiquidationPoolByTxIDStatus(
 			portalStateDB,
-			statedb.PortalLiquidationRedeemRequestStatusPrefix(),
-			[]byte(actionData.TxReqID.String()),
+			actionData.TxReqID.String(),
 			contentStatusBytes,
-			beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Errorf("Store redeem liquidate exchange rates error %v\n", err)
@@ -355,11 +338,20 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 
 	depositStatus := instructions[2]
 	if depositStatus == common.PortalTopUpWaitingPortingRejectedChainStatus {
-		err = trackPortalStateStatus(
-			beaconHeight,
-			portalStateDB,
-			actionData,
+		topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatus(
+			actionData.TxReqID,
+			actionData.PortingID,
+			actionData.IncogAddressStr,
+			actionData.PTokenID,
+			actionData.DepositedAmount,
+			actionData.FreeCollateralAmount,
 			common.PortalTopUpWaitingPortingRejectedStatus,
+		)
+		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
+		err = statedb.StoreCustodianTopupWaitingPortingStatus(
+			portalStateDB,
+			actionData.TxReqID.String(),
+			statusContentBytes,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
@@ -400,11 +392,20 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 		currentPortalState.CustodianPoolState[custodianStateKey.String()] = custodian
 		currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()] = waitingPortingReq
 
-		err = trackPortalStateStatus(
-			beaconHeight,
-			portalStateDB,
-			actionData,
+		topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatus(
+			actionData.TxReqID,
+			actionData.PortingID,
+			actionData.IncogAddressStr,
+			actionData.PTokenID,
+			actionData.DepositedAmount,
+			actionData.FreeCollateralAmount,
 			common.PortalTopUpWaitingPortingSuccessStatus,
+		)
+		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
+		err = statedb.StoreCustodianTopupWaitingPortingStatus(
+			portalStateDB,
+			actionData.TxReqID.String(),
+			statusContentBytes,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
@@ -424,12 +425,10 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 			beaconHeight+1,
 		)
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StorePortalPortingRequestStatus(
 			portalStateDB,
-			statedb.PortalPortingRequestStatusPrefix(),
-			[]byte(waitingPortingReq.UniquePortingID()),
+			waitingPortingReq.UniquePortingID(),
 			newPortingRequestStatusBytes,
-			beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
@@ -437,31 +436,6 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 		}
 	}
 	return nil
-}
-
-func trackPortalStateStatus(
-	beaconHeight uint64,
-	portalStateDB *statedb.StateDB,
-	actionData metadata.PortalTopUpWaitingPortingRequestContent,
-	status byte,
-) error {
-	topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatus(
-		actionData.TxReqID,
-		actionData.PortingID,
-		actionData.IncogAddressStr,
-		actionData.PTokenID,
-		actionData.DepositedAmount,
-		actionData.FreeCollateralAmount,
-		status,
-	)
-	statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
-	return statedb.TrackPortalStateStatusMultiple(
-		portalStateDB,
-		statedb.PortalTopUpWaitingPortingStatusPrefix(),
-		[]byte(actionData.TxReqID.String()),
-		statusContentBytes,
-		beaconHeight,
-	)
 }
 
 func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
@@ -519,14 +493,11 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StoreCustodianTopupStatus(
 			portalStateDB,
-			statedb.PortalLiquidationCustodianDepositStatusPrefix(),
-			[]byte(actionData.TxReqID.String()),
+			actionData.TxReqID.String(),
 			contentStatusBytes,
-			beaconHeight,
 		)
-
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit error %v", err)
 			return nil
@@ -542,14 +513,11 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StoreCustodianTopupStatus(
 			portalStateDB,
-			statedb.PortalLiquidationCustodianDepositStatusPrefix(),
-			[]byte(actionData.TxReqID.String()),
+			actionData.TxReqID.String(),
 			contentStatusBytes,
-			beaconHeight,
 		)
-
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit error %v", err)
 			return nil
@@ -630,12 +598,10 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 			waitingPortingReq.BeaconHeight())
 
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
-		err = statedb.TrackPortalStateStatusMultiple(
+		err = statedb.StorePortalPortingRequestStatus(
 			stateDB,
-			statedb.PortalPortingRequestStatusPrefix(),
-			[]byte(actionData.UniquePortingID),
+			actionData.UniquePortingID,
 			newPortingRequestStatusBytes,
-			beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
