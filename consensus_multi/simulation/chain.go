@@ -55,8 +55,10 @@ func (c *Chain) CreateNewBlock(version int, proposer string, round int, startTim
 	return newBlock, nil
 }
 
-func (s *Chain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
-	return oldBlock, nil
+func (c *Chain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
+	//TODO: must using the old block data, and timestamp
+	newBlock := NewBlock(c.GetBestView().GetHeight()+1, time.Now().Unix(), proposer, *c.GetBestView().GetHash())
+	return newBlock, nil
 }
 
 func (s *Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {

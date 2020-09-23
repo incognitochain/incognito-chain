@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,6 +14,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
+
+var mapNodeID = make(map[string]string)
+var mapLock = sync.Mutex{}
 
 type Node struct {
 	id              string
@@ -141,7 +145,19 @@ func (s *Node) RequestMissingViewViaStream(peerID string, hashes [][]byte, fromC
 		pH, _ := common.Hash{}.NewHash(h)
 		str = append(str, pH.String())
 	}
-	fmt.Println("RequestMissingViewViaStream from ", peerID, strings.Join(str, ","))
+	for _, c := range s.nodeList {
+		if s.id == c.id {
+			continue
+		}
+		if c.id == mapNodeID[peerID] {
+			for _, h := range hashes {
+				pH, _ := common.Hash{}.NewHash(h)
+				v := c.chain.multiview.GetViewByHash(*pH)
+				s.chain.multiview.AddView(v)
+			}
+		}
+	}
+	fmt.Printf("Node %v RequestMissingViewViaStream from %v hash %v \n", s.id, mapNodeID[peerID], strings.Join(str, ","))
 	return nil
 }
 
@@ -150,6 +166,9 @@ func (s *Node) GetSelfPeerID() libp2p.ID {
 }
 
 func (s *Node) Start() {
-	fmt.Printf("Node %s log is %s, peerID: %v \n", s.id, fmt.Sprintf("log%s.log", s.id), libp2p.ID(s.id))
+	fmt.Printf("Node %s log is %s, peerID: %v \n", s.id, fmt.Sprintf("log%s.log", s.id), libp2p.ID(s.id).String())
+	mapLock.Lock()
+	defer mapLock.Unlock()
+	mapNodeID[libp2p.ID(s.id).String()] = s.id
 	s.consensusEngine.Start()
 }

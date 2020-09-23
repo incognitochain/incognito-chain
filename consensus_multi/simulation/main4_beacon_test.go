@@ -83,8 +83,8 @@ func Test_Main4BeaconCommittee(t *testing.T) {
 	setVoteCommunication(timeslot, 3, []int{0, 1, 1, 1})
 
 	timeslot = setTimeSlot(50) //normal cimmunication
-	setProposeCommunication(timeslot, 1, []int{1, 1, 1, 1})
-	setVoteCommunication(timeslot, 3, []int{1, 1, 1, 1})
+	//setProposeCommunication(timeslot, 1, []int{1, 1, 1, 1})
+	//setVoteCommunication(timeslot, 3, []int{1, 1, 1, 1})
 
 	/*
 		END YOUR SIMULATION HERE
@@ -97,7 +97,7 @@ func Test_Main4BeaconCommittee(t *testing.T) {
 			curTimeSlot := (uint64(common.CalculateTimeSlot(time.Now().Unix())) - startTimeSlot) + 1
 			if lastTimeSlot != curTimeSlot {
 				time.AfterFunc(time.Millisecond*500, func() {
-					fmt.Printf("Best view height: %d. Final view height: %d\n", nodeList[0].chain.GetBestView().GetHeight(), nodeList[0].chain.GetFinalView().GetHeight())
+					fmt.Printf("TIMELSOT %v: Best view height: %d. Final view height: %d\n", uint64(common.CalculateTimeSlot(time.Now().Unix())), nodeList[0].chain.GetBestView().GetHeight(), nodeList[0].chain.GetFinalView().GetHeight())
 				})
 			}
 			lastTimeSlot = curTimeSlot
