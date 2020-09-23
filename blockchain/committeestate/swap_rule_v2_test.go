@@ -1,10 +1,48 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
 	"testing"
 )
+
+// TODO: @tin write unit test
+func Test_createSwapShardInstructionV2(t *testing.T) {
+	type args struct {
+		shardID                 byte
+		substitutes             []string
+		committees              []string
+		maxCommitteeSize        int
+		numberOfRound           map[string]int
+		typeIns                 int
+		numberOfFixedValidators uint64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *instruction.SwapShardInstruction
+		want1   []string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := createSwapShardInstructionV2(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.maxCommitteeSize, tt.args.numberOfRound, tt.args.typeIns, tt.args.numberOfFixedValidators)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createSwapShardInstructionV2() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("createSwapShardInstructionV2() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("createSwapShardInstructionV2() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
 
 func Test_sortShardIDByIncreaseOrder(t *testing.T) {
 	type args struct {

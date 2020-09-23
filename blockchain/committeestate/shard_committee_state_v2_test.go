@@ -63,14 +63,10 @@ func TestShardCommitteeStateV2_processInstructionFromBeacon(t *testing.T) {
 			},
 			want: &CommitteeChange{
 				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
+					0: []incognitokey.CommitteePublicKey{},
 				},
 				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey,
-					},
+					0: []incognitokey.CommitteePublicKey{},
 				},
 			},
 			wantErr: false,
@@ -153,53 +149,7 @@ func TestShardCommitteeEngineV2_ProcessInstructionFromBeacon(t *testing.T) {
 					numberOfFixedBlockValidators: 0,
 				},
 			},
-			want: &CommitteeChange{
-				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-					1: []incognitokey.CommitteePublicKey{},
-					2: []incognitokey.CommitteePublicKey{},
-					3: []incognitokey.CommitteePublicKey{},
-					4: []incognitokey.CommitteePublicKey{},
-					5: []incognitokey.CommitteePublicKey{},
-					6: []incognitokey.CommitteePublicKey{},
-					7: []incognitokey.CommitteePublicKey{},
-				},
-				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey,
-					},
-					1: []incognitokey.CommitteePublicKey{},
-					2: []incognitokey.CommitteePublicKey{},
-					3: []incognitokey.CommitteePublicKey{},
-					4: []incognitokey.CommitteePublicKey{},
-					5: []incognitokey.CommitteePublicKey{},
-					6: []incognitokey.CommitteePublicKey{},
-					7: []incognitokey.CommitteePublicKey{},
-				},
-				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{},
-					1: []incognitokey.CommitteePublicKey{},
-					2: []incognitokey.CommitteePublicKey{},
-					3: []incognitokey.CommitteePublicKey{},
-					4: []incognitokey.CommitteePublicKey{},
-					5: []incognitokey.CommitteePublicKey{},
-					6: []incognitokey.CommitteePublicKey{},
-					7: []incognitokey.CommitteePublicKey{},
-				},
-				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{},
-					1: []incognitokey.CommitteePublicKey{},
-					2: []incognitokey.CommitteePublicKey{},
-					3: []incognitokey.CommitteePublicKey{},
-					4: []incognitokey.CommitteePublicKey{},
-					5: []incognitokey.CommitteePublicKey{},
-					6: []incognitokey.CommitteePublicKey{},
-					7: []incognitokey.CommitteePublicKey{},
-				},
-				ShardCommitteeReplaced: map[byte][2][]incognitokey.CommitteePublicKey{},
-			},
+			want:    NewCommitteeChange(),
 			wantErr: false,
 		},
 	}
