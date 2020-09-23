@@ -132,8 +132,8 @@ func (e *BLSBFT_V2) Start() error {
 					e.receiveBlockByHash[blkHash].block = block
 				}
 
-				if block.GetHeight() <= e.Chain.GetBestViewHeight() {
-					e.Logger.Info("Receive block create from old view. Rejected!")
+				if block.GetHeight() <= e.Chain.GetBestView().GetHeight() {
+					e.Logger.Infof("Receive block create from old view - height %v. Rejected! Expect: %v", block.GetHeight(), e.Chain.GetBestView().GetHeight())
 					continue
 				}
 
@@ -362,7 +362,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
-		fmt.Println("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
+		e.Logger.Info("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
 		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return
