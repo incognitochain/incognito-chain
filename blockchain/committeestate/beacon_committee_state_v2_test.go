@@ -6,7 +6,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/blockchain/instructionsprocessor"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -450,7 +449,6 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		beaconHash                        common.Hash
 		finalBeaconCommitteeStateV2       *BeaconCommitteeStateV2
 		uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
-		insProcessor                      *instructionsprocessor.BInsProcessor
 	}
 	type args struct {
 		env *BeaconCommitteeStateEnvironment
