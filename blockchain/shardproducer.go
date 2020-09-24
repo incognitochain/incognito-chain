@@ -76,6 +76,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
+
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", shardBestState.ShardHeight+1)
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	currentCommitteePubKeys, err := incognitokey.
@@ -225,6 +226,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
 		}
 	}
+
+	// if shardBestState.BeaconHeight == 19 {
+	// 	Logger.log.Info("[swap-v2] producer block:", proposer)
+	// }
+
 	newShardBlock.Header = types.ShardHeader{
 		Producer:          producerKey, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr: producerPubKeyStr,

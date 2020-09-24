@@ -605,7 +605,9 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						*incKey6,
 					},
 				},
-				env: &BeaconCommitteeStateEnvironment{},
+				env: &BeaconCommitteeStateEnvironment{
+					ConsensusStateDB: sDB,
+				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
 					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
@@ -645,7 +647,9 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						*incKey6,
 					},
 				},
-				env: &BeaconCommitteeStateEnvironment{},
+				env: &BeaconCommitteeStateEnvironment{
+					ConsensusStateDB: sDB,
+				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
 					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
@@ -705,6 +709,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidators: 0,
+					ConsensusStateDB:                  sDB,
 				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
@@ -835,6 +840,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
 	initPublicKey()
+	initStateDB()
 	initLog()
 
 	type fields struct {

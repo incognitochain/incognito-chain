@@ -156,6 +156,7 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
+			// Logger.Log.Info("[swap-v2] blk.GetHeight():", blk.GetHeight())
 			// Logger.Log.Info("[swap-v2] minCommitteeSize:", minCommitteeSize)
 			// Logger.Log.Info("[swap-v2] producer:", producer)
 			// Logger.Log.Info("[swap-v2] produceTime:", produceTime)

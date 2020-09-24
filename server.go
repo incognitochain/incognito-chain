@@ -2164,7 +2164,6 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 }
 
 // GetUserMiningState get user mining state by latest beacon view
-//TODO: @tin custom here
 // Sync latest by beacon view
 func (s *Server) GetUserMiningState() (role string, chainID int) {
 	//TODO: check synker is in FewBlockBehind

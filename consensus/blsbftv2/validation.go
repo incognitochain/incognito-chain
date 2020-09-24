@@ -69,6 +69,7 @@ func ValidateProducerSig(block common.BlockInterface) error {
 }
 
 func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	//@tin Check here
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)

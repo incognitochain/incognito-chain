@@ -651,27 +651,27 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
 	tempSwapInPuclicKeys := swapShardInstruction.InPublicKeyStructs
 	numberFixedValidators := env.NumberOfFixedShardBlockValidators
-	tempCommittees := b.shardCommittee[chainID]
-	tempSubtitutes := b.shardSubstitute[chainID]
 
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
-		if !v.IsEqual(tempCommittees[numberFixedValidators]) {
+		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
 			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
-		tempCommittees = append(tempCommittees[:numberFixedValidators], tempCommittees[numberFixedValidators+1:]...)
+		b.shardCommittee[chainID] =
+			append(b.shardCommittee[chainID][:numberFixedValidators],
+				b.shardCommittee[chainID][numberFixedValidators+1:]...)
 		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
-	tempCommittees = append(tempCommittees, tempSwapInPuclicKeys...)
+	b.shardCommittee[chainID] = append(b.shardCommittee[chainID], tempSwapInPuclicKeys...)
 	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPuclicKeys...)
 
 	// process list shard pool
 	for _, v := range tempSwapInPuclicKeys {
-		if !v.IsEqual(tempSubtitutes[0]) {
+		if !v.IsEqual(b.shardSubstitute[chainID][0]) {
 			return rootCommitteeChange, errors.New("Swap In Not Valid In List Subtitutes Public Key")
 		}
 		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
-		tempSubtitutes = append(tempSubtitutes[:0], tempSubtitutes[1:]...)
+		b.shardSubstitute[chainID] = append(b.shardSubstitute[chainID][:0], b.shardSubstitute[chainID][1:]...)
 	}
 
 	// process after swap for assign old committees to current shard pool
