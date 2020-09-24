@@ -229,7 +229,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 
-	gotCurrentValidatorM, gotSubstituteValidatorM, gotNextEpochCandidateM, gotCurrentEpochCandidateM, _, _ := tempStateDB.getAllCommitteeState(ids)
+	gotCurrentValidatorM, gotSubstituteValidatorM, gotNextEpochCandidateM, gotCurrentEpochCandidateM, _, _, _, _, _ := tempStateDB.getAllCommitteeState(ids)
 	for _, id := range ids {
 		temp, ok := gotCurrentValidatorM[id]
 		if !ok {
