@@ -551,7 +551,7 @@ func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []comm
 			if syncProcess.shardPool != nil {
 				res := []common.BlockPoolInterface{}
 				for fromSID, blksPool := range synckerManager.crossShardPool {
-					for _, blk := range blksPool.blkPoolByHash {
+					for _, blk := range blksPool.GetBlockList() {
 						res = append(res, &TmpBlock{
 							Height:  blk.GetHeight(),
 							BlkHash: blk.Hash(),
