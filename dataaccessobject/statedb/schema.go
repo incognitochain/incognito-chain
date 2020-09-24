@@ -85,6 +85,7 @@ var (
 	PortalRewardName = "portal"
 
 	portalEthTxPrefix =[]byte("portalethtx-")
+	withdrawCollateralPrefix                         = []byte("withdrawcollateral-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -384,6 +385,11 @@ func GetRewardFeatureStatePrefix(epoch uint64) []byte {
 
 func GetPortalExternalTxPrefix() []byte {
 	h := common.HashH(portalEthTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetWithdrawCollateralConfirmPrefixV3() []byte {
+	h := common.HashH(withdrawCollateralPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
