@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_multi/blsbftv2"
@@ -35,7 +36,7 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, miningKey *signatureschemes.MiningKey, committee []string, index int) *Node {
+func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, miningKey *signatureschemes.MiningKey, index int) *Node {
 	name := fmt.Sprintf("log%d", index)
 	fd, err := os.OpenFile(fmt.Sprintf("%s.log", name), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
@@ -73,28 +74,25 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 				os.Exit(0)
 			}
 			pComm := GetSimulation().scenario.proposeComm
-			if comm, ok := pComm[timeSlot]; ok {
+			if senderComm, ok := pComm[timeSlot]; ok {
 				for i, c := range s.nodeList {
 					if s.id == c.id {
 						continue
 					}
-					if senderComm, ok := comm[s.id]; ok {
-						if senderComm[i] == 1 {
-							s.consensusEngine.Logger.Debug("Send propose to ", c.id)
-							c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
-						}
+					if senderComm[i] == 0 {
+						fmt.Printf("Don't send propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+						// c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 					} else {
-						s.consensusEngine.Logger.Debug("Send propose to ", c.id)
+						fmt.Printf("Send propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
 						c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 					}
-
 				}
 			} else {
 				for _, c := range s.nodeList {
 					if s.id == c.id {
 						continue
 					}
-					s.consensusEngine.Logger.Debug("Send propose to ", c.id)
+					fmt.Printf("Send* propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
 					c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 				}
 			}
@@ -113,12 +111,15 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 						continue
 					}
 					if senderComm, ok := comm[s.id]; ok {
-						if senderComm[i] == 1 {
-							s.consensusEngine.Logger.Debug("Send vote to ", c.id)
+						if senderComm[i] == 0 {
+							fmt.Printf("Don't send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+							// c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+						} else {
+							fmt.Printf("Send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
 							c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 						}
 					} else {
-						s.consensusEngine.Logger.Debug("Send vote to ", c.id)
+						fmt.Printf("Send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
 						c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 					}
 
@@ -128,7 +129,7 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 					if s.id == c.id {
 						continue
 					}
-					s.consensusEngine.Logger.Debug("Send vote to ", c.id)
+					fmt.Printf("Send* vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
 					c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 				}
 			}

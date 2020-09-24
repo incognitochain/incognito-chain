@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 	"sort"
 	"time"
+
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
@@ -338,7 +339,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 	}
 	//e.Logger.Debug(validVote, len(view.GetCommittee()), errVote)
 	v.hasNewVote = false
-	if validVote > 2*len(view.GetCommittee())/3 {
+	if validVote >= 2*len(view.GetCommittee())/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
 		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
 		//fmt.Println(committeeBLSString)
