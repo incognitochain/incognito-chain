@@ -82,8 +82,8 @@ var _ = func() (_ struct{}) {
 	inactiveLogger = common.NewBackend(nil).Logger("test", true)
 	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
 	activeLogger.SetLevel(common.LevelDebug)
-	privacy.LoggerV1.Init(common.NewBackend(nil).Logger("test", true))
-	privacy.LoggerV2.Init(common.NewBackend(nil).Logger("test", true))
+	privacy.LoggerV1.Init(inactiveLogger)
+	privacy.LoggerV2.Init(activeLogger)
 	// can switch between the 2 loggers to mute logs as one wishes
 	Logger.Init(activeLogger)
 	bulletproofs.Logger.Init(common.NewBackend(nil).Logger("test", true))
@@ -652,6 +652,7 @@ func getCorruptedJsonDeserializedTxs(tx metadata.Transaction, maxJsonChanges int
 	var result []metadata.Transaction
 	// json bytes are readable strings
 	// we try to malleify a letter / digit
+	// if that char is part of a key then it's equivalent to deleting that attribute
 	for i:=0; i<maxJsonChanges; i++{
 		// let the changes stack up many times to exhaust more cases
 		s := string(jsonBytesAgain)
@@ -696,10 +697,8 @@ func getCorruptedJsonDeserializedTokenTxs(tx TransactionToken, maxJsonChanges in
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)
 	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
 	var result []TransactionToken
-	// json bytes are readable strings
-	// we try to malleify a letter / digit
+
 	for i:=0; i<maxJsonChanges; i++{
-		// let the changes stack up many times to exhaust more cases
 		s := string(jsonBytesAgain)
 		theRunes := []rune(s)
 		corruptedIndex := RandInt() % len(theRunes)
