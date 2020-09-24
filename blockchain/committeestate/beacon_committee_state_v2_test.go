@@ -1452,3 +1452,51 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		})
 	}
 }
+
+// TODO: @tin write unittest
+func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
+	type fields struct {
+		beaconCommittee            []incognitokey.CommitteePublicKey
+		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
+		shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
+		shardCommonPool            []incognitokey.CommitteePublicKey
+		numberOfAssignedCandidates int
+		autoStake                  map[string]bool
+		rewardReceiver             map[string]privacy.PaymentAddress
+		stakingTx                  map[string]common.Hash
+		numberOfRound              map[string]int
+		mu                         *sync.RWMutex
+	}
+	type args struct {
+		stopAutoStakeInstruction *instruction.StopAutoStakeInstruction
+		env                      *BeaconCommitteeStateEnvironment
+		committeeChange          *CommitteeChange
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *CommitteeChange
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV2{
+				beaconCommittee:            tt.fields.beaconCommittee,
+				shardCommittee:             tt.fields.shardCommittee,
+				shardSubstitute:            tt.fields.shardSubstitute,
+				shardCommonPool:            tt.fields.shardCommonPool,
+				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
+				autoStake:                  tt.fields.autoStake,
+				rewardReceiver:             tt.fields.rewardReceiver,
+				stakingTx:                  tt.fields.stakingTx,
+				numberOfRound:              tt.fields.numberOfRound,
+				mu:                         tt.fields.mu,
+			}
+			if got := b.processStopAutoStakeInstruction(tt.args.stopAutoStakeInstruction, tt.args.env, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("processStopAutoStakeInstruction() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
