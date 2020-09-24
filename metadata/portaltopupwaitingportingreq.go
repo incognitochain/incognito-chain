@@ -139,7 +139,7 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
-	if !common.IsPortalToken(p.PTokenID) {
+	if !IsPortalToken(p.PTokenID) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 

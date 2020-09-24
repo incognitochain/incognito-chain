@@ -116,7 +116,7 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 	}
 
 	// validate tokenID
-	if !common.IsPortalToken(meta.TokenID) {
+	if !IsPortalToken(meta.TokenID) {
 		return false, false, errors.New("TokenID is not a portal token")
 	}
 

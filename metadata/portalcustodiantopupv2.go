@@ -105,7 +105,7 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
-	if !common.IsPortalToken(custodianDeposit.PTokenId) {
+	if !IsPortalToken(custodianDeposit.PTokenId) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 

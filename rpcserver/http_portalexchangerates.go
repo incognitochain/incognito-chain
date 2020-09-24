@@ -46,8 +46,9 @@ func (httpServer *HttpServer) createPortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
 	}
 
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for pTokenID, value := range exchangeRateMap {
-		if !common.IsPortalExchangeRateToken(pTokenID) {
+		if !metadata.IsPortalExchangeRateToken(pTokenID, httpServer.GetBlockchain(), beaconHeight) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
 
@@ -192,7 +193,7 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, err)
 	}
 
-	if !common.IsPortalToken(tokenID) {
+	if !metadata.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
@@ -243,7 +244,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	if !common.IsPortalToken(tokenID) {
+	if !metadata.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 

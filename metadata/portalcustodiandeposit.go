@@ -154,7 +154,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 	}
 
 	for tokenID, remoteAddr := range custodianDeposit.RemoteAddresses {
-		if !common.IsPortalToken(tokenID) {
+		if !IsPortalToken(tokenID) {
 			return false, false, errors.New("TokenID in remote address is invalid")
 		}
 		if len(remoteAddr) == 0 {

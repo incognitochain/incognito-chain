@@ -469,15 +469,6 @@ func GetShardChainKey(shardID byte) string {
 	return ShardChainKey + "-" + strconv.Itoa(int(shardID))
 }
 
-func IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
-	return isExisted
-}
-
-func IsPortalExchangeRateToken(tokenIDStr string) bool {
-	return IsPortalToken(tokenIDStr) || tokenIDStr == PRVIDStr
-}
-
 // CopyBytes returns an exact copy of the provided bytes.
 func CopyBytes(b []byte) (copiedBytes []byte) {
 	if b == nil {

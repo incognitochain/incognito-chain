@@ -276,3 +276,18 @@ func GetChainIDByTokenID(tokenID string, chainRetriever ChainRetriever) string {
 	}
 	return ""
 }
+
+func IsPortalToken(tokenIDStr string) bool {
+	isExisted, _ := common.SliceExists(common.PortalSupportedIncTokenIDs, tokenIDStr)
+	return isExisted
+}
+
+func IsSupportedTokenCollateralV3(bcr ChainRetriever, beaconHeight uint64, externalTokenID string) bool {
+	isSupported, _ := common.SliceExists(bcr.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenID)
+	return isSupported
+}
+
+func IsPortalExchangeRateToken(tokenIDStr string, bcr ChainRetriever, beaconHeight uint64) bool {
+	return IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || IsSupportedTokenCollateralV3(bcr, beaconHeight, tokenIDStr)
+}
+

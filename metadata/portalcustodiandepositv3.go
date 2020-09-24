@@ -101,7 +101,7 @@ func NewPortalCustodianDepositV3FromMap(
 	remoteAddresses := make(map[string]string, 0)
 	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !common.IsPortalToken(pTokenID) {
+		if !IsPortalToken(pTokenID) {
 			return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata public token is not supported currently"))
 		}
 		_, ok := remoteAddress.(string)
@@ -173,7 +173,7 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("remote addresses should be at least one"))
 	}
 	for tokenID, remoteAddr := range custodianDeposit.RemoteAddresses {
-		if !common.IsPortalToken(tokenID) {
+		if !IsPortalToken(tokenID) {
 			return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("TokenID in remote address is invalid"))
 		}
 		if len(remoteAddr) == 0 {

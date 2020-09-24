@@ -584,105 +584,30 @@ func (blockchain *BlockChain) processPortalExchangeRates(
 }
 
 func (blockchain *BlockChain) pickExchangesRatesFinal(currentPortalState *CurrentPortalState) {
-	//convert to slice
-	var btcExchangeRatesSlice []uint64
-	var bnbExchangeRatesSlice []uint64
-	var prvExchangeRatesSlice []uint64
-	for _, v := range currentPortalState.ExchangeRatesRequests {
-		for _, rate := range v.Rates {
-			switch rate.PTokenID {
-			case common.PortalBTCIDStr:
-				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rate.Rate)
-				break
-			case common.PortalBNBIDStr:
-				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rate.Rate)
-				break
-			case common.PRVIDStr:
-				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rate.Rate)
-				break
-			}
+	// sort exchange rate requests by rate
+	sumRates := map[string][]uint64{}
+
+	for _, req := range currentPortalState.ExchangeRatesRequests {
+		for _, rate := range req.Rates {
+			sumRates[rate.PTokenID] = append(sumRates[rate.PTokenID], rate.Rate)
 		}
 	}
 
-	//sort
-	sort.SliceStable(btcExchangeRatesSlice, func(i, j int) bool {
-		return btcExchangeRatesSlice[i] < btcExchangeRatesSlice[j]
-	})
+	updateFinalExchangeRates := currentPortalState.FinalExchangeRatesState.Rates()
+	for tokenID, rates := range sumRates {
+		// sort rates
+		sort.SliceStable(rates, func(i, j int) bool {
+			return rates[i] < rates[j]
+		})
 
-	sort.SliceStable(bnbExchangeRatesSlice, func(i, j int) bool {
-		return bnbExchangeRatesSlice[i] < bnbExchangeRatesSlice[j]
-	})
+		// pick one median rate to make final rate for tokenID
+		medianRate := calcMedian(rates)
 
-	sort.SliceStable(prvExchangeRatesSlice, func(i, j int) bool {
-		return prvExchangeRatesSlice[i] < prvExchangeRatesSlice[j]
-	})
-
-	exchangeRatesList := make(map[string]statedb.FinalExchangeRatesDetail)
-
-	var btcAmount uint64
-	var bnbAmount uint64
-	var prvAmount uint64
-
-	//get current value
-	if len(btcExchangeRatesSlice) > 0 {
-		btcAmount = calcMedian(btcExchangeRatesSlice)
-	}
-
-	if len(bnbExchangeRatesSlice) > 0 {
-		bnbAmount = calcMedian(bnbExchangeRatesSlice)
-
-	}
-
-	if len(prvExchangeRatesSlice) > 0 {
-		prvAmount = calcMedian(prvExchangeRatesSlice)
-	}
-
-	//todo: need refactor code, not need write this code
-	//update value when has exchange
-	if exchangeRatesState := currentPortalState.FinalExchangeRatesState; exchangeRatesState != nil {
-		var btcAmountPreState uint64
-		var bnbAmountPreState uint64
-		var prvAmountPreState uint64
-		if value, ok := exchangeRatesState.Rates()[common.PortalBTCIDStr]; ok {
-			btcAmountPreState = value.Amount
-		}
-
-		if value, ok := exchangeRatesState.Rates()[common.PortalBNBIDStr]; ok {
-			bnbAmountPreState = value.Amount
-		}
-
-		if value, ok := exchangeRatesState.Rates()[common.PRVIDStr]; ok {
-			prvAmountPreState = value.Amount
-		}
-
-		//pick current value and pre value state
-		btcAmount = choicePrice(btcAmount, btcAmountPreState)
-		bnbAmount = choicePrice(bnbAmount, bnbAmountPreState)
-		prvAmount = choicePrice(prvAmount, prvAmountPreState)
-	}
-
-	//select
-	if btcAmount > 0 {
-		exchangeRatesList[common.PortalBTCIDStr] = statedb.FinalExchangeRatesDetail{
-			Amount: btcAmount,
+		if medianRate > 0 {
+			updateFinalExchangeRates[tokenID] = statedb.FinalExchangeRatesDetail{ Amount: medianRate }
 		}
 	}
-
-	if bnbAmount > 0 {
-		exchangeRatesList[common.PortalBNBIDStr] = statedb.FinalExchangeRatesDetail{
-			Amount: bnbAmount,
-		}
-	}
-
-	if prvAmount > 0 {
-		exchangeRatesList[common.PRVIDStr] = statedb.FinalExchangeRatesDetail{
-			Amount: prvAmount,
-		}
-	}
-
-	if len(exchangeRatesList) > 0 {
-		currentPortalState.FinalExchangeRatesState = statedb.NewFinalExchangeRatesStateWithValue(exchangeRatesList)
-	}
+	currentPortalState.FinalExchangeRatesState = statedb.NewFinalExchangeRatesStateWithValue(updateFinalExchangeRates)
 }
 
 func calcMedian(ratesList []uint64) uint64 {
@@ -693,18 +618,6 @@ func calcMedian(ratesList []uint64) uint64 {
 	}
 
 	return ratesList[mNumber]
-}
-
-func choicePrice(currentPrice uint64, prePrice uint64) uint64 {
-	if currentPrice > 0 {
-		return currentPrice
-	} else {
-		if prePrice > 0 {
-			return prePrice
-		}
-	}
-
-	return 0
 }
 
 func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(

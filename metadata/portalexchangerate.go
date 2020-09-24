@@ -97,7 +97,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	}
 
 	for _, value := range portalExchangeRates.Rates {
-		if !common.IsPortalExchangeRateToken(value.PTokenID) {
+		if !IsPortalExchangeRateToken(value.PTokenID, chainRetriever, beaconHeight) {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 

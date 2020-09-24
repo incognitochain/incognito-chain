@@ -40,7 +40,7 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	if !common.IsPortalExchangeRateToken(pTokenID) {
+	if !metadata.IsPortalToken(pTokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
@@ -91,7 +91,7 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	if !common.IsPortalToken(pTokenID) {
+	if !metadata.IsPortalToken(pTokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
@@ -219,7 +219,7 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !common.IsPortalToken(pTokenId) {
+	if !metadata.IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -315,7 +315,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !common.IsPortalToken(pTokenId) {
+	if !metadata.IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 

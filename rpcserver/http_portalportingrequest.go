@@ -43,7 +43,7 @@ func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
-	if !common.IsPortalToken(pTokenId) {
+	if !metadata.IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 

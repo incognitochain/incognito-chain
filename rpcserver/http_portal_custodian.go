@@ -37,7 +37,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	remoteAddresses := make(map[string]string, 0)
 	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !common.IsPortalToken(pTokenID) {
+		if !metadata.IsPortalToken(pTokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 		}
 		_, ok := remoteAddress.(string)
