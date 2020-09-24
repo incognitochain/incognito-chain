@@ -73,6 +73,7 @@ type TxPrivacyInitParams struct {
 	tokenID     *common.Hash // default is nil -> use for prv coin
 	metaData    metadata.Metadata
 	info        []byte // 512 bytes
+	kvargs		map[string]interface{}
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -95,8 +96,13 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 		paymentInfo: paymentInfo,
 		senderSK:    senderSK,
 		info:        info,
+		kvargs:		 nil,
 	}
 	return params
+}
+
+func (par *TxPrivacyInitParams) SetKvargs(kv map[string]interface{}){
+	par.kvargs = kv
 }
 
 func getTxInfo(paramInfo []byte) ([]byte, error) {
