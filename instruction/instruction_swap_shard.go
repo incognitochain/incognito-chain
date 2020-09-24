@@ -77,6 +77,7 @@ func (s *SwapShardInstruction) SetType(typeIns int) *SwapShardInstruction {
 	return s
 }
 
+// TODO: @tin write unittest
 func ValidateAndImportSwapShardInstructionFromString(instruction []string) (*SwapShardInstruction, error) {
 	if err := ValidateSwapShardInstructionSanity(instruction); err != nil {
 		return nil, err
@@ -84,6 +85,7 @@ func ValidateAndImportSwapShardInstructionFromString(instruction []string) (*Swa
 	return ImportSwapShardInstructionFromString(instruction), nil
 }
 
+// TODO: @tin write unittest
 func ImportSwapShardInstructionFromString(instruction []string) *SwapShardInstruction {
 	swapShardInstruction := NewSwapShardInstruction()
 	inPublicKeys := []string{}
@@ -103,6 +105,7 @@ func ImportSwapShardInstructionFromString(instruction []string) *SwapShardInstru
 	return swapShardInstruction
 }
 
+// TODO: @tin write unittest
 // validate SwapShard instruction sanity
 // new reward receiver only present in replace committee
 // beaconproducer.go: 356 - 367

@@ -164,6 +164,7 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	return nil
 }
 
+// TODO: @tin write unittest
 // ImportStakeInstructionFromString is unsafe method
 func ImportInitStakeInstructionFromString(instruction []string) *StakeInstruction {
 	stakeInstruction := NewStakeInstruction()
