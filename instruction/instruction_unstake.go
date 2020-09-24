@@ -64,6 +64,7 @@ func ImportUnstakeInstructionFromString(instruction []string) *UnstakeInstructio
 		if len(instruction[1]) > 0 {
 			committeePublicKeys := strings.Split(instruction[1], SPLITTER)
 			unstakeInstruction.CommitteePublicKeys = committeePublicKeys
+			unstakeInstruction.CommitteePublicKeysStruct, _ = incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 		}
 	}
 	return unstakeInstruction

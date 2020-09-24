@@ -468,7 +468,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 			tempSubstitutes,
 			tempCommittees,
 			env.MaxCommitteeSize,
-			engine.finalBeaconCommitteeStateV2.numberOfRound,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidators,
 		)
@@ -752,6 +751,77 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 	return newCommitteeChange, nil
 }
 
+//processUnstakeInstruction : process unstake instruction from beacon block
+func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
+	unstakeInstruction *instruction.UnstakeInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+) (*CommitteeChange, [][]string, error) {
+	newCommitteeChange := committeeChange
+	incurredInstructions := [][]string{}
+	returnStakerInfoPublicKeys := make(map[byte][]string)
+	stakingTxs := make(map[byte][]string)
+	percentReturns := make(map[byte][]uint)
+	indexNextEpochShardCandidate := make(map[string]int)
+	for i, v := range b.shardCommonPool {
+		key, err := v.ToBase58()
+		if err != nil {
+			return newCommitteeChange, nil, err
+		}
+		indexNextEpochShardCandidate[key] = i
+	}
+
+	for index, committeePublicKey := range unstakeInstruction.CommitteePublicKeys {
+		if common.IndexOfStr(committeePublicKey, env.unassignedCommonPool) == -1 {
+			if common.IndexOfStr(committeePublicKey, env.allSubstituteCommittees) != -1 {
+				// if found in committee list then turn off auto staking
+				if _, ok := b.autoStake[committeePublicKey]; ok {
+					b.autoStake[committeePublicKey] = false
+					newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, committeePublicKey)
+				}
+			}
+		} else {
+			indexCandidate := indexNextEpochShardCandidate[committeePublicKey]
+			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
+			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, committeePublicKey)
+			if err != nil {
+				return newCommitteeChange, nil, err
+			}
+			if !has {
+				return newCommitteeChange, nil, errors.New("Can't find staker info")
+			}
+
+			newCommitteeChange.NextEpochShardCandidateRemoved =
+				append(newCommitteeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
+
+			returnStakerInfoPublicKeys[stakerInfo.ShardID()] =
+				append(returnStakerInfoPublicKeys[stakerInfo.ShardID()], committeePublicKey)
+			percentReturns[stakerInfo.ShardID()] =
+				append(percentReturns[stakerInfo.ShardID()], 100)
+			stakingTxs[stakerInfo.ShardID()] =
+				append(stakingTxs[stakerInfo.ShardID()], stakerInfo.TxStakingID().String())
+
+			err2 := b.deleteStakerInfo(unstakeInstruction.CommitteePublicKeysStruct[index], env.ConsensusStateDB)
+			if err2 != nil {
+				return newCommitteeChange, nil, err
+			}
+		}
+	}
+
+	for i, v := range returnStakerInfoPublicKeys {
+		if v != nil {
+			returnStakingIns := instruction.NewReturnStakeInsWithValue(
+				v,
+				i,
+				stakingTxs[i],
+				percentReturns[i],
+			)
+			incurredInstructions = append(incurredInstructions, returnStakingIns.ToString())
+		}
+	}
+	return newCommitteeChange, incurredInstructions, nil
+}
+
 func (engine *BeaconCommitteeEngineV2) generateUncommittedCommitteeHashes() (*BeaconCommitteeStateHash, error) {
 	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV2, NewBeaconCommitteeStateV1()) {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
@@ -872,4 +942,47 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 	delete(b.numberOfRound, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
 	return nil
+}
+
+func (b *BeaconCommitteeStateV2) unassignedCommonPool() ([]string, error) {
+	commonPoolValidators := []string{}
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool[b.numberOfAssignedCandidates:])
+	if err != nil {
+		return nil, err
+	}
+	commonPoolValidators = append(commonPoolValidators, candidateShardWaitingForNextRandomStr...)
+	return commonPoolValidators, nil
+}
+
+func (b *BeaconCommitteeStateV2) getAllSubstituteCommittees() ([]string, error) {
+	validators := []string{}
+
+	for _, committee := range b.shardCommittee {
+		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			return nil, err
+		}
+		validators = append(validators, committeeStr...)
+	}
+	for _, substitute := range b.shardSubstitute {
+		substituteStr, err := incognitokey.CommitteeKeyListToString(substitute)
+		if err != nil {
+			return nil, err
+		}
+		validators = append(validators, substituteStr...)
+	}
+
+	beaconCommittee := b.beaconCommittee
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconCommittee)
+	if err != nil {
+		return nil, err
+	}
+	validators = append(validators, beaconCommitteeStr...)
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool[:b.numberOfAssignedCandidates])
+	if err != nil {
+		return nil, err
+	}
+	validators = append(validators, candidateShardWaitingForCurrentRandomStr...)
+
+	return validators, nil
 }

@@ -21,12 +21,13 @@ type SwapShardInstruction struct {
 func NewSwapShardInstructionWithValue(
 	inPublicKeys, outPublicKeys []string,
 	chainID, typeIns int) *SwapShardInstruction {
-	return &SwapShardInstruction{
-		InPublicKeys:  inPublicKeys,
-		OutPublicKeys: outPublicKeys,
-		ChainID:       chainID,
-		Type:          typeIns,
+	swapShardInstruction := &SwapShardInstruction{
+		ChainID: chainID,
+		Type:    typeIns,
 	}
+	swapShardInstruction, _ = swapShardInstruction.SetInPublicKeys(inPublicKeys)
+	swapShardInstruction, _ = swapShardInstruction.SetOutPublicKeys(outPublicKeys)
+	return swapShardInstruction
 }
 
 func NewSwapShardInstruction() *SwapShardInstruction {
@@ -85,17 +86,17 @@ func ValidateAndImportSwapShardInstructionFromString(instruction []string) (*Swa
 
 func ImportSwapShardInstructionFromString(instruction []string) *SwapShardInstruction {
 	swapShardInstruction := NewSwapShardInstruction()
-	inPublicKey := []string{}
-	outPublicKey := []string{}
+	inPublicKeys := []string{}
+	outPublicKeys := []string{}
 
 	if len(instruction[1]) > 0 {
-		inPublicKey = strings.Split(instruction[1], SPLITTER)
+		inPublicKeys = strings.Split(instruction[1], SPLITTER)
 	}
-	swapShardInstruction, _ = swapShardInstruction.SetInPublicKeys(inPublicKey)
+	swapShardInstruction, _ = swapShardInstruction.SetInPublicKeys(inPublicKeys)
 	if len(instruction[2]) > 0 {
-		outPublicKey = strings.Split(instruction[2], SPLITTER)
+		outPublicKeys = strings.Split(instruction[2], SPLITTER)
 	}
-	swapShardInstruction, _ = swapShardInstruction.SetOutPublicKeys(outPublicKey)
+	swapShardInstruction, _ = swapShardInstruction.SetOutPublicKeys(outPublicKeys)
 	swapShardInstruction.ChainID, _ = strconv.Atoi(instruction[3])
 	swapShardInstruction.Type, _ = strconv.Atoi(instruction[4])
 
