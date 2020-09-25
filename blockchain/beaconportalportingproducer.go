@@ -150,13 +150,25 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	//get exchange rates
+	// get exchange rates
 	exchangeRatesState := currentPortalState.FinalExchangeRatesState
 	if exchangeRatesState == nil {
 		Logger.log.Errorf("Porting request, exchange rates not found")
 		return [][]string{rejectInst}, nil
 	}
 
+	// validate porting fees
+	exchangePortingFees, err := CalMinPortingFee(actionData.Meta.RegisterAmount, actionData.Meta.PTokenId, exchangeRatesState, portalParams.MinPercentPortingFee)
+	if err != nil {
+		Logger.log.Errorf("Porting request: Calculate Porting fee is error %v", err)
+		return [][]string{rejectInst}, nil
+	}
+	if actionData.Meta.PortingFee < exchangePortingFees {
+		Logger.log.Errorf("Porting request: Porting fees is invalid: expected %v - get %v", exchangePortingFees, actionData.Meta.PortingFee)
+		return [][]string{rejectInst}, nil
+	}
+
+	// pick-up custodians
 	if len(currentPortalState.CustodianPoolState) <= 0 {
 		Logger.log.Errorf("Porting request: Custodian not found")
 		return [][]string{rejectInst}, nil
@@ -169,20 +181,6 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		Logger.log.Errorf("Porting request, custodian not found")
 		return [][]string{rejectInst}, nil
 	}
-
-	//validation porting fees
-	exchangePortingFees, err := CalMinPortingFee(actionData.Meta.RegisterAmount, actionData.Meta.PTokenId, exchangeRatesState, portalParams.MinPercentPortingFee)
-	if err != nil {
-		Logger.log.Errorf("Porting request: Calculate Porting fee is error %v", err)
-		return [][]string{rejectInst}, nil
-	}
-
-	if actionData.Meta.PortingFee < exchangePortingFees {
-		Logger.log.Errorf("Porting request: Porting fees is invalid: expected %v - get %v", exchangePortingFees, actionData.Meta.PortingFee)
-		return [][]string{rejectInst}, nil
-	}
-
-	// pick-up custodians
 	pickedCustodians, err := pickUpCustodians(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState, portalParams)
 	if err != nil || len(pickedCustodians) == 0 {
 		Logger.log.Errorf("Porting request: an error occurred while picking up custodians for the porting request: %+v", err)

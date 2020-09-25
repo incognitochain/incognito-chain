@@ -401,12 +401,6 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 		return [][]string{}, err
 	}
 
-	// validate Custodian Incognito Address
-	if custodianIncAddr != meta.IncAddressStr {
-		Logger.log.Errorf("Custodian deposit v3: Custodian incognito address %v should be equal to info from log map %v", meta.IncAddressStr, custodianIncAddr)
-		return [][]string{}, err
-	}
-
 	// check externalTokenID should be one of supported collateral tokenIDs
 	if ok, err := common.SliceExists(bc.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenIDStr); !ok || err != nil {
 		Logger.log.Errorf("Custodian deposit v3: external collateral tokenID is not supported on portal %v", externalTokenIDStr)
@@ -436,7 +430,7 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 	currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 
 	inst := buildCustodianDepositInstV3(
-		actionData.Meta.IncAddressStr,
+		custodianIncAddr,
 		depositAmount,
 		newCustodian.GetRemoteAddresses(),
 		externalTokenIDStr,

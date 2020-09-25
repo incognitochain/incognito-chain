@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -9,7 +8,6 @@ import (
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"sort"
 	"strconv"
@@ -19,7 +17,6 @@ import (
 // metadata - custodian deposit - create normal tx with this metadata
 type PortalCustodianDepositV3 struct {
 	MetadataBase
-	IncAddressStr    string
 	RemoteAddresses map[string]string // tokenID: remote address
 
 	// ETH proof
@@ -66,7 +63,6 @@ type PortalCustodianDepositStatusV3 struct {
 
 func NewPortalCustodianDepositV3(
 	metaType int,
-	custodianIncAddr string,
 	remoteAddrs map[string]string,
 	blockHash eCommon.Hash,
 	txIndex uint,
@@ -79,7 +75,6 @@ func NewPortalCustodianDepositV3(
 		BlockHash:       blockHash,
 		TxIndex:         txIndex,
 		ProofStrs:       proofStrs,
-		IncAddressStr: custodianIncAddr,
 	}
 	return custodianDepositMetaV3, nil
 }
@@ -87,10 +82,6 @@ func NewPortalCustodianDepositV3(
 func NewPortalCustodianDepositV3FromMap(
 	data map[string]interface{},
 ) (*PortalCustodianDepositV3, error) {
-	incognitoAddress, ok := data["IncognitoAddress"].(string)
-	if !ok {
-		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata IncognitoAddress is invalid"))
-	}
 	remoteAddressesMap, ok := data["RemoteAddresses"].(map[string]interface{})
 	if !ok {
 		return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata RemoteAddresses param is invalid"))
@@ -138,7 +129,6 @@ func NewPortalCustodianDepositV3FromMap(
 
 	meta, _ := NewPortalCustodianDepositV3(
 		PortalCustodianDepositMetaV3,
-		incognitoAddress,
 		remoteAddresses,
 		blockHash,
 		txIdx,
@@ -190,57 +180,6 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	if len(custodianDeposit.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("ProofStrs should be not empty"))
 	}
-	//ethReceipt, err := custodianDeposit.verifyProofAndParseReceipt()
-	//if err != nil {
-	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
-	//}
-	//if ethReceipt == nil {
-	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("The eth proof's receipt could not be null."))
-	//}
-	//
-	//logMap, err := PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, chainRetriever.GetPortalETHContractAddrStr(), "Deposit")
-	//if err != nil {
-	//	Logger.log.Info("WARNING: an error occured while parsing log map from receipt: ", err)
-	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
-	//}
-	//if logMap == nil {
-	//	Logger.log.Info("WARNING: could not find log map out from receipt")
-	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("log map is nil"))
-	//}
-	//
-	//custodianIncAddr, externalTokenIDStr, amount, err := ParseInfoFromLogMap(logMap)
-	//if err != nil {
-	//	Logger.log.Info("WARNING: an error occured while parsing info from log map: ", err)
-	//	return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
-	//}
-
-	// check sender's address
-	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncAddressStr)
-	if err != nil {
-		return false, false,
-			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("could not decode CustodianIncAddressStr"))
-	}
-	incogAddr := keyWallet.KeySet.PaymentAddress
-	if len(incogAddr.Pk) == 0 {
-		return false, false,
-			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("CustodianIncAddressStr with empty public key"))
-	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false,
-			NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("custodian incognito address is not signer tx"))
-	}
-
-	//// check externalTokenID should be one of supported collateral tokenIDs
-	//if ok, err := common.SliceExists(chainRetriever.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenIDStr); !ok || err != nil {
-	//	return false, false,
-	//		NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("external collateral tokenID is not supported on portal"))
-	//}
-	//
-	//// check deposit amount
-	//if amount <= 0 {
-	//	return false, false,
-	//		NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("amount should be greater than zero"))
-	//}
 
 	return true, true, nil
 }
@@ -251,7 +190,6 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateMetadataByItself() bool
 
 func (custodianDeposit PortalCustodianDepositV3) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
-	record += custodianDeposit.IncAddressStr
 	tokenIDKeys := make([]string, 0)
 	for tokenID := range custodianDeposit.RemoteAddresses {
 		tokenIDKeys = append(tokenIDKeys, tokenID)
