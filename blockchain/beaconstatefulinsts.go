@@ -56,7 +56,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalCustodianTopupMetaV2,
 			metadata.PortalCustodianTopupResponseMeta,
 			metadata.PortalReqMatchingRedeemMeta,
-			metadata.PortalTopUpWaitingPortingRequestMeta:
+			metadata.PortalTopUpWaitingPortingRequestMeta,
+			metadata.PortalCustodianDepositMetaV3,
+			metadata.PortalCustodianWithdrawRequestMetaV3:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -177,8 +179,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 			case metadata.PortalCustodianDepositMeta:
 				pm.portalInstructions[metadata.PortalCustodianDepositMeta].putAction(action, shardID)
-			case metadata.PortalCustodianDepositMetaV3:
-				pm.portalInstructions[metadata.PortalCustodianDepositMetaV3].putAction(action, shardID)
 			case metadata.PortalUserRegisterMeta:
 				pm.portalInstructions[metadata.PortalUserRegisterMeta].putAction(action, shardID)
 			case metadata.PortalUserRequestPTokenMeta:
@@ -187,6 +187,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pm.portalInstructions[metadata.PortalExchangeRatesMeta].putAction(action, shardID)
 			case metadata.PortalCustodianWithdrawRequestMeta:
 				pm.portalInstructions[metadata.PortalCustodianWithdrawRequestMeta].putAction(action, shardID)
+
 			case metadata.PortalRedeemRequestMeta:
 				pm.portalInstructions[metadata.PortalRedeemRequestMeta].putAction(action, shardID)
 			case metadata.PortalRequestUnlockCollateralMeta:
@@ -201,6 +202,11 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pm.portalInstructions[metadata.PortalReqMatchingRedeemMeta].putAction(action, shardID)
 			case metadata.PortalTopUpWaitingPortingRequestMeta:
 				pm.portalInstructions[metadata.PortalTopUpWaitingPortingRequestMeta].putAction(action, shardID)
+
+			case metadata.PortalCustodianDepositMetaV3:
+				pm.portalInstructions[metadata.PortalCustodianDepositMetaV3].putAction(action, shardID)
+			case metadata.PortalCustodianWithdrawRequestMetaV3:
+				pm.portalInstructions[metadata.PortalCustodianWithdrawRequestMetaV3].putAction(action, shardID)
 
 			case metadata.RelayingBNBHeaderMeta:
 				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
