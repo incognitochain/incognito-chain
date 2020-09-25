@@ -1,4 +1,4 @@
-package transaction
+package tx_generic
 
 import (
 	"bytes"
@@ -16,9 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -42,43 +40,29 @@ type TxBase struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
-func NewTransactionFromParams(params *TxPrivacyInitParams) (metadata.Transaction, error) {
-	inputCoins := params.inputCoins
-	ver, err := getTxVersionFromCoins(inputCoins)
-	if err != nil {
-		return nil, err
-	}
-
-	if ver == 1 {
-		return new(TxVersion1), nil
-	} else if ver == 2 {
-		return new(TxVersion2), nil
-	}
-	return nil, errors.New("Cannot create new transaction from params, ver is wrong")
-}
-
 func (tx TxBase) ClearCacheHash(){//For testing-purpose only, remove when deploy
 	tx.cachedHash = nil
 }
 
+
 // Function that choose which version to create metadata Transaction
 
 type TxPrivacyInitParams struct {
-	senderSK    *privacy.PrivateKey
-	paymentInfo []*privacy.PaymentInfo
-	inputCoins  []coin.PlainCoin
-	fee         uint64
-	hasPrivacy  bool
-	stateDB     *statedb.StateDB
-	tokenID     *common.Hash // default is nil -> use for prv coin
-	metaData    metadata.Metadata
-	info        []byte // 512 bytes
-	kvargs		map[string]interface{}
+	SenderSK    *privacy.PrivateKey
+	PaymentInfo []*privacy.PaymentInfo
+	InputCoins  []privacy.PlainCoin
+	Fee         uint64
+	HasPrivacy  bool
+	StateDB     *statedb.StateDB
+	TokenID     *common.Hash // default is nil -> use for prv coin
+	MetaData    metadata.Metadata
+	Info        []byte // 512 bytes
+	Kvargs		map[string]interface{}
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoins []coin.PlainCoin,
+	inputCoins []privacy.PlainCoin,
 	fee uint64,
 	hasPrivacy bool,
 	stateDB *statedb.StateDB,
@@ -87,27 +71,23 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	info []byte) *TxPrivacyInitParams {
 
 	params := &TxPrivacyInitParams{
-		stateDB:     stateDB,
-		tokenID:     tokenID,
-		hasPrivacy:  hasPrivacy,
-		inputCoins:  inputCoins,
-		fee:         fee,
-		metaData:    metaData,
-		paymentInfo: paymentInfo,
-		senderSK:    senderSK,
-		info:        info,
-		kvargs:		 nil,
+		StateDB:     stateDB,
+		TokenID:     tokenID,
+		HasPrivacy:  hasPrivacy,
+		InputCoins:  inputCoins,
+		Fee:         fee,
+		MetaData:    metaData,
+		PaymentInfo: paymentInfo,
+		SenderSK:    senderSK,
+		Info:        info,
+		Kvargs:		 nil,
 	}
 	return params
 }
 
-func (par *TxPrivacyInitParams) SetKvargs(kv map[string]interface{}){
-	par.kvargs = kv
-}
-
 func getTxInfo(paramInfo []byte) ([]byte, error) {
-	if lenTxInfo := len(paramInfo); lenTxInfo > MaxSizeInfo {
-		return []byte{}, NewTransactionErr(ExceedSizeInfoTxError, nil)
+	if lenTxInfo := len(paramInfo); lenTxInfo > utils.MaxSizeInfo {
+		return []byte{}, utils.NewTransactionErr(utils.ExceedSizeInfoTxError, nil)
 	}
 	return paramInfo, nil
 }
@@ -115,20 +95,20 @@ func getTxInfo(paramInfo []byte) ([]byte, error) {
 func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress) error {
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
-	for _, p := range params.paymentInfo {
+	for _, p := range params.PaymentInfo {
 		sumOutputValue += p.Amount
 	}
 
 	// Calculate sum of all input coins' value
 	sumInputValue := uint64(0)
-	for _, coin := range params.inputCoins {
+	for _, coin := range params.InputCoins {
 		sumInputValue += coin.GetValue()
 	}
 
-	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
+	overBalance := int64(sumInputValue - sumOutputValue - params.Fee)
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return NewTransactionErr(WrongInputError, errors.New(fmt.Sprintf("Sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
+		return utils.NewTransactionErr(utils.WrongInputError, errors.New(fmt.Sprintf("Sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.Fee)))
 	}
 	// Create a new payment to sender's pk where amount is overBalance if > 0
 	if overBalance > 0 {
@@ -136,16 +116,16 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddre
 		changePaymentInfo := new(privacy.PaymentInfo)
 		changePaymentInfo.Amount = uint64(overBalance)
 		changePaymentInfo.PaymentAddress = senderPaymentAddree
-		params.paymentInfo = append(params.paymentInfo, changePaymentInfo)
+		params.PaymentInfo = append(params.PaymentInfo, changePaymentInfo)
 	}
 
 	return nil
 }
 
-func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
+func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 	// If this is nonPrivacyNonInputCoins (maybe)
 	if len(inputCoins) == 0 {
-		return currentTxVersion, nil
+		return utils.CurrentTxVersion, nil
 	}
 	check := [3]bool{false, false, false}
 	for i := 0; i < len(inputCoins); i += 1 {
@@ -170,28 +150,28 @@ func getTxVersionFromCoins(inputCoins []coin.PlainCoin) (int8, error) {
 }
 
 // return bool indicates whether we should continue "Init" function or not
-func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
+func (tx *TxBase) InitializeTxAndParams(params *TxPrivacyInitParams) error {
 	var err error
 	// Get Keyset from param
 	senderKeySet := incognitokey.KeySet{}
-	if err := senderKeySet.InitFromPrivateKey(params.senderSK); err != nil {
-		Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
-		return NewTransactionErr(PrivateKeySenderInvalidError, err)
+	if err := senderKeySet.InitFromPrivateKey(params.SenderSK); err != nil {
+		utils.Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
+		return utils.NewTransactionErr(utils.PrivateKeySenderInvalidError, err)
 	}
-	tx.sigPrivKey = *params.senderSK
+	tx.sigPrivKey = *params.SenderSK
 	// Tx: initialize some values
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
 	}
-	tx.Fee = params.fee
+	tx.Fee = params.Fee
 	tx.Type = common.TxNormalType
-	tx.Metadata = params.metaData
+	tx.Metadata = params.MetaData
 	tx.PubKeyLastByteSender = senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 
-	if tx.Version, err = getTxVersionFromCoins(params.inputCoins); err != nil {
+	if tx.Version, err = GetTxVersionFromCoins(params.InputCoins); err != nil {
 		return err
 	}
-	if tx.Info, err = getTxInfo(params.info); err != nil {
+	if tx.Info, err = getTxInfo(params.Info); err != nil {
 		return err
 	}
 
@@ -203,43 +183,6 @@ func (tx *TxBase) initializeTxAndParams(params *TxPrivacyInitParams) error {
 }
 
 // =================== PARSING JSON FUNCTIONS ===================
-
-func parseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
-	// If transaction is nonPrivacyNonInput then we do not have proof, so parse it as nil
-	if p == nil {
-		return nil, nil
-	}
-	proofInBytes, err := json.Marshal(p)
-	if err != nil {
-		return nil, err
-	}
-
-	var res privacy.Proof
-	if txType == common.TxConversionType {
-		if ver == TxConversionVersion12Number {
-			res = new(privacy_v2.ConversionProofVer1ToVer2)
-			res.Init()
-		} else {
-			return nil, errors.New("ParseProof: TxConversion version is incorrect")
-		}
-	} else {
-		switch ver {
-		case TxVersion1Number, TxVersion0Number:
-			res = new(zkp.PaymentProof)
-		case TxVersion2Number:
-			res = new(privacy_v2.PaymentProofV2)
-			res.Init()
-		default:
-			return nil, errors.New("ParseProof: Tx.Version is incorrect")
-		}
-	}
-
-	err = json.Unmarshal(proofInBytes, res)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
 
 func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	// For rolling version
@@ -253,8 +196,8 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	}
 	err := json.Unmarshal(data, temp)
 	if err != nil {
-		Logger.Log.Error("UnmarshalJSON tx", string(data))
-		return NewTransactionErr(UnexpectedError, err)
+		utils.Logger.Log.Errorf("UnmarshalJSON tx %s", string(data))
+		return utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
 
 	if temp.Metadata == nil {
@@ -262,7 +205,7 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	} else {
 		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
 		if parseErr != nil {
-			Logger.Log.Error(parseErr)
+			utils.Logger.Log.Error(parseErr)
 			return parseErr
 		}
 		tx.SetMetadata(meta)
@@ -271,9 +214,9 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	if temp.Proof == nil {
 		tx.SetProof(nil)
 	} else {
-		proof, proofErr := parseProof(temp.Proof, tx.Version, tx.Type)
+		proof, proofErr := utils.ParseProof(temp.Proof, tx.Version, tx.Type)
 		if proofErr != nil {
-			Logger.Log.Error(proofErr)
+			utils.Logger.Log.Error(proofErr)
 			return proofErr
 		}
 		tx.SetProof(proof)
@@ -333,6 +276,22 @@ func (tx TxBase) GetTokenID() *common.Hash { return &common.PRVCoinID }
 func (tx TxBase) GetMetadata() metadata.Metadata { return tx.Metadata }
 
 func (tx *TxBase) SetMetadata(meta metadata.Metadata) { tx.Metadata = meta }
+
+func (tx TxBase) GetPrivateKey() []byte{
+	return tx.sigPrivKey
+}
+
+func (tx TxBase) SetPrivateKey(sk []byte){
+	tx.sigPrivKey = sk
+}
+
+func (tx TxBase) GetCachedActualSize() *uint64{
+	return tx.cachedActualSize
+}
+
+func (tx TxBase) SetCachedActualSize(sz *uint64){
+	tx.cachedActualSize = sz
+}
 
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 
@@ -399,11 +358,11 @@ func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
 func (tx TxBase) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	pubkeys, amounts := tx.GetReceivers()
 	if len(pubkeys) == 0 {
-		Logger.Log.Error("GetTransferData receiver 0 output, it should has exactly 1 output")
+		utils.Logger.Log.Error("GetTransferData receiver 0 output, it should has exactly 1 output")
 		return false, nil, 0, &common.PRVCoinID
 	}
 	if len(pubkeys) > 1 {
-		Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
+		utils.Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
 		return false, nil, 0, &common.PRVCoinID
 	}
 	return true, pubkeys[0], amounts[0], &common.PRVCoinID
@@ -490,15 +449,15 @@ func (tx TxBase) CheckTxVersion(maxTxVersion int8) bool {
 	return !(tx.Version > maxTxVersion)
 }
 
-func (tx *TxBase) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
+func (tx *TxBase) IsNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
 	var err error
-	//Logger.Log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
-	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
+	//Logger.Log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.InputCoins), params.Fee, params.HasPrivacy)
+	if len(params.InputCoins) == 0 && params.Fee == 0 && !params.HasPrivacy {
 		//Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
-		tx.sigPrivKey = *params.senderSK
-		if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
-			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
-			return true, NewTransactionErr(SignTxError, err)
+		tx.sigPrivKey = *params.SenderSK
+		if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.SenderSK, tx.Hash()[:]); err != nil {
+			utils.Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
+			return true, utils.NewTransactionErr(utils.SignTxError, err)
 		}
 		return true, nil
 	}
@@ -598,14 +557,14 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 	inputCoins := tx.Proof.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
 		serialNumber := inputCoins[i].GetKeyImage().ToBytesS()
-		ok, err := txDatabaseWrapper.hasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
+		ok, err := statedb.HasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}
 	}
 	for _, outCoin := range tx.GetProof().GetOutputCoins(){
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
-		ok, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
+		ok, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
 		if ok || err != nil {
 			return errors.New("OTA of output coin already in database")
 		}

@@ -195,7 +195,7 @@ func testTxTokenV2TransferPRV(db *statedb.StateDB, t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	res := txDatabaseWrapper.privacyTokenIDExisted(db, common.PRVCoinID)
+	res := statedb.PrivacyTokenIDExisted(db, common.PRVCoinID)
 	assert.Equal(t, true, res)
 
 

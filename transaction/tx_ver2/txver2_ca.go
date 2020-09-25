@@ -128,7 +128,7 @@ func createPrivKeyMlsagCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV
 
 func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, []*operation.Point, error) {
 	
-	lenOTA, err := txDatabaseWrapper.getOTACoinLength(params.stateDB, common.ConfidentialAssetID, shardID)
+	lenOTA, err := statedb.GetOTACoinLength(params.stateDB, common.ConfidentialAssetID, shardID)
 	if err != nil || lenOTA == nil {
 		Logger.Log.Errorf("Getting length of commitment error, either database length ota is empty or has error, error = %v", err)
 		return nil, nil, nil, err
@@ -157,7 +157,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
-				if rowIndexes[j], err = txDatabaseWrapper.getOTACoinIndex(params.stateDB, common.ConfidentialAssetID, publicKeyBytes); err != nil {
+				if rowIndexes[j], err = statedb.GetOTACoinIndex(params.stateDB, common.ConfidentialAssetID, publicKeyBytes); err != nil {
 					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, nil, err
 				}
@@ -171,7 +171,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []coin.PlainCoin, outputCoins []*
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, common.ConfidentialAssetID, rowIndexes[j].Uint64(), shardID)
+				coinBytes, err := statedb.GetOTACoinByIndex(params.stateDB, common.ConfidentialAssetID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
 					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
 					return nil, nil, nil, err
@@ -317,7 +317,7 @@ func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags 
 		row := make([]*operation.Point, m+2)
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
-			randomCoinBytes, err := txDatabaseWrapper.getOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if err != nil {
 				Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
 				return nil, err
@@ -407,7 +407,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
 		// here tokenID should always be TokenConfidentialAssetID (for db storage)
-		found, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, common.ConfidentialAssetID, publicKeyBytes)
+		found, err := statedb.HasOnetimeAddress(stateDB, common.ConfidentialAssetID, publicKeyBytes)
 		if err != nil {
 			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 			return nil, nil, err

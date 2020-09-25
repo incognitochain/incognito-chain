@@ -24,7 +24,7 @@ type TxTokenVersion2 struct {
 
 func checkIsBridgeTokenID(bridgeStateDB *statedb.StateDB, tokenID *common.Hash) error {
 	isBridgeToken := false
-	allBridgeTokensBytes, err := txDatabaseWrapper.getAllBridgeTokens(bridgeStateDB)
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
 	if err != nil {
 		return NewTransactionErr(TokenIDExistedError, err)
 	}
@@ -116,7 +116,7 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				Logger.Log.Debug("New Privacy Token %+v ", newHashInitToken)
-				existed := txDatabaseWrapper.privacyTokenIDExisted(params.transactionStateDB, newHashInitToken)
+				existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, newHashInitToken)
 				if existed {
 					Logger.Log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
@@ -145,7 +145,7 @@ func (txToken *TxTokenVersion2) initToken(params *TxTokenParams) error {
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
 			// propertyID, _ := common.TokenStringToHash(params.tokenParams.PropertyID)
-			// existed := txDatabaseWrapper.privacyTokenIDExisted(params.transactionStateDB, *propertyID)
+			// existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, *propertyID)
 			// if !existed {
 			// 	if err := checkIsBridgeTokenID(params.bridgeStateDB, propertyID); err != nil {
 			// 		return err
@@ -451,7 +451,7 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 				return true, nil
 			} else {
 				// check exist token
-				if txDatabaseWrapper.privacyTokenIDExisted(transactionStateDB, tokenID) {
+				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
 					return false, errors.New("Cannot validate Tx Init Token. It is tx mint from User")
 				}
 				return true, nil

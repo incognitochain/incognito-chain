@@ -651,7 +651,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	for i := 0; i < numTests; i++ {
 		randomTokenIndex := common.RandInt() % numTokens
 		tokenID := tokenIDs[randomTokenIndex]
-		assert.Equal(t, true, txDatabaseWrapper.privacyTokenIDExisted(testDB, *tokenID))
+		assert.Equal(t, true, statedb.PrivacyTokenIDExisted(testDB, *tokenID))
 
 		fmt.Printf("Test #%d: Convert token %d\n", i, randomTokenIndex)
 		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 10), common.RandIntInterval(1, 3)

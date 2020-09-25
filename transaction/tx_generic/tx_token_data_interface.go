@@ -1,15 +1,13 @@
-package transaction
+package tx_generic
 
 import (
-	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"strconv"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 // Interface for Transaction Transfer Token
@@ -49,9 +47,9 @@ type TransactionToken interface {
 	GetReceivers() ([][]byte, []uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
 
-	GetReceiverData() ([]coin.Coin, error)
-	GetTxMintData() (bool, coin.Coin, *common.Hash, error)
-	GetTxBurnData() (bool, coin.Coin, *common.Hash, error)
+	GetReceiverData() ([]privacy.Coin, error)
+	GetTxMintData() (bool, privacy.Coin, *common.Hash, error)
+	GetTxBurnData() (bool, privacy.Coin, *common.Hash, error)
 
 	ListSerialNumbersHashH() []common.Hash
 	String() string
@@ -95,27 +93,6 @@ type TxTokenData struct {
 	Type     int    // action type
 	Mintable bool   // default false
 	Amount   uint64 // init amount
-}
-
-func (txData *TxTokenData) UnmarshalJSON(data []byte) error {
-	type Alias TxTokenData
-	temp := &struct {
-		TxNormal json.RawMessage
-		*Alias
-	}{
-		Alias: (*Alias)(txData),
-	}
-	err := json.Unmarshal(data, temp)
-	if err != nil {
-		Logger.Log.Error("UnmarshalJSON tx", string(data))
-		return NewTransactionErr(UnexpectedError, err)
-	}
-
-	if txData.TxNormal, err = NewTransactionFromJsonBytes(temp.TxNormal); err != nil {
-		Logger.Log.Error(err)
-		return err
-	}
-	return nil
 }
 
 func (txData TxTokenData) GetPropertyID() common.Hash { return txData.PropertyID }
@@ -163,7 +140,7 @@ func (txData TxTokenData) String() string {
 }
 
 func (txData TxTokenData) Hash() (*common.Hash, error) {
-	point := operation.HashToPoint([]byte(txData.String()))
+	point := privacy.HashToPoint([]byte(txData.String()))
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
 	if err != nil {

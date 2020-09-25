@@ -198,7 +198,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 	//Verify that input coins have not been spent
 	inputCoins := proofConversion.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
-		if ok, err := txDatabaseWrapper.hasSerialNumber(statedb, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
+		if ok, err := statedb.HasSerialNumber(statedb, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)
 				return false, errors.New(errStr)
@@ -211,7 +211,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 	outputCoins := proofConversion.GetOutputCoins()
 	mapOutputCoins := make(map[string]int)
 	for i := 0; i < len(outputCoins); i++ {
-		if ok, err := txDatabaseWrapper.hasOnetimeAddress(statedb, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
+		if ok, err := statedb.HasOnetimeAddress(statedb, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
 				return false, errors.New(errStr)
@@ -336,7 +336,7 @@ func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1To
 	txToken.TxTokenData.SetMintable(false)
 	txToken.TxTokenData.SetPropertyID(*params.tokenParams.tokenID)
 
-	existed := txDatabaseWrapper.privacyTokenIDExisted(params.stateDB, *params.tokenParams.tokenID)
+	existed := statedb.PrivacyTokenIDExisted(params.stateDB, *params.tokenParams.tokenID)
 	if !existed {
 		if err := checkIsBridgeTokenID(params.bridgeStateDB, params.tokenParams.tokenID); err != nil {
 			return err

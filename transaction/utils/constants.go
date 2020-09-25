@@ -1,8 +1,8 @@
-package transaction
+package utils
 
 const (
 	// txVersion is the current latest supported transaction version.
-	currentTxVersion                 = 2
+	CurrentTxVersion                 = 2
 	TxVersion0Number                 = 0
 	TxVersion1Number                 = 1
 	TxVersion2Number                 = 2

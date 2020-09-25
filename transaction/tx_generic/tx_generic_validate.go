@@ -1,25 +1,27 @@
-package transaction
+package tx_generic
 
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"time"
 )
 
-func verifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error)  {
+func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error)  {
 	if tx.IsPrivacy() {
 		return true, nil
 	}
 	proof := tx.GetProof()
 	meta := tx.GetMetadata()
 
-	inputCoins := make([]coin.PlainCoin, 0)
-	outputCoins := make([]coin.Coin, 0)
+	inputCoins := make([]privacy.PlainCoin, 0)
+	outputCoins := make([]privacy.Coin, 0)
 	if tx.GetProof() != nil {
 		inputCoins = tx.GetProof().GetInputCoins()
 		outputCoins = tx.GetProof().GetOutputCoins()
@@ -35,21 +37,21 @@ func verifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 	if meta != nil {
 		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, tx, bcr, accumulatedValues, retriever, viewRetriever)
 		if err != nil {
-			Logger.Log.Error(err)
-			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
+			utils.Logger.Log.Error(err)
+			return false, utils.NewTransactionErr(utils.VerifyMinerCreatedTxBeforeGettingInBlockError, err)
 		}
 		return ok, nil
 	}
 	return true, nil
 }
-func getTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, coin.Coin, *common.Hash, error) {
+func GetTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, privacy.Coin, *common.Hash, error) {
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
-		Logger.Log.Error("GetTxMintData: Cannot get receiver data")
+		utils.Logger.Log.Error("GetTxMintData: Cannot get receiver data")
 		return false, nil, nil, err
 	}
 	if len(outputCoins) != 1 {
-		Logger.Log.Error("GetTxMintData : Should only have one receiver")
+		utils.Logger.Log.Error("GetTxMintData : Should only have one receiver")
 		return false, nil, nil, errors.New("Error Tx mint has more than one receiver")
 	}
 	if inputCoins := tx.GetProof().GetInputCoins(); len(inputCoins) > 0 {
@@ -58,14 +60,14 @@ func getTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, coin.Co
 	return true, outputCoins[0], tokenID, nil
 }
 
-func getTxBurnData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, error) {
+func GetTxBurnData(tx metadata.Transaction) (bool, privacy.Coin, *common.Hash, error) {
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
-		Logger.Log.Errorf("Cannot get receiver data, error %v", err)
+		utils.Logger.Log.Errorf("Cannot get receiver data, error %v", err)
 		return false, nil, nil, err
 	}
 	if len(outputCoins) > 2 {
-		Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
+		utils.Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
 		return false, nil, nil, err
 	}
 	for _, coin := range outputCoins {
@@ -76,7 +78,7 @@ func getTxBurnData(tx metadata.Transaction) (bool, coin.Coin, *common.Hash, erro
 	return false, nil, nil, nil
 }
 
-func validateTxWithBlockChain(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+func ValidateTxWithBlockChain(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
@@ -85,8 +87,8 @@ func validateTxWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 		isContinued, err := meta.ValidateTxWithBlockChain(tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
-			Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
-			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
+			utils.Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
+			return utils.NewTransactionErr(utils.RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
 		}
 		if !isContinued {
 			return nil
@@ -95,7 +97,7 @@ func validateTxWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func validateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, isNewTransaction bool) (bool, error) {
+func ValidateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, isNewTransaction bool) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -114,25 +116,26 @@ func validateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionSta
 		if validateMetadata {
 			return validateMetadata, nil
 		} else {
-			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
+			return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid"))
 		}
 	}
 	return true, nil
 }
 
-func validateTransaction(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	switch tx.GetType() {
-	case common.TxRewardType:
-		return tx.ValidateTxSalary(transactionStateDB)
-	case common.TxReturnStakingType:
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil
-	case common.TxConversionType:
-		return validateConversionVer1ToVer2(tx, transactionStateDB, shardID, tokenID)
-	}
-	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
-}
+// func validateTransaction(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+// 	switch tx.GetType() {
+// 	case common.TxRewardType:
+// 		return tx.ValidateTxSalary(transactionStateDB)
+// 	case common.TxReturnStakingType:
+// 		return tx.ValidateTxReturnStaking(transactionStateDB), nil
+// 	case common.TxConversionType:
+// 		return validateConversionVer1ToVer2(tx, transactionStateDB, shardID, tokenID)
+// 	}
+// 	// fmt.Printf("TokenID here is %s\n", tokenID.String())
+// 	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+// }
 
-func validateSanityMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) ( bool, error) {
+func ValidateSanityMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) ( bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
 		isValid, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx )
@@ -143,20 +146,20 @@ func validateSanityMetadata(tx metadata.Transaction, chainRetriever metadata.Cha
 	return true, nil
 }
 
-func validateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func ValidateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	//check version
-	if tx.GetVersion() > TxVersion2Number {
-		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), currentTxVersion))
+	if tx.GetVersion() > utils.TxVersion2Number {
+		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), utils.CurrentTxVersion))
 	}
 	// check LockTime before now
 	if tx.GetLockTime() > time.Now().Unix() {
-		return false, NewTransactionErr(RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.GetLockTime()))
+		return false, utils.NewTransactionErr(utils.RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.GetLockTime()))
 	}
 
 	// check tx size
 	actualTxSize := tx.GetTxActualSize()
 	if actualTxSize > common.MaxTxSize {
-		return false, NewTransactionErr(RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
+		return false, utils.NewTransactionErr(utils.RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
 	}
 
 	// check sanity of Proof
@@ -177,28 +180,28 @@ func validateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever met
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxTokenConversionType, common.TxReturnStakingType, common.TxConversionType: //is valid
 	default:
-		return false, NewTransactionErr(RejectTxType, fmt.Errorf("wrong tx type with %s", tx.GetType()))
+		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.GetType()))
 	}
 
 	// check info field
 	info := tx.GetInfo()
-	if len(info) > MaxSizeInfo {
-		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(info), 512))
+	if len(info) > utils.MaxSizeInfo {
+		return false, utils.NewTransactionErr(utils.RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(info), 512))
 	}
 	return true, nil
 }
 
-func getTxActualSizeInBytes(tx metadata.Transaction) uint64{
+func GetTxActualSizeInBytes(tx metadata.Transaction) uint64{
 	if tx == nil {
 		return uint64(0)
 	}
 	var sizeTx = uint64(0)
 	txTokenBase, ok := tx.(TxTokenBase)
 	if ok { //TxTokenBase
-		sizeTx += getTxActualSizeInBytes(txTokenBase.Tx)
+		sizeTx += GetTxActualSizeInBytes(txTokenBase.Tx)
 
 		if &txTokenBase.TxTokenData != nil {
-			sizeTx += getTxActualSizeInBytes(txTokenBase.TxTokenData.TxNormal)
+			sizeTx += GetTxActualSizeInBytes(txTokenBase.TxTokenData.TxNormal)
 			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyName))
 			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertySymbol))
 			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyID))

@@ -336,7 +336,7 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 		row := make([]*operation.Point, m+1)
 		for j := 0; j < m; j += 1 {
 			index := indexes[i][j]
-			randomCoinBytes, err := txDatabaseWrapper.getOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if err != nil {
 				Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
 				return nil, err
@@ -358,7 +358,7 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
 func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, params *TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
-	lenOTA, err := txDatabaseWrapper.getOTACoinLength(params.stateDB, *params.tokenID, shardID)
+	lenOTA, err := statedb.GetOTACoinLength(params.stateDB, *params.tokenID, shardID)
 	if err != nil || lenOTA == nil {
 		Logger.Log.Errorf("Getting length of commitment error, either database length ota is empty or has error, error = %v", err)
 		return nil, nil, err
@@ -376,7 +376,7 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
-				if rowIndexes[j], err = txDatabaseWrapper.getOTACoinIndex(params.stateDB, *params.tokenID, publicKeyBytes); err != nil {
+				if rowIndexes[j], err = statedb.GetOTACoinIndex(params.stateDB, *params.tokenID, publicKeyBytes); err != nil {
 					Logger.Log.Errorf("Getting commitment index error %v ", err)
 					return nil, nil, err
 				}
@@ -385,7 +385,7 @@ func generateMlsagRingWithIndexes(inputCoins []coin.PlainCoin, outputCoins []*co
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
 				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := txDatabaseWrapper.getOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
+				coinBytes, err := statedb.GetOTACoinByIndex(params.stateDB, *params.tokenID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
 					Logger.Log.Errorf("Get coinv2 by index error %v ", err)
 					return nil, nil, err
@@ -521,7 +521,7 @@ func (tx *TxVersion2) InitTxSalary(otaCoin *coin.CoinV2, privateKey *privacy.Pri
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
 		return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
-	if found, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS()); found || err != nil {
+	if found, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS()); found || err != nil {
 		if found {
 			return errors.New("Cannot initTxSalary, onetimeaddress already exists in database")
 		}
@@ -594,7 +594,7 @@ func (tx *TxVersion2) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 
 	// Check database for ota
-	found, err := txDatabaseWrapper.hasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
+	found, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 		return false, err
@@ -659,11 +659,17 @@ func (tx TxVersion2) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetri
 }
 
 func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-	// tid := tokenID
-	// if hasPrivacy{
-	// 	tid = &common.ConfidentialAssetID
-	// }
-	return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+	switch tx.GetType() {
+	case common.TxRewardType:
+		return tx.ValidateTxSalary(transactionStateDB)
+	case common.TxReturnStakingType:
+		return tx.ValidateTxReturnStaking(transactionStateDB), nil
+	case common.TxConversionType:
+		return validateConversionVer1ToVer2(tx, transactionStateDB, shardID, tokenID)
+	default:
+		return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+	}
+	// return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
 func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {

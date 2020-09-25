@@ -37,7 +37,7 @@ var (
 	minInputs = 1
 
 	maxTries = 100
-	numOfLoops = 2
+	numOfLoops = 10
 )
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper

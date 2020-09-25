@@ -1,7 +1,6 @@
-package transaction
+package tx_generic
 
 import (
-	"encoding/json"
 	"errors"
 	"math"
 	"math/big"
@@ -10,7 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
-	"github.com/incognitochain/incognito-chain/wallet"
+	
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -18,7 +17,8 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
+	zku "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
 type RandomCommitmentsProcessParam struct {
@@ -61,9 +61,9 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		commitmentInHash := common.HashH(usableCommitment)
 		listUsableCommitments[commitmentInHash] = usableCommitment
 		listUsableCommitmentsIndices[i] = commitmentInHash
-		index, err := txDatabaseWrapper.getCommitmentIndex(param.stateDB, *param.tokenID, usableCommitment, param.shardID)
+		index, err := statedb.GetCommitmentIndex(param.stateDB, *param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
-			Logger.Log.Error(err)
+			utils.Logger.Log.Error(err)
 			return
 		}
 		commitmentInBase58Check := base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)
@@ -72,13 +72,13 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := txDatabaseWrapper.getCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
+	lenCommitment, err1 := statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 	if err1 != nil {
-		Logger.Log.Error(err1)
+		utils.Logger.Log.Error(err1)
 		return
 	}
 	if lenCommitment == nil {
-		Logger.Log.Error(errors.New("Commitments is empty"))
+		utils.Logger.Log.Error(errors.New("Commitments is empty"))
 		return
 	}
 	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {
@@ -87,12 +87,14 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}
 	} else {
 		for i := 0; i < cpRandNum; i++ {
-			for {
-				lenCommitment, _ = txDatabaseWrapper.getCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
+			maxRetries := 5000
+			var retries int
+			for retries=maxRetries;retries>0;retries--{
+				lenCommitment, _ = statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
-				ok, err := txDatabaseWrapper.hasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
+				ok, err := statedb.HasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
-					temp, _ := txDatabaseWrapper.getCommitmentByIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
+					temp, _ := statedb.GetCommitmentByIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
 					if _, found := listUsableCommitments[common.HashH(temp)]; !found {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -102,6 +104,11 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 				} else {
 					continue
 				}
+			}
+			// no usable commitment from db
+			if retries==0{
+				utils.Logger.Log.Errorf("Error : No available commitment in db")
+				return
 			}
 		}
 	}
@@ -161,10 +168,10 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 
 	sizeProof := uint64(0)
 	if estimateTxSizeParam.numInputCoins != 0 || estimateTxSizeParam.numPayments != 0 {
-		sizeProof = utils.EstimateProofSize(estimateTxSizeParam.numInputCoins, estimateTxSizeParam.numPayments, estimateTxSizeParam.hasPrivacy)
+		sizeProof = zku.EstimateProofSize(estimateTxSizeParam.numInputCoins, estimateTxSizeParam.numPayments, estimateTxSizeParam.hasPrivacy)
 	} else {
 		if estimateTxSizeParam.limitFee > 0 {
-			sizeProof = utils.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
+			sizeProof = zku.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
 		}
 	}
 
@@ -199,7 +206,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 		customTokenDataSize += uint64(common.SigPrivacySize) // sig
 
 		// Proof
-		customTokenDataSize += utils.EstimateProofSize(len(estimateTxSizeParam.privacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.privacyCustomTokenParams.Receiver), true)
+		customTokenDataSize += zku.EstimateProofSize(len(estimateTxSizeParam.privacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.privacyCustomTokenParams.Receiver), true)
 
 		customTokenDataSize += uint64(1) //PubKeyLastByte
 
@@ -207,45 +214,6 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	}
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
-}
-
-type BuildCoinBaseTxByCoinIDParams struct {
-	payToAddress       *privacy.PaymentAddress
-	amount             uint64
-	txRandom           *coin.TxRandom
-	payByPrivateKey    *privacy.PrivateKey
-	transactionStateDB *statedb.StateDB
-	bridgeStateDB      *statedb.StateDB
-	meta               *metadata.WithDrawRewardResponse
-	coinID             common.Hash
-	txType             int
-	coinName           string
-	shardID            byte
-}
-
-func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
-	amount uint64,
-	payByPrivateKey *privacy.PrivateKey,
-	stateDB *statedb.StateDB,
-	meta *metadata.WithDrawRewardResponse,
-	coinID common.Hash,
-	txType int,
-	coinName string,
-	shardID byte,
-	bridgeStateDB *statedb.StateDB) *BuildCoinBaseTxByCoinIDParams {
-	params := &BuildCoinBaseTxByCoinIDParams{
-		transactionStateDB: stateDB,
-		bridgeStateDB:      bridgeStateDB,
-		shardID:            shardID,
-		meta:               meta,
-		amount:             amount,
-		coinID:             coinID,
-		coinName:           coinName,
-		payByPrivateKey:    payByPrivateKey,
-		payToAddress:       payToAddress,
-		txType:             txType,
-	}
-	return params
 }
 
 func calculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
@@ -261,100 +229,38 @@ func calculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.
 	return sumOutputsWithFee
 }
 
-func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*coin.CoinV2, error) {
-	for {
-		c, err := coin.NewCoinFromPaymentInfo(paymentInfo)
-		if err != nil {
-			Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
-			return nil, err
-		}
-		// If previously created coin is burning address
-		if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
-			return c, nil // No need to check db
-		}
-		// Onetimeaddress should be unique
-		publicKeyBytes := c.GetPublicKey().ToBytesS()
-		found, err := txDatabaseWrapper.hasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
-		if err != nil {
-			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
-			return nil, err
-		}
-		if !found {
-			return c, nil
-		}
+func ValidateTxParams(params *TxPrivacyInitParams) error {
+	if len(params.InputCoins) > 255 {
+		return utils.NewTransactionErr(utils.InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.InputCoins)))
 	}
-}
-
-func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*coin.CoinV2, error) {
-	outputCoins := make([]*coin.CoinV2, len(paymentInfo))
-	for index, info := range paymentInfo {
-		var err error
-		outputCoins[index], err = newCoinUniqueOTABasedOnPaymentInfo(info, tokenID, stateDB)
-		if err != nil {
-			Logger.Log.Errorf("Cannot create coin with unique OTA, error: %v", err)
-			return nil, err
-		}
-	}
-	return outputCoins, nil
-}
-
-func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(params.amount, *params.payToAddress)
-	params.meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	if err != nil {
-		Logger.Log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
-	}
-	switch params.txType {
-	case NormalCoinType:
-		tx := new(TxVersion2)
-		err = tx.InitTxSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB, params.meta)
-		return tx, err
-	case CustomTokenPrivacyType:
-		var propertyID [common.HashSize]byte
-		copy(propertyID[:], params.coinID[:])
-		propID := common.Hash(propertyID)
-		tx := new(TxTokenVersion2)
-		err = tx.InitTxTokenSalary(otaCoin, params.payByPrivateKey, params.transactionStateDB,
-			params.meta, &propID, params.coinName)
-		return tx, err
-	}
-	return nil, nil
-}
-
-func validateTxParams(params *TxPrivacyInitParams) error {
-	if len(params.inputCoins) > 255 {
-		return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
-	}
-	if len(params.paymentInfo) > 254 {
-		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
+	if len(params.PaymentInfo) > 254 {
+		return utils.NewTransactionErr(utils.PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.PaymentInfo)))
 	}
 	limitFee := uint64(0)
-	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
-		params.hasPrivacy, nil, nil, limitFee)
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.InputCoins), len(params.PaymentInfo),
+		params.HasPrivacy, nil, nil, limitFee)
 	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
-	if params.tokenID == nil {
+	if params.TokenID == nil {
 		// using default PRV
-		params.tokenID = &common.Hash{}
-		err := params.tokenID.SetBytes(common.PRVCoinID[:])
+		params.TokenID = &common.Hash{}
+		err := params.TokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.String())
+			return utils.NewTransactionErr(utils.TokenIDInvalidError, err, params.TokenID.String())
 		}
 	}
 	return nil
 }
 
-func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
+func ParseTokenID(tokenID *common.Hash) (*common.Hash, error) {
 	if tokenID == nil {
 		result := new(common.Hash)
 		err := result.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			Logger.Log.Error(err)
-			return nil, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+			utils.Logger.Log.Error(err)
+			return nil, utils.NewTransactionErr(utils.TokenIDInvalidError, err, tokenID.String())
 		}
 		return result, nil
 	}
@@ -364,7 +270,7 @@ func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
 func verifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (bool, error) {
 	// check input transaction
 	if sig == nil || sigPubKey == nil {
-		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an signed one"))
 	}
 
 	var err error
@@ -374,8 +280,8 @@ func verifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (boo
 	sigPublicKey, err := new(operation.Point).FromBytesS(sigPubKey)
 
 	if err != nil {
-		Logger.Log.Error(err)
-		return false, NewTransactionErr(DecompressSigPubKeyError, err)
+		utils.Logger.Log.Error(err)
+		return false, utils.NewTransactionErr(utils.DecompressSigPubKeyError, err)
 	}
 	verifyKey.Set(sigPublicKey)
 
@@ -383,16 +289,16 @@ func verifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (boo
 	signature := new(privacy.SchnSignature)
 	err = signature.SetBytes(sig)
 	if err != nil {
-		Logger.Log.Error(err)
-		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
+		utils.Logger.Log.Error(err)
+		return false, utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
 	}
 
 	// verify signature
-	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	/*utils.Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
 	if tx.Proof != nil {
-		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+		utils.Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
 	}
-	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
+	utils.Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res := verifyKey.Verify(signature, hashedMessage)
 	return res, nil
 }
@@ -415,82 +321,3 @@ func signNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signature
 	return signatureBytes, sigPubKey, nil
 }
 
-// Used to parse json
-type txJsonDataVersion struct {
-	Version int8 `json:"Version"`
-	Type    string
-}
-
-// For PRV and the Fee inside TokenTx
-func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
-	//fmt.Println(string(data))
-	txJsonVersion := new(txJsonDataVersion)
-	if err := json.Unmarshal(data, txJsonVersion); err != nil {
-		return nil, err
-	}
-	if txJsonVersion.Type == common.TxConversionType || txJsonVersion.Type == common.TxTokenConversionType {
-		if txJsonVersion.Version == int8(TxConversionVersion12Number) {
-				tx := new(TxVersion2)
-				if err := json.Unmarshal(data, tx); err != nil {
-					return nil, err
-				}
-				return tx, nil
-		} else {
-			return nil, errors.New("Cannot new txConversion from jsonBytes, type is incorrect.")
-		}
-	} else {
-		switch txJsonVersion.Version {
-		case int8(TxVersion1Number), int8(TxVersion0Number):
-			tx := new(TxVersion1)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		case int8(TxVersion2Number):
-			tx := new(TxVersion2)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		default:
-			return nil, errors.New("Cannot new tx from jsonBytes, version is incorrect")
-		}
-	}
-}
-
-// Return token transaction from bytes
-func NewTransactionTokenFromJsonBytes(data []byte) (TransactionToken, error) {
-	txJsonVersion := new(txJsonDataVersion)
-	if err := json.Unmarshal(data, txJsonVersion); err != nil {
-		return nil, err
-	}
-
-	if txJsonVersion.Type == common.TxTokenConversionType {
-		if txJsonVersion.Version == TxConversionVersion12Number {
-			tx := new(TxTokenVersion2)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		} else {
-			return nil, errors.New("Cannot new txTokenConversion from jsonBytes, version is incorrect")
-		}
-	} else {
-		switch txJsonVersion.Version {
-		case int8(TxVersion1Number), TxVersion0Number:
-			tx := new(TxTokenVersion1)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		case int8(TxVersion2Number):
-			tx := new(TxTokenVersion2)
-			if err := json.Unmarshal(data, tx); err != nil {
-				return nil, err
-			}
-			return tx, nil
-		default:
-			return nil, errors.New("Cannot new txToken from bytes because version is incorrect")
-		}
-	}
-}

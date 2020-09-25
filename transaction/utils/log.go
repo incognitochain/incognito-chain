@@ -1,4 +1,4 @@
-package transaction
+package utils
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
