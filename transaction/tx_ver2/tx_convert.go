@@ -1,21 +1,22 @@
-package transaction
+package tx_ver2
 
 import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"strconv"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
 // ================ TX NORMAL CONVERSION =================
@@ -54,29 +55,29 @@ func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 
 func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) error {
 	if len(params.inputCoins) > 255 {
-		return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
+		return utils.NewTransactionErr(utils.InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
 	}
 	if len(params.paymentInfo) > 254 {
-		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
+		return utils.NewTransactionErr(utils.PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
 	limitFee := uint64(0)
-	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
+	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
 		false, nil, nil, limitFee)
-	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
 	sumInput, sumOutput := uint64(0), uint64(0)
 	for _, c := range params.inputCoins {
 		if c.GetVersion() != 1 {
 			err := errors.New("TxConversion should only have inputCoins version 1")
-			return NewTransactionErr(InvalidInputCoinVersionErr, err)
+			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, err)
 		}
 
 		//Verify if input coins have been concealed
 		if c.GetRandomness() == nil || c.GetSNDerivator() == nil || c.GetPublicKey() == nil || c.GetCommitment() == nil {
 			err := errors.New("input coins should not be concealed")
-			return NewTransactionErr(InvalidInputCoinVersionErr, err)
+			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, err)
 		}
 		sumInput += c.GetValue()
 	}
@@ -85,14 +86,14 @@ func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) e
 	}
 	if sumInput != sumOutput + params.fee {
 		err := errors.New("TxConversion's sum input coin and output coin (with fee) is not the same")
-		return NewTransactionErr(SumInputCoinsAndOutputCoinsError, err)
+		return utils.NewTransactionErr(utils.SumInputCoinsAndOutputCoinsError, err)
 	}
 
 	if params.tokenID == nil {
 		// using default PRV
 		params.tokenID = &common.Hash{}
 		if err := params.tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.String())
+			return utils.NewTransactionErr(utils.TokenIDInvalidError, err, params.tokenID.String())
 		}
 	}
 	return nil
@@ -103,13 +104,13 @@ func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParam
 	// Get Keyset from param
 	senderKeySet :=  incognitokey.KeySet{}
 	if err:= senderKeySet.InitFromPrivateKey(params.senderSK); err != nil {
-		Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
-		return NewTransactionErr(PrivateKeySenderInvalidError, err)
+		utils.Logger.Log.Errorf("Cannot parse Private Key. Err %v", err)
+		return utils.NewTransactionErr(utils.PrivateKeySenderInvalidError, err)
 	}
 
 	// Tx: initialize some values
 	tx.Fee = params.fee
-	tx.Version = TxConversionVersion12Number
+	tx.Version = utils.TxConversionVersion12Number
 	tx.Type = common.TxConversionType
 	tx.Metadata = params.metaData
 	tx.PubKeyLastByteSender = senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
@@ -117,7 +118,7 @@ func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParam
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
 	}
-	if tx.Info, err = getTxInfo(params.info); err != nil {
+	if tx.Info, err = tx_generic.GetTxInfo(params.info); err != nil {
 		return err
 	}
 	return nil
@@ -137,14 +138,14 @@ func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error
 	return nil
 }
 
-func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID *common.Hash,  statedb *statedb.StateDB) ([]*coin.CoinV2, error) {
+func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID *common.Hash,  db *statedb.StateDB) ([]*coin.CoinV2, error) {
 	var err error
 	c := make([]*coin.CoinV2, len(paymentInfos))
 
 	for i := 0; i < len(paymentInfos); i += 1 {
-		c[i], err = newCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, statedb)
+		c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
 		if err != nil {
-			Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
+			utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
 			return nil, err
 		}
 	}
@@ -155,7 +156,7 @@ func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) erro
 	inputCoins := params.inputCoins
 	outputCoins, err := getOutputcoinsFromPaymentInfo(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
-		Logger.Log.Errorf("TxConversion cannot get output coins from payment info got error %v", err)
+		utils.Logger.Log.Errorf("TxConversion cannot get output coins from payment info got error %v", err)
 		return err
 	}
 	lenInputs := len(inputCoins)
@@ -168,37 +169,37 @@ func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) erro
 	}
 	tx.Proof, err = privacy_v2.ProveConversion(inputCoins, outputCoins, serialnumberWitness)
 	if err != nil {
-		Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
+		utils.Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
 	}
 
 	// sign tx
-	if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
-		Logger.Log.Error(err)
-		return NewTransactionErr(SignTxError, err)
+	if tx.Sig, tx.SigPubKey, err = tx_generic.SignNoPrivacy(params.senderSK, tx.Hash()[:]); err != nil {
+		utils.Logger.Log.Error(err)
+		return utils.NewTransactionErr(utils.SignTxError, err)
 	}
 	return nil
 }
 
-func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
-	if valid, err := verifySigNoPrivacy(tx.GetSig(), tx.GetSigPubKey(), tx.Hash()[:]); !valid {
+func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+	if valid, err := tx_generic.VerifySigNoPrivacy(tx.GetSig(), tx.GetSigPubKey(), tx.Hash()[:]); !valid {
 		if err != nil {
-			Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v \n", tx.Hash().String(), err)
-			return false, NewTransactionErr(VerifyTxSigFailError, err)
+			utils.Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v \n", tx.Hash().String(), err)
+			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 		}
-		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
-		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
+		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
+		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
 	}
 	proofConversion, ok := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
 	if !ok {
-		Logger.Log.Error("Error casting ConversionProofVer1ToVer2")
+		utils.Logger.Log.Error("Error casting ConversionProofVer1ToVer2")
 		return false, errors.New("Error casting ConversionProofVer1ToVer2")
 	}
 
 	//Verify that input coins have not been spent
 	inputCoins := proofConversion.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
-		if ok, err := statedb.HasSerialNumber(statedb, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
+		if ok, err := statedb.HasSerialNumber(db, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)
 				return false, errors.New(errStr)
@@ -211,7 +212,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 	outputCoins := proofConversion.GetOutputCoins()
 	mapOutputCoins := make(map[string]int)
 	for i := 0; i < len(outputCoins); i++ {
-		if ok, err := statedb.HasOnetimeAddress(statedb, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
+		if ok, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
 				return false, errors.New(errStr)
@@ -230,12 +231,12 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, statedb *statedb.Stat
 	valid, err := proofConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
 	if !valid {
 		if err != nil {
-			Logger.Log.Error(err)
+			utils.Logger.Log.Error(err)
 		}
-		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err, tx.Hash().String())
 	}
 
-	Logger.Log.Debugf("SUCCEEDED VERIFICATION PAYMENT PROOF")
+	utils.Logger.Log.Debugf("SUCCEEDED VERIFICATION PAYMENT PROOF")
 	return true, nil
 }
 
@@ -304,33 +305,33 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 	}
 
 	limitFee := uint64(0)
-	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.feeInputs), len(params.feePayments),
+	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(len(params.feeInputs), len(params.feePayments),
 		false, nil, nil, limitFee)
-	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
 	for _, c := range params.feeInputs {
-		if c.GetVersion() != TxVersion2Number {
+		if c.GetVersion() != utils.TxVersion2Number {
 			return errors.New("TxConversion should only have fee input coins version 2")
 		}
 	}
 	tokenParams := params.tokenParams
 	if tokenParams.tokenID == nil {
-		return NewTransactionErr(TokenIDInvalidError, errors.New("TxTokenConversion should have its tokenID not null"))
+		return utils.NewTransactionErr(utils.TokenIDInvalidError, errors.New("TxTokenConversion should have its tokenID not null"))
 	}
 	sumInput := uint64(0)
 	for _, c := range tokenParams.tokenInputs {
 		sumInput += c.GetValue()
 	}
 	if sumInput != tokenParams.tokenPayments[0].Amount {
-		return NewTransactionErr(SumInputCoinsAndOutputCoinsError, errors.New("sumInput and sum TokenPayment amount is not equal"))
+		return utils.NewTransactionErr(utils.SumInputCoinsAndOutputCoinsError, errors.New("sumInput and sum TokenPayment amount is not equal"))
 	}
 	return nil
 }
 
 func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1ToVer2InitParams) error {
-	txToken.TxTokenData.SetType(CustomTokenTransfer)
+	txToken.TxTokenData.SetType(utils.CustomTokenTransfer)
 	txToken.TxTokenData.SetPropertyName("")
 	txToken.TxTokenData.SetPropertySymbol("")
 	txToken.TxTokenData.SetMintable(false)
@@ -355,23 +356,23 @@ func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1To
 	)
 	txNormal := new(TxVersion2)
 	if err := InitConversion(txNormal, txConvertParams); err != nil {
-		return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
+		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
 	txToken.TxTokenData.TxNormal = txNormal
 	return nil
 }
 
-func (txToken *TxTokenVersion2) initPRVFeeConversion(feeTx *TxVersion2, params *TxPrivacyInitParams) error {
+func (txToken *TxTokenVersion2) initPRVFeeConversion(feeTx *TxVersion2, params *tx_generic.TxPrivacyInitParams) error {
 	txTokenDataHash, err := txToken.TxTokenData.Hash()
 	if err != nil {
-		Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
+		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 		return err
 	}
 	if err := feeTx.proveWithMessage(params, txTokenDataHash[:]); err != nil {
-		return NewTransactionErr(PrivacyTokenInitPRVError, err)
+		return utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	feeTx.SetVersion(TxVersion2Number)
+	feeTx.SetVersion(utils.TxVersion2Number)
 	feeTx.SetType(common.TxTokenConversionType)
 	txToken.Tx = feeTx
 
@@ -383,28 +384,28 @@ func InitTokenConversion(txToken *TxTokenVersion2, params *TxTokenConvertVer1ToV
 		return err
 	}
 
-	txPrivacyParams := NewTxPrivacyInitParams(
+	txPrivacyParams := tx_generic.NewTxPrivacyInitParams(
 		params.senderSK, params.feePayments, params.feeInputs, params.fee,
 		false, params.stateDB, nil, params.metaData, params.info,
 	)
-	if err := validateTxParams(txPrivacyParams); err != nil {
+	if err := tx_generic.ValidateTxParams(txPrivacyParams); err != nil {
 		return err
 	}
 	// Init tx and params (tx and params will be changed)
 	tx := new(TxVersion2)
-	if err := tx.initializeTxAndParams(txPrivacyParams); err != nil {
+	if err := tx.InitializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
 
 	// Init Token first
 	if err := txToken.initTokenConversion(params); err != nil {
-		Logger.Log.Errorf("Cannot init token ver2: err %v", err)
+		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
 
 	// Init PRV Fee on the whole transaction
 	if err := txToken.initPRVFeeConversion(tx, txPrivacyParams); err != nil {
-		Logger.Log.Errorf("Cannot init token ver2: err %v", err)
+		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
 

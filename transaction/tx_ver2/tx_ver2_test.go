@@ -1,4 +1,4 @@
-package transaction
+package tx_ver2
 
 import (
 	"bytes"
@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"unicode"
 	"math/rand"
-	"time"
-	"strconv"
+	// "time"
+	// "strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -25,6 +25,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -85,7 +87,7 @@ var _ = func() (_ struct{}) {
 	privacy.LoggerV1.Init(inactiveLogger)
 	privacy.LoggerV2.Init(activeLogger)
 	// can switch between the 2 loggers to mute logs as one wishes
-	Logger.Init(activeLogger)
+	utils.Logger.Init(activeLogger)
 	bulletproofs.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
 	if err != nil {
@@ -319,7 +321,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		sumOut := uint64(4000*len(dummyPrivateKeys)*numOfInputs)
 		assert.Equal(t,true,sumIn >= sumOut)
 
-		initializingParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
+		initializingParams := tx_generic.NewTxPrivacyInitParams(dummyPrivateKeys[0],
 			paymentInfoOut,inputCoins,
 			sumIn-sumOut,false,
 			dummyDB,
@@ -386,7 +388,7 @@ func testTxV2DuplicateInput(db *statedb.StateDB, inputCoins []coin.PlainCoin, pa
 	dup.SetBytes(inputCoins[0].Bytes())
 	// used the same coin twice in inputs
 	malInputCoins := append(inputCoins,dup)
-	malFeeParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
+	malFeeParams := tx_generic.NewTxPrivacyInitParams(dummyPrivateKeys[0],
 		paymentInfoOut,malInputCoins,
 		10,true,
 		db,
@@ -413,7 +415,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 	sumIn := uint64(4000*len(dummyPrivateKeys)*len(inputCoins))
 	sumOut := uint64(3000*len(paymentInfoOut))
 	assert.Equal(t,true,sumIn > sumOut)
-	malFeeParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
+	malFeeParams := tx_generic.NewTxPrivacyInitParams(dummyPrivateKeys[0],
 		paymentInfoOut,inputCoins,
 		sumIn-sumOut+1111,true,
 		db,
@@ -433,7 +435,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 	assert.Equal(t,false,isValid)
 }
 
-func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, params *TxPrivacyInitParams, pastCoins []coin.Coin, t *testing.T){
+func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, pastCoins []coin.Coin, t *testing.T){
 	// likewise, if someone took an already proven tx and swaps one input coin
 	// for another random coin from outside, the tx cannot go through
 	// (here we only meddle with coin-changing - not adding/removing - since length checks are included within mlsag)
@@ -483,7 +485,7 @@ func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, params *TxPriva
 	// inputCoins[changed] = saved
 }
 
-func testTxV2OneFakeOutput(txv2 *TxVersion2, db *statedb.StateDB, params *TxPrivacyInitParams, paymentInfoOut []*key.PaymentInfo, t *testing.T){
+func testTxV2OneFakeOutput(txv2 *TxVersion2, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, paymentInfoOut []*key.PaymentInfo, t *testing.T){
 	// similar to the above. All these verifications should fail
 	var err error
 	outs := txv2.GetProof().GetOutputCoins()
@@ -554,7 +556,7 @@ func testTxV2OneFakeOutput(txv2 *TxVersion2, db *statedb.StateDB, params *TxPriv
 func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymentInfoOut []*key.PaymentInfo, pastCoins []coin.Coin, t *testing.T){
 	// similar to the above. All these verifications should fail
 		changed := RandInt() % len(inputCoins)
-		malInputParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
+		malInputParams := tx_generic.NewTxPrivacyInitParams(dummyPrivateKeys[0],
 			paymentInfoOut,inputCoins,
 			1,true,
 			db,
@@ -641,11 +643,11 @@ func getRandomLetter() rune{
 	}
 }
 
-func getCorruptedJsonDeserializedTxs(tx metadata.Transaction, maxJsonChanges int, t *testing.T) []metadata.Transaction{
+func getCorruptedJsonDeserializedTxs(tx *TxVersion2, maxJsonChanges int, t *testing.T) []metadata.Transaction{
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
-
-	reconstructedTx, err := NewTransactionFromJsonBytes(jsonBytes)
+	reconstructedTx := &TxVersion2{}
+	err = json.Unmarshal(jsonBytes, reconstructedTx)
 	assert.Equal(t, nil, err)
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)
 	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
@@ -677,7 +679,8 @@ func getCorruptedJsonDeserializedTxs(tx metadata.Transaction, maxJsonChanges int
 		}
 
 
-		reconstructedTx, err = NewTransactionFromJsonBytes([]byte(string(theRunes)))
+		// reconstructedTx, err = NewTransactionFromJsonBytes([]byte(string(theRunes)))
+		err := json.Unmarshal([]byte(string(theRunes)), reconstructedTx)
 		if err != nil{
 			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
@@ -688,15 +691,15 @@ func getCorruptedJsonDeserializedTxs(tx metadata.Transaction, maxJsonChanges int
 	return result
 }
 
-func getCorruptedJsonDeserializedTokenTxs(tx TransactionToken, maxJsonChanges int,t *testing.T) []TransactionToken{
+func getCorruptedJsonDeserializedTokenTxs(tx *TxTokenVersion2, maxJsonChanges int,t *testing.T) []tx_generic.TransactionToken{
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
-
-	reconstructedTx, err := NewTransactionTokenFromJsonBytes(jsonBytes)
+	reconstructedTx := &TxTokenVersion2{}
+	err = json.Unmarshal(jsonBytes, reconstructedTx)
 	assert.Equal(t, nil, err)
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)
 	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
-	var result []TransactionToken
+	var result []tx_generic.TransactionToken
 
 	for i:=0; i<maxJsonChanges; i++{
 		s := string(jsonBytesAgain)
@@ -721,7 +724,8 @@ func getCorruptedJsonDeserializedTokenTxs(tx TransactionToken, maxJsonChanges in
 		}
 
 
-		reconstructedTx, err = NewTransactionTokenFromJsonBytes([]byte(string(theRunes)))
+		// reconstructedTx, err = NewTransactionTokenFromJsonBytes([]byte(string(theRunes)))
+		err := json.Unmarshal([]byte(string(theRunes)), reconstructedTx)
 		if err != nil{
 			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
@@ -733,200 +737,4 @@ func getCorruptedJsonDeserializedTokenTxs(tx TransactionToken, maxJsonChanges in
 
 func RandInt() int {
 	return rand.Int()
-}
-
-func BenchmarkTxV2Verify(b *testing.B){
-	rand.Seed(time.Now().UnixNano())
-	// fmt.Println(os.Args[5:])
-	clargs := os.Args[5:]
-	// fmt.Println(clargs)
-
-	numOfInputs,_ := strconv.Atoi(clargs[0])
-	numOfOutputs,_ := strconv.Atoi(clargs[1])
-	// our setup will cause an extra 'change' output coin to be added so we fix here
-	numOfOutputs -= 1
-	numOfPrivateKeys := 50
-	// fmt.Printf("\n------------------TxVersion2 Verify Benchmark\n")
-	// fmt.Printf("Number of transactions : %d\n", numOfPrivateKeys)
-	// fmt.Printf("Number of inputs       : %d\n", numOfInputs)
-	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
-	preparePaymentKeys(numOfPrivateKeys,nil)
-	numOfTxs := numOfPrivateKeys
-	// dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-
-	var txsForBenchmark []*TxVersion2
-	for txInd:=0;txInd<numOfTxs;txInd++{
-		// pastCoins are coins we forcefully write into the dummyDB to simulate the db having OTAs in the past
-		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
-		pastCoins := make([]coin.Coin, numOfInputs)
-		for i, _ := range pastCoins {
-			tempCoin,_ := coin.NewCoinFromPaymentInfo(paymentInfo[txInd])
-
-			// to obtain a PlainCoin to feed into input of TX, we need to conceal & decrypt it (it makes sure all fields are right, as opposed to just casting the type to PlainCoin)
-			tempCoin.ConcealOutputCoin(keySets[txInd].PaymentAddress.GetPublicView())
-			pastCoins[i] = tempCoin
-		}
-		// use the db's interface to write our simulated pastCoins to the database
-		// we do need to re-format the data into bytes first
-		forceSaveCoins(dummyDB, pastCoins, 0, common.PRVCoinID, nil)
-
-		// in this test, we randomize the length of inputCoins so we feel safe fixing the length of outputCoins to equal len(dummyPrivateKeys)
-		// since the function `tx.Init` takes output's paymentinfo and creates outputCoins inside of it, we only create the paymentinfo here
-		paymentInfoOut := make([]*key.PaymentInfo, numOfOutputs)
-		for i, _ := range paymentInfoOut {
-			paymentInfoOut[i] = key.InitPaymentInfo(keySets[txInd].PaymentAddress,uint64(3000),[]byte("bench out"))
-			// fmt.Println(paymentInfo[i])
-		}
-		// now we take some of those stored coins to use as TX input
-		// for the TX to be valid, these inputs must associate to one same private key
-		// (it's guaranteed by our way of indexing the pastCoins array)
-		inputCoins := make([]coin.PlainCoin,numOfInputs)
-		for i,_ := range inputCoins{
-			inputCoins[i],_ = pastCoins[i].Decrypt(keySets[txInd])
-		}
-
-		// now we calculate the fee = sum(Input) - sum(Output)
-		// sumIn := uint64(400000*numOfPrivateKeys*numOfInputs)
-		// sumOut := uint64(3000*numOfOutputs)
-
-		initializingParams := NewTxPrivacyInitParams(dummyPrivateKeys[txInd],
-			paymentInfoOut,inputCoins,
-			1,true,
-			dummyDB,
-			nil,
-			nil,
-			[]byte{},
-		)
-		// creating the TX object
-		tx := &TxVersion2{}
-		// actually making the TX
-		// `Init` function will also create all necessary proofs and attach them to the TX
-		tx.Init(initializingParams)
-
-		txsForBenchmark = append(txsForBenchmark, tx)
-	}
-
-	b.ResetTimer()
-	for loop := 0; loop < b.N; loop++ {
-		chosenIndex := RandInt() % len(txsForBenchmark)
-		currentTx := txsForBenchmark[chosenIndex]
-		// verify the TX
-		// params : hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB,
-		// 			shardID byte (we're testing with only 1 shard),
-		//			tokenID *common.Hash (set to nil, meaning we use PRV),
-		//			isBatch bool, isNewTransaction bool
-		var err error
-		var isValid bool
-		isValid, err = currentTx.ValidateSanityData(nil,nil,nil,0)
-		if !isValid{
-			panic("Invalid tx sanity")
-		}
-		isValid, err = currentTx.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
-		if !isValid{
-			panic("Invalid tx")
-		}
-		err = currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
-		if err!=nil{
-			panic("Invalid tx : double spent")
-		}
-	}
-}
-
-func BenchmarkTxV2BatchVerify(b *testing.B){
-	rand.Seed(time.Now().UnixNano())
-	// fmt.Println(os.Args[5:])
-	clargs := os.Args[5:]
-	// fmt.Println(clargs)
-
-	numOfInputs,_ := strconv.Atoi(clargs[0])
-	numOfOutputs,_ := strconv.Atoi(clargs[1])
-	// our setup will cause an extra 'change' output coin to be added so we fix here
-	numOfOutputs -= 1
-	numOfPrivateKeys := 50
-	// fmt.Printf("\n------------------TxVersion2 Verify Benchmark\n")
-	// fmt.Printf("Number of transactions : %d\n", 1)
-	// fmt.Printf("Number of inputs       : %d\n", numOfInputs)
-	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
-	preparePaymentKeys(numOfPrivateKeys,nil)
-	numOfTxs := numOfPrivateKeys
-	// dummyDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-
-	var txsForBenchmark []*TxVersion2
-	for txInd:=0;txInd<numOfTxs;txInd++{
-		// pastCoins are coins we forcefully write into the dummyDB to simulate the db having OTAs in the past
-		// we make sure there are a lot - and a lot - of past coins from all those simulated private keys
-		pastCoins := make([]coin.Coin, numOfInputs)
-		for i, _ := range pastCoins {
-			tempCoin,_ := coin.NewCoinFromPaymentInfo(paymentInfo[txInd])
-
-			// to obtain a PlainCoin to feed into input of TX, we need to conceal & decrypt it (it makes sure all fields are right, as opposed to just casting the type to PlainCoin)
-			tempCoin.ConcealOutputCoin(keySets[txInd].PaymentAddress.GetPublicView())
-			pastCoins[i] = tempCoin
-		}
-		// use the db's interface to write our simulated pastCoins to the database
-		// we do need to re-format the data into bytes first
-		forceSaveCoins(dummyDB, pastCoins, 0, common.PRVCoinID, nil)
-
-		// in this test, we randomize the length of inputCoins so we feel safe fixing the length of outputCoins to equal len(dummyPrivateKeys)
-		// since the function `tx.Init` takes output's paymentinfo and creates outputCoins inside of it, we only create the paymentinfo here
-		paymentInfoOut := make([]*key.PaymentInfo, numOfOutputs)
-		for i, _ := range paymentInfoOut {
-			paymentInfoOut[i] = key.InitPaymentInfo(keySets[txInd].PaymentAddress,uint64(3000),[]byte("bench out"))
-			// fmt.Println(paymentInfo[i])
-		}
-		// now we take some of those stored coins to use as TX input
-		// for the TX to be valid, these inputs must associate to one same private key
-		// (it's guaranteed by our way of indexing the pastCoins array)
-		inputCoins := make([]coin.PlainCoin,numOfInputs)
-		for i,_ := range inputCoins{
-			inputCoins[i],_ = pastCoins[i].Decrypt(keySets[txInd])
-		}
-
-		// now we calculate the fee = sum(Input) - sum(Output)
-		// sumIn := uint64(400000*numOfPrivateKeys*numOfInputs)
-		// sumOut := uint64(3000*numOfOutputs)
-
-		initializingParams := NewTxPrivacyInitParams(dummyPrivateKeys[txInd],
-			paymentInfoOut,inputCoins,
-			1,true,
-			dummyDB,
-			nil,
-			nil,
-			[]byte{},
-		)
-		// creating the TX object
-		tx := &TxVersion2{}
-		// actually making the TX
-		// `Init` function will also create all necessary proofs and attach them to the TX
-		tx.Init(initializingParams)
-
-		txsForBenchmark = append(txsForBenchmark, tx)
-	}
-
-	batchLength, _ := strconv.Atoi(clargs[2])
-	// each loop verifies 20 transactions as one batch
-	// so the ops/sec will need to be divided by 20 afterwards
-	// for fair comparison
-	b.ResetTimer()
-	var pass bool
-	for loop := 0; loop < b.N; loop++ {
-		var batchContent []metadata.Transaction
-		chosenIndex := RandInt() % len(txsForBenchmark)
-		for j:=0;j<batchLength;j++{
-			chosenIndex := (chosenIndex+1)%len(txsForBenchmark)
-			currentTx := txsForBenchmark[chosenIndex]
-			currentTx.ValidateSanityData(nil,nil,nil,0)
-			currentTx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
-
-			batchContent = append(batchContent, currentTx)
-		}
-		batch := NewBatchTransaction(batchContent)
-		success, _, _ := batch.Validate(dummyDB, nil)
-		if !success{
-			fmt.Println("Something wrong")
-			panic("Invalid tx batch")
-		}
-		pass = true
-	}
-	assert.Equal(b,true,pass)
 }

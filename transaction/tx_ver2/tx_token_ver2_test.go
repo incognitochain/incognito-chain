@@ -1,4 +1,4 @@
-package transaction
+package tx_ver2
 
 import (
 	"bytes"
@@ -15,6 +15,8 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 	// "github.com/incognitochain/incognito-chain/trie"
 	// "github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -77,7 +79,7 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		// convert to JSON string and revert
 		txJsonString := tx.JSONString()
 		txHash := tx.Hash()
-		tx1 := new(TxTokenBase)
+		tx1 := new(TxTokenVersion2)
 		tx1.UnmarshalJSON([]byte(txJsonString))
 		txHash1 := tx1.Hash()
 		assert.Equal(t, txHash, txHash1)
@@ -149,14 +151,14 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		assert.NotEqual(t, nil, err)
 		// add the coin. Tx creation should succeed  now
 		forceSaveCoins(dummyDB, tokenOutputs, 0, common.ConfidentialAssetID, t)
-		Logger.Init(activeLogger)
+		utils.Logger.Init(activeLogger)
 		err = tx2.Init(paramToCreateTx2)
 		assert.Equal(t, nil, err)
 
 		msgCipherText = []byte("doing a transfer")
 		assert.Equal(t, true, bytes.Equal(msgCipherText, tx2.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()[0].GetInfo()))
 
-		Logger.Log.Warnf("Token Transfer")
+		utils.Logger.Log.Warnf("Token Transfer")
 		isValidSanity, err = tx2.ValidateSanityData(nil, nil, nil, 0)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
@@ -205,7 +207,7 @@ func testTxTokenV2TransferPRV(db *statedb.StateDB, t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	paramToCreateTx.tokenParams.TokenTxType = CustomTokenTransfer
+	paramToCreateTx.TokenParams.TokenTxType = utils.CustomTokenTransfer
 
 	tx := &TxTokenVersion2{}
 	err = tx.Init(paramToCreateTx)
@@ -263,7 +265,7 @@ func testTxTokenV2InvalidFee(txv2 *TxTokenVersion2, db *statedb.StateDB, t *test
 	assert.Equal(t, true, isValidTxItself)
 }
 
-func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, params *TxTokenParams, fakingTokenID common.Hash, t *testing.T) {
+func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, params *tx_generic.TxTokenParams, fakingTokenID common.Hash, t *testing.T) {
 	// similar to the above. All these verifications should fail
 	var err error
 	var isValid bool
@@ -342,7 +344,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	forceSaveCoins(db, tokenOutputs, 0, common.ConfidentialAssetID, t)
 
 	// firstly, using the output coins to create new tx should be successful
-	Logger.Log.Debugf("Negative test : Double-spending tx for token %s", tokenIDExtracted.String())
+	utils.Logger.Log.Debugf("Negative test : Double-spending tx for token %s", tokenIDExtracted.String())
 	pr, _ := getParamForTxTokenTransfer(tokenTx, db, tokenIDExtracted, t)
 	tx := &TxTokenVersion2{}
 	err := tx.Init(pr)
@@ -360,7 +362,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	doubleSpendingFeeInput := &coin.CoinV2{}
 	doubleSpendingFeeInput.SetBytes(feeOutputBytesExtracted)
 	pc, _ := doubleSpendingFeeInput.Decrypt(keySets[0])
-	pr.inputCoin = []coin.PlainCoin{pc}
+	pr.InputCoin = []coin.PlainCoin{pc}
 	tx = &TxTokenVersion2{}
 	err = tx.Init(pr)
 	assert.Equal(t, nil, err)
@@ -378,7 +380,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	doubleSpendingTokenInput := &coin.CoinV2{}
 	doubleSpendingTokenInput.SetBytes(tokenOutputBytesExtracted)
 	pc, _ = doubleSpendingTokenInput.Decrypt(keySets[0])
-	pr.tokenParams.TokenInput = []coin.PlainCoin{pc}
+	pr.TokenParams.TokenInput = []coin.PlainCoin{pc}
 	tx = &TxTokenVersion2{}
 	err = tx.Init(pr)
 	assert.Equal(t, nil, err)
@@ -397,7 +399,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	}
 }
 
-func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, specifiedTokenID *common.Hash, t *testing.T) (*TxTokenParams, *TokenParam) {
+func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, specifiedTokenID *common.Hash, t *testing.T) (*tx_generic.TxTokenParams, *tx_generic.TokenParam) {
 	transferAmount := uint64(69)
 	msgCipherText := []byte("doing a transfer")
 	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: transferAmount, Message: msgCipherText}}
@@ -422,25 +424,25 @@ func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateD
 	if specifiedTokenID==nil{
 		specifiedTokenID = txTokenInit.GetTokenID()
 	}
-	tokenParam2 := &TokenParam{
+	tokenParam2 := &tx_generic.TokenParam{
 		PropertyID:     specifiedTokenID.String(),
 		PropertyName:   "Token 1",
 		PropertySymbol: "T1",
 		Amount:         transferAmount,
-		TokenTxType:    CustomTokenTransfer,
+		TokenTxType:    utils.CustomTokenTransfer,
 		Receiver:       paymentInfo2,
 		TokenInput:     tokenCoinsToTransfer,
 		Mintable:       false,
 		Fee:            0,
 	}
 
-	paramToCreateTx2 := NewTxTokenParams(&keySets[0].PrivateKey,
+	paramToCreateTx2 := tx_generic.NewTxTokenParams(&keySets[0].PrivateKey,
 		[]*key.PaymentInfo{}, prvCoinsToPayTransfer, 15, tokenParam2, db, nil,
 		hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{}, db)
 	return paramToCreateTx2, tokenParam2
 }
 
-func getParamsForTxTokenInit(theInputCoin coin.Coin, db *statedb.StateDB) (*TxTokenParams, *TokenParam) {
+func getParamsForTxTokenInit(theInputCoin coin.Coin, db *statedb.StateDB) (*tx_generic.TxTokenParams, *tx_generic.TokenParam) {
 	msgCipherText := []byte("haha dummy ciphertext")
 	initAmount := uint64(10000)
 	tokenPayments := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: initAmount, Message: msgCipherText}}
@@ -450,19 +452,19 @@ func getParamsForTxTokenInit(theInputCoin coin.Coin, db *statedb.StateDB) (*TxTo
 	paymentInfoPRV := []*privacy.PaymentInfo{key.InitPaymentInfo(keySets[0].PaymentAddress, uint64(15000), []byte("test out"))}
 
 	// token param for init new token
-	tokenParam := &TokenParam{
+	tokenParam := &tx_generic.TokenParam{
 		PropertyID:     "",
 		PropertyName:   "Token 1",
 		PropertySymbol: "T1",
 		Amount:         initAmount,
-		TokenTxType:    CustomTokenInit,
+		TokenTxType:    utils.CustomTokenInit,
 		Receiver:       tokenPayments,
 		TokenInput:     []coin.PlainCoin{},
 		Mintable:       false,
 		Fee:            0,
 	}
 
-	paramToCreateTx := NewTxTokenParams(&keySets[0].PrivateKey,
+	paramToCreateTx := tx_generic.NewTxTokenParams(&keySets[0].PrivateKey,
 		paymentInfoPRV, inputCoinsPRV, 1000, tokenParam, db, nil,
 		hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{}, db)
 	return paramToCreateTx, tokenParam
@@ -532,52 +534,52 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 
 }
 
-func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTokenVersion2, params *TxTokenParams, nonPrivacyParams *TxPrivacyInitParams) error {
+func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTokenVersion2, params *tx_generic.TxTokenParams, nonPrivacyParams *tx_generic.TxPrivacyInitParams) error {
 	var err error
 	txOuter, ok := txToken.Tx.(*TxVersion2)
 	if !ok {
 		activeLogger.Errorf("Test Error : cast")
-		return NewTransactionErr(-1000, nil, "Cast failed")
+		return utils.NewTransactionErr(-1000, nil, "Cast failed")
 	}
 	txToken.Tx = nil
-	txToken.cachedHash = nil
+	txOuter.SetCachedHash(nil)
 
 	txn := txToken.TxTokenData.TxNormal.(*TxVersion2)
-	txn.cachedHash = nil
+	txn.SetCachedHash(nil)
 	if !ok {
 		activeLogger.Errorf("Test Error : cast")
-		return NewTransactionErr(-1000, nil, "Cast failed")
+		return utils.NewTransactionErr(-1000, nil, "Cast failed")
 	}
 
 	if nonPrivacyParams == nil {
-		propertyID, _ := common.TokenStringToHash(params.tokenParams.PropertyID)
-		paramsInner := NewTxPrivacyInitParams(
-			params.senderKey,
-			params.tokenParams.Receiver,
-			params.tokenParams.TokenInput,
-			params.tokenParams.Fee,
+		propertyID, _ := common.TokenStringToHash(params.TokenParams.PropertyID)
+		paramsInner := tx_generic.NewTxPrivacyInitParams(
+			params.SenderKey,
+			params.TokenParams.Receiver,
+			params.TokenParams.TokenInput,
+			params.TokenParams.Fee,
 			hasPrivacyForToken,
-			params.transactionStateDB,
+			params.TransactionStateDB,
 			propertyID,
 			nil,
 			nil,
 		)
 		_ = paramsInner
-		paramsOuter := NewTxPrivacyInitParams(
-			params.senderKey,
-			params.paymentInfo,
-			params.inputCoin,
-			params.feeNativeCoin,
+		paramsOuter := tx_generic.NewTxPrivacyInitParams(
+			params.SenderKey,
+			params.PaymentInfo,
+			params.InputCoin,
+			params.FeeNativeCoin,
 			hasPrivacyForPRV,
-			params.transactionStateDB,
+			params.TransactionStateDB,
 			&common.PRVCoinID,
-			params.metaData,
-			params.info,
+			params.MetaData,
+			params.Info,
 		)
 		txInner, ok := txToken.GetTxTokenData().TxNormal.(*TxVersion2)
 		if !ok {
 			activeLogger.Errorf("Test Error : cast inner")
-			return NewTransactionErr(-1000, nil, "Cast failed")
+			return utils.NewTransactionErr(-1000, nil, "Cast failed")
 		}
 
 		err = resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &txToken.TxTokenData)
@@ -596,8 +598,8 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 
 }
 
-func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, params *TxPrivacyInitParams, tokenData *TxTokenData) error {
-	tx.cachedHash = nil
+func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, params *tx_generic.TxPrivacyInitParams, tokenData *tx_generic.TxTokenData) error {
+	tx.SetCachedHash(nil)
 	tx.SetSig(nil)
 	tx.SetSigPubKey(nil)
 	var err error
@@ -626,7 +628,7 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, par
 		cv2.SetKeyImage(nil)
 		outputCoins = append(outputCoins, cv2)
 	}
-	inputCoins := params.inputCoins
+	inputCoins := params.InputCoins
 
 	message := tx.Hash()[:]
 	if tokenData != nil {
@@ -638,11 +640,11 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, par
 		message = temp[:]
 	}
 
-	if params.hasPrivacy{
-		Logger.Log.Warnf("Re-sign a CA transaction")
+	if params.HasPrivacy{
+		utils.Logger.Log.Warnf("Re-sign a CA transaction")
 		err = tx.signCA(inputCoins, outputCoins, sharedSecrets, params, message[:])
 	}else{
-		Logger.Log.Warnf("Re-sign a non-CA transaction")
+		utils.Logger.Log.Warnf("Re-sign a non-CA transaction")
 		err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
 	}
 
@@ -651,7 +653,7 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, par
 	return err
 }
 
-func createTokenTransferParams(inputCoins []coin.Coin, db *statedb.StateDB, tokenID, tokenName, symbol string, keySet *incognitokey.KeySet) (*TxTokenParams, *TokenParam, error) {
+func createTokenTransferParams(inputCoins []coin.Coin, db *statedb.StateDB, tokenID, tokenName, symbol string, keySet *incognitokey.KeySet) (*tx_generic.TxTokenParams, *tx_generic.TokenParam, error) {
 	var err error
 
 	msgCipherText := []byte("Testing Transfer Token")
@@ -674,19 +676,19 @@ func createTokenTransferParams(inputCoins []coin.Coin, db *statedb.StateDB, toke
 	paymentInfoPRV := []*privacy.PaymentInfo{key.InitPaymentInfo(keySet.PaymentAddress, uint64(10), []byte("test out"))}
 
 	// token param for init new token
-	tokenParam := &TokenParam{
+	tokenParam := &tx_generic.TokenParam{
 		PropertyID:     tokenID,
 		PropertyName:   tokenName,
 		PropertySymbol: symbol,
 		Amount:         transferAmount,
-		TokenTxType:    CustomTokenTransfer,
+		TokenTxType:    utils.CustomTokenTransfer,
 		Receiver:       tokenPayments,
 		TokenInput:     plainInputCoins[1:len(inputCoins)],
 		Mintable:       false,
 		Fee:            0,
 	}
 
-	paramToCreateTx := NewTxTokenParams(&keySet.PrivateKey,
+	paramToCreateTx := tx_generic.NewTxTokenParams(&keySet.PrivateKey,
 		paymentInfoPRV, inputCoinsPRV, 10, tokenParam, db, nil,
 		hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{}, db)
 	return paramToCreateTx, tokenParam, nil

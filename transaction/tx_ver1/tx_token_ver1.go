@@ -276,3 +276,27 @@ func (txToken TxTokenVersion1) GetTxActualSize() uint64 {
 	}
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
+
+func (txToken *TxTokenVersion1) UnmarshalJSON(data []byte) error {
+	var err error
+	txToken.Tx = &TxVersion1{}
+	if err = json.Unmarshal(data, txToken.Tx); err != nil {
+		return err
+	}
+	temp := &struct {
+		TxTokenData tx_generic.TxTokenData `json:"TxTokenPrivacyData"`
+	}{}
+	temp.TxTokenData.TxNormal = &TxVersion1{}
+	err = json.Unmarshal(data, &temp)
+	if err != nil {
+		utils.Logger.Log.Error(err)
+		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, err)
+	}
+	txToken.TxTokenData = temp.TxTokenData
+	if txToken.Tx.GetMetadata() != nil && txToken.Tx.GetMetadata().GetType() == 81 {
+		if txToken.TxTokenData.Amount == 37772966455153490 {
+			txToken.TxTokenData.Amount = 37772966455153487
+		}
+	}
+	return nil
+}

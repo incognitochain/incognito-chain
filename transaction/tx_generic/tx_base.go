@@ -85,7 +85,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	return params
 }
 
-func getTxInfo(paramInfo []byte) ([]byte, error) {
+func GetTxInfo(paramInfo []byte) ([]byte, error) {
 	if lenTxInfo := len(paramInfo); lenTxInfo > utils.MaxSizeInfo {
 		return []byte{}, utils.NewTransactionErr(utils.ExceedSizeInfoTxError, nil)
 	}
@@ -171,7 +171,7 @@ func (tx *TxBase) InitializeTxAndParams(params *TxPrivacyInitParams) error {
 	if tx.Version, err = GetTxVersionFromCoins(params.InputCoins); err != nil {
 		return err
 	}
-	if tx.Info, err = getTxInfo(params.Info); err != nil {
+	if tx.Info, err = GetTxInfo(params.Info); err != nil {
 		return err
 	}
 
@@ -281,7 +281,7 @@ func (tx TxBase) GetPrivateKey() []byte{
 	return tx.sigPrivKey
 }
 
-func (tx TxBase) SetPrivateKey(sk []byte){
+func (tx *TxBase) SetPrivateKey(sk []byte){
 	tx.sigPrivKey = sk
 }
 
@@ -289,8 +289,16 @@ func (tx TxBase) GetCachedActualSize() *uint64{
 	return tx.cachedActualSize
 }
 
-func (tx TxBase) SetCachedActualSize(sz *uint64){
+func (tx *TxBase) SetCachedActualSize(sz *uint64){
 	tx.cachedActualSize = sz
+}
+
+func (tx TxBase) GetCachedHash() *common.Hash{
+	return tx.cachedHash
+}
+
+func (tx *TxBase) SetCachedHash(h *common.Hash){
+	tx.cachedHash = h
 }
 
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
@@ -455,7 +463,7 @@ func (tx *TxBase) IsNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 	if len(params.InputCoins) == 0 && params.Fee == 0 && !params.HasPrivacy {
 		//Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.SenderSK
-		if tx.Sig, tx.SigPubKey, err = signNoPrivacy(params.SenderSK, tx.Hash()[:]); err != nil {
+		if tx.Sig, tx.SigPubKey, err = SignNoPrivacy(params.SenderSK, tx.Hash()[:]); err != nil {
 			utils.Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
 			return true, utils.NewTransactionErr(utils.SignTxError, err)
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, error) {
+func NewCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, error) {
 	for {
 		c, err := privacy.NewCoinFromPaymentInfo(paymentInfo)
 		if err != nil {
@@ -34,11 +34,11 @@ func newCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 	}
 }
 
-func newCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*privacy.CoinV2, error) {
+func NewCoinV2ArrayFromPaymentInfoArray(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) ([]*privacy.CoinV2, error) {
 	outputCoins := make([]*privacy.CoinV2, len(paymentInfo))
 	for index, info := range paymentInfo {
 		var err error
-		outputCoins[index], err = newCoinUniqueOTABasedOnPaymentInfo(info, tokenID, stateDB)
+		outputCoins[index], err = NewCoinUniqueOTABasedOnPaymentInfo(info, tokenID, stateDB)
 		if err != nil {
 			Logger.Log.Errorf("Cannot create coin with unique OTA, error: %v", err)
 			return nil, err

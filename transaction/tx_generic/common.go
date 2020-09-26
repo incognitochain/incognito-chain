@@ -9,7 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
-	
+
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -216,7 +216,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
 
-func calculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
+func CalculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
 	sumOutputsWithFee := new(operation.Point).Identity()
 	for i := 0; i < len(outputCoins); i += 1 {
 		sumOutputsWithFee.Add(sumOutputsWithFee, outputCoins[i].GetCommitment())
@@ -267,7 +267,7 @@ func ParseTokenID(tokenID *common.Hash) (*common.Hash, error) {
 	return tokenID, nil
 }
 
-func verifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (bool, error) {
+func VerifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (bool, error) {
 	// check input transaction
 	if sig == nil || sigPubKey == nil {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an signed one"))
@@ -303,7 +303,7 @@ func verifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (boo
 	return res, nil
 }
 
-func signNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signatureBytes []byte, sigPubKey []byte, err error) {
+func SignNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signatureBytes []byte, sigPubKey []byte, err error) {
 	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
