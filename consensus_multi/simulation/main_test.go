@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,8 +13,26 @@ import (
 
 var startTimeSlot uint64
 
-func Test_Main4Committee_Case1(t *testing.T) {
+type TimeSlotScenerio struct {
+	ProposingScenerio []int            //offset to that current timeslot proposer
+	VotingScenerios   map[string][]int //offset to that current timeslot proposer
+	ExpectedOutput    map[int]map[string]TimeSlotOutput
+}
 
+type TimeSlotOutput struct {
+	BestHeight  uint64
+	FinalHeight uint64
+	ViewCount   int
+}
+
+type testScenerio struct {
+	Name              string
+	Committee         []string
+	TimeSlots         int // how many timeslot
+	TimeSlotScenerios map[int]TimeSlotScenerio
+}
+
+func Test_Main4Committee_Case1(t *testing.T) {
 	committee := []string{
 		"112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL",
 		"112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5",
@@ -24,10 +43,180 @@ func Test_Main4Committee_Case1(t *testing.T) {
 		"112t8rrASXvBAtZ3dBTwXp6NH8KsX4dgmghUu36HtaPRJGvqeBqSSKb8yi7NUuNwUa58eKcyLGsXWtqfYVTgiPvAZ11GADLRZSHUNb9nssFw",
 		"112t8rzc1pPSajQtjYVctFY5MGRgv2tqpRyD5zAZbwGXyh5Fum5Nafkn86iTw9w8RUhRnYH3wFLnFaZpDpb61gi3vBeQFTnzzyEErtd7jiBD",
 	}
+	testScn := testScenerio{
+		Name:      "test1",
+		Committee: committee,
+		TimeSlots: 7,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{1},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 3, 4, 5, 6, 7},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{1},
+				VotingScenerios: map[string][]int{
+					"all": {1},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn)
 
+	testScn2 := testScenerio{
+		Name:      "test2",
+		Committee: committee,
+		TimeSlots: 9,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 4, 5, 6, 7},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{2},
+				VotingScenerios: map[string][]int{
+					"all": {2},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			6: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn2)
+
+	testScn3 := testScenerio{
+		Name:      "test3",
+		Committee: committee,
+		TimeSlots: 14,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			6: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			8: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			9: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 3, 4, 5, 6, 7},
+				},
+			},
+			10: {
+				ProposingScenerio: []int{1, 2, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn3)
+
+	testScn4 := testScenerio{
+		Name:      "test4",
+		Committee: committee,
+		TimeSlots: 14,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 2, 3, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			7: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			8: {
+				ProposingScenerio: []int{1},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 3, 4, 5, 6, 7},
+				},
+			},
+			9: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn4)
+
+}
+func RunSimulation(testScn *testScenerio) {
+	simulation = nil
 	committeePkStruct := []incognitokey.CommitteePublicKey{}
 	committeePkBytes := [][]byte{}
-	for _, v := range committee {
+	for _, v := range testScn.Committee {
 		p, _ := consensus_multi.LoadUserKeyFromIncPrivateKey(v)
 		m, _ := consensus_multi.GetMiningKeyFromPrivateSeed(p)
 		pk := m.GetPublicKey()
@@ -36,10 +225,10 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	}
 	nodeList := []*Node{}
 
-	for i, v := range committee {
+	for i, v := range testScn.Committee {
 		p, _ := consensus_multi.LoadUserKeyFromIncPrivateKey(v)
 		m, _ := consensus_multi.GetMiningKeyFromPrivateSeed(p)
-		ni := NewNode(committeePkStruct, m, i)
+		ni := NewNode(committeePkStruct, m, i, testScn.Name)
 		nodeList = append(nodeList, ni)
 	}
 	var startNode = func() {
@@ -51,7 +240,6 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	}
 
 	GetSimulation().nodeList = nodeList
-	////simulation
 	startTimeSlot = uint64(common.CalculateTimeSlot(time.Now().Unix()))
 	GetSimulation().setStartTimeSlot(uint64(startTimeSlot))
 	var setTimeSlot = func(s int) uint64 {
@@ -70,64 +258,50 @@ func Test_Main4Committee_Case1(t *testing.T) {
 		GetSimulation().scenario.voteComm[timeslot][fmt.Sprintf("%d", nodeID)] = scenario
 	}
 
-	/*
-		START YOUR SIMULATION HERE
-	*/
+	var timeslot uint64
+	for i := 1; i <= testScn.TimeSlots; i++ {
+		timeslot = setTimeSlot(i)
+		slotProducerIdx := GetIndexOfBytes(nodeList[0].chain.GetBestView().GetProposerByTimeSlot(int64(timeslot), 2).MiningPubKey["bls"], committeePkBytes)
+		if scenerio, ok := testScn.TimeSlotScenerios[i]; ok {
+			pComm := make([]int, len(testScn.Committee))
+			for a := range pComm {
+				pComm[a] = 1
+			}
 
-	timeslot := setTimeSlot(1) //normal communication, full connect by default
-	beginProducerIdx := GetIndexOfBytes(nodeList[0].chain.GetBestView().GetProposerByTimeSlot(int64(timeslot), 2).MiningPubKey["bls"], committeePkBytes)
+			for _, p := range scenerio.ProposingScenerio {
+				pComm[(slotProducerIdx+p)%len(testScn.Committee)] = 0
+			}
+			setProposeCommunication(timeslot, pComm)
+			if len(scenerio.VotingScenerios) > 0 {
+				if vaComm, ok := scenerio.VotingScenerios["all"]; ok {
+					vComm := make([]int, len(testScn.Committee))
+					for a := range vComm {
+						vComm[a] = 1
+					}
+					for _, p := range vaComm {
+						vComm[(slotProducerIdx+p)%len(testScn.Committee)] = 0
+					}
+					for n := 0; n < len(testScn.Committee); n++ {
+						setVoteCommunication(timeslot, n, vComm)
+					}
+				} else {
+					for n := 0; n < len(testScn.Committee); n++ {
+						if nComm, ok := scenerio.VotingScenerios[strconv.Itoa(n)]; ok {
+							vComm := make([]int, len(testScn.Committee))
+							for a := range vComm {
+								vComm[a] = 1
+							}
+							for _, p := range nComm {
+								vComm[(slotProducerIdx+p)%len(testScn.Committee)] = 0
+							}
+							setVoteCommunication(timeslot, n, vComm)
+						}
+					}
+				}
+			}
+		}
+	}
 
-	timeslot = setTimeSlot(2) //block 3:2
-	ct2 := []int{0, 0, 0, 0, 0, 0, 0, 0}
-	ct2[(beginProducerIdx+3)%len(committee)] = 1
-	setProposeCommunication(timeslot, ct2)
-	setVoteCommunication(timeslot, 0, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 1, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 2, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 3, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 4, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 5, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 6, []int{0, 0, 0, 0, 0, 0, 0, 0})
-	setVoteCommunication(timeslot, 7, []int{0, 0, 0, 0, 0, 0, 0, 0})
-
-	//
-	timeslot = setTimeSlot(3) //block 3:3
-	ct3 := []int{1, 1, 1, 1, 1, 1, 1, 1}
-	ct3[(beginProducerIdx+3)%len(committee)] = 0
-	setProposeCommunication(timeslot, ct3)
-	ct31 := []int{0, 0, 0, 0, 0, 0, 0, 0}
-	ct31[(beginProducerIdx+4)%len(committee)] = 1
-	setVoteCommunication(timeslot, 0, ct31)
-	setVoteCommunication(timeslot, 1, ct31)
-	setVoteCommunication(timeslot, 2, ct31)
-	setVoteCommunication(timeslot, 3, ct31)
-	setVoteCommunication(timeslot, 4, ct31)
-	setVoteCommunication(timeslot, 5, ct31)
-	setVoteCommunication(timeslot, 6, ct31)
-	setVoteCommunication(timeslot, 7, ct31)
-
-	//
-	timeslot = setTimeSlot(4) //block 3:4 (3:2)
-	ct4 := []int{1, 1, 1, 1, 1, 1, 1, 1}
-	ct4[(beginProducerIdx+4)%len(committee)] = 0
-	setProposeCommunication(timeslot, ct4)
-	setVoteCommunication(timeslot, 0, ct4)
-	setVoteCommunication(timeslot, 1, ct4)
-	setVoteCommunication(timeslot, 2, ct4)
-	setVoteCommunication(timeslot, 3, ct4)
-	setVoteCommunication(timeslot, 4, ct4)
-	setVoteCommunication(timeslot, 5, ct4)
-	setVoteCommunication(timeslot, 6, ct4)
-	setVoteCommunication(timeslot, 7, ct4)
-
-	timeslot = setTimeSlot(5) //block 3:3->4:5
-
-	timeslot = setTimeSlot(6)
-
-	timeslot = setTimeSlot(7)
-	/*
-		END YOUR SIMULATION HERE
-	*/
 	GetSimulation().setMaxTimeSlot(timeslot)
 	startNode()
 	lastTimeSlot := uint64(0)
@@ -137,15 +311,19 @@ func Test_Main4Committee_Case1(t *testing.T) {
 			time.AfterFunc(time.Millisecond*1000, func() {
 				fmt.Println("==========================")
 				fmt.Printf("Timeslot %v:\n", uint64(common.CalculateTimeSlot(time.Now().Unix()))-startTimeSlot+1)
-				for i := 0; i < len(committee); i++ {
-					fmt.Printf("Node %v: \n -Best view height: %d\n -Final view height: %d\n -View count: %v\n", i, nodeList[i].chain.GetBestView().GetHeight(), nodeList[i].chain.GetFinalView().GetHeight(), len(nodeList[i].chain.multiview.GetAllViewsWithBFS()))
+				for i := 0; i < len(testScn.Committee); i++ {
+					fmt.Printf("Node %v: \n -Best view height: %d:%d\n -Final view height: %d:%d\n -View count: %v\n", i, nodeList[i].chain.GetBestView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1, nodeList[i].chain.GetFinalView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1, len(nodeList[i].chain.multiview.GetAllViewsWithBFS()))
 				}
 				fmt.Println("==========================")
 			})
 		}
 		lastTimeSlot = curTimeSlot
 		time.Sleep(1 * time.Millisecond)
-		if curTimeSlot == 7 {
+		if curTimeSlot == uint64(testScn.TimeSlots) {
+			for i, v := range nodeList {
+				fmt.Println("node stop", i)
+				go v.Stop()
+			}
 			return
 		}
 	}

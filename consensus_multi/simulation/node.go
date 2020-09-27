@@ -36,8 +36,8 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, miningKey *signatureschemes.MiningKey, index int) *Node {
-	name := fmt.Sprintf("log%d", index)
+func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, miningKey *signatureschemes.MiningKey, index int, testname string) *Node {
+	name := fmt.Sprintf("%s_log%d", testname, index)
 	fd, err := os.OpenFile(fmt.Sprintf("%s.log", name), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
@@ -172,4 +172,11 @@ func (s *Node) Start() {
 	defer mapLock.Unlock()
 	mapNodeID[libp2p.ID(s.id).String()] = s.id
 	s.consensusEngine.Start()
+}
+
+func (s *Node) Stop() {
+	mapLock.Lock()
+	defer mapLock.Unlock()
+	delete(mapNodeID, libp2p.ID(s.id).String())
+	s.consensusEngine.Stop()
 }

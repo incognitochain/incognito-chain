@@ -2,13 +2,10 @@ package main
 
 import (
 	"bytes"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 )
-
-var START_TIME = time.Now().Unix()
 
 func failOnError(err error) {
 	if err != nil {
