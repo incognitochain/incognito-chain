@@ -6,8 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/rpcserver/bean"
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	// "github.com/incognitochain/incognito-chain/rpcserver/bean"
+	// "github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -335,161 +335,161 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 	return CountResult{Success: success, Fail: fail}, nil
 }
 
-func (httpServer *HttpServer) handleTestBuildDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
+// func (httpServer *HttpServer) handleTestBuildDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
 
-	txs, err := httpServer.txService.TestBuildDoubleSpendingTransaction(createRawTxParam, nil)
-	if err != nil {
-		// return hex for a new tx
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildDoubleSpendingTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	// tx := data.(jsonresult.CreateTransactionResult)
-	// base58CheckData := tx.Base58CheckData
-	// newParam := make([]interface{}, 0)
-	// newParam = append(newParam, base58CheckData)
-	// sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	// if err != nil {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
-	// }
-	// result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	// tx := data.(jsonresult.CreateTransactionResult)
+// 	// base58CheckData := tx.Base58CheckData
+// 	// newParam := make([]interface{}, 0)
+// 	// newParam = append(newParam, base58CheckData)
+// 	// sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+// 	// if err != nil {
+// 	// 	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+// 	// }
+// 	// result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+// 	return result, nil
+// }
 
-func (httpServer *HttpServer) handleTestBuildDuplicateInputTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
+// func (httpServer *HttpServer) handleTestBuildDuplicateInputTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
 
-	txs, err := httpServer.txService.TestBuildDuplicateInputTransaction(createRawTxParam, nil)
-	if err != nil {
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildDuplicateInputTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
 
-func (httpServer *HttpServer) handleTestBuildOutGtInTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
+// func (httpServer *HttpServer) handleTestBuildOutGtInTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
 
-	txs, err := httpServer.txService.TestBuildOutGtInTransaction(createRawTxParam, nil)
-	if err != nil {
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildOutGtInTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
 
-func (httpServer *HttpServer) handleTestBuildReceiverExistsTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
+// func (httpServer *HttpServer) handleTestBuildReceiverExistsTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
 
-	txs, err := httpServer.txService.TestBuildReceiverExistsTransaction(createRawTxParam, nil)
-	if err != nil {
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildReceiverExistsTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
 
-func (httpServer *HttpServer) handleTestBuildDoubleSpendTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	// createRawTxParam, errNewParam := bean.NewCreateRawPrivacyTokenTxParam(params)
-	// if errNewParam != nil {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	// }
+// func (httpServer *HttpServer) handleTestBuildDoubleSpendTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	// createRawTxParam, errNewParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+// 	// if errNewParam != nil {
+// 	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	// }
 
-	txs, err := httpServer.txService.TestBuildDoubleSpendingTokenTransaction(params, nil)
-	if err != nil {
-		// return hex for a new tx
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildDoubleSpendingTokenTransaction(params, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
 
-func (httpServer *HttpServer) handleTestBuildDuplicateInputTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// func (httpServer *HttpServer) handleTestBuildDuplicateInputTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
-	txs, err := httpServer.txService.TestBuildDuplicateInputTokenTransaction(params, nil)
-	if err != nil {
-		// return hex for a new tx
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildDuplicateInputTokenTransaction(params, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
 
-func (httpServer *HttpServer) handleTestBuildReceiverExistsTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// func (httpServer *HttpServer) handleTestBuildReceiverExistsTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
-	txs, err := httpServer.txService.TestBuildReceiverExistsTokenTransaction(params, nil)
-	if err != nil {
-		// return hex for a new tx
-		return nil, err
-	}
+// 	txs, err := httpServer.txService.TestBuildReceiverExistsTokenTransaction(params, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
 
-	var result []jsonresult.CreateTransactionResult
-	for i,_ := range txs{
-		jsonBytes, err := json.Marshal(txs[i])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
-	}
-	return result, nil
-}
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }

@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -24,7 +23,7 @@ import (
 type TxConvertVer1ToVer2InitParams struct {
 	senderSK    *privacy.PrivateKey
 	paymentInfo []*privacy.PaymentInfo
-	inputCoins  []coin.PlainCoin
+	inputCoins  []privacy.PlainCoin
 	fee         uint64
 	stateDB     *statedb.StateDB
 	tokenID     *common.Hash // default is nil -> use for prv coin
@@ -34,7 +33,7 @@ type TxConvertVer1ToVer2InitParams struct {
 
 func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoins []coin.PlainCoin,
+	inputCoins []privacy.PlainCoin,
 	fee uint64,
 	stateDB *statedb.StateDB,
 	tokenID *common.Hash, // default is nil -> use for prv coin
@@ -99,7 +98,7 @@ func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) e
 	return nil
 }
 
-func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
+func initializeTxConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
 	var err error
 	// Get Keyset from param
 	senderKeySet :=  incognitokey.KeySet{}
@@ -124,7 +123,7 @@ func initializeTxConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParam
 	return nil
 }
 
-func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
+func InitConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
 	// validate again
 	if err := validateTxConvertVer1ToVer2Params(params); err != nil {
 		return err
@@ -138,9 +137,9 @@ func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error
 	return nil
 }
 
-func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID *common.Hash,  db *statedb.StateDB) ([]*coin.CoinV2, error) {
+func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID *common.Hash,  db *statedb.StateDB) ([]*privacy.CoinV2, error) {
 	var err error
-	c := make([]*coin.CoinV2, len(paymentInfos))
+	c := make([]*privacy.CoinV2, len(paymentInfos))
 
 	for i := 0; i < len(paymentInfos); i += 1 {
 		c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
@@ -152,7 +151,7 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 	return c, nil
 }
 
-func proveConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
+func proveConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
 	inputCoins := params.inputCoins
 	outputCoins, err := getOutputcoinsFromPaymentInfo(params.paymentInfo, params.tokenID, params.stateDB)
 	if err != nil {
@@ -244,13 +243,13 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 
 type CustomTokenConversionParams struct {
 	tokenID       *common.Hash
-	tokenInputs   []coin.PlainCoin
+	tokenInputs   []privacy.PlainCoin
 	tokenPayments []*privacy.PaymentInfo
 }
 
 type TxTokenConvertVer1ToVer2InitParams struct {
 	senderSK      *privacy.PrivateKey
-	feeInputs     []coin.PlainCoin
+	feeInputs     []privacy.PlainCoin
 	feePayments   []*privacy.PaymentInfo
 	fee           uint64
 	tokenParams   *CustomTokenConversionParams
@@ -261,9 +260,9 @@ type TxTokenConvertVer1ToVer2InitParams struct {
 }
 
 func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
-	feeInputs []coin.PlainCoin,
+	feeInputs []privacy.PlainCoin,
 	feePayments []*privacy.PaymentInfo,
-	tokenInputs []coin.PlainCoin,
+	tokenInputs []privacy.PlainCoin,
 	tokenPayments []*privacy.PaymentInfo,
 	fee uint64,
 	stateDB *statedb.StateDB,
@@ -330,7 +329,7 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 	return nil
 }
 
-func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1ToVer2InitParams) error {
+func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2InitParams) error {
 	txToken.TxTokenData.SetType(utils.CustomTokenTransfer)
 	txToken.TxTokenData.SetPropertyName("")
 	txToken.TxTokenData.SetPropertySymbol("")
@@ -354,7 +353,7 @@ func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1To
 		nil,
 		params.info,
 	)
-	txNormal := new(TxVersion2)
+	txNormal := new(Tx)
 	if err := InitConversion(txNormal, txConvertParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
@@ -362,7 +361,7 @@ func (txToken *TxTokenVersion2) initTokenConversion(params *TxTokenConvertVer1To
 	return nil
 }
 
-func (txToken *TxTokenVersion2) initPRVFeeConversion(feeTx *TxVersion2, params *tx_generic.TxPrivacyInitParams) error {
+func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPrivacyInitParams) error {
 	txTokenDataHash, err := txToken.TxTokenData.Hash()
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
@@ -379,7 +378,7 @@ func (txToken *TxTokenVersion2) initPRVFeeConversion(feeTx *TxVersion2, params *
 	return nil
 }
 
-func InitTokenConversion(txToken *TxTokenVersion2, params *TxTokenConvertVer1ToVer2InitParams) error {
+func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitParams) error {
 	if err := validateTxTokenConvertVer1ToVer2Params(params); err != nil {
 		return err
 	}
@@ -392,7 +391,7 @@ func InitTokenConversion(txToken *TxTokenVersion2, params *TxTokenConvertVer1ToV
 		return err
 	}
 	// Init tx and params (tx and params will be changed)
-	tx := new(TxVersion2)
+	tx := new(Tx)
 	if err := tx.InitializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}

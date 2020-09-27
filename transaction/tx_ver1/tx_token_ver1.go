@@ -15,11 +15,11 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
-type TxTokenVersion1 struct {
+type TxToken struct {
 	tx_generic.TxTokenBase
 }
 
-func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
+func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxTokenParams)
 	if !ok {
 		return errors.New("Cannot init TxTokenBase because params is not correct")
@@ -36,7 +36,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 		params.MetaData,
 		params.Info,
 	)
-	txToken.Tx = new(TxVersion1)
+	txToken.Tx = new(Tx)
 	if err := txToken.Tx.Init(txPrivacyParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
@@ -64,7 +64,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			handled = true
 			txToken.TxTokenData.SetAmount(params.TokenParams.Amount)
 
-			temp := new(TxVersion1)
+			temp := new(Tx)
 			temp.SetVersion(utils.TxVersion1Number)
 			temp.Type = common.TxNormalType
 			temp.Proof = new(privacy.ProofV1)
@@ -170,7 +170,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 			txToken.TxTokenData.SetPropertyID(*propertyID)
 			txToken.TxTokenData.SetMintable(params.TokenParams.Mintable)
 
-			txToken.TxTokenData.TxNormal = new(TxVersion1)
+			txToken.TxTokenData.TxNormal = new(Tx)
 			err := txToken.TxTokenData.TxNormal.Init(tx_generic.NewTxPrivacyInitParams(params.SenderKey,
 				params.TokenParams.Receiver,
 				params.TokenParams.TokenInput,
@@ -191,7 +191,7 @@ func (txToken *TxTokenVersion1) Init(paramsInterface interface{}) error {
 	return nil
 }
 
-func (txToken TxTokenVersion1) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
 	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
 		return false, err
@@ -208,7 +208,7 @@ func (txToken TxTokenVersion1) ValidateTxByItself(hasPrivacyCoin bool, transacti
 	return true, nil
 }
 
-func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	// validate for PRV
 	ok, err := txToken.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
 	if ok {
@@ -239,7 +239,7 @@ func (txToken TxTokenVersion1) ValidateTransaction(hasPrivacyCoin bool, transact
 	return false, err
 }
 
-func (txToken TxTokenVersion1) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	// validate metadata
 	check, err := tx_generic.ValidateSanityMetadata(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
@@ -261,7 +261,7 @@ func (txToken TxTokenVersion1) ValidateSanityData(chainRetriever metadata.ChainR
 	return true, nil
 }
 
-func (txToken TxTokenVersion1) GetTxActualSize() uint64 {
+func (txToken TxToken) GetTxActualSize() uint64 {
 	normalTxSize := txToken.Tx.GetTxActualSize()
 	tokenDataSize := uint64(0)
 	tokenDataSize += txToken.TxTokenData.TxNormal.GetTxActualSize()
@@ -277,16 +277,16 @@ func (txToken TxTokenVersion1) GetTxActualSize() uint64 {
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
-func (txToken *TxTokenVersion1) UnmarshalJSON(data []byte) error {
+func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	var err error
-	txToken.Tx = &TxVersion1{}
+	txToken.Tx = &Tx{}
 	if err = json.Unmarshal(data, txToken.Tx); err != nil {
 		return err
 	}
 	temp := &struct {
 		TxTokenData tx_generic.TxTokenData `json:"TxTokenPrivacyData"`
 	}{}
-	temp.TxTokenData.TxNormal = &TxVersion1{}
+	temp.TxTokenData.TxNormal = &Tx{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		utils.Logger.Log.Error(err)

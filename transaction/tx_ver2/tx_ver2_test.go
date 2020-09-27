@@ -155,7 +155,7 @@ func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
 	n := RandInt() % (maxPrivateKeys - minInputs + 1) + minInputs
 	var err error
 	for i := 0; i < numOfLoops; i += 1 {
-		fmt.Printf("\n------------------TxTokenVersion2 SigPubKey Test\n")
+		fmt.Printf("\n------------------TxToken SigPubKey Test\n")
 		maxLen := new(big.Int)
 		maxLen.SetString("1000000000000000000", 10)
 		indexes := make([][]*big.Int, n)
@@ -168,13 +168,13 @@ func TestSigPubKeyCreationAndMarshalling(t *testing.T) {
 			indexes[i] = row
 		}
 
-		txSig := new(TxSigPubKeyVer2)
+		txSig := new(SigPubKey)
 		txSig.Indexes = indexes
 
 		b, err := txSig.Bytes()
 		assert.Equal(t, nil, err, "Should not have any bug when txSig.ToBytes")
 
-		txSig2 := new(TxSigPubKeyVer2)
+		txSig2 := new(SigPubKey)
 		err = txSig2.SetBytes(b)
 		assert.Equal(t, nil, err, "Should not have any bug when txSig.FromBytes")
 
@@ -206,7 +206,7 @@ func TestTxV2Salary(t *testing.T){
 	numOfPrivateKeys := 2
 
 	for loop := 0; loop < numOfLoops; loop++ {
-		fmt.Printf("\n------------------TxVersion2 Salary Test\n")
+		fmt.Printf("\n------------------Tx Salary Test\n")
 		var err error
 		preparePaymentKeys(numOfPrivateKeys,t)
 
@@ -237,7 +237,7 @@ func TestTxV2Salary(t *testing.T){
 		forceSaveCoins(dummyDB, []coin.Coin{theCoinsGeneric[1]}, 0, common.PRVCoinID, t)
 
 		// creating the TX object
-		tx := &TxVersion2{}
+		tx := &Tx{}
 		// actually making the salary TX
 		err = tx.InitTxSalary(theCoins[0], dummyPrivateKeys[0], dummyDB, nil)
 
@@ -248,7 +248,7 @@ func TestTxV2Salary(t *testing.T){
 		testTxV2JsonMarshaler(tx, 50, dummyDB, t)
 		// someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, t)
 		// for _,theInvalidTx := range someInvalidTxs{
-		// 	txSpecific, ok := theInvalidTx.(*TxVersion2)
+		// 	txSpecific, ok := theInvalidTx.(*Tx)
 		// 	assert.Equal(t, true, ok)
 		// 	// look for potential panics by calling verify
 		// 	isSane, _ := txSpecific.ValidateSanityData(nil,nil,nil,0)
@@ -259,7 +259,7 @@ func TestTxV2Salary(t *testing.T){
 		// 	txSpecific.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
 		// }
 
-		malTx := &TxVersion2{}
+		malTx := &Tx{}
 		// this other coin is already in db so it must be rejected
 		err = malTx.InitTxSalary(theCoins[1], dummyPrivateKeys[0], dummyDB, nil)
 		assert.NotEqual(t,nil,err)
@@ -271,7 +271,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 	numOfInputs := RandInt() % (maxInputs - minInputs + 1) + minInputs
 	// dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	for loop := 0; loop < numOfLoops; loop++ {
-		fmt.Printf("\n------------------TxVersion2 Main Test\n")
+		fmt.Printf("\n------------------Tx Main Test\n")
 		fmt.Printf("Number of inputs  : %d\n", numOfInputs)
 		fmt.Printf("Number of outputs : %d\n", numOfPrivateKeys)
 		var err error
@@ -330,7 +330,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			[]byte{},
 		)
 		// creating the TX object
-		tx := &TxVersion2{}
+		tx := &Tx{}
 		// actually making the TX
 		// `Init` function will also create all necessary proofs and attach them to the TX
 		err = tx.Init(initializingParams)
@@ -372,7 +372,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 	}
 }
 
-func testTxV2DeletedProof(txv2 *TxVersion2, t *testing.T){
+func testTxV2DeletedProof(txv2 *Tx, t *testing.T){
 	// try setting the proof to nil, then verify
 	// it should not go through
 	savedProof := txv2.Proof
@@ -396,7 +396,7 @@ func testTxV2DuplicateInput(db *statedb.StateDB, inputCoins []coin.PlainCoin, pa
 		nil,
 		[]byte{},
 	)
-	malTx := &TxVersion2{}
+	malTx := &Tx{}
 	errMalInit := malTx.Init(malFeeParams)
 	assert.Equal(t,nil,errMalInit)
 	// sanity should be fine
@@ -423,7 +423,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 		nil,
 		[]byte{},
 	)
-	malTx := &TxVersion2{}
+	malTx := &Tx{}
 	_ = malTx.Init(malFeeParams)
 	// if errMalInit!=nil{
 	// 	panic(errMalInit)
@@ -435,7 +435,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 	assert.Equal(t,false,isValid)
 }
 
-func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, pastCoins []coin.Coin, t *testing.T){
+func testTxV2OneFakeInput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, pastCoins []coin.Coin, t *testing.T){
 	// likewise, if someone took an already proven tx and swaps one input coin
 	// for another random coin from outside, the tx cannot go through
 	// (here we only meddle with coin-changing - not adding/removing - since length checks are included within mlsag)
@@ -485,7 +485,7 @@ func testTxV2OneFakeInput(txv2 *TxVersion2, db *statedb.StateDB, params *tx_gene
 	// inputCoins[changed] = saved
 }
 
-func testTxV2OneFakeOutput(txv2 *TxVersion2, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, paymentInfoOut []*key.PaymentInfo, t *testing.T){
+func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, paymentInfoOut []*key.PaymentInfo, t *testing.T){
 	// similar to the above. All these verifications should fail
 	var err error
 	outs := txv2.GetProof().GetOutputCoins()
@@ -564,7 +564,7 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 			nil,
 			[]byte{},
 		)
-		malTx := &TxVersion2{}
+		malTx := &Tx{}
 		err := malTx.Init(malInputParams)
 		assert.Equal(t,nil,err)
 		otaBytes := malTx.GetProof().GetInputCoins()[changed].GetKeyImage().ToBytesS()
@@ -583,10 +583,10 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 
 }
 
-func testTxV2JsonMarshaler(tx *TxVersion2, count int, db *statedb.StateDB, t *testing.T){
+func testTxV2JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T){
 	someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
 	for _,theInvalidTx := range someInvalidTxs{
-		txSpecific, ok := theInvalidTx.(*TxVersion2)
+		txSpecific, ok := theInvalidTx.(*Tx)
 		if !ok{
 			fmt.Println("Skipping a transaction from wrong version")
 			continue
@@ -605,10 +605,10 @@ func testTxV2JsonMarshaler(tx *TxVersion2, count int, db *statedb.StateDB, t *te
 	}
 }
 
-func testTxTokenV2JsonMarshaler(tx *TxTokenVersion2, count int, db *statedb.StateDB, t *testing.T){
+func testTxTokenV2JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *testing.T){
 	someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
 	for _,theInvalidTx := range someInvalidTxs{
-		txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
+		txSpecific, ok := theInvalidTx.(*TxToken)
 		if !ok{
 			fmt.Println("Skipping a transaction from wrong version")
 			continue
@@ -643,10 +643,10 @@ func getRandomLetter() rune{
 	}
 }
 
-func getCorruptedJsonDeserializedTxs(tx *TxVersion2, maxJsonChanges int, t *testing.T) []metadata.Transaction{
+func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) []metadata.Transaction{
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
-	reconstructedTx := &TxVersion2{}
+	reconstructedTx := &Tx{}
 	err = json.Unmarshal(jsonBytes, reconstructedTx)
 	assert.Equal(t, nil, err)
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)
@@ -691,10 +691,10 @@ func getCorruptedJsonDeserializedTxs(tx *TxVersion2, maxJsonChanges int, t *test
 	return result
 }
 
-func getCorruptedJsonDeserializedTokenTxs(tx *TxTokenVersion2, maxJsonChanges int,t *testing.T) []tx_generic.TransactionToken{
+func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *testing.T) []tx_generic.TransactionToken{
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
-	reconstructedTx := &TxTokenVersion2{}
+	reconstructedTx := &TxToken{}
 	err = json.Unmarshal(jsonBytes, reconstructedTx)
 	assert.Equal(t, nil, err)
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)

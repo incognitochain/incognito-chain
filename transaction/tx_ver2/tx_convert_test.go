@@ -401,7 +401,7 @@ func TestInitializeTxConversion(t *testing.T) {
 		assert.Equal(t, nil, err, "createConversionParams returns an error: %v", err)
 
 		//Test initializeTxConversion
-		txConversionOutput := new(TxVersion2)
+		txConversionOutput := new(Tx)
 		err = initializeTxConversion(txConversionOutput, txConversionParams)
 
 		assert.Equal(t, nil, err, "initializeTxConversion returns an error: %v", err)
@@ -410,7 +410,7 @@ func TestInitializeTxConversion(t *testing.T) {
 
 func TestProveVerifyTxNormalConversion(t *testing.T) {
 	for i := 0; i < numTests; i++ {
-		txConvertOutput := new(TxVersion2)
+		txConvertOutput := new(Tx)
 
 		_, _, txConvertParams, err := createConversionParams(numInputs, numOutputs, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "createConversionParams returns an error: %v", err)
@@ -433,7 +433,7 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 
 func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 	for i := 0; i < numTests; i++ {
-		txConversionOutput := new(TxVersion2)
+		txConversionOutput := new(Tx)
 		_, _, txConversionParams, err := createConversionParams(numInputs, numOutputs, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "createConversionParams returns an error: %v", err)
 
@@ -626,7 +626,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		theInputCoin, ok := coins[i].(coin.Coin)
 		assert.Equal(t, true, ok, "Cannot parse coin")
 		paramToCreateTx, tokenParam, err := createInitTokenParams(theInputCoin, testDB, "", tokenName, keySets[0])
-		tx := &TxTokenVersion2{}
+		tx := &TxToken{}
 
 		err = tx.Init(paramToCreateTx)
 		if err != nil {
@@ -660,7 +660,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		mySupposedlyPersonalKey, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
 
-		txToken := new(TxTokenVersion2)
+		txToken := new(TxToken)
 		err = InitTokenConversion(txToken, txTokenConversionParams)
 		assert.Equal(t, nil, err, "initTokenConversion returns an error: %v", err)
 		if err != nil {
@@ -682,7 +682,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 	}
 }
 
-func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet, txConversionOutput *TxTokenVersion2, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash, t *testing.T) {
+func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet, txConversionOutput *TxToken, convParam *TxTokenConvertVer1ToVer2InitParams, tokenID *common.Hash, t *testing.T) {
 	m := common.RandInt()
 	testDB := convParam.stateDB
 	txPrivacyParams := tx_generic.NewTxPrivacyInitParams(
@@ -690,7 +690,7 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 		false, convParam.stateDB, &common.PRVCoinID, convParam.metaData, convParam.info,
 	)
 	var err error
-	txInner, ok := txConversionOutput.GetTxTokenData().TxNormal.(*TxVersion2)
+	txInner, ok := txConversionOutput.GetTxTokenData().TxNormal.(*Tx)
 	assert.Equal(t, true, ok)
 
 	switch m % 5 { //Change this if you want to test a specific case

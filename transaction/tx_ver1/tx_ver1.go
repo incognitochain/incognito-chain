@@ -18,13 +18,13 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 )
 
-type TxVersion1 struct {
+type Tx struct {
 	tx_generic.TxBase
 }
 
 // ========== GET FUNCTION ============
 
-func (tx *TxVersion1) GetReceiverData() ([]privacy.Coin, error) {
+func (tx *Tx) GetReceiverData() ([]privacy.Coin, error) {
 	pubkeys := make([]*privacy.Point, 0)
 	amounts := []uint64{}
 
@@ -57,7 +57,7 @@ func (tx *TxVersion1) GetReceiverData() ([]privacy.Coin, error) {
 
 // ========== CHECK FUNCTION ===========
 
-func (tx *TxVersion1) CheckAuthorizedSender(publicKey []byte) (bool, error) {
+func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	sigPubKey := tx.GetSigPubKey()
 	if bytes.Equal(sigPubKey, publicKey) {
 		return true, nil
@@ -170,7 +170,7 @@ func parseOutputCoins(paymentInfo []*privacy.PaymentInfo, tokenID *common.Hash, 
 	return outputCoins, nil
 }
 
-func (tx *TxVersion1) Init(paramsInterface interface{}) error {
+func (tx *Tx) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxPrivacyInitParams)
 	if !ok {
 		return errors.New("params of tx Init is not TxPrivacyInitParam")
@@ -199,7 +199,7 @@ func (tx *TxVersion1) Init(paramsInterface interface{}) error {
 	return nil
 }
 
-func (tx *TxVersion1) initializePaymentWitnessParam(params *tx_generic.TxPrivacyInitParams) (*privacy.PaymentWitnessParam, error) {
+func (tx *Tx) initializePaymentWitnessParam(params *tx_generic.TxPrivacyInitParams) (*privacy.PaymentWitnessParam, error) {
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
 
 	// get list of commitments for proving one-out-of-many from commitmentIndexs
@@ -231,7 +231,7 @@ func (tx *TxVersion1) initializePaymentWitnessParam(params *tx_generic.TxPrivacy
 	return &paymentWitnessParam, nil
 }
 
-func (tx *TxVersion1) proveAndSignCore(params *tx_generic.TxPrivacyInitParams, paymentWitnessParamPtr *privacy.PaymentWitnessParam) error {
+func (tx *Tx) proveAndSignCore(params *tx_generic.TxPrivacyInitParams, paymentWitnessParamPtr *privacy.PaymentWitnessParam) error {
 	paymentWitnessParam := *paymentWitnessParamPtr
 	witness := new(privacy.PaymentWitness)
 	err := witness.Init(paymentWitnessParam)
@@ -268,7 +268,7 @@ func (tx *TxVersion1) proveAndSignCore(params *tx_generic.TxPrivacyInitParams, p
 	return nil
 }
 
-func (tx *TxVersion1) prove(params *tx_generic.TxPrivacyInitParams) error {
+func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	// PrepareTransaction paymentWitness params
 	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParam(params)
 	if err != nil {
@@ -277,7 +277,7 @@ func (tx *TxVersion1) prove(params *tx_generic.TxPrivacyInitParams) error {
 	return tx.proveAndSignCore(params, paymentWitnessParamPtr)
 }
 
-// func (tx *TxVersion1) initializePaymentWitnessParamASM(params *TxPrivacyInitParamsForASM) (*privacy.PaymentWitnessParam, error) {
+// func (tx *Tx) initializePaymentWitnessParamASM(params *TxPrivacyInitParamsForASM) (*privacy.PaymentWitnessParam, error) {
 // 	// create SNDs for output coins
 // 	txParams := &params.txParam
 // 	outputCoins, err := parseOutputCoins(txParams.paymentInfo, txParams.tokenID, txParams.stateDB)
@@ -311,7 +311,7 @@ func (tx *TxVersion1) prove(params *tx_generic.TxPrivacyInitParams) error {
 // 	return &paymentWitnessParam, nil
 // }
 
-func (tx *TxVersion1) sign() error {
+func (tx *Tx) sign() error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
@@ -340,14 +340,14 @@ func (tx *TxVersion1) sign() error {
 	return nil
 }
 
-func (tx *TxVersion1) Sign(sigPrivakey []byte) error {//For testing-purpose only, remove when deploy
+func (tx *Tx) Sign(sigPrivakey []byte) error {//For testing-purpose only, remove when deploy
 	if sigPrivakey != nil{
 		tx.SetPrivateKey(sigPrivakey)
 	}
 	return tx.sign()
 }
 
-// func (tx *TxVersion1) proveASM(params *TxPrivacyInitParamsForASM) error {
+// func (tx *Tx) proveASM(params *TxPrivacyInitParamsForASM) error {
 // 	paymentWitnessParamPtr, err := tx.initializePaymentWitnessParamASM(params)
 // 	if err != nil {
 // 		return err
@@ -357,7 +357,7 @@ func (tx *TxVersion1) Sign(sigPrivakey []byte) error {//For testing-purpose only
 
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
-func (tx TxVersion1) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	if check, err := tx_generic.ValidateSanityTxWithoutMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
 		utils.Logger.Log.Errorf("Cannot check sanity of version, size, proof, type and info: err %v", err)
 		return false, err
@@ -430,7 +430,7 @@ func getCommitmentsInDatabase(
 	return &commitments, nil
 }
 
-func (tx *TxVersion1) verifySig() (bool, error) {
+func (tx *Tx) verifySig() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an signed one"))
@@ -456,7 +456,7 @@ func (tx *TxVersion1) verifySig() (bool, error) {
 	return res, nil
 }
 
-func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var err error
 	if valid, err := tx.verifySig(); !valid {
 		if err != nil {
@@ -552,7 +552,7 @@ func (tx *TxVersion1) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	return true, nil
 }
 
-func (tx TxVersion1) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData,
+func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData,
 		shardID byte, bcr metadata.ChainRetriever,
 		accumulatedValues *metadata.AccumulatedValues,
 		retriever metadata.ShardViewRetriever,
@@ -562,7 +562,7 @@ func (tx TxVersion1) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata
 
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
-func (tx *TxVersion1) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata,
+func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata,
 ) error {
 	tx.Version = utils.TxVersion1Number
 	tx.Type = common.TxRewardType
@@ -622,7 +622,7 @@ func (tx *TxVersion1) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentA
 	return nil
 }
 
-func (tx TxVersion1) ValidateTxSalary(
+func (tx Tx) ValidateTxSalary(
 	db *statedb.StateDB,
 ) (bool, error) {
 	// verify signature
@@ -675,15 +675,15 @@ func (tx TxVersion1) ValidateTxSalary(
 
 // =========== SHARED FUNCTIONS ==========
 
-func (tx TxVersion1) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
+func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
 
-func (tx TxVersion1) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
+func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
 
-func (tx TxVersion1) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	return tx_generic.ValidateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 }
 
-func (tx TxVersion1) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	switch tx.GetType() {
 	case common.TxRewardType:
 		return tx.ValidateTxSalary(transactionStateDB)
@@ -694,11 +694,11 @@ func (tx TxVersion1) ValidateTransaction(hasPrivacy bool, transactionStateDB *st
 	}
 }
 
-func (tx TxVersion1) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	return tx_generic.ValidateTxByItself(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
 }
 
-func (tx TxVersion1) GetTxActualSize() uint64 {
+func (tx Tx) GetTxActualSize() uint64 {
 	if tx.GetCachedActualSize() != nil {
 		return *tx.GetCachedActualSize()
 	}

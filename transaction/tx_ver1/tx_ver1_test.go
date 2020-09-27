@@ -41,8 +41,8 @@ var (
 
 	maxTries = 100
 	numOfLoops = 10
-	hasPrivacyForPRV   bool = false
-	hasPrivacyForToken bool = true
+	hasPrivacyForPRV   bool = true
+	hasPrivacyForToken bool = false
 	shardID            byte = byte(0)
 	numInputs = 5
 	// must be 1
@@ -416,7 +416,7 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 		coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, dummyDB)
 		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-		tx := new(TxVersion1)
+		tx := new(Tx)
 
 		r := common.RandInt() % (100 - numOfInputs)
 
@@ -454,7 +454,7 @@ func TestTxVersion1_InputCoinReplication(t *testing.T) {
 
 		// fmt.Println(coins[0].GetValue())
 
-		tx := new(TxVersion1)
+		tx := new(Tx)
 		//choose some input coins to spend => make sure that inputCoins[0] and inputCoins[1] have the same amount
 		inputCoins := coins[:10]
 
@@ -503,8 +503,8 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 
 	for i:=0;i<numTests;i++ {
 		//create 2 transactions
-		tx1 := new(TxVersion1)
-		tx2 := new(TxVersion1)
+		tx1 := new(Tx)
+		tx2 := new(Tx)
 		inputCoins := coins[i*20 : i*20+10]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, 1)
@@ -578,8 +578,8 @@ func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 
 	for i := 0; i < numTests; i++ {
 		//create 2 transactions
-		tx1 := new(TxVersion1)
-		tx2 := new(TxVersion1)
+		tx1 := new(Tx)
+		tx2 := new(Tx)
 		inputCoins := coins[i*20 : i*20+10]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, 1)
@@ -651,8 +651,8 @@ func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 
 	for i := 0; i < numTests; i++ {
 		//create 2 transactions
-		tx1 := new(TxVersion1)
-		tx2 := new(TxVersion1)
+		tx1 := new(Tx)
+		tx2 := new(Tx)
 		inputCoins := coins[i*20 : i*20+10]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, 1)
@@ -729,8 +729,8 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 
 	for i := 0; i < numTests; i++ {
 		//create 2 transactions
-		tx1 := new(TxVersion1)
-		tx2 := new(TxVersion1)
+		tx1 := new(Tx)
+		tx2 := new(Tx)
 		inputCoins := coins[i*20 : i*20+10]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, false, 1)
@@ -811,7 +811,7 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 
 	for i := 0; i < numTests; i++ {
 		//create 2 transactions
-		tx := new(TxVersion1)
+		tx := new(Tx)
 		inputCoins := coins[i*10 : i*10 + 10]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, 1)
@@ -879,10 +879,10 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 	}
 }
 
-func testTxV1JsonMarshaler(tx *TxVersion1, count int, db *statedb.StateDB, t *testing.T){
+func testTxV1JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T){
 	someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
 	for _,theInvalidTx := range someInvalidTxs{
-		txSpecific, ok := theInvalidTx.(*TxVersion1)
+		txSpecific, ok := theInvalidTx.(*Tx)
 		if !ok{
 			fmt.Println("Skipping a transaction from wrong version")
 			continue
@@ -901,10 +901,10 @@ func testTxV1JsonMarshaler(tx *TxVersion1, count int, db *statedb.StateDB, t *te
 	}
 }
 
-func testTxTokenV1JsonMarshaler(tx *TxTokenVersion1, count int, db *statedb.StateDB, t *testing.T){
+func testTxTokenV1JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *testing.T){
 	someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
 	for _,theInvalidTx := range someInvalidTxs{
-		txSpecific, ok := theInvalidTx.(*TxTokenVersion1)
+		txSpecific, ok := theInvalidTx.(*TxToken)
 		if !ok{
 			fmt.Println("Skipping a transaction from wrong version")
 			continue
@@ -938,10 +938,10 @@ func getRandomLetter() rune{
 	}
 }
 
-func getCorruptedJsonDeserializedTxs(tx *TxVersion1, maxJsonChanges int, t *testing.T) []metadata.Transaction{
+func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) []metadata.Transaction{
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
-	reconstructedTx := &TxVersion1{}
+	reconstructedTx := &Tx{}
 	err = json.Unmarshal(jsonBytes, reconstructedTx)
 	assert.Equal(t, nil, err)
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)
@@ -986,10 +986,10 @@ func getCorruptedJsonDeserializedTxs(tx *TxVersion1, maxJsonChanges int, t *test
 	return result
 }
 
-func getCorruptedJsonDeserializedTokenTxs(tx *TxTokenVersion1, maxJsonChanges int,t *testing.T) []tx_generic.TransactionToken{
+func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *testing.T) []tx_generic.TransactionToken{
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
-	reconstructedTx := &TxTokenVersion1{}
+	reconstructedTx := &TxToken{}
 	err = json.Unmarshal(jsonBytes, reconstructedTx)
 	assert.Equal(t, nil, err)
 	jsonBytesAgain, err := json.Marshal(reconstructedTx)

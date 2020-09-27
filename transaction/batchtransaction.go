@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 )
@@ -51,14 +52,14 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			}
 			validateMetadata := tx.GetMetadata().ValidateMetadataByItself()
 			if !validateMetadata {
-				return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid")), i
+				return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid")), i
 			}
 		}
 
 		if hasPrivacy {
 			bulletproof := tx.GetProof().GetAggregatedRangeProof()
 			if bulletproof == nil {
-				return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("Privacy TX Proof missing at index %d", i)), -1
+				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("Privacy TX Proof missing at index %d", i)), -1
 			}
 			if tx.GetProof().GetVersion() == 1 {
 				bulletproofV1 := bulletproof.(*privacy.AggregatedRangeProofV1)
@@ -73,19 +74,19 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	//TODO: add go routine
 	ok, err, i := aggregatedrange.VerifyBatchingAggregatedRangeProofs(bulletProofListVer1)
 	if err != nil {
-		return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
 	}
 	if !ok {
 		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", i)
-		return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 1 PAYMENT PROOF %d", i)), -1
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 1 PAYMENT PROOF %d", i)), -1
 	}
 	ok, err, i = bulletproofs.VerifyBatch(bulletProofListVer2)
 	if err != nil {
-		return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
 	}
 	if !ok {
 		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %d", i)
-		return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 2 PAYMENT PROOF %d", i)), -1
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 2 PAYMENT PROOF %d", i)), -1
 	}
 	fmt.Println("[BUGLOG] Number of tx in batch", len(bulletProofListVer1), len(bulletProofListVer2))
 	return true, nil, -1

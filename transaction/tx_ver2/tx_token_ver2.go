@@ -18,7 +18,7 @@ import (
 
 )
 
-type TxTokenVersion2 struct {
+type TxToken struct {
 	tx_generic.TxTokenBase
 }
 
@@ -47,7 +47,7 @@ func checkIsBridgeTokenID(bridgeStateDB *statedb.StateDB, tokenID *common.Hash) 
 	return nil
 }
 
-func (txToken *TxTokenVersion2) initToken(params *tx_generic.TxTokenParams) error {
+func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 	txToken.TxTokenData.SetType(params.TokenParams.TokenTxType)
 	txToken.TxTokenData.SetPropertyName(params.TokenParams.PropertyName)
 	txToken.TxTokenData.SetPropertySymbol(params.TokenParams.PropertySymbol)
@@ -75,7 +75,7 @@ func (txToken *TxTokenVersion2) initToken(params *tx_generic.TxTokenParams) erro
 				return errCoin
 			}
 
-			temp := new(TxVersion2)
+			temp := new(Tx)
 			temp.SetVersion(utils.TxVersion2Number)
 			temp.SetType(common.TxNormalType)
 			temp.Proof = new(privacy.ProofV2)
@@ -168,7 +168,7 @@ func (txToken *TxTokenVersion2) initToken(params *tx_generic.TxTokenParams) erro
 				nil,
 				nil,
 			)
-			txNormal := new(TxVersion2)
+			txNormal := new(Tx)
 			if err := txNormal.Init(txParams); err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 			}
@@ -184,7 +184,7 @@ func (txToken *TxTokenVersion2) initToken(params *tx_generic.TxTokenParams) erro
 }
 
 // Prove
-func (tx *TxVersion2) proveWithMessage(params *tx_generic.TxPrivacyInitParams, hashedTokenMessage []byte) error {
+func (tx *Tx) proveWithMessage(params *tx_generic.TxPrivacyInitParams, hashedTokenMessage []byte) error {
 	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
@@ -213,7 +213,7 @@ func (tx *TxVersion2) proveWithMessage(params *tx_generic.TxPrivacyInitParams, h
 	return err
 }
 
-func (txToken *TxTokenVersion2) initPRVFee(feeTx * TxVersion2, params *tx_generic.TxPrivacyInitParams) error {
+func (txToken *TxToken) initPRVFee(feeTx * Tx, params *tx_generic.TxPrivacyInitParams) error {
 	txTokenDataHash, err := txToken.TxTokenData.Hash()
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
@@ -229,7 +229,7 @@ func (txToken *TxTokenVersion2) initPRVFee(feeTx * TxVersion2, params *tx_generi
 	return nil
 }
 
-func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
+func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxTokenParams)
 	if !ok {
 		return errors.New("Cannot init TxCustomTokenPrivacy because params is not correct")
@@ -253,7 +253,7 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 		return err
 	}
 	// Init tx and params (tx and params will be changed)
-	tx := new(TxVersion2)
+	tx := new(Tx)
 	if err := tx.InitializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func (txToken *TxTokenVersion2) Init(paramsInterface interface{}) error {
 	return nil
 }
 
-func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata, coinID *common.Hash, coinName string) error {
+func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata, coinID *common.Hash, coinName string) error {
 	var err error
 	// Check validate params
 	txPrivacyParams := tx_generic.NewTxPrivacyInitParams(
@@ -321,7 +321,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *privacy.CoinV2, privK
 		utils.Logger.Log.Errorf("Init customPrivacyToken cannot set outputCoins")
 		return err
 	}
-	temp := new(TxVersion2)
+	temp := new(Tx)
 	temp.Version = utils.TxVersion2Number
 	temp.Type = common.TxNormalType
 	temp.Proof = proof
@@ -336,7 +336,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *privacy.CoinV2, privK
 	txToken.TxTokenData.TxNormal = temp
 
 	// Init tx fee params
-	tx := new(TxVersion2)
+	tx := new(Tx)
 	if err := tx.InitializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
@@ -355,7 +355,7 @@ func (txToken *TxTokenVersion2) InitTxTokenSalary(otaCoin *privacy.CoinV2, privK
 	return nil
 }
 
-func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	// check input transaction
 	txFee := txToken.Tx
 	if txFee.GetSig() == nil || txFee.GetSigPubKey() == nil {
@@ -416,7 +416,7 @@ func (txToken *TxTokenVersion2) verifySig(transactionStateDB *statedb.StateDB, s
 	return mlsag.Verify(mlsagSignature, ring, message[:])
 }
 
-func (txToken TxTokenVersion2) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
 	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
 		return false, err
@@ -432,7 +432,7 @@ func (txToken TxTokenVersion2) ValidateTxByItself(hasPrivacyCoin bool, transacti
 	return true, nil
 }
 
-func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var err error
 	if tokenID, err = tx_generic.ParseTokenID(tokenID); err != nil {
 		return false, err
@@ -480,7 +480,7 @@ func (txToken TxTokenVersion2) ValidateTransaction(hasPrivacyCoin bool, transact
 	}
 }
 
-func (txToken TxTokenVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	if txToken.GetTxBase().GetProof() == nil && txToken.TxTokenData.TxNormal.GetProof() == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have a proof")
 	}
@@ -505,7 +505,7 @@ func (txToken TxTokenVersion2) ValidateSanityData(chainRetriever metadata.ChainR
 	return true, nil
 }
 
-func (txToken TxTokenVersion2) GetTxActualSize() uint64 {
+func (txToken TxToken) GetTxActualSize() uint64 {
 	sizeTx := tx_generic.GetTxActualSizeInBytes(txToken.Tx)
 
 	if &txToken.TxTokenData != nil {
@@ -527,9 +527,9 @@ func (txToken TxTokenVersion2) GetTxActualSize() uint64 {
 	return result
 }
 
-func (txToken *TxTokenVersion2) UnmarshalJSON(data []byte) error {
+func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	var err error
-	txToken.Tx = &TxVersion2{}
+	txToken.Tx = &Tx{}
 	if err = json.Unmarshal(data, txToken.Tx); err != nil {
 		return err
 	}
@@ -537,7 +537,7 @@ func (txToken *TxTokenVersion2) UnmarshalJSON(data []byte) error {
 	temp := &struct {
 		TxTokenData tx_generic.TxTokenData `json:"TxTokenPrivacyData"`
 	}{}
-	temp.TxTokenData.TxNormal = &TxVersion2{}
+	temp.TxTokenData.TxNormal = &Tx{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
 		utils.Logger.Log.Error(err)

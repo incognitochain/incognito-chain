@@ -236,14 +236,13 @@ var HttpHandler = map[string]httpHandler{
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
-	// test: create 2 transactions that try double-spending
-	"testbuilddoublespend": (*HttpServer).handleTestBuildDoubleSpendTx,
-	"testbuildduplicateinput": (*HttpServer).handleTestBuildDuplicateInputTx,
-	"testbuildoutgtin": (*HttpServer).handleTestBuildOutGtInTx,
-	"testbuildreceiverexists": (*HttpServer).handleTestBuildReceiverExistsTx,
-	"testbuilddoublespendtoken": (*HttpServer).handleTestBuildDoubleSpendTokenTx,
-	"testbuildduplicateinputtoken": (*HttpServer).handleTestBuildDuplicateInputTokenTx,
-	"testbuildreceiverexiststoken": (*HttpServer).handleTestBuildReceiverExistsTokenTx,
+	// "testbuilddoublespend": (*HttpServer).handleTestBuildDoubleSpendTx,
+	// "testbuildduplicateinput": (*HttpServer).handleTestBuildDuplicateInputTx,
+	// "testbuildoutgtin": (*HttpServer).handleTestBuildOutGtInTx,
+	// "testbuildreceiverexists": (*HttpServer).handleTestBuildReceiverExistsTx,
+	// "testbuilddoublespendtoken": (*HttpServer).handleTestBuildDoubleSpendTokenTx,
+	// "testbuildduplicateinputtoken": (*HttpServer).handleTestBuildDuplicateInputTokenTx,
+	// "testbuildreceiverexiststoken": (*HttpServer).handleTestBuildReceiverExistsTokenTx,
 }
 
 // Commands that are available to a limited user

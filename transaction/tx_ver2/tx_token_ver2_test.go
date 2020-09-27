@@ -45,7 +45,7 @@ var (
 
 func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 	for loop := 0; loop < numOfLoops; loop++ {
-		fmt.Printf("\n------------------TxTokenVersion2 Main Test\n")
+		fmt.Printf("\n------------------TxToken Main Test\n")
 		var err error
 		numOfPrivateKeys := 4
 		numOfInputs := 2
@@ -70,7 +70,7 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		msgCipherText := []byte("haha dummy ciphertext")
 		paramToCreateTx, tokenParam := getParamsForTxTokenInit(pastCoins[0], dummyDB)
 		// create tx for token init
-		tx := &TxTokenVersion2{}
+		tx := &TxToken{}
 
 		fmt.Println("Token Init")
 		err = tx.Init(paramToCreateTx)
@@ -79,7 +79,7 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		// convert to JSON string and revert
 		txJsonString := tx.JSONString()
 		txHash := tx.Hash()
-		tx1 := new(TxTokenVersion2)
+		tx1 := new(TxToken)
 		tx1.UnmarshalJSON([]byte(txJsonString))
 		txHash1 := tx1.Hash()
 		assert.Equal(t, txHash, txHash1)
@@ -131,7 +131,7 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		// tx token transfer
 		paramToCreateTx2, tokenParam2 := getParamForTxTokenTransfer(tx, dummyDB, nil, t)
 		_ = tokenParam2
-		tx2 := &TxTokenVersion2{}
+		tx2 := &TxToken{}
 
 		fmt.Println("Token Transfer")
 		err = tx2.Init(paramToCreateTx2)
@@ -209,7 +209,7 @@ func testTxTokenV2TransferPRV(db *statedb.StateDB, t *testing.T) {
 	}
 	paramToCreateTx.TokenParams.TokenTxType = utils.CustomTokenTransfer
 
-	tx := &TxTokenVersion2{}
+	tx := &TxToken{}
 	err = tx.Init(paramToCreateTx)
 	if err != nil {
 		panic(err)
@@ -219,7 +219,7 @@ func testTxTokenV2TransferPRV(db *statedb.StateDB, t *testing.T) {
 	assert.Equal(t, false, res)
 }
 
-func testTxTokenV2DeletedProof(txv2 *TxTokenVersion2, db *statedb.StateDB, t *testing.T) {
+func testTxTokenV2DeletedProof(txv2 *TxToken, db *statedb.StateDB, t *testing.T) {
 	// try setting the proof to nil, then verify
 	// it should not go through
 	savedProof := txv2.GetTxTokenData().TxNormal.GetProof()
@@ -240,7 +240,7 @@ func testTxTokenV2DeletedProof(txv2 *TxTokenVersion2, db *statedb.StateDB, t *te
 	txv2.GetTxBase().SetProof(savedProof)
 }
 
-func testTxTokenV2InvalidFee(txv2 *TxTokenVersion2, db *statedb.StateDB, t *testing.T) {
+func testTxTokenV2InvalidFee(txv2 *TxToken, db *statedb.StateDB, t *testing.T) {
 	// a set of init params where fee is changed so mlsag should verify to false
 	// let's say someone tried to use this invalid fee for tx
 	// we should encounter an error here
@@ -265,7 +265,7 @@ func testTxTokenV2InvalidFee(txv2 *TxTokenVersion2, db *statedb.StateDB, t *test
 	assert.Equal(t, true, isValidTxItself)
 }
 
-func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, params *tx_generic.TxTokenParams, fakingTokenID common.Hash, t *testing.T) {
+func testTxTokenV2OneFakeOutput(txv2 *TxToken, db *statedb.StateDB, params *tx_generic.TxTokenParams, fakingTokenID common.Hash, t *testing.T) {
 	// similar to the above. All these verifications should fail
 	var err error
 	var isValid bool
@@ -331,7 +331,7 @@ func testTxTokenV2OneFakeOutput(txv2 *TxTokenVersion2, db *statedb.StateDB, para
 
 // happens after txTransfer in test
 // we create a second transfer, then try to reuse fee input / token input
-func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.StateDB, feeOutputBytesExtracted, tokenOutputBytesExtracted []byte, tokenIDExtracted *common.Hash, t *testing.T) {
+func testTxTokenV2OneDoubleSpentInput(tokenTx *TxToken, db *statedb.StateDB, feeOutputBytesExtracted, tokenOutputBytesExtracted []byte, tokenIDExtracted *common.Hash, t *testing.T) {
 	// save both fee&token outputs from previous tx
 	otaBytes := [][]byte{tokenTx.GetTxTokenData().TxNormal.GetProof().GetInputCoins()[0].GetKeyImage().ToBytesS()}
 	statedb.StoreSerialNumbers(db, common.ConfidentialAssetID, otaBytes, 0)
@@ -346,7 +346,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	// firstly, using the output coins to create new tx should be successful
 	utils.Logger.Log.Debugf("Negative test : Double-spending tx for token %s", tokenIDExtracted.String())
 	pr, _ := getParamForTxTokenTransfer(tokenTx, db, tokenIDExtracted, t)
-	tx := &TxTokenVersion2{}
+	tx := &TxToken{}
 	err := tx.Init(pr)
 	assert.Equal(t, nil, err)
 	isValidSanity, err := tx.ValidateSanityData(nil, nil, nil, 0)
@@ -363,7 +363,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	doubleSpendingFeeInput.SetBytes(feeOutputBytesExtracted)
 	pc, _ := doubleSpendingFeeInput.Decrypt(keySets[0])
 	pr.InputCoin = []coin.PlainCoin{pc}
-	tx = &TxTokenVersion2{}
+	tx = &TxToken{}
 	err = tx.Init(pr)
 	assert.Equal(t, nil, err)
 	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
@@ -381,7 +381,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	doubleSpendingTokenInput.SetBytes(tokenOutputBytesExtracted)
 	pc, _ = doubleSpendingTokenInput.Decrypt(keySets[0])
 	pr.TokenParams.TokenInput = []coin.PlainCoin{pc}
-	tx = &TxTokenVersion2{}
+	tx = &TxToken{}
 	err = tx.Init(pr)
 	assert.Equal(t, nil, err)
 	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
@@ -399,7 +399,7 @@ func testTxTokenV2OneDoubleSpentInput(tokenTx *TxTokenVersion2, db *statedb.Stat
 	}
 }
 
-func getParamForTxTokenTransfer(txTokenInit *TxTokenVersion2, db *statedb.StateDB, specifiedTokenID *common.Hash, t *testing.T) (*tx_generic.TxTokenParams, *tx_generic.TokenParam) {
+func getParamForTxTokenTransfer(txTokenInit *TxToken, db *statedb.StateDB, specifiedTokenID *common.Hash, t *testing.T) (*tx_generic.TxTokenParams, *tx_generic.TokenParam) {
 	transferAmount := uint64(69)
 	msgCipherText := []byte("doing a transfer")
 	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: keySets[0].PaymentAddress, Amount: transferAmount, Message: msgCipherText}}
@@ -472,7 +472,7 @@ func getParamsForTxTokenInit(theInputCoin coin.Coin, db *statedb.StateDB) (*tx_g
 
 func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T) {
 	numOfPrivateKeys := 2
-	fmt.Printf("\n------------------TxTokenVersion2 Salary Test\n")
+	fmt.Printf("\n------------------TxToken Salary Test\n")
 	var err error
 	preparePaymentKeys(numOfPrivateKeys, t)
 
@@ -503,7 +503,7 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 	forceSaveCoins(db, []coin.Coin{theCoinsGeneric[1]}, 0, *tokenID, t)
 
 	// creating the TX object
-	txsal := &TxTokenVersion2{}
+	txsal := &TxToken{}
 	// actually making the salary TX
 	err = txsal.InitTxTokenSalary(theCoins[0], dummyPrivateKeys[0], db, nil, tokenID, "Token 1")
 	if err != nil {
@@ -515,7 +515,7 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 	testTxTokenV2JsonMarshaler(txsal, 25, db, t)
 	// someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(txsal, t)
 	// for _,theInvalidTx := range someInvalidTxs{
-	// 	txSpecific, ok := theInvalidTx.(*TxTokenVersion2)
+	// 	txSpecific, ok := theInvalidTx.(*TxToken)
 	// 	// assert.Equal(t, true, ok)
 	// 	if !ok{
 	// 		// it's a txToken but not ver2 for some reason. We ignore for now
@@ -534,9 +534,9 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 
 }
 
-func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTokenVersion2, params *tx_generic.TxTokenParams, nonPrivacyParams *tx_generic.TxPrivacyInitParams) error {
+func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxToken, params *tx_generic.TxTokenParams, nonPrivacyParams *tx_generic.TxPrivacyInitParams) error {
 	var err error
-	txOuter, ok := txToken.Tx.(*TxVersion2)
+	txOuter, ok := txToken.Tx.(*Tx)
 	if !ok {
 		activeLogger.Errorf("Test Error : cast")
 		return utils.NewTransactionErr(-1000, nil, "Cast failed")
@@ -544,7 +544,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 	txToken.Tx = nil
 	txOuter.SetCachedHash(nil)
 
-	txn := txToken.TxTokenData.TxNormal.(*TxVersion2)
+	txn := txToken.TxTokenData.TxNormal.(*Tx)
 	txn.SetCachedHash(nil)
 	if !ok {
 		activeLogger.Errorf("Test Error : cast")
@@ -576,7 +576,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			params.MetaData,
 			params.Info,
 		)
-		txInner, ok := txToken.GetTxTokenData().TxNormal.(*TxVersion2)
+		txInner, ok := txToken.GetTxTokenData().TxNormal.(*Tx)
 		if !ok {
 			activeLogger.Errorf("Test Error : cast inner")
 			return utils.NewTransactionErr(-1000, nil, "Cast failed")
@@ -598,7 +598,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 
 }
 
-func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *TxVersion2, params *tx_generic.TxPrivacyInitParams, tokenData *tx_generic.TxTokenData) error {
+func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *Tx, params *tx_generic.TxPrivacyInitParams, tokenData *tx_generic.TxTokenData) error {
 	tx.SetCachedHash(nil)
 	tx.SetSig(nil)
 	tx.SetSigPubKey(nil)

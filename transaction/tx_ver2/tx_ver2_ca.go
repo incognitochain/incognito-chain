@@ -205,7 +205,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 	return mlsag.NewRing(ring), indexes, lastTwoColumnsCommitmentToZero, nil
 }
 
-func (tx *TxVersion2) proveCA(params *tx_generic.TxPrivacyInitParams) error {
+func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) error {
 	var err error
 	var outputCoins 	[]*privacy.CoinV2
 	var sharedSecrets 	[]*privacy.Point
@@ -240,7 +240,7 @@ func (tx *TxVersion2) proveCA(params *tx_generic.TxPrivacyInitParams) error {
 	return err
 }
 
-func (tx *TxVersion2) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputSharedSecrets []*privacy.Point, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
+func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputSharedSecrets []*privacy.Point, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
 	if tx.Sig != nil {
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
@@ -263,7 +263,7 @@ func (tx *TxVersion2) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, out
 	}
 
 	// Set SigPubKey
-	txSigPubKey := new(TxSigPubKeyVer2)
+	txSigPubKey := new(SigPubKey)
 	txSigPubKey.Indexes = indexes
 	tx.SigPubKey, err = txSigPubKey.Bytes()
 	if err != nil {
@@ -299,7 +299,7 @@ func (tx *TxVersion2) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, out
 }
 
 func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
-	txSigPubKey := new(TxSigPubKeyVer2)
+	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
 		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
@@ -344,7 +344,7 @@ func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee , sumOutputAssetTags 
 	return mlsag.NewRing(ring), nil
 }
 
-func (tx *TxVersion2) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
+func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be a signed one"))

@@ -21,15 +21,15 @@ import (
 )
 
 // TxSigPubKey of ver2 is array of Indexes in database
-type TxSigPubKeyVer2 struct {
+type SigPubKey struct {
 	Indexes [][]*big.Int
 }
 
-type TxVersion2 struct {
+type Tx struct {
 	tx_generic.TxBase
 }
 
-func (sigPub TxSigPubKeyVer2) Bytes() ([]byte, error) {
+func (sigPub SigPubKey) Bytes() ([]byte, error) {
 	n := len(sigPub.Indexes)
 	if n == 0 {
 		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is empty")
@@ -64,7 +64,7 @@ func (sigPub TxSigPubKeyVer2) Bytes() ([]byte, error) {
 	return b, nil
 }
 
-func (sigPub *TxSigPubKeyVer2) SetBytes(b []byte) error {
+func (sigPub *SigPubKey) SetBytes(b []byte) error {
 	if len(b) < 2 {
 		return errors.New("txSigPubKeyFromBytes: cannot parse length of Indexes, length of input byte is too small")
 	}
@@ -90,7 +90,7 @@ func (sigPub *TxSigPubKeyVer2) SetBytes(b []byte) error {
 		indexes[i] = row
 	}
 	if sigPub == nil {
-		sigPub = new(TxSigPubKeyVer2)
+		sigPub = new(SigPubKey)
 	}
 	sigPub.Indexes = indexes
 	return nil
@@ -98,7 +98,7 @@ func (sigPub *TxSigPubKeyVer2) SetBytes(b []byte) error {
 
 // ========== GET FUNCTION ===========
 
-func (tx *TxVersion2) GetReceiverData() ([]privacy.Coin, error) {
+func (tx *Tx) GetReceiverData() ([]privacy.Coin, error) {
 	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
 		return tx.Proof.GetOutputCoins(), nil
 	}
@@ -107,7 +107,7 @@ func (tx *TxVersion2) GetReceiverData() ([]privacy.Coin, error) {
 
 // ========== CHECK FUNCTION ===========
 
-func (tx *TxVersion2) CheckAuthorizedSender(publicKey []byte) (bool, error) {
+func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	if !tx.Metadata.ShouldSignMetaData() {
 		utils.Logger.Log.Error("Check authorized sender failed because tx.Metadata is not appropriate")
 		return false, errors.New("Check authorized sender failed because tx.Metadata is not appropriate")
@@ -165,7 +165,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	return privKeyMlsag, nil
 }
 
-func (tx *TxVersion2) Init(paramsInterface interface{}) error {
+func (tx *Tx) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxPrivacyInitParams)
 	if !ok {
 		return errors.New("params of tx Init is not TxPrivacyInitParam")
@@ -200,7 +200,7 @@ func (tx *TxVersion2) Init(paramsInterface interface{}) error {
 	return nil
 }
 
-func (tx *TxVersion2) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
+func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
 	if tx.Sig != nil {
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
@@ -223,7 +223,7 @@ func (tx *TxVersion2) signOnMessage(inp []privacy.PlainCoin, out []*privacy.Coin
 	}
 
 	// Set SigPubKey
-	txSigPubKey := new(TxSigPubKeyVer2)
+	txSigPubKey := new(SigPubKey)
 	txSigPubKey.Indexes = indexes
 	tx.SigPubKey, err = txSigPubKey.Bytes()
 	if err != nil {
@@ -258,7 +258,7 @@ func (tx *TxVersion2) signOnMessage(inp []privacy.PlainCoin, out []*privacy.Coin
 	return err
 }
 
-func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
+func (tx *Tx) signMetadata(privateKey *privacy.PrivateKey) error {
 	// signOnMessage meta data
 	metaSig := tx.Metadata.GetSig()
 	if metaSig != nil && len(metaSig) > 0 {
@@ -283,7 +283,7 @@ func (tx *TxVersion2) signMetadata(privateKey *privacy.PrivateKey) error {
 	return nil
 }
 
-func (tx *TxVersion2) prove(params *tx_generic.TxPrivacyInitParams) error {
+func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
@@ -309,13 +309,13 @@ func (tx *TxVersion2) prove(params *tx_generic.TxPrivacyInitParams) error {
 	return err
 }
 
-// func (tx *TxVersion2) proveASM(params *tx_generic.TxPrivacyInitParamsForASM) error {
+// func (tx *Tx) proveASM(params *tx_generic.TxPrivacyInitParamsForASM) error {
 // 	return tx.prove(&params.txParam)
 // }
 
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
 func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
-	txSigPubKey := new(TxSigPubKeyVer2)
+	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
 		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
@@ -419,7 +419,7 @@ func getMLSAGSigFromTxSigAndKeyImages(txSig []byte, keyImages []*privacy.Point) 
 	return mlsag.NewMlsagSig(mlsagSig.GetC(), keyImages, mlsagSig.GetR())
 }
 
-func (tx *TxVersion2) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
+func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be a signed one"))
@@ -454,7 +454,7 @@ func (tx *TxVersion2) verifySig(transactionStateDB *statedb.StateDB, shardID byt
 	return mlsag.Verify(mlsagSignature, ring, tx.Hash()[:])
 }
 
-func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var err error
 	var valid bool
 	if tokenID, err = tx_generic.ParseTokenID(tokenID); err != nil {
@@ -513,13 +513,13 @@ func (tx *TxVersion2) Verify(hasPrivacy bool, transactionStateDB *statedb.StateD
 	return true, nil
 }
 
-func (tx TxVersion2) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	return tx_generic.VerifyTxCreatedByMiner(&tx, mintdata, shardID, bcr, accumulatedValues, retriever, viewRetriever)
 }
 
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
-func (tx *TxVersion2) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
+func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
 	tokenID := &common.Hash{}
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
 		return utils.NewTransactionErr(utils.TokenIDInvalidError, err, tokenID.String())
@@ -560,7 +560,7 @@ func (tx *TxVersion2) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.
 	return nil
 }
 
-func (tx *TxVersion2) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
+func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// verify signature
 	if valid, err := tx_generic.VerifySigNoPrivacy(tx.Sig, tx.SigPubKey, tx.Hash()[:]); !valid {
 		if err != nil {
@@ -609,7 +609,7 @@ func (tx *TxVersion2) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	return true, nil
 }
 
-func (tx TxVersion2) StringWithoutMetadataSig() string {
+func (tx Tx) StringWithoutMetadataSig() string {
 	record := strconv.Itoa(int(tx.Version))
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
@@ -624,7 +624,7 @@ func (tx TxVersion2) StringWithoutMetadataSig() string {
 	return record
 }
 
-func (tx *TxVersion2) HashWithoutMetadataSig() *common.Hash {
+func (tx *Tx) HashWithoutMetadataSig() *common.Hash {
 	inBytes := []byte(tx.StringWithoutMetadataSig())
 	hash := common.HashH(inBytes)
 	//tx.cachedHash = &hash
@@ -633,7 +633,7 @@ func (tx *TxVersion2) HashWithoutMetadataSig() *common.Hash {
 
 // ========== VALIDATE FUNCTIONS ============
 
-func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	if tx.Proof == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have proof")
 	}
@@ -653,15 +653,15 @@ func (tx TxVersion2) ValidateSanityData(chainRetriever metadata.ChainRetriever, 
 
 // ========== SHARED FUNCTIONS ============
 
-func (tx TxVersion2) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
+func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
 
-func (tx TxVersion2) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
+func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
 
-func (tx TxVersion2) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	return tx_generic.ValidateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 }
 
-func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	switch tx.GetType() {
 	case common.TxRewardType:
 		return tx.ValidateTxSalary(transactionStateDB)
@@ -675,11 +675,11 @@ func (tx TxVersion2) ValidateTransaction(hasPrivacy bool, transactionStateDB *st
 	// return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
-func (tx TxVersion2) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	return tx_generic.ValidateTxByItself(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
 }
 
-func (tx TxVersion2) GetTxActualSize() uint64 {
+func (tx Tx) GetTxActualSize() uint64 {
 	if tx.GetCachedActualSize() != nil {
 		return *tx.GetCachedActualSize()
 	}
