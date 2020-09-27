@@ -10,6 +10,10 @@ type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
 }
+type PortalCollateral struct {
+	ExternalTokenID string
+	Decimal         uint8
+}
 type PortalParams struct {
 	TimeOutCustodianReturnPubToken       time.Duration
 	TimeOutWaitingPortingRequest         time.Duration
@@ -23,7 +27,7 @@ type PortalParams struct {
 	TP130                                uint64
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
-	SupportedCollateralTokenIDs          []string
+	SupportedCollateralTokenIDs          []PortalCollateral
 }
 
 /*
@@ -135,6 +139,13 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 	}
 }
 
+func getSupportedPortalCollaterals() []PortalCollateral {
+	return []PortalCollateral{
+		{common.EthAddrStr, 9},
+		{"USDT", 6},
+	}
+}
+
 func init() {
 	// FOR TESTNET
 	genesisParamsTestnetNew = &GenesisParams{
@@ -208,9 +219,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs: []string{
-					common.EthAddrStr,
-				},
+				SupportedCollateralTokenIDs:          getSupportedPortalCollaterals(),
 			},
 		},
 		PortalTokens:                     initPortalTokensForTestNet(),
@@ -220,7 +229,7 @@ func init() {
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 2070000,
 		ETHRemoveBridgeSigEpoch:          21920,
-		PortalETHContractAddressStr:      "", // todo: update sc address
+		PortalETHContractAddressStr:      "0x1B4c8873Fd83aB7E2eaB66cDB238F884827a61d4", // todo: update sc address
 	}
 	// END TESTNET
 
@@ -296,9 +305,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs: []string{
-					common.EthAddrStr,
-				},
+				SupportedCollateralTokenIDs:          getSupportedPortalCollaterals(),
 			},
 		},
 		PortalTokens:                     initPortalTokensForTestNet(),
@@ -382,9 +389,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs: []string{
-					common.EthAddrStr,
-				},
+				SupportedCollateralTokenIDs:          getSupportedPortalCollaterals(),
 			},
 		},
 		PortalTokens:                     initPortalTokensForMainNet(),

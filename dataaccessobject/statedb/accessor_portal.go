@@ -783,7 +783,7 @@ func GetAllRewardFeatureState(
 
 //======================  Portal external tx (ETH tx)  ======================
 func InsertPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueEthTx []byte) error {
-	key := GenerateBridgeEthTxObjectKey(uniqueEthTx)
+	key := GeneratePortalExternalTxObjectKey(uniqueEthTx)
 	value := NewPortalExternalTxStateWithValue(uniqueEthTx)
 	err := stateDB.SetStateObject(PortalExternalTxObjectType, key, value)
 	if err != nil {
@@ -793,16 +793,16 @@ func InsertPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueEthTx []byte) e
 }
 
 // IsPortalExternalTxHashSubmitted returns true if eth tx hash was submitted to portal and otherwise
-func IsPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueEthTx []byte) (bool, error) {
-	key := GeneratePortalExternalTxObjectKey(uniqueEthTx)
-	ethTxState, has, err := stateDB.getPortalExternalTxState(key)
+func IsPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueExtTx []byte) (bool, error) {
+	key := GeneratePortalExternalTxObjectKey(uniqueExtTx)
+	extTxState, has, err := stateDB.getPortalExternalTxState(key)
 	if err != nil {
 		return false, NewStatedbError(IsPortalExternalTxHashSubmittedError, err)
 	}
 	if !has {
 		return false, nil
 	}
-	if bytes.Compare(ethTxState.UniqueExternalTx(), uniqueEthTx) != 0 {
+	if bytes.Compare(extTxState.UniqueExternalTx(), uniqueExtTx) != 0 {
 		panic("same key wrong value")
 	}
 	return has, nil

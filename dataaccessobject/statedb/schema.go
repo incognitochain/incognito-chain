@@ -84,8 +84,8 @@ var (
 	// feature names
 	PortalRewardName = "portal"
 
-	portalEthTxPrefix =[]byte("portalethtx-")
-	withdrawCollateralPrefix                         = []byte("withdrawcollateral-")
+	portalExternalTxPrefix   =[]byte("portalexttx-")
+	withdrawCollateralPrefix = []byte("withdrawcollateral-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -384,7 +384,7 @@ func GetRewardFeatureStatePrefix(epoch uint64) []byte {
 }
 
 func GetPortalExternalTxPrefix() []byte {
-	h := common.HashH(portalEthTxPrefix)
+	h := common.HashH(portalExternalTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

@@ -181,7 +181,7 @@ func pickUpCustodians(
 			return nil, err
 		}
 
-		pTokenCustodianCanHold := down150Percent(collateralsInPToken, uint64(portalParams.MinPercentLockedCollateral))
+		pTokenCustodianCanHold := downPercent(collateralsInPToken, uint64(portalParams.MinPercentLockedCollateral))
 		if pTokenCustodianCanHold > remainPTokens {
 			pTokenCustodianCanHold = remainPTokens
 			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenCustodianCanHold)
@@ -189,7 +189,7 @@ func pickUpCustodians(
 			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenCustodianCanHold)
 		}
 
-		totalPTokenAfterUp150Percent := up150Percent(pTokenCustodianCanHold, uint64(portalParams.MinPercentLockedCollateral))
+		totalPTokenAfterUp150Percent := upPercent(pTokenCustodianCanHold, uint64(portalParams.MinPercentLockedCollateral))
 		neededCollaterals, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150Percent)
 		if err != nil {
 			Logger.log.Errorf("Failed to convert PToken to prv - with error %v", err)
@@ -226,6 +226,159 @@ func pickUpCustodians(
 	}
 
 	return custodians, nil
+}
+
+// convertAllFreeCollateralsToUSDT converts all collaterals of custodian to USDT
+func convertAllFreeCollateralsToUSDT(convertRateTool *PortalExchangeRateTool, custodian *statedb.CustodianState) (uint64, error) {
+	res := uint64(0)
+	prvCollateralInUSDT, err := convertRateTool.ConvertToUSDT(common.PRVIDStr, custodian.GetFreeCollateral())
+	if err != nil {
+		return 0, err
+	}
+	res += prvCollateralInUSDT
+
+	tokenCollaterals := custodian.GetFreeTokenCollaterals()
+	for tokenID, amount := range tokenCollaterals {
+		amountInUSDT, err := convertRateTool.ConvertToUSDT(tokenID, amount)
+		if err != nil {
+			return 0, err
+		}
+
+		res += amountInUSDT
+	}
+	return res, nil
+}
+
+//todo:
+func calHoldPubTokenAmountAndLockCollaterals(
+	totalLockCollateralInUSDT uint64, portalTokenID string,
+	convertRateTool *PortalExchangeRateTool, custodianState *statedb.CustodianState) (uint64, uint64, map[string]uint64) {
+	// result
+	pubTokenAmountCanBeHold, _ := convertRateTool.ConvertFromUSDT(portalTokenID, totalLockCollateralInUSDT)
+	lockPRVCollateral := uint64(0)
+	lockTokenCollaterals := map[string]uint64{}
+
+	remainLockCollateralInUSDT := totalLockCollateralInUSDT
+
+	// lock collateral PRV first
+	//remainLockCollateralInUSDT := totalLockCollateralInUSDT
+	freePRVCollateralInUSDT, _ := convertRateTool.ConvertToUSDT(common.PRVIDStr, custodianState.GetFreeCollateral())
+	if freePRVCollateralInUSDT >= totalLockCollateralInUSDT {
+		lockPRVCollateral, _ = convertRateTool.ConvertFromUSDT(common.PRVIDStr, totalLockCollateralInUSDT)
+		return pubTokenAmountCanBeHold, lockPRVCollateral, lockTokenCollaterals
+	} else {
+		lockPRVCollateral = custodianState.GetFreeCollateral()
+		remainLockCollateralInUSDT = totalLockCollateralInUSDT - freePRVCollateralInUSDT
+	}
+
+	// lock other token collaterals
+	//todo: need to sort to make sure always return the same result on different nodes
+	freeTokenCollaterals := custodianState.GetFreeTokenCollaterals()
+	for tokenID, amount := range freeTokenCollaterals {
+		freeTokenInUSDT, _ := convertRateTool.ConvertToUSDT(tokenID, amount)
+		lockTokenCollateralAmt := uint64(0)
+
+		if freeTokenInUSDT >= remainLockCollateralInUSDT {
+			lockTokenCollateralAmt, _ = convertRateTool.ConvertFromUSDT(tokenID, remainLockCollateralInUSDT)
+			remainLockCollateralInUSDT = 0
+		} else {
+			lockTokenCollateralAmt = amount
+			remainLockCollateralInUSDT -= freeTokenInUSDT
+		}
+		lockTokenCollaterals[tokenID] = lockTokenCollateralAmt
+
+		if remainLockCollateralInUSDT == 0 {
+			return pubTokenAmountCanBeHold, lockPRVCollateral, lockTokenCollaterals
+		}
+	}
+
+	return 0, 0, map[string]uint64{}
+}
+
+func pickUpCustodianForPorting(
+	portingAmount uint64, portalTokenID string,
+	custodianPool map[string]*statedb.CustodianState,
+	exchangeRate *statedb.FinalExchangeRatesState,
+	portalParams PortalParams,
+	supportCollaterals []PortalCollateral) ([]*statedb.MatchingPortingCustodianDetail, error) {
+	if len(custodianPool) == 0 {
+		return nil, errors.New("pickUpCustodianForPorting: Custodian pool is empty")
+	}
+	if exchangeRate == nil {
+		return nil, errors.New("pickUpCustodianForPorting: Current exchange rate is nil")
+	}
+
+	// convert free collaterals of custodians to usdt to compare and sort descending
+	convertRateTool := NewPortalExchangeRateTool(exchangeRate, supportCollaterals)
+	type custodianTotalCollateral struct {
+		custodianKey string
+		amountInUSDT uint64
+	}
+	sortedCusCollaterals := make([]custodianTotalCollateral, 0)
+	for cusKey, cusDetail := range custodianPool {
+		if cusDetail.GetRemoteAddresses() != nil && cusDetail.GetRemoteAddresses()[portalTokenID] != "" {
+			collateralInUSDT, err := convertAllFreeCollateralsToUSDT(convertRateTool, cusDetail)
+			if err != nil {
+				return nil, errors.New("pickUpCustodianForPorting: Error when converting free collateral to USDT")
+			}
+
+			sortedCusCollaterals = append(sortedCusCollaterals, custodianTotalCollateral{
+				custodianKey: cusKey,
+				amountInUSDT:collateralInUSDT,
+			})
+		}
+	}
+	if len(sortedCusCollaterals) == 0 {
+		return nil, errors.New("pickUpCustodianForPorting: There is no custodian supply remote address for porting tokenID")
+	}
+	sort.SliceStable(sortedCusCollaterals, func(i, j int) bool {
+		return sortedCusCollaterals[i].amountInUSDT > sortedCusCollaterals[j].amountInUSDT
+	})
+
+	// convert porting amount (up to percent) to USDT
+	portAmtInUSDT, _ := convertRateTool.ConvertToUSDT(portalTokenID, upPercent(portingAmount, portalParams.MinPercentLockedCollateral))
+
+	// choose the custodian that has free collateral
+	matchCustodians := make([]*statedb.MatchingPortingCustodianDetail, 0)
+
+	// case 1: there is no custodian has enough free collaterals for matching porting request
+	// choose many custodians
+	remainPortAmtInUSDT := portAmtInUSDT
+	if sortedCusCollaterals[0].amountInUSDT < portAmtInUSDT {
+		for _, cus := range sortedCusCollaterals {
+			custodianState := custodianPool[cus.custodianKey]
+			lockPRVCollateral := uint64(0)
+			lockTokenColaterals := map[string]uint64{}
+			holdPublicToken := uint64(0)
+
+			matchPortAmtInUSDT := uint64(0)
+			// lock all free collaterals
+			if cus.amountInUSDT <= remainPortAmtInUSDT {
+				matchPortAmtInUSDT = cus.amountInUSDT
+			} else {
+				matchPortAmtInUSDT = remainPortAmtInUSDT
+			}
+
+			holdPublicToken, lockPRVCollateral, lockTokenColaterals =  calHoldPubTokenAmountAndLockCollaterals(
+				matchPortAmtInUSDT, portalTokenID, convertRateTool, custodianState)
+
+			matchCus := statedb.MatchingPortingCustodianDetail{
+				IncAddress:             custodianState.GetIncognitoAddress(),
+				RemoteAddress:          custodianState.GetRemoteAddresses()[portalTokenID],
+				Amount:                 holdPublicToken,
+				LockedAmountCollateral: lockPRVCollateral,
+				LockedTokenCollaterals: lockTokenColaterals,
+			}
+			matchCustodians = append(matchCustodians, &matchCus)
+
+			remainPortAmtInUSDT -= matchPortAmtInUSDT
+			if remainPortAmtInUSDT == 0 {
+				break
+			}
+		}
+	}
+
+	return matchCustodians, nil
 }
 
 func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, lockedAmountCollateral uint64) error {
@@ -308,13 +461,13 @@ func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 /*
 	up 150%
 */
-func up150Percent(amount uint64, percent uint64) uint64 {
+func upPercent(amount uint64, percent uint64) uint64 {
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(percent))
 	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	return result //return nano pBTC, pBNB
 }
 
-func down150Percent(amount uint64, percent uint64) uint64 {
+func downPercent(amount uint64, percent uint64) uint64 {
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amount), new(big.Int).SetUint64(100))
 	result := new(big.Int).Div(tmp, new(big.Int).SetUint64(percent)).Uint64()
 	return result
@@ -359,7 +512,7 @@ func CalAmountNeededDepositLiquidate(currentPortalState *CurrentPortalState, cus
 		return 0, nil
 	}
 	totalHoldingPublicToken := GetTotalHoldPubTokenAmount(currentPortalState, custodian, pTokenId)
-	totalPToken := up150Percent(totalHoldingPublicToken, portalParams.MinPercentLockedCollateral)
+	totalPToken := upPercent(totalHoldingPublicToken, portalParams.MinPercentLockedCollateral)
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRates)
 	totalPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(pTokenId, totalPToken)
 	if err != nil {
@@ -1249,7 +1402,7 @@ func CalAmountTopUpWaitingPortings(
 
 			minCollateralAmount, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(
 				waitingPorting.TokenID(),
-				up150Percent(cus.Amount, portalParam.MinPercentLockedCollateral))
+				upPercent(cus.Amount, portalParam.MinPercentLockedCollateral))
 			if err != nil {
 				Logger.log.Errorf("[calAmountTopUpWaitingPortings] Error when converting ptoken to PRV %v", err)
 				return result, err

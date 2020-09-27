@@ -83,6 +83,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newLockedCollateralStateObjectWithValue(db, hash, value)
 	case RewardFeatureStateObjectType:
 		return newRewardFeatureStateObjectWithValue(db, hash, value)
+	case PortalExternalTxObjectType:
+		return newPortalExternalTxObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
 	default:

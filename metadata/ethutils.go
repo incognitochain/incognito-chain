@@ -78,7 +78,7 @@ func PickAndParseLogMapFromReceiptByContractAddr(
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
-		Logger.log.Debug("WARNING: LOG data is invalid.")
+		Logger.log.Errorf("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {
@@ -88,6 +88,7 @@ func PickAndParseLogMapFromReceiptByContractAddr(
 		}
 	}
 	if len(logData) == 0 {
+		Logger.log.Errorf("WARNING: logData is empty.")
 		return nil, nil
 	}
 	return ParseETHLogDataByEventName(logData, eventName)

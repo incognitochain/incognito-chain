@@ -68,6 +68,7 @@ type ChainRetriever interface {
 	GetPortalFeederAddress() string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
+	//GetSupportedCollateralInfo(beaconHeight uint64) []blockchain.PortalCollateral
 	GetPortalETHContractAddrStr() string
 }
 
