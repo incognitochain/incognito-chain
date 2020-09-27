@@ -322,10 +322,11 @@ func pickUpCustodianForPorting(
 				return nil, errors.New("pickUpCustodianForPorting: Error when converting free collateral to USDT")
 			}
 
-			sortedCusCollaterals = append(sortedCusCollaterals, custodianTotalCollateral{
-				custodianKey: cusKey,
-				amountInUSDT:collateralInUSDT,
-			})
+			sortedCusCollaterals = append(sortedCusCollaterals,
+				custodianTotalCollateral{
+					custodianKey: cusKey,
+					amountInUSDT: collateralInUSDT,
+				})
 		}
 	}
 	if len(sortedCusCollaterals) == 0 {
@@ -341,41 +342,49 @@ func pickUpCustodianForPorting(
 	// choose the custodian that has free collateral
 	matchCustodians := make([]*statedb.MatchingPortingCustodianDetail, 0)
 
-	// case 1: there is no custodian has enough free collaterals for matching porting request
-	// choose many custodians
+	isChooseOneCustodian := false
+	if sortedCusCollaterals[0].amountInUSDT >= portAmtInUSDT {
+		isChooseOneCustodian = true
+	}
+
 	remainPortAmtInUSDT := portAmtInUSDT
-	if sortedCusCollaterals[0].amountInUSDT < portAmtInUSDT {
-		for _, cus := range sortedCusCollaterals {
-			custodianState := custodianPool[cus.custodianKey]
-			lockPRVCollateral := uint64(0)
-			lockTokenColaterals := map[string]uint64{}
-			holdPublicToken := uint64(0)
-
-			matchPortAmtInUSDT := uint64(0)
-			// lock all free collaterals
-			if cus.amountInUSDT <= remainPortAmtInUSDT {
-				matchPortAmtInUSDT = cus.amountInUSDT
-			} else {
-				matchPortAmtInUSDT = remainPortAmtInUSDT
-			}
-
-			holdPublicToken, lockPRVCollateral, lockTokenColaterals =  calHoldPubTokenAmountAndLockCollaterals(
-				matchPortAmtInUSDT, portalTokenID, convertRateTool, custodianState)
-
-			matchCus := statedb.MatchingPortingCustodianDetail{
-				IncAddress:             custodianState.GetIncognitoAddress(),
-				RemoteAddress:          custodianState.GetRemoteAddresses()[portalTokenID],
-				Amount:                 holdPublicToken,
-				LockedAmountCollateral: lockPRVCollateral,
-				LockedTokenCollaterals: lockTokenColaterals,
-			}
-			matchCustodians = append(matchCustodians, &matchCus)
-
-			remainPortAmtInUSDT -= matchPortAmtInUSDT
-			if remainPortAmtInUSDT == 0 {
-				break
-			}
+	for i, cus := range sortedCusCollaterals {
+		pickedCus := cus
+		if cus.amountInUSDT > portAmtInUSDT && i != len(sortedCusCollaterals) - 1 {
+			continue
+		} else if cus.amountInUSDT < portAmtInUSDT && isChooseOneCustodian && i > 0 {
+			pickedCus = sortedCusCollaterals[i-1]
 		}
+
+		custodianState := custodianPool[pickedCus.custodianKey]
+		lockPRVCollateral := uint64(0)
+		lockTokenColaterals := map[string]uint64{}
+		holdPublicToken := uint64(0)
+
+		matchPortAmtInUSDT := pickedCus.amountInUSDT
+		if pickedCus.amountInUSDT > remainPortAmtInUSDT {
+			matchPortAmtInUSDT = remainPortAmtInUSDT
+		}
+
+		holdPublicToken, lockPRVCollateral, lockTokenColaterals = calHoldPubTokenAmountAndLockCollaterals(
+			matchPortAmtInUSDT, portalTokenID, convertRateTool, custodianState)
+
+		matchCus := statedb.MatchingPortingCustodianDetail{
+			IncAddress:             custodianState.GetIncognitoAddress(),
+			RemoteAddress:          custodianState.GetRemoteAddresses()[portalTokenID],
+			Amount:                 holdPublicToken,
+			LockedAmountCollateral: lockPRVCollateral,
+			LockedTokenCollaterals: lockTokenColaterals,
+		}
+		matchCustodians = append(matchCustodians, &matchCus)
+
+		remainPortAmtInUSDT -= matchPortAmtInUSDT
+		if remainPortAmtInUSDT == 0 {
+			break
+		}
+	}
+	if remainPortAmtInUSDT > 0 {
+		return nil, errors.New("pickUpCustodianForPorting: Not enough custodians for matching to porting request")
 	}
 
 	return matchCustodians, nil

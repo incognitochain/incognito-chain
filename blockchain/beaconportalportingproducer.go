@@ -169,19 +169,14 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 	}
 
 	// pick-up custodians
-	if len(currentPortalState.CustodianPoolState) <= 0 {
-		Logger.log.Errorf("Porting request: Custodian not found")
-		return [][]string{rejectInst}, nil
-	}
-
-	var sortCustodianStateByFreeCollateral []CustodianStateSlice
-	sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
-
-	if len(sortCustodianStateByFreeCollateral) <= 0 {
-		Logger.log.Errorf("Porting request, custodian not found")
-		return [][]string{rejectInst}, nil
-	}
-	pickedCustodians, err := pickUpCustodians(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState, portalParams)
+	pickedCustodians, err := pickUpCustodianForPorting(
+		actionData.Meta.RegisterAmount,
+		actionData.Meta.PTokenId,
+		currentPortalState.CustodianPoolState,
+		currentPortalState.FinalExchangeRatesState,
+		bc.GetPortalParams(beaconHeight),
+		bc.GetSupportedCollateralInfo(beaconHeight),
+	)
 	if err != nil || len(pickedCustodians) == 0 {
 		Logger.log.Errorf("Porting request: an error occurred while picking up custodians for the porting request: %+v", err)
 		return [][]string{rejectInst}, nil
