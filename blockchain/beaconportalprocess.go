@@ -773,10 +773,10 @@ func (blockchain *BlockChain) processPortalCustodianDepositV3(
 			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
 			return nil
 		}
-	} else if depositStatus == common.PortalCustodianDepositV3RefundChainStatus {
+	} else if depositStatus == common.PortalCustodianDepositV3RejectedChainStatus {
 		// store custodian deposit status into DB
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatusV3{
-			Status:           common.PortalCustodianDepositV3RefundStatus,
+			Status:           common.PortalCustodianDepositV3RejectedStatus,
 			IncAddressStr:    actionData.IncAddressStr,
 			RemoteAddresses:  actionData.RemoteAddresses,
 			DepositAmount:    actionData.DepositAmount,

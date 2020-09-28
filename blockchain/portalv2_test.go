@@ -2054,16 +2054,6 @@ func (s *PortalTestSuite) TestCustodianRewards() {
 	s.Equal(reward3, s.currentPortalStateForProcess.CustodianPoolState[custodianKey3].GetRewardAmount())
 }
 
-func (s *PortalTestSuite) TestABC() {
-	matchedCustodian := &statedb.MatchingRedeemCustodianDetail{}
-	fmt.Println("TestABC: ", matchedCustodian.GetIncognitoAddress() == "")
-
-	a := s.blockChain.config.ChainParams.PortalTokens["ABC"]
-	b := s.blockChain.config.ChainParams.PortalTokens[common.PortalBTCIDStr]
-	fmt.Println("TestABC 2 a: ", a == nil)
-	fmt.Println("TestABC 2 b: ", b == nil)
-}
-
 func TestPortalSuite(t *testing.T) {
 	suite.Run(t, new(PortalTestSuite))
 }

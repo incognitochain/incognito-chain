@@ -195,7 +195,7 @@ const (
 	PortalTopUpWaitingPortingRejectedStatus = 2
 
 	PortalCustodianDepositV3AcceptedStatus = 1
-	PortalCustodianDepositV3RefundStatus   = 2
+	PortalCustodianDepositV3RejectedStatus = 2
 
 	PortalCustodianWithdrawReqV3AcceptedStatus = 1
 	PortalCustodianWithdrawReqV3RejectStatus   = 2
@@ -279,7 +279,7 @@ const (
 
 	// Portal v3
 	PortalCustodianDepositV3AcceptedChainStatus         = "accepted"
-	PortalCustodianDepositV3RefundChainStatus           = "refund"
+	PortalCustodianDepositV3RejectedChainStatus         = "rejected"
 	PortalCustodianWithdrawRequestV3AcceptedChainStatus = "accepted"
 	PortalCustodianWithdrawRequestV3RejectedChainStatus = "rejected"
 )

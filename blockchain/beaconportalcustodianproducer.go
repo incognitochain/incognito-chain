@@ -353,69 +353,93 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 
 	meta := actionData.Meta
 
+	rejectedInst := buildCustodianDepositInstV3(
+		"",
+		0,
+		meta.RemoteAddresses,
+		"",
+		[]byte{},
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+		common.PortalCustodianDepositV3RejectedChainStatus,
+	)
+
 	// check uniqExternalTxID from optionalData which get from statedb
 	if optionalData == nil {
 		Logger.log.Errorf("Custodian deposit v3: optionalData is null")
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 	uniqExternalTxID, ok := optionalData["uniqExternalTxID"].([]byte)
 	if !ok || len(uniqExternalTxID) == 0 {
 		Logger.log.Errorf("Custodian deposit v3: optionalData uniqExternalTxID is invalid")
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 	isExist, ok := optionalData["isSubmitted"].(bool)
 	if !ok {
 		Logger.log.Errorf("Custodian deposit v3: optionalData isSubmitted is invalid")
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 	if isExist {
 		Logger.log.Errorf("Custodian deposit v3: Unique external id exist in db %v", uniqExternalTxID)
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 
 	// verify proof and parse receipt
 	ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
 	if err != nil {
 		Logger.log.Errorf("Custodian deposit v3: Verify eth proof error: %+v", err)
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 	if ethReceipt == nil {
 		Logger.log.Errorf("The eth proof's receipt could not be null.")
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 
 	logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, bc.GetPortalETHContractAddrStr(), "Deposit")
 	if err != nil {
 		Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 	if logMap == nil {
 		Logger.log.Errorf("WARNING: could not find log map out from receipt")
-		return [][]string{}, nil
+		return [][]string{rejectedInst}, nil
 	}
 
 	// parse info from log map and validate info
 	custodianIncAddr, externalTokenIDStr, depositAmount, err := metadata.ParseInfoFromLogMap(logMap)
 	if err != nil {
 		Logger.log.Errorf("Custodian deposit v3: Error when parsing info from log map : %+v", err)
-		return [][]string{}, err
+		return [][]string{rejectedInst}, err
 	}
+
+	rejectedInst2 := buildCustodianDepositInstV3(
+		custodianIncAddr,
+		depositAmount,
+		meta.RemoteAddresses,
+		externalTokenIDStr,
+		uniqExternalTxID,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+		common.PortalCustodianDepositV3RejectedChainStatus,
+	)
 
 	// check externalTokenID should be one of supported collateral tokenIDs
 	if ok, err := common.SliceExists(bc.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenIDStr); !ok || err != nil {
 		Logger.log.Errorf("Custodian deposit v3: external collateral tokenID is not supported on portal %v", externalTokenIDStr)
-		return [][]string{}, nil
+		return [][]string{rejectedInst2}, nil
 	}
 
 	// check depositAmount
 	if depositAmount <= 0 {
 		Logger.log.Errorf("Custodian deposit v3: depositAmount should be greater than zero %v", depositAmount)
-		return [][]string{}, nil
+		return [][]string{rejectedInst2}, nil
 	}
 
 	if currentPortalState == nil {
 		Logger.log.Errorf("Custodian deposit V3: Current Portal state is null.")
-		return [][]string{}, nil
+		return [][]string{rejectedInst2}, nil
 	}
 
 	newCustodian := addCustodianToPool(
