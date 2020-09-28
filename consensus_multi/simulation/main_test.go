@@ -14,15 +14,17 @@ import (
 var startTimeSlot uint64
 
 type TimeSlotScenerio struct {
-	ProposingScenerio []int            //offset to that current timeslot proposer
-	VotingScenerios   map[string][]int //offset to that current timeslot proposer
-	ExpectedOutput    map[int]map[string]TimeSlotOutput
+	ProposingScenerio []int                     // offset from position of current timeslot proposer
+	VotingScenerios   map[string][]int          // offset from position of current timeslot proposer
+	ExpectedOutput    map[string]TimeSlotOutput // map[offset from position of current timeslot proposer]TimeSlotOutput
 }
 
 type TimeSlotOutput struct {
-	BestHeight  uint64
-	FinalHeight uint64
-	ViewCount   int
+	BestHeight    uint64
+	BestTimeslot  uint64
+	FinalHeight   uint64
+	FinalTimeslot uint64
+	ViewCount     int
 }
 
 type testScenerio struct {
@@ -311,6 +313,53 @@ func RunSimulation(testScn *testScenerio) {
 			time.AfterFunc(time.Millisecond*1000, func() {
 				fmt.Println("==========================")
 				fmt.Printf("Timeslot %v:\n", uint64(common.CalculateTimeSlot(time.Now().Unix()))-startTimeSlot+1)
+
+				expectedOutput := false
+				if _, ok := testScn.TimeSlotScenerios[int(curTimeSlot)]; ok {
+					if len(testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput) > 0 {
+						if output, ok := testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput["all"]; ok {
+							for i := 0; i < len(testScn.Committee); i++ {
+								if nodeList[i].chain.GetBestView().GetHeight() != output.BestHeight {
+									break
+								}
+								if uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
+									break
+								}
+								if nodeList[i].chain.GetFinalView().GetHeight() != output.FinalHeight {
+									break
+								}
+								if uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
+									break
+								}
+								if len(nodeList[i].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
+									break
+								}
+							}
+						} else {
+							slotProducerIdx := GetIndexOfBytes(nodeList[0].chain.GetBestView().GetProposerByTimeSlot(int64(timeslot), 2).MiningPubKey["bls"], committeePkBytes)
+							for nodeID, output := range testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput {
+								nodeIDNumber, _ := strconv.Atoi(nodeID)
+								if nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetBestView().GetHeight() != output.BestHeight {
+									break
+								}
+								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
+									break
+								}
+								if nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetFinalView().GetHeight() != output.FinalHeight {
+									break
+								}
+								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
+									break
+								}
+								if len(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
+									break
+								}
+							}
+						}
+					}
+				}
+				fmt.Printf("ExpectedOutput met:%s", expectedOutput)
+
 				for i := 0; i < len(testScn.Committee); i++ {
 					fmt.Printf("Node %v: \n -Best view height: %d:%d\n -Final view height: %d:%d\n -View count: %v\n", i, nodeList[i].chain.GetBestView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1, nodeList[i].chain.GetFinalView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1, len(nodeList[i].chain.multiview.GetAllViewsWithBFS()))
 				}

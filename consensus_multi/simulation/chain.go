@@ -60,7 +60,6 @@ func (c *Chain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, propo
 	//TODO: must using the old block data, and timestamp
 	oldBlock.(*blockchain.ShardBlock).Header.Proposer = proposer
 	oldBlock.(*blockchain.ShardBlock).Header.ProposeTime = time.Now().Unix()
-
 	// newBlock := NewBlock(c.GetBestView().GetHeight()+1, oldBlock.GetProduceTime(), proposer, *c.GetBestView().GetHash())
 	return oldBlock, nil
 }
