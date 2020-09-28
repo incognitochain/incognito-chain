@@ -249,12 +249,11 @@ func convertAllFreeCollateralsToUSDT(convertRateTool *PortalExchangeRateTool, cu
 	return res, nil
 }
 
-//todo:
 func calHoldPubTokenAmountAndLockCollaterals(
 	portingAmount uint64,
-	totalLockCollateralInUSDT uint64, matchLockCollateralInUSDT uint64, portalTokenID string,
+	totalLockCollateralInUSDT uint64, matchLockCollateralInUSDT uint64,
 	convertRateTool *PortalExchangeRateTool, custodianState *statedb.CustodianState) (uint64, uint64, map[string]uint64) {
-	// result
+	// hold public token amount by percent of matchLockCollateralInUSDT
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchLockCollateralInUSDT), new(big.Int).SetUint64(portingAmount))
 	pubTokenAmountCanBeHold := tmp.Div(tmp, new(big.Int).SetUint64(totalLockCollateralInUSDT)).Uint64()
 
@@ -375,7 +374,7 @@ func pickUpCustodianForPorting(
 		}
 
 		holdPublicToken, lockPRVCollateral, lockTokenColaterals = calHoldPubTokenAmountAndLockCollaterals(
-			portingAmount, portAmtInUSDT, matchPortAmtInUSDT, portalTokenID, convertRateTool, custodianState)
+			portingAmount, portAmtInUSDT, matchPortAmtInUSDT, convertRateTool, custodianState)
 		actualHoldPubToken += holdPublicToken
 
 		matchCus := statedb.MatchingPortingCustodianDetail{
