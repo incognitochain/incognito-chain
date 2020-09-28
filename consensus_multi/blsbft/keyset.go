@@ -11,20 +11,20 @@ import (
 )
 
 func (e *BLSBFT) LoadUserKeys(miningKey []signatureschemes2.MiningKey) error {
-	e.UserKeySet = &miningKey[0]
+	e.UserKeySet = miningKey
 	return nil
 }
 
 func (e *BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
-		key := e.UserKeySet.GetPublicKey()
+		key := e.UserKeySet[0].GetPublicKey()
 		return key
 	}
 	return nil
 }
 
 func (e *BLSBFT) SignData(data []byte) (string, error) {
-	result, err := e.UserKeySet.BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
+	result, err := e.UserKeySet[0].BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
 	if err != nil {
 		return "", NewConsensusError(SignDataError, err)
 	}

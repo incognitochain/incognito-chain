@@ -80,13 +80,13 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
-func (e *BLSBFT) confirmVote(Vote *vote) error {
+func (e *BLSBFT) confirmVote(Vote *vote, userKey signatureschemes.MiningKey) error {
 	data := e.RoundData.Block.Hash().GetBytes()
 	data = append(data, Vote.BLS...)
 	data = append(data, Vote.BRI...)
 	data = common.HashB(data)
 	var err error
-	Vote.Confirmation, err = e.UserKeySet.BriSignData(data)
+	Vote.Confirmation, err = userKey.BriSignData(data)
 	return err
 }
 
@@ -102,39 +102,42 @@ func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *vote, candidate []byte)
 
 func (e *BLSBFT) sendVote() error {
 	var Vote vote
+	for _, userKey := range e.UserKeySet {
+		pubKey := userKey.GetPublicKey()
+		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
+			selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
+			blsSig, err := userKey.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
+			if err != nil {
+				return NewConsensusError(UnExpectedError, err)
+			}
+			bridgeSig := []byte{}
+			if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+				bridgeSig, err = userKey.BriSignData(e.RoundData.Block.Hash().GetBytes())
+				if err != nil {
+					return NewConsensusError(UnExpectedError, err)
+				}
+			}
 
-	pubKey := e.UserKeySet.GetPublicKey()
-	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
+			Vote.BLS = blsSig
+			Vote.BRI = bridgeSig
 
-	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
-	if err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
-		bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
-		if err != nil {
-			return NewConsensusError(UnExpectedError, err)
+			//TODO hy
+			err = e.confirmVote(&Vote, userKey)
+			if err != nil {
+				return NewConsensusError(UnExpectedError, err)
+			}
+			key := userKey.GetPublicKey()
+
+			msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
+			if err != nil {
+				return NewConsensusError(UnExpectedError, err)
+			}
+			e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
+			e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+			go e.Node.PushMessageToChain(msg, e.Chain)
 		}
 	}
 
-	Vote.BLS = blsSig
-	Vote.BRI = bridgeSig
-
-	//TODO hy
-	err = e.confirmVote(&Vote)
-	if err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	key := e.UserKeySet.GetPublicKey()
-
-	msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
-	if err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
-	e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
 	return nil
 }

@@ -46,15 +46,6 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 	return string(result), nil
 }
 
-func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
-	var valData ValidationData
-	// selfPublicKey := e.UserKeySet.GetPublicKey()
-	// keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
-	// valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
-	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes()) //, 0, []blsmultisig.PublicKey{keyByte})
-	return valData
-}
-
 func ValidateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {

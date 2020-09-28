@@ -25,7 +25,7 @@ type BLSBFT struct {
 	ChainID  int
 	PeerID   string
 
-	UserKeySet       *signatureschemes2.MiningKey
+	UserKeySet       []signatureschemes2.MiningKey
 	BFTMessageCh     chan wire.MessageBFT
 	ProposeMessageCh chan BFTPropose
 	VoteMessageCh    chan BFTVote
@@ -200,8 +200,16 @@ func (e *BLSBFT) Start() error {
 
 				monitor.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 
-				pubKey := e.UserKeySet.GetPublicKey()
-				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
+				inCommitteeList := false
+				for _, userKey := range e.UserKeySet {
+					pubKey := userKey.GetPublicKey()
+					if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) != -1 {
+						inCommitteeList = true
+						break
+					}
+				}
+
+				if !inCommitteeList {
 					e.enterNewRound()
 					continue
 				}
@@ -310,13 +318,13 @@ func (e *BLSBFT) Start() error {
 	return nil
 }
 
-func (e *BLSBFT) enterProposePhase() {
+func (e *BLSBFT) enterProposePhase(keyset *signatureschemes2.MiningKey) {
 	if !e.isInTimeFrame() || e.RoundData.State == proposePhase {
 		return
 	}
 	e.setState(proposePhase)
 	e.isOngoing = true
-	block, err := e.createNewBlock()
+	block, err := e.createNewBlock(keyset)
 	monitor.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 	if err != nil {
 		e.isOngoing = false
@@ -327,7 +335,8 @@ func (e *BLSBFT) enterProposePhase() {
 	if e.Chain.CurrentHeight()+1 != block.GetHeight() {
 		return
 	}
-	validationData := e.CreateValidationData(block)
+	var validationData ValidationData
+	validationData.ProducerBLSSig, _ = keyset.BriSignData(block.Hash().GetBytes())
 	validationDataString, err := EncodeValidationData(validationData)
 	if err != nil {
 		e.logger.Errorf("Encode validation data failed %+v", err)
@@ -339,10 +348,9 @@ func (e *BLSBFT) enterProposePhase() {
 	e.RoundData.BlockValidateData = validationData
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
-	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, keyset)
 	// e.logger.Info("push block", time.Since(time1).Seconds())
 	go e.Node.PushMessageToChain(msg, e.Chain)
-	e.enterVotePhase()
 }
 
 func (e *BLSBFT) enterListenPhase() {
@@ -387,13 +395,25 @@ func (e *BLSBFT) enterNewRound() {
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")
-	pubKey := e.UserKeySet.GetPublicKey()
-	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(e.Chain.GetLastProposerIndex(), e.RoundData.Round, e.Chain.GetCommitteeSize()) {
-		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
-		e.enterProposePhase()
-	} else {
-		e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
-		e.enterListenPhase()
+
+	for _, userKey := range e.UserKeySet {
+		pubKey := userKey.GetPublicKey()
+		if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(e.Chain.GetLastProposerIndex(), e.RoundData.Round, e.Chain.GetCommitteeSize()) {
+			e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
+			e.enterProposePhase(&userKey)
+			e.enterListenPhase()
+			return
+		}
+	}
+
+	//if not propose => check for listen
+	for _, userKey := range e.UserKeySet {
+		pubKey := userKey.GetPublicKey()
+		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) != -1 {
+			e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
+			e.enterListenPhase()
+			break
+		}
 	}
 
 }
@@ -416,7 +436,7 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 	return
 }
 
-func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
+func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (common.BlockInterface, error) {
 
 	var errCh chan error
 	var block common.BlockInterface = nil
@@ -427,7 +447,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		time1 := time.Now()
 		var err error
 		commitee := e.Chain.GetCommittee()
-		pk := e.UserKeySet.GetPublicKey()
+		pk := userKey.GetPublicKey()
 		base58Str, err := commitee[e.Chain.GetPubKeyCommitteeIndex(pk.GetMiningKeyBase58(consensusName))].ToBase58()
 		if err != nil {
 			e.logger.Error("UserKeySet is wrong", err)
