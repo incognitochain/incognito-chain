@@ -156,12 +156,6 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
-			// Logger.Log.Info("[swap-v2] blk.GetHeight():", blk.GetHeight())
-			// Logger.Log.Info("[swap-v2] minCommitteeSize:", minCommitteeSize)
-			// Logger.Log.Info("[swap-v2] producer:", producer)
-			// Logger.Log.Info("[swap-v2] produceTime:", produceTime)
-			// Logger.Log.Info("[swap-v2] tempProducerID:", tempProducerID)
-			// Logger.Log.Info("[swap-v2] b58Str:", b58Str)
 			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producer)
 		}
 

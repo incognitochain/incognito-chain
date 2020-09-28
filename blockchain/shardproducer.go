@@ -85,8 +85,10 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, err
 	}
 
+	beaconFinalBlockHash := common.Hash{}
 	if shardBestState.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+		beaconFinalBlockHash = *beaconFinalView.GetHash()
 		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(beaconFinalView.GetShardCommittee()[shardBestState.ShardID])
 		if err != nil {
 			return nil, err
@@ -227,24 +229,21 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		}
 	}
 
-	// if shardBestState.BeaconHeight == 19 {
-	// 	Logger.log.Info("[swap-v2] producer block:", proposer)
-	// }
-
 	newShardBlock.Header = types.ShardHeader{
-		Producer:          producerKey, //committeeMiningKeys[producerPosition],
-		ProducerPubKeyStr: producerPubKeyStr,
-		ShardID:           shardID,
-		Version:           version,
-		PreviousBlockHash: shardBestState.BestBlockHash,
-		Height:            shardBestState.ShardHeight + 1,
-		Round:             round,
-		Epoch:             epoch,
-		CrossShardBitMap:  CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
-		BeaconHeight:      beaconHeight,
-		BeaconHash:        *beaconHash,
-		TotalTxsFee:       totalTxsFee,
-		ConsensusType:     shardBestState.ConsensusAlgorithm,
+		Producer:           producerKey, //committeeMiningKeys[producerPosition],
+		ProducerPubKeyStr:  producerPubKeyStr,
+		ShardID:            shardID,
+		Version:            version,
+		PreviousBlockHash:  shardBestState.BestBlockHash,
+		Height:             shardBestState.ShardHeight + 1,
+		Round:              round,
+		Epoch:              epoch,
+		CrossShardBitMap:   CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		BeaconHeight:       beaconHeight,
+		BeaconHash:         *beaconHash,
+		TotalTxsFee:        totalTxsFee,
+		ConsensusType:      shardBestState.ConsensusAlgorithm,
+		CommitteeFromBlock: beaconFinalBlockHash,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()

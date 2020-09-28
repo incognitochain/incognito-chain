@@ -312,12 +312,19 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		return
 	}
 
+	committees := []incognitokey.CommitteePublicKey{}
+	if e.ChainID != -1 {
+		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+	} else {
+		committees = view.GetCommittee()
+	}
+
 	validVote := 0
 	errVote := 0
 	for _, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.isValid == 0 {
-			for _, c := range view.GetCommittee() {
+			for _, c := range committees {
 				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
@@ -339,11 +346,11 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			}
 		}
 	}
-	//e.Logger.Debug(validVote, len(view.GetCommittee()), errVote)
+	//e.Logger.Debug(validVote, committees), errVote)
 	v.hasNewVote = false
-	if validVote > 2*len(view.GetCommittee())/3 {
+	if validVote > 2*len(committees)/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
 		//fmt.Println(committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
@@ -400,7 +407,15 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	bytelist := []blsmultisig.PublicKey{}
 	selfIdx := 0
 	userBLSPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-	for i, v := range e.Chain.GetBestView().GetCommittee() {
+
+	committees := []incognitokey.CommitteePublicKey{}
+	if e.ChainID != -1 {
+		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+	} else {
+		committees = e.Chain.GetBestView().GetCommittee()
+	}
+
+	for i, v := range committees {
 		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
 			selfIdx = i
 		}

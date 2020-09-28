@@ -1,17 +1,14 @@
 package committeestate
 
 import (
-	"reflect"
-	"testing"
-
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
-	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
+	"testing"
 )
 
 func TestBeaconCommitteeEngine_BuildIncurredInstructions(t *testing.T) {

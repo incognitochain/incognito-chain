@@ -107,6 +107,9 @@ func TestValidateAndImportUnstakeInstructionFromString(t *testing.T) {
 				CommitteePublicKeys: []string{
 					key1, key2, key3, key4,
 				},
+				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
+					*incKey1, *incKey2, *incKey3, *incKey4,
+				},
 			},
 			wantErr: false,
 		},
@@ -154,6 +157,9 @@ func TestImportUnstakeInstructionFromString(t *testing.T) {
 			want: &UnstakeInstruction{
 				CommitteePublicKeys: []string{
 					key1, key2, key3, key4,
+				},
+				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
+					*incKey1, *incKey2, *incKey3, *incKey4,
 				},
 			},
 		},
