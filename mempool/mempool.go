@@ -229,7 +229,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
-	//TODO: find a proper solution
+	//TODO: find a proper solution to: rejecting return staking or mintable transactions.
 	if tx.GetType() == common.TxReturnStakingType{
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
@@ -512,9 +512,6 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	isSalaryTx := tx.IsSalaryTx()
 	if isSalaryTx {
 		return NewMempoolTxError(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-	}
-	if tx.GetType() == common.TxReturnStakingType{
-		return NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", txHash.String()))
 	}
 	// Condition 4: check fee PRV of tx
 	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
