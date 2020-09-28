@@ -594,6 +594,9 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(currentPortalState *Curren
 	}
 
 	updateFinalExchangeRates := currentPortalState.FinalExchangeRatesState.Rates()
+	if updateFinalExchangeRates == nil {
+		updateFinalExchangeRates = map[string]statedb.FinalExchangeRatesDetail{}
+	}
 	for tokenID, rates := range sumRates {
 		// sort rates
 		sort.SliceStable(rates, func(i, j int) bool {
