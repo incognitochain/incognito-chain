@@ -1425,6 +1425,14 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Tran
 			return false, nil
 		}
 	}
+	//if type is reward and not have metadata
+	if tx.GetType() == common.TxRewardType && meta == nil  {
+		return false, nil
+	}
+	//if type is return staking and not have metadata
+	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
+		return false, nil
+	}
 	if meta != nil {
 		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues, nil, nil)
 		if err != nil {

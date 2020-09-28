@@ -229,6 +229,19 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
+	//TODO: find a proper solution
+	if tx.GetType() == common.TxReturnStakingType{
+		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
+	}
+	if tx.GetType() == common.TxCustomTokenPrivacyType{
+		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		if !ok {
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
+		}
+		if tempTx.TxPrivacyTokenData.Mintable{
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
+		}
+	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight)
 	//==========
 	if err != nil {
