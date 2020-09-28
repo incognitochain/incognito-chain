@@ -118,11 +118,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	//get view that block link to
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
-		go func(preHash common.Hash, bc *BlockChain) {
-			ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
-			defer cancel()
-			bc.config.Syncker.SyncMissingBeaconBlock(ctx, "", preHash)
-		}(preHash, blockchain)
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
+		defer cancel()
+		blockchain.config.Syncker.SyncMissingBeaconBlock(ctx, "", preHash)
 		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
 	}
 	curView := preView.(*BeaconBestState)

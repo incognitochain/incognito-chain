@@ -125,13 +125,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	//get view that block link to
 	preView := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
 	if preView == nil {
-		go func(sID byte, preHash common.Hash, bc *BlockChain) {
-			ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
-			defer cancel()
-			bc.config.Syncker.SyncMissingShardBlock(ctx, "", sID, preHash)
-		}(shardID, preHash, blockchain)
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
+		defer cancel()
+		blockchain.config.Syncker.SyncMissingShardBlock(ctx, "", shardID, preHash)
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
-
 	}
 	curView := preView.(*ShardBestState)
 
