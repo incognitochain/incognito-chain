@@ -107,7 +107,6 @@ func (e *BLSBFT) Start() error {
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 
-		fmt.Println("action")
 		for { //actor loop
 			select {
 			case <-e.StopCh:
@@ -227,16 +226,15 @@ func (e *BLSBFT) Start() error {
 				switch e.RoundData.State {
 				case listenPhase:
 					// timeout or vote nil?
-					//fmt.Println("CONSENSUS: listen phase 1")
+					//fmt.Println("CONSENSUS: listen phase:", e.Chain.CurrentHeight(), e.RoundData.NextHeight)
 					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
 						e.enterNewRound()
 						continue
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+
 					if e.Blocks[roundKey] != nil {
 						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
-						//fmt.Println("CONSENSUS: listen phase 2")
-
 						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
@@ -401,7 +399,7 @@ func (e *BLSBFT) enterNewRound() {
 		if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(e.Chain.GetLastProposerIndex(), e.RoundData.Round, e.Chain.GetCommitteeSize()) {
 			e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 			e.enterProposePhase(&userKey)
-			e.enterListenPhase()
+			e.enterVotePhase()
 			return
 		}
 	}

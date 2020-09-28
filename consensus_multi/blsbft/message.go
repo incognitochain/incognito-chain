@@ -104,7 +104,7 @@ func (e *BLSBFT) sendVote() error {
 	var Vote vote
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
-		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
+		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) != -1 {
 			selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
 			blsSig, err := userKey.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
 			if err != nil {
