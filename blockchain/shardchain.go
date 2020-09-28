@@ -277,6 +277,9 @@ func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitok
 	}
 	result := []incognitokey.CommitteePublicKey{}
 
+	// TODO: @tin very dangerous style of code
+	// 1. caller of this func can pass any types of block
+	// 2. this function only accept one type of block, why don't change type into *types.ShardBlock to make this function more explicity
 	shardBlock := block.(*types.ShardBlock)
 	if block.GetHeight() > 18 {
 		Logger.log.Info("[swap-v2] shardBlock.Header.CommitteeFromBlock.String():", shardBlock.Header.CommitteeFromBlock.String())
