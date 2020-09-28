@@ -251,39 +251,46 @@ func convertAllFreeCollateralsToUSDT(convertRateTool *PortalExchangeRateTool, cu
 
 //todo:
 func calHoldPubTokenAmountAndLockCollaterals(
-	totalLockCollateralInUSDT uint64, portalTokenID string,
+	portingAmount uint64,
+	totalLockCollateralInUSDT uint64, matchLockCollateralInUSDT uint64, portalTokenID string,
 	convertRateTool *PortalExchangeRateTool, custodianState *statedb.CustodianState) (uint64, uint64, map[string]uint64) {
 	// result
-	pubTokenAmountCanBeHold, _ := convertRateTool.ConvertFromUSDT(portalTokenID, totalLockCollateralInUSDT)
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchLockCollateralInUSDT), new(big.Int).SetUint64(portingAmount))
+	pubTokenAmountCanBeHold := tmp.Div(tmp, new(big.Int).SetUint64(totalLockCollateralInUSDT)).Uint64()
+
 	lockPRVCollateral := uint64(0)
 	lockTokenCollaterals := map[string]uint64{}
 
-	remainLockCollateralInUSDT := totalLockCollateralInUSDT
+	remainLockCollateralInUSDT := matchLockCollateralInUSDT
 
 	// lock collateral PRV first
-	//remainLockCollateralInUSDT := totalLockCollateralInUSDT
 	freePRVCollateralInUSDT, _ := convertRateTool.ConvertToUSDT(common.PRVIDStr, custodianState.GetFreeCollateral())
-	if freePRVCollateralInUSDT >= totalLockCollateralInUSDT {
-		lockPRVCollateral, _ = convertRateTool.ConvertFromUSDT(common.PRVIDStr, totalLockCollateralInUSDT)
+	if freePRVCollateralInUSDT >= matchLockCollateralInUSDT {
+		lockPRVCollateral, _ = convertRateTool.ConvertFromUSDT(common.PRVIDStr, matchLockCollateralInUSDT)
 		return pubTokenAmountCanBeHold, lockPRVCollateral, lockTokenCollaterals
 	} else {
 		lockPRVCollateral = custodianState.GetFreeCollateral()
-		remainLockCollateralInUSDT = totalLockCollateralInUSDT - freePRVCollateralInUSDT
+		remainLockCollateralInUSDT = matchLockCollateralInUSDT - freePRVCollateralInUSDT
 	}
 
 	// lock other token collaterals
-	//todo: need to sort to make sure always return the same result on different nodes
 	freeTokenCollaterals := custodianState.GetFreeTokenCollaterals()
-	for tokenID, amount := range freeTokenCollaterals {
+	sortedTokenIDs := []string{}
+	for tokenID := range freeTokenCollaterals {
+		sortedTokenIDs = append(sortedTokenIDs, tokenID)
+	}
+	sort.Strings(sortedTokenIDs)
+	for _, tokenID := range sortedTokenIDs {
+		amount := freeTokenCollaterals[tokenID]
+		if amount == 0 {
+			continue
+		}
 		freeTokenInUSDT, _ := convertRateTool.ConvertToUSDT(tokenID, amount)
-		lockTokenCollateralAmt := uint64(0)
-
+		lockTokenCollateralAmt := amount
+		remainLockCollateralInUSDT -= freeTokenInUSDT
 		if freeTokenInUSDT >= remainLockCollateralInUSDT {
 			lockTokenCollateralAmt, _ = convertRateTool.ConvertFromUSDT(tokenID, remainLockCollateralInUSDT)
 			remainLockCollateralInUSDT = 0
-		} else {
-			lockTokenCollateralAmt = amount
-			remainLockCollateralInUSDT -= freeTokenInUSDT
 		}
 		lockTokenCollaterals[tokenID] = lockTokenCollateralAmt
 
@@ -347,6 +354,7 @@ func pickUpCustodianForPorting(
 		isChooseOneCustodian = true
 	}
 
+	actualHoldPubToken := uint64(0)
 	remainPortAmtInUSDT := portAmtInUSDT
 	for i, cus := range sortedCusCollaterals {
 		pickedCus := cus
@@ -367,7 +375,8 @@ func pickUpCustodianForPorting(
 		}
 
 		holdPublicToken, lockPRVCollateral, lockTokenColaterals = calHoldPubTokenAmountAndLockCollaterals(
-			matchPortAmtInUSDT, portalTokenID, convertRateTool, custodianState)
+			portingAmount, portAmtInUSDT, matchPortAmtInUSDT, portalTokenID, convertRateTool, custodianState)
+		actualHoldPubToken += holdPublicToken
 
 		matchCus := statedb.MatchingPortingCustodianDetail{
 			IncAddress:             custodianState.GetIncognitoAddress(),
@@ -380,6 +389,9 @@ func pickUpCustodianForPorting(
 
 		remainPortAmtInUSDT -= matchPortAmtInUSDT
 		if remainPortAmtInUSDT == 0 {
+			if actualHoldPubToken < portingAmount {
+				matchCustodians[0].Amount = matchCustodians[0].Amount + portingAmount - actualHoldPubToken
+			}
 			break
 		}
 	}
