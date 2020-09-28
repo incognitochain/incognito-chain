@@ -2164,7 +2164,6 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 }
 
 // GetUserMiningState get user mining state by latest beacon view
-//TODO: @tin custom here
 // Sync latest by beacon view
 func (s *Server) GetUserMiningState() (role string, chainID int) {
 	//TODO: check synker is in FewBlockBehind
@@ -2185,9 +2184,11 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		}
 	}
 
+	beaconFinalView := s.blockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+
 	//For Shard
-	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
-	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
+	shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
+	shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 
 	//check if in committee or pending committee in beacon
 	for _, chain := range s.blockChain.ShardChain {

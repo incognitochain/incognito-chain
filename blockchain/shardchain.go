@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -200,6 +202,10 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
+		committees, _ := incognitokey.CommitteeKeyListToString(committee)
+		Logger.log.Info("[swap-v2] chain.CurrentHeight():", chain.CurrentHeight())
+		Logger.log.Info("[swap-v2] committees:", committees)
+		panic(err)
 		return err
 	}
 	return nil
@@ -221,7 +227,7 @@ func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -260,4 +266,31 @@ func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error
 
 func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+	shardView := chain.GetBestState()
+
+	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		result := []incognitokey.CommitteePublicKey{}
+		return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...), nil
+	}
+	result := []incognitokey.CommitteePublicKey{}
+
+	shardBlock := block.(*types.ShardBlock)
+	if block.GetHeight() > 18 {
+		Logger.log.Info("[swap-v2] shardBlock.Header.CommitteeFromBlock.String():", shardBlock.Header.CommitteeFromBlock.String())
+	}
+
+	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
+	if err != nil {
+		return result, err
+	}
+	result = beaconView.GetShardCommittee()[byte(chain.shardID)]
+
+	return result, nil
+}
+
+func (chain *ShardChain) CommitteeStateVersion() uint {
+	return chain.GetBestState().shardCommitteeEngine.Version()
 }

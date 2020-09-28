@@ -378,6 +378,21 @@ func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForNextRandom() 
 	return beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
 }
 
+//HasSwappedCommittee ..
+func (beaconBestState *BeaconBestState) HasSwappedCommittee(shardID byte, chainParamEpoch uint64) (bool, error) {
+	env := &committeestate.BeaconCommitteeStateEnvironment{}
+	env.ShardID = shardID
+	env.BeaconHeight = beaconBestState.BeaconHeight
+	env.ParamEpoch = chainParamEpoch
+	env.BeaconInstructions = beaconBestState.GetBlock().GetInstructions()
+	return beaconBestState.beaconCommitteeEngine.HasSwappedCommittees(env)
+}
+
+// //CommitteeStateVersion ...
+// func (beaconBestState *BeaconBestState) CommitteeStateVersion() uint {
+// 	return beaconBestState.beaconCommitteeEngine.Version()
+// }
+
 func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
 	if err != nil {

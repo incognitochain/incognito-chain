@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"context"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -59,6 +60,8 @@ type Chain interface {
 	InsertBlk(block common.BlockInterface, shouldValidate bool) error
 	CheckExistedBlk(block common.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
+	CommitteesV2(common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
+	CommitteeStateVersion() uint
 }
 
 const (

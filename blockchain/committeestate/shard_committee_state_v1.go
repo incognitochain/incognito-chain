@@ -80,9 +80,24 @@ func (committeeState ShardCommitteeStateV1) clone(newCommitteeState *ShardCommit
 	}
 }
 
+//Clone ...
+func (engine *ShardCommitteeEngineV1) Clone() ShardCommitteeEngine {
+	finalCommitteeState := NewShardCommitteeStateV1()
+	engine.shardCommitteeStateV1.clone(finalCommitteeState)
+	engine.uncommittedShardCommitteeStateV1 = NewShardCommitteeStateV1()
+
+	res := NewShardCommitteeEngineV1(
+		engine.shardHeight,
+		engine.shardHash,
+		engine.shardID,
+		finalCommitteeState,
+	)
+	return res
+}
+
 //Version get version of engine
 func (engine *ShardCommitteeEngineV1) Version() uint {
-	return NORMAL_VERSION
+	return SELF_SWAP_SHARD_VERSION
 }
 
 //reset : reset ShardCommitteeStateV1 to default value
@@ -490,10 +505,5 @@ func (engine *ShardCommitteeEngineV1) ProcessInstructionFromBeacon(
 
 //ProcessInstructionFromShard :
 func (engine *ShardCommitteeEngineV1) ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	return nil, nil
-}
-
-//UpdateCommitteeStateByBeacon ...
-func (engine *ShardCommitteeEngineV1) UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, error) {
 	return nil, nil
 }

@@ -150,7 +150,7 @@ func (engine *BeaconCommitteeEngineV1) Clone() BeaconCommitteeEngine {
 
 //Version :
 func (engine BeaconCommitteeEngineV1) Version() uint {
-	return NORMAL_VERSION
+	return SELF_SWAP_SHARD_VERSION
 }
 
 //GetBeaconHeight :
@@ -938,4 +938,9 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 		b.stakingTx,
 	)
 	return nil
+}
+
+//HasSwappedCommittees ...
+func (b *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
+	return false, nil
 }

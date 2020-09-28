@@ -76,6 +76,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
+
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", shardBestState.ShardHeight+1)
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	currentCommitteePubKeys, err := incognitokey.
@@ -84,26 +85,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		return nil, err
 	}
 
-	if shardBestState.shardCommitteeEngine.Version() != committeestate.NORMAL_VERSION {
+	beaconFinalBlockHash := common.Hash{}
+	if shardBestState.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
-		newCommittees := beaconFinalView.GetShardCommittee()[shardID]
-
-		newCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(newCommittees)
-		if err != nil {
-			return nil, err
-		}
-
-		env := committeestate.
-			NewShardEnvBuilder().
-			BuildUpdatedCommitteesByBeacon(newCommitteePubKeys).
-			Build()
-
-		hashes, err := shardBestState.shardCommitteeEngine.UpdateCommitteeStateByBeacon(env)
-		if err != nil {
-			return nil, err
-		}
-
-		err = shardBestState.shardCommitteeEngine.Commit(hashes)
+		beaconFinalBlockHash = *beaconFinalView.GetHash()
+		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(beaconFinalView.GetShardCommittee()[shardBestState.ShardID])
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +126,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	}
 
 	epoch := beaconBlock.Header.Epoch
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.NORMAL_VERSION {
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if epoch-shardBestState.Epoch >= 1 {
 			//TODO: @tin check here
 			beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
@@ -242,20 +228,22 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
 		}
 	}
+
 	newShardBlock.Header = types.ShardHeader{
-		Producer:          producerKey, //committeeMiningKeys[producerPosition],
-		ProducerPubKeyStr: producerPubKeyStr,
-		ShardID:           shardID,
-		Version:           version,
-		PreviousBlockHash: shardBestState.BestBlockHash,
-		Height:            shardBestState.ShardHeight + 1,
-		Round:             round,
-		Epoch:             epoch,
-		CrossShardBitMap:  CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
-		BeaconHeight:      beaconHeight,
-		BeaconHash:        *beaconHash,
-		TotalTxsFee:       totalTxsFee,
-		ConsensusType:     shardBestState.ConsensusAlgorithm,
+		Producer:           producerKey, //committeeMiningKeys[producerPosition],
+		ProducerPubKeyStr:  producerPubKeyStr,
+		ShardID:            shardID,
+		Version:            version,
+		PreviousBlockHash:  shardBestState.BestBlockHash,
+		Height:             shardBestState.ShardHeight + 1,
+		Round:              round,
+		Epoch:              epoch,
+		CrossShardBitMap:   CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		BeaconHeight:       beaconHeight,
+		BeaconHash:         *beaconHash,
+		TotalTxsFee:        totalTxsFee,
+		ConsensusType:      shardBestState.ConsensusAlgorithm,
+		CommitteeFromBlock: beaconFinalBlockHash,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()

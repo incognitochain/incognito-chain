@@ -7,6 +7,6 @@ const (
 )
 
 const (
-	NORMAL_VERSION = iota + 1
+	SELF_SWAP_SHARD_VERSION = iota + 1
 	SLASHING_VERSION
 )

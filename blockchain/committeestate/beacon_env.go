@@ -33,6 +33,7 @@ type BeaconCommitteeStateEnvironment struct {
 	allSubstituteCommittees            []string
 	LatestShardsState                  map[byte][]types.ShardState
 	SwapSubType                        uint
+	ShardID                            byte
 }
 
 type BeaconCommitteeStateHash struct {

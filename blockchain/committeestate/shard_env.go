@@ -23,7 +23,6 @@ type ShardEnvBuilder interface {
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
-	BuildUpdatedCommitteesByBeacon([]string) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -50,7 +49,6 @@ type ShardCommitteeStateEnvironment interface {
 	SwapOffset() int
 	StakingTx() map[string]string
 	NumberOfFixedBlockValidators() int
-	UpdatedCommitteesByBeacon() []string
 }
 
 //shardCommitteeStateEnvironment :
@@ -71,13 +69,6 @@ type shardCommitteeStateEnvironment struct {
 	swapOffset                   int
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
-	updatedCommitteesByBeacon    []string
-}
-
-//BuildShardHeight :
-func (env *shardCommitteeStateEnvironment) BuildUpdatedCommitteesByBeacon(committees []string) ShardEnvBuilder {
-	env.updatedCommitteesByBeacon = committees
-	return env
 }
 
 //BuildShardHeight :
@@ -256,10 +247,6 @@ func (env *shardCommitteeStateEnvironment) StakingTx() map[string]string {
 
 func (env *shardCommitteeStateEnvironment) NumberOfFixedBlockValidators() int {
 	return env.numberOfFixedBlockValidators
-}
-
-func (env *shardCommitteeStateEnvironment) UpdatedCommitteesByBeacon() []string {
-	return env.updatedCommitteesByBeacon
 }
 
 //Build :

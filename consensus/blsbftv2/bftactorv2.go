@@ -17,11 +17,12 @@ import (
 )
 
 type BLSBFT_V2 struct {
-	Chain    ChainInterface
-	Node     NodeInterface
-	ChainKey string
-	ChainID  int
-	PeerID   string
+	CommitteeChain CommitteeChainHandler
+	Chain          ChainInterface
+	Node           NodeInterface
+	ChainKey       string
+	ChainID        int
+	PeerID         string
 
 	UserKeySet   *MiningKey
 	BFTMessageCh chan wire.MessageBFT
@@ -174,13 +175,18 @@ func (e *BLSBFT_V2) Start() error {
 
 				}
 
+				proposerPk := incognitokey.CommitteePublicKey{}
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
+				if e.ChainID != -1 {
+					proposerPk = e.CommitteeChain.GetProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, 2)
+				} else {
+					proposerPk = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+				}
 
 				/*
 					Check for whether we should propose block
 				*/
-				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 
 				if newTimeSlot { //for logging
@@ -272,13 +278,14 @@ func (e *BLSBFT_V2) Start() error {
 	return nil
 }
 
-func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V2 {
+func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V2 {
 	var newInstance = new(BLSBFT_V2)
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
 	newInstance.ChainID = chainID
 	newInstance.Node = node
 	newInstance.Logger = logger
+	newInstance.CommitteeChain = committeeChain
 	return newInstance
 }
 
@@ -305,12 +312,19 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		return
 	}
 
+	committees := []incognitokey.CommitteePublicKey{}
+	if e.ChainID != -1 {
+		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+	} else {
+		committees = view.GetCommittee()
+	}
+
 	validVote := 0
 	errVote := 0
 	for _, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.isValid == 0 {
-			for _, c := range view.GetCommittee() {
+			for _, c := range committees {
 				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
@@ -332,11 +346,11 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			}
 		}
 	}
-	//e.Logger.Debug(validVote, len(view.GetCommittee()), errVote)
+	//e.Logger.Debug(validVote, committees), errVote)
 	v.hasNewVote = false
-	if validVote > 2*len(view.GetCommittee())/3 {
+	if validVote > 2*len(committees)/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
 		//fmt.Println(committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
@@ -393,7 +407,15 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	bytelist := []blsmultisig.PublicKey{}
 	selfIdx := 0
 	userBLSPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-	for i, v := range e.Chain.GetBestView().GetCommittee() {
+
+	committees := []incognitokey.CommitteePublicKey{}
+	if e.ChainID != -1 {
+		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+	} else {
+		committees = e.Chain.GetBestView().GetCommittee()
+	}
+
+	for i, v := range committees {
 		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
 			selfIdx = i
 		}

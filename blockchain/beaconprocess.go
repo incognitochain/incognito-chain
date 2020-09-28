@@ -222,6 +222,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
 	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
+
 	return nil
 }
 
