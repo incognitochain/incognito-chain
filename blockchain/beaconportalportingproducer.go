@@ -184,9 +184,8 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 
 	// Update custodian state after finishing choosing enough custodians for the porting request
 	for _, cus := range pickedCustodians {
-		cusKey := statedb.GenerateCustodianStateObjectKey(cus.IncAddress).String()
 		// update custodian state
-		err := UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, cusKey, actionData.Meta.PTokenId, cus.LockedAmountCollateral)
+		err := UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, cus, actionData.Meta.PTokenId)
 		if err != nil {
 			Logger.log.Errorf("Porting request: an error occurred while updating custodian state: %+v", err)
 			return [][]string{rejectInst}, nil

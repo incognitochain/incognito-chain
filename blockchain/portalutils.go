@@ -285,20 +285,21 @@ func calHoldPubTokenAmountAndLockCollaterals(
 			continue
 		}
 		freeTokenInUSDT, _ := convertRateTool.ConvertToUSDT(tokenID, amount)
-		lockTokenCollateralAmt := amount
-		remainLockCollateralInUSDT -= freeTokenInUSDT
+		lockTokenCollateralAmt := uint64(0)
 		if freeTokenInUSDT >= remainLockCollateralInUSDT {
 			lockTokenCollateralAmt, _ = convertRateTool.ConvertFromUSDT(tokenID, remainLockCollateralInUSDT)
 			remainLockCollateralInUSDT = 0
+		} else {
+			lockTokenCollateralAmt = amount
+			remainLockCollateralInUSDT -= freeTokenInUSDT
 		}
 		lockTokenCollaterals[tokenID] = lockTokenCollateralAmt
-
 		if remainLockCollateralInUSDT == 0 {
-			return pubTokenAmountCanBeHold, lockPRVCollateral, lockTokenCollaterals
+			break
 		}
 	}
 
-	return 0, 0, map[string]uint64{}
+	return pubTokenAmountCanBeHold, lockPRVCollateral, lockTokenCollaterals
 }
 
 func pickUpCustodianForPorting(
@@ -357,7 +358,7 @@ func pickUpCustodianForPorting(
 	remainPortAmtInUSDT := portAmtInUSDT
 	for i, cus := range sortedCusCollaterals {
 		pickedCus := cus
-		if cus.amountInUSDT > portAmtInUSDT && i != len(sortedCusCollaterals) - 1 {
+		if cus.amountInUSDT > portAmtInUSDT && i != len(sortedCusCollaterals)-1 {
 			continue
 		} else if cus.amountInUSDT < portAmtInUSDT && isChooseOneCustodian && i > 0 {
 			pickedCus = sortedCusCollaterals[i-1]
@@ -401,28 +402,48 @@ func pickUpCustodianForPorting(
 	return matchCustodians, nil
 }
 
-func UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, lockedAmountCollateral uint64) error {
+func UpdateCustodianStateAfterMatchingPortingRequest(
+	currentPortalState *CurrentPortalState,
+	matchCus *statedb.MatchingPortingCustodianDetail,
+	portalTokenID string) error {
+	custodianKey := statedb.GenerateCustodianStateObjectKey(matchCus.IncAddress).String()
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
 	if !ok {
 		return errors.New("Custodian not found")
 	}
+	// lock PRV collateral
+	if matchCus.LockedAmountCollateral > 0 {
+		freeCollateral := custodian.GetFreeCollateral() - matchCus.LockedAmountCollateral
 
-	freeCollateral := custodian.GetFreeCollateral() - lockedAmountCollateral
-	custodian.SetFreeCollateral(freeCollateral)
+		lockPRVCollateral := custodian.GetLockedAmountCollateral()
+		if lockPRVCollateral == nil {
+			lockPRVCollateral = make(map[string]uint64)
+		}
+		lockPRVCollateral[portalTokenID] += matchCus.LockedAmountCollateral
 
-	// don't update holding public tokens to avoid this custodian match to redeem request before receiving pubtokens from users
-
-	//update collateral holded
-	if custodian.GetLockedAmountCollateral() == nil {
-		totalLockedAmountCollateral := make(map[string]uint64)
-		totalLockedAmountCollateral[PTokenId] = lockedAmountCollateral
-		custodian.SetLockedAmountCollateral(totalLockedAmountCollateral)
-	} else {
-		lockedAmount := custodian.GetLockedAmountCollateral()
-		lockedAmount[PTokenId] = lockedAmount[PTokenId] + lockedAmountCollateral
-		custodian.SetLockedAmountCollateral(lockedAmount)
+		custodian.SetFreeCollateral(freeCollateral)
+		custodian.SetLockedAmountCollateral(lockPRVCollateral)
 	}
 
+	// lock token collaterals
+	if len(matchCus.LockedTokenCollaterals) > 0 {
+		freeTokenCollaterals := custodian.GetFreeTokenCollaterals()
+		lockTokenCollaterals := custodian.GetLockedTokenCollaterals()
+		if lockTokenCollaterals == nil {
+			lockTokenCollaterals = map[string]map[string]uint64{}
+		} else if lockTokenCollaterals[portalTokenID] == nil {
+			lockTokenCollaterals[portalTokenID] = map[string]uint64{}
+		}
+		for collateralTokenID, amount := range matchCus.LockedTokenCollaterals {
+			freeTokenCollaterals[collateralTokenID] -= amount
+			lockTokenCollaterals[portalTokenID][collateralTokenID] += matchCus.LockedAmountCollateral
+		}
+
+		custodian.SetFreeTokenCollaterals(freeTokenCollaterals)
+		custodian.SetLockedTokenCollaterals(lockTokenCollaterals)
+	}
+
+	// Note: don't update holding public tokens to avoid this custodian match to redeem request before receiving pubtokens from users
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 
 	return nil

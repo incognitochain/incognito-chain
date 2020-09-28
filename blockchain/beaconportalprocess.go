@@ -336,9 +336,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save custodian state
 		for _, itemCustodian := range custodiansDetail {
 			//update custodian state
-			custodianKey := statedb.GenerateCustodianStateObjectKey(itemCustodian.IncAddress)
-			custodianKeyStr := custodianKey.String()
-			_ = UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, custodianKeyStr, tokenID, itemCustodian.LockedAmountCollateral)
+			_ = UpdateCustodianStateAfterMatchingPortingRequest(currentPortalState, itemCustodian, tokenID)
 		}
 
 		//save waiting request porting state
