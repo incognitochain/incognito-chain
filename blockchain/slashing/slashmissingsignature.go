@@ -129,7 +129,7 @@ func (s SignatureCounter) GetAllSlashingPenalty() map[string]Penalty {
 func getSlashingPenalty(numberOfMissingSig uint, penalties []Penalty) Penalty {
 	penalty := NewPenalty()
 	for _, penaltyLevel := range penalties {
-		if numberOfMissingSig > penalty.minRange {
+		if numberOfMissingSig >= penaltyLevel.minRange {
 			penalty = penaltyLevel
 		}
 	}
