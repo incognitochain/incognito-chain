@@ -238,6 +238,12 @@ func pickUpCustodianForPorting(
 
 	// convert porting amount (up to percent) to USDT
 	portAmtInUSDT, _ := convertRateTool.ConvertToUSDT(portalTokenID, upPercent(portingAmount, portalParams.MinPercentLockedCollateral))
+	fmt.Println("portAmtInUSDT: ", portAmtInUSDT)
+	fmt.Println("sortedCusCollaterals: ", sortedCusCollaterals)
+	for _, cus := range sortedCusCollaterals {
+		fmt.Println("custodianKey: ", cus.custodianKey)
+		fmt.Println("amountInUSDT: ", cus.amountInUSDT)
+	}
 
 	// choose the custodian that has free collateral
 	matchCustodians := make([]*statedb.MatchingPortingCustodianDetail, 0)
@@ -324,12 +330,13 @@ func UpdateCustodianStateAfterMatchingPortingRequest(
 		lockTokenCollaterals := custodian.GetLockedTokenCollaterals()
 		if lockTokenCollaterals == nil {
 			lockTokenCollaterals = map[string]map[string]uint64{}
-		} else if lockTokenCollaterals[portalTokenID] == nil {
+		}
+		if lockTokenCollaterals[portalTokenID] == nil {
 			lockTokenCollaterals[portalTokenID] = map[string]uint64{}
 		}
 		for collateralTokenID, amount := range matchCus.LockedTokenCollaterals {
 			freeTokenCollaterals[collateralTokenID] -= amount
-			lockTokenCollaterals[portalTokenID][collateralTokenID] += matchCus.LockedAmountCollateral
+			lockTokenCollaterals[portalTokenID][collateralTokenID] += amount
 		}
 
 		custodian.SetFreeTokenCollaterals(freeTokenCollaterals)

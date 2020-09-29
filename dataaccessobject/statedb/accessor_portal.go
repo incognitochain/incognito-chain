@@ -341,8 +341,8 @@ func GetPortalPortingRequestStatus(stateDB *StateDB, portingID string) ([]byte, 
 	statusType := PortalPortingRequestStatusPrefix()
 	statusSuffix := []byte(portingID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
-	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
-		return []byte{}, NewStatedbError(GetPortalPortingRequestStatusError, err)
+	if err != nil {
+		return nil, NewStatedbError(GetPortalPortingRequestStatusError, err)
 	}
 
 	return data, nil
@@ -363,8 +363,8 @@ func GetPortalPortingRequestByTxIDStatus(stateDB *StateDB, portingID string) ([]
 	statusType := PortalPortingRequestTxStatusPrefix()
 	statusSuffix := []byte(portingID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
-	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
-		return []byte{}, NewStatedbError(GetPortalPortingRequestByTxIDStatusError, err)
+	if err != nil  {
+		return nil, NewStatedbError(GetPortalPortingRequestByTxIDStatusError, err)
 	}
 
 	return data, nil

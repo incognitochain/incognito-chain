@@ -15,7 +15,6 @@ type PortalService struct {
 func (portal *PortalService) GetPortingRequestByByTxID(txId string) (jsonresult.PortalPortingRequest, error) {
 	portalStateDB := portal.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	portingRequestItem, err := statedb.GetPortalPortingRequestByTxIDStatus(portalStateDB, txId)
-
 	if err != nil {
 		return jsonresult.PortalPortingRequest{}, err
 	}
@@ -36,7 +35,6 @@ func (portal *PortalService) GetPortingRequestByByTxID(txId string) (jsonresult.
 func (portal *PortalService) GetPortingRequestByByPortingId(portingId string) (jsonresult.PortalPortingRequest, error) {
 	portalStateDB := portal.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	portingRequestItem, err := statedb.GetPortalPortingRequestStatus(portalStateDB, portingId)
-
 	if err != nil {
 		return jsonresult.PortalPortingRequest{}, err
 	}
