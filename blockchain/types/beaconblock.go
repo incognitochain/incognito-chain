@@ -89,8 +89,13 @@ func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
+
 func (beaconBlock BeaconBlock) GetShardID() int {
 	return -1
+}
+
+func (beaconBlock BeaconBlock) CommitteeFromBlock() common.Hash {
+	return common.Hash{}
 }
 
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {

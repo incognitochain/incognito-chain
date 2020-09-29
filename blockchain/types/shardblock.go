@@ -100,6 +100,10 @@ func NewShardBlockFull(header ShardHeader, body ShardBody) *ShardBlock {
 	}
 }
 
+func (shardBlock *ShardBlock) CommitteeFromBlock() common.Hash {
+	return shardBlock.Header.CommitteeFromBlock
+}
+
 func (shardBlock *ShardBlock) GetProposer() string {
 	return shardBlock.Header.Proposer
 }
@@ -124,6 +128,10 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.Instructions = append(shardBlock.Body.Instructions, instructions...)
 	shardBlock.Body.CrossTransactions = crossTransaction
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
+}
+
+func (crossShardBlock CrossShardBlock) CommitteeFromBlock() common.Hash {
+	return common.Hash{}
 }
 
 func (crossShardBlock CrossShardBlock) GetProposer() string {

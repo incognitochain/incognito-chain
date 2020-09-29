@@ -28,6 +28,7 @@ type BlockInterface interface {
 	GetProposeTime() int64
 	GetPrevHash() Hash
 	GetProposer() string
+	CommitteeFromBlock() Hash
 }
 
 type ChainInterface interface {

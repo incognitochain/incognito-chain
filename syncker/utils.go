@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -19,15 +18,38 @@ func isNil(v interface{}) bool {
 func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
 	curEpoch := chain.GetEpoch()
 	sameCommitteeBlock := blocks
+	index := -1
+
+	if chain.CurrentHeight() == 20 {
+		Logger.Info("[swap-v2] len(sameCommitteeBlock) 0:", len(sameCommitteeBlock))
+	}
+
 	for i, v := range blocks {
-		if v.GetCurrentEpoch() == curEpoch+1 {
-			if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-				sameCommitteeBlock = blocks[:i+1]
-			} else {
-				sameCommitteeBlock = blocks[:i]
+		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+			if v.GetCurrentEpoch() == curEpoch+1 {
+				index = i + 1
+				break
 			}
-			break
+		} else {
+			//TODO: Checking committees for beacon when release
+			if chain.CurrentHeight() == 20 {
+				Logger.Info("[swap-v2] len(sameCommitteeBlock) x:", len(sameCommitteeBlock))
+			}
+			if i != len(blocks)-1 {
+				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
+					index = i
+					break
+				}
+			}
 		}
+	}
+
+	if index != -1 {
+		sameCommitteeBlock = blocks[:index]
+	}
+
+	if chain.CurrentHeight() == 20 {
+		Logger.Info("[swap-v2] len(sameCommitteeBlock) 1:", len(sameCommitteeBlock))
 	}
 
 	for i, blk := range sameCommitteeBlock {
@@ -46,16 +68,6 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		epochCommittee, err = chain.CommitteesV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
-		}
-	}
-
-	if chain.CurrentHeight() == 19 || chain.CurrentHeight() == 29 {
-		Logger.Info("[swap-v2] chain.CurrentHeight():", chain.CurrentHeight())
-		Logger.Info("[swap-v2] len(sameCommitteeBlock):", len(sameCommitteeBlock))
-		for i, v := range sameCommitteeBlock {
-			Logger.Info("[swap-v2] index:", i)
-			Logger.Info("[swap-v2] block.Height():", v.GetHeight())
-			Logger.Info("[swap-v2] block.Hash().String():", v.Hash().String())
 		}
 	}
 

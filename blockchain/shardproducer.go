@@ -128,7 +128,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	epoch := beaconBlock.Header.Epoch
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if epoch-shardBestState.Epoch >= 1 {
-			//TODO: @tin check here
 			beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
 			newBeaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
 			if err != nil {

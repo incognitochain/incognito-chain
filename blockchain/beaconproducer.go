@@ -535,7 +535,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		}
 	}
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
-	if newBeaconHeight%chainParamEpoch == 0 {
+	if newBeaconHeight%chainParamEpoch == 1 {
 		BeaconCommittee := beaconBestState.GetBeaconCommittee()
 		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
 		if err != nil {

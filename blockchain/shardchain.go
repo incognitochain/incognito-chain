@@ -278,10 +278,6 @@ func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitok
 	result := []incognitokey.CommitteePublicKey{}
 
 	shardBlock := block.(*types.ShardBlock)
-	if block.GetHeight() > 18 {
-		Logger.log.Info("[swap-v2] shardBlock.Header.CommitteeFromBlock.String():", shardBlock.Header.CommitteeFromBlock.String())
-	}
-
 	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
 	if err != nil {
 		return result, err
