@@ -727,7 +727,8 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 	// 	snapshotAutoStaking[k] = v
 	// }
 	for _, instruction := range beaconBlock.Body.Instructions {
-		err, tempRandomFlag, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, committeeChange)
+		err, tempRandomFlag, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain,
+			committeeChange, beaconBestState.consensusStateDB.Copy())
 		if err != nil {
 			return nil, err
 		}
@@ -839,28 +840,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
-	// update param
-	// snapshotAutoStaking := make(map[string]bool)
-	// for k, v := range beaconBestState.AutoStaking {
-	// 	snapshotAutoStaking[k] = v
-	// }
-	for _, instruction := range genesisBeaconBlock.Body.Instructions {
-		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain, newCommitteeChange())
-		if err != nil {
-			return err
-		}
-		newBeaconCandidate = append(newBeaconCandidate, tempNewBeaconCandidate...)
-		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
-	}
-	beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, newBeaconCandidate...)
-	beaconBestState.ConsensusAlgorithm = common.BlsConsensus
-	beaconBestState.ShardConsensusAlgorithm = make(map[byte]string)
-	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
-		beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
-		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
-	}
-	beaconBestState.Epoch = 1
-	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
 	//statedb===========================START
 	var err error
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
@@ -884,10 +863,25 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.SlashStateDBRootHash = common.EmptyRoot
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
-	if err != nil {
-		return err
-	}
 	//statedb===========================END
+	for _, instruction := range genesisBeaconBlock.Body.Instructions {
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain,
+			newCommitteeChange(), beaconBestState.consensusStateDB.Copy())
+		if err != nil {
+			return err
+		}
+		newBeaconCandidate = append(newBeaconCandidate, tempNewBeaconCandidate...)
+		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
+	}
+	beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, newBeaconCandidate...)
+	beaconBestState.ConsensusAlgorithm = common.BlsConsensus
+	beaconBestState.ShardConsensusAlgorithm = make(map[byte]string)
+	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
+		beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
+		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
+	}
+	beaconBestState.Epoch = 1
+	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
 	return nil
 }
 
@@ -914,7 +908,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //		+ doesn't call any of methods provided by blockchain object.
 //		+ variables get from blockchain object are golang built-in types
 //		+ easier for functional testing
-func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange, consensusStateDB *statedb.StateDB) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	if len(instruction) < 1 {
@@ -1026,7 +1020,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 						if len(outPublicKey) == 0 {
 							continue
 						}
-						stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+						stakerInfo, has, err := statedb.GetStakerInfo(consensusStateDB, outPublicKey)
 						if err != nil {
 							panic(err)
 						}
@@ -1065,7 +1059,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 					beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, inPublickeyStructs...)
 				}
 				for _, outPublicKey := range outPublickeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconBestState.consensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetStakerInfo(consensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}
