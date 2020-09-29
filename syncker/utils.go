@@ -18,38 +18,22 @@ func isNil(v interface{}) bool {
 func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
 	curEpoch := chain.GetEpoch()
 	sameCommitteeBlock := blocks
-	index := -1
-
-	if chain.CurrentHeight() == 20 {
-		Logger.Info("[swap-v2] len(sameCommitteeBlock) 0:", len(sameCommitteeBlock))
-	}
 
 	for i, v := range blocks {
 		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 			if v.GetCurrentEpoch() == curEpoch+1 {
-				index = i + 1
+				sameCommitteeBlock = blocks[:i+1]
 				break
 			}
 		} else {
-			//TODO: Checking committees for beacon when release
-			if chain.CurrentHeight() == 20 {
-				Logger.Info("[swap-v2] len(sameCommitteeBlock) x:", len(sameCommitteeBlock))
-			}
+			//TODO: Checking committees for beacon when release beacon
 			if i != len(blocks)-1 {
 				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
-					index = i
+					sameCommitteeBlock = blocks[:i+1]
 					break
 				}
 			}
 		}
-	}
-
-	if index != -1 {
-		sameCommitteeBlock = blocks[:index]
-	}
-
-	if chain.CurrentHeight() == 20 {
-		Logger.Info("[swap-v2] len(sameCommitteeBlock) 1:", len(sameCommitteeBlock))
 	}
 
 	for i, blk := range sameCommitteeBlock {

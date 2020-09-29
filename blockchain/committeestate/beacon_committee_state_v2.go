@@ -427,6 +427,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
+			Logger.log.Info("[swap-v2] swapShardInstruction.InPublicKeys:", swapShardInstruction.InPublicKeys)
+			Logger.log.Info("[swap-v2] swapShardInstruction.OutPublicKeys:", swapShardInstruction.OutPublicKeys)
 			committeeChange, err = newB.
 				processSwapShardInstruction(swapShardInstruction, env, committeeChange)
 			if err != nil {

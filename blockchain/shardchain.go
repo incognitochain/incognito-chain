@@ -202,10 +202,6 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		committees, _ := incognitokey.CommitteeKeyListToString(committee)
-		Logger.log.Info("[swap-v2] chain.CurrentHeight():", chain.CurrentHeight())
-		Logger.log.Info("[swap-v2] committees:", committees)
-		panic(err)
 		return err
 	}
 	return nil
