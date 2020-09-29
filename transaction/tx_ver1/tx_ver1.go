@@ -504,6 +504,9 @@ func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridg
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
+			if inputCoins[i].GetCommitment()==nil{
+				return false, utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
+			}
 			ok, err := statedb.HasCommitment(transactionStateDB, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID)
 			if !ok || err != nil {
 				if err != nil {
