@@ -25,7 +25,7 @@ var (
 			forceUnstake: false,
 		},
 		{
-			minRange:     3000,
+			minRange:     3001,
 			time:         302400 * 2,
 			forceUnstake: true,
 		},
@@ -285,7 +285,7 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 			},
 			want: map[string]Penalty{
 				committeePublicKeys[0]: samplePenaltyRule[1],
-				committeePublicKeys[1]: samplePenaltyRule[2],
+				committeePublicKeys[1]: samplePenaltyRule[1],
 				committeePublicKeys[2]: samplePenaltyRule[2],
 				committeePublicKeys[3]: samplePenaltyRule[1],
 			},
@@ -303,7 +303,7 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 			},
 			want: map[string]Penalty{
 				committeePublicKeys[0]: samplePenaltyRule[0],
-				committeePublicKeys[1]: samplePenaltyRule[2],
+				committeePublicKeys[1]: samplePenaltyRule[1],
 				committeePublicKeys[2]: samplePenaltyRule[2],
 				committeePublicKeys[3]: samplePenaltyRule[1],
 			},
@@ -346,7 +346,7 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 			name: "penalty range 3000",
 			fields: fields{
 				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 3000,
+					committeePublicKeys[0]: 30000,
 					committeePublicKeys[1]: 3002,
 					committeePublicKeys[2]: 3001,
 					committeePublicKeys[3]: 30003,
@@ -367,7 +367,7 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 					committeePublicKeys[0]: 1500,
 					committeePublicKeys[1]: 1501,
 					committeePublicKeys[2]: 2999,
-					committeePublicKeys[3]: 2998,
+					committeePublicKeys[3]: 3000,
 				},
 				penalties: samplePenaltyRule,
 			},
