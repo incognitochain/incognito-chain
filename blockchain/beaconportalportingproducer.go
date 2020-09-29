@@ -158,7 +158,7 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 	}
 
 	// validate porting fees
-	exchangePortingFees, err := CalMinPortingFee(actionData.Meta.RegisterAmount, actionData.Meta.PTokenId, exchangeRatesState, portalParams.MinPercentPortingFee)
+	exchangePortingFees, err := CalMinPortingFee(actionData.Meta.RegisterAmount, actionData.Meta.PTokenId, exchangeRatesState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Porting request: Calculate Porting fee is error %v", err)
 		return [][]string{rejectInst}, nil
@@ -175,7 +175,6 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		currentPortalState.CustodianPoolState,
 		currentPortalState.FinalExchangeRatesState,
 		bc.GetPortalParams(beaconHeight),
-		bc.GetSupportedCollateralInfo(beaconHeight),
 	)
 	if err != nil || len(pickedCustodians) == 0 {
 		Logger.log.Errorf("Porting request: an error occurred while picking up custodians for the porting request: %+v", err)

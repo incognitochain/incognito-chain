@@ -177,7 +177,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		Logger.log.Errorf("Redeem request: Can not get exchange rate at beaconHeight %v\n", beaconHeight)
 		return [][]string{rejectInst}, nil
 	}
-	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState, portalParams.MinPercentRedeemFee)
+	minRedeemFee, err := CalMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
 		return [][]string{rejectInst}, nil

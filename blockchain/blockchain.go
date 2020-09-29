@@ -643,7 +643,7 @@ func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams 
 func (blockchain *BlockChain) GetSupportedCollateralTokenIDs(beaconHeight uint64) []string {
 	portalParams := blockchain.GetPortalParams(beaconHeight)
 	tokenIDs := []string{}
-	for _, col := range portalParams.SupportedCollateralTokenIDs {
+	for _, col := range portalParams.SupportedCollateralTokens {
 		tokenIDs = append(tokenIDs, col.ExternalTokenID)
 	}
 	return tokenIDs
@@ -651,7 +651,7 @@ func (blockchain *BlockChain) GetSupportedCollateralTokenIDs(beaconHeight uint64
 
 func (blockchain *BlockChain) GetSupportedCollateralInfo(beaconHeight uint64) []PortalCollateral {
 	portalParams := blockchain.GetPortalParams(beaconHeight)
-	return portalParams.SupportedCollateralTokenIDs
+	return portalParams.SupportedCollateralTokens
 }
 
 func (blockchain *BlockChain) GetPortalETHContractAddrStr() string {

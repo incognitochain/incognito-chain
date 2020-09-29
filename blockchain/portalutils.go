@@ -122,112 +122,6 @@ func storePortalStateToDB(
 	return nil
 }
 
-func sortCustodianByAmountAscent(
-	metadata metadata.PortalUserRegister,
-	custodianState map[string]*statedb.CustodianState,
-	custodianStateSlice *[]CustodianStateSlice) {
-	//convert to slice
-
-	var result []CustodianStateSlice
-	for k, v := range custodianState {
-		//check pTokenId, select only ptokenid
-		if v.GetRemoteAddresses()[metadata.PTokenId] == "" {
-			continue
-		}
-
-		item := CustodianStateSlice{
-			Key:   k,
-			Value: v,
-		}
-		result = append(result, item)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].Value.GetFreeCollateral() < result[j].Value.GetFreeCollateral() {
-			return true
-		} else if (result[i].Value.GetFreeCollateral() == result[j].Value.GetFreeCollateral()) &&
-			(result[i].Value.GetIncognitoAddress() < result[j].Value.GetIncognitoAddress()) {
-			return true
-		}
-		return false
-	})
-
-	*custodianStateSlice = result
-}
-
-func pickUpCustodians(
-	metadata metadata.PortalUserRegister,
-	exchangeRate *statedb.FinalExchangeRatesState,
-	custodianStateSlice []CustodianStateSlice,
-	currentPortalState *CurrentPortalState,
-	portalParams PortalParams,
-) ([]*statedb.MatchingPortingCustodianDetail, error) {
-	//get multiple custodian
-	custodians := make([]*statedb.MatchingPortingCustodianDetail, 0)
-	remainPTokens := metadata.RegisterAmount
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
-	for i := len(custodianStateSlice) - 1; i >= 0; i-- {
-		custodianItem := custodianStateSlice[i]
-		freeCollaterals := custodianItem.Value.GetFreeCollateral()
-		if freeCollaterals == 0 {
-			continue
-		}
-
-		Logger.log.Infof("Porting request, pick multiple custodian key: %v, has collateral %v", custodianItem.Key, freeCollaterals)
-
-		collateralsInPToken, err := convertExchangeRatesObj.ExchangePRV2PTokenByTokenId(metadata.PTokenId, freeCollaterals)
-		if err != nil {
-			Logger.log.Errorf("Failed to convert prv collaterals to PToken - with error %v", err)
-			return nil, err
-		}
-
-		pTokenCustodianCanHold := downPercent(collateralsInPToken, uint64(portalParams.MinPercentLockedCollateral))
-		if pTokenCustodianCanHold > remainPTokens {
-			pTokenCustodianCanHold = remainPTokens
-			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenCustodianCanHold)
-		} else {
-			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenCustodianCanHold)
-		}
-
-		totalPTokenAfterUp150Percent := upPercent(pTokenCustodianCanHold, uint64(portalParams.MinPercentLockedCollateral))
-		neededCollaterals, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150Percent)
-		if err != nil {
-			Logger.log.Errorf("Failed to convert PToken to prv - with error %v", err)
-			return nil, err
-		}
-		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenCustodianCanHold, neededCollaterals)
-
-		if freeCollaterals >= neededCollaterals {
-			remoteAddr := custodianItem.Value.GetRemoteAddresses()[metadata.PTokenId]
-			if remoteAddr == "" {
-				Logger.log.Errorf("Remote address in tokenID %v of custodian %v is null", metadata.PTokenId, custodianItem.Value.GetIncognitoAddress())
-				return nil, fmt.Errorf("Remote address in tokenID %v of custodian %v is null", metadata.PTokenId, custodianItem.Value.GetIncognitoAddress())
-			}
-			custodians = append(
-				custodians,
-				&statedb.MatchingPortingCustodianDetail{
-					IncAddress:             custodianItem.Value.GetIncognitoAddress(),
-					RemoteAddress:          remoteAddr,
-					Amount:                 pTokenCustodianCanHold,
-					LockedAmountCollateral: neededCollaterals,
-				},
-			)
-
-			remainPTokens = remainPTokens - pTokenCustodianCanHold
-			if remainPTokens == 0 {
-				break
-			}
-		}
-	}
-
-	if remainPTokens > 0 {
-		Logger.log.Errorf("Not enough custodians for porting amount %v", metadata.RegisterAmount)
-		return nil, fmt.Errorf("Not enough custodians for porting amount %v", metadata.RegisterAmount)
-	}
-
-	return custodians, nil
-}
-
 // convertAllFreeCollateralsToUSDT converts all collaterals of custodian to USDT
 func convertAllFreeCollateralsToUSDT(convertRateTool *PortalExchangeRateTool, custodian *statedb.CustodianState) (uint64, error) {
 	res := uint64(0)
@@ -306,8 +200,7 @@ func pickUpCustodianForPorting(
 	portingAmount uint64, portalTokenID string,
 	custodianPool map[string]*statedb.CustodianState,
 	exchangeRate *statedb.FinalExchangeRatesState,
-	portalParams PortalParams,
-	supportCollaterals []PortalCollateral) ([]*statedb.MatchingPortingCustodianDetail, error) {
+	portalParams PortalParams) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	if len(custodianPool) == 0 {
 		return nil, errors.New("pickUpCustodianForPorting: Custodian pool is empty")
 	}
@@ -316,7 +209,7 @@ func pickUpCustodianForPorting(
 	}
 
 	// convert free collaterals of custodians to usdt to compare and sort descending
-	convertRateTool := NewPortalExchangeRateTool(exchangeRate, supportCollaterals)
+	convertRateTool := NewPortalExchangeRateTool(exchangeRate, portalParams.SupportedCollateralTokens)
 	type custodianTotalCollateral struct {
 		custodianKey string
 		amountInUSDT uint64
@@ -465,36 +358,30 @@ func UpdateCustodianStateAfterUserRequestPToken(currentPortalState *CurrentPorta
 	return nil
 }
 
-func CalculatePortingFees(totalPToken uint64, minPercent float64) uint64 {
-	result := minPercent * float64(totalPToken) / 100
-	roundNumber := math.Round(result)
-	return uint64(roundNumber)
-}
-
-func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState, minPercent float64) (uint64, error) {
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
-	portingAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenSymbol, portingAmountInPToken)
+func CalMinPortingFee(portingAmountInPToken uint64, portalTokenID string, exchangeRate *statedb.FinalExchangeRatesState, portalParam PortalParams) (uint64, error) {
+	exchangeTool := NewPortalExchangeRateTool(exchangeRate, portalParam.SupportedCollateralTokens)
+	portingAmountInPRV, err := exchangeTool.Convert(portalTokenID, common.PRVIDStr, portingAmountInPToken)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum porting fee %v", err)
 		return 0, err
 	}
 
 	// can't use big int to calculate porting fee because of common.MinPercentPortingFee < 1
-	portingFee := uint64(math.Round(float64(portingAmountInPRV) * minPercent / 100))
+	portingFee := uint64(math.Round(float64(portingAmountInPRV) * portalParam.MinPercentPortingFee / 100))
 
 	return portingFee, nil
 }
 
-func CalMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRate *statedb.FinalExchangeRatesState, minPercent float64) (uint64, error) {
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
-	redeemAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenSymbol, redeemAmountInPToken)
+func CalMinRedeemFee(redeemAmountInPToken uint64, portalTokenID string, exchangeRate *statedb.FinalExchangeRatesState, portalParam PortalParams) (uint64, error) {
+	exchangeTool := NewPortalExchangeRateTool(exchangeRate, portalParam.SupportedCollateralTokens)
+	redeemAmountInPRV, err := exchangeTool.Convert(portalTokenID, common.PRVIDStr, redeemAmountInPToken)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v", err)
 		return 0, err
 	}
 
 	// can't use big int to calculate porting fee because of common.MinPercentRedeemFee < 1
-	redeemFee := uint64(math.Round(float64(redeemAmountInPRV) * minPercent / 100))
+	redeemFee := uint64(math.Round(float64(redeemAmountInPRV) * portalParam.MinPercentRedeemFee / 100))
 
 	return redeemFee, nil
 }
@@ -821,6 +708,7 @@ func deleteWaitingPortingRequest(state *CurrentPortalState, waitingPortingReques
 	delete(state.WaitingPortingRequests, waitingPortingRequestKey)
 }
 
+// todo: replace it by PortalExchangeRateTool
 type ConvertExchangeRatesObject struct {
 	finalExchangeRates *statedb.FinalExchangeRatesState
 }
@@ -845,17 +733,6 @@ func (c ConvertExchangeRatesObject) ExchangePToken2PRVByTokenId(pTokenId string,
 		}
 
 		return result, nil
-	}
-
-	return 0, errors.New("Ptoken is not support")
-}
-
-func (c *ConvertExchangeRatesObject) ExchangePRV2PTokenByTokenId(pTokenId string, value uint64) (uint64, error) {
-	switch pTokenId {
-	case common.PortalBTCIDStr:
-		return c.ExchangePRV2BTC(value)
-	case common.PortalBNBIDStr:
-		return c.ExchangePRV2BNB(value)
 	}
 
 	return 0, errors.New("Ptoken is not support")
@@ -899,31 +776,6 @@ func (c *ConvertExchangeRatesObject) ExchangeBNB2PRV(value uint64) (uint64, erro
 		return 0, err
 	}
 
-	return valueExchange, nil
-}
-
-func (c *ConvertExchangeRatesObject) ExchangePRV2BTC(value uint64) (uint64, error) {
-	//input nano
-	BTCRates := c.finalExchangeRates.Rates()[common.PortalBTCIDStr].Amount //return nano pUSDT
-	PRVRates := c.finalExchangeRates.Rates()[common.PRVIDStr].Amount       //return nano pUSDT
-
-	valueExchange, err := c.convert(value, PRVRates, BTCRates)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return valueExchange, nil
-}
-
-func (c *ConvertExchangeRatesObject) ExchangePRV2BNB(value uint64) (uint64, error) {
-	BNBRates := c.finalExchangeRates.Rates()[common.PortalBNBIDStr].Amount
-	PRVRates := c.finalExchangeRates.Rates()[common.PRVIDStr].Amount
-
-	valueExchange, err := c.convert(value, PRVRates, BNBRates)
-	if err != nil {
-		return 0, err
-	}
 	return valueExchange, nil
 }
 
@@ -1399,6 +1251,7 @@ func GetTotalMatchingPubTokenInWaitingPortings(portalState *CurrentPortalState, 
 	return totalMatchingPubTokenAmount
 }
 
+//todo: update to v3
 func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
 	exchangeRate := NewConvertExchangeRatesObject(currentPortalState.FinalExchangeRatesState)
 

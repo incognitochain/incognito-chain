@@ -101,40 +101,26 @@ func (portal *PortalService) GetFinalExchangeRates(stateDB *statedb.StateDB, bea
 	return result, nil
 }
 
-func (portal *PortalService) ConvertExchangeRates(stateDB *statedb.StateDB, tokenID string, valuePToken uint64) (map[string]uint64, error) {
-	result := make(map[string]uint64)
-	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB)
-	if err != nil {
-		return result, err
+func (portal *PortalService) ConvertExchangeRates(
+	finalExchangeRates *statedb.FinalExchangeRatesState, portalParams blockchain.PortalParams,
+	amount uint64, tokenIDFrom string, tokenIDTo string) (uint64, error) {
+	result := uint64(0)
+	var err error
+	exchangeTool := blockchain.NewPortalExchangeRateTool(finalExchangeRates, portalParams.SupportedCollateralTokens)
+	if tokenIDTo != "" {
+		result, err = exchangeTool.Convert(tokenIDFrom, tokenIDTo, amount)
+	} else {
+		result, err = exchangeTool.ConvertToUSDT(tokenIDFrom, amount)
 	}
-
-	finalExchangeRatesObj := blockchain.NewConvertExchangeRatesObject(finalExchangeRates)
-	exchange, err := finalExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, valuePToken)
-
 	if err != nil {
-		return result, err
+		return 0, err
 	}
-	result[tokenID] = exchange
 
 	return result, nil
 }
 
-func (portal *PortalService) GetPortingFees(stateDB *statedb.StateDB, tokenID string, valuePToken uint64, portalParam blockchain.PortalParams) (map[string]uint64, error) {
-	result := make(map[string]uint64)
-	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB)
-	if err != nil {
-		return result, err
-	}
-
-	exchangePortingFees, err := blockchain.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates, portalParam.MinPercentPortingFee)
-
-	if err != nil {
-		return result, err
-	}
-
-	result[tokenID] = exchangePortingFees
-
-	return result, nil
+func (portal *PortalService) GetPortingFees(finalExchangeRates *statedb.FinalExchangeRatesState, tokenID string, valuePToken uint64, portalParam blockchain.PortalParams) (uint64, error) {
+	return blockchain.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates, portalParam)
 }
 
 func (portal *PortalService) CalculateAmountNeededCustodianDepositLiquidation(

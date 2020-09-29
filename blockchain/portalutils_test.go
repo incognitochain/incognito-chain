@@ -22,10 +22,9 @@ func TestPickUpCustodianForPorting(t *testing.T) {
 
 	portalParam := PortalParams{
 		MinPercentLockedCollateral: 150,
-	}
-
-	supportCollateral := []PortalCollateral{
-		{common.EthAddrStr, 9},
+		SupportedCollateralTokens: []PortalCollateral{
+			{common.EthAddrStr, 9},
+		},
 	}
 
 	custodianKey1 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress1").String()
@@ -93,7 +92,7 @@ func TestPickUpCustodianForPorting(t *testing.T) {
 		custodianKey4: custodian4,
 	}
 
-	matchCustodians, err := pickUpCustodianForPorting(portingAmount, portalTokenID, custodianPool, finalExchangeRate, portalParam, supportCollateral)
+	matchCustodians, err := pickUpCustodianForPorting(portingAmount, portalTokenID, custodianPool, finalExchangeRate, portalParam)
 
 	fmt.Println("Err: ", err)
 	fmt.Printf("Result: %+v", matchCustodians)
