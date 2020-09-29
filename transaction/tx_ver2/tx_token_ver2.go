@@ -47,6 +47,24 @@ func checkIsBridgeTokenID(bridgeStateDB *statedb.StateDB, tokenID *common.Hash) 
 	return nil
 }
 
+// this signs only on the hash of the data in it
+func (tx *Tx) proveToken(params *tx_generic.TxPrivacyInitParams) error {
+	utils.Logger.Log.Debugf("CREATING sub-TX (token)")
+	if err := tx_generic.ValidateTxParams(params); err != nil {
+		return err
+	}
+
+	// Init tx and params (tx and params will be changed)
+	if err := tx.InitializeTxAndParams(params); err != nil {
+		return err
+	}
+
+	if err := tx.proveCA(params); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 	txToken.TxTokenData.SetType(params.TokenParams.TokenTxType)
 	txToken.TxTokenData.SetPropertyName(params.TokenParams.PropertyName)
@@ -169,7 +187,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				nil,
 			)
 			txNormal := new(Tx)
-			if err := txNormal.Init(txParams); err != nil {
+			if err := txNormal.proveToken(txParams); err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 			}
 			txToken.TxTokenData.TxNormal = txNormal
@@ -183,8 +201,8 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 	return nil
 }
 
-// Prove
-func (tx *Tx) proveWithMessage(params *tx_generic.TxPrivacyInitParams, hashedTokenMessage []byte) error {
+// this signs on the hash of both sub TXs
+func (tx *Tx) provePRV(params *tx_generic.TxPrivacyInitParams, hashedTokenMessage []byte) error {
 	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
@@ -213,13 +231,13 @@ func (tx *Tx) proveWithMessage(params *tx_generic.TxPrivacyInitParams, hashedTok
 	return err
 }
 
-func (txToken *TxToken) initPRVFee(feeTx * Tx, params *tx_generic.TxPrivacyInitParams) error {
+func (txToken *TxToken) initPRV(feeTx * Tx, params *tx_generic.TxPrivacyInitParams) error {
 	txTokenDataHash, err := txToken.TxTokenData.Hash()
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 		return err
 	}
-	if err := feeTx.proveWithMessage(params, txTokenDataHash[:]); err != nil {
+	if err := feeTx.provePRV(params, txTokenDataHash[:]); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
@@ -281,7 +299,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	}
 
 	// Init PRV Fee on the whole transaction
-	if err := txToken.initPRVFee(tx, txPrivacyParams); err != nil {
+	if err := txToken.initPRV(tx, txPrivacyParams); err != nil {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}

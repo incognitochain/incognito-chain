@@ -256,7 +256,7 @@ func TestTxV2Salary(t *testing.T){
 		// 	if !isSane{
 		// 		continue
 		// 	}
-		// 	txSpecific.ValidateTxByItself(true, dummyDB, nil, nil, byte(0), true, nil, nil)
+		// 	txSpecific.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, byte(0), true, nil, nil)
 		// }
 
 		malTx := &Tx{}
@@ -323,7 +323,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 
 		initializingParams := tx_generic.NewTxPrivacyInitParams(dummyPrivateKeys[0],
 			paymentInfoOut,inputCoins,
-			sumIn-sumOut,false,
+			sumIn-sumOut,hasPrivacyForPRV,
 			dummyDB,
 			&common.PRVCoinID,
 			nil,
@@ -348,7 +348,7 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
 		// isValid,err = tx.ValidateTransaction(true,dummyDB,nil,0,nil,false,true)
-		isValid,err = tx.ValidateTxByItself(false, dummyDB, nil, nil, shardID, true, nil, nil)
+		isValid,err = tx.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, true, nil, nil)
 		if err!=nil{
 			panic(err)
 		}
@@ -404,7 +404,7 @@ func testTxV2DuplicateInput(db *statedb.StateDB, inputCoins []coin.PlainCoin, pa
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
 	// validate should reject due to Verify() in PaymentProofV2
-	isValid,_ = malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,_ = malTx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,false,isValid)
 }
 
@@ -429,7 +429,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymen
 	// 	panic(errMalInit)
 	// }
 	// assert.NotEqual(t,nil,errMalInit)
-	isValid,errMalVerify := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,errMalVerify := malTx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.NotEqual(t,nil,errMalVerify)
 	fmt.Println(errMalVerify)
 	assert.Equal(t,false,isValid)
@@ -460,7 +460,7 @@ func testTxV2OneFakeInput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxPr
 	isValid,err := txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
-	isValid,err = txv2.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,err = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	// should fail at signature since mlsag needs commitments from inputs
 	// fmt.Printf("One fake valid input -> %v\n",err)
 	assert.Equal(t,false,isValid)
@@ -470,7 +470,7 @@ func testTxV2OneFakeInput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxPr
 	isValid,err = txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
-	isValid,err = txv2.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,err = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
 
@@ -478,7 +478,7 @@ func testTxV2OneFakeInput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxPr
 	// saved = inputCoins[changed]
 	// inputCoins[changed] = nil
 	// malTx.GetProof().SetInputCoins(inputCoins)
-	// isValid,err = malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	// isValid,err = malTx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	// // verify must fail
 	// assert.NotEqual(t,nil,err)
 	// assert.Equal(t,false,isValid)
@@ -502,7 +502,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	isValid,err := txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
-	isValid,err = txv2.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,err = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	// verify must fail
 	assert.Equal(t,false,isValid)
 	// fmt.Printf("Fake output (wrong amount) -> %v\n",err)
@@ -512,7 +512,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	txv2.GetProof().SetOutputCoins(outs)
 	err = resignUnprovenTx(keySets, txv2, params, nil)
 	assert.Equal(t,nil,err)
-	isValid,_ = txv2.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,_ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,true,isValid)
 
 	// now instead of changing amount, we change the OTA public key
@@ -537,7 +537,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	isValid,err = txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
-	isValid,err = txv2.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,err = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	// verify must fail
 	assert.Equal(t,false,isValid)
 	// fmt.Printf("Fake output (wrong receiving OTA) -> %v\n",err)
@@ -548,7 +548,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	txv2.GetProof().SetOutputCoins(outs)
 	err = resignUnprovenTx(keySets, txv2, params, nil)
 	assert.Equal(t,nil,err)
-	isValid,_ = txv2.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+	isValid,_ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,true,isValid)
 
 }
@@ -569,7 +569,7 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 		assert.Equal(t,nil,err)
 		otaBytes := malTx.GetProof().GetInputCoins()[changed].GetKeyImage().ToBytesS()
 		statedb.StoreSerialNumbers(db, common.ConfidentialAssetID, [][]byte{otaBytes}, 0)
-		isValid,err := malTx.ValidateTxByItself(true, db, nil, nil, byte(0), true, nil, nil)
+		isValid,err := malTx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 		// verify by itself passes
 		if err!=nil{
 			panic(err)
@@ -597,7 +597,7 @@ func testTxV2JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T)
 		if !isSane{
 			continue
 		}
-		isSane, _ = txSpecific.ValidateTxByItself(false, db, nil, nil, shardID, false, nil, nil)
+		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
 		if !isSane{
 			continue
 		}

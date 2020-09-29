@@ -38,7 +38,7 @@ import (
 // 	return
 // }()
 var (
-	hasPrivacyForPRV   bool = false
+	hasPrivacyForPRV   bool = true
 	hasPrivacyForToken bool = true
 	shardID            byte = byte(0)
 )
@@ -551,6 +551,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 		return utils.NewTransactionErr(-1000, nil, "Cast failed")
 	}
 
+	// NOTE : hasPrivacy has been deprecated in the real flow.
 	if nonPrivacyParams == nil {
 		propertyID, _ := common.TokenStringToHash(params.TokenParams.PropertyID)
 		paramsInner := tx_generic.NewTxPrivacyInitParams(
@@ -558,7 +559,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			params.TokenParams.Receiver,
 			params.TokenParams.TokenInput,
 			params.TokenParams.Fee,
-			hasPrivacyForToken,
+			true,
 			params.TransactionStateDB,
 			propertyID,
 			nil,
@@ -570,7 +571,7 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			params.PaymentInfo,
 			params.InputCoin,
 			params.FeeNativeCoin,
-			hasPrivacyForPRV,
+			false,
 			params.TransactionStateDB,
 			&common.PRVCoinID,
 			params.MetaData,

@@ -188,15 +188,16 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	if check, err := tx.IsNonPrivacyNonInput(params); check {
 		return err
 	}
-	if params.HasPrivacy{
-		if err := tx.proveCA(params); err != nil {
-			return err
-		}
-	}else{
-		if err := tx.prove(params); err != nil {
-			return err
-		}
+	// if params.HasPrivacy{
+	// 	if err := tx.proveCA(params); err != nil {
+	// 		return err
+	// 	}
+	// }else{
+	// }
+	if err := tx.prove(params); err != nil {
+		return err
 	}
+
 	return nil
 }
 
@@ -293,7 +294,7 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	// inputCoins is plainCoin because it may have coinV1 with coinV2
 	inputCoins := params.InputCoins
 
-	tx.Proof, err = privacy.ProveV2(inputCoins, outputCoins, nil, params.HasPrivacy, params.PaymentInfo)
+	tx.Proof, err = privacy.ProveV2(inputCoins, outputCoins, nil, false, params.PaymentInfo)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err

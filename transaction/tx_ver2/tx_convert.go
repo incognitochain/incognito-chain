@@ -367,7 +367,7 @@ func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPri
 		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 		return err
 	}
-	if err := feeTx.proveWithMessage(params, txTokenDataHash[:]); err != nil {
+	if err := feeTx.provePRV(params, txTokenDataHash[:]); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type

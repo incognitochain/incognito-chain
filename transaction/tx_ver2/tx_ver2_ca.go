@@ -224,7 +224,7 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) error {
 	// inputCoins is plainCoin because it may have coinV1 with coinV2
 	inputCoins := params.InputCoins
 
-	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, params.HasPrivacy, params.PaymentInfo)
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, true, params.PaymentInfo)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
 		return err
