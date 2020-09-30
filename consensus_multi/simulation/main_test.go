@@ -45,6 +45,13 @@ func Test_Main4Committee_Case1(t *testing.T) {
 		"112t8rrASXvBAtZ3dBTwXp6NH8KsX4dgmghUu36HtaPRJGvqeBqSSKb8yi7NUuNwUa58eKcyLGsXWtqfYVTgiPvAZ11GADLRZSHUNb9nssFw",
 		"112t8rzc1pPSajQtjYVctFY5MGRgv2tqpRyD5zAZbwGXyh5Fum5Nafkn86iTw9w8RUhRnYH3wFLnFaZpDpb61gi3vBeQFTnzzyEErtd7jiBD",
 	}
+	additionalCommittee := []string{
+		"112t8sJ4kBcdPD3xjqpDE2rQJXws7uYbaBnDx17zHjXM5v7Xitciozih6qnxyMazD8b6xu2c6nB5NAceKuRsKwqqLsL8cDD6pevrcomQhSuj",
+		"112t8s1PX87jAEsotY2jVKcbY11yRgpDkrsVDaNU59hUJYg3FjiM5BHeqY5tyszkmVGy94ReCuhmgARN8W3cDUDJyen5XEWWK8D8RTeL4JEr",
+		"112t8rw2S2U1UqMPuSZkvN4ag5gWz9twGzhfGkpPi9hrug87Co4bbi1vmCxKMDPQPGV97acVHJLjbqWWJgJhvgvKnpwkj7VUWadSPUf81tso",
+		"112t8rqgs3FEcd1249ReCaMr4zbGYMRdFDMxqKGDM5nKR7AV4x3TQRMfGm9S8VEDfoZyr9fMBMpmkq94TzZ2tUGogrJo3vwWVn8mafdx86iW",
+		"112t8sSnofyEiraUFykMfYYER2agCbJaYjMHBUmL5oWsCH5SoFVg1NVYt9i39wYrygbhoXFXm378vcRD3Qbdx6Rsbm47tv5K8hR6QnHXe4mo",
+	}
 	// testScn := testScenerio{
 	// 	Name:      "test1",
 	// 	Committee: committee,
@@ -90,44 +97,79 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	// }
 	// RunSimulation(&testScn)
 
-	testScn2 := testScenerio{
-		Name:      "test2",
-		Committee: committee,
-		TimeSlots: 9,
-		TimeSlotScenerios: map[int]TimeSlotScenerio{
-			2: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			3: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 4, 5, 6, 7},
-				},
-			},
-			4: {
-				ProposingScenerio: []int{2},
-				VotingScenerios: map[string][]int{
-					"all": {2},
-				},
-			},
-			5: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			6: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-		},
-	}
-	RunSimulation(&testScn2)
+	// testScn2 := testScenerio{
+	// 	Name:      "test2",
+	// 	Committee: committee,
+	// 	TimeSlots: 9,
+	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
+	// 		2: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		3: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 4, 5, 6, 7},
+	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"3": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 			},
+	// 		},
+	// 		4: {
+	// 			ProposingScenerio: []int{2},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {2},
+	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"2": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 			},
+	// 		},
+	// 		5: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		6: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
+	// 				"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 				"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 			},
+	// 		},
+	// 		7: {
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"2": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"7": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// RunSimulation(&testScn2)
 
 	// testScn3 := testScenerio{
 	// 	Name:      "test3",
@@ -145,6 +187,21 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	// 			VotingScenerios: map[string][]int{
 	// 				"all": {1, 2, 3, 4, 5, 6, 7},
 	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 			},
+	// 		},
+	// 		4: {
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 			},
 	// 		},
 	// 		5: {
 	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
@@ -157,6 +214,22 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	// 			VotingScenerios: map[string][]int{
 	// 				"all": {1, 2, 3, 4, 5, 6, 7},
 	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+	// 			},
+	// 		},
+	// 		7: {
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"2": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"7": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 3},
+	// 			},
 	// 		},
 	// 		8: {
 	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
@@ -168,6 +241,16 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	// 			ProposingScenerio: []int{},
 	// 			VotingScenerios: map[string][]int{
 	// 				"all": {0, 1, 3, 4, 5, 6, 7},
+	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"2": {BestHeight: 5, BestTimeslot: 9, FinalHeight: 4, FinalTimeslot: 5, ViewCount: 2},
+	// 				"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 3},
+	// 				"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+	// 				"7": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
 	// 			},
 	// 		},
 	// 		10: {
@@ -176,60 +259,112 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	// 				"all": {1, 2, 3, 4, 5, 6, 7},
 	// 			},
 	// 		},
+	// 		11: {
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"all": {BestHeight: 6, BestTimeslot: 11, FinalHeight: 5, FinalTimeslot: 9, ViewCount: 2},
+	// 			},
+	// 		},
 	// 	},
 	// }
 	// RunSimulation(&testScn3)
 
-	// testScn4 := testScenerio{
-	// 	Name:      "test4",
-	// 	Committee: committee,
-	// 	TimeSlots: 14,
-	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
-	// 		2: {
-	// 			ProposingScenerio: []int{1, 2, 3, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		3: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		4: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		5: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		7: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		8: {
-	// 			ProposingScenerio: []int{1},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		9: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// RunSimulation(&testScn4)
+	testScn4 := testScenerio{
+		Name:      "test4",
+		Committee: append(committee, additionalCommittee...),
+		TimeSlots: 14,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 3, BestTimeslot: 4, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0":  {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"12": {BestHeight: 3, BestTimeslot: 4, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			6: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"1":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"2":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"3":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"4":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"5":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"6":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"7":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"8":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"9":  {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"10": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"11": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"12": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+				},
+			},
+			7: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+			},
+			8: {
+				ProposingScenerio: []int{1},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"2": {BestHeight: 4, BestTimeslot: 8, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+				},
+			},
+			9: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 4, BestTimeslot: 7, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+				},
+			},
+			10: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"1":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"2":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"3":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"4":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"5":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"6":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"7":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"8":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"9":  {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"10": {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"11": {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+					"12": {BestHeight: 5, BestTimeslot: 10, FinalHeight: 4, FinalTimeslot: 8, ViewCount: 2},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn4)
 
 }
 func RunSimulation(testScn *testScenerio) {
@@ -326,12 +461,14 @@ func RunSimulation(testScn *testScenerio) {
 	startNode()
 	lastTimeSlot := uint64(0)
 	for {
-		curTimeSlot := (uint64(common.CalculateTimeSlot(time.Now().Unix())) - startTimeSlot) + 1
+		curTimeSlotTime := uint64(common.CalculateTimeSlot(time.Now().Unix()))
+		curTimeSlot := (curTimeSlotTime - startTimeSlot) + 1
 		if lastTimeSlot != curTimeSlot {
-			time.AfterFunc(time.Millisecond*1000, func() {
+			time.AfterFunc(time.Millisecond*1500, func() {
+				slotProducerIdx := GetIndexOfBytes(nodeList[0].chain.GetBestView().GetProposerByTimeSlot(int64(curTimeSlotTime), 2).MiningPubKey["bls"], committeePkBytes)
 				fmt.Println("==========================")
-				fmt.Printf("Timeslot %v:\n", uint64(common.CalculateTimeSlot(time.Now().Unix()))-startTimeSlot+1)
-
+				fmt.Printf("Timeslot is: %v\n", curTimeSlot)
+				fmt.Printf("Proposer is: %d\n", slotProducerIdx)
 				expectedOutput := true
 				if _, ok := testScn.TimeSlotScenerios[int(curTimeSlot)]; ok {
 					if len(testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput) > 0 {
@@ -339,54 +476,63 @@ func RunSimulation(testScn *testScenerio) {
 							for i := 0; i < len(testScn.Committee); i++ {
 								if nodeList[i].chain.GetBestView().GetHeight() != output.BestHeight {
 									expectedOutput = false
+									fmt.Println("BestHeight not match!")
 									break
 								}
 								if uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
 									expectedOutput = false
+									fmt.Println("BestTimeslot not match!")
 									break
 								}
 								if nodeList[i].chain.GetFinalView().GetHeight() != output.FinalHeight {
 									expectedOutput = false
+									fmt.Println("FinalHeight not match!")
 									break
 								}
 								if uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
 									expectedOutput = false
+									fmt.Println("FinalHeight not match!")
 									break
 								}
 								if len(nodeList[i].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
 									expectedOutput = false
+									fmt.Println("Viewcount not match!")
 									break
 								}
 							}
 						} else {
-							slotProducerIdx := GetIndexOfBytes(nodeList[0].chain.GetBestView().GetProposerByTimeSlot(int64(timeslot), 2).MiningPubKey["bls"], committeePkBytes)
 							for nodeID, output := range testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput {
-								nodeIDNumber, _ := strconv.Atoi(nodeID)
-								if nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetBestView().GetHeight() != output.BestHeight {
+								nodeIDOffset, _ := strconv.Atoi(nodeID)
+								if nodeList[(slotProducerIdx+nodeIDOffset)%len(testScn.Committee)].chain.GetBestView().GetHeight() != output.BestHeight {
 									expectedOutput = false
+									fmt.Println("BestHeight not match!")
 									break
 								}
-								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
+								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDOffset)%len(testScn.Committee)].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
 									expectedOutput = false
+									fmt.Println("BestTimeslot not match!")
 									break
 								}
-								if nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetFinalView().GetHeight() != output.FinalHeight {
+								if nodeList[(slotProducerIdx+nodeIDOffset)%len(testScn.Committee)].chain.GetFinalView().GetHeight() != output.FinalHeight {
 									expectedOutput = false
+									fmt.Println("FinalHeight not match!")
 									break
 								}
-								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
+								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDOffset)%len(testScn.Committee)].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
 									expectedOutput = false
+									fmt.Println("FinalHeight not match!")
 									break
 								}
-								if len(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
+								if len(nodeList[(slotProducerIdx+nodeIDOffset)%len(testScn.Committee)].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
 									expectedOutput = false
+									fmt.Println("Viewcount not match!")
 									break
 								}
 							}
 						}
 					}
 				}
-				fmt.Printf("ExpectedOutput met:%v\n", expectedOutput)
+				fmt.Printf("ExpectedOutput met: %v\n", expectedOutput)
 
 				for i := 0; i < len(testScn.Committee); i++ {
 					fmt.Printf("Node %v: \n -Best view height: %d:%d\n -Final view height: %d:%d\n -View count: %v\n", i, nodeList[i].chain.GetBestView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1, nodeList[i].chain.GetFinalView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1, len(nodeList[i].chain.multiview.GetAllViewsWithBFS()))
