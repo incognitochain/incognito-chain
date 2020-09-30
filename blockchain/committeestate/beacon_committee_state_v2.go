@@ -3,7 +3,6 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -646,8 +645,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	var err error
 	chainID := byte(swapShardInstruction.ChainID)
 	newCommitteeChange := committeeChange
-	rootCommitteeChange := NewCommitteeChange()
-	rootCommitteeChange.clone(committeeChange)
 	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
 	tempSwapInPublicKeys := swapShardInstruction.InPublicKeyStructs
 	numberFixedValidators := env.NumberOfFixedShardBlockValidators
@@ -657,9 +654,8 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
 			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
-		b.shardCommittee[chainID] =
-			append(b.shardCommittee[chainID][:numberFixedValidators],
-				b.shardCommittee[chainID][numberFixedValidators+1:]...)
+		b.shardCommittee[chainID] = append(b.shardCommittee[chainID][:numberFixedValidators],
+			b.shardCommittee[chainID][numberFixedValidators+1:]...)
 		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
 	b.shardCommittee[chainID] = append(b.shardCommittee[chainID], tempSwapInPublicKeys...)
@@ -668,10 +664,10 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process list shard pool
 	for _, v := range tempSwapInPublicKeys {
 		if !v.IsEqual(b.shardSubstitute[chainID][0]) {
-			return rootCommitteeChange, errors.New("Swap In Not Valid In List Subtitutes Public Key")
+			return newCommitteeChange, errors.New("Swap In Not Valid In List Subtitutes Public Key")
 		}
+		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
 		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
-		b.shardSubstitute[chainID] = append(b.shardSubstitute[chainID][:0], b.shardSubstitute[chainID][1:]...)
 	}
 
 	// process after swap for assign old committees to current shard pool
@@ -934,9 +930,11 @@ func (engine *BeaconCommitteeEngineV2) HasSwappedCommittees(env *BeaconCommittee
 		for _, inst := range env.BeaconInstructions {
 			switch inst[0] {
 			case instruction.SWAP_SHARD_ACTION:
-				if inst[3] == strconv.Itoa(int(env.ShardID)) {
-					return true, nil
+				err := instruction.ValidateSwapShardInstructionSanity(inst)
+				if err != nil {
+					return false, err
 				}
+				return true, nil
 			}
 		}
 	}

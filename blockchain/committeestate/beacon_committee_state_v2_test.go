@@ -547,8 +547,8 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		rewardReceiver             map[string]privacy.PaymentAddress
 		stakingTx                  map[string]common.Hash
 		numberOfRound              map[string]int
-		mu                         *sync.RWMutex
 	}
+
 	type args struct {
 		swapShardInstruction *instruction.SwapShardInstruction
 		env                  *BeaconCommitteeStateEnvironment

@@ -90,6 +90,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 		}
 	}
 
+	// TODO: @tin move this condition to verify with shard best state, both insert and verify presign need this condition
 	if beaconHeight <= shardBestState.BeaconHeight {
 		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
 			beaconHeight, shardBestState.BeaconHeight)
@@ -188,6 +189,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 			return err
 		}
 
+		// TODO: @tin move validate block sign to verify pre-processing
+		// TODO: @tin get shard committees beacon block only one time and pass it to all functions
 		committees := []incognitokey.CommitteePublicKey{}
 		if curView.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 			beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)

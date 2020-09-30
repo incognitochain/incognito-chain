@@ -249,7 +249,7 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 	newCommitteeChange := committeeChange
 	chainID := byte(swapShardInstruction.ChainID)
 	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
-	tempSwapInPuclicKeys := swapShardInstruction.InPublicKeyStructs
+	tempSwapInPublicKeys := swapShardInstruction.InPublicKeyStructs
 	numberFixedValidators := env.NumberOfFixedBlockValidators()
 
 	// process list shard committees
@@ -257,8 +257,8 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 		s.shardCommittee = append(s.shardCommittee[:numberFixedValidators], s.shardCommittee[numberFixedValidators+1:]...)
 		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
-	s.shardCommittee = append(s.shardCommittee, tempSwapInPuclicKeys...)
-	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPuclicKeys...)
+	s.shardCommittee = append(s.shardCommittee, tempSwapInPublicKeys...)
+	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	return newCommitteeChange, nil
 }

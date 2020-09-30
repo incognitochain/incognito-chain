@@ -79,6 +79,7 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	UpgradeCommitteeEngineV2Height   uint64
 	BCHeightBreakPointFixRandShardCM uint64
+	CommitteeStateV2                 uint64
 }
 
 type GenesisParams struct {
@@ -188,6 +189,7 @@ func init() {
 		PreloadAddress:                   "",
 		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 2070000,
+		CommitteeStateV2:                 1,
 	}
 	// END TESTNET
 
@@ -270,6 +272,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
+		CommitteeStateV2:                 1,
 	}
 	// END TESTNET-2
 
@@ -352,6 +355,7 @@ func init() {
 		PreloadAddress:                   "",
 		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 644000,
+		CommitteeStateV2:                 1e9,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

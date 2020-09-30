@@ -322,7 +322,7 @@ func (chain *BeaconChain) CommitteesByShardID(shardID byte) []incognitokey.Commi
 func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version int) incognitokey.CommitteePublicKey {
 	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
 
-	//TODO: add recalculate proposer index here when swap committees
+	//TODO: @tin add recalculate proposer index here when swap committees
 	// chainParamEpoch := chain.Blockchain.config.ChainParams.Epoch
 	// id := -1
 	// if ok, err := finalView.HasSwappedCommittee(shardID, chainParamEpoch); err == nil && ok {
