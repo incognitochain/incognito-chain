@@ -453,7 +453,7 @@ func processPortalInstructions(
 		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
 			err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// portal reward
-		case strconv.Itoa(metadata.PortalRewardMeta):
+		case strconv.Itoa(metadata.PortalRewardMeta), strconv.Itoa(metadata.PortalRewardMetaV3):
 			err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// request withdraw reward
 		case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):

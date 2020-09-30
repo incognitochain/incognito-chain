@@ -16,7 +16,7 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewa
 	contentStr, _ := json.Marshal(portalRewardContent)
 
 	inst := []string{
-		strconv.Itoa(metadata.PortalRewardMeta),
+		strconv.Itoa(metadata.PortalRewardMetaV3),
 		strconv.Itoa(-1), // no need shardID
 		"portalRewardInst",
 		string(contentStr),

@@ -1258,7 +1258,6 @@ func GetTotalMatchingPubTokenInWaitingPortings(portalState *CurrentPortalState, 
 	return totalMatchingPubTokenAmount
 }
 
-//todo: update to v3
 func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState, portalParam PortalParams) {
 	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParam.SupportedCollateralTokens)
 
@@ -1281,6 +1280,33 @@ func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState, po
 			}
 			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += pubTokenAmountInPRV
 			totalLockedCollateralAmount += pubTokenAmountInPRV
+		}
+	}
+
+	currentPortalState.LockedCollateralForRewards.SetTotalLockedCollateralForRewards(totalLockedCollateralAmount)
+	currentPortalState.LockedCollateralForRewards.SetLockedCollateralDetail(lockedCollateralDetails)
+}
+
+func UpdateLockedCollateralForRewardsV3(currentPortalState *CurrentPortalState, portalParam PortalParams) {
+	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParam.SupportedCollateralTokens)
+
+	totalLockedCollateralAmount := currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards()
+	lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
+	portalTokenIDs := common.PortalSupportedIncTokenIDs
+	for _, custodianState := range currentPortalState.CustodianPoolState {
+		for _, tokenID := range portalTokenIDs {
+			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)
+			matchingPubTokenAmount := GetTotalMatchingPubTokenInWaitingPortings(currentPortalState, custodianState, tokenID)
+			totalPubToken := holdPubTokenAmount + matchingPubTokenAmount
+			if totalPubToken == 0 {
+				continue
+			}
+			pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSDT(tokenID, totalPubToken)
+			if err != nil {
+				Logger.log.Errorf("Error when converting public token to prv: %v", err)
+			}
+			lockedCollateralDetails[custodianState.GetIncognitoAddress()] += pubTokenAmountInUSDT
+			totalLockedCollateralAmount += pubTokenAmountInUSDT
 		}
 	}
 
