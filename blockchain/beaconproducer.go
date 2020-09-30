@@ -535,19 +535,23 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		}
 	}
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
-	if newBeaconHeight%chainParamEpoch == 1 {
-		BeaconCommittee := beaconBestState.GetBeaconCommittee()
-		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
-		if err != nil {
-			Logger.log.Error(err)
+	if newBeaconHeight < blockchain.config.ChainParams.CommitteeStateV2 {
+		if newBeaconHeight%chainParamEpoch == 0 {
+			BeaconCommittee := beaconBestState.GetBeaconCommittee()
+			beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
+			if err != nil {
+				Logger.log.Error(err)
+			}
+			if common.IndexOfUint64(newBeaconHeight/chainParamEpoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
+				epoch := newBeaconHeight / chainParamEpoch
+				swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconCommitteeStr, beaconBestState.MinBeaconCommitteeSize, epoch)
+				instructions = append(instructions, swapBeaconInstructions)
+				beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
+				instructions = append(instructions, beaconRootInst)
+			}
 		}
-		if common.IndexOfUint64(newBeaconHeight/chainParamEpoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-			epoch := newBeaconHeight / chainParamEpoch
-			swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconCommitteeStr, beaconBestState.MinBeaconCommitteeSize, epoch)
-			instructions = append(instructions, swapBeaconInstructions)
-			beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
-			instructions = append(instructions, beaconRootInst)
-		} else {
+	} else {
+		if newBeaconHeight%chainParamEpoch == 1 {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
 			env.LatestShardsState = shardsState

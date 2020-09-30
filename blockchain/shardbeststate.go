@@ -54,6 +54,10 @@ type ShardBestState struct {
 	ActiveShards           int                     `json:"ActiveShards"`
 	ConsensusAlgorithm     string                  `json:"ConsensusAlgorithm"`
 	StakingTx              *common.MapStringString `json:"-"`
+
+	// TODO: @tin add CommitteeFromBlock to shard best state
+	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"`
+
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
