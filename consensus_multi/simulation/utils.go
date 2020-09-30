@@ -28,6 +28,8 @@ func NewBlock(height uint64, time int64, producer string, prev common.Hash) comm
 			Timestamp:         time,
 			PreviousBlockHash: prev,
 			Producer:          producer,
+			ProposeTime:       time,
+			Proposer:          producer,
 		},
 		Body: blockchain.ShardBody{},
 	}

@@ -126,20 +126,20 @@ func (e *BLSBFT_V2) Start() error {
 						votes:      make(map[string]*BFTVote),
 						hasNewVote: false,
 					}
-					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+					e.Logger.Info(e.ChainKey, "Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
 					e.receiveBlockByHash[blkHash].block = block
 				}
 
 				if block.GetHeight() <= e.Chain.GetBestView().GetHeight() {
-					e.Logger.Infof("Receive block create from old view - height %v. Rejected! Expect: %v", block.GetHeight(), e.Chain.GetBestView().GetHeight())
+					e.Logger.Infof("%v Receive block create from old view - height %v. Rejected! Expect: %v", e.ChainKey, block.GetHeight(), e.Chain.GetBestView().GetHeight())
 					continue
 				}
 
 				proposeView := e.Chain.GetViewByHash(block.GetPrevHash())
 				if proposeView == nil {
-					e.Logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
+					e.Logger.Infof("%v Request sync block from node %s from %s to %s", e.ChainKey, proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().String())
 					e.Node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, e.Chain.GetShardID(), e.Chain.GetChainName())
 				}
 
@@ -148,7 +148,7 @@ func (e *BLSBFT_V2) Start() error {
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 						b.votes[voteMsg.Validator] = &voteMsg // store it
-						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+						e.Logger.Infof("%v Receive vote for block %s (%d) from %v", e.ChainKey, voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 						b.hasNewVote = true
 					}
 				} else {
@@ -156,12 +156,9 @@ func (e *BLSBFT_V2) Start() error {
 						votes:      make(map[string]*BFTVote),
 						hasNewVote: true,
 					}
-					if _, ok := e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator]; !ok {
-						e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-						e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
-					}
+					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
+					e.Logger.Infof("%v Receive vote for block %s (%d) from %v", e.ChainKey, voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 				}
-				// e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
 
 			case <-ticker:
 				if !e.Chain.IsReady() {
@@ -182,46 +179,59 @@ func (e *BLSBFT_V2) Start() error {
 					Check for whether we should propose block
 				*/
 				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+				var userProposeKey signatureschemes2.MiningKey
+				shouldPropose := false
+				shouldListen := true
 				for _, userKey := range e.UserKeySet {
 					userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-					if newTimeSlot { //for logging
-						e.Logger.Info("")
-						e.Logger.Info("======================================================")
-						e.Logger.Info("")
-						if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
-							e.Logger.Infof("TS: %v , PROPOSE BLOCK %v", common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1)
-						} else {
-							e.Logger.Infof("TS: %v , LISTEN BLOCK %v", common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1)
+					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
+						shouldListen = false
+						if common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
+							//using block hash as key of best view -> check if this best view we propose or not
+							if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
+								shouldPropose = true
+								userProposeKey = userKey
+							}
+						}
+					}
+				}
+
+				if newTimeSlot { //for logging
+					e.Logger.Infof("%v", e.ChainKey)
+					e.Logger.Infof("%v ======================================================", e.ChainKey)
+					e.Logger.Infof("%v", e.ChainKey)
+					if shouldListen {
+						e.Logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", e.ChainKey, common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1, e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
+					}
+					if shouldPropose {
+						e.Logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", e.ChainKey, common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1, e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
+					}
+
+				}
+
+				if shouldPropose {
+					e.proposeHistory.Add(fmt.Sprintf("%s%d", e.currentTimeSlot), 1)
+					//Proposer Rule: check propose block connected to bestview(longest chain rule 1) and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
+					sort.Slice(e.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
+						return e.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < e.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
+					})
+
+					var proposeBlock common.BlockInterface = nil
+					for _, v := range e.receiveBlockByHeight[bestView.GetHeight()+1] {
+						if v.isValid {
+							proposeBlock = v.block
+							break
 						}
 					}
 
-					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
-						//using block hash as key of best view -> check if this best view we propose or not
-						if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
-							e.proposeHistory.Add(fmt.Sprintf("%s%d", e.currentTimeSlot), 1)
-							//Proposer Rule: check propose block connected to bestview(longest chain rule 1) and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
-							sort.Slice(e.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
-								return e.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < e.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
-							})
+					//proposerPk: which include mining pubkey + incokey
+					//userKey: only have minigkey
+					if createdBlk, err := e.proposeBlock(userProposeKey, proposerPk, proposeBlock); err != nil {
+						e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
+						e.Logger.Critical(err)
 
-							var proposeBlock common.BlockInterface = nil
-							for _, v := range e.receiveBlockByHeight[bestView.GetHeight()+1] {
-								if v.isValid {
-									proposeBlock = v.block
-									break
-								}
-							}
-
-							//proposerPk: which include mining pubkey + incokey
-							//userKey: only have minigkey
-							if createdBlk, err := e.proposeBlock(userKey, proposerPk, proposeBlock); err != nil {
-								e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
-								e.Logger.Critical(err)
-
-							} else {
-								e.Logger.Infof("proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
-							}
-						}
+					} else {
+						e.Logger.Infof("%v proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", e.ChainKey, createdBlk.GetHeight(), e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
 					}
 				}
 
@@ -237,6 +247,7 @@ func (e *BLSBFT_V2) Start() error {
 					bestViewHeight := bestView.GetHeight()
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
 					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
+
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 					}
 
@@ -339,7 +350,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 	//e.Logger.Debug(validVote, len(view.GetCommittee()), errVote)
 	v.hasNewVote = false
 	if validVote > 2*len(view.GetCommittee())/3 {
-		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
+		e.Logger.Infof("%v Commit block %v , height: %v", e.ChainKey, blockHash, v.block.GetHeight())
 		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
 		//fmt.Println(committeeBLSString)
 		if err != nil {
@@ -362,7 +373,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
-		e.Logger.Info("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
+		e.Logger.Infof("%v Validation Data", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
 		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return
@@ -376,10 +387,10 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 
 func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	//not connected
-	e.Logger.Info("validateAndVote")
+	e.Logger.Info(e.ChainKey, "validateAndVote")
 	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
-		e.Logger.Info("view is null")
+		e.Logger.Error(e.ChainKey, "view is null")
 		return errors.New("View not connect")
 	}
 
@@ -439,7 +450,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 
 		v.isValid = true
 		e.voteHistory[v.block.GetHeight()] = v.block
-		e.Logger.Info("sending vote...")
+		e.Logger.Info(e.ChainKey, "sending vote...")
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
 
@@ -455,10 +466,10 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 		ctx, cancel := context.WithTimeout(ctx, common.TIMESLOT/2)
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
-		e.Logger.Info("debug CreateNewBlock")
+		//e.Logger.Info("debug CreateNewBlock")
 		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime)
 	} else {
-		e.Logger.Info("debug CreateNewBlockFromOldBlock")
+		//e.Logger.Info("debug CreateNewBlockFromOldBlock")
 		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime)
 		//b58Str, _ := proposerPk.ToBase58()
 		//block = e.voteHistory[e.Chain.GetBestViewHeight()+1]
@@ -468,9 +479,9 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 	}
 
 	if block != nil {
-		e.Logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(common.BlockInterface).GetProposeTime(), block.(common.BlockInterface).GetProduceTime())
+		e.Logger.Infof("%v create block %v hash %v, propose time %v, produce time %v", e.ChainKey, block.GetHeight(), block.Hash().String(), block.(common.BlockInterface).GetProposeTime(), block.(common.BlockInterface).GetProduceTime())
 	} else {
-		e.Logger.Infof("create block fail, time: %v", time.Since(time1).Seconds())
+		e.Logger.Infof("%v create block fail, time: %v", e.ChainKey, time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
 	}
 
