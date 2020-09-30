@@ -27,7 +27,7 @@ type PortalParams struct {
 	TP130                                uint64
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
-	SupportedCollateralTokenIDs          []PortalCollateral
+	SupportedCollateralTokens          []PortalCollateral
 }
 
 /*
@@ -219,7 +219,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs:          getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:          getSupportedPortalCollaterals(),
 			},
 		},
 		PortalTokens:                     initPortalTokensForTestNet(),
@@ -305,7 +305,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs:          getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:          getSupportedPortalCollaterals(),
 			},
 		},
 		PortalTokens:                     initPortalTokensForTestNet(),
@@ -389,7 +389,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokenIDs:          getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:          getSupportedPortalCollaterals(),
 			},
 		},
 		PortalTokens:                     initPortalTokensForMainNet(),

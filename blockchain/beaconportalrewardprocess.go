@@ -32,7 +32,7 @@ func (blockchain *BlockChain) processPortalReward(
 		}
 
 		// update locked collateral for rewards base on holding public tokens
-		UpdateLockedCollateralForRewards(currentPortalState)
+		UpdateLockedCollateralForRewards(currentPortalState, portalParams)
 
 		// store reward at beacon height into db
 		err = statedb.StorePortalRewards(

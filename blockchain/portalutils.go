@@ -1259,8 +1259,8 @@ func GetTotalMatchingPubTokenInWaitingPortings(portalState *CurrentPortalState, 
 }
 
 //todo: update to v3
-func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
-	exchangeRate := NewConvertExchangeRatesObject(currentPortalState.FinalExchangeRatesState)
+func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState, portalParam PortalParams) {
+	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParam.SupportedCollateralTokens)
 
 	totalLockedCollateralAmount := currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards()
 	lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
@@ -1275,7 +1275,7 @@ func UpdateLockedCollateralForRewards(currentPortalState *CurrentPortalState) {
 			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)
 			matchingPubTokenAmount := GetTotalMatchingPubTokenInWaitingPortings(currentPortalState, custodianState, tokenID)
 			totalPubToken := holdPubTokenAmount + matchingPubTokenAmount
-			pubTokenAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, totalPubToken)
+			pubTokenAmountInPRV, err := exchangeTool.Convert(tokenID, common.PRVIDStr, totalPubToken)
 			if err != nil {
 				Logger.log.Errorf("Error when converting public token to prv: %v", err)
 			}
