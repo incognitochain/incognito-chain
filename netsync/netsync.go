@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -266,9 +265,9 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64) {
 	Logger.log.Debug("Handling new message tx")
-	if !netSync.handleTxWithRole(msg.Transaction) {
-		return
-	}
+	// if !netSync.handleTxWithRole(msg.Transaction) {
+	// 	return
+	// }
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
 		if err != nil {
@@ -296,9 +295,9 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken, beaconHeight int64) {
 	Logger.log.Debug("Handling new message tx")
-	if !netSync.handleTxWithRole(msg.Transaction) {
-		return
-	}
+	// if !netSync.handleTxWithRole(msg.Transaction) {
+	// 	return
+	// }
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
 		if err != nil {
@@ -449,22 +448,22 @@ func (netSync *NetSync) handleCacheTx(txHash common.Hash) bool {
 }
 
 // handleTxWithRole - check tx and make decision is processed or not
-func (netSync *NetSync) handleTxWithRole(tx metadata.Transaction) bool {
-	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	for _, shardID := range netSync.config.RelayShard {
-		if senderShardID == shardID {
-			return true
-		}
-	}
-	netSync.config.roleInCommitteesMtx.RLock()
-	if netSync.config.RoleInCommittees > -1 && byte(netSync.config.RoleInCommittees) == senderShardID {
-		netSync.config.roleInCommitteesMtx.RUnlock()
-		return true
-	} else {
-		netSync.config.roleInCommitteesMtx.RUnlock()
-		return false
-	}
-}
+// func (netSync *NetSync) handleTxWithRole(tx metadata.Transaction) bool {
+// 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+// 	for _, shardID := range netSync.config.RelayShard {
+// 		if senderShardID == shardID {
+// 			return true
+// 		}
+// 	}
+// 	netSync.config.roleInCommitteesMtx.RLock()
+// 	if netSync.config.RoleInCommittees > -1 && byte(netSync.config.RoleInCommittees) == senderShardID {
+// 		netSync.config.roleInCommitteesMtx.RUnlock()
+// 		return true
+// 	} else {
+// 		netSync.config.roleInCommitteesMtx.RUnlock()
+// 		return false
+// 	}
+// }
 
 func (netSync *NetSync) cacheLoop() {
 	for w := 0; w < workers; w++ {
