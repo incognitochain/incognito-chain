@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -19,14 +18,21 @@ func isNil(v interface{}) bool {
 func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
 	curEpoch := chain.GetEpoch()
 	sameCommitteeBlock := blocks
+
 	for i, v := range blocks {
-		if v.GetCurrentEpoch() == curEpoch+1 {
-			if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+			if v.GetCurrentEpoch() == curEpoch+1 {
 				sameCommitteeBlock = blocks[:i+1]
-			} else {
-				sameCommitteeBlock = blocks[:i]
+				break
 			}
-			break
+		} else {
+			//TODO: Checking committees for beacon when release beacon
+			if i != len(blocks)-1 {
+				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
+					sameCommitteeBlock = blocks[:i+1]
+					break
+				}
+			}
 		}
 	}
 
@@ -46,16 +52,6 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		epochCommittee, err = chain.CommitteesV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
-		}
-	}
-
-	if chain.CurrentHeight() == 19 || chain.CurrentHeight() == 29 {
-		Logger.Info("[swap-v2] chain.CurrentHeight():", chain.CurrentHeight())
-		Logger.Info("[swap-v2] len(sameCommitteeBlock):", len(sameCommitteeBlock))
-		for i, v := range sameCommitteeBlock {
-			Logger.Info("[swap-v2] index:", i)
-			Logger.Info("[swap-v2] block.Height():", v.GetHeight())
-			Logger.Info("[swap-v2] block.Hash().String():", v.Hash().String())
 		}
 	}
 

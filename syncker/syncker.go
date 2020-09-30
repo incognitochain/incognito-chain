@@ -172,7 +172,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	case *types.ShardBlock:
 
 		shardBlk := blk.(*types.ShardBlock)
-		// fmt.Printf("[debugshard]: receive shard block %d \n", shardBlk.GetHeight())
+		// fmt.Printf("[debugshard]: receive shard %v block %d \n", shardBlk.GetShardID(), shardBlk.GetHeight())
 		if synckerManager.shardPool[shardBlk.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
 			if synckerManager.ShardSyncProcess[shardBlk.GetShardID()] != nil {

@@ -202,10 +202,6 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		committees, _ := incognitokey.CommitteeKeyListToString(committee)
-		Logger.log.Info("[swap-v2] chain.CurrentHeight():", chain.CurrentHeight())
-		Logger.log.Info("[swap-v2] committees:", committees)
-		panic(err)
 		return err
 	}
 	return nil
@@ -277,11 +273,10 @@ func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitok
 	}
 	result := []incognitokey.CommitteePublicKey{}
 
+	// TODO: @tin very dangerous style of code
+	// 1. caller of this func can pass any types of block
+	// 2. this function only accept one type of block, why don't change type into *types.ShardBlock to make this function more explicity
 	shardBlock := block.(*types.ShardBlock)
-	if block.GetHeight() > 18 {
-		Logger.log.Info("[swap-v2] shardBlock.Header.CommitteeFromBlock.String():", shardBlock.Header.CommitteeFromBlock.String())
-	}
-
 	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
 	if err != nil {
 		return result, err
