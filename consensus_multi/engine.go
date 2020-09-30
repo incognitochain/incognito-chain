@@ -270,5 +270,8 @@ func (engine *Engine) AddValidatorKey(key string) error {
 // }
 
 func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
-	return engine.BFTProcess[int(shardID)].IsStarted()
+	if shard, ok := engine.BFTProcess[int(shardID)]; ok {
+		return shard.IsStarted()
+	}
+	return false
 }
