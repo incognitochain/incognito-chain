@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	// "strconv"
 
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/transaction"
+	// "github.com/incognitochain/incognito-chain/privacy/coin"
+	// "github.com/incognitochain/incognito-chain/transaction"
 )
 
-var privIndicator string = "1"
+var privIndicator string = "-1"
 
 // Parse from byte to AutoTxByHash
 func ParseAutoTxHashFromBytes(b []byte) (*AutoTxByHash, error) {
@@ -140,10 +140,10 @@ func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, privKey
 				"%s": %s
 			},
 			1,
-			1
+			%s
 		],
 		"id": 1
-	}`, privKeyA, paymentAddStr, amount)
+	}`, privKeyA, paymentAddStr, amount, privIndicator)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -627,133 +627,133 @@ func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, e
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
-	amountI,_ := strconv.Atoi(amount)
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx1, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
+// func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
+// 	amountI,_ := strconv.Atoi(amount)
+// 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx1, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
 
-	keyWallet, _ = wallet.Base58CheckDeserialize(privKeyA)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr = keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx2, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
-	preJson := []string{EncodeBase58Check(tx1),EncodeBase58Check(tx2)}
-	result, _ := json.Marshal(preJson)
-	return result, err
+// 	keyWallet, _ = wallet.Base58CheckDeserialize(privKeyA)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	paymentAddStr = keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx2, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
+// 	preJson := []string{EncodeBase58Check(tx1),EncodeBase58Check(tx2)}
+// 	result, _ := json.Marshal(preJson)
+// 	return result, err
 
-	// if len(this.url) == 0 {
-	// 	return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	// }
+// 	// if len(this.url) == 0 {
+// 	// 	return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+// 	// }
 
-	// keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
-	// keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	// paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	// keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+// 	// keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	// paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
-	// query := fmt.Sprintf(`{
-	// 	"jsonrpc": "1.0",
-	// 	"method": "testbuilddoublespend",
-	// 	"params": [
-	// 		"%s",
-	// 		{
-	// 			"%s": %s
-	// 		},
-	// 		1,
-	// 		%s
-	// 	],
-	// 	"id": 1
-	// }`, privKeyA, paymentAddStr, amount, privIndicator)
-	// return this.SendPostRequestWithQuery(query)
-}
+// 	// query := fmt.Sprintf(`{
+// 	// 	"jsonrpc": "1.0",
+// 	// 	"method": "testbuilddoublespend",
+// 	// 	"params": [
+// 	// 		"%s",
+// 	// 		{
+// 	// 			"%s": %s
+// 	// 		},
+// 	// 		1,
+// 	// 		%s
+// 	// 	],
+// 	// 	"id": 1
+// 	// }`, privKeyA, paymentAddStr, amount, privIndicator)
+// 	// return this.SendPostRequestWithQuery(query)
+// }
 
-func (this *DebugTool) CreateDuplicateInput(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-	amountI,_ := strconv.Atoi(amount)
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx1j, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
-	if err !=nil{
-		return nil,err
-	}
-	tx1, err := transaction.NewTransactionFromJsonBytes(tx1j)
-	if err!=nil{
-		return nil,err
-	}
-	proof := tx1.GetProof()
-	inputCoins := proof.GetInputCoins()
-	clonedCoin := &coin.PlainCoinV1{}
-	clonedCoin.SetBytes(inputCoins[0].Bytes())
-	tx1.GetProof().SetInputCoins(append(inputCoins,clonedCoin))
-	// transaction.TestResignTxV1(tx1)
+// func (this *DebugTool) CreateDuplicateInput(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
+// 	if len(this.url) == 0 {
+// 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+// 	}
+// 	amountI,_ := strconv.Atoi(amount)
+// 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx1j, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
+// 	if err !=nil{
+// 		return nil,err
+// 	}
+// 	tx1, err := transaction.NewTransactionFromJsonBytes(tx1j)
+// 	if err!=nil{
+// 		return nil,err
+// 	}
+// 	proof := tx1.GetProof()
+// 	inputCoins := proof.GetInputCoins()
+// 	clonedCoin := &coin.PlainCoinV1{}
+// 	clonedCoin.SetBytes(inputCoins[0].Bytes())
+// 	tx1.GetProof().SetInputCoins(append(inputCoins,clonedCoin))
+// 	// transaction.TestResignTxV1(tx1)
 
-	tx1j, _ = json.Marshal(tx1)
+// 	tx1j, _ = json.Marshal(tx1)
 
-	preJson := []string{EncodeBase58Check(tx1j)}
-	result, _ := json.Marshal(preJson)
-	return result, err
+// 	preJson := []string{EncodeBase58Check(tx1j)}
+// 	result, _ := json.Marshal(preJson)
+// 	return result, err
 
-	// query := fmt.Sprintf(`{
-	// 	"jsonrpc": "1.0",
-	// 	"method": "testbuildduplicateinput",
-	// 	"params": [
-	// 		"%s",
-	// 		{
-	// 			"%s": %s
-	// 		},
-	// 		1,
-	// 		%s
-	// 	],
-	// 	"id": 1
-	// }`, privKeyA, paymentAddStr, amount, privIndicator)
-	// return this.SendPostRequestWithQuery(query)
-}
+// 	// query := fmt.Sprintf(`{
+// 	// 	"jsonrpc": "1.0",
+// 	// 	"method": "testbuildduplicateinput",
+// 	// 	"params": [
+// 	// 		"%s",
+// 	// 		{
+// 	// 			"%s": %s
+// 	// 		},
+// 	// 		1,
+// 	// 		%s
+// 	// 	],
+// 	// 	"id": 1
+// 	// }`, privKeyA, paymentAddStr, amount, privIndicator)
+// 	// return this.SendPostRequestWithQuery(query)
+// }
 
-func (this *DebugTool) CreateOutGtIn(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-	amountI,_ := strconv.Atoi(amount)
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	myOwnKeyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
-	myOwnKeyWallet.KeySet.InitFromPrivateKey(&myOwnKeyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx1j, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
-	if err !=nil{
-		return nil,err
-	}
-	tx1, err := transaction.NewTransactionFromJsonBytes(tx1j)
-	if err!=nil{
-		return nil,err
-	}
-	realFee := tx1.GetTxFee()
-	tx1.SetTxFee(realFee + 1000)
-	transaction.TestResignTxV1WithKey(tx1,[]byte(myOwnKeyWallet.KeySet.PrivateKey))
+// func (this *DebugTool) CreateOutGtIn(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
+// 	if len(this.url) == 0 {
+// 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+// 	}
+// 	amountI,_ := strconv.Atoi(amount)
+// 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	myOwnKeyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
+// 	myOwnKeyWallet.KeySet.InitFromPrivateKey(&myOwnKeyWallet.KeySet.PrivateKey)
+// 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx1j, err := this.CreateRawTx(privKeyA, paymentAddStr, uint64(amountI), isPrivacy)
+// 	if err !=nil{
+// 		return nil,err
+// 	}
+// 	tx1, err := transaction.NewTransactionFromJsonBytes(tx1j)
+// 	if err!=nil{
+// 		return nil,err
+// 	}
+// 	realFee := tx1.GetTxFee()
+// 	tx1.SetTxFee(realFee + 1000)
+// 	transaction.TestResignTxV1WithKey(tx1,[]byte(myOwnKeyWallet.KeySet.PrivateKey))
 
-	tx1j, _ = json.Marshal(tx1)
+// 	tx1j, _ = json.Marshal(tx1)
 
-	preJson := []string{EncodeBase58Check(tx1j)}
-	result, _ := json.Marshal(preJson)
-	return result, err
+// 	preJson := []string{EncodeBase58Check(tx1j)}
+// 	result, _ := json.Marshal(preJson)
+// 	return result, err
 
-	// query := fmt.Sprintf(`{
-	// 	"jsonrpc": "1.0",
-	// 	"method": "testbuildoutgtin",
-	// 	"params": [
-	// 		"%s",
-	// 		{
-	// 			"%s": %s
-	// 		},
-	// 		1,
-	// 		%s
-	// 	],
-	// 	"id": 1
-	// }`, privKeyA, paymentAddStr, amount, privIndicator)
-	// return this.SendPostRequestWithQuery(query)
-}
+// 	// query := fmt.Sprintf(`{
+// 	// 	"jsonrpc": "1.0",
+// 	// 	"method": "testbuildoutgtin",
+// 	// 	"params": [
+// 	// 		"%s",
+// 	// 		{
+// 	// 			"%s": %s
+// 	// 		},
+// 	// 		1,
+// 	// 		%s
+// 	// 	],
+// 	// 	"id": 1
+// 	// }`, privKeyA, paymentAddStr, amount, privIndicator)
+// 	// return this.SendPostRequestWithQuery(query)
+// }
 
 // func (this *DebugTool) CreateReceiverExists(privKeyA string, amount string) ([]byte, error) {
 // 	if len(this.url) == 0 {
@@ -780,104 +780,104 @@ func (this *DebugTool) CreateOutGtIn(privKeyA string, privKeyB string, amount st
 // 	return this.SendPostRequestWithQuery(query)
 // }
 
-func (this *DebugTool) CreateDoubleSpendToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string, isPrivacy bool) ([]byte, error) {
+// func (this *DebugTool) CreateDoubleSpendToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string, isPrivacy bool) ([]byte, error) {
 
-	amountI,_ := strconv.Atoi(amount)
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx1, err := this.CreateRawTxToken(privKeyStrA, tokenID, paymentAddStr, uint64(amountI), true)
+// 	amountI,_ := strconv.Atoi(amount)
+// 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx1, err := this.CreateRawTxToken(privKeyStrA, tokenID, paymentAddStr, uint64(amountI), true)
 
-	keyWallet, _ = wallet.Base58CheckDeserialize(privKeyStrA)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr = keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx2, err := this.CreateRawTxToken(privKeyStrA, tokenID, paymentAddStr, uint64(amountI), true)
+// 	keyWallet, _ = wallet.Base58CheckDeserialize(privKeyStrA)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	paymentAddStr = keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx2, err := this.CreateRawTxToken(privKeyStrA, tokenID, paymentAddStr, uint64(amountI), true)
 
-	preJson := []string{EncodeBase58Check(tx1),EncodeBase58Check(tx2)}
-	result, _ := json.Marshal(preJson)
-	return result, err
+// 	preJson := []string{EncodeBase58Check(tx1),EncodeBase58Check(tx2)}
+// 	result, _ := json.Marshal(preJson)
+// 	return result, err
 
 
-	// query := fmt.Sprintf(`{
-	// 	"id": 1,
-	// 	"jsonrpc": "1.0",
-	// 	"method": "testbuilddoublespendtoken",
-	// 	"params": [
-	// 		"%s",
-	// 		null,
-	// 		10,
-	// 		1,
-	// 		{
-	// 			"Privacy": true,
-	// 			"TokenID": "%s",
-	// 			"TokenName": "",
-	// 			"TokenSymbol": "",
-	// 			"TokenFee": 0,
-	// 			"TokenTxType": 1,
-	// 			"TokenAmount": 0,
-	// 			"TokenReceivers": {
-	// 				"%s": %s
-	// 			}
-	// 		}
-	// 		]
-	// }`, privKeyStrA, tokenID, paymentAddStr, amount)
-	// return this.SendPostRequestWithQuery(query)
-}
+// 	// query := fmt.Sprintf(`{
+// 	// 	"id": 1,
+// 	// 	"jsonrpc": "1.0",
+// 	// 	"method": "testbuilddoublespendtoken",
+// 	// 	"params": [
+// 	// 		"%s",
+// 	// 		null,
+// 	// 		10,
+// 	// 		1,
+// 	// 		{
+// 	// 			"Privacy": true,
+// 	// 			"TokenID": "%s",
+// 	// 			"TokenName": "",
+// 	// 			"TokenSymbol": "",
+// 	// 			"TokenFee": 0,
+// 	// 			"TokenTxType": 1,
+// 	// 			"TokenAmount": 0,
+// 	// 			"TokenReceivers": {
+// 	// 				"%s": %s
+// 	// 			}
+// 	// 		}
+// 	// 		]
+// 	// }`, privKeyStrA, tokenID, paymentAddStr, amount)
+// 	// return this.SendPostRequestWithQuery(query)
+// }
 
-func (this *DebugTool) CreateDuplicateInputToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string, isPrivacy bool) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-	amountI,_ := strconv.Atoi(amount)
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	tx1j, err := this.CreateRawTxToken(privKeyStrA, tokenID, paymentAddStr, uint64(amountI), true)
-	if err !=nil{
-		return nil,err
-	}
-	tx1, err := transaction.NewTransactionTokenFromJsonBytes(tx1j)
-	if err!=nil{
-		return nil,err
-	}
-	proof := tx1.GetTxTokenData().TxNormal.GetProof()
-	inputCoins := proof.GetInputCoins()
-	clonedCoin := &coin.PlainCoinV1{}
-	clonedCoin.SetBytes(inputCoins[0].Bytes())
-	proof.SetInputCoins(append(inputCoins,clonedCoin))
-	// transaction.TestResignTxV1(tx1)
+// func (this *DebugTool) CreateDuplicateInputToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string, isPrivacy bool) ([]byte, error) {
+// 	if len(this.url) == 0 {
+// 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+// 	}
+// 	amountI,_ := strconv.Atoi(amount)
+// 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
+// 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+// 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+// 	tx1j, err := this.CreateRawTxToken(privKeyStrA, tokenID, paymentAddStr, uint64(amountI), true)
+// 	if err !=nil{
+// 		return nil,err
+// 	}
+// 	tx1, err := transaction.NewTransactionTokenFromJsonBytes(tx1j)
+// 	if err!=nil{
+// 		return nil,err
+// 	}
+// 	proof := tx1.GetTxTokenData().TxNormal.GetProof()
+// 	inputCoins := proof.GetInputCoins()
+// 	clonedCoin := &coin.PlainCoinV1{}
+// 	clonedCoin.SetBytes(inputCoins[0].Bytes())
+// 	proof.SetInputCoins(append(inputCoins,clonedCoin))
+// 	// transaction.TestResignTxV1(tx1)
 
-	tx1j, _ = json.Marshal(tx1)
+// 	tx1j, _ = json.Marshal(tx1)
 
-	preJson := []string{EncodeBase58Check(tx1j)}
-	result, _ := json.Marshal(preJson)
-	return result, err
+// 	preJson := []string{EncodeBase58Check(tx1j)}
+// 	result, _ := json.Marshal(preJson)
+// 	return result, err
 
-	// query := fmt.Sprintf(`{
-	// 	"id": 1,
-	// 	"jsonrpc": "1.0",
-	// 	"method": "testbuildduplicateinputtoken",
-	// 	"params": [
-	// 		"%s",
-	// 		null,
-	// 		10,
-	// 		1,
-	// 		{
-	// 			"Privacy": true,
-	// 			"TokenID": "%s",
-	// 			"TokenName": "",
-	// 			"TokenSymbol": "",
-	// 			"TokenFee": 0,
-	// 			"TokenTxType": 1,
-	// 			"TokenAmount": 0,
-	// 			"TokenReceivers": {
-	// 				"%s": %s
-	// 			}
-	// 		}
-	// 		]
-	// }`, privKeyStrA, tokenID, paymentAddStr, amount)
-	// return this.SendPostRequestWithQuery(query)
-}
+// 	// query := fmt.Sprintf(`{
+// 	// 	"id": 1,
+// 	// 	"jsonrpc": "1.0",
+// 	// 	"method": "testbuildduplicateinputtoken",
+// 	// 	"params": [
+// 	// 		"%s",
+// 	// 		null,
+// 	// 		10,
+// 	// 		1,
+// 	// 		{
+// 	// 			"Privacy": true,
+// 	// 			"TokenID": "%s",
+// 	// 			"TokenName": "",
+// 	// 			"TokenSymbol": "",
+// 	// 			"TokenFee": 0,
+// 	// 			"TokenTxType": 1,
+// 	// 			"TokenAmount": 0,
+// 	// 			"TokenReceivers": {
+// 	// 				"%s": %s
+// 	// 			}
+// 	// 		}
+// 	// 		]
+// 	// }`, privKeyStrA, tokenID, paymentAddStr, amount)
+// 	// return this.SendPostRequestWithQuery(query)
+// }
 
 // func (this *DebugTool) CreateReceiverExistsToken(privKeyStrA string, tokenID string, amount string) ([]byte, error) {
 // 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrA)
