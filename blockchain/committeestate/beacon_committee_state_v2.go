@@ -371,7 +371,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			newB.shardCommonPool,
 			newB.shardCommittee,
 			newB.shardSubstitute,
-			env.MaxCommitteeSize,
+			env.MaxShardCommitteeSize,
 		)
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newB.numberOfAssignedCandidates)
 	}
@@ -427,8 +427,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
 				continue
 			}
-			Logger.log.Info("[swap-v2] swapShardInstruction.InPublicKeys:", swapShardInstruction.InPublicKeys)
-			Logger.log.Info("[swap-v2] swapShardInstruction.OutPublicKeys:", swapShardInstruction.OutPublicKeys)
 			committeeChange, err = newB.
 				processSwapShardInstruction(swapShardInstruction, env, committeeChange)
 			if err != nil {
@@ -470,7 +468,7 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
-			env.MaxCommitteeSize,
+			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidators,
 		)

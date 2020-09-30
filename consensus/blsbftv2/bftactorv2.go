@@ -360,7 +360,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			e.Logger.Error(err)
 			return
 		}
-		aggSig, brigSigs, validatorIdx, err := combineVotes(v.votes, committeeBLSString) //@tin maybe here
+		aggSig, brigSigs, validatorIdx, err := combineVotes(v.votes, committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
 			return
