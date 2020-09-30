@@ -540,7 +540,7 @@ func (tx TxBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) erro
 	for _, listSerialNumbers := range poolSerialNumbersHashH {
 		for _, serialNumberHash := range listSerialNumbers {
 			if _, ok := temp[serialNumberHash]; ok {
-				return errors.New("double spend")
+				return errors.New("double spend in mempool")
 			}
 		}
 	}
@@ -566,14 +566,20 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 	for i := 0; i < len(inputCoins); i++ {
 		serialNumber := inputCoins[i].GetKeyImage().ToBytesS()
 		ok, err := statedb.HasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
-		if ok || err != nil {
+		if err != nil{
+			return err
+		}
+		if ok {
 			return errors.New("double spend")
 		}
 	}
 	for _, outCoin := range tx.GetProof().GetOutputCoins(){
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
 		ok, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
-		if ok || err != nil {
+		if err != nil {
+			return err
+		}
+		if ok {
 			return errors.New("OTA of output coin already in database")
 		}
 	}
