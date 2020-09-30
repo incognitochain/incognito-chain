@@ -211,6 +211,28 @@ func GetCustodianDepositStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
+func StoreCustodianDepositStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalCustodianDepositStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianDepositStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalCustodianDepositStatusError, err)
+	}
+
+	return data, nil
+}
+
 func GetOneCustodian(stateDB *StateDB, custodianAddress string) (*CustodianState, error) {
 	key := GenerateCustodianStateObjectKey(custodianAddress)
 	custodianState, has, err := stateDB.getCustodianByKey(key)

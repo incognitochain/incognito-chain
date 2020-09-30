@@ -50,7 +50,7 @@ var (
 	portalPortingRequestStatusPrefix              = []byte("portalportingrequeststatus-")
 	portalPortingRequestTxStatusPrefix            = []byte("portalportingrequesttxstatus-")
 	portalCustodianWithdrawStatusPrefix           = []byte("portalcustodianwithdrawstatus-")
-	portalCustodianWithdrawStatusPrefixV3           = []byte("portalcustodianwithdrawstatusv3-")
+	portalCustodianWithdrawStatusPrefixV3         = []byte("portalcustodianwithdrawstatusv3-")
 	portalLiquidationTpExchangeRatesStatusPrefix  = []byte("portalliquidationtpexchangeratesstatus-")
 	portalLiquidationExchangeRatesPoolPrefix      = []byte("portalliquidationexchangeratespool-")
 	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
@@ -63,7 +63,7 @@ var (
 
 	portalStatusPrefix                           = []byte("portalstatus-")
 	portalCustodianDepositStatusPrefix           = []byte("custodiandeposit-")
-	portalCustodianDepositStatusPrefixV3           = []byte("custodiandepositv3-")
+	portalCustodianDepositStatusPrefixV3         = []byte("custodiandepositv3-")
 	portalRequestPTokenStatusPrefix              = []byte("requestptoken-")
 	portalRedeemRequestStatusPrefix              = []byte("redeemrequest-")
 	portalRedeemRequestStatusByTxReqIDPrefix     = []byte("redeemrequestbytxid-")
@@ -84,8 +84,9 @@ var (
 	// feature names
 	PortalRewardName = "portal"
 
-	portalExternalTxPrefix   =[]byte("portalexttx-")
-	withdrawCollateralPrefix = []byte("withdrawcollateral-")
+	portalExternalTxPrefix        = []byte("portalexttx-")
+	portalConfirmProofPrefix      = []byte("portalproof-")
+	withdrawCollateralProofType = []byte("0-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -388,9 +389,13 @@ func GetPortalExternalTxPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetWithdrawCollateralConfirmPrefixV3() []byte {
-	h := common.HashH(withdrawCollateralPrefix)
+func GetPortalConfirmProofPrefixV3(proofType []byte) []byte {
+	h := common.HashH(append(portalConfirmProofPrefix, proofType...))
 	return h[:][:prefixHashKeyLength]
+}
+
+func PortalWithdrawCollateralProofType() []byte {
+	return withdrawCollateralProofType
 }
 
 func PortalCustodianDepositStatusPrefix() []byte {

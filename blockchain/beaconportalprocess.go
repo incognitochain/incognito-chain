@@ -758,7 +758,7 @@ func (blockchain *BlockChain) processPortalCustodianDepositV3(
 			UniqExternalTxID: actionData.UniqExternalTxID,
 		}
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		err = statedb.StoreCustodianDepositStatus(
+		err = statedb.StoreCustodianDepositStatusV3(
 			stateDB,
 			actionData.TxReqID.String(),
 			custodianDepositDataBytes,
@@ -785,7 +785,7 @@ func (blockchain *BlockChain) processPortalCustodianDepositV3(
 			UniqExternalTxID: actionData.UniqExternalTxID,
 		}
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		err = statedb.StoreCustodianDepositStatus(
+		err = statedb.StoreCustodianDepositStatusV3(
 			stateDB,
 			actionData.TxReqID.String(),
 			custodianDepositDataBytes,

@@ -946,7 +946,7 @@ func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (
 
 func (blockService BlockService) GetCustodianDepositStatusV3(depositTxID string) (*metadata.PortalCustodianDepositStatusV3, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
-	data, err := statedb.GetCustodianDepositStatus(stateDB, depositTxID)
+	data, err := statedb.GetCustodianDepositStatusV3(stateDB, depositTxID)
 	if err != nil {
 		return nil, err
 	}

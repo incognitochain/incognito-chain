@@ -45,7 +45,7 @@ const (
 
 	// Portal v3
 	PortalExternalTxObjectType
-	WithdrawCollateralConfirmObjectType
+	PortalConfirmProofObjectType
 
 	// PDEX v2
 	PDETradingFeeObjectType
