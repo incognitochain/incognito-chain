@@ -37,19 +37,19 @@ type NetSync struct {
 }
 
 type NetSyncConfig struct {
-	Syncker               *syncker.SynckerManager
-	BlockChain            *blockchain.BlockChain
-	ChainParam            *blockchain.Params
-	TxMemPool             *mempool.TxPool
-	PubSubManager         *pubsub.PubSubManager
-	TransactionEvent      pubsub.EventChannel // transaction event
-	RoleInCommitteesEvent pubsub.EventChannel // role in committees event
-	BeaconBlockEvent      pubsub.EventChannel // beacon block event
-	ShardBlockEvent       pubsub.EventChannel // shard block event
-	RelayShard            []byte
-	RoleInCommittees      int
-	roleInCommitteesMtx   sync.RWMutex
-	Server                interface {
+	Syncker          *syncker.SynckerManager
+	BlockChain       *blockchain.BlockChain
+	ChainParam       *blockchain.Params
+	TxMemPool        *mempool.TxPool
+	PubSubManager    *pubsub.PubSubManager
+	TransactionEvent pubsub.EventChannel // transaction event
+	// RoleInCommitteesEvent pubsub.EventChannel // role in committees event
+	BeaconBlockEvent pubsub.EventChannel // beacon block event
+	ShardBlockEvent  pubsub.EventChannel // shard block event
+	RelayShard       []byte
+	// RoleInCommittees      int
+	// roleInCommitteesMtx   sync.RWMutex
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
@@ -85,11 +85,11 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 		Logger.log.Error(err)
 	}
 	netSync.config.TransactionEvent = subChanTx
-	_, subChanRole, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	netSync.config.RoleInCommitteesEvent = subChanRole
+	// _, subChanRole, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// }
+	// netSync.config.RoleInCommitteesEvent = subChanRole
 	_, subChanBeaconBlock, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
 		Logger.log.Error(err)
@@ -487,16 +487,16 @@ func (netSync *NetSync) cacheLoop() {
 					go netSync.handleCacheBlock("b" + beaconBlock.Header.Hash().String())
 				}
 			}
-		case msg := <-netSync.config.RoleInCommitteesEvent:
-			{
-				if shardID, ok := msg.Value.(int); !ok {
-					continue
-				} else {
-					netSync.config.roleInCommitteesMtx.Lock()
-					netSync.config.RoleInCommittees = shardID
-					netSync.config.roleInCommitteesMtx.Unlock()
-				}
-			}
+			// case msg := <-netSync.config.RoleInCommitteesEvent:
+			// 	{
+			// 		if shardID, ok := msg.Value.(int); !ok {
+			// 			continue
+			// 		} else {
+			// 			netSync.config.roleInCommitteesMtx.Lock()
+			// 			netSync.config.RoleInCommittees = shardID
+			// 			netSync.config.roleInCommitteesMtx.Unlock()
+			// 		}
+			// 	}
 		}
 	}
 }

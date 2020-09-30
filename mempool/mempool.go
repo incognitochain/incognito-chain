@@ -26,9 +26,9 @@ const (
 	defaultScanTime          = 10 * time.Minute
 	defaultIsUnlockMempool   = true
 	defaultIsBlockGenStarted = false
-	defaultRoleInCommittees  = -1
-	defaultIsTest            = false
-	defaultReplaceFeeRatio   = 1.1
+	// defaultRoleInCommittees  = -1
+	defaultIsTest          = false
+	defaultReplaceFeeRatio = 1.1
 )
 
 // config is a descriptor containing the memory pool configuration.

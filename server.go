@@ -443,9 +443,9 @@ func (serverObj *Server) NewServer(
 		Consensus:  serverObj.consensusEngine, // for onBFTMsg
 		// ShardToBeaconPool: serverObj.shardToBeaconPool,
 		// CrossShardPool:    serverObj.crossShardPool,
-		PubSubManager:    serverObj.pusubManager,
-		RelayShard:       relayShards,
-		RoleInCommittees: -1,
+		PubSubManager: serverObj.pusubManager,
+		RelayShard:    relayShards,
+		// RoleInCommittees: -1,
 	})
 	// Create a connection manager.
 	var listenPeer *peer.Peer
