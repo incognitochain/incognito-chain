@@ -52,221 +52,221 @@ func Test_Main4Committee_Case1(t *testing.T) {
 		"112t8rqgs3FEcd1249ReCaMr4zbGYMRdFDMxqKGDM5nKR7AV4x3TQRMfGm9S8VEDfoZyr9fMBMpmkq94TzZ2tUGogrJo3vwWVn8mafdx86iW",
 		"112t8sSnofyEiraUFykMfYYER2agCbJaYjMHBUmL5oWsCH5SoFVg1NVYt9i39wYrygbhoXFXm378vcRD3Qbdx6Rsbm47tv5K8hR6QnHXe4mo",
 	}
-	// testScn := testScenerio{
-	// 	Name:      "test1",
-	// 	Committee: committee,
-	// 	TimeSlots: 7,
-	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
-	// 		2: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		3: {
-	// 			ProposingScenerio: []int{1},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 3, 4, 5, 6, 7},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"2": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 			},
-	// 		},
-	// 		4: {
-	// 			ProposingScenerio: []int{1},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"1": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 			},
-	// 		},
-	// 		5: {
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"all": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// RunSimulation(&testScn)
+	testScn := testScenerio{
+		Name:      "test1",
+		Committee: committee,
+		TimeSlots: 7,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{1},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 3, 4, 5, 6, 7},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"2": {BestHeight: 30, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{1},
+				VotingScenerios: map[string][]int{
+					"all": {1},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"1": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			5: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"all": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn, t)
 
-	// testScn2 := testScenerio{
-	// 	Name:      "test2",
-	// 	Committee: committee,
-	// 	TimeSlots: 9,
-	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
-	// 		2: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		3: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 4, 5, 6, 7},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"3": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 			},
-	// 		},
-	// 		4: {
-	// 			ProposingScenerio: []int{2},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {2},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"2": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 			},
-	// 		},
-	// 		5: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		6: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
-	// 				"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 				"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 			},
-	// 		},
-	// 		7: {
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"2": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"7": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// RunSimulation(&testScn2)
+	testScn2 := testScenerio{
+		Name:      "test2",
+		Committee: committee,
+		TimeSlots: 9,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 4, 5, 6, 7},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"3": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{2},
+				VotingScenerios: map[string][]int{
+					"all": {2},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"2": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			6: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
+					"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+					"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+				},
+			},
+			7: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"2": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"7": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn2, t)
 
-	// testScn3 := testScenerio{
-	// 	Name:      "test3",
-	// 	Committee: committee,
-	// 	TimeSlots: 14,
-	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
-	// 		2: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		3: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 			},
-	// 		},
-	// 		4: {
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
-	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 			},
-	// 		},
-	// 		5: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		6: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
-	// 			},
-	// 		},
-	// 		7: {
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"2": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"7": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 3},
-	// 			},
-	// 		},
-	// 		8: {
-	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		9: {
-	// 			ProposingScenerio: []int{},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {0, 1, 3, 4, 5, 6, 7},
-	// 			},
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"2": {BestHeight: 5, BestTimeslot: 9, FinalHeight: 4, FinalTimeslot: 5, ViewCount: 2},
-	// 				"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 3},
-	// 				"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 				"7": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
-	// 			},
-	// 		},
-	// 		10: {
-	// 			ProposingScenerio: []int{1, 2, 3, 4, 5, 6, 7},
-	// 			VotingScenerios: map[string][]int{
-	// 				"all": {1, 2, 3, 4, 5, 6, 7},
-	// 			},
-	// 		},
-	// 		11: {
-	// 			ExpectedOutput: map[string]TimeSlotOutput{
-	// 				"all": {BestHeight: 6, BestTimeslot: 11, FinalHeight: 5, FinalTimeslot: 9, ViewCount: 2},
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// RunSimulation(&testScn3)
+	testScn3 := testScenerio{
+		Name:      "test3",
+		Committee: committee,
+		TimeSlots: 14,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			4: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"1": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			6: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 4, BestTimeslot: 6, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 3},
+				},
+			},
+			7: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"2": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"7": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 3},
+				},
+			},
+			8: {
+				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			9: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 3, 4, 5, 6, 7},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"1": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"2": {BestHeight: 5, BestTimeslot: 9, FinalHeight: 4, FinalTimeslot: 5, ViewCount: 2},
+					"3": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"4": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"5": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 3},
+					"6": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+					"7": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 2, ViewCount: 2},
+				},
+			},
+			10: {
+				ProposingScenerio: []int{1, 2, 3, 4, 5, 6, 7},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3, 4, 5, 6, 7},
+				},
+			},
+			11: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"all": {BestHeight: 6, BestTimeslot: 11, FinalHeight: 5, FinalTimeslot: 9, ViewCount: 2},
+				},
+			},
+		},
+	}
+	RunSimulation(&testScn3, t)
 
 	testScn4 := testScenerio{
 		Name:      "test4",
@@ -364,10 +364,10 @@ func Test_Main4Committee_Case1(t *testing.T) {
 			},
 		},
 	}
-	RunSimulation(&testScn4)
+	RunSimulation(&testScn4, t)
 
 }
-func RunSimulation(testScn *testScenerio) {
+func RunSimulation(testScn *testScenerio, t *testing.T) {
 	simulation = nil
 	committeePkStruct := []incognitokey.CommitteePublicKey{}
 	committeePkBytes := [][]byte{}
