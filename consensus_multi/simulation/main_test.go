@@ -45,32 +45,50 @@ func Test_Main4Committee_Case1(t *testing.T) {
 		"112t8rrASXvBAtZ3dBTwXp6NH8KsX4dgmghUu36HtaPRJGvqeBqSSKb8yi7NUuNwUa58eKcyLGsXWtqfYVTgiPvAZ11GADLRZSHUNb9nssFw",
 		"112t8rzc1pPSajQtjYVctFY5MGRgv2tqpRyD5zAZbwGXyh5Fum5Nafkn86iTw9w8RUhRnYH3wFLnFaZpDpb61gi3vBeQFTnzzyEErtd7jiBD",
 	}
-	testScn := testScenerio{
-		Name:      "test1",
-		Committee: committee,
-		TimeSlots: 7,
-		TimeSlotScenerios: map[int]TimeSlotScenerio{
-			2: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			3: {
-				ProposingScenerio: []int{1},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 3, 4, 5, 6, 7},
-				},
-			},
-			4: {
-				ProposingScenerio: []int{1},
-				VotingScenerios: map[string][]int{
-					"all": {1},
-				},
-			},
-		},
-	}
-	RunSimulation(&testScn)
+	// testScn := testScenerio{
+	// 	Name:      "test1",
+	// 	Committee: committee,
+	// 	TimeSlots: 7,
+	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
+	// 		2: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7, 8},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		3: {
+	// 			ProposingScenerio: []int{1},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 3, 4, 5, 6, 7},
+	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"2": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 			},
+	// 		},
+	// 		4: {
+	// 			ProposingScenerio: []int{1},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1},
+	// 			},
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"1": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"2": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"3": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"4": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"5": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"6": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 				"7": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+	// 			},
+	// 		},
+	// 		5: {
+	// 			ExpectedOutput: map[string]TimeSlotOutput{
+	// 				"all": {BestHeight: 4, BestTimeslot: 5, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// RunSimulation(&testScn)
 
 	testScn2 := testScenerio{
 		Name:      "test2",
@@ -111,107 +129,107 @@ func Test_Main4Committee_Case1(t *testing.T) {
 	}
 	RunSimulation(&testScn2)
 
-	testScn3 := testScenerio{
-		Name:      "test3",
-		Committee: committee,
-		TimeSlots: 14,
-		TimeSlotScenerios: map[int]TimeSlotScenerio{
-			2: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			3: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			5: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			6: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			8: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			9: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 3, 4, 5, 6, 7},
-				},
-			},
-			10: {
-				ProposingScenerio: []int{1, 2, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-		},
-	}
-	RunSimulation(&testScn3)
+	// testScn3 := testScenerio{
+	// 	Name:      "test3",
+	// 	Committee: committee,
+	// 	TimeSlots: 14,
+	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
+	// 		2: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		3: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		5: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		6: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		8: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		9: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		10: {
+	// 			ProposingScenerio: []int{1, 2, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// RunSimulation(&testScn3)
 
-	testScn4 := testScenerio{
-		Name:      "test4",
-		Committee: committee,
-		TimeSlots: 14,
-		TimeSlotScenerios: map[int]TimeSlotScenerio{
-			2: {
-				ProposingScenerio: []int{1, 2, 3, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			3: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			4: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			5: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			7: {
-				ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-			8: {
-				ProposingScenerio: []int{1},
-				VotingScenerios: map[string][]int{
-					"all": {0, 1, 3, 4, 5, 6, 7},
-				},
-			},
-			9: {
-				ProposingScenerio: []int{},
-				VotingScenerios: map[string][]int{
-					"all": {1, 2, 3, 4, 5, 6, 7},
-				},
-			},
-		},
-	}
-	RunSimulation(&testScn4)
+	// testScn4 := testScenerio{
+	// 	Name:      "test4",
+	// 	Committee: committee,
+	// 	TimeSlots: 14,
+	// 	TimeSlotScenerios: map[int]TimeSlotScenerio{
+	// 		2: {
+	// 			ProposingScenerio: []int{1, 2, 3, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		3: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		4: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		5: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		7: {
+	// 			ProposingScenerio: []int{1, 3, 4, 5, 6, 7},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		8: {
+	// 			ProposingScenerio: []int{1},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {0, 1, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 		9: {
+	// 			ProposingScenerio: []int{},
+	// 			VotingScenerios: map[string][]int{
+	// 				"all": {1, 2, 3, 4, 5, 6, 7},
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// RunSimulation(&testScn4)
 
 }
 func RunSimulation(testScn *testScenerio) {
@@ -314,24 +332,29 @@ func RunSimulation(testScn *testScenerio) {
 				fmt.Println("==========================")
 				fmt.Printf("Timeslot %v:\n", uint64(common.CalculateTimeSlot(time.Now().Unix()))-startTimeSlot+1)
 
-				expectedOutput := false
+				expectedOutput := true
 				if _, ok := testScn.TimeSlotScenerios[int(curTimeSlot)]; ok {
 					if len(testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput) > 0 {
 						if output, ok := testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput["all"]; ok {
 							for i := 0; i < len(testScn.Committee); i++ {
 								if nodeList[i].chain.GetBestView().GetHeight() != output.BestHeight {
+									expectedOutput = false
 									break
 								}
 								if uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
+									expectedOutput = false
 									break
 								}
 								if nodeList[i].chain.GetFinalView().GetHeight() != output.FinalHeight {
+									expectedOutput = false
 									break
 								}
 								if uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
+									expectedOutput = false
 									break
 								}
 								if len(nodeList[i].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
+									expectedOutput = false
 									break
 								}
 							}
@@ -340,25 +363,30 @@ func RunSimulation(testScn *testScenerio) {
 							for nodeID, output := range testScn.TimeSlotScenerios[int(curTimeSlot)].ExpectedOutput {
 								nodeIDNumber, _ := strconv.Atoi(nodeID)
 								if nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetBestView().GetHeight() != output.BestHeight {
+									expectedOutput = false
 									break
 								}
 								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.BestTimeslot {
+									expectedOutput = false
 									break
 								}
 								if nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetFinalView().GetHeight() != output.FinalHeight {
+									expectedOutput = false
 									break
 								}
 								if uint64(common.CalculateTimeSlot(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1 != output.FinalTimeslot {
+									expectedOutput = false
 									break
 								}
 								if len(nodeList[(slotProducerIdx+nodeIDNumber)%len(testScn.Committee)].chain.multiview.GetAllViewsWithBFS()) != output.ViewCount {
+									expectedOutput = false
 									break
 								}
 							}
 						}
 					}
 				}
-				fmt.Printf("ExpectedOutput met:%s", expectedOutput)
+				fmt.Printf("ExpectedOutput met:%v\n", expectedOutput)
 
 				for i := 0; i < len(testScn.Committee); i++ {
 					fmt.Printf("Node %v: \n -Best view height: %d:%d\n -Final view height: %d:%d\n -View count: %v\n", i, nodeList[i].chain.GetBestView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetBestView().GetBlock().GetProduceTime()))-startTimeSlot+1, nodeList[i].chain.GetFinalView().GetHeight(), uint64(common.CalculateTimeSlot(nodeList[i].chain.GetFinalView().GetBlock().GetProduceTime()))-startTimeSlot+1, len(nodeList[i].chain.multiview.GetAllViewsWithBFS()))
