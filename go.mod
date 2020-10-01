@@ -58,7 +58,6 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	go.uber.org/zap v1.15.0 // indirect
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.27.1
