@@ -1,10 +1,10 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -57,7 +57,7 @@ func NewIssuingRequest(
 	metaType int,
 ) (*IssuingRequest, error) {
 	metadataBase := MetadataBase{
-		Type: metaType,
+		Type: metaType, Sig: []byte{},
 	}
 	issuingReq := &IssuingRequest{
 		ReceiverAddress: receiverAddress,
@@ -106,7 +106,11 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	shardBlockBeaconHeight := shardViewRetriever.GetBeaconHeight()
 	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress(shardBlockBeaconHeight))
-	if err != nil || !bytes.Equal(tx.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
+	if err != nil {
+		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("cannot get centralized website payment address"))
+	}
+	if ok, err := tx.CheckAuthorizedSender(keySet.KeySet.PaymentAddress.Pk); err != nil || !ok {
+		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
 
@@ -144,7 +148,23 @@ func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 	return iReq.Type == IssuingRequestMeta
 }
 
+func (*IssuingRequest) ShouldSignMetaData() bool { return true }
+
 func (iReq IssuingRequest) Hash() *common.Hash {
+	record := iReq.ReceiverAddress.String()
+	record += iReq.TokenID.String()
+	record += string(iReq.DepositedAmount)
+	record += iReq.TokenName
+	record += iReq.MetadataBase.Hash().String()
+	if iReq.Sig != nil && len(iReq.Sig) != 0 {
+		record += string(iReq.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (iReq IssuingRequest) HashWithoutSig() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.TokenID.String()
 	record += string(iReq.DepositedAmount)
