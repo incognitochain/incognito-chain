@@ -346,5 +346,5 @@ func (chain *BeaconChain) CommitteeStateVersion() uint {
 }
 
 func (chain *BeaconChain) FinalView() multiview.View {
-	return chain.multiView.GetFinalView()
+	return chain.GetFinalView()
 }
