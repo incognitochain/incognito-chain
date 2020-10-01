@@ -1,8 +1,8 @@
 package blsbft
 
 import (
-	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
@@ -21,33 +21,8 @@ type blockValidation interface {
 	AddValidationField(validationData string) error
 }
 
-type ValidationData struct {
-	ProducerBLSSig []byte
-	ProducerBriSig []byte
-	ValidatiorsIdx []int
-	AggSig         []byte
-	BridgeSig      [][]byte
-}
-
-func DecodeValidationData(data string) (*ValidationData, error) {
-	var valData ValidationData
-	err := json.Unmarshal([]byte(data), &valData)
-	if err != nil {
-		return nil, NewConsensusError(DecodeValidationDataError, err)
-	}
-	return &valData, nil
-}
-
-func EncodeValidationData(validationData ValidationData) (string, error) {
-	result, err := json.Marshal(validationData)
-	if err != nil {
-		return "", NewConsensusError(EncodeValidationDataError, err)
-	}
-	return string(result), nil
-}
-
-func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
-	var valData ValidationData
+func (e BLSBFT) CreateValidationData(block common.BlockInterface) types.ValidationData {
+	var valData types.ValidationData
 	// selfPublicKey := e.UserKeySet.GetPublicKey()
 	// keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
 	// valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
@@ -56,7 +31,7 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData
 }
 
 func ValidateProducerSig(block common.BlockInterface) error {
-	valData, err := DecodeValidationData(block.GetValidationField())
+	valData, err := types.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -79,7 +54,7 @@ func ValidateProducerSig(block common.BlockInterface) error {
 }
 
 func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	valData, err := DecodeValidationData(block.GetValidationField())
+	valData, err := types.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}

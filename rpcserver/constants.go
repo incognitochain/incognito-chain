@@ -170,10 +170,6 @@ const (
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
 
-	// slash
-	getProducersBlackList       = "getproducersblacklist"
-	getProducersBlackListDetail = "getproducersblacklistdetail"
-
 	// pde
 	getPDEState                                = "getpdestate"
 	createAndSendTxWithWithdrawalReq           = "createandsendtxwithwithdrawalreq"

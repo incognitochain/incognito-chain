@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"strconv"
@@ -379,13 +380,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		keys = append(keys, int(shardID))
 	}
 	sort.Ints(keys)
-
-	// count missing signature
-	err = curView.countMissingSignature(blockchain.GetBeaconChainDatabase(), allShardBlocks)
-	if err != nil {
-		Logger.log.Error(NewBlockChainError(CountMissingSignatureError, err))
-	}
-
 	for _, v := range keys {
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
@@ -624,11 +618,19 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	if beaconBestState.BestShardHeight == nil {
 		beaconBestState.BestShardHeight = make(map[byte]uint64)
 	}
+
 	// Update new best new block hash
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
+
+	// add count signature
+	err := curView.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
+	if err != nil {
+		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+	}
+
 	// processing instruction
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
@@ -642,6 +644,7 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 			Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		}
 	}
+
 	if beaconBestState.BeaconHeight%chainParamEpoch == 1 && beaconBestState.BeaconHeight != 1 {
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
@@ -660,13 +663,15 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	if err != nil {
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
+	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
 	if beaconBestState.BeaconHeight%chainParamEpoch == 0 {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset()
 	}
-	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
+
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
+
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
 }
 
@@ -724,8 +729,29 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 			genesisBeaconBlock.Body.Instructions, false, false))
 
 	beaconBestState.Epoch = 1
-	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	return nil
+}
 
+func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShardStates map[byte][]types.ShardState) error {
+	for shardID, shardStates := range allShardStates {
+		cacheCommittees := make(map[common.Hash][]incognitokey.CommitteePublicKey)
+		for _, shardState := range shardStates {
+			beaconHashForCommittee := shardState.CommitteeFromBlock
+			committees, ok := cacheCommittees[beaconHashForCommittee]
+			if !ok {
+				consensusStateDB, err := getBeaconConsensusStateDB(db, beaconHashForCommittee)
+				if err != nil {
+					return err
+				}
+				committees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
+				cacheCommittees[beaconHashForCommittee] = committees
+			}
+			err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -814,8 +840,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-
-	blockchain.processForSlashing(newBestState.slashStateDB, beaconBlock)
 
 	// Remove shard reward request of old epoch
 	// this value is no longer needed because, old epoch reward has been split and send to shard
@@ -974,8 +998,4 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	return nil
-}
-
-func isNil(v interface{}) bool {
-	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }

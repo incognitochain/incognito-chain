@@ -484,7 +484,7 @@ func (beaconBestState *BeaconBestState) GetNumberOfMissingSignature() map[string
 	return beaconBestState.missingSignatureCounter.MissingSignature()
 }
 
-func (beaconBestState *BeaconBestState) GetMissingSignatureSlashingResult() map[string]signaturecounter.Penalty {
+func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]signaturecounter.Penalty {
 	return beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 }
 
@@ -625,7 +625,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
-func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
+func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -664,7 +664,7 @@ func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 	return beaconCommitteeEngine
 }
 
-func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
+func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	var numberOfAssignedCandidate int
@@ -743,22 +743,16 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	return beaconCommitteeEngine
 }
 
-func InitMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
+func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
 	curView.missingSignatureCounter = signaturecounter.NewDefaultSignatureCounter()
 	lastEpochBeaconHeight := (curView.Epoch - 1) * bc.config.ChainParams.Epoch
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
-	allShardBlocks := make(map[byte][]*types.ShardBlock)
+	allShardStates := make(map[byte][]types.ShardState)
+
 	for tempBeaconHeight > lastEpochBeaconHeight {
-		allShardStates := tempBeaconBlock.Body.ShardState
-		for shardID, shardStates := range allShardStates {
-			for _, shardState := range shardStates {
-				shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
-				if err != nil {
-					return err
-				}
-				allShardBlocks[shardID] = append(allShardBlocks[shardID], shardBlock)
-			}
+		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
+			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
 		}
 		previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
 		if err != nil {
@@ -767,10 +761,12 @@ func InitMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconBlock = previousBeaconBlock
 		tempBeaconHeight--
 	}
-	err := curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardBlocks)
+
+	err := curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardStates)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
