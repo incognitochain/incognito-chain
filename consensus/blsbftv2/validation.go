@@ -1,4 +1,4 @@
-package blsbftv3
+package blsbftv2
 
 import (
 	"encoding/json"
@@ -42,7 +42,7 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 	return string(result), nil
 }
 
-func (e BLSBFT_V3) CreateValidationData(block common.BlockInterface) ValidationData {
+func (e BLSBFT_V2) CreateValidationData(block common.BlockInterface) ValidationData {
 	var valData ValidationData
 	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes())
 	return valData
@@ -85,7 +85,7 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 	return nil
 }
 
-func (e BLSBFT_V3) ValidateData(data []byte, sig string, publicKey string) error {
+func (e BLSBFT_V2) ValidateData(data []byte, sig string, publicKey string) error {
 	sigByte, _, err := base58.Base58Check{}.Decode(sig)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -154,7 +154,7 @@ func validateBLSSig(
 	return nil
 }
 
-func (e BLSBFT_V3) ValidateBlockWithConsensus(block common.BlockInterface) error {
+func (e BLSBFT_V2) ValidateBlockWithConsensus(block common.BlockInterface) error {
 
 	return nil
 }
