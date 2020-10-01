@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"time"
 
@@ -54,7 +55,8 @@ type BeaconBestState struct {
 	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
-	beaconCommitteeEngine committeestate.BeaconCommitteeEngine
+	beaconCommitteeEngine   committeestate.BeaconCommitteeEngine
+	missingSignatureCounter signaturecounter.MissingSignatureCounter
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -98,7 +100,8 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	return beaconBestState
 }
-func NewBeaconBestStateWithConfig(netparam *Params, beaconCommitteeEngine committeestate.BeaconCommitteeEngine) *BeaconBestState {
+func NewBeaconBestStateWithConfig(netparam *Params,
+	beaconCommitteeEngine committeestate.BeaconCommitteeEngine) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)

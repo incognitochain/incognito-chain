@@ -1,4 +1,4 @@
-package slashing
+package signaturecounter
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
