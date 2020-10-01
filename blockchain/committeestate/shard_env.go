@@ -23,6 +23,7 @@ type ShardEnvBuilder interface {
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
+	BuildCommitteeFromBlock(common.Hash) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -48,6 +49,7 @@ type ShardCommitteeStateEnvironment interface {
 	Offset() int
 	SwapOffset() int
 	StakingTx() map[string]string
+	CommitteeFromBlock() common.Hash
 	NumberOfFixedBlockValidators() int
 }
 
@@ -69,6 +71,13 @@ type shardCommitteeStateEnvironment struct {
 	swapOffset                   int
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
+	committeeFromBlock           common.Hash
+}
+
+//BuildCommitteeFromBlock :
+func (env *shardCommitteeStateEnvironment) BuildCommitteeFromBlock(hash common.Hash) ShardEnvBuilder {
+	env.committeeFromBlock = hash
+	return env
 }
 
 //BuildShardHeight :
@@ -247,6 +256,10 @@ func (env *shardCommitteeStateEnvironment) StakingTx() map[string]string {
 
 func (env *shardCommitteeStateEnvironment) NumberOfFixedBlockValidators() int {
 	return env.numberOfFixedBlockValidators
+}
+
+func (env *shardCommitteeStateEnvironment) CommitteeFromBlock() common.Hash {
+	return env.committeeFromBlock
 }
 
 //Build :

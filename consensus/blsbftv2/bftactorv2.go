@@ -220,7 +220,6 @@ func (e *BLSBFT_V2) Start() error {
 						if createdBlk, err := e.proposeBlock(proposerPk, proposeBlock); err != nil {
 							e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
 							e.Logger.Critical(err)
-
 						} else {
 							e.Logger.Infof("proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
 						}
@@ -259,7 +258,9 @@ func (e *BLSBFT_V2) Start() error {
 							e.validateAndVote(v)
 						} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
 							e.validateAndVote(v)
-						} //blkCreateTimeSlot is larger or equal than voted block => do nothing
+						} else if v.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
+							e.validateAndVote(v)
+						} // if not swap committees => do nothing
 					} else { //there is no vote for this height yet
 						e.validateAndVote(v)
 					}
@@ -472,16 +473,23 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	time1 := time.Now()
 	b58Str, _ := proposerPk.ToBase58()
 	var err error
+	committeeFinalView := e.CommitteeChain.FinalView()
 	if block == nil {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, common.TIMESLOT/2)
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
 		e.Logger.Info("debug CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime)
+		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committeeFinalView)
+		if err != nil {
+			return nil, NewConsensusError(BlockCreationError, err)
+		}
 	} else {
 		e.Logger.Info("debug CreateNewBlockFromOldBlock")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeFinalView)
+		if err != nil {
+			return nil, NewConsensusError(BlockCreationError, err)
+		}
 		//b58Str, _ := proposerPk.ToBase58()
 		//block = e.voteHistory[e.Chain.GetBestViewHeight()+1]
 	}

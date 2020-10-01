@@ -434,7 +434,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 			return
 		}
 
-		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix())
+		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), nil)
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {

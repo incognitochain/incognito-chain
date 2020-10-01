@@ -39,8 +39,8 @@ type ChainInterface interface {
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error)
-	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error)
+	CreateNewBlock(version int, proposer string, round int, startTime int64, view multiview.View) (common.BlockInterface, error)
+	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64, view multiview.View) (common.BlockInterface, error)
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
@@ -61,4 +61,5 @@ type ChainInterface interface {
 type CommitteeChainHandler interface {
 	CommitteesByShardID(byte) []incognitokey.CommitteePublicKey
 	GetProposerByTimeSlot(byte, int64, int) incognitokey.CommitteePublicKey
+	FinalView() multiview.View
 }

@@ -55,9 +55,6 @@ type ShardBestState struct {
 	ConsensusAlgorithm     string                  `json:"ConsensusAlgorithm"`
 	StakingTx              *common.MapStringString `json:"-"`
 
-	// TODO: @tin add CommitteeFromBlock to shard best state
-	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"`
-
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
@@ -426,12 +423,12 @@ func InitShardCommitteeEngineV2(
 	shardHash common.Hash,
 	beaconHeight uint64,
 	epoch uint64,
+	committeeFromBlockHash common.Hash,
 	bc *BlockChain) committeestate.ShardCommitteeEngine {
 
 	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
-	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
 
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, shardPendingValidators)
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash)
 	shardCommitteeEngine := committeestate.NewShardCommitteeEngineV2(shardHeight, shardHash, shardID, shardCommitteeState)
 
 	return shardCommitteeEngine
