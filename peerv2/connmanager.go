@@ -50,7 +50,7 @@ func NewConnManager(
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon, wire.CmdCrossShard}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState, wire.CmdCrossShard}
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
@@ -110,13 +110,11 @@ func (cm *ConnManager) Start(ns NetSync) {
 		panic(err)
 	}
 	cm.messages = make(chan *pubsub.Message, 1000)
-	cm.data = make(chan []byte, 1000)
 
 	// NOTE: must Connect after creating FloodSub
 	go cm.keepHighwayConnection()
 
 	cm.Requester = NewRequester(cm.LocalHost.GRPC)
-	cm.Requester.HandleResponseBlock = cm.PutData
 	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 	go cm.manageRoleSubscription()
@@ -173,7 +171,6 @@ type ConnManager struct {
 
 	ps               *pubsub.PubSub
 	messages         chan *pubsub.Message // queue messages from all topics
-	data             chan []byte
 	registerRequests chan peer.ID
 
 	keeper     *AddrKeeper
@@ -189,11 +186,6 @@ func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
 	cm.messages <- msg
 }
 
-func (cm *ConnManager) PutData(data []byte) {
-	Logger.Infof("[stream] Put data to cm.data")
-	cm.data <- data
-}
-
 func (cm *ConnManager) process() {
 	for {
 		select {
@@ -202,14 +194,6 @@ func (cm *ConnManager) process() {
 			if err != nil {
 				Logger.Warn(err)
 			}
-		case data := <-cm.data:
-			//Logger.Infof("[stream] process data")
-			go func(data []byte) {
-				err := cm.disp.processStreamBlk(data[0], data[1:])
-				if err != nil {
-					Logger.Warn(err)
-				}
-			}(data)
 		}
 	}
 }
