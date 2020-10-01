@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"io"
 	"sort"
 
@@ -205,7 +206,8 @@ func (blockchain *BlockChain) initBeaconState() error {
 				1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV1())
 	}
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine)
+	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter()
+	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine, missingSignatureCounter)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err

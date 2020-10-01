@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/rand"
 	"sort"
 	"time"
@@ -209,7 +211,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 // 5. accepted reward instructions
 // 6. stop auto staking instructions
 func (blockchain *BlockChain) GetShardState(
-	beaconBestState *BeaconBestState,
+	curView *BeaconBestState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
 ) (map[byte][]types.ShardState, *shardInstruction, [][]string, [][]string) {
@@ -220,7 +222,7 @@ func (blockchain *BlockChain) GetShardState(
 	validStakePublicKeys := []string{}
 	validUnstakePublicKeys := make(map[string]bool)
 	//Get shard to beacon block from pool
-	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
+	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(curView.BestShardHeight)
 	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
 		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
@@ -231,6 +233,13 @@ func (blockchain *BlockChain) GetShardState(
 		keys = append(keys, int(shardID))
 	}
 	sort.Ints(keys)
+
+	// count missing signature
+	err := curView.countMissingSignature(blockchain.GetBeaconChainDatabase(), allShardBlocks)
+	if err != nil {
+		Logger.log.Error(NewBlockChainError(CountMissingSignatureError, err))
+	}
+
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -241,7 +250,7 @@ func (blockchain *BlockChain) GetShardState(
 		for _, shardBlock := range shardBlocks {
 			shardState, newShardInstruction, tempValidStakePublicKeys,
 				bridgeInstruction, acceptedRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-				beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validUnstakePublicKeys, validStakePublicKeys)
+				curView, curView.BeaconHeight+1, shardBlock, shardID, true, validUnstakePublicKeys, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			shardInstruction.add(newShardInstruction)
 			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
@@ -258,7 +267,7 @@ func (blockchain *BlockChain) GetShardState(
 	}
 
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch, portalParams)
+	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, curView.BeaconHeight+1, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	return shardStates, shardInstruction, bridgeInstructions, acceptedRewardInstructions
 }
@@ -468,6 +477,29 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	statefulActions := blockchain.collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 	return shardStates, shardInstruction, tempValidStakePublicKeys, bridgeInstructions, acceptedRewardInstructions, statefulActions
+}
+
+func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShardBlocks map[byte][]*types.ShardBlock) error {
+	for shardID, shardBlocks := range allShardBlocks {
+		cacheCommittees := make(map[common.Hash][]incognitokey.CommitteePublicKey)
+		for _, shardBlock := range shardBlocks {
+			beaconHashForCommittee := shardBlock.Header.CommitteeFromBlock
+			committees, ok := cacheCommittees[beaconHashForCommittee]
+			if !ok {
+				consensusStateDB, err := getBeaconConsensusStateDB(db, beaconHashForCommittee)
+				if err != nil {
+					return err
+				}
+				committees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
+				cacheCommittees[beaconHashForCommittee] = committees
+			}
+			err := curView.missingSignatureCounter.AddMissingSignature(shardBlock.ValidationData, committees)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 //GenerateInstruction generate instruction for new beacon block

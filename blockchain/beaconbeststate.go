@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"time"
 
@@ -63,9 +64,8 @@ type BeaconBestState struct {
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
 	// Number of blocks produced by producers in epoch
-	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
-	BlockInterval          time.Duration
-	BlockMaxCreateTime     time.Duration
+	BlockInterval      time.Duration
+	BlockMaxCreateTime time.Duration
 	//================================ StateDB Method
 	// block height => root hash
 	consensusStateDB         *statedb.StateDB
@@ -101,7 +101,9 @@ func NewBeaconBestState() *BeaconBestState {
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(netparam *Params,
-	beaconCommitteeEngine committeestate.BeaconCommitteeEngine) *BeaconBestState {
+	beaconCommitteeEngine committeestate.BeaconCommitteeEngine,
+	missingSignatureCounter signaturecounter.MissingSignatureCounter,
+) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
@@ -118,6 +120,7 @@ func NewBeaconBestStateWithConfig(netparam *Params,
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
+	beaconBestState.missingSignatureCounter = missingSignatureCounter
 	return beaconBestState
 }
 
@@ -414,6 +417,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
+	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
 	return nil
 }
 
@@ -474,6 +478,14 @@ func (beaconBestState *BeaconBestState) GetHeight() uint64 {
 
 func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
 	return beaconBestState.BestBlock.Header.Timestamp
+}
+
+func (beaconBestState *BeaconBestState) GetNumberOfMissingSignature() map[string]uint {
+	return beaconBestState.missingSignatureCounter.MissingSignature()
+}
+
+func (beaconBestState *BeaconBestState) GetMissingSignatureSlashingResult() map[string]signaturecounter.Penalty {
+	return beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
@@ -731,6 +743,37 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	return beaconCommitteeEngine
 }
 
+func InitMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
+	curView.missingSignatureCounter = signaturecounter.NewDefaultSignatureCounter()
+	lastEpochBeaconHeight := (curView.Epoch - 1) * bc.config.ChainParams.Epoch
+	tempBeaconBlock := beaconBlock
+	tempBeaconHeight := beaconBlock.Header.Height
+	allShardBlocks := make(map[byte][]*types.ShardBlock)
+	for tempBeaconHeight > lastEpochBeaconHeight {
+		allShardStates := tempBeaconBlock.Body.ShardState
+		for shardID, shardStates := range allShardStates {
+			for _, shardState := range shardStates {
+				shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
+				if err != nil {
+					return err
+				}
+				allShardBlocks[shardID] = append(allShardBlocks[shardID], shardBlock)
+			}
+		}
+		previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return err
+		}
+		tempBeaconBlock = previousBeaconBlock
+		tempBeaconHeight--
+	}
+	err := curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardBlocks)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
 	bRH, e := blockchain.GetBeaconRootsHash(height)
 	if e != nil {
@@ -738,6 +781,23 @@ func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *Beacon
 	}
 	return bRH.ConsensusStateDBRootHash, nil
 
+}
+
+func getBeaconConsensusStateDB(db incdb.Database, hash common.Hash) (*statedb.StateDB, error) {
+	data, err := rawdbv2.GetBeaconRootsHash(db, hash)
+	if err != nil {
+		return nil, err
+	}
+	bRH := &BeaconRootHash{}
+	err1 := json.Unmarshal(data, bRH)
+	if err1 != nil {
+		return nil, err1
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return nil, err
+	}
+	return stateDB, nil
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {

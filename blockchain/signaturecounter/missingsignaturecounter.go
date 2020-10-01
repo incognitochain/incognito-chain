@@ -53,6 +53,8 @@ func (p Penalty) IsEmpty() bool {
 }
 
 type MissingSignatureCounter interface {
+	MissingSignature() map[string]uint
+	Penalties() []Penalty
 	AddMissingSignature(validationData string, committees []incognitokey.CommitteePublicKey) error
 	GetAllSlashingPenalty() map[string]Penalty
 	GetSlashingPenalty(key *incognitokey.CommitteePublicKey) (bool, Penalty, error)
