@@ -54,6 +54,10 @@ type ShardBestState struct {
 	ActiveShards           int                     `json:"ActiveShards"`
 	ConsensusAlgorithm     string                  `json:"ConsensusAlgorithm"`
 	StakingTx              *common.MapStringString `json:"-"`
+
+	// TODO: @tin add CommitteeFromBlock to shard best state
+	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"`
+
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
@@ -105,6 +109,10 @@ func (shardBestState *ShardBestState) GetHeight() uint64 {
 func (shardBestState *ShardBestState) GetBlockTime() int64 {
 	return shardBestState.BestBlock.Header.Timestamp
 }
+
+// func (shardBestState *ShardBestState) CommitteeStateVersion() uint {
+// 	return shardBestState.shardCommitteeEngine.Version()
+// }
 
 // var bestStateShardMap = make(map[byte]*ShardBestState)
 
@@ -321,7 +329,7 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
-	shardBestState.shardCommitteeEngine = target.shardCommitteeEngine
+	shardBestState.shardCommitteeEngine = target.shardCommitteeEngine.Clone()
 	shardBestState.BestBlock = target.BestBlock
 	return nil
 }
@@ -341,7 +349,7 @@ func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePub
 
 func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
 	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
-	return shardBestState.shardCommitteeEngine.GetShardSubstitute()[id]
+	return shardBestState.shardCommitteeEngine.GetShardCommittee()[id]
 }
 
 func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {

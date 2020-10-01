@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -221,7 +223,7 @@ func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -260,4 +262,30 @@ func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error
 
 func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+	shardView := chain.GetBestState()
+
+	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		result := []incognitokey.CommitteePublicKey{}
+		return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...), nil
+	}
+	result := []incognitokey.CommitteePublicKey{}
+
+	// TODO: @tin very dangerous style of code
+	// 1. caller of this func can pass any types of block
+	// 2. this function only accept one type of block, why don't change type into *types.ShardBlock to make this function more explicity
+	shardBlock := block.(*types.ShardBlock)
+	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
+	if err != nil {
+		return result, err
+	}
+	result = beaconView.GetShardCommittee()[byte(chain.shardID)]
+
+	return result, nil
+}
+
+func (chain *ShardChain) CommitteeStateVersion() uint {
+	return chain.GetBestState().shardCommitteeEngine.Version()
 }

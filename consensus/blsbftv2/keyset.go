@@ -118,7 +118,9 @@ func (e BLSBFT_V2) SignData(data []byte) (string, error) {
 func combineVotes(votes map[string]BFTVote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
 	var blsSigList [][]byte
 	for validator, _ := range votes {
-		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
+		if index := common.IndexOfStr(validator, committee); index != -1 {
+			validatorIdx = append(validatorIdx, index)
+		}
 	}
 	sort.Ints(validatorIdx)
 	for _, idx := range validatorIdx {

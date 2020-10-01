@@ -3,6 +3,7 @@ package syncker
 import (
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -17,10 +18,21 @@ func isNil(v interface{}) bool {
 func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
 	curEpoch := chain.GetEpoch()
 	sameCommitteeBlock := blocks
+
 	for i, v := range blocks {
-		if v.GetCurrentEpoch() == curEpoch+1 {
-			sameCommitteeBlock = blocks[:i+1]
-			break
+		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+			if v.GetCurrentEpoch() == curEpoch+1 {
+				sameCommitteeBlock = blocks[:i+1]
+				break
+			}
+		} else {
+			//TODO: Checking committees for beacon when release beacon
+			if i != len(blocks)-1 {
+				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
+					sameCommitteeBlock = blocks[:i+1]
+					break
+				}
+			}
 		}
 	}
 
@@ -33,7 +45,16 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 			break
 		}
 	}
-	epochCommittee := chain.GetCommittee()
+
+	epochCommittee := []incognitokey.CommitteePublicKey{}
+	if len(sameCommitteeBlock) != 0 {
+		var err error
+		epochCommittee, err = chain.CommitteesV2(sameCommitteeBlock[0])
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
 			sameCommitteeBlock = sameCommitteeBlock[:i]

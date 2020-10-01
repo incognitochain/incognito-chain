@@ -38,12 +38,13 @@ type BeaconCommitteeEngine interface {
 	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
 	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 	BuildIncurredInstructions(env *BeaconCommitteeStateEnvironment) ([][]string, error)
+	HasSwappedCommittees(*BeaconCommitteeStateEnvironment) (bool, error)
 }
 
 //ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
 	Version() uint
-	// Clone() ShardCommitteeEngine
+	Clone() ShardCommitteeEngine
 	Commit(*ShardCommitteeStateHash) error
 	AbortUncommittedShardState()
 	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
@@ -54,5 +55,4 @@ type ShardCommitteeEngine interface {
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
-	UpdateCommitteeStateByBeacon(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, error) // WARNING: This function can only be use for update committees by beacon
 }
