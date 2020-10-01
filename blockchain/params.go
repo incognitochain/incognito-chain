@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -33,30 +34,29 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	Name                   string // Name defines a human-readable identifier for the network.
-	Net                    uint32 // Net defines the magic bytes used to identify the network.
-	DefaultPort            string // DefaultPort defines the default peer-to-peer port for the network.
-	GenesisParams          *GenesisParams
-	MaxShardCommitteeSize  int
-	MinShardCommitteeSize  int
-	MaxBeaconCommitteeSize int
-	MinBeaconCommitteeSize int
-	MinShardBlockInterval  time.Duration
-	MaxShardBlockCreation  time.Duration
-	MinBeaconBlockInterval time.Duration
-	MaxBeaconBlockCreation time.Duration
-	StakingAmountShard     uint64
-	ActiveShards           int
-	GenesisBeaconBlock     *types.BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock      *types.ShardBlock  // GenesisBlock defines the first block of the chain.
-	BasicReward            uint64
-	Epoch                  uint64
-	RandomTime             uint64
-	SlashLevels            []SlashLevel
-	EthContractAddressStr  string // smart contract of ETH for bridge
-	Offset                 int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
-	SwapOffset             int    // is used for case that good producers length is equal to max committee size
-	// TODO: @hung remove
+	Name                             string // Name defines a human-readable identifier for the network.
+	Net                              uint32 // Net defines the magic bytes used to identify the network.
+	DefaultPort                      string // DefaultPort defines the default peer-to-peer port for the network.
+	GenesisParams                    *GenesisParams
+	MaxShardCommitteeSize            int
+	MinShardCommitteeSize            int
+	MaxBeaconCommitteeSize           int
+	MinBeaconCommitteeSize           int
+	MinShardBlockInterval            time.Duration
+	MaxShardBlockCreation            time.Duration
+	MinBeaconBlockInterval           time.Duration
+	MaxBeaconBlockCreation           time.Duration
+	StakingAmountShard               uint64
+	ActiveShards                     int
+	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
+	BasicReward                      uint64
+	Epoch                            uint64
+	RandomTime                       uint64
+	SlashLevels                      []SlashLevel
+	EthContractAddressStr            string // smart contract of ETH for bridge
+	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
+	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
 	MaxSwapOrAssign                  int
 	IncognitoDAOAddress              string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
@@ -79,7 +79,8 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	UpgradeCommitteeEngineV2Height   uint64
 	BCHeightBreakPointFixRandShardCM uint64
-	CommitteeStateV2                 uint64
+	CommitteeStateV2Height           uint64
+	MissingSignaturePenalty          []signaturecounter.Penalty
 }
 
 type GenesisParams struct {
@@ -189,7 +190,24 @@ func init() {
 		PreloadAddress:                   "",
 		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 2070000,
-		CommitteeStateV2:                 1,
+		CommitteeStateV2Height:           1,
+		MissingSignaturePenalty: []signaturecounter.Penalty{
+			{
+				MinRange:     20 * TestnetEpoch / 100,
+				Time:         int64(TestnetEpoch * 2.5 * TestNetMinBeaconBlkInterval.Seconds()),
+				ForceUnstake: false,
+			},
+			{
+				MinRange:     35 * TestnetEpoch / 100,
+				Time:         int64(TestnetEpoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
+				ForceUnstake: false,
+			},
+			{
+				MinRange:     70 * TestnetEpoch / 100,
+				Time:         int64(TestnetEpoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
+				ForceUnstake: true,
+			},
+		},
 	}
 	// END TESTNET
 
@@ -272,7 +290,24 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
-		CommitteeStateV2:                 1,
+		CommitteeStateV2Height:           1,
+		MissingSignaturePenalty: []signaturecounter.Penalty{
+			{
+				MinRange:     20 * Testnet2Epoch / 100,
+				Time:         int64(Testnet2Epoch * 2.5 * TestNetMinBeaconBlkInterval.Seconds()),
+				ForceUnstake: false,
+			},
+			{
+				MinRange:     35 * Testnet2Epoch / 100,
+				Time:         int64(Testnet2Epoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
+				ForceUnstake: false,
+			},
+			{
+				MinRange:     70 * Testnet2Epoch / 100,
+				Time:         int64(Testnet2Epoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
+				ForceUnstake: true,
+			},
+		},
 	}
 	// END TESTNET-2
 
@@ -355,7 +390,24 @@ func init() {
 		PreloadAddress:                   "",
 		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 644000,
-		CommitteeStateV2:                 1e9,
+		CommitteeStateV2Height:           1e9,
+		MissingSignaturePenalty: []signaturecounter.Penalty{
+			{
+				MinRange:     800,
+				Time:         302400,
+				ForceUnstake: false,
+			},
+			{
+				MinRange:     1500,
+				Time:         302400 * 2,
+				ForceUnstake: false,
+			},
+			{
+				MinRange:     3000,
+				Time:         302400 * 2,
+				ForceUnstake: true,
+			},
+		},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

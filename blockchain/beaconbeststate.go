@@ -744,7 +744,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 }
 
 func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
-	curView.missingSignatureCounter = signaturecounter.NewDefaultSignatureCounter()
+	curView.missingSignatureCounter = signaturecounter.NewSignatureCounterWithValue(make(map[string]uint), bc.config.ChainParams.MissingSignaturePenalty)
 	lastEpochBeaconHeight := (curView.Epoch - 1) * bc.config.ChainParams.Epoch
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height

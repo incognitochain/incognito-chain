@@ -535,7 +535,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		}
 	}
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
-	if newBeaconHeight < blockchain.config.ChainParams.CommitteeStateV2 {
+	if newBeaconHeight < blockchain.config.ChainParams.CommitteeStateV2Height {
 		if newBeaconHeight%chainParamEpoch == 0 {
 			BeaconCommittee := beaconBestState.GetBeaconCommittee()
 			beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)

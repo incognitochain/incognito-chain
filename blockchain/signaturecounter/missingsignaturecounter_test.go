@@ -15,19 +15,19 @@ var (
 	}
 	samplePenaltyRule = []Penalty{
 		{
-			minRange:     800,
-			time:         302400,
-			forceUnstake: false,
+			MinRange:     800,
+			Time:         302400,
+			ForceUnstake: false,
 		},
 		{
-			minRange:     1500,
-			time:         302400 * 2,
-			forceUnstake: false,
+			MinRange:     1500,
+			Time:         302400 * 2,
+			ForceUnstake: false,
 		},
 		{
-			minRange:     3001,
-			time:         302400 * 2,
-			forceUnstake: true,
+			MinRange:     3001,
+			Time:         302400 * 2,
+			ForceUnstake: true,
 		},
 	}
 	committeePublicKeyStructs = []incognitokey.CommitteePublicKey{}

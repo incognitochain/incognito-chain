@@ -9,43 +9,31 @@ import (
 )
 
 type Penalty struct {
-	minRange     uint
-	time         int64
-	forceUnstake bool
+	MinRange     uint
+	Time         int64
+	ForceUnstake bool
 }
 
 var defaultRule = []Penalty{
 	{
-		minRange:     800,
-		time:         302400,
-		forceUnstake: false,
+		MinRange:     800,
+		Time:         302400,
+		ForceUnstake: false,
 	},
 	{
-		minRange:     1500,
-		time:         302400 * 2,
-		forceUnstake: false,
+		MinRange:     1500,
+		Time:         302400 * 2,
+		ForceUnstake: false,
 	},
 	{
-		minRange:     3000,
-		time:         302400 * 2,
-		forceUnstake: true,
+		MinRange:     3000,
+		Time:         302400 * 2,
+		ForceUnstake: true,
 	},
 }
 
 func NewPenalty() Penalty {
 	return Penalty{}
-}
-
-func (p Penalty) MinMissingSignature() uint {
-	return p.minRange
-}
-
-func (p Penalty) Time() int64 {
-	return p.time
-}
-
-func (p Penalty) ForceUnstake() bool {
-	return p.forceUnstake
 }
 
 func (p Penalty) IsEmpty() bool {
@@ -93,7 +81,7 @@ func NewDefaultSignatureCounter() *SignatureCounter {
 
 func NewSignatureCounterWithValue(missingSignature map[string]uint, rule []Penalty) *SignatureCounter {
 	sort.Slice(rule, func(i, j int) bool {
-		return rule[i].minRange < rule[j].minRange
+		return rule[i].MinRange < rule[j].MinRange
 	})
 	return &SignatureCounter{
 		missingSignature: missingSignature,
@@ -140,7 +128,7 @@ func (s SignatureCounter) GetAllSlashingPenalty() map[string]Penalty {
 func getSlashingPenalty(numberOfMissingSig uint, penalties []Penalty) Penalty {
 	penalty := NewPenalty()
 	for _, penaltyLevel := range penalties {
-		if numberOfMissingSig >= penaltyLevel.minRange {
+		if numberOfMissingSig >= penaltyLevel.MinRange {
 			penalty = penaltyLevel
 		}
 	}
