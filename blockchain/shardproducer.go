@@ -119,6 +119,22 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, errors.New("Waiting For Beacon Produce Block")
 	}
 
+	if beaconFinalBlockHash.String() != shardBestState.CommitteeFromBlock().String() {
+		oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+		if err != nil {
+			return nil, err
+		}
+		newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconFinalBlockHash)
+		if err != nil {
+			return nil, err
+		}
+		if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+			return nil, NewBlockChainError(WrongBlockHeightError,
+				fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+					newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+		}
+	}
+
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
 	if err != nil {
 		fmt.Println("cannot find beacon block ", beaconHeight)

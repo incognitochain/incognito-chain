@@ -107,9 +107,9 @@ func (shardBestState *ShardBestState) GetBlockTime() int64 {
 	return shardBestState.BestBlock.Header.Timestamp
 }
 
-// func (shardBestState *ShardBestState) CommitteeStateVersion() uint {
-// 	return shardBestState.shardCommitteeEngine.Version()
-// }
+func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
+	return shardBestState.shardCommitteeEngine.CommitteeFromBlock()
+}
 
 // var bestStateShardMap = make(map[byte]*ShardBestState)
 

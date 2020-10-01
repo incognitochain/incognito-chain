@@ -688,6 +688,22 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 		return err
 	}
 
+	if shardBlock.CommitteeFromBlock().String() != shardBestState.CommitteeFromBlock().String() {
+		oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+		if err != nil {
+			return err
+		}
+		newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.CommitteeFromBlock())
+		if err != nil {
+			return err
+		}
+		if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+			return NewBlockChainError(WrongBlockHeightError,
+				fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+					newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+		}
+	}
+
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
