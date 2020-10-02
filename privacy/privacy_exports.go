@@ -40,6 +40,7 @@ const (
 
 	RingSize 				= privacy_util.RingSize
 	MAX_TRIES_OTA 			= coin.MAX_TRIES_OTA
+	TxRandomGroupSize		= coin.TxRandomGroupSize
 )
 
 var PedCom = operation.PedCom

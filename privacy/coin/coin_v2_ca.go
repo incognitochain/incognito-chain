@@ -79,6 +79,13 @@ func GenerateOTACoinAndSharedSecret(info *key.PaymentInfo, tokenID *common.Hash)
 			panic("Something is wrong with info.paymentAddress.Pk, burning address should be a valid point")
 		}
 		c.SetPublicKey(publicKey)
+		assetTag := operation.HashToPoint(tokenID[:])
+		c.SetAssetTag(assetTag)
+		com, err := c.ComputeCommitmentCA()
+		if err != nil{
+			return nil, nil, errors.New("Cannot compute commitment for confidential asset")
+		}
+		c.SetCommitment(com)
 		return c, nil, nil
 	}
 
