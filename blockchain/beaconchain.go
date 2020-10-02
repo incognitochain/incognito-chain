@@ -158,7 +158,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
+	round int, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
 	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
@@ -172,7 +173,8 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int
 }
 
 //this function for version 2
-func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string,
+	startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.BeaconBlock)
 	json.Unmarshal(b, &newBlock)
@@ -322,7 +324,7 @@ func (chain *BeaconChain) CommitteesByShardID(shardID byte) []incognitokey.Commi
 func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version int) incognitokey.CommitteePublicKey {
 	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
 
-	//TODO: @tin add recalculate proposer index here when swap committees
+	//TODO: add recalculate proposer index here when swap committees
 	// chainParamEpoch := chain.Blockchain.config.ChainParams.Epoch
 	// id := -1
 	// if ok, err := finalView.HasSwappedCommittee(shardID, chainParamEpoch); err == nil && ok {
@@ -341,4 +343,8 @@ func (chain *BeaconChain) CommitteesV2(block common.BlockInterface) ([]incognito
 
 func (chain *BeaconChain) CommitteeStateVersion() uint {
 	return chain.GetBestView().(*BeaconBestState).beaconCommitteeEngine.Version()
+}
+
+func (chain *BeaconChain) FinalView() multiview.View {
+	return chain.GetFinalView()
 }

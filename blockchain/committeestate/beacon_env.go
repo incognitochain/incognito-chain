@@ -23,7 +23,7 @@ type BeaconCommitteeStateEnvironment struct {
 	MinShardCommitteeSize              int
 	MinBeaconCommitteeSize             int
 	MaxBeaconCommitteeSize             int
-	MaxCommitteeSize                   int
+	MaxShardCommitteeSize              int
 	ConsensusStateDB                   *statedb.StateDB
 	IsReplace                          bool
 	NumberOfFixedBeaconBlockValidators uint64

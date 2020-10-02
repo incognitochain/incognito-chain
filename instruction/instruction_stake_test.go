@@ -5,11 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateAndImportStakeInstructionFromString(t *testing.T) {
@@ -461,6 +460,114 @@ func TestStakeInstruction_ToString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.args.instruction.ToString(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestImportInitStakeInstructionFromString(t *testing.T) {
+
+	initPublicKey()
+	initPaymentAddress()
+	initTxHash()
+
+	type args struct {
+		instruction []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *StakeInstruction
+	}{
+		{
+			name: "Valid Input - auto stake = true",
+			args: args{
+				instruction: []string{STAKE_ACTION,
+					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
+					SHARD_INST,
+					strings.Join([]string{
+						txHash1, txHash2, txHash3, txHash4}, SPLITTER),
+					strings.Join([]string{
+						paymentAddress1, paymentAddress2, paymentAddress3, paymentAddress4}, SPLITTER),
+					strings.Join([]string{"true", "true", "true", "true"}, SPLITTER)},
+			},
+			want: &StakeInstruction{
+				PublicKeys: []string{key1, key2, key3, key4},
+				PublicKeyStructs: []incognitokey.CommitteePublicKey{
+					*incKey1,
+					*incKey2,
+					*incKey3,
+					*incKey4,
+				},
+				Chain: SHARD_INST,
+				TxStakes: []string{
+					txHash1, txHash2, txHash3, txHash4,
+				},
+				TxStakeHashes: []common.Hash{
+					*incTxHash1,
+					*incTxHash2,
+					*incTxHash3,
+					*incTxHash4,
+				},
+				RewardReceiverStructs: []privacy.PaymentAddress{
+					*incPaymentAddress1,
+					*incPaymentAddress2,
+					*incPaymentAddress3,
+					*incPaymentAddress4,
+				},
+				RewardReceivers: []string{
+					paymentAddress1, paymentAddress2, paymentAddress3, paymentAddress4,
+				},
+				AutoStakingFlag: []bool{true, true, true, true},
+			},
+		},
+		{
+			name: "Valid Input - auto stake = false",
+			args: args{
+				instruction: []string{STAKE_ACTION,
+					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
+					SHARD_INST,
+					strings.Join([]string{
+						txHash1, txHash2, txHash3, txHash4}, SPLITTER),
+					strings.Join([]string{
+						paymentAddress1, paymentAddress2, paymentAddress3, paymentAddress4}, SPLITTER),
+					strings.Join([]string{"false", "false", "false", "false"}, SPLITTER)},
+			},
+			want: &StakeInstruction{
+				PublicKeys: []string{key1, key2, key3, key4},
+				PublicKeyStructs: []incognitokey.CommitteePublicKey{
+					*incKey1,
+					*incKey2,
+					*incKey3,
+					*incKey4,
+				},
+				Chain: SHARD_INST,
+				TxStakes: []string{
+					txHash1, txHash2, txHash3, txHash4,
+				},
+				TxStakeHashes: []common.Hash{
+					*incTxHash1,
+					*incTxHash2,
+					*incTxHash3,
+					*incTxHash4,
+				},
+				RewardReceiverStructs: []privacy.PaymentAddress{
+					*incPaymentAddress1,
+					*incPaymentAddress2,
+					*incPaymentAddress3,
+					*incPaymentAddress4,
+				},
+				RewardReceivers: []string{
+					paymentAddress1, paymentAddress2, paymentAddress3, paymentAddress4,
+				},
+				AutoStakingFlag: []bool{false, false, false, false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ImportInitStakeInstructionFromString(tt.args.instruction); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ImportInitStakeInstructionFromString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

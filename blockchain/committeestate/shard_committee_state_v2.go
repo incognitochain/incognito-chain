@@ -20,8 +20,8 @@ type ShardCommitteeStateHashV2 struct {
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
 	shardCommittee []incognitokey.CommitteePublicKey
-	//TODO: @hung remove shard substitute
-	shardSubstitute []incognitokey.CommitteePublicKey
+	// TODO: [review] @tin add CommitteeFromBlock to shard best state
+	committeeFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
 }
@@ -46,12 +46,13 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 //NewShardCommitteeStateV2WithValue is constructor for ShardCommitteeStateV2 with value
 //Output: pointer of ShardCommitteeStateV2 struct with value
 func NewShardCommitteeStateV2WithValue(
-	shardCommittee, shardSubstitute []incognitokey.CommitteePublicKey,
+	shardCommittee []incognitokey.CommitteePublicKey,
+	committeeFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
 	return &ShardCommitteeStateV2{
-		shardCommittee:  shardCommittee,
-		shardSubstitute: shardSubstitute,
-		mu:              new(sync.RWMutex),
+		shardCommittee:     shardCommittee,
+		committeeFromBlock: committeeFromBlockHash,
+		mu:                 new(sync.RWMutex),
 	}
 }
 
@@ -90,17 +91,12 @@ func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	for i, v := range s.shardCommittee {
 		newCommitteeState.shardCommittee[i] = v
 	}
-
-	newCommitteeState.shardSubstitute = make([]incognitokey.CommitteePublicKey, len(s.shardSubstitute))
-	for i, v := range s.shardSubstitute {
-		newCommitteeState.shardSubstitute[i] = v
-	}
+	newCommitteeState.committeeFromBlock = s.committeeFromBlock
 }
 
 //reset : reset ShardCommitteeStateV2 to default value
 func (s *ShardCommitteeStateV2) reset() {
 	s.shardCommittee = make([]incognitokey.CommitteePublicKey, 0)
-	s.shardSubstitute = make([]incognitokey.CommitteePublicKey, 0)
 }
 
 //Version ...
@@ -115,7 +111,11 @@ func (engine *ShardCommitteeEngineV2) GetShardCommittee() []incognitokey.Committ
 
 //GetShardSubstitute get shard pending validators
 func (engine *ShardCommitteeEngineV2) GetShardSubstitute() []incognitokey.CommitteePublicKey {
-	return engine.shardCommitteeStateV2.shardSubstitute
+	return []incognitokey.CommitteePublicKey{}
+}
+
+func (engine *ShardCommitteeEngineV2) CommitteeFromBlock() common.Hash {
+	return engine.shardCommitteeStateV2.committeeFromBlock
 }
 
 //Commit commit committee state change in uncommittedShardCommitteeStateV2 struct
@@ -221,6 +221,8 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
+	newCommitteeState.committeeFromBlock = env.CommitteeFromBlock()
+
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -235,9 +237,8 @@ func getNewShardCommittees(
 	return shardCommittees, nil
 }
 func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
-	shardSubsitutes, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardSubstitute)
 	shardCommittees, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardCommittee)
-	return instruction.NewSwapInstruction(), shardSubsitutes, shardCommittees, nil
+	return instruction.NewSwapInstruction(), []string{}, shardCommittees, nil
 }
 
 // processSwapShardInstruction: process swap shard instruction
@@ -362,7 +363,7 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
 
-	substitutesStr, err := incognitokey.CommitteeKeyListToString(newCommitteeState.shardSubstitute)
+	substitutesStr, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{})
 	if err != nil {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
@@ -375,5 +376,6 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 	return &ShardCommitteeStateHash{
 		ShardCommitteeHash:  committeeHash,
 		ShardSubstituteHash: substituteHash,
+		CommitteeFromBlock:  newCommitteeState.committeeFromBlock,
 	}, nil
 }
