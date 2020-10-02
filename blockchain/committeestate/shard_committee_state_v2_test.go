@@ -75,9 +75,8 @@ func TestShardCommitteeStateV2_processInstructionFromBeacon(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &ShardCommitteeStateV2{
-				shardCommittee:  tt.fields.shardCommittee,
-				shardSubstitute: tt.fields.shardSubstitute,
-				mu:              tt.fields.mu,
+				shardCommittee: tt.fields.shardCommittee,
+				mu:             tt.fields.mu,
 			}
 			got, err := s.processInstructionFromBeacon(tt.args.env, tt.args.committeeChange)
 			if (err != nil) != tt.wantErr {
