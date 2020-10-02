@@ -14,6 +14,7 @@ import (
 type IssuingResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
+	SharedRandom       []byte
 }
 
 type IssuingResAction struct {
@@ -52,7 +53,9 @@ func (iRes IssuingResponse) ValidateMetadataByItself() bool {
 func (iRes IssuingResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -64,14 +67,12 @@ func (iRes *IssuingResponse) CalculateSize() uint64 {
 
 func (iRes IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	insts := mintData.Insts
-	instUsed := mintData.InstsUsed
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not IssuingETHRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(IssuingRequestMeta) {
 			continue
 		}
@@ -87,24 +88,32 @@ func (iRes IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *M
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
+		if issuingAcceptedInst.ShardID != shardID {
+			continue
+		}
 
 		if !bytes.Equal(iRes.RequestedTxID[:], issuingAcceptedInst.TxReqID[:]) {
 			continue
 		}
 
-		_, pk, amount, assetID := tx.GetTransferData()
-		if !bytes.Equal(issuingAcceptedInst.ReceiverAddr.Pk[:], pk[:]) ||
-			issuingAcceptedInst.DepositedAmount != amount ||
-			!bytes.Equal(issuingAcceptedInst.IncTokenID[:], assetID[:]) ||
-			issuingAcceptedInst.ShardID != shardID {
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != issuingAcceptedInst.IncTokenID.String() {
 			continue
 		}
+		if ok := mintCoin.CheckCoinValid(issuingAcceptedInst.ReceiverAddr, iRes.SharedRandom, issuingAcceptedInst.DepositedAmount); !ok {
+			continue
+		}
+
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.Errorf("no IssuingRequest tx found for the IssuingResponse tx %s", tx.Hash().String())
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *IssuingResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

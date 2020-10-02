@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"math/big"
@@ -15,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -211,13 +211,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		Logger.log.Warnf("WARNING: an error occurs while decode content string of accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var issuingAcceptedInst metadata.IssuingAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		Logger.log.Warnf("WARNING: an error occurs while unmarshal accepted issuance instruction: ", err)
 		return nil, nil
 	}
 
@@ -232,49 +232,32 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		Amount:         issuingAcceptedInst.DepositedAmount,
 		PaymentAddress: issuingAcceptedInst.ReceiverAddr,
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.TokenParam{
-		PropertyID:     propID.String(),
-		PropertyName:   issuingAcceptedInst.IncTokenName,
-		PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:         issuingAcceptedInst.DepositedAmount,
-		TokenTxType:    transaction.CustomTokenInit,
-		Receiver:       []*privacy.PaymentInfo{receiver},
-		TokenInput:     []coin.PlainCoin{},
-		Mintable:       true,
-	}
-	txTokenParams := transaction.NewTxTokenParams(producerPrivateKey,
-		[]*privacy.PaymentInfo{}, nil, 0,
-		tokenParams, shardView.GetCopiedTransactionStateDB(), issuingRes,
-		false, false, shardID, nil, beaconView.GetBeaconFeatureStateDB())
-	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiver.Amount, receiver.PaymentAddress)
 	if err != nil {
-		Logger.log.Errorf("Cannot create transaction token from param err %v", err)
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
 		return nil, err
 	}
+	issuingRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
 
-	initErr := resTx.Init(txTokenParams)
-	if initErr != nil {
-		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
-		return nil, nil
+	tokenID := issuingAcceptedInst.IncTokenID
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
 	}
-	Logger.log.Info("[Centralized token issuance] Create tx ok.")
-	return resTx, nil
+	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingRes, &tokenID)
 }
 
 func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while decoding content string of ETH accepted issuance instruction: ", err)
+		Logger.log.Info("WARNING: an error occurs while decoding content string of ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
+		Logger.log.Info("WARNING: an error occurs while unmarshal ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
 
@@ -283,25 +266,12 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 	}
 	key, err := wallet.Base58CheckDeserialize(issuingETHAcceptedInst.ReceiverAddrStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while deserializing receiver address string: ", err)
+		Logger.log.Info("WARNING: an error occurs while deserialize receiver address string: ", err)
 		return nil, nil
 	}
 	receiver := &privacy.PaymentInfo{
 		Amount:         issuingETHAcceptedInst.IssuingAmount,
 		PaymentAddress: key.KeySet.PaymentAddress,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingETHAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.TokenParam{
-		PropertyID: propID.String(),
-		// PropertyName:   common.PETHTokenName,
-		// PropertySymbol: common.PETHTokenName,
-		Amount:      issuingETHAcceptedInst.IssuingAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []coin.PlainCoin{},
-		Mintable:    true,
 	}
 
 	issuingETHRes := metadata.NewIssuingETHResponse(
@@ -310,22 +280,17 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		issuingETHAcceptedInst.ExternalTokenID,
 		metadata.IssuingETHResponseMeta,
 	)
-	txTokenParams := transaction.NewTxTokenParams(producerPrivateKey,
-		[]*privacy.PaymentInfo{}, nil, 0,
-		tokenParams, shardView.GetCopiedTransactionStateDB(),
-		issuingETHRes, false, false,
-		shardID, nil, beaconView.GetBeaconFeatureStateDB())
-
-	resTx, err := transaction.NewTransactionTokenFromParams(txTokenParams)
+	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiver.Amount, receiver.PaymentAddress)
 	if err != nil {
-		Logger.log.Errorf("Cannot create transaction token from param err %v", err)
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
 		return nil, err
 	}
-	initErr := resTx.Init(txTokenParams)
-	if initErr != nil {
-		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
-		return nil, nil
+	issuingETHRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+
+	tokenID := issuingETHAcceptedInst.IncTokenID
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
 	}
-	Logger.log.Info("[Decentralized bridge token issuance] Create tx ok.")
-	return resTx, nil
+	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingETHRes, &tokenID)
 }

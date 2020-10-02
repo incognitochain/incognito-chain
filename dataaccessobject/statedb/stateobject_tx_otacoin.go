@@ -9,11 +9,11 @@ import (
 )
 
 type OTACoinState struct {
-	tokenID     common.Hash
-	shardID     byte
-	height		[]byte
-	outputCoin	[]byte
-	index       *big.Int
+	tokenID    common.Hash
+	shardID    byte
+	height     []byte
+	outputCoin []byte
+	index      *big.Int
 }
 
 func (ota OTACoinState) Index() *big.Int {
@@ -62,11 +62,11 @@ func (ota *OTACoinState) MarshalJSON() ([]byte, error) {
 		ShardID    byte
 		Height     []byte
 		OutputCoin []byte
-		Index 	   *big.Int
+		Index      *big.Int
 	}{
 		TokenID:    ota.tokenID,
 		ShardID:    ota.shardID,
-		Height:  	ota.height,
+		Height:     ota.height,
 		OutputCoin: ota.outputCoin,
 		Index:      ota.index,
 	})
@@ -82,7 +82,7 @@ func (ota *OTACoinState) UnmarshalJSON(data []byte) error {
 		ShardID    byte
 		Height     []byte
 		OutputCoin []byte
-		Index	   *big.Int
+		Index      *big.Int
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -109,11 +109,11 @@ type OTACoinObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version          int
+	version             int
 	onetimeAddressHash  common.Hash
 	onetimeAddressState *OTACoinState
-	objectType       int
-	deleted          bool
+	objectType          int
+	deleted             bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -234,18 +234,17 @@ func (s OTACoinObject) IsEmpty() bool {
 	return reflect.DeepEqual(temp, s.onetimeAddressState) || s.onetimeAddressState == nil
 }
 
-
 //========================================================== INDEX
 type OTACoinIndexObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version             int
+	version          int
 	otaCoinIndexHash common.Hash
 	otaCoinHash      common.Hash
-	objectType          int
-	deleted             bool
+	objectType       int
+	deleted          bool
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -256,12 +255,12 @@ type OTACoinIndexObject struct {
 
 func newOTACoinIndexObject(db *StateDB, hash common.Hash) *OTACoinIndexObject {
 	return &OTACoinIndexObject{
-		version:                 defaultVersion,
-		db:                      db,
-		otaCoinIndexHash: 		 hash,
-		otaCoinHash:      		 common.Hash{},
-		objectType:              OTACoinIndexObjectType,
-		deleted:                 false,
+		version:          defaultVersion,
+		db:               db,
+		otaCoinIndexHash: hash,
+		otaCoinHash:      common.Hash{},
+		objectType:       OTACoinIndexObjectType,
+		deleted:          false,
 	}
 }
 
@@ -281,18 +280,18 @@ func newOTACoinIndexObjectWithValue(db *StateDB, key common.Hash, data interface
 		}
 	}
 	return &OTACoinIndexObject{
-		version:             defaultVersion,
+		version:          defaultVersion,
 		otaCoinIndexHash: key,
 		otaCoinHash:      newOnetimeAddressCoinIndexState,
-		db:                  db,
-		objectType:          OTACoinIndexObjectType,
-		deleted:             false,
+		db:               db,
+		objectType:       OTACoinIndexObjectType,
+		deleted:          false,
 	}, nil
 }
 
 func GenerateOTACoinIndexObjectKey(tokenID common.Hash, shardID byte, index *big.Int) common.Hash {
 	// non-PRV coins will be indexed together
-	if tokenID!=common.PRVCoinID{
+	if tokenID != common.PRVCoinID {
 		tokenID = common.ConfidentialAssetID
 	}
 	prefixHash := GetOTACoinIndexPrefix(tokenID, shardID)
@@ -368,11 +367,11 @@ type OTACoinLengthObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version              int
+	version           int
 	otaCoinLengthHash common.Hash
 	otaCoinLength     *big.Int
-	objectType           int
-	deleted              bool
+	objectType        int
+	deleted           bool
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -383,12 +382,12 @@ type OTACoinLengthObject struct {
 
 func newOTACoinLengthObject(db *StateDB, hash common.Hash) *OTACoinLengthObject {
 	return &OTACoinLengthObject{
-		version:              defaultVersion,
-		db:                   db,
-		otaCoinLengthHash:    hash,
-		otaCoinLength:        new(big.Int).SetUint64(0),
-		objectType:           OTACoinLengthObjectType,
-		deleted:              false,
+		version:           defaultVersion,
+		db:                db,
+		otaCoinLengthHash: hash,
+		otaCoinLength:     new(big.Int).SetUint64(0),
+		objectType:        OTACoinLengthObjectType,
+		deleted:           false,
 	}
 }
 
@@ -405,18 +404,18 @@ func newOTACoinLengthObjectWithValue(db *StateDB, key common.Hash, data interfac
 		}
 	}
 	return &OTACoinLengthObject{
-		version:              defaultVersion,
-		otaCoinLengthHash:    key,
-		otaCoinLength:        newOTACoinLengthValue,
-		db:                   db,
-		objectType:           OTACoinLengthObjectType,
-		deleted:              false,
+		version:           defaultVersion,
+		otaCoinLengthHash: key,
+		otaCoinLength:     newOTACoinLengthValue,
+		db:                db,
+		objectType:        OTACoinLengthObjectType,
+		deleted:           false,
 	}, nil
 }
 
 func GenerateOTACoinLengthObjectKey(tokenID common.Hash, shardID byte) common.Hash {
 	// non-PRV coins will be indexed together
-	if tokenID!=common.PRVCoinID{
+	if tokenID != common.PRVCoinID {
 		tokenID = common.ConfidentialAssetID
 	}
 	prefixHash := GetOTACoinLengthPrefix()
