@@ -9,6 +9,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -23,7 +24,7 @@ type BLSBFT_V2 struct {
 	ChainID  int
 	PeerID   string
 
-	UserKeySet   *MiningKey
+	UserKeySet   *types.MiningKey
 	BFTMessageCh chan wire.MessageBFT
 	isStarted    bool
 	StopCh       chan struct{}
@@ -348,7 +349,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			return
 		}
 
-		valData, err := DecodeValidationData(v.block.GetValidationField())
+		valData, err := types.DecodeValidationData(v.block.GetValidationField())
 		if err != nil {
 			e.Logger.Error(err)
 			return
@@ -357,9 +358,9 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.AggSig = aggSig
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
-		validationDataString, _ := EncodeValidationData(*valData)
+		validationDataString, _ := types.EncodeValidationData(*valData)
 		fmt.Println("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
-		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
+		if v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return
 		}
@@ -471,7 +472,7 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	}
 
 	validationData := e.CreateValidationData(block)
-	validationDataString, _ := EncodeValidationData(validationData)
+	validationDataString, _ := types.EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
 	blockData, _ := json.Marshal(block)
 	var proposeCtn = new(BFTPropose)
@@ -519,7 +520,7 @@ func (e *BLSBFT_V2) preValidateVote(blockHash []byte, Vote *BFTVote, candidate [
 	return err
 }
 
-func (s *BFTVote) signVote(key *MiningKey) error {
+func (s *BFTVote) signVote(key *types.MiningKey) error {
 	data := []byte{}
 	data = append(data, s.BlockHash...)
 	data = append(data, s.BLS...)
@@ -541,7 +542,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 }
 
 func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
-	valData, err := DecodeValidationData(block.GetValidationField())
+	valData, err := types.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}

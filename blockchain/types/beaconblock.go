@@ -114,9 +114,9 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (beaconBlock *BeaconBlock) AddValidationField(validationData string) error {
+func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
 	beaconBlock.ValidationData = validationData
-	return nil
+	return
 }
 func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData

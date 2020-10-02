@@ -86,8 +86,14 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	var beaconFinalView *BeaconBestState
 	beaconFinalBlockHash := common.Hash{}
-	if shardBestState.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
-		// TODO: [review] @tin beacon final view for committee must be pass from bft, which lock a new committee set to create block
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		currentCommittees = shardBestState.GetShardCommittee()
+		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
+		if err != nil {
+			return nil, err
+		}
+		beaconFinalView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+	} else {
 		beaconFinalView = committeeFinalView.(*BeaconBestState)
 		beaconFinalBlockHash = *beaconFinalView.GetHash()
 		currentCommittees = beaconFinalView.GetShardCommittee()[shardBestState.ShardID]
@@ -95,13 +101,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		currentCommittees = shardBestState.GetShardCommittee()
-		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
-		if err != nil {
-			return nil, err
-		}
-		beaconFinalView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	}
 	beaconHeight := beaconFinalView.GetHeight()
 
@@ -156,18 +155,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	epoch := beaconBlock.Header.Epoch
-
-	//if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-	//	if epoch-shardBestState.Epoch >= 1 {
-	//		beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
-	//		newBeaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
-	//		if err != nil {
-	//			return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
-	//		}
-	//		copy(beaconHash[:], newBeaconHash.GetBytes())
-	//		epoch = shardBestState.Epoch + 1
-	//	}
-	//}
 
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -24,7 +25,7 @@ type BLSBFT_V3 struct {
 	ChainID        int
 	PeerID         string
 
-	UserKeySet   *MiningKey
+	UserKeySet   *types.MiningKey
 	BFTMessageCh chan wire.MessageBFT
 	isStarted    bool
 	StopCh       chan struct{}
@@ -367,7 +368,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			return
 		}
 
-		valData, err := DecodeValidationData(v.block.GetValidationField())
+		valData, err := types.DecodeValidationData(v.block.GetValidationField())
 		if err != nil {
 			e.Logger.Error(err)
 			return
@@ -376,9 +377,9 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.AggSig = aggSig
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
-		validationDataString, _ := EncodeValidationData(*valData)
+		validationDataString, _ := types.EncodeValidationData(*valData)
 		fmt.Println("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
-		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
+		if v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return
 		}
@@ -463,9 +464,7 @@ func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {
 	e.voteHistory[v.block.GetHeight()] = v.block
 	e.Logger.Info("sending vote...")
 	go e.Node.PushMessageToChain(msg, e.Chain)
-	//go func() {
-	//	e.VoteMessageCh <- *Vote
-	//}()
+
 	return nil
 }
 
@@ -474,11 +473,11 @@ func (e *BLSBFT_V3) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	b58Str, _ := proposerPk.ToBase58()
 	var err error
 	committeeFinalView := e.CommitteeChain.FinalView()
+
 	if block == nil {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, common.TIMESLOT/2)
 		defer cancel()
-		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
 		e.Logger.Info("debug CreateNewBlock")
 		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committeeFinalView)
 		if err != nil {
@@ -490,11 +489,6 @@ func (e *BLSBFT_V3) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
-		//b58Str, _ := proposerPk.ToBase58()
-		//block = e.voteHistory[e.Chain.GetBestViewHeight()+1]
-	}
-	if err != nil {
-		return nil, NewConsensusError(BlockCreationError, err)
 	}
 
 	if block != nil {
@@ -505,9 +499,10 @@ func (e *BLSBFT_V3) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	}
 
 	validationData := e.CreateValidationData(block)
-	validationDataString, _ := EncodeValidationData(validationData)
+	validationDataString, _ := types.EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
 	blockData, _ := json.Marshal(block)
+
 	var proposeCtn = new(BFTPropose)
 	proposeCtn.Block = blockData
 	proposeCtn.PeerID = e.Node.GetSelfPeerID().String()
@@ -553,7 +548,7 @@ func (e *BLSBFT_V3) preValidateVote(blockHash []byte, Vote *BFTVote, candidate [
 	return err
 }
 
-func (s *BFTVote) signVote(key *MiningKey) error {
+func (s *BFTVote) signVote(key *types.MiningKey) error {
 	data := []byte{}
 	data = append(data, s.BlockHash...)
 	data = append(data, s.BLS...)
@@ -575,7 +570,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 }
 
 func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
-	valData, err := DecodeValidationData(block.GetValidationField())
+	valData, err := types.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
