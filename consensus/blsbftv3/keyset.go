@@ -1,9 +1,9 @@
 package blsbftv3
 
 import (
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
@@ -13,7 +13,7 @@ import (
 )
 
 func (e *BLSBFT_V3) LoadUserKey(privateSeed string) error {
-	var miningKey types.MiningKey
+	var miningKey consensustypes.MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
 		return NewConsensusError(LoadKeyError, err)
@@ -83,8 +83,8 @@ func combineVotes(votes map[string]BFTVote, committee []string) (aggSig []byte, 
 	return
 }
 
-func GetMiningKeyFromPrivateSeed(privateSeed string) (*types.MiningKey, error) {
-	var miningKey types.MiningKey
+func GetMiningKeyFromPrivateSeed(privateSeed string) (*consensustypes.MiningKey, error) {
+	var miningKey consensustypes.MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
 		return nil, NewConsensusError(LoadKeyError, err)
