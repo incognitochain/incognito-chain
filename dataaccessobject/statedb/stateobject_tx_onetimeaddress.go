@@ -134,6 +134,9 @@ func newOnetimeAddressObjectWithValue(db *StateDB, key common.Hash, data interfa
 }
 
 func GenerateOnetimeAddressObjectKey(tokenID common.Hash, onetimeAddress []byte) common.Hash {
+	if tokenID!=common.PRVCoinID{
+		tokenID = common.ConfidentialAssetID
+	}
 	prefixHash := GetOnetimeAddressPrefix(tokenID)
 	valueHash := common.HashH(onetimeAddress)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
