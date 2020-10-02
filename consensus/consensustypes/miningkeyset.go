@@ -1,4 +1,4 @@
-package types
+package consensustypes
 
 import (
 	"encoding/json"
