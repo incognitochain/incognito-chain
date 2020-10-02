@@ -336,6 +336,17 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 			value := outputCoin.GetValue()
 			rand := outputCoin.GetRandomness()
 			commitment := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(value), rand, coin.PedersenValueIndex)
+			outputCoin_specific, ok := outputCoin.(*coin.CoinV2)
+			if !ok{
+				return false, errors.New("Validate sanity - Cannot cast a coin to v2")
+			}
+			if outputCoin_specific.GetAssetTag()!=nil{
+				com, err := outputCoin_specific.ComputeCommitmentCA()
+				if err != nil{
+					return false, errors.New("Cannot compute commitment for confidential asset")
+				}
+				outputCoin_specific.SetCommitment(com)
+			}
 			if !operation.IsPointEqual(commitment, outputCoin.GetCommitment()){
 				return false, errors.New("validate sanity Coin commitment of burned coin failed")
 			}
@@ -344,7 +355,7 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 	return true, nil
 }
 
-func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecrets []*operation.Point, hasPrivacy bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
+func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecrets []*operation.Point, hasConfidentialAsset bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
 	var err error
 
 	proof := new(PaymentProofV2)
@@ -372,13 +383,17 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
 	wit.Set(outputValues, outputRands)
-	if hasPrivacy{
+	if hasConfidentialAsset{
 		blinders := make([]*operation.Scalar, len(sharedSecrets))
 		for i, _ := range sharedSecrets{
-			_, indexForShard, err := outputCoins[i].GetTxRandomDetail()
-			blinders[i], err = coin.ComputeAssetTagBlinder(sharedSecrets[i], indexForShard)
-			if err != nil {
-				return nil, err
+			if sharedSecrets[i]==nil{
+				blinders[i] = new(operation.Scalar).FromUint64(0)
+			}else{
+				_, indexForShard, err := outputCoins[i].GetTxRandomDetail()
+				blinders[i], err = coin.ComputeAssetTagBlinder(sharedSecrets[i], indexForShard)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		var err error
@@ -438,7 +453,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 }
 
 // TODO PRIVACY (recheck before devnet)
-func (proof PaymentProofV2) verifyHasPrivacy(isBatch bool) (bool, error) {
+func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, error) {
 	cmsValues := proof.aggregatedRangeProof.GetCommitments()
 	if len(proof.GetOutputCoins())!=len(cmsValues){
 		return false, errors.New("Commitment length mismatch")
@@ -524,7 +539,7 @@ func (proof PaymentProofV2) verifyHasNoPrivacy(isBatch bool) (bool, error) {
 	// return true, nil
 }
 
-func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof PaymentProofV2) Verify(hasConfidentialAsset bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	inputCoins := proof.GetInputCoins()
 	dupMap := make(map[string]bool)
 	for _,coin := range inputCoins{
@@ -536,8 +551,8 @@ func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee ui
 		dupMap[identifier] = true
 	}
 
-	if !hasPrivacy{
+	if !hasConfidentialAsset{
 		return proof.verifyHasNoPrivacy(isBatch)
 	}
-	return proof.verifyHasPrivacy(isBatch)
+	return proof.verifyHasConfidentialAsset(isBatch)
 }
