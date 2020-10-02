@@ -464,9 +464,9 @@ func (shardBody ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Has
 	return crossShardMap, nil
 }
 
-func (block *ShardBlock) AddValidationField(validationData string) error {
+func (block *ShardBlock) AddValidationField(validationData string) {
 	block.ValidationData = validationData
-	return nil
+	return
 }
 
 func (block ShardBlock) GetCurrentEpoch() uint64 {

@@ -85,14 +85,14 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 
 	//========Get Committes For Processing Block
 	committees := []incognitokey.CommitteePublicKey{}
-	if shardBestState.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		committees = shardBestState.GetShardCommittee()
+	} else {
 		beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
 		if err != nil {
 			return err
 		}
 		committees = beaconView.GetShardCommittee()[shardBestState.ShardID]
-	} else {
-		committees = shardBestState.GetShardCommittee()
 	}
 	//
 
@@ -161,14 +161,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	committees := []incognitokey.CommitteePublicKey{}
 	if shouldValidate {
-		if curView.shardCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
+		if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+			committees = curView.GetShardCommittee()
+		} else {
 			beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
 			if err != nil {
 				return err
 			}
 			committees = beaconView.GetShardCommittee()[curView.ShardID]
-		} else {
-			committees = curView.GetShardCommittee()
 		}
 	}
 

@@ -19,8 +19,7 @@ type ShardCommitteeStateHashV2 struct {
 
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
-	shardCommittee []incognitokey.CommitteePublicKey
-	// TODO: [review] @tin add CommitteeFromBlock to shard best state
+	shardCommittee     []incognitokey.CommitteePublicKey
 	committeeFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
@@ -216,11 +215,6 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)
-	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
 	newCommitteeState.committeeFromBlock = env.CommitteeFromBlock()
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -293,35 +287,6 @@ func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
 	}
 
 	return newCommitteeChange, nil
-}
-
-//processShardBlockInstruction process shard block instruction for sending to beacon
-//	- get list instructions from input environment
-//	- loop over the list instructions
-//		+ Check type of instructions and process itp
-//		+ At this moment, there will be only swap action for this function
-//	- After process all instructions, we will updatew commitee change variable
-//	- Only call once in new or insert block process
-func (s *ShardCommitteeStateV2) processShardBlockInstruction(
-	env ShardCommitteeStateEnvironment,
-	committeeChange *CommitteeChange) (*CommitteeChange, error) {
-	var err error
-	// shardID := env.ShardID()
-	// shardCommittees, err := incognitokey.CommitteeKeyListToString(s.shardCommittee)
-	if err != nil {
-		return nil, err
-	}
-	// Swap committee
-	for _, inst := range env.ShardInstructions() {
-		if len(inst) == 0 {
-			continue
-		}
-		// Logger.log.Infof("Shard ConfirmShardSwapInstruction, new shard committee %+v", tempNewShardCommittees)
-		// s.shardCommittee, _ = incognitokey.CommitteeBase58KeyListToStruct(tempNewShardCommittees)
-		// committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], confirmShardSwapInstruction.InPublicKeyStructs...)
-		// committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], confirmShardSwapInstruction.OutPublicKeyStructs...)
-	}
-	return committeeChange, nil
 }
 
 //ProcessInstructionFromBeacon : process instrucction from beacon

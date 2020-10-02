@@ -85,7 +85,7 @@ func NewBeaconCommitteeStateV2WithValue(
 
 func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	newB.reset()
-	newB.beaconCommittee = b.beaconCommittee //TODO: WARNING For release fixed beacon nodes copy value of this slice
+	copy(newB.beaconCommittee, b.beaconCommittee)
 	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	newB.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(b.shardCommonPool))
 	for i, v := range b.shardCommonPool {
@@ -93,17 +93,11 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	}
 
 	for i, v := range b.shardCommittee {
-		newB.shardCommittee[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		for index, value := range v {
-			newB.shardCommittee[i][index] = value
-		}
+		copy(newB.shardCommittee[i], v)
 	}
 
 	for i, v := range b.shardSubstitute {
-		newB.shardSubstitute[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		for index, value := range v {
-			newB.shardSubstitute[i][index] = value
-		}
+		copy(newB.shardSubstitute[i], v)
 	}
 
 	for k, v := range b.autoStake {
