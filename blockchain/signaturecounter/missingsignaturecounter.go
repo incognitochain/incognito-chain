@@ -1,7 +1,7 @@
 package signaturecounter
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
@@ -94,7 +94,7 @@ func (s *SignatureCounter) AddMissingSignature(data string, committees []incogni
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	validationData, err := types.DecodeValidationData(data)
+	validationData, err := consensustypes.DecodeValidationData(data)
 	if err != nil {
 		return err
 	}

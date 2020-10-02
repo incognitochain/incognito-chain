@@ -2,7 +2,7 @@ package blsbft
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"reflect"
 	"strconv"
@@ -122,7 +122,7 @@ func parseRoundKey(roundKey string) (uint64, int) {
 }
 
 func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
-	valData, err := types.DecodeValidationData(block.GetValidationField())
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
