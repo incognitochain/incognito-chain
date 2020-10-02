@@ -1,4 +1,4 @@
-package blsbftv2
+package blsbftv3
 
 import (
 	"time"
@@ -54,4 +54,12 @@ type ChainInterface interface {
 	GetFinalViewHash() string
 
 	GetViewByHash(hash common.Hash) multiview.View
+	// CommitteeStateVersion() uint
+}
+
+//CommitteeChainHandler :
+type CommitteeChainHandler interface {
+	CommitteesByShardID(byte) []incognitokey.CommitteePublicKey
+	GetProposerByTimeSlot(byte, int64, int) incognitokey.CommitteePublicKey
+	FinalView() multiview.View
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -151,9 +152,9 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 	return chain.GetBestState().ShardProposerIdx
 }
 
-func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
-	newBlock, err := chain.Blockchain.NewBlockShard(chain.GetBestState(), version, proposer, round, time.Unix(startTime, 0))
+	newBlock, err := chain.Blockchain.NewBlockShard(chain.GetBestState(), version, proposer, round, time.Unix(startTime, 0), committeeView)
 	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		Logger.log.Error(err)
@@ -168,12 +169,18 @@ func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int,
 	return newBlock, nil
 }
 
-func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface,
+	proposer string, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
+
+	if newBlock.CommitteeFromBlock().String() != committeeView.GetHash().String() {
+		return nil, errors.New("Committee From Block Hash Is Not Similar")
+	}
+
 	return newBlock, nil
 }
 
@@ -264,6 +271,8 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
+//CommitteesV2 get committees by block for shardChain
+// Input block must be ShardBlock
 func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	shardView := chain.GetBestState()
 
@@ -273,9 +282,11 @@ func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitok
 	}
 	result := []incognitokey.CommitteePublicKey{}
 
-	// TODO: @tin very dangerous style of code
+	// TODO: [review] @tin very dangerous style of code [review]
 	// 1. caller of this func can pass any types of block
 	// 2. this function only accept one type of block, why don't change type into *types.ShardBlock to make this function more explicity
+	// Note: This fucntion is used for two type of chain BeaconChain and ShardChain
+	// So it also need to receive a block interface input for processing
 	shardBlock := block.(*types.ShardBlock)
 	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
 	if err != nil {

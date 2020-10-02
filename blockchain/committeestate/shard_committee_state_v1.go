@@ -15,6 +15,7 @@ import (
 type ShardCommitteeStateHash struct {
 	ShardCommitteeHash  common.Hash
 	ShardSubstituteHash common.Hash
+	CommitteeFromBlock  common.Hash
 }
 
 //ShardCommitteeStateV1
@@ -114,6 +115,10 @@ func (engine *ShardCommitteeEngineV1) GetShardCommittee() []incognitokey.Committ
 //GetShardSubstitute get shard pending validators
 func (engine *ShardCommitteeEngineV1) GetShardSubstitute() []incognitokey.CommitteePublicKey {
 	return engine.shardCommitteeStateV1.shardPendingValidator
+}
+
+func (engine *ShardCommitteeEngineV1) CommitteeFromBlock() common.Hash {
+	return common.Hash{}
 }
 
 //Commit commit committee state change in uncommittedShardCommitteeStateV1 struct

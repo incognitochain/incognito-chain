@@ -1,4 +1,4 @@
-package blsbftv2
+package blsbftv3
 
 import (
 	"sort"
@@ -12,7 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func (e *BLSBFT_V2) LoadUserKey(privateSeed string) error {
+func (e *BLSBFT_V3) LoadUserKey(privateSeed string) error {
 	var miningKey types.MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
@@ -34,7 +34,7 @@ func (e *BLSBFT_V2) LoadUserKey(privateSeed string) error {
 	return nil
 }
 
-func (e *BLSBFT_V2) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
+func (e *BLSBFT_V3) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
 	wl, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return "", NewConsensusError(LoadKeyError, err)
@@ -47,7 +47,7 @@ func (e *BLSBFT_V2) LoadUserKeyFromIncPrivateKey(privateKey string) (string, err
 	return privateSeed, nil
 }
 
-func (e *BLSBFT_V2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
+func (e *BLSBFT_V3) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
 		key := e.UserKeySet.GetPublicKey()
 		return &key
@@ -55,7 +55,7 @@ func (e *BLSBFT_V2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	return nil
 }
 
-func (e BLSBFT_V2) SignData(data []byte) (string, error) {
+func (e BLSBFT_V3) SignData(data []byte) (string, error) {
 	result, err := e.UserKeySet.BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
 	if err != nil {
 		return "", NewConsensusError(SignDataError, err)
@@ -67,7 +67,9 @@ func (e BLSBFT_V2) SignData(data []byte) (string, error) {
 func combineVotes(votes map[string]BFTVote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
 	var blsSigList [][]byte
 	for validator, _ := range votes {
-		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
+		if index := common.IndexOfStr(validator, committee); index != -1 {
+			validatorIdx = append(validatorIdx, index)
+		}
 	}
 	sort.Ints(validatorIdx)
 	for _, idx := range validatorIdx {

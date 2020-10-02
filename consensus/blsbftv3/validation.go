@@ -1,7 +1,9 @@
-package blsbft
+package blsbftv3
 
 import (
 	"errors"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -10,23 +12,14 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-type vote struct {
-	BLS          []byte
-	BRI          []byte
-	Confirmation []byte
-}
-
 type blockValidation interface {
 	common.BlockInterface
 	AddValidationField(validationData string)
 }
 
-func (e BLSBFT) CreateValidationData(block common.BlockInterface) types.ValidationData {
+func (e BLSBFT_V3) CreateValidationData(block common.BlockInterface) types.ValidationData {
 	var valData types.ValidationData
-	// selfPublicKey := e.UserKeySet.GetPublicKey()
-	// keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
-	// valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
-	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes()) //, 0, []blsmultisig.PublicKey{keyByte})
+	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes())
 	return valData
 }
 
@@ -36,20 +29,14 @@ func ValidateProducerSig(block common.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 
-	// producerBase58 := block.GetProducer()
-	// producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
-
 	producerKey := incognitokey.CommitteePublicKey{}
-	err = producerKey.FromBase58(block.GetProducer())
+	err = producerKey.FromBase58(block.GetProposer())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
-	//start := time.Now()
 	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
-	//end := time.Now().Sub(start)
-	//fmt.Printf("ConsLog just verify %v\n", end.Seconds())
 	return nil
 }
 
@@ -60,25 +47,22 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {
-		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
 	}
-
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil
 }
 
-func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
+func (e BLSBFT_V3) ValidateData(data []byte, sig string, publicKey string) error {
 	sigByte, _, err := base58.Base58Check{}.Decode(sig)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	publicKeyByte := []byte(publicKey)
-	// if err != nil {
-	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// }
-	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
 	dataHash := new(common.Hash)
 	dataHash.NewHash(data)
 	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
@@ -94,10 +78,7 @@ func validateSingleBLSSig(
 	selfIdx int,
 	committee []blsmultisig.PublicKey,
 ) error {
-	//start := time.Now()
 	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
-	//end := time.Now().Sub(start)
-	//fmt.Printf("ConsLog single verify %v\n", end.Seconds())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -110,9 +91,9 @@ func validateSingleBLSSig(
 func validateSingleBriSig(
 	dataHash *common.Hash,
 	briSig []byte,
-	candidate []byte,
+	validatorPk []byte,
 ) error {
-	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
+	result, err := bridgesig.Verify(validatorPk, dataHash.GetBytes(), briSig)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -135,5 +116,9 @@ func validateBLSSig(
 	if !result {
 		return NewConsensusError(UnExpectedError, errors.New("Invalid Signature!"))
 	}
+	return nil
+}
+
+func (e BLSBFT_V3) ValidateBlockWithConsensus(block common.BlockInterface) error {
 	return nil
 }

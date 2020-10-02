@@ -604,7 +604,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		ConsensusStateDB:                   beaconBestState.consensusStateDB,
 		NumberOfFixedBeaconBlockValidators: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidators:  NumberOfFixedShardBlockValidators,
-		MaxCommitteeSize:                   params.MaxShardCommitteeSize,
+		MaxShardCommitteeSize:              params.MaxShardCommitteeSize,
 	}
 }
 
@@ -619,7 +619,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		ActiveShards:                       beaconBestState.ActiveShards,
 		MinShardCommitteeSize:              beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                   beaconBestState.consensusStateDB,
-		MaxCommitteeSize:                   params.MaxShardCommitteeSize,
+		MaxShardCommitteeSize:              params.MaxShardCommitteeSize,
 		NumberOfFixedBeaconBlockValidators: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidators:  NumberOfFixedShardBlockValidators,
 	}
