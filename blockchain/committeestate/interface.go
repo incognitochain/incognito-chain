@@ -54,6 +54,5 @@ type ShardCommitteeEngine interface {
 	GetShardSubstitute() []incognitokey.CommitteePublicKey
 	CommitteeFromBlock() common.Hash
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
-	ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 }

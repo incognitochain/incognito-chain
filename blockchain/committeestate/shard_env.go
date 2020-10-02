@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -23,7 +24,8 @@ type ShardEnvBuilder interface {
 	BuildSwapOffset(swapOffset int) ShardEnvBuilder
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
-	BuildCommitteeFromBlock(common.Hash) ShardEnvBuilder
+	BuildCommitteesFromBlock(common.Hash) ShardEnvBuilder
+	BuildCommitteesFromBeaconView([]incognitokey.CommitteePublicKey) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -49,8 +51,9 @@ type ShardCommitteeStateEnvironment interface {
 	Offset() int
 	SwapOffset() int
 	StakingTx() map[string]string
-	CommitteeFromBlock() common.Hash
+	CommitteesFromBlock() common.Hash
 	NumberOfFixedBlockValidators() int
+	CommitteesFromBeaconView() []incognitokey.CommitteePublicKey // This Field Is Only Use For Swap Committee
 }
 
 //shardCommitteeStateEnvironment :
@@ -71,12 +74,19 @@ type shardCommitteeStateEnvironment struct {
 	swapOffset                   int
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
-	committeeFromBlock           common.Hash
+	committeesFromBlock          common.Hash
+	committeesFromBeaconView     []incognitokey.CommitteePublicKey
+}
+
+//BuildCommitteesFromBeacon :
+func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBeaconView(committees []incognitokey.CommitteePublicKey) ShardEnvBuilder {
+	env.committeesFromBeaconView = committees
+	return env
 }
 
 //BuildCommitteeFromBlock :
-func (env *shardCommitteeStateEnvironment) BuildCommitteeFromBlock(hash common.Hash) ShardEnvBuilder {
-	env.committeeFromBlock = hash
+func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBlock(hash common.Hash) ShardEnvBuilder {
+	env.committeesFromBlock = hash
 	return env
 }
 
@@ -258,8 +268,12 @@ func (env *shardCommitteeStateEnvironment) NumberOfFixedBlockValidators() int {
 	return env.numberOfFixedBlockValidators
 }
 
-func (env *shardCommitteeStateEnvironment) CommitteeFromBlock() common.Hash {
-	return env.committeeFromBlock
+func (env *shardCommitteeStateEnvironment) CommitteesFromBlock() common.Hash {
+	return env.committeesFromBlock
+}
+
+func (env *shardCommitteeStateEnvironment) CommitteesFromBeaconView() []incognitokey.CommitteePublicKey {
+	return env.committeesFromBeaconView
 }
 
 //Build :
