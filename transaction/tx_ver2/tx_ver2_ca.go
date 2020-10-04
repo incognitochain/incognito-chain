@@ -42,7 +42,7 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 		if !ok || inputCoin_specific.GetAssetTag()==nil{
 			return nil, errors.New("Cannot cast a coin as v2-CA")
 		}
-		
+
 		isUnblinded := privacy.IsPointEqual(rehashed, inputCoin_specific.GetAssetTag())
 		if isUnblinded{
 			utils.Logger.Log.Infof("Signing TX : processing an unblinded input coin")
@@ -146,7 +146,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 	for i:=0;i<len(outputCoins);i++{
 		outputCoinsAsGeneric[i] = outputCoins[i]
 	}
-	sumOutputsWithFee := calculateSumOutputsWithFee(outputCoinsAsGeneric, params.Fee)
+	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(outputCoinsAsGeneric, params.Fee)
 	inCount := new(privacy.Scalar).FromUint64(uint64(len(inputCoins)))
 	outCount := new(privacy.Scalar).FromUint64(uint64(len(outputCoins)))
 
@@ -373,7 +373,7 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	// confidential asset TX always use umbrella ID to verify
 	tokenID = &common.ConfidentialAssetID
 	// Reform Ring
-	sumOutputsWithFee := calculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
+	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
 	sumOutputAssetTags := new(privacy.Point).Identity()
 	for _, oc := range tx.Proof.GetOutputCoins(){
 		output_specific, ok := oc.(*privacy.CoinV2)
