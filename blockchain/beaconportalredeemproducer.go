@@ -51,7 +51,7 @@ func (p *portalRedeemRequestProcessor) prepareDataBeforeProcessing(stateDB *stat
 
 	// Get redeem request with uniqueID from stateDB
 	redeemRequestBytes, err := statedb.GetPortalRedeemRequestStatus(stateDB, actionData.Meta.UniqueRedeemID)
-	if err != nil{
+	if err != nil {
 		Logger.log.Errorf("Redeem request: an error occurred while get redeem request Id from DB: %+v", err)
 		return nil, fmt.Errorf("Redeem request: an error occurred while get redeem request Id from DB: %+v", err)
 	}
@@ -219,7 +219,6 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-
 /* =======
 Portal Request Mactching Redeem Processor
 ======= */
@@ -339,7 +338,6 @@ func (p *portalRequestMatchingRedeemProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-
 // PortalPickMoreCustodiansForRedeemReqContent - Beacon builds a new instruction with this content after timeout of redeem request
 // It will be appended to beaconBlock
 type PortalPickMoreCustodiansForRedeemReqContent struct {
@@ -388,7 +386,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 			totalMatchedAmount += cus.GetAmount()
 		}
 		neededMatchingAmountInPToken := waitingRedeem.GetRedeemAmount() - totalMatchedAmount
-		if neededMatchingAmountInPToken <= 0 {
+		if neededMatchingAmountInPToken > waitingRedeem.GetRedeemAmount() || neededMatchingAmountInPToken <= 0 {
 			Logger.log.Errorf("Amount need to matching in redeem request %v is less than zero", neededMatchingAmountInPToken)
 			continue
 		}
@@ -469,7 +467,6 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 
 	return insts, nil
 }
-
 
 /* =======
 Portal Request Unlock Collateral Processor
@@ -617,16 +614,17 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 	// calculate unlock amount
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
 	custodianStateKeyStr := custodianStateKey.String()
-	unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
+	unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
 		return [][]string{rejectInst}, nil
 	}
 
 	// update custodian state (FreeCollateral, LockedAmountCollateral)
+	// unlock amount in usdt
 	err = updateCustodianStateAfterReqUnlockCollateral(
 		currentPortalState.CustodianPoolState[custodianStateKeyStr],
-		unlockAmount, meta.TokenID)
+		unlockAmount, meta.TokenID, portalParams, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
 		return [][]string{rejectInst}, nil

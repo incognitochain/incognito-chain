@@ -385,7 +385,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		custodianStateKeyStr := custodianStateKey.String()
 		err := updateCustodianStateAfterReqUnlockCollateral(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			actionData.UnlockAmount, tokenID)
+			actionData.UnlockAmount, tokenID, portalParams, currentPortalState)
 		if err != nil {
 			Logger.log.Errorf("Error when update custodian state", err)
 			return nil
