@@ -52,6 +52,53 @@ func Test_Main4Committee_Case1(t *testing.T) {
 		"112t8rqgs3FEcd1249ReCaMr4zbGYMRdFDMxqKGDM5nKR7AV4x3TQRMfGm9S8VEDfoZyr9fMBMpmkq94TzZ2tUGogrJo3vwWVn8mafdx86iW",
 		"112t8sSnofyEiraUFykMfYYER2agCbJaYjMHBUmL5oWsCH5SoFVg1NVYt9i39wYrygbhoXFXm378vcRD3Qbdx6Rsbm47tv5K8hR6QnHXe4mo",
 	}
+
+	committee0 := []string{
+		"112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL",
+		"112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5",
+		"112t8rnXi8eKJ5RYJjyQYcFMThfbXHgaL6pq5AF5bWsDXwfsw8pqQUreDv6qgWyiABoDdphvqE7NFr9K92aomX7Gi5Nm1e4tEoV3qRLVdfSR",
+		"112t8rnY42xRqJghQX3zvhgEa2ZJBwSzJ46SXyVQEam1yNpN4bfAqJwh1SsobjHAz8wwRvwnqJBfxrbwUuTxqgEbuEE8yMu6F14QmwtwyM43",
+	}
+	testScn0 := testScenerio{
+		Name:      "test0",
+		Committee: committee0,
+		TimeSlots: 10,
+		TimeSlotScenerios: map[int]TimeSlotScenerio{
+			2: {
+				ProposingScenerio: []int{0, 1, 2, 3},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3},
+				},
+			},
+			3: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1, 2, 3},
+				},
+			},
+			4: {
+				ProposingScenerio: []int{0, 1, 2, 3},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3},
+				},
+			},
+			5: {
+				ProposingScenerio: []int{0, 1, 2, 3},
+				VotingScenerios: map[string][]int{
+					"all": {0, 1, 2, 3},
+				},
+			},
+			6: {
+				ProposingScenerio: []int{},
+				VotingScenerios: map[string][]int{
+					"all": {1},
+				},
+			},
+		},
+	}
+
+	RunSimulation(&testScn0, t)
+
 	testScn := testScenerio{
 		Name:      "test1",
 		Committee: committee,
