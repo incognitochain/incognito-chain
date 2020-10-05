@@ -69,7 +69,7 @@ func Test_Main4Committee_Case1(t *testing.T) {
 					"all": {0, 1, 3, 4, 5, 6, 7},
 				},
 				ExpectedOutput: map[string]TimeSlotOutput{
-					"2": {BestHeight: 30, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+					"2": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
 				},
 			},
 			4: {
