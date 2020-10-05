@@ -253,7 +253,11 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), byte(block.(*ShardBlock).GetShardID()))
+	err := chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), byte(block.(*ShardBlock).GetShardID()))
+	if err != nil {
+		Logger.log.Error("ValidatePreSignBlock Shard", err)
+	}
+	return err
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {

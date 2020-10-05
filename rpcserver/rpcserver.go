@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -86,11 +87,13 @@ type RpcServerConfig struct {
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
 	}
 	ConsensusEngine interface {
-		GetUserLayer() (string, int)
 		GetUserRole() (string, string, int)
 		GetCurrentMiningPublicKey() (publickey string, keyType string)
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
+		GetAllValidatorKeyState() map[string]consensus.MiningState
+		AddValidatorKey(key string) error
+		// SetValidatorKeyLimit(newLimit int) error
 	}
 	TxMemPool                   *mempool.TxPool
 	RPCMaxClients               int

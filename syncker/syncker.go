@@ -8,6 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus_multi"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -21,6 +26,7 @@ const MAX_CROSSX_BLOCK = 10
 type SynckerManagerConfig struct {
 	Node       Server
 	Blockchain *blockchain.BlockChain
+	Consensus  *consensus_multi.Engine
 }
 
 type SynckerManager struct {
@@ -79,13 +85,14 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	go func() {
 		t := time.NewTicker(time.Second * 3)
 		for _ = range t.C {
-			_, chainID := synckerManager.config.Node.GetUserMiningState()
-			if chainID == -1 {
-				_ = synckerManager.config.Node.PublishNodeState("beacon", chainID)
-			}
-			if chainID >= 0 {
-				_ = synckerManager.config.Node.PublishNodeState("shard", chainID)
-			}
+			synckerManager.config.Node.PublishNodeState()
+			// _, chainID := synckerManager.config.Node.GetUserMiningState()
+			// if chainID == -1 {
+			// 	_ = synckerManager.config.Node.PublishNodeState("beacon", chainID)
+			// }
+			// if chainID >= 0 {
+			// 	_ = synckerManager.config.Node.PublishNodeState("shard", chainID)
+			// }
 		}
 	}()
 }
@@ -110,19 +117,26 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	if !synckerManager.isEnabled || synckerManager.config == nil {
 		return
 	}
-	role, chainID := synckerManager.config.Node.GetUserMiningState()
-	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
+
+	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
+
+	if beaconChain, ok := chainValidator[-1]; ok {
+		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
+	}
 
 	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
 	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
+	for chainID, _ := range chainValidator {
+		wantedShard[byte(chainID)] = struct{}{}
+	}
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
 		wg.Add(1)
 		go func(sid int, syncProc *ShardSyncProcess) {
 			defer wg.Done()
-			if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+			if _, ok := wantedShard[byte(sid)]; ok {
 				//check preload shard
 				if preloadAddr != "" {
 					if syncProc.status != RUNNING_SYNC { //run only when start
@@ -138,7 +152,10 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 			} else {
 				syncProc.stop()
 			}
-			syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
+			if chain, ok := chainValidator[sid]; ok {
+				syncProc.isCommittee = chain.State.Role == common.CommitteeRole || chain.State.Role == common.PendingRole
+			}
+
 		}(sid, syncProc)
 	}
 	wg.Wait()
