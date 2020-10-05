@@ -14,10 +14,10 @@ type CommitteeChange struct {
 	NextEpochShardCandidateRemoved     []incognitokey.CommitteePublicKey
 	CurrentEpochShardCandidateAdded    []incognitokey.CommitteePublicKey
 	CurrentEpochShardCandidateRemoved  []incognitokey.CommitteePublicKey
-	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey
-	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey
-	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey
-	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey
+	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey //
+	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey //
+	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey //
+	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey //
 	BeaconSubstituteAdded              []incognitokey.CommitteePublicKey
 	BeaconSubstituteRemoved            []incognitokey.CommitteePublicKey
 	BeaconCommitteeAdded               []incognitokey.CommitteePublicKey

@@ -358,7 +358,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	engine.finalBeaconCommitteeStateV2.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV2
 	committeeChange := NewCommitteeChange()
-	incuredInstructions := [][]string{}
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		newB.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
@@ -412,6 +411,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if tempIncurredIns != nil {
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
+
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
@@ -424,17 +424,18 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			}
 		}
 	}
+
 	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
-		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
-		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	return hashes, committeeChange, incuredInstructions, nil
+	return hashes, committeeChange, incurredInstructions, nil
 }
 
 // GenerateAllSwapShardInstructions generate swap shard instructions for all shard
@@ -648,7 +649,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
 	b.shardCommittee[chainID] = append(b.shardCommittee[chainID], tempSwapInPublicKeys...)
-	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process list shard pool
 	for _, v := range tempSwapInPublicKeys {
@@ -658,6 +658,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
 		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
 	}
+	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, err = b.processAfterSwap(env,
@@ -807,6 +808,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			incurredInstructions = append(incurredInstructions, returnStakingIns.ToString())
 		}
 	}
+
 	return newCommitteeChange, incurredInstructions, nil
 }
 
