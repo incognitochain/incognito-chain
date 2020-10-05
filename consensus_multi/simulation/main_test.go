@@ -75,6 +75,9 @@ func Test_Main4Committee_Case1(t *testing.T) {
 				VotingScenerios: map[string][]int{
 					"all": {1, 2, 3},
 				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 3, BestTimeslot: 3, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
 			},
 			4: {
 				ProposingScenerio: []int{0, 1, 2, 3},
@@ -92,6 +95,14 @@ func Test_Main4Committee_Case1(t *testing.T) {
 				ProposingScenerio: []int{},
 				VotingScenerios: map[string][]int{
 					"all": {1},
+				},
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"0": {BestHeight: 3, BestTimeslot: 2, FinalHeight: 2, FinalTimeslot: 1, ViewCount: 2},
+				},
+			},
+			7: {
+				ExpectedOutput: map[string]TimeSlotOutput{
+					"all": {BestHeight: 4, BestTimeslot: 7, FinalHeight: 3, FinalTimeslot: 3, ViewCount: 2},
 				},
 			},
 		},
