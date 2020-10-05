@@ -384,17 +384,20 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
+				fmt.Println(err)
 				continue
 			}
 			committeeChange, err = newB.processStakeInstruction(stakeInstruction, committeeChange, env)
 			if err != nil {
 				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
+				fmt.Println(err)
 				continue
 			}
 		case instruction.RANDOM_ACTION:
 			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				continue
 			}
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
@@ -403,6 +406,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				continue
 			}
 			committeeChange = newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 		case instruction.UNSTAKE_ACTION:
