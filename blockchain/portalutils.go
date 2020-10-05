@@ -659,8 +659,8 @@ func CalUnlockCollateralAmount(
 	lockedAmountCollateral := uint64(0)
 	listLockedTokens := custodianState.GetLockedTokenCollaterals()[tokenID]
 	listLockedTokens[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[tokenID]
-	for tokenID, token := range listLockedTokens {
-		tokenValueLocked, err := convertRateTool.ConvertToUSDT(tokenID, token)
+	for tokenCollateralID, token := range listLockedTokens {
+		tokenValueLocked, err := convertRateTool.ConvertToUSDT(tokenCollateralID, token)
 		if err != nil {
 			Logger.log.Errorf("[GetTotalLockedCollateralAmountInWaitingPortings] got error %v", err.Error())
 			return 0, errors.New("[CalUnlockCollateralAmount] got error while get convert from collateral to USDT ")
