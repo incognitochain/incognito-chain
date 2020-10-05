@@ -210,14 +210,14 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 
 	newCommitteeState := engine.uncommittedShardCommitteeStateV2
 
-	committeeChange, err := newCommitteeState.updateCommitteesByBeaconView(env, NewCommitteeChange())
+	committeeChange, err := newCommitteeState.forceUpdateCommitteesFromBeacon(env, NewCommitteeChange())
 	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	return hashes, committeeChange, nil
@@ -256,12 +256,13 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 	return newCommitteeChange, nil
 }
 
-func (s *ShardCommitteeStateV2) updateCommitteesByBeaconView(
+func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
-	s.shardCommittee = env.CommitteesFromBeaconView()
+	s.shardCommittee = make([]incognitokey.CommitteePublicKey, len(env.CommitteesFromBeaconView()))
+	copy(s.shardCommittee, env.CommitteesFromBeaconView())
 	s.committeeFromBlock = env.CommitteesFromBlock()
 	return newCommitteeChange, nil
 }
@@ -269,10 +270,6 @@ func (s *ShardCommitteeStateV2) updateCommitteesByBeaconView(
 //ProcessInstructionFromBeacon : process instrucction from beacon
 func (engine *ShardCommitteeEngineV2) ProcessInstructionFromBeacon(
 	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	engine.shardCommitteeStateV2.mu.RLock()
-	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
-	engine.shardCommitteeStateV2.mu.RUnlock()
-
 	return NewCommitteeChange(), nil
 }
 

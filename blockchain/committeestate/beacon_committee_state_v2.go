@@ -85,25 +85,20 @@ func NewBeaconCommitteeStateV2WithValue(
 
 func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	newB.reset()
-	newB.beaconCommittee = b.beaconCommittee
+	newB.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
+	copy(newB.beaconCommittee, b.beaconCommittee)
 	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	newB.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(b.shardCommonPool))
-	for i, v := range b.shardCommonPool {
-		newB.shardCommonPool[i] = v
-	}
+	copy(newB.shardCommonPool, b.shardCommonPool)
 
 	for i, v := range b.shardCommittee {
 		newB.shardCommittee[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		for index, value := range v {
-			newB.shardCommittee[i][index] = value
-		}
+		copy(newB.shardCommittee[i], v)
 	}
 
 	for i, v := range b.shardSubstitute {
 		newB.shardSubstitute[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		for index, value := range v {
-			newB.shardSubstitute[i][index] = value
-		}
+		copy(newB.shardSubstitute[i], v)
 	}
 
 	for k, v := range b.autoStake {
@@ -383,21 +378,16 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		case instruction.STAKE_ACTION:
 			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-				fmt.Println(err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, err = newB.processStakeInstruction(stakeInstruction, committeeChange, env)
 			if err != nil {
-				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-				fmt.Println(err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 		case instruction.RANDOM_ACTION:
 			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
@@ -405,15 +395,13 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 		case instruction.UNSTAKE_ACTION:
 			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			tempIncurredIns := [][]string{}
 			committeeChange, tempIncurredIns, err =
@@ -427,8 +415,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, err = newB.
 				processSwapShardInstruction(swapShardInstruction, env, committeeChange)
