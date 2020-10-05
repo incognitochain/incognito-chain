@@ -27,7 +27,6 @@ type PortalRedeemRequest struct {
 }
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
-// it will be append to ShardToBeaconBlock
 type PortalRedeemRequestAction struct {
 	Meta    PortalRedeemRequest
 	TxReqID common.Hash

@@ -15,6 +15,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -31,12 +33,10 @@ type SynckerManager struct {
 	isEnabled             bool //0 > stop, 1: running
 	config                *SynckerManagerConfig
 	BeaconSyncProcess     *BeaconSyncProcess
-	S2BSyncProcess        *S2BSyncProcess
 	ShardSyncProcess      map[int]*ShardSyncProcess
 	CrossShardSyncProcess map[int]*CrossShardSyncProcess
 	beaconPool            *BlkPool
 	shardPool             map[int]*BlkPool
-	s2bPool               *BlkPool
 	crossShardPool        map[int]*BlkPool
 }
 
@@ -66,9 +66,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 
 	//init beacon sync process
 	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain)
-	synckerManager.S2BSyncProcess = synckerManager.BeaconSyncProcess.s2bSyncProcess
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
-	synckerManager.s2bPool = synckerManager.S2BSyncProcess.s2bPool
 
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
@@ -130,7 +128,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	synckerManager.BeaconSyncProcess.start()
 
 	wg := sync.WaitGroup{}
-	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
+	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
 	for chainID, _ := range chainValidator {
 		wantedShard[byte(chainID)] = struct{}{}
 	}
@@ -205,19 +203,6 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 			}
 		}
 
-	case *blockchain.ShardToBeaconBlock:
-		s2bBlk := blk.(*blockchain.ShardToBeaconBlock)
-		if synckerManager.S2BSyncProcess != nil {
-			synckerManager.s2bPool.AddBlock(s2bBlk)
-			//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
-			//create fake s2b pool peerstate
-			synckerManager.S2BSyncProcess.s2bPeerStateCh <- &wire.MessagePeerState{
-				SenderID:          peerID,
-				ShardToBeaconPool: map[byte][]uint64{s2bBlk.Header.ShardID: []uint64{1, s2bBlk.GetHeight()}},
-				Timestamp:         time.Now().Unix(),
-			}
-		}
-
 	case *blockchain.CrossShardBlock:
 		csBlk := blk.(*blockchain.CrossShardBlock)
 		if synckerManager.CrossShardSyncProcess[int(csBlk.ToShardID)] != nil {
@@ -229,51 +214,19 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 
 //Process incomming broadcast peerstate
 func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePeerState) {
-	//b, _ := json.Marshal(peerState)
-	//fmt.Println("SYNCKER: receive peer state", string(b))
 	//beacon
 	if peerState.Beacon.Height != 0 && synckerManager.BeaconSyncProcess != nil {
 		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- peerState
 	}
-	//s2b
-	if len(peerState.ShardToBeaconPool) != 0 && synckerManager.S2BSyncProcess != nil {
-		synckerManager.S2BSyncProcess.s2bPeerStateCh <- peerState
-	}
 	//shard
 	for sid, _ := range peerState.Shards {
 		if synckerManager.ShardSyncProcess[int(sid)] != nil {
+			// b, _ := json.Marshal(peerState)
+			// fmt.Println("[debugshard]: receive peer state", string(b))
 			synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
 		}
 
 	}
-}
-
-//Get S2B Block for creating beacon block
-func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShardHash map[byte]common.Hash, limit map[byte][]common.Hash) map[byte][]interface{} {
-	res := make(map[byte][]interface{})
-
-	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
-		v := bestViewShardHash[byte(i)]
-		//beacon beststate dont have shard hash  => create one
-		if (&v).IsEqual(&common.Hash{}) {
-			blk := *synckerManager.config.Node.GetChainParam().GenesisShardBlock
-			blk.Header.ShardID = byte(i)
-			v = *blk.Hash()
-		}
-
-		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
-			//if limit has 0 length, we should break now
-			if limit != nil && len(res[byte(i)]) >= len(limit[byte(i)]) {
-				break
-			}
-
-			res[byte(i)] = append(res[byte(i)], v)
-			if len(res[byte(i)]) >= MAX_S2B_BLOCK {
-				break
-			}
-		}
-	}
-	return res
 }
 
 //Get Crossshard Block for creating shardblock block
@@ -351,66 +304,6 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 		}
 	}
 	return res
-}
-
-//Get S2B Block for validating beacon block
-func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(bestViewShardHash map[byte]common.Hash, list map[byte][]common.Hash) (map[byte][]interface{}, error) {
-	s2bPoolLists := synckerManager.GetS2BBlocksForBeaconProducer(bestViewShardHash, list)
-
-	missingBlocks := compareLists(s2bPoolLists, list)
-	// synckerManager.config.Server.
-	if len(missingBlocks) > 0 {
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		synckerManager.StreamMissingShardToBeaconBlock(ctx, missingBlocks)
-		//fmt.Println("debug finish stream missing s2b block")
-
-		s2bPoolLists = synckerManager.GetS2BBlocksForBeaconProducer(bestViewShardHash, list)
-		missingBlocks = compareLists(s2bPoolLists, list)
-		if len(missingBlocks) > 0 {
-			return nil, errors.New("Unable to sync required block in time")
-		}
-	}
-
-	for sid, heights := range list {
-		if len(s2bPoolLists[sid]) != len(heights) {
-			return nil, fmt.Errorf("S2BPoolLists not match sid:%v pool:%v producer:%v", sid, len(s2bPoolLists[sid]), len(heights))
-		}
-	}
-
-	return s2bPoolLists, nil
-}
-
-//Stream Missing ShardToBeacon Block
-func (synckerManager *SynckerManager) StreamMissingShardToBeaconBlock(ctx context.Context, missingBlock map[byte][]common.Hash) {
-	fmt.Println("debug stream missing s2b block", missingBlock)
-	wg := sync.WaitGroup{}
-	for i, v := range missingBlock {
-		wg.Add(1)
-		go func(sid byte, list []common.Hash) {
-			defer wg.Done()
-			hashes := [][]byte{}
-			for _, h := range list {
-				hashes = append(hashes, h.Bytes())
-			}
-			ch, err := synckerManager.config.Node.RequestShardToBeaconBlocksByHashViaStream(ctx, "", int(sid), hashes)
-			if err != nil {
-				fmt.Println("Syncker: create channel fail")
-				return
-			}
-			//receive
-			for {
-				select {
-				case blk := <-ch:
-					if !isNil(blk) {
-						synckerManager.s2bPool.AddBlock(blk.(common.BlockPoolInterface))
-					} else {
-						return
-					}
-				}
-			}
-		}(i, v)
-	}
-	wg.Wait()
 }
 
 //Get Crossshard Block for validating shardblock block
@@ -581,7 +474,6 @@ type syncInfo struct {
 
 type SynckerStatusInfo struct {
 	Beacon     syncInfo
-	S2B        syncInfo
 	Shard      map[int]*syncInfo
 	Crossshard map[int]*syncInfo
 }
@@ -591,10 +483,6 @@ func (synckerManager *SynckerManager) GetSyncStatus(includePool bool) SynckerSta
 	info.Beacon = syncInfo{
 		IsSync:   synckerManager.BeaconSyncProcess.status == RUNNING_SYNC,
 		IsLatest: synckerManager.BeaconSyncProcess.isCatchUp,
-	}
-	info.S2B = syncInfo{
-		IsSync:   synckerManager.S2BSyncProcess.status == RUNNING_SYNC,
-		IsLatest: false,
 	}
 
 	info.Shard = make(map[int]*syncInfo)
@@ -615,7 +503,6 @@ func (synckerManager *SynckerManager) GetSyncStatus(includePool bool) SynckerSta
 
 	if includePool {
 		info.Beacon.PoolLength = synckerManager.beaconPool.GetPoolSize()
-		info.S2B.PoolLength = synckerManager.s2bPool.GetPoolSize()
 		for k, _ := range synckerManager.ShardSyncProcess {
 			info.Shard[k].PoolLength = synckerManager.shardPool[k].GetPoolSize()
 		}
@@ -676,18 +563,12 @@ func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []comm
 				return syncProcess.shardPool.GetPoolInfo()
 			}
 		}
-	case S2BPoolType:
-		if synckerManager.S2BSyncProcess != nil {
-			if synckerManager.S2BSyncProcess.s2bPool != nil {
-				return synckerManager.S2BSyncProcess.s2bPool.GetPoolInfo()
-			}
-		}
 	case CrossShardPoolType:
 		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
 			if syncProcess.shardPool != nil {
 				res := []common.BlockPoolInterface{}
 				for fromSID, blksPool := range synckerManager.crossShardPool {
-					for _, blk := range blksPool.blkPoolByHash {
+					for _, blk := range blksPool.GetBlockList() {
 						res = append(res, &TmpBlock{
 							Height:  blk.GetHeight(),
 							BlkHash: blk.Hash(),
@@ -715,12 +596,6 @@ func (synckerManager *SynckerManager) GetPoolLatestHeight(poolType byte, bestHas
 		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
 			if syncProcess.shardPool != nil {
 				return syncProcess.shardPool.GetLatestHeight(bestHash)
-			}
-		}
-	case S2BPoolType:
-		if synckerManager.S2BSyncProcess != nil {
-			if synckerManager.S2BSyncProcess.s2bPool != nil {
-				return synckerManager.S2BSyncProcess.s2bPool.GetLatestHeight(bestHash)
 			}
 		}
 	case CrossShardPoolType:

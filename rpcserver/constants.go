@@ -249,15 +249,16 @@ const (
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
 	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
 
-	getBeaconPoolInfo        = "getbeaconpoolinfo"
-	getShardToBeaconPoolInfo = "getshardtobeaconpoolinfo"
-	getShardPoolInfo         = "getshardpoolinfo"
-	getCrossShardPoolInfo    = "getcrossshardpoolinfo"
-	getAllView               = "getallview"
-	getAllViewDetail         = "getallviewdetail"
+	getBeaconPoolInfo     = "getbeaconpoolinfo"
+	getShardPoolInfo      = "getshardpoolinfo"
+	getCrossShardPoolInfo = "getcrossshardpoolinfo"
+	getAllView            = "getallview"
+	getAllViewDetail      = "getallviewdetail"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
+
+	getTotalStaker = "gettotalstaker"
 
 	//multi-validators
 	getMultiValKeyState = "getmultivalkeystate"

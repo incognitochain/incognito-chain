@@ -172,11 +172,6 @@ out:
 						{
 							netSync.handleMessageGetCrossShard(msg)
 						}
-
-					case *wire.MessageGetShardToBeacon:
-						{
-							netSync.handleMessageGetShardToBeacon(msg)
-						}
 					case *wire.MessageGetBlockBeacon:
 						{
 							netSync.handleMessageGetBlockBeacon(msg)
@@ -375,26 +370,6 @@ func (netSync *NetSync) handleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 		netSync.getBlockBeaconByHashAndSend(peerID, msg.BlkHashes)
 	} else {
 		netSync.getBlockBeaconByHeightAndSend(peerID, msg.FromPool, msg.BySpecificHeight, msg.BlkHeights)
-	}
-}
-
-func (netSync *NetSync) handleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
-	Logger.log.Debug("Handling new message getshardtobeacon")
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetShardToBeacon,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockShardByHashAndSend(peerID, shardToBeacon, msg.BlkHashes, 0)
-	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, shardToBeacon, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
 	}
 }
 

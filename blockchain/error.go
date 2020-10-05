@@ -111,7 +111,7 @@ const (
 	BeaconBlockSignatureError
 	WrongEpochError
 	GenerateInstructionHashError
-	GetShardToBeaconBlocksError
+	GetShardBlocksForBeaconProcessError
 	ShardStateHeightError
 	ShardStateCrossShardBitMapError
 	ShardBlockSignatureError
@@ -123,11 +123,6 @@ const (
 	ShuffleBeaconCandidateError
 	CleanBackUpError
 	BackUpBestStateError
-	StoreAcceptedShardToBeaconError
-	StoreCrossShardNextHeightError
-	StoreShardCommitteeByHeightError
-	StoreBeaconCommitteeByHeightError
-	StoreBeaconBestStateError
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
 	GetStakingTransactionError
@@ -328,7 +323,7 @@ var ErrCodeMessage = map[int]struct {
 	ProcessSlashingError:                              {-1135, "Process slashing Error"},
 	ConvertCommitteePubKeyToBase58Error:               {-1136, "Convert committee pub key to base58 Error"},
 	ConsensusIsOngoingError:                           {-1137, "Consensus Is Ongoing Error"},
-	GetShardToBeaconBlocksError:                       {-1138, "Get Shard To Beacon Blocks Error"},
+	GetShardBlocksForBeaconProcessError:               {-1138, "Get Shard To Beacon Blocks Error"},
 	RevertStateError:                                  {-1139, "Revert State Error"},
 	NotEnoughRewardError:                              {-1140, "Not enough reward Error"},
 	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
