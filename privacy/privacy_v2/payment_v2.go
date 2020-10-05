@@ -345,7 +345,7 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 				if err != nil{
 					return false, errors.New("Cannot compute commitment for confidential asset")
 				}
-				outputCoin_specific.SetCommitment(com)
+				commitment = com
 			}
 			if !operation.IsPointEqual(commitment, outputCoin.GetCommitment()){
 				return false, errors.New("validate sanity Coin commitment of burned coin failed")

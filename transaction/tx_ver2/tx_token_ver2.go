@@ -48,21 +48,21 @@ func checkIsBridgeTokenID(bridgeStateDB *statedb.StateDB, tokenID *common.Hash) 
 }
 
 // this signs only on the hash of the data in it
-func (tx *Tx) proveToken(params *tx_generic.TxPrivacyInitParams) error {
+func (tx *Tx) proveToken(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	utils.Logger.Log.Debugf("CREATING sub-TX (token)")
 	if err := tx_generic.ValidateTxParams(params); err != nil {
-		return err
+		return false, err
 	}
 
 	// Init tx and params (tx and params will be changed)
 	if err := tx.InitializeTxAndParams(params); err != nil {
-		return err
+		return false, err
 	}
-
-	if err := tx.proveCA(params); err != nil {
-		return err
+	isBurning, err := tx.proveCA(params)
+	if err != nil {
+		return false, err
 	}
-	return nil
+	return isBurning, nil
 }
 
 func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
@@ -187,12 +187,18 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				nil,
 			)
 			txNormal := new(Tx)
-			if err := txNormal.proveToken(txParams); err != nil {
+			isBurning, err := txNormal.proveToken(txParams)
+			if err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 			}
 			txToken.TxTokenData.TxNormal = txNormal
 			// tokenID is already hidden in asset tags in coin, here we use the umbrella ID
-			txToken.TxTokenData.SetPropertyID(dbFacingTokenID)
+			if isBurning{
+				// show plain tokenID if this is a burning TX
+				txToken.TxTokenData.SetPropertyID(*propertyID)
+			}else{
+				txToken.TxTokenData.SetPropertyID(dbFacingTokenID)
+			}
 		}
 	}
 	if !handled {

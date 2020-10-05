@@ -215,20 +215,22 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 	return mlsag.NewRing(ring), indexes, lastTwoColumnsCommitmentToZero, nil
 }
 
-func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) error {
+func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	var err error
 	var outputCoins 	[]*privacy.CoinV2
 	var sharedSecrets 	[]*privacy.Point
 	// fmt.Printf("tokenID is %v\n",params.TokenID)
 	var numOfCoinsBurned uint = 0
+	var isBurning bool = false
 	for _,inf := range params.PaymentInfo{
 		c, ss, err := createUniqueOTACoinCA(inf, params.TokenID, params.StateDB)
 		if err != nil {
 			utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
-			return err
+			return false, err
 		}
 		// the only way err!=nil but ss==nil is a coin meant for burning address
 		if ss==nil{
+			isBurning = true
 			numOfCoinsBurned += 1
 		}
 		sharedSecrets 	= append(sharedSecrets, ss)
@@ -237,7 +239,7 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) error {
 	// first, reject the invalid case. After this, isBurning will correctly determine if TX is burning
 	if numOfCoinsBurned>1{
 		utils.Logger.Log.Errorf("Cannot burn multiple coins")
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("output must not have more than 1 burned coin"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output must not have more than 1 burned coin"))
 	}
 	// outputCoins, err := newCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
 
@@ -246,17 +248,17 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) error {
 	tx.Proof, err = privacy.ProveV2(inputCoins, outputCoins, sharedSecrets, true, params.PaymentInfo)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error in privacy_v2.Prove, error %v ", err)
-		return err
+		return false, err
 	}
 
 	if tx.ShouldSignMetaData() {
 		if err := tx.signMetadata(params.SenderSK); err != nil {
 			utils.Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
-			return err
+			return false, err
 		}
 	}
 	err = tx.signCA(inputCoins, outputCoins, sharedSecrets, params, tx.Hash()[:])
-	return err
+	return isBurning, err
 }
 
 func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputSharedSecrets []*privacy.Point, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
