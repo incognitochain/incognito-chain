@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"

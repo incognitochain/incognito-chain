@@ -507,8 +507,3 @@ func (engine *ShardCommitteeEngineV1) ProcessInstructionFromBeacon(
 
 	return committeeChange, nil
 }
-
-//ProcessInstructionFromShard :
-func (engine *ShardCommitteeEngineV1) ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	return nil, nil
-}

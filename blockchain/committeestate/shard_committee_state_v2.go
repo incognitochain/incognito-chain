@@ -210,12 +210,10 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 
 	newCommitteeState := engine.uncommittedShardCommitteeStateV2
 
-	committeeChange, err := newCommitteeState.processInstructionFromBeacon(env, NewCommitteeChange())
+	committeeChange, err := newCommitteeState.updateCommitteesByBeaconView(env, NewCommitteeChange())
 	if err != nil {
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-
-	newCommitteeState.committeeFromBlock = env.CommitteeFromBlock()
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
@@ -258,34 +256,13 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 	return newCommitteeChange, nil
 }
 
-// processInstructionFromBeacon process instruction from beacon blocks
-//	- Get all subtitutes in shard
-//  - Loop over the list instructions:
-//		+ Create Assign instruction struct from assign instruction string
-//	- Update shard subtitute added in committee change struct
-//	- Only call once in new or insert block process
-func (s *ShardCommitteeStateV2) processInstructionFromBeacon(
+func (s *ShardCommitteeStateV2) updateCommitteesByBeaconView(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
-
-	for _, inst := range env.BeaconInstructions() {
-		switch inst[0] {
-		case instruction.SWAP_SHARD_ACTION:
-			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Infof("SHARD %v | Skip validate swap shard instruction err = %v\n", env.ShardID(), err)
-				continue
-			}
-			newCommitteeChange, err = s.processSwapShardInstruction(swapShardInstruction, env, newCommitteeChange)
-			if err != nil {
-				Logger.log.Infof("SHARD %v | Proccess swap shard instruction err = %v\n", env.ShardID(), err)
-				continue
-			}
-		}
-	}
-
+	s.shardCommittee = env.CommitteesFromBeaconView()
+	s.committeeFromBlock = env.CommitteesFromBlock()
 	return newCommitteeChange, nil
 }
 
@@ -296,17 +273,7 @@ func (engine *ShardCommitteeEngineV2) ProcessInstructionFromBeacon(
 	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
 	engine.shardCommitteeStateV2.mu.RUnlock()
 
-	committeeChange, err := engine.uncommittedShardCommitteeStateV2.processInstructionFromBeacon(env, NewCommitteeChange())
-	if err != nil {
-		return nil, err
-	}
-
-	return committeeChange, nil
-}
-
-//ProcessInstructionFromShard :
-func (engine *ShardCommitteeEngineV2) ProcessInstructionFromShard(env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	return nil, nil
+	return NewCommitteeChange(), nil
 }
 
 //generateUncommittedCommitteeHashes generate hashes relate to uncommitted committees of struct ShardCommitteeEngineV2
