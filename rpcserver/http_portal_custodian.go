@@ -412,3 +412,4 @@ func (httpServer *HttpServer) handleGetCustodianWithdrawRequestStatusV3ByTxId(pa
 
 	return result, nil
 }
+

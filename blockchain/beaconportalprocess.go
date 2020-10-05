@@ -906,5 +906,12 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawConfirmV3(
 	updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, status.ExternalTokenID, status.Amount)
 	currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
 
+	// store withdraw confirm proof
+	err = statedb.StoreWithdrawCollateralConfirmProof(portalStateDB, status.TxReqID, beaconHeight + 1)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw confirm proof: %+v", err)
+		return nil
+	}
+
 	return nil
 }

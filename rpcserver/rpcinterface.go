@@ -222,6 +222,7 @@ var HttpHandler = map[string]httpHandler{
 	checkPortalExternalHashSubmitted:              (*HttpServer).handleCheckPortalExternalHashSubmitted,
 	createAndSendTxWithCustodianWithdrawRequestV3: (*HttpServer).handleCreateAndSendTxWithCustodianWithdrawRequestV3,
 	getCustodianWithdrawRequestStatusV3ByTxId:     (*HttpServer).handleGetCustodianWithdrawRequestStatusV3ByTxId,
+	getPortalWithdrawCollateralProof:              (*HttpServer).handleGetPortalWithdrawCollateralProof,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

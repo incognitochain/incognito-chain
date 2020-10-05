@@ -240,6 +240,7 @@ const (
 	checkPortalExternalHashSubmitted              = "checkportalexternalhashsubmitted"
 	createAndSendTxWithCustodianWithdrawRequestV3 = "createandsendtxwithcustodianwithdrawrequestv3"
 	getCustodianWithdrawRequestStatusV3ByTxId     = "getcustodianwithdrawrequeststatusv3"
+	getPortalWithdrawCollateralProof              = "getportalwithdrawcollateralproof"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

@@ -829,3 +829,30 @@ func IsPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueExtTx []byte) (bool
 	}
 	return has, nil
 }
+
+//======================  Portal proof  ======================
+func StoreWithdrawCollateralConfirmProof(stateDB *StateDB, txID common.Hash, height uint64) error {
+	key := GeneratePortalConfirmProofObjectKey(withdrawCollateralProofType, txID)
+	value := NewPortalConfirmProofStateWithValue(txID, height)
+	err := stateDB.SetStateObject(PortalConfirmProofObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreWithdrawCollateralConfirmError, err)
+	}
+	return nil
+}
+
+func GetWithdrawCollateralConfirmProof(stateDB *StateDB, txID common.Hash) (uint64, error) {
+	key := GeneratePortalConfirmProofObjectKey(withdrawCollateralProofType, txID)
+	confirmProofState, has, err := stateDB.getPortalConfirmProofState(key)
+	if err != nil {
+		return 0, NewStatedbError(GetWithdrawCollateralConfirmError, err)
+	}
+	if !has {
+		return 0, NewStatedbError(GetWithdrawCollateralConfirmError, fmt.Errorf("withdraw confirm with txID %+v not found", txID))
+	}
+	tempTxID := confirmProofState.TxID()
+	if !tempTxID.IsEqual(&txID) {
+		panic("panic withdraw collateral confirm state")
+	}
+	return confirmProofState.Height(), nil
+}

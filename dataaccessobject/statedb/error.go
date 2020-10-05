@@ -7,32 +7,32 @@ import (
 )
 
 const (
-	ErrInvalidByteArrayType                      = "invalid byte array type"
-	ErrInvalidHashType                           = "invalid hash type"
-	ErrInvalidBigIntType                         = "invalid big int type"
-	ErrInvalidCommitteeStateType                 = "invalid committee state type"
-	ErrInvalidStakerInfoType                     = "invalid staker info type"
-	ErrInvalidPaymentAddressType                 = "invalid payment address type"
-	ErrInvalidIncognitoPublicKeyType             = "invalid incognito public key type"
-	ErrInvalidCommitteeRewardStateType           = "invalid reward receiver state type "
-	ErrInvalidRewardRequestStateType             = "invalid reward request state type"
-	ErrInvalidBlackListProducerStateType         = "invalid black list producer state type"
-	ErrInvalidSerialNumberStateType              = "invalid serial number state type"
-	ErrInvalidCommitmentStateType                = "invalid commitment state type"
-	ErrInvalidSNDerivatorStateType               = "invalid snderivator state type"
-	ErrInvalidOutputCoinStateType                = "invalid output coin state type"
-	ErrInvalidTokenStateType                     = "invalid token state type"
-	ErrInvalidWaitingPDEContributionStateType    = "invalid waiting pde contribution state type"
-	ErrInvalidPDEPoolPairStateType               = "invalid pde pool pair state type"
-	ErrInvalidPDEShareStateType                  = "invalid pde shard state type"
-	ErrInvalidPDEStatusStateType                 = "invalid pde status state type"
-	ErrInvalidBridgeEthTxStateType               = "invalid bridge eth tx state type"
-	ErrInvalidBridgeTokenInfoStateType           = "invalid bridge token info state type"
-	ErrInvalidBridgeStatusStateType              = "invalid bridge status state type"
-	ErrInvalidBurningConfirmStateType            = "invalid burning confirm state type"
-	ErrInvalidTokenTransactionStateType          = "invalid token transaction state type"
-	ErrInvalidFinalExchangeRatesStateType        = "invalid final exchange rates state type"
-	ErrInvalidLiquidationExchangeRatesType       = "invalid liquidation exchange rates type"
+	ErrInvalidByteArrayType                   = "invalid byte array type"
+	ErrInvalidHashType                        = "invalid hash type"
+	ErrInvalidBigIntType                      = "invalid big int type"
+	ErrInvalidCommitteeStateType              = "invalid committee state type"
+	ErrInvalidStakerInfoType                  = "invalid staker info type"
+	ErrInvalidPaymentAddressType              = "invalid payment address type"
+	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
+	ErrInvalidCommitteeRewardStateType        = "invalid reward receiver state type "
+	ErrInvalidRewardRequestStateType          = "invalid reward request state type"
+	ErrInvalidBlackListProducerStateType      = "invalid black list producer state type"
+	ErrInvalidSerialNumberStateType           = "invalid serial number state type"
+	ErrInvalidCommitmentStateType             = "invalid commitment state type"
+	ErrInvalidSNDerivatorStateType            = "invalid snderivator state type"
+	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
+	ErrInvalidTokenStateType                  = "invalid token state type"
+	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
+	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
+	ErrInvalidPDEShareStateType               = "invalid pde shard state type"
+	ErrInvalidPDEStatusStateType              = "invalid pde status state type"
+	ErrInvalidBridgeEthTxStateType            = "invalid bridge eth tx state type"
+	ErrInvalidBridgeTokenInfoStateType        = "invalid bridge token info state type"
+	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
+	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
+	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
+	ErrInvalidLiquidationExchangeRatesType    = "invalid liquidation exchange rates type"
 	ErrInvalidWaitingPortingRequestType       = "invalid waiting porting request type"
 	ErrInvalidPortalStatusStateType           = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
@@ -182,6 +182,8 @@ const (
 	// Portal v3
 	IsPortalExternalTxHashSubmittedError
 	InsertPortalExternalTxHashSubmittedError
+	StoreWithdrawCollateralConfirmError
+	GetWithdrawCollateralConfirmError
 
 	// PDEX v2
 	StorePDETradingFeeError
@@ -318,6 +320,9 @@ var ErrCodeMessage = map[int]struct {
 	// external unique txID
 	IsPortalExternalTxHashSubmittedError:     {-14044, "Portal check external tx hash submitted error"},
 	InsertPortalExternalTxHashSubmittedError: {-14045, "Portal insert external tx hash submitted error"},
+	// portal proof
+	StoreWithdrawCollateralConfirmError: {-14046, "Store portal withdraw collateral confirm proof error"},
+	GetWithdrawCollateralConfirmError:   {-14047, "Get portal withdraw collateral confirm proof error"},
 	// feature reward
 	StoreRewardFeatureError:              {-15000, "Store reward feature state error"},
 	GetRewardFeatureError:                {-15001, "Get reward feature state error"},

@@ -1636,3 +1636,15 @@ func (stateDB *StateDB) getPortalExternalTxState(key common.Hash) (*PortalExtern
 	}
 	return NewPortalExternalTxState(), false, nil
 }
+
+// ================================= Portal confirm proof OBJECT =======================================
+func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConfirmProofState, bool, error) {
+	portalConfirmProofState, err := stateDB.getStateObject(PortalConfirmProofObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalConfirmProofState != nil {
+		return portalConfirmProofState.GetValue().(*PortalConfirmProofState), true, nil
+	}
+	return NewPortalConfirmProofState(), false, nil
+}
