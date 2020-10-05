@@ -1633,13 +1633,14 @@ func (serverObj *Server) PublishNodeState() error {
 		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
 		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-
-		sBestState := serverObj.blockChain.GetBestStateShard(byte(chainID))
-		msg.(*wire.MessagePeerState).Shards[byte(chainID)] = wire.ChainState{
-			sBestState.BestBlock.Header.Timestamp,
-			sBestState.ShardHeight,
-			sBestState.BestBlockHash,
-			sBestState.Hash(),
+		if chainID != -1 {
+			sBestState := serverObj.blockChain.GetBestStateShard(byte(chainID))
+			msg.(*wire.MessagePeerState).Shards[byte(chainID)] = wire.ChainState{
+				sBestState.BestBlock.Header.Timestamp,
+				sBestState.ShardHeight,
+				sBestState.BestBlockHash,
+				sBestState.Hash(),
+			}
 		}
 
 		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
