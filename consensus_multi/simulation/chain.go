@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"time"
 )
 
 type Chain struct {
@@ -57,8 +58,10 @@ func (c *Chain) CreateNewBlock(version int, proposer string, round int, startTim
 
 func (c *Chain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
 	//TODO: must using the old block data, and timestamp
-	newBlock := NewBlock(c.GetBestView().GetHeight()+1, time.Now().Unix(), proposer, *c.GetBestView().GetHash())
-	return newBlock, nil
+	oldBlock.(*blockchain.ShardBlock).Header.Proposer = proposer
+	oldBlock.(*blockchain.ShardBlock).Header.ProposeTime = time.Now().Unix()
+	// newBlock := NewBlock(c.GetBestView().GetHeight()+1, oldBlock.GetProduceTime(), proposer, *c.GetBestView().GetHash())
+	return oldBlock, nil
 }
 
 func (s *Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {
