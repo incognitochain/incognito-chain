@@ -188,8 +188,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 			return err
 		}
 
-		// TODO: [review] @tin move validate block sign to verify pre-processing
-		// TODO: [review] @tin get shard committees beacon block only one time and pass it to all functions
 	} else {
 		Logger.log.Debugf("SHARD %+v | SKIP Verify Best State With Shard Block, Shard Block Height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
@@ -313,7 +311,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
 	}
 
-	// TODO: [review] @tin Avoid duplicate code
 	beaconHeight := curView.BeaconHeight
 	for _, v := range beaconBlocks {
 		if v.GetHeight() >= beaconHeight {
@@ -821,7 +818,8 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
 		BuildTxs(shardBlock.Body.Transactions).
 		BuildShardInstructions(shardBlock.Body.Instructions).
-		BuildCommitteeFromBlock(shardBlock.Header.CommitteeFromBlock).
+		BuildCommitteesFromBlock(shardBlock.Header.CommitteeFromBlock).
+		BuildCommitteesFromBeaconView(committees).
 		Build()
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeEngine.UpdateCommitteeState(env)

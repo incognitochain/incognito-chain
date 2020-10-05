@@ -85,18 +85,19 @@ func NewBeaconCommitteeStateV2WithValue(
 
 func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	newB.reset()
+	newB.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
 	copy(newB.beaconCommittee, b.beaconCommittee)
 	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	newB.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(b.shardCommonPool))
-	for i, v := range b.shardCommonPool {
-		newB.shardCommonPool[i] = v
-	}
+	copy(newB.shardCommonPool, b.shardCommonPool)
 
 	for i, v := range b.shardCommittee {
+		newB.shardCommittee[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(newB.shardCommittee[i], v)
 	}
 
 	for i, v := range b.shardSubstitute {
+		newB.shardSubstitute[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(newB.shardSubstitute[i], v)
 	}
 
@@ -357,7 +358,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	engine.finalBeaconCommitteeStateV2.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV2
 	committeeChange := NewCommitteeChange()
-	incuredInstructions := [][]string{}
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		newB.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
@@ -377,18 +377,16 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		case instruction.STAKE_ACTION:
 			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, err = newB.processStakeInstruction(stakeInstruction, committeeChange, env)
 			if err != nil {
-				Logger.log.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 		case instruction.RANDOM_ACTION:
 			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = newB.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange)
@@ -396,14 +394,13 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 		case instruction.UNSTAKE_ACTION:
 			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			tempIncurredIns := [][]string{}
 			committeeChange, tempIncurredIns, err =
@@ -414,11 +411,11 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if tempIncurredIns != nil {
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
+
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
-				Logger.log.Errorf("SKIP Swap Shard Committees instruction %+v, error %+v", inst, err)
-				continue
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, err = newB.
 				processSwapShardInstruction(swapShardInstruction, env, committeeChange)
@@ -427,17 +424,18 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			}
 		}
 	}
+
 	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
-		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
-		return nil, nil, incuredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	return hashes, committeeChange, incuredInstructions, nil
+	return hashes, committeeChange, incurredInstructions, nil
 }
 
 // GenerateAllSwapShardInstructions generate swap shard instructions for all shard
@@ -651,7 +649,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
 	}
 	b.shardCommittee[chainID] = append(b.shardCommittee[chainID], tempSwapInPublicKeys...)
-	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process list shard pool
 	for _, v := range tempSwapInPublicKeys {
@@ -661,6 +658,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
 		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
 	}
+	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, err = b.processAfterSwap(env,
@@ -810,6 +808,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			incurredInstructions = append(incurredInstructions, returnStakingIns.ToString())
 		}
 	}
+
 	return newCommitteeChange, incurredInstructions, nil
 }
 
