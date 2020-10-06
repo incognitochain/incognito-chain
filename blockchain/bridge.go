@@ -149,9 +149,8 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 	shardID := byte(s)
 	cusPaymentAddress := []byte(inst[2])
 	externalAddress, _ := decodeRemoteAddr(inst[3])
-
-	// todo:
-	externalTokenID:= []byte(inst[4])
+	// todo: review
+	externalTokenID, _ := decodeRemoteAddr(inst[4])
 	amount, _ := strconv.ParseUint(inst[5], 10, 64)
 	amountBytes := new(big.Int).SetUint64(amount).Bytes()
 	txIDStr := inst[6]
