@@ -262,49 +262,6 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-//To be removed after check-point
-func (wit SNPrivacyWitness) ProveOld(mess []byte) (*SNPrivacyProof, error) {
-	eSK := privacy.RandomScalar()
-	eSND := privacy.RandomScalar()
-	dSK := privacy.RandomScalar()
-	dSND := privacy.RandomScalar()
-	// calculate tSeed = g_SK^eSK * h^dSK
-	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.PedersenPrivateKeyIndex)
-	// calculate tSND = g_SND^eSND * h^dSND
-	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.PedersenSndIndex)
-	// calculate tSND = g_SK^eSND * h^dSND2
-	tOutput := new(privacy.Point).ScalarMult(wit.stmt.sn, new(privacy.Scalar).Add(eSK, eSND))
-	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(privacy.Scalar)
-	if mess == nil {
-		x = utils.GenerateChallenge([][]byte{
-			tSeed.ToBytesS(),
-			tInput.ToBytesS(),
-			tOutput.ToBytesS()})
-	} else {
-		x.FromBytesS(mess)
-	}
-	// Calculate zSeed = sk * x + eSK
-	zSeed := new(privacy.Scalar).Mul(wit.sk, x)
-	zSeed.Add(zSeed, eSK)
-	//zSeed.Mod(zSeed, privacy.Curve.Params().N)
-	// Calculate zRSeed = rSK * x + dSK
-	zRSeed := new(privacy.Scalar).Mul(wit.rSK, x)
-	zRSeed.Add(zRSeed, dSK)
-	//zRSeed.Mod(zRSeed, privacy.Curve.Params().N)
-	// Calculate zInput = input * x + eSND
-	zInput := new(privacy.Scalar).Mul(wit.input, x)
-	zInput.Add(zInput, eSND)
-	//zInput.Mod(zInput, privacy.Curve.Params().N)
-	// Calculate zRInput = rInput * x + dSND
-	zRInput := new(privacy.Scalar).Mul(wit.rInput, x)
-	zRInput.Add(zRInput, dSND)
-	//zRInput.Mod(zRInput, privacy.Curve.Params().N)
-	proof := new(SNPrivacyProof).Init()
-	proof.Set(wit.stmt, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
-	return proof, nil
-}
-
 func (proof SNPrivacyProof) VerifyOld(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(privacy.Scalar)

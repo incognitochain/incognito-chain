@@ -248,30 +248,6 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	return true, nil
 }
 
-//To be removed after check-point
-func (wit SNNoPrivacyWitness) ProveOld(mess []byte) (*SNNoPrivacyProof, error) {
-	// randomness
-	eSK := privacy.RandomScalar()
-	// calculate tSeed = g_SK^eSK
-	tSK := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], eSK)
-	// calculate tOutput = sn^eSK
-	tE := new(privacy.Point).ScalarMult(wit.stmt.output, eSK)
-	x := new(privacy.Scalar)
-	if mess == nil {
-		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		// recheck frombytes is valid scalar
-		x = utils.GenerateChallenge([][]byte{tSK.ToBytesS(), tE.ToBytesS()})
-	} else {
-		x.FromBytesS(mess)
-	}
-	// Calculate zSeed = SK * x + eSK
-	zSK := new(privacy.Scalar).Mul(wit.seed, x)
-	zSK.Add(zSK, eSK)
-	proof := new(SNNoPrivacyProof).Init()
-	proof.Set(wit.stmt.output, wit.stmt.vKey, wit.stmt.input, tSK, tE, zSK)
-	return proof, nil
-}
-
 func (pro SNNoPrivacyProof) VerifyOld(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tOutput)
 	x := new(privacy.Scalar)
