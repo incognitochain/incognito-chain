@@ -488,36 +488,8 @@ func (p *portalRequestWithdrawCollateralProcessorV3) prepareDataBeforeProcessing
 	return nil, nil
 }
 
-func buildCustodianWithdrawCollateralRejectedInstV3(
-	metaType int,
-	shardID byte,
-	reqStatus string,
-	paymentAddress string,
-	custodianExtAddr string,
-	extTokenID string,
-	amount uint64,
-	txReqID common.Hash,
-) []string {
-	content := metadata.PortalCustodianWithdrawRequestContentV3{
-		CustodianIncAddress:      paymentAddress,
-		CustodianExternalAddress: custodianExtAddr,
-		ExternalTokenID:          extTokenID,
-		Amount:                   amount,
-		TxReqID:                  txReqID,
-		ShardID:                  shardID,
-	}
-
-	contentBytes, _ := json.Marshal(content)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		reqStatus,
-		string(contentBytes),
-	}
-}
-
-// buildCustodianWithdrawCollateralConfirmV3 builds new instructions to allow custodian withdraw collateral from Portal SC
-func buildCustodianWithdrawCollateralConfirmV3(
+// buildCustodianWithdrawCollateralInstV3 builds new instructions to allow custodian withdraw collateral from Portal SC
+func buildCustodianWithdrawCollateralInstV3(
 	metaType int,
 	shardID byte,
 	custodianIncAddress string,
@@ -537,14 +509,14 @@ func buildCustodianWithdrawCollateralConfirmV3(
 	}
 }
 
-
-func buildPortalCustodianWithdrawStatusFromConfirmInstV3(
+func buildPortalCustodianWithdrawStatusFromInstV3(
 	inst []string,
 ) (*metadata.CustodianWithdrawRequestStatusV3, error) {
 	if len(inst) != 7 {
 		return nil, errors.New("Portal custodian withdraw confirm instruction should have len = 7")
 	}
 
+	metaType := inst[0]
 	paymentAddress := inst[2]
 	externalAddress := inst[3]
 	externalTokenID:= inst[4]
@@ -553,15 +525,19 @@ func buildPortalCustodianWithdrawStatusFromConfirmInstV3(
 	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
 
+	statusType := common.PortalCustodianWithdrawReqV3RejectStatus
+	if metaType == strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3) {
+		statusType = common.PortalCustodianWithdrawReqV3AcceptedStatus
+	}
+
 	status := metadata.NewCustodianWithdrawRequestStatusV3(
 		paymentAddress,
 		externalAddress,
 		externalTokenID,
 		amount,
 		*txID,
-		common.PortalCustodianWithdrawReqV3AcceptedStatus,
+		statusType,
 	)
-
 	return status, nil
 }
 func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
@@ -586,10 +562,9 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		return [][]string{}, nil
 	}
 
-	rejectInst := buildCustodianWithdrawCollateralRejectedInstV3(
+	rejectInst := buildCustodianWithdrawCollateralInstV3(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestV3RejectedChainStatus,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
@@ -627,7 +602,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	inst := buildCustodianWithdrawCollateralConfirmV3(
+	inst := buildCustodianWithdrawCollateralInstV3(
 		metadata.PortalCustodianWithdrawConfirmMetaV3,
 		shardID,
 		actionData.Meta.CustodianIncAddress,

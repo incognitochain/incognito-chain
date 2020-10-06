@@ -88,12 +88,9 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			err = blockchain.processPortalPickMoreCustodiansForTimeOutWaitingRedeemReq(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		case strconv.Itoa(metadata.PortalCustodianDepositMetaV3):
 			err = blockchain.processPortalCustodianDepositV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3):
-			err = blockchain.processPortalCustodianWithdrawRequestRejectedV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
 		// for Portal smart contract
-		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
-			err = blockchain.processPortalCustodianWithdrawConfirmV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3), strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
+			err = blockchain.processPortalCustodianWithdrawV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
@@ -799,65 +796,7 @@ func (blockchain *BlockChain) processPortalCustodianDepositV3(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalCustodianWithdrawRequestRejectedV3(
-	portalStateDB *statedb.StateDB,
-	beaconHeight uint64,
-	instructions []string,
-	currentPortalState *CurrentPortalState,
-	portalParams PortalParams) error {
-	if currentPortalState == nil {
-		Logger.log.Errorf("current portal state is nil")
-		return nil
-	}
-
-	if len(instructions) != 4 {
-		return nil // skip the instruction
-	}
-	// parse instruction
-	var custodianWithdrawRequestContent = metadata.PortalCustodianWithdrawRequestContentV3{}
-	err := json.Unmarshal([]byte(instructions[3]), &custodianWithdrawRequestContent)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of custodian withdraw request instruction: %+v", err)
-		return nil
-	}
-
-	reqStatus := instructions[2]
-	paymentAddress := custodianWithdrawRequestContent.CustodianIncAddress
-	amount := custodianWithdrawRequestContent.Amount
-	externalAddress := custodianWithdrawRequestContent.CustodianExternalAddress
-	externalTokenID := custodianWithdrawRequestContent.ExternalTokenID
-	txHash := custodianWithdrawRequestContent.TxReqID
-
-	if reqStatus != common.PortalCustodianWithdrawRequestV3RejectedChainStatus {
-		Logger.log.Errorf("ERROR: Invalid req status", reqStatus)
-		return nil
-	}
-
-	// store req Tx
-	newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatusV3(
-		paymentAddress,
-		externalAddress,
-		externalTokenID,
-		amount,
-		txHash,
-		common.PortalCustodianWithdrawReqV3RejectStatus,
-	)
-
-	contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-	err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
-		portalStateDB,
-		txHash.String(),
-		contentStatusBytes,
-	)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
-		return nil
-	}
-
-	return nil
-}
-
-func (blockchain *BlockChain) processPortalCustodianWithdrawConfirmV3(
+func (blockchain *BlockChain) processPortalCustodianWithdrawV3(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -869,48 +808,51 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawConfirmV3(
 	}
 
 	if len(instructions) != 7 {
-		Logger.log.Errorf("Portal custodian withdraw confirm v3 should have len = 7")
+		Logger.log.Errorf("Portal custodian withdraw v3 should have len = 7")
 		return nil // skip the instruction
 	}
 
-	status, err := buildPortalCustodianWithdrawStatusFromConfirmInstV3(instructions)
+	// store status of requesting withdraw collateral
+	statusData, err := buildPortalCustodianWithdrawStatusFromInstV3(instructions)
 	if err != nil {
 		Logger.log.Errorf("ERROR: when build portal custodian withdraw status v3 from confirm instruction")
 		return nil
 	}
-	custodianKeyStr := statedb.GenerateCustodianStateObjectKey(status.CustodianIncAddress).String()
-	custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
-	if !ok {
-		Logger.log.Errorf("ERROR: Custodian not found")
-		return nil
-	}
-
-	//check free collateral
-	if status.Amount > custodian.GetFreeTokenCollaterals()[status.ExternalTokenID] {
-		Logger.log.Errorf("ERROR: Free collateral is not enough to withdraw")
-		return nil
-	}
-
-	contentStatusBytes, _ := json.Marshal(status)
+	contentStatusBytes, _ := json.Marshal(statusData)
 	err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
 		portalStateDB,
-		status.TxReqID.String(),
+		statusData.TxReqID.String(),
 		contentStatusBytes,
 	)
-
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
 		return nil
 	}
 
-	updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, status.ExternalTokenID, status.Amount)
-	currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
+	// if success: update custodian state, store withdraw confirm proof
+	if statusData.Status == common.PortalCustodianWithdrawReqV3AcceptedStatus {
+		custodianKeyStr := statedb.GenerateCustodianStateObjectKey(statusData.CustodianIncAddress).String()
+		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
+		if !ok {
+			Logger.log.Errorf("ERROR: Custodian not found")
+			return nil
+		}
 
-	// store withdraw confirm proof
-	err = statedb.StoreWithdrawCollateralConfirmProof(portalStateDB, status.TxReqID, beaconHeight + 1)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw confirm proof: %+v", err)
-		return nil
+		//check free collateral
+		if statusData.Amount > custodian.GetFreeTokenCollaterals()[statusData.ExternalTokenID] {
+			Logger.log.Errorf("ERROR: Free collateral is not enough to withdraw")
+			return nil
+		}
+
+		updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, statusData.ExternalTokenID, statusData.Amount)
+		currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
+
+		// store withdraw confirm proof
+		err = statedb.StoreWithdrawCollateralConfirmProof(portalStateDB, statusData.TxReqID, beaconHeight + 1)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw confirm proof: %+v", err)
+			return nil
+		}
 	}
 
 	return nil
