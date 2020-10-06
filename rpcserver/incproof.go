@@ -113,8 +113,9 @@ func getIncProofByHeightV2(
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst, beaconHeight := splitAndDecodeInstV2(beaconInstProof.inst)
-	return buildProofResult(decodedInst, beaconInstProof, nil, beaconHeight, ""), nil
+	decodedInst := splitAndDecodeInstV3(beaconInstProof.inst)
+	bcHeightStr := strconv.Itoa(int(height))
+	return buildProofResult(decodedInst, beaconInstProof, nil, bcHeightStr, ""), nil
 }
 
 func getIncProofByHeight(

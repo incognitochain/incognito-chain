@@ -148,15 +148,31 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 	s, _ := strconv.Atoi(inst[1])
 	shardID := byte(s)
 	cusPaymentAddress := []byte(inst[2])
-	externalAddress, _ := decodeRemoteAddr(inst[3])
+	externalAddress, err := decodeRemoteAddr2(inst[3])
+	if err != nil {
+		Logger.log.Errorf("Decode external address error: ", err)
+	}
 	// todo: review
-	externalTokenID, _ := decodeRemoteAddr(inst[4])
+	externalTokenID, err := decodeRemoteAddr2(inst[4])
+	if err != nil {
+		Logger.log.Errorf("Decode externalTokenID error: ", err)
+	}
 	amount, _ := strconv.ParseUint(inst[5], 10, 64)
-	amountBytes := new(big.Int).SetUint64(amount).Bytes()
+	amountBytes := common.AddPaddingBigInt(new(big.Int).SetUint64(amount), 8)
+
 	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
 
-	BLogger.log.Infof("Decoded WithdrawCollateralConfirm inst, amount: %d, remoteAddr: %x, externalTokenID: %x", amount, externalAddress, externalTokenID)
+	Logger.log.Errorf("metaType: %v", metaType)
+	Logger.log.Errorf("shardID: %v", shardID)
+	Logger.log.Errorf("cusPaymentAddress: %v - %v", cusPaymentAddress, len(cusPaymentAddress))
+	Logger.log.Errorf("externalAddress: %v - %v", externalAddress, len(externalAddress))
+	Logger.log.Errorf("externalTokenID: %v - %v", externalTokenID, len(externalTokenID))
+	Logger.log.Errorf("amountBytes: %v - %v", amountBytes, len(amountBytes))
+	Logger.log.Errorf("txID: %v - %v", txID[:])
+
+
+	//BLogger.log.Infof("Decoded WithdrawCollateralConfirm inst, amount: %d, remoteAddr: %x, externalTokenID: %x", amount, externalAddress, externalTokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType)
 	flatten = append(flatten, shardID)
@@ -165,6 +181,7 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 	flatten = append(flatten, externalTokenID...)
 	flatten = append(flatten, amountBytes...)
 	flatten = append(flatten, txID[:]...)
+	Logger.log.Errorf("flatten: %v - %v", flatten, len(flatten))
 	return flatten, nil
 }
 
@@ -174,6 +191,14 @@ func decodeRemoteAddr(addr string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	addrFixedLen := [32]byte{}
+	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
+	return addrFixedLen[:], nil
+}
+
+// decodeRemoteAddr converts address string (maybe contains 0x) to 32 bytes slice
+func decodeRemoteAddr2(addr string) ([]byte, error) {
+	remoteAddr := common.FromHex(addr)
 	addrFixedLen := [32]byte{}
 	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
 	return addrFixedLen[:], nil

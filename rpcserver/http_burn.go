@@ -250,6 +250,14 @@ func splitAndDecodeInstV2(beaconInst []string) (string, string) {
 	return decodedInst, beaconHeight
 }
 
+// splitAndDecodeInst splits BurningConfirm insts (on beacon and bridge) into 2 parts: the inst itself and beaconHeight that contains the inst
+func splitAndDecodeInstV3(beaconInst []string) string {
+	// Decode instructions
+	beaconInstFlat, _ := blockchain.DecodeInstruction(beaconInst)
+	decodedInst := hex.EncodeToString(beaconInstFlat[:])
+	return decodedInst
+}
+
 // handleGetBurnProof returns a proof of a tx burning pETH
 func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	listParams, ok := params.([]interface{})
