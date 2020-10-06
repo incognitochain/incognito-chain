@@ -44,6 +44,13 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
+	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
+		var err error
+		flatten, err = decodeWithdrawCollateralConfirmV3Inst(inst)
+		if err != nil {
+			return nil, err
+		}
+
 	default:
 		for _, part := range inst {
 			flatten = append(flatten, []byte(part)...)
@@ -127,6 +134,38 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	flatten = append(flatten, txID[:]...)
 	flatten = append(flatten, incTokenID...)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
+	return flatten, nil
+}
+
+// decodeBurningConfirmInst decodes and flattens a WithdrawCollateralConfirm instruction
+func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
+	if len(inst) < 7 {
+		return nil, errors.New("invalid length of WithdrawCollateralConfirm inst")
+	}
+
+	m, _ := strconv.Atoi(inst[0])
+	metaType := byte(m)
+	s, _ := strconv.Atoi(inst[1])
+	shardID := byte(s)
+	cusPaymentAddress := []byte(inst[2])
+	externalAddress, _ := decodeRemoteAddr(inst[3])
+
+	// todo:
+	externalTokenID:= []byte(inst[4])
+	amount, _ := strconv.ParseUint(inst[5], 10, 64)
+	amountBytes := new(big.Int).SetUint64(amount).Bytes()
+	txIDStr := inst[6]
+	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
+
+	BLogger.log.Infof("Decoded WithdrawCollateralConfirm inst, amount: %d, remoteAddr: %x, externalTokenID: %x", amount, externalAddress, externalTokenID)
+	flatten := []byte{}
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, shardID)
+	flatten = append(flatten, cusPaymentAddress...)
+	flatten = append(flatten, externalAddress...)
+	flatten = append(flatten, externalTokenID...)
+	flatten = append(flatten, amountBytes...)
+	flatten = append(flatten, txID[:]...)
 	return flatten, nil
 }
 
