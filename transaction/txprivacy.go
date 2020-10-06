@@ -421,6 +421,14 @@ func (tx *Tx) signTx() error {
 	return nil
 }
 
+func (tx *Tx) Sign(sigPrivakey []byte) error {//For testing-purposes only, remove when deployed
+	if sigPrivakey != nil{
+		tx.sigPrivKey = sigPrivakey
+		tx.cachedHash = nil
+	}
+	return tx.signTx()
+}
+
 // verifySigTx - verify signature on tx
 func (tx *Tx) verifySigTx() (bool, error) {
 	// check input transaction
@@ -468,7 +476,6 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
-	//fmt.Println("BUGLOG2 ValidateTransaction boolParams", boolParams)
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	if tx.IsSalaryTx() {
@@ -923,11 +930,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			serialNumbers[hashSN] = true
 		}
 
-		isPrivacy := true
-		// check Privacy or not
-		if txN.Proof.GetAggregatedRangeProof() == nil || len(txN.Proof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
-			isPrivacy = false
-		}
+		isPrivacy := txN.IsPrivacy()
 
 		if isPrivacy {
 			// check cmValue of output coins is equal to comValue in Bulletproof
@@ -935,6 +938,10 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			cmValueInBulletProof := txN.Proof.GetAggregatedRangeProof().GetCmValues()
 			if len(cmValueOfOutputCoins) != len(cmValueInBulletProof) {
 				return false, errors.New("invalid cmValues in Bullet proof")
+			}
+
+			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()){
+				return false, errors.New("the number of input coins must be equal to the number of serialnumber proofs and the number of one-of-many proofs")
 			}
 
 			for i := 0; i < len(cmValueOfOutputCoins); i++ {
@@ -967,6 +974,12 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				if !privacy.IsPointEqual(cmInputSNDs[i], txN.Proof.GetSerialNumberProof()[i].GetComInput()) {
 					Logger.log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("cmSND in SNproof %v is not equal to commitment of input's SND", i))
+				}
+
+				// check SN of input coins is equal to the corresponding SN in serial number proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber(), txN.Proof.GetSerialNumberProof()[i].GetSN()) {
+					Logger.log.Errorf("SN in SNProof is not equal to SN of input coin - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("SN in SNProof %v is not equal to SN of input coin", i))
 				}
 
 				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
@@ -1070,6 +1083,11 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("SigPubKey is invalid")
 			}
 			inputCoins := txN.Proof.GetInputCoins()
+
+			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()){
+				return false, errors.New("the number of input coins must be equal to the number of serialnumbernoprivacy proofs")
+			}
+
 			for i := 0; i < len(inputCoins); i++ {
 				// check PublicKey of input coin is equal to SigPubKey
 				if !privacy.IsPointEqual(inputCoins[i].CoinDetails.GetPublicKey(), sigPubKeyPoint) {
@@ -1081,14 +1099,20 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
 				// check PK of input coin is equal to vKey in serial number proof
 				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
-					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
-					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
+					Logger.log.Errorf("VKey in SNNoPrivacyProof is not equal public key of sender - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNNoPrivacyProof %v is not public key of sender", i))
 				}
 
 				// check SND of input coins is equal to SND in serial number no privacy proof
 				if !privacy.IsScalarEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetInput()) {
-					Logger.log.Errorf("SND in SNProof is not equal to input's SND - txId %v", txN.Hash().String())
-					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNProof %v is not equal to input's SND", i))
+					Logger.log.Errorf("SND in SNNoPrivacyProof is not equal to input's SND - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNNoPrivacyProof %v is not equal to input's SND", i))
+				}
+
+				// check SND of input coins is equal to SND in serial number no privacy proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetOutput()) {
+					Logger.log.Errorf("SN in SNNoPrivacyProof is not equal to SN in input coin - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SN in SNNoPrivacyProof %v is not equal to SN in input coin", i))
 				}
 
 				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
@@ -1165,7 +1189,7 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 	}
 	if tx.Metadata != nil {
 		if hasPrivacy {
-			return false, errors.New("Metadata can not exist in not privacy tx")
+			return false, errors.New("metadata can not exist in  privacy tx")
 		}
 		validateMetadata := tx.Metadata.ValidateMetadataByItself()
 		if validateMetadata {
@@ -1214,7 +1238,7 @@ func (tx Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx Tx) IsPrivacy() bool {
-	if tx.Proof == nil || len(tx.Proof.GetOneOfManyProof()) == 0 {
+	if tx.Proof == nil || tx.Proof.GetAggregatedRangeProof() == nil || len(tx.Proof.GetOneOfManyProof()) == 0 || len(tx.Proof.GetSerialNumberProof()) == 0 {
 		return false
 	}
 	return true
