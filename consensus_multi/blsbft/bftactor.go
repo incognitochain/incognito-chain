@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 	"sync"
 	"time"
+
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
@@ -139,7 +140,7 @@ func (e *BLSBFT) Start() error {
 					continue
 				}
 			case msg := <-e.VoteMessageCh:
-				e.logger.Info("Receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+				e.logger.Info("Receive vote for block", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				validatorIdx := common.IndexOfStr(msg.Validator, e.RoundData.CommitteeBLS.StringList)
 				if validatorIdx == -1 {
 					continue
@@ -365,6 +366,7 @@ func (e *BLSBFT) enterVotePhase() {
 	}
 	e.isOngoing = true
 	e.setState(votePhase)
+	e.logger.Info(e.ChainKey, "sending vote...")
 	err := e.sendVote()
 	if err != nil {
 		e.logger.Error(err)
@@ -397,7 +399,8 @@ func (e *BLSBFT) enterNewRound() {
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
 		if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(e.Chain.GetLastProposerIndex(), e.RoundData.Round, e.Chain.GetCommitteeSize()) {
-			e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
+			// e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
+			e.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", e.ChainKey, 0, e.RoundData.NextHeight, e.RoundData.Round)
 			e.enterProposePhase(&userKey)
 			e.enterVotePhase()
 			return
@@ -408,7 +411,8 @@ func (e *BLSBFT) enterNewRound() {
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) != -1 {
-			e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
+			// e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
+			e.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", e.ChainKey, 0, e.RoundData.NextHeight, e.RoundData.Round)
 			e.enterListenPhase()
 			break
 		}
