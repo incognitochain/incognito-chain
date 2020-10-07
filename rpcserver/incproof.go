@@ -1,13 +1,11 @@
 package rpcserver
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"math/big"
 	"strconv"
 )
 
@@ -41,7 +39,7 @@ type PortalWithdrawCollateralProof struct {
 // findConfirmInst finds a specific instruction in a list, returns it along with its index
 func (withdrawProof PortalWithdrawCollateralProof) findConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
 	for i, inst := range insts {
-		if inst[0] != strconv.Itoa(withdrawProof.metaType) || len(inst) < 7 {
+		if inst[0] != strconv.Itoa(withdrawProof.metaType) || len(inst) < 8 {
 			continue
 		}
 
@@ -115,8 +113,7 @@ func getIncProofByHeightV2(
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst := splitAndDecodeInstV3(beaconInstProof.inst)
-	bcHeightStr := hex.EncodeToString(common.AddPaddingBigInt(new(big.Int).SetUint64(height), 32))
+	decodedInst, bcHeightStr := splitAndDecodeInstV2(beaconInstProof.inst)
 	return buildProofResult(decodedInst, beaconInstProof, nil, bcHeightStr, ""), nil
 }
 

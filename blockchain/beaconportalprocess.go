@@ -813,8 +813,8 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawV3(
 		return nil
 	}
 
-	if len(instructions) != 7 {
-		Logger.log.Errorf("Portal custodian withdraw v3 should have len = 7")
+	if len(instructions) != 8 {
+		Logger.log.Errorf("Portal custodian withdraw v3 should have len = 8")
 		return nil // skip the instruction
 	}
 

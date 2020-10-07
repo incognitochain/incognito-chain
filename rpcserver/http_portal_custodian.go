@@ -330,11 +330,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianWithdrawRequestV3(pa
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianExtAddress is invalid"))
 	}
+	// remove 0x prefix (if there)
+	custodianExtAddress = common.Remove0xPrefix(custodianExtAddress)
 
 	externalTokenID, ok := data["ExternalTokenID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianIncAddress is invalid"))
 	}
+	externalTokenID = common.Remove0xPrefix(externalTokenID)
 
 	amount, err := common.AssertAndConvertStrToNumber(data["Amount"])
 	if err != nil {

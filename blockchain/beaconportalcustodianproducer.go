@@ -413,6 +413,7 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 		Logger.log.Errorf("Custodian deposit v3: Error when parsing info from log map : %+v", err)
 		return [][]string{rejectedInst}, err
 	}
+	externalTokenIDStr = common.Remove0xPrefix(externalTokenIDStr)
 
 	rejectedInst2 := buildCustodianDepositInstV3(
 		custodianIncAddr,
@@ -498,6 +499,7 @@ func buildCustodianWithdrawCollateralInstV3(
 	extTokenID string,
 	amount *big.Int,
 	txReqID common.Hash,
+	beaconHeight uint64,
 ) []string {
 	return []string{
 		strconv.Itoa(metaType),
@@ -507,14 +509,15 @@ func buildCustodianWithdrawCollateralInstV3(
 		extTokenID,
 		amount.String(),
 		txReqID.String(),
+		strconv.Itoa(int(beaconHeight)),
 	}
 }
 
 func buildPortalCustodianWithdrawStatusFromInstV3(
 	inst []string,
 ) (*metadata.CustodianWithdrawRequestStatusV3, error) {
-	if len(inst) != 7 {
-		return nil, errors.New("Portal custodian withdraw confirm instruction should have len = 7")
+	if len(inst) != 8 {
+		return nil, errors.New("Portal custodian withdraw confirm instruction should have len = 8")
 	}
 
 	metaType := inst[0]
@@ -570,6 +573,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		actionData.Meta.ExternalTokenID,
 		amount,
 		actionData.TxReqID,
+		beaconHeight+1,
 	)
 
 	if currentPortalState == nil {
@@ -616,6 +620,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		actionData.Meta.ExternalTokenID,
 		amount,
 		actionData.TxReqID,
+		beaconHeight+1,
 	)
 
 	// update custodian state

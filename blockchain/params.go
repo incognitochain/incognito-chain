@@ -139,9 +139,10 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 	}
 }
 
+// external tokenID there is no 0x prefix
 func getSupportedPortalCollaterals() []PortalCollateral {
 	return []PortalCollateral{
-		{common.EthAddrStr, 9},
+		{"0000000000000000000000000000000000000000", 9},
 		{"USDT", 6},
 	}
 }

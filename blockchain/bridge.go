@@ -139,7 +139,7 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 
 // decodeBurningConfirmInst decodes and flattens a WithdrawCollateralConfirm instruction
 func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
-	if len(inst) < 7 {
+	if len(inst) < 8 {
 		return nil, errors.New("invalid length of WithdrawCollateralConfirm inst")
 	}
 
@@ -162,6 +162,10 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
 
+	beaconHeightStr := inst[7]
+	bcHeightBN, _ := new(big.Int).SetString(beaconHeightStr, 10)
+	bcHeightBytes := common.AddPaddingBigInt(bcHeightBN, 32)
+
 	//Logger.log.Errorf("metaType: %v", metaType)
 	//Logger.log.Errorf("shardID: %v", shardID)
 	//Logger.log.Errorf("cusPaymentAddress: %v - %v", cusPaymentAddress, len(cusPaymentAddress))
@@ -180,6 +184,7 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 	flatten = append(flatten, externalTokenID...)
 	flatten = append(flatten, amountBytes...)
 	flatten = append(flatten, txID[:]...)
+	flatten = append(flatten, bcHeightBytes...)
 	Logger.log.Errorf("flatten: %v - %v", flatten, len(flatten))
 	return flatten, nil
 }
