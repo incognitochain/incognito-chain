@@ -152,24 +152,23 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 	if err != nil {
 		Logger.log.Errorf("Decode external address error: ", err)
 	}
-	// todo: review
 	externalTokenID, err := decodeRemoteAddr2(inst[4])
 	if err != nil {
 		Logger.log.Errorf("Decode externalTokenID error: ", err)
 	}
-	amount, _ := strconv.ParseUint(inst[5], 10, 64)
-	amountBytes := common.AddPaddingBigInt(new(big.Int).SetUint64(amount), 32)
+	amount, _ := new(big.Int).SetString(inst[5], 10)
+	amountBytes := common.AddPaddingBigInt(amount, 32)
 
 	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
 
-	Logger.log.Errorf("metaType: %v", metaType)
-	Logger.log.Errorf("shardID: %v", shardID)
-	Logger.log.Errorf("cusPaymentAddress: %v - %v", cusPaymentAddress, len(cusPaymentAddress))
-	Logger.log.Errorf("externalAddress: %v - %v", externalAddress, len(externalAddress))
-	Logger.log.Errorf("externalTokenID: %v - %v", externalTokenID, len(externalTokenID))
-	Logger.log.Errorf("amountBytes: %v - %v", amountBytes, len(amountBytes))
-	Logger.log.Errorf("txID: %v - %v", txID[:])
+	//Logger.log.Errorf("metaType: %v", metaType)
+	//Logger.log.Errorf("shardID: %v", shardID)
+	//Logger.log.Errorf("cusPaymentAddress: %v - %v", cusPaymentAddress, len(cusPaymentAddress))
+	//Logger.log.Errorf("externalAddress: %v - %v", externalAddress, len(externalAddress))
+	//Logger.log.Errorf("externalTokenID: %v - %v", externalTokenID, len(externalTokenID))
+	//Logger.log.Errorf("amountBytes: %v - %v", amountBytes, len(amountBytes))
+	//Logger.log.Errorf("txID: %v - %v", txID[:])
 
 
 	//BLogger.log.Infof("Decoded WithdrawCollateralConfirm inst, amount: %d, remoteAddr: %x, externalTokenID: %x", amount, externalAddress, externalTokenID)

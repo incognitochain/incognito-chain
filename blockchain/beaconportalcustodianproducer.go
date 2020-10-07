@@ -3,13 +3,13 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math/big"
 	"strconv"
-	"errors"
 )
 
 /* =======
@@ -495,7 +495,7 @@ func buildCustodianWithdrawCollateralInstV3(
 	custodianIncAddress string,
 	custodianExtAddress string,
 	extTokenID string,
-	amount uint64,
+	amount *big.Int,
 	txReqID common.Hash,
 ) []string {
 	return []string{
@@ -504,7 +504,7 @@ func buildCustodianWithdrawCollateralInstV3(
 		custodianIncAddress,
 		custodianExtAddress,
 		extTokenID,
-		new(big.Int).SetUint64(amount).String(),
+		amount.String(),
 		txReqID.String(),
 	}
 }
@@ -561,14 +561,14 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		Logger.log.Errorf("Have an error occurred while unmarshal custodian withdraw request action v3: %+v", err)
 		return [][]string{}, nil
 	}
-
+	amount := big.NewInt(0).SetUint64(actionData.Meta.Amount)
 	rejectInst := buildCustodianWithdrawCollateralInstV3(
 		actionData.Meta.Type,
 		shardID,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
-		actionData.Meta.Amount,
+		amount,
 		actionData.TxReqID,
 	)
 
@@ -602,13 +602,19 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
+	// Convert amount to big.Int to get bytes later
+	if externalTokenID == common.EthAddrStr {
+		// Convert Gwei to Wei for Ether
+		amount = amount.Mul(amount, big.NewInt(1000000000))
+	}
+
 	inst := buildCustodianWithdrawCollateralInstV3(
 		metadata.PortalCustodianWithdrawConfirmMetaV3,
 		shardID,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
-		actionData.Meta.Amount,
+		amount,
 		actionData.TxReqID,
 	)
 
