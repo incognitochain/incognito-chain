@@ -201,7 +201,13 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		inst := []string{instruction.STAKE_ACTION, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
+		inst := []string{
+			instruction.STAKE_ACTION,
+			strings.Join(stakeShardPublicKey, ","),
+			"shard", strings.Join(stakeShardTxID, ","),
+			strings.Join(stakeShardRewardReceiver, ","),
+			strings.Join(stakeShardAutoStaking, ","),
+		}
 		instructions = append(instructions, inst)
 	}
 	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
