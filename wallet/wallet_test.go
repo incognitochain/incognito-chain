@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -776,24 +774,3 @@ func TestWalletContainPubKeyWithNotExistedPubKey(t *testing.T) {
 	res := wallet.ContainPublicKey(randPubKey)
 	assert.Equal(t, false, res)
 }
-
-func TestCommitteeKey(t *testing.T) {
-	privateKeyStr := "112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5"
-	w, _ := Base58CheckDeserialize(privateKeyStr)
-	w.KeySet.InitFromPrivateKeyByte(w.KeySet.PrivateKey)
-
-	seed := common.HashB(common.HashB(w.KeySet.PrivateKey))
-	seedStr := base58.Base58Check{}.Encode(seed, common.Base58Version)
-	fmt.Printf("seedStr: %v\n", seedStr)
-
-	seedStrOnNode := "12NDsWtAdfKbkDpYQty2rt5r2K5cxdMwAqRZLoHtwojuvJTyPaB"
-	seedBytesOnNode, _, _ := base58.Base58Check{}.Decode(seedStrOnNode)
-	fmt.Printf("seedBytesOnNode: %v - %v\n", seedBytesOnNode, len(seedBytesOnNode))
-
-	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(seed, w.KeySet.PaymentAddress.Pk)
-	fmt.Printf( "committeeKey: %+v\n", committeeKey)
-
-	blsPubKeyStr := base58.Base58Check{}.Encode(committeeKey.MiningPubKey[common.BlsConsensus], common.Base58Version)
-	fmt.Printf( "blsPubKeyStr: %+v\n", blsPubKeyStr)
-}
-
