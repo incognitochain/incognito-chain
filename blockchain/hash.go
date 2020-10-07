@@ -403,6 +403,9 @@ func generateHashFromShardState(allShardState map[byte][]types.ShardState) (comm
 			res += shardState.Hash.String()
 			crossShard, _ := json.Marshal(shardState.CrossShard)
 			res += string(crossShard)
+			// TODO: @hung sync mainnet/testnet to see if the block hash is changed or not
+			res += shardState.ValidationData
+			res += shardState.CommitteeFromBlock.String()
 		}
 		allShardStateStr = append(allShardStateStr, res)
 	}

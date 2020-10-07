@@ -238,6 +238,17 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) er
 	return nil
 }
 
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface, validationData string) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	//TODO: replace validation data of previous block
+	return nil
+}
+
 func (chain *ShardChain) GetActiveShardNumber() int {
 	return 0
 }

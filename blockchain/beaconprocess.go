@@ -100,19 +100,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	blockHash := beaconBlock.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
-	// if beaconBlock.GetHeight() == 2 {
-	// 	bcTmp = 0
-	// 	bcStart = time.Now()
-	// 	bcAllTime = time.Since(bcStart)
-	// }
-	// defer func(h uint64) {
-	// 	bcAllTime = time.Since(bcStart)
-	// 	if h%1000 == 0 {
-	// 		bcTmp = bcAllTime - bcTmp
-	// 		Logger.log.Infof("[BenchmarkBeacon] Time for insert from 2->%v: %v, Avg: %v", h, bcAllTime, bcAllTime.Seconds()/float64(h-2+1))
-	// 		Logger.log.Infof("[BenchmarkBeacon] Time for insert 1000 blks [%v-%v]: %v; Avg: %v", h-1000+1, h, bcTmp, bcTmp.Seconds()/1000)
-	// 	}
-	// }(beaconBlock.GetHeight())
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
@@ -394,6 +381,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 				//check hash in shardstate
 				if shardStates[i].Hash.String() != shardBlock.Hash().String() {
 					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block %v Hash not correct: %v (expect %v)", shardID, shardBlock.GetHeight(), shardStates[i].Hash.String(), shardBlock.Hash().String()))
+				}
+				//check hash in shardstate
+				if shardStates[i].CommitteeFromBlock.String() != shardBlock.Header.CommitteeFromBlock.String() {
+					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block %v CommitteeFromBlock not correct: %v (expect %v)", shardID, shardBlock.GetHeight(), shardStates[i].Hash.String(), shardBlock.Hash().String()))
 				}
 				tempShardState, newShardInstruction, tempValidStakePublicKeys,
 					bridgeInstruction, acceptedBlockRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
@@ -736,6 +727,10 @@ func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShar
 	for shardID, shardStates := range allShardStates {
 		cacheCommittees := make(map[common.Hash][]incognitokey.CommitteePublicKey)
 		for _, shardState := range shardStates {
+			// skip genesis block
+			if shardState.Height == 1 {
+				continue
+			}
 			beaconHashForCommittee := shardState.CommitteeFromBlock
 			committees, ok := cacheCommittees[beaconHashForCommittee]
 			if !ok {

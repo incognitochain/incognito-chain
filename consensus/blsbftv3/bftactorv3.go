@@ -314,80 +314,93 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		return
 	}
 
-	committees := []incognitokey.CommitteePublicKey{}
+	currentCommittees := []incognitokey.CommitteePublicKey{}
+	previousCommittees := []incognitokey.CommitteePublicKey{}
 	if e.ChainID != -1 {
-		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+		currentCommittees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+		previousCommittees = view.GetCommittee()
 	} else {
-		committees = view.GetCommittee()
+		currentCommittees = view.GetCommittee()
 	}
 
-	validVote := 0
-	errVote := 0
+	numberOfValidVote := 0
+	numberOfErrorVote := 0
 	for _, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.isValid == 0 {
-			for _, c := range committees {
-				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
+			for _, c := range currentCommittees {
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
 				}
 			}
 			if len(dsaKey) == 0 {
-				e.Logger.Error("canot find dsa key")
+				e.Logger.Error("cannot find dsa key")
 			}
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
 				vote.isValid = -1
-				errVote++
+				numberOfErrorVote++
 			} else {
 				vote.isValid = 1
-				validVote++
+				numberOfValidVote++
 			}
 		}
 	}
-	//e.Logger.Debug(validVote, committees), errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
 		if value.isValid == -1 {
 			delete(v.votes, key)
 		}
 	}
-	if validVote > 2*len(committees)/3 {
+	if numberOfValidVote > 2*len(currentCommittees)/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
-		//fmt.Println(committeeBLSString)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-		aggSig, brigSigs, validatorIdx, err := combineVotes(v.votes, committeeBLSString)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-
-		valData, err := consensustypes.DecodeValidationData(v.block.GetValidationField())
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-
-		valData.AggSig = aggSig
-		valData.BridgeSig = brigSigs
-		valData.ValidatiorsIdx = validatorIdx
-		validationDataString, _ := consensustypes.EncodeValidationData(*valData)
-		fmt.Println("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
-		if v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
-			e.Logger.Error(err)
-			return
-		}
-
-		go e.Chain.InsertAndBroadcastBlock(v.block)
-
-		delete(e.receiveBlockByHash, blockHash)
+		e.processWithEnoughVotes(v, currentCommittees, previousCommittees)
 	}
+}
+
+func (e *BLSBFT_V3) processWithEnoughVotes(v *ProposeBlockInfo, currentCommittees []incognitokey.CommitteePublicKey, previousCommittees []incognitokey.CommitteePublicKey) {
+	validationData, err := createBLSAggregatedSignatures(currentCommittees, v.block.GetValidationField(), v.votes)
+	if err != nil {
+		e.Logger.Error(err)
+		return
+	}
+	v.block.(blockValidation).AddValidationField(validationData)
+
+	previousV := e.receiveBlockByHash[v.block.GetPrevHash().String()]
+	previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousV.block.GetValidationField(), previousV.votes)
+	if err != nil {
+		e.Logger.Error(err)
+		return
+	}
+	previousV.block.(blockValidation).AddValidationField(previousValidationData)
+
+	go e.Chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData)
+
+	delete(e.receiveBlockByHash, previousV.block.GetPrevHash().String())
+}
+
+func createBLSAggregatedSignatures(committees []incognitokey.CommitteePublicKey, tempValidationData string, votes map[string]BFTVote) (string, error) {
+	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
+	if err != nil {
+		return "", err
+	}
+	aggSig, brigSigs, validatorIdx, err := combineVotes(votes, committeeBLSString)
+	if err != nil {
+		return "", err
+	}
+
+	valData, err := consensustypes.DecodeValidationData(tempValidationData)
+	if err != nil {
+		return "", err
+	}
+
+	valData.AggSig = aggSig
+	valData.BridgeSig = brigSigs
+	valData.ValidatiorsIdx = validatorIdx
+	validationData, _ := consensustypes.EncodeValidationData(*valData)
+	return validationData, err
 }
 
 func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {

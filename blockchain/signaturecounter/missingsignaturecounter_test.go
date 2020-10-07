@@ -3,6 +3,7 @@ package signaturecounter
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -186,6 +187,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &SignatureCounter{
 				missingSignature: tt.fields.missingSignature,
+				lock:             new(sync.RWMutex),
 			}
 			if err := s.AddMissingSignature(tt.args.data, tt.args.committees); (err != nil) != tt.wantErr {
 				t.Errorf("AddMissingSignature() error = %v, wantErr %v", err, tt.wantErr)
@@ -384,6 +386,7 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 			s := SignatureCounter{
 				missingSignature: tt.fields.missingSignature,
 				penalties:        tt.fields.penalties,
+				lock:             new(sync.RWMutex),
 			}
 			if got := s.GetAllSlashingPenalty(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAllSlashingPenalty() = %v, want %v", got, tt.want)

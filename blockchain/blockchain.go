@@ -263,7 +263,6 @@ func (blockchain *BlockChain) GetClonedBeaconBestState() (*BeaconBestState, erro
 	if err != nil {
 		return nil, err
 	}
-	result.beaconCommitteeEngine = blockchain.GetBeaconBestState().beaconCommitteeEngine
 	return result, nil
 }
 

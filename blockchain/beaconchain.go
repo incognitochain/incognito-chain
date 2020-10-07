@@ -207,6 +207,16 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) e
 
 }
 
+func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
+		Logger.log.Info(err)
+		return err
+	}
+	return nil
+
+}
+
 func (chain *BeaconChain) GetActiveShardNumber() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).ActiveShards
 }

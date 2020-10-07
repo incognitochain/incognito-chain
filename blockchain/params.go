@@ -121,8 +121,8 @@ func init() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		// InitialIncognito: IntegrationTestInitPRV,
-		InitialIncognito:   TestnetInitPRV,
+		InitialIncognito: IntegrationTestInitPRV,
+		//InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
@@ -161,7 +161,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
-		ConsensusV3Epoch:               20000,
+		ConsensusV3Epoch:               1,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
@@ -263,7 +263,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               20000,
+		ConsensusV3Epoch:               1,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -292,6 +292,7 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
+		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 120000,
 		CommitteeStateV2Height:           1,
 		MissingSignaturePenalty: []signaturecounter.Penalty{

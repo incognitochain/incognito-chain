@@ -394,11 +394,6 @@ func (beaconBestState *BeaconBestState) HasSwappedCommittee(shardID byte, chainP
 	return beaconBestState.beaconCommitteeEngine.HasSwappedCommittees(env)
 }
 
-// //CommitteeStateVersion ...
-// func (beaconBestState *BeaconBestState) CommitteeStateVersion() uint {
-// 	return beaconBestState.beaconCommitteeEngine.Version()
-// }
-
 func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
 	if err != nil {
@@ -740,19 +735,23 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		beaconBestState.BestBlockHash,
 		beaconCommitteeStateV2,
 	)
+
 	return beaconCommitteeEngine
 }
 
 func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
 	curView.missingSignatureCounter = signaturecounter.NewSignatureCounterWithValue(make(map[string]uint), bc.config.ChainParams.MissingSignaturePenalty)
-	lastEpochBeaconHeight := (curView.Epoch - 1) * bc.config.ChainParams.Epoch
+	lastEpochBeaconHeight := (curView.Epoch-1)*bc.config.ChainParams.Epoch + 1
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
 
-	for tempBeaconHeight > lastEpochBeaconHeight {
+	for tempBeaconHeight >= lastEpochBeaconHeight {
 		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
 			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
+		}
+		if tempBeaconHeight == 1 {
+			break
 		}
 		previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
 		if err != nil {

@@ -32,6 +32,7 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 	for _, v := range allViews {
 		err := v.RestoreBeaconViewStateFromHash(httpServer.GetBlockchain())
 		if err != nil {
+			Logger.log.Error("RestoreBeaconViewStateFromHash err ", err)
 			continue
 		}
 		beaconBestState = v

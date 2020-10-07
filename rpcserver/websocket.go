@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"net"
 	"net/http"
@@ -311,4 +312,8 @@ func AddSubscription(subManager *SubcriptionManager, subRequest *SubcriptionRequ
 	}
 	subManager.subRequestList[subRequest.JsonRequest.Method][hash] = closeChan
 	return nil
+}
+
+func (wsServer *WsServer) GetBlockchain() *blockchain.BlockChain {
+	return wsServer.config.BlockChain
 }

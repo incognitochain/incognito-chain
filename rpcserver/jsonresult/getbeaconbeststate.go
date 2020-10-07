@@ -146,8 +146,13 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	for k, v := range data.GetAutoStaking() {
 		result.AutoStaking[k] = v
 	}
-	result.NumberOfMissingSignature = data.GetNumberOfMissingSignature()
-	result.MissingSignaturePenalty = data.GetMissingSignaturePenalty()
-
+	result.NumberOfMissingSignature = make(map[string]uint)
+	for k, v := range data.GetNumberOfMissingSignature() {
+		result.NumberOfMissingSignature[k] = v
+	}
+	result.MissingSignaturePenalty = make(map[string]signaturecounter.Penalty)
+	for k, v := range data.GetMissingSignaturePenalty() {
+		result.MissingSignaturePenalty[k] = v
+	}
 	return result
 }

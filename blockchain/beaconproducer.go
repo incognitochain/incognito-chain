@@ -310,12 +310,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		acceptedRewardInstructions = []string{}
 	}
 	//Get Shard State from Block
-	shardState := types.ShardState{}
-	shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShardBitMap))
-	copy(shardState.CrossShard, shardBlock.Header.CrossShardBitMap)
-	shardState.Hash = shardBlock.Header.Hash()
-	shardState.Height = shardBlock.Header.Height
-	shardStates[shardID] = shardState
+	shardStates[shardID] = types.NewShardState(
+		shardBlock.ValidationData,
+		shardBlock.Header.CommitteeFromBlock,
+		shardBlock.Header.Height,
+		shardBlock.Header.Hash(),
+		shardBlock.Header.CrossShardBitMap,
+	)
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 

@@ -1,9 +1,11 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -82,12 +84,32 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue
 				}
-				beaconBestStateResult, err := wsServer.blockService.GetBeaconBestState()
+				allViews := []*blockchain.BeaconBestState{}
+				beaconBestState := &blockchain.BeaconBestState{}
+				beaconDB := wsServer.blockService.BlockChain.GetBeaconChainDatabase()
+				beaconViews, err := rawdbv2.GetBeaconViews(beaconDB)
+				if err != nil {
+					cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
+				}
+
+				err = json.Unmarshal(beaconViews, &allViews)
+				if err != nil {
+					cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
+				}
+
+				for _, v := range allViews {
+					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain())
+					if err != nil {
+						cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
+					}
+					beaconBestState = v
+				}
+				beaconBestStateResult := jsonresult.NewGetBeaconBestState(beaconBestState)
 				if err != nil {
 					err := rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 					cResult <- RpcSubResult{Error: err}
 				} else {
-					cResult <- RpcSubResult{Result: jsonresult.NewGetBeaconBestState(beaconBestStateResult), Error: nil}
+					cResult <- RpcSubResult{Result: beaconBestStateResult, Error: nil}
 				}
 			}
 		case <-closeChan:
