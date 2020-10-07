@@ -241,6 +241,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	amount := portingRequestContent.RegisterAmount
 	custodiansDetail := portingRequestContent.Custodian
 	portingFee := portingRequestContent.PortingFee
+	shardHeight := portingRequestContent.ShardHeight
+	shardId := portingRequestContent.ShardID
 
 	switch reqStatus {
 	case common.PortalPortingRequestAcceptedChainStatus:
@@ -280,6 +282,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			custodiansDetail,
 			portingFee,
 			beaconHeight+1,
+			shardHeight,
+			shardId,
 		)
 
 		newPortingRequestState := metadata.NewPortingRequestStatus(

@@ -158,7 +158,7 @@ func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
 		Logger.log.Errorf("Decode externalTokenID error: ", err)
 	}
 	amount, _ := strconv.ParseUint(inst[5], 10, 64)
-	amountBytes := common.AddPaddingBigInt(new(big.Int).SetUint64(amount), 8)
+	amountBytes := common.AddPaddingBigInt(new(big.Int).SetUint64(amount), 32)
 
 	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)

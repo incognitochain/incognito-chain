@@ -68,6 +68,7 @@ func buildRequestPortingInst(
 	portingFee uint64,
 	custodian []*statedb.MatchingPortingCustodianDetail,
 	txReqID common.Hash,
+	shardHeight uint64,
 ) []string {
 	portingRequestContent := metadata.PortalPortingRequestContent{
 		UniqueRegisterId: uniqueRegisterId,
@@ -78,6 +79,7 @@ func buildRequestPortingInst(
 		Custodian:        custodian,
 		TxReqID:          txReqID,
 		ShardID:          shardID,
+		ShardHeight: shardHeight,
 	}
 
 	portingRequestContentBytes, _ := json.Marshal(portingRequestContent)
@@ -122,6 +124,7 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		actionData.Meta.PortingFee,
 		nil,
 		actionData.TxReqID,
+		actionData.ShardHeight,
 	)
 
 	if currentPortalState == nil {
@@ -202,6 +205,7 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		actionData.Meta.PortingFee,
 		pickedCustodians,
 		actionData.TxReqID,
+		actionData.ShardHeight,
 	)
 
 	newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
@@ -213,6 +217,8 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		pickedCustodians,
 		actionData.Meta.PortingFee,
 		beaconHeight+1,
+		actionData.ShardHeight,
+		actionData.ShardID,
 	)
 
 	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.Meta.UniqueRegisterId)

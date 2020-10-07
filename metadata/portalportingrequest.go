@@ -28,6 +28,7 @@ type PortalUserRegisterAction struct {
 	Meta    PortalUserRegister
 	TxReqID common.Hash
 	ShardID byte
+	ShardHeight uint64
 }
 
 type PortalPortingRequestContent struct {
@@ -39,6 +40,7 @@ type PortalPortingRequestContent struct {
 	Custodian        []*statedb.MatchingPortingCustodianDetail
 	TxReqID          common.Hash
 	ShardID          byte
+	ShardHeight uint64
 }
 
 type PortingRequestStatus struct {
@@ -51,6 +53,8 @@ type PortingRequestStatus struct {
 	PortingFee      uint64
 	Status          int
 	BeaconHeight    uint64
+	ShardHeight uint64
+	ShardID          byte
 }
 
 func NewPortingRequestStatus(
@@ -166,11 +170,13 @@ func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 	return &hash
 }
 
+// todo:
 func (portalUserRegister *PortalUserRegister) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalUserRegisterAction{
 		Meta:    *portalUserRegister,
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
+		ShardHeight: uint64(0),
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
