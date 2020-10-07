@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"math/big"
 	"strconv"
 )
 
@@ -114,7 +116,7 @@ func getIncProofByHeightV2(
 
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst := splitAndDecodeInstV3(beaconInstProof.inst)
-	bcHeightStr := strconv.Itoa(int(height))
+	bcHeightStr := base58.Base58Check{}.Encode(new(big.Int).SetUint64(height).Bytes(), 0x00)
 	return buildProofResult(decodedInst, beaconInstProof, nil, bcHeightStr, ""), nil
 }
 
