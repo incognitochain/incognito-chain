@@ -48,10 +48,10 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 			utils.Logger.Log.Infof("Signing TX : processing an unblinded input coin")
 		}
 
-		sharedSecret := new(privacy.Scalar).FromUint64(0)
+		sharedSecret := new(privacy.Point).Identity()
 		bl := new(privacy.Scalar).FromUint64(0)
 		if !isUnblinded{
-			sharedSecret, err := inputCoin_specific.RecomputeSharedSecret(mySkBytes)
+			sharedSecret, err = inputCoin_specific.RecomputeSharedSecret(mySkBytes)
 			if err != nil {
 				utils.Logger.Log.Errorf("Cannot recompute shared secret : %v", err)
 				return nil, err

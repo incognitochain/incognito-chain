@@ -180,7 +180,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				params.TokenParams.Receiver,
 				params.TokenParams.TokenInput,
 				params.TokenParams.Fee,
-				true,
+				params.HasPrivacyToken,
 				params.TransactionStateDB,
 				propertyID,
 				nil,
