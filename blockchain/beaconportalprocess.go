@@ -1,10 +1,12 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"math/big"
 	"sort"
 	"strconv"
 )
@@ -842,13 +844,19 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawV3(
 			return nil
 		}
 
-		//check free collateral
-		if statusData.Amount > custodian.GetFreeTokenCollaterals()[statusData.ExternalTokenID] {
+		// check free collateral
+		amountBN := statusData.Amount
+		if bytes.Equal(common.FromHex(statusData.ExternalTokenID), common.FromHex(common.EthAddrStr)) {
+			// Convert Wei to Gwei for Ether
+			amountBN = amountBN.Div(amountBN, big.NewInt(1000000000))
+		}
+		amount := amountBN.Uint64()
+		if amount > custodian.GetFreeTokenCollaterals()[statusData.ExternalTokenID] {
 			Logger.log.Errorf("ERROR: Free collateral is not enough to withdraw")
 			return nil
 		}
 
-		updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, statusData.ExternalTokenID, statusData.Amount)
+		updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, statusData.ExternalTokenID, amount)
 		currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
 
 		// store withdraw confirm proof

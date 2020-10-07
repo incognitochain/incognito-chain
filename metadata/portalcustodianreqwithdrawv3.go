@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"math/big"
 	"strconv"
 )
 
@@ -29,7 +30,7 @@ type PortalCustodianWithdrawRequestContentV3 struct {
 	CustodianIncAddress      string
 	CustodianExternalAddress string
 	ExternalTokenID          string // collateral token ID
-	Amount                   uint64
+	Amount                   *big.Int
 	TxReqID                  common.Hash
 	ShardID                  byte
 }
@@ -38,7 +39,7 @@ type CustodianWithdrawRequestStatusV3 struct {
 	CustodianIncAddress      string
 	CustodianExternalAddress string
 	ExternalTokenID          string // collateral token ID
-	Amount                   uint64
+	Amount                   *big.Int
 	TxReqID                  common.Hash
 	Status                   int
 }
@@ -47,7 +48,7 @@ func NewCustodianWithdrawRequestStatusV3(
 	cusIncAddress string,
 	cusExternalAddress string,
 	externalTokenID string,
-	amount uint64,
+	amount *big.Int,
 	txReqID common.Hash,
 	status int) *CustodianWithdrawRequestStatusV3 {
 	return &CustodianWithdrawRequestStatusV3{
@@ -120,7 +121,7 @@ func (req PortalCustodianWithdrawRequestV3) ValidateSanityData(chainRetriever Ch
 	// validate ExternalTokenID
 	// check externalTokenID should be one of supported collateral tokenIDs
 	if ok, err := common.SliceExists(chainRetriever.GetSupportedCollateralTokenIDs(beaconHeight), req.ExternalTokenID); !ok || err != nil {
-		return false, false, errors.New("custodian request withdraw v3: amount should be larger than 0")
+		return false, false, errors.New("custodian request withdraw v3: external tokenID is not supported")
 	}
 
 	// validate remote address

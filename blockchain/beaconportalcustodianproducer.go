@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -520,8 +521,7 @@ func buildPortalCustodianWithdrawStatusFromInstV3(
 	paymentAddress := inst[2]
 	externalAddress := inst[3]
 	externalTokenID:= inst[4]
-	amountStr := inst[5]
-	amount, _ := strconv.ParseUint(amountStr, 10, 64)
+	amount, _ := new(big.Int).SetString(inst[5], 10)
 	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
 
@@ -603,7 +603,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 	}
 
 	// Convert amount to big.Int to get bytes later
-	if externalTokenID == common.EthAddrStr {
+	if bytes.Equal(common.FromHex(externalTokenID), common.FromHex(common.EthAddrStr)) {
 		// Convert Gwei to Wei for Ether
 		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}
