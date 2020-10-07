@@ -346,6 +346,8 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 				v.votes[id].isValid = 1
 				validVote++
 			}
+		} else {
+			validVote++
 		}
 	}
 	//e.Logger.Debug(validVote, len(view.GetCommittee()), errVote)
