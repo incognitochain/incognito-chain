@@ -421,14 +421,6 @@ func (tx *Tx) signTx() error {
 	return nil
 }
 
-func (tx *Tx) Sign(sigPrivakey []byte) error {//For testing-purposes only, remove when deployed
-	if sigPrivakey != nil{
-		tx.sigPrivKey = sigPrivakey
-		tx.cachedHash = nil
-	}
-	return tx.signTx()
-}
-
 // verifySigTx - verify signature on tx
 func (tx *Tx) verifySigTx() (bool, error) {
 	// check input transaction
