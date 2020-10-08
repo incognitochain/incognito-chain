@@ -48,7 +48,7 @@ func cacheCoins(_ js.Value, args []js.Value) interface{} {
 
 func main() {
 	c := make(chan struct{}, 0)
-	println("Hello WASM It's V2")
+	println("WASM resource loaded !")
 
 	js.Global().Set("createTransaction", js.FuncOf(createTx))
 	js.Global().Set("decompressCoins", js.FuncOf(decompressCoins))

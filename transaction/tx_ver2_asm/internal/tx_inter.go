@@ -2,8 +2,9 @@ package internal
 
 import (
 	"errors"
+	// "fmt"
 	"encoding/json"
-	// "github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common"
 	// "github.com/incognitochain/incognito-chain/wallet"
 
 	// "github.com/incognitochain/incognito-chain/metadata"
@@ -60,9 +61,9 @@ func CreateTransaction(args string, serverTime int64) (string, error) {
 	// lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
 	// resBytes := append(txJson, lockTimeBytes...)
 
-	// B64Res := base64.StdEncoding.EncodeToString(resBytes)
+	res := b58.Encode(txJson, common.ZeroByte)
 
-	return string(txJson), nil
+	return res, nil
 }
 
 func DecompressCoins(args string) (string, error) {
@@ -85,10 +86,9 @@ func DecompressCoins(args string) (string, error) {
 		cis = append(cis, *temp)
 	}
 	// serialize tx json
-
 	txJson, err := json.Marshal(cis)
 	if err != nil {
-		println("Error marshalling coin array: ", err)
+		println("Error marshalling coin array: ", err.Error())
 		return "", err
 	}
 
@@ -132,7 +132,7 @@ func CacheCoins(coinsString string, indexesString string) (string, error) {
 				cache.AssetTags = append(cache.AssetTags, temp.AssetTag)
 			}
 		}
-		mapKey := b64.EncodeToString(temp.PublicKey)
+		mapKey := b58.Encode(temp.PublicKey, common.ZeroByte)
 		cache.PkToIndexMap[mapKey] = indexes[i]
 	}
 	// serialize tx json

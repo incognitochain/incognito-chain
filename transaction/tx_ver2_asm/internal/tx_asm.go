@@ -2,18 +2,33 @@ package internal
 
 import(
 	"encoding/base64"
-	// "encoding/json"
+	"encoding/json"
 	"math/big"
 	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
 
 const MaxSizeByte = (1 << 8) - 1
+var b58 = base58.Base58Check{}
+
+type b58CompatBytes []byte
+func (b *b58CompatBytes) MarshalJSON() ([]byte, error){
+	var res string = fmt.Sprintf("\"%s\"",b58.Encode(*b, common.ZeroByte))
+	return []byte(res), nil
+}
+func (b *b58CompatBytes) UnmarshalJSON(src []byte) error{
+	var theStr string
+	json.Unmarshal(src, &theStr)
+	res, _, err := b58.Decode(theStr)
+	*b = res
+	return err
+}
 
 type SigPubKey struct {
 	Indexes [][]*big.Int
@@ -106,9 +121,9 @@ type Tx struct {
 }
 
 type CoinCache struct{
-	PublicKeys 		[][]byte 			`json:"public_keys"`
-	Commitments 	[][]byte 			`json:"commitments"`
-	AssetTags		[][]byte 			`json:"asset_tags,omitempty"`
+	PublicKeys 		[]b58CompatBytes 			`json:"public_keys"`
+	Commitments 	[]b58CompatBytes 			`json:"commitments"`
+	AssetTags		[]b58CompatBytes 			`json:"asset_tags,omitempty"`
 	PkToIndexMap 	map[string]uint64 	`json:"pk_to_index"`
 }
 func MakeCoinCache() *CoinCache{
@@ -171,18 +186,18 @@ func (params *InitParamsAsm) GetGenericParams() *TxPrivacyInitParams{
 }
 
 type CoinInter struct {
-	Version    		uint8 	`json:"version"`
-	Info       		[]byte 	`json:"info"`
-	PublicKey  		[]byte 	`json:"public_key"`
-	Commitment 		[]byte 	`json:"commitment"`
-	KeyImage   		[]byte 	`json:"key_image"`
+	Version    		uint8 			`json:"version"`
+	Info       		b58CompatBytes 	`json:"info"`
+	PublicKey  		b58CompatBytes 	`json:"public_key"`
+	Commitment 		b58CompatBytes 	`json:"commitment"`
+	KeyImage   		b58CompatBytes 	`json:"key_image"`
 
-	SharedRandom 	[]byte 	`json:"shared_secret_randomness"`
-	TxRandom     	[]byte 	`json:"shared_secret_details"`
-	Mask    		[]byte 	`json:"commitment_randomness"`
-	Amount 			[]byte 	`json:"amount"`
+	SharedRandom 	b58CompatBytes 	`json:"shared_secret_randomness"`
+	TxRandom     	b58CompatBytes 	`json:"shared_secret_details"`
+	Mask    		b58CompatBytes 	`json:"commitment_randomness"`
+	Amount 			b58CompatBytes 	`json:"amount"`
 	// tag is nil unless confidential asset
-	AssetTag  		[]byte 	`json:"asset_tag"`
+	AssetTag  		b58CompatBytes 	`json:"asset_tag"`
 }
 func (c CoinInter) Bytes() []byte{
 	coinBytes := []byte{c.Version}
@@ -382,7 +397,7 @@ func generateMlsagRing(inputCoins []privacy.PlainCoin, outputCoins []*privacy.Co
 			for j := 0; j < len(inputCoins); j += 1 {
 				row[j] = inputCoins[j].GetPublicKey()
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
-				key := b64.EncodeToString(publicKeyBytes)
+				key := b58.Encode(publicKeyBytes, common.ZeroByte)
 				val, exists := coinCache.PkToIndexMap[key]
 				if !exists{
 					err := errors.New(fmt.Sprintf("Cannot find a coin's index using cached index map - %s", key))
@@ -397,7 +412,7 @@ func generateMlsagRing(inputCoins []privacy.PlainCoin, outputCoins []*privacy.Co
 				pos := int(temp.Uint64())
 				pkBytes := coinCache.PublicKeys[pos]
 				commitmentBytes := coinCache.Commitments[pos]
-				key := b64.EncodeToString(pkBytes)
+				key := b58.Encode(pkBytes, common.ZeroByte)
 				val, exists := coinCache.PkToIndexMap[key]
 				if !exists{
 					err := errors.New(fmt.Sprintf("Cannot find a coin's index using cached index map - %s", key))
