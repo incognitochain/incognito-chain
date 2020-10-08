@@ -315,7 +315,7 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
 		return nil
 	}
-	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID)
+	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID, shardBlock.Header.Height)
 	if err != nil {
 		Logger.log.Errorf("[S2B] CreateShardToBeaconBlock return err:", err)
 		return nil

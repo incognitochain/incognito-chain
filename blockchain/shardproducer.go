@@ -200,7 +200,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height)
 	if err != nil {
 		return nil, err
 	}

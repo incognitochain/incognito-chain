@@ -168,7 +168,7 @@ func (iReq IssuingETHRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)

@@ -154,7 +154,7 @@ func (req PortalCustodianWithdrawRequestV3) Hash() *common.Hash {
 	return &hash
 }
 
-func (req *PortalCustodianWithdrawRequestV3) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (req *PortalCustodianWithdrawRequestV3) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalCustodianWithdrawRequestActionV3{
 		Meta:    *req,
 		TxReqID: *tx.Hash(),

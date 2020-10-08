@@ -127,7 +127,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) Hash() *common.Hash {
 	return &hash
 }
 
-func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalLiquidationCustodianDepositAction{
 		Meta:    *custodianDeposit,
 		TxReqID: *tx.Hash(),

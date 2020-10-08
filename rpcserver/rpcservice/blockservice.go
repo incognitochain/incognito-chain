@@ -164,7 +164,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		result.Round = shardBlock.Header.Round
 		result.CrossShardBitMap = []int{}
 		result.Instruction = shardBlock.Body.Instructions
-		instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID)
+		instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height)
 		if err == nil {
 			result.Instruction = append(result.Instruction, instructions...)
 		}
@@ -285,7 +285,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 			res.Round = shardBlock.Header.Round
 			res.CrossShardBitMap = []int{}
 			res.Instruction = shardBlock.Body.Instructions
-			instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID)
+			instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height)
 			if err == nil {
 				res.Instruction = append(res.Instruction, instructions...)
 			}

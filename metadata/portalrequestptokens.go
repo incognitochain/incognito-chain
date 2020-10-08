@@ -137,7 +137,7 @@ func (reqPToken PortalRequestPTokens) Hash() *common.Hash {
 	return &hash
 }
 
-func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRequestPTokensAction{
 		Meta:    *reqPToken,
 		TxReqID: *tx.Hash(),

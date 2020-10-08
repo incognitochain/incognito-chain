@@ -119,7 +119,7 @@ func (Withdraw PortalCustodianWithdrawRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalCustodianWithdrawRequestAction{
 		Meta:    *Withdraw,
 		TxReqID: *tx.Hash(),

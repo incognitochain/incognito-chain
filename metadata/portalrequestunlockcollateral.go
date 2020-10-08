@@ -139,7 +139,7 @@ func (meta PortalRequestUnlockCollateral) Hash() *common.Hash {
 	return &hash
 }
 
-func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRequestUnlockCollateralAction{
 		Meta:    *meta,
 		TxReqID: *tx.Hash(),

@@ -126,7 +126,7 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	return &hash
 }
 
-func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalExchangeRatesAction{
 		Meta:     *portalExchangeRates,
 		TxReqID:  *tx.Hash(),

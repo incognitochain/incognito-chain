@@ -112,7 +112,7 @@ func (req PortalReqMatchingRedeem) Hash() *common.Hash {
 	return &hash
 }
 
-func (req *PortalReqMatchingRedeem) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (req *PortalReqMatchingRedeem) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalReqMatchingRedeemAction{
 		Meta:    *req,
 		TxReqID: *tx.Hash(),

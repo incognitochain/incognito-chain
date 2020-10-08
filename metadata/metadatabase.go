@@ -82,7 +82,7 @@ func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64,
 	return !(txFee < fullFee)
 }
 
-func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	return [][]string{}, nil
 }
 

@@ -123,7 +123,7 @@ func (rh RelayingHeader) Hash() *common.Hash {
 	return &hash
 }
 
-func (rh *RelayingHeader) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (rh *RelayingHeader) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := RelayingHeaderAction{
 		Meta:    *rh,
 		TxReqID: *tx.Hash(),

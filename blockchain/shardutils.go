@@ -143,7 +143,7 @@ func CreateShardSwapActionForKeyListV2(
 	- Stop Auto Staking
 		+ ["stopautostaking" "pubkey1,pubkey2,..."]
 */
-func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
+func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeBeaconPublicKey := []string{}
@@ -162,7 +162,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)
@@ -240,12 +240,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 }
 
 // build actions from txs and ins at shard
-func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardID byte) ([][]string, error) {
+func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) ([][]string, error) {
 	actions := [][]string{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
 		if meta != nil {
-			actionPairs, err := meta.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
+			actionPairs, err := meta.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 			if err != nil {
 				continue
 			}

@@ -139,7 +139,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
 	return &hash
 }
 
-func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRedeemLiquidateExchangeRatesAction{
 		Meta:    *redeemReq,
 		TxReqID: *tx.Hash(),

@@ -302,7 +302,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(CrossShardTransactionRootHashError, fmt.Errorf("Expect cross shard transaction root hash %+v", shardBlock.Header.CrossTransactionRoot))
 	}
 	// Verify Action
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)

@@ -172,6 +172,7 @@ func (p *PortalTopUpWaitingPortingRequest) BuildReqActions(
 	shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
+	shardHeight uint64,
 ) ([][]string, error) {
 	actionContent := PortalTopUpWaitingPortingRequestAction{
 		Meta:    *p,
