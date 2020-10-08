@@ -404,7 +404,8 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 			}
 		}
 
-		if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+		if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION &&
+			(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
 			duplicateStakePublicKeys = common.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
 			if len(duplicateStakePublicKeys) > 0 {
 				stakingTxs := []string{}

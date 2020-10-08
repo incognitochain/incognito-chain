@@ -221,23 +221,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		return err2
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	//========Store new  Shard block and new shard bestState
-	//confirmBeaconBlock := NewBeaconBlock()
-	//if len(beaconBlocks) > 0 {
-	//	confirmBeaconBlock = beaconBlocks[len(beaconBlocks)-1]
-	//} else {
-	//	confirmBeaconBlocks, err := blockchain.GetBeaconBlockByHeight(shardBlock.Header.BeaconHeight)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	confirmBeaconBlock = confirmBeaconBlocks[0]
-	//}
-
-	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
-		newBestState.ShardID, shardBlock.Header.Height, blockHash)
-	if err2 = newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
-		return err2
-	}
 
 	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
 	if err2 != nil {
