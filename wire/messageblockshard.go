@@ -10,7 +10,8 @@ import (
 )
 
 type MessageBlockShard struct {
-	Block *types.ShardBlock
+	Block                  *types.ShardBlock
+	PreviousValidationData string
 }
 
 func (msg *MessageBlockShard) Hash() string {

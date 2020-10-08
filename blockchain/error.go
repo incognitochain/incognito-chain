@@ -183,6 +183,7 @@ const (
 	BuildIncurredInstructionError
 	ReturnStakingInstructionHandlerError
 	CountMissingSignatureError
+	ReplacePreviousValidationDataError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -351,6 +352,7 @@ var ErrCodeMessage = map[int]struct {
 	BuildIncurredInstructionError:                     {-1159, "Build Incurred Instructions error"},
 	ReturnStakingInstructionHandlerError:              {-1160, "Return Staking Instruction Handler error"},
 	CountMissingSignatureError:                        {-1161, "Count Missing Signature Error"},
+	ReplacePreviousValidationDataError:                {-1162, "Replace Previous Validation Data Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},

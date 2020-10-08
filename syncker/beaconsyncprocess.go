@@ -243,11 +243,11 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
-			if err := s.chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
+			if err := s.chain.InsertShardBlock(blk.(common.BlockInterface), true); err != nil {
 				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
 			}
-			s.beaconPool.RemoveBlock(blk.Hash())
+			s.beaconPool.RemoveBlock(blk)
 		}
 	}
 

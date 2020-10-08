@@ -7,9 +7,10 @@ import (
 )
 
 type BlkPool struct {
-	action            chan func()
-	blkPoolByHash     map[string]common.BlockPoolInterface // hash -> block
-	blkPoolByPrevHash map[string][]string                  // prevhash -> []nexthash
+	action               chan func()
+	blkPoolByHash        map[string]common.BlockPoolInterface // hash -> block
+	validationDataByHash map[string]string                    // hash of block -> validation data of that block
+	blkPoolByPrevHash    map[string][]string                  // prevhash -> []nexthash
 }
 
 func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
@@ -17,6 +18,7 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 	pool.action = make(chan func())
 	pool.blkPoolByHash = make(map[string]common.BlockPoolInterface)
 	pool.blkPoolByPrevHash = make(map[string][]string)
+	pool.validationDataByHash = make(map[string]string)
 	go pool.Start()
 
 	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
@@ -29,7 +31,7 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 				blkList := pool.GetBlockList()
 				for _, blk := range blkList {
 					if IsOutdatedBlk(blk) {
-						pool.RemoveBlock(blk.Hash())
+						pool.RemoveBlock(blk)
 					}
 				}
 			}
@@ -109,7 +111,12 @@ func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 			return
 		}
 		pool.blkPoolByPrevHash[prevHash] = append(pool.blkPoolByPrevHash[prevHash], hash)
-		//fmt.Println("Syncker: add block to pool", blk.GetHeight())
+	}
+}
+
+func (pool *BlkPool) AddPreviousValidationData(hash common.Hash, validationData string) {
+	pool.action <- func() {
+		pool.validationDataByHash[hash.String()] = validationData
 	}
 }
 
@@ -131,9 +138,10 @@ func (pool *BlkPool) HasHash(hash common.Hash) bool {
 	return <-res
 }
 
-func (pool *BlkPool) RemoveBlock(hash *common.Hash) {
+func (pool *BlkPool) RemoveBlock(block common.BlockPoolInterface) {
 	pool.action <- func() {
-		delete(pool.blkPoolByHash, hash.String())
+		delete(pool.blkPoolByHash, block.Hash().String())
+		delete(pool.validationDataByHash, block.GetPrevHash().String())
 	}
 }
 
@@ -187,6 +195,14 @@ func (pool *BlkPool) GetBlockByPrevHash(prevHash common.Hash) []common.BlockPool
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetBlksByPrevHash(prevHash.String(), pool.blkPoolByHash, pool.blkPoolByPrevHash)
+	}
+	return <-res
+}
+
+func (pool *BlkPool) GetPreviousValidationData(hash common.Hash) string {
+	res := make(chan string)
+	pool.action <- func() {
+		res <- pool.validationDataByHash[hash.String()]
 	}
 	return <-res
 }

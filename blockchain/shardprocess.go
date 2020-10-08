@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"sort"
 	"time"
 
@@ -126,6 +127,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, shouldValidate bool) error {
+	//startTimeInsertShardBlock := time.Now()
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
@@ -134,7 +136,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
-	//startTimeInsertShardBlock := time.Now()
 
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
@@ -201,10 +202,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		}
 	}()
 
-	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	// update number of blocks produced by producers to shard best state
-	newBestState.updateNumOfBlocksByProducers(shardBlock)
-
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
@@ -221,23 +218,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		return err2
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	//========Store new  Shard block and new shard bestState
-	//confirmBeaconBlock := NewBeaconBlock()
-	//if len(beaconBlocks) > 0 {
-	//	confirmBeaconBlock = beaconBlocks[len(beaconBlocks)-1]
-	//} else {
-	//	confirmBeaconBlocks, err := blockchain.GetBeaconBlockByHeight(shardBlock.Header.BeaconHeight)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	confirmBeaconBlock = confirmBeaconBlocks[0]
-	//}
-
-	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
-		newBestState.ShardID, shardBlock.Header.Height, blockHash)
-	if err2 = newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
-		return err2
-	}
 
 	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
 	if err2 != nil {
@@ -249,32 +229,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
 	return nil
-}
-
-// updateNumOfBlocksByProducers updates number of blocks produced by producers to shard best state
-func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *types.ShardBlock) {
-	isSwapInstContained := false
-	for _, inst := range shardBlock.Body.Instructions {
-		if len(inst) > 0 && inst[0] == instruction.SWAP_ACTION {
-			isSwapInstContained = true
-			break
-		}
-	}
-	producer := shardBlock.GetProducerPubKeyStr()
-	if isSwapInstContained {
-		// reset number of blocks produced by producers
-		shardBestState.NumOfBlocksByProducers = map[string]uint64{
-			producer: 1,
-		}
-	} else {
-		// Update number of blocks produced by producers in epoch
-		numOfBlks, found := shardBestState.NumOfBlocksByProducers[producer]
-		if !found {
-			shardBestState.NumOfBlocksByProducers[producer] = 1
-		} else {
-			shardBestState.NumOfBlocksByProducers[producer] = numOfBlks + 1
-		}
-	}
 }
 
 // verifyPreProcessingShardBlock DOES NOT verify new block with best state
@@ -993,7 +947,13 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store incoming cross shard block
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
-func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *types.ShardBlock, committeeChange *committeestate.CommitteeChange, beaconBlocks []*types.BeaconBlock) error {
+func (blockchain *BlockChain) processStoreShardBlock(
+	newShardState *ShardBestState,
+	shardBlock *types.ShardBlock,
+	committeeChange *committeestate.CommitteeChange,
+	beaconBlocks []*types.BeaconBlock,
+) error {
+
 	startTimeProcessStoreShardBlock := time.Now()
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
@@ -1197,6 +1157,35 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
+	return nil
+}
+
+// ReplacePreviousValidationData replace newValidationData to previous if
+// new aggregated signatures is combined from a larger subset of committees
+func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error {
+
+	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedOldValidationData, err := consensustypes.DecodeValidationData(shardBlock.ValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
+		shardBlock.ValidationData = newValidationData
+		if err := rawdbv2.StoreShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), blockHash, shardBlock); err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+	}
+
 	return nil
 }
 

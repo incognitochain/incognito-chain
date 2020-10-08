@@ -214,39 +214,57 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
+func (chain *ShardChain) InsertShardBlock(block common.BlockInterface, shouldValidate bool) error {
+
 	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
+		return err
 	}
-	return err
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
+
+	if err := chain.InsertShardBlock(block, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+
+	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	if err := chain.InsertShardBlock(block, false); err != nil {
+		return err
+	}
+
+	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
 	return err == nil
-}
-
-func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	return nil
-}
-
-func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface, validationData string) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	//TODO: replace validation data of previous block
-	return nil
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {

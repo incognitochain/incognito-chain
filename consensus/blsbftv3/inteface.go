@@ -43,6 +43,7 @@ type ChainInterface interface {
 	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64, view multiview.View) (common.BlockInterface, error)
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface, validationData string) error
+	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int

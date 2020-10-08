@@ -67,9 +67,9 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		if !chain.CheckExistedBlk(v) {
 			var err error
 			if i == len(sameCommitteeBlock)-1 {
-				err = chain.InsertBlk(v, true)
+				err = chain.InsertShardBlock(v, true)
 			} else {
-				err = chain.InsertBlk(v, false)
+				err = chain.InsertShardBlock(v, false)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)

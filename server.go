@@ -966,38 +966,20 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	msg *wire.MessageBlockShard) {
 	Logger.log.Infof("[bcsyncshard] Receive a new blockshard START")
-	//
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	////<-txProcessed
-	//
-	//Logger.log.Debug("Receive a new blockshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+
+	go serverObj.syncker.ReceiveBlock(msg.Block, msg.PreviousValidationData, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 	msg *wire.MessageBlockBeacon) {
 
-	//Logger.log.Info("Receive a new blockbeacon START")
-	//
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	////<-txProcessed
-	//
-	//Logger.log.Debug("Receive a new blockbeacon END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	go serverObj.syncker.ReceiveBlock(msg.Block, "", p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
 	msg *wire.MessageCrossShard) {
-	//Logger.log.Debug("Receive a new crossshard START")
-	//
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	////<-txProcessed
-	//
-	//Logger.log.Debug("Receive a new crossshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+
+	go serverObj.syncker.ReceiveBlock(msg.Block, "", p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
@@ -1756,7 +1738,7 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.Chain
 	return nil
 }
 
-func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
+func (serverObj *Server) PushBlockToAll(block common.BlockInterface, previousValidationData string, isBeacon bool) error {
 	var ok bool
 	if isBeacon {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
@@ -1781,6 +1763,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 			return err
 		}
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
+		msgShard.(*wire.MessageBlockShard).PreviousValidationData = previousValidationData
 		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
 
 		crossShardBlks := blockchain.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
