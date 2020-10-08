@@ -22,9 +22,9 @@ type BeaconCommitteeStateV2 struct {
 	shardCommonPool            []incognitokey.CommitteePublicKey
 	numberOfAssignedCandidates int
 
-	autoStake      map[string]bool                   // committee public key => reward receiver payment address
+	autoStake      map[string]bool                   // committee public key => true or false
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
-	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
+	stakingTx      map[string]common.Hash            // committee public key => staking tx
 	numberOfRound  map[string]int                    // committee public key => number of round in epoch
 
 	mu *sync.RWMutex
@@ -550,15 +550,18 @@ func (b *BeaconCommitteeStateV2) processStakeInstruction(
 	committeeChange *CommitteeChange,
 	env *BeaconCommitteeStateEnvironment,
 ) (*CommitteeChange, error) {
+	var err error
+	// var key string
 	for index, candidate := range stakeInstruction.PublicKeyStructs {
+		committeePublicKey := stakeInstruction.PublicKeys[index]
 		b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
-		b.autoStake[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
-		b.numberOfRound[stakeInstruction.PublicKeys[index]] = 0
-		b.stakingTx[stakeInstruction.PublicKeys[index]] = stakeInstruction.TxStakeHashes[index]
+		b.autoStake[committeePublicKey] = stakeInstruction.AutoStakingFlag[index]
+		b.numberOfRound[committeePublicKey] = 0
+		b.stakingTx[committeePublicKey] = stakeInstruction.TxStakeHashes[index]
 	}
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 	b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeyStructs...)
-	err := statedb.StoreStakerInfoV2(
+	err = statedb.StoreStakerInfoV2(
 		env.ConsensusStateDB,
 		stakeInstruction.PublicKeyStructs,
 		b.rewardReceiver,
@@ -566,10 +569,7 @@ func (b *BeaconCommitteeStateV2) processStakeInstruction(
 		b.stakingTx,
 		b.numberOfRound,
 	)
-	if err != nil {
-		return committeeChange, err
-	}
-	return committeeChange, nil
+	return committeeChange, err
 }
 
 func (b *BeaconCommitteeStateV2) processStopAutoStakeInstruction(
