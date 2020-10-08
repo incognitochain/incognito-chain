@@ -346,7 +346,7 @@ func init() {
 		ReplaceStakingTxHeight:    559380,
 		IsBackup:                  false,
 		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  660000, //TODO: change this value when deployed mainnet
+		BCHeightBreakPointNewZKP:  737450,
 		ETHRemoveBridgeSigEpoch:   1973,
 	}
 	if IsTestNet {
