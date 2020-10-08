@@ -44,13 +44,6 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
-	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
-		var err error
-		flatten, err = decodeWithdrawCollateralConfirmV3Inst(inst)
-		if err != nil {
-			return nil, err
-		}
-
 	default:
 		for _, part := range inst {
 			flatten = append(flatten, []byte(part)...)
@@ -137,72 +130,12 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	return flatten, nil
 }
 
-// decodeBurningConfirmInst decodes and flattens a WithdrawCollateralConfirm instruction
-func decodeWithdrawCollateralConfirmV3Inst(inst []string) ([]byte, error) {
-	if len(inst) < 8 {
-		return nil, errors.New("invalid length of WithdrawCollateralConfirm inst")
-	}
-
-	m, _ := strconv.Atoi(inst[0])
-	metaType := byte(m)
-	s, _ := strconv.Atoi(inst[1])
-	shardID := byte(s)
-	cusPaymentAddress := []byte(inst[2])
-	externalAddress, err := decodeRemoteAddr2(inst[3])
-	if err != nil {
-		Logger.log.Errorf("Decode external address error: ", err)
-	}
-	externalTokenID, err := decodeRemoteAddr2(inst[4])
-	if err != nil {
-		Logger.log.Errorf("Decode externalTokenID error: ", err)
-	}
-	amount, _ := new(big.Int).SetString(inst[5], 10)
-	amountBytes := common.AddPaddingBigInt(amount, 32)
-
-	txIDStr := inst[6]
-	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
-
-	beaconHeightStr := inst[7]
-	bcHeightBN, _ := new(big.Int).SetString(beaconHeightStr, 10)
-	bcHeightBytes := common.AddPaddingBigInt(bcHeightBN, 32)
-
-	//Logger.log.Errorf("metaType: %v", metaType)
-	//Logger.log.Errorf("shardID: %v", shardID)
-	//Logger.log.Errorf("cusPaymentAddress: %v - %v", cusPaymentAddress, len(cusPaymentAddress))
-	//Logger.log.Errorf("externalAddress: %v - %v", externalAddress, len(externalAddress))
-	//Logger.log.Errorf("externalTokenID: %v - %v", externalTokenID, len(externalTokenID))
-	//Logger.log.Errorf("amountBytes: %v - %v", amountBytes, len(amountBytes))
-	//Logger.log.Errorf("txID: %v - %v", txID[:])
-
-
-	//BLogger.log.Infof("Decoded WithdrawCollateralConfirm inst, amount: %d, remoteAddr: %x, externalTokenID: %x", amount, externalAddress, externalTokenID)
-	flatten := []byte{}
-	flatten = append(flatten, metaType)
-	flatten = append(flatten, shardID)
-	flatten = append(flatten, cusPaymentAddress...)
-	flatten = append(flatten, externalAddress...)
-	flatten = append(flatten, externalTokenID...)
-	flatten = append(flatten, amountBytes...)
-	flatten = append(flatten, txID[:]...)
-	flatten = append(flatten, bcHeightBytes...)
-	Logger.log.Errorf("flatten: %v - %v", flatten, len(flatten))
-	return flatten, nil
-}
-
 // decodeRemoteAddr converts address string to 32 bytes slice
 func decodeRemoteAddr(addr string) ([]byte, error) {
 	remoteAddr, err := hex.DecodeString(addr)
 	if err != nil {
 		return nil, err
 	}
-	addrFixedLen := [32]byte{}
-	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
-	return addrFixedLen[:], nil
-}
-
-// decodeRemoteAddr converts address string (maybe contains 0x) to 32 bytes slice
-func decodeRemoteAddr2(addr string) ([]byte, error) {
-	remoteAddr := common.FromHex(addr)
 	addrFixedLen := [32]byte{}
 	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
 	return addrFixedLen[:], nil

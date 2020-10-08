@@ -245,17 +245,8 @@ func splitAndDecodeInstV2(beaconInst []string) (string, string) {
 
 	// Split of last 32 bytes (block height)
 	beaconHeight := hex.EncodeToString(beaconInstFlat[len(beaconInstFlat)-32:])
-
 	decodedInst := hex.EncodeToString(beaconInstFlat[:len(beaconInstFlat)-32])
 	return decodedInst, beaconHeight
-}
-
-// splitAndDecodeInst splits BurningConfirm insts (on beacon and bridge) into 2 parts: the inst itself and beaconHeight that contains the inst
-func splitAndDecodeInstV3(beaconInst []string) string {
-	// Decode instructions
-	beaconInstFlat, _ := blockchain.DecodeInstruction(beaconInst)
-	decodedInst := hex.EncodeToString(beaconInstFlat[:])
-	return decodedInst
 }
 
 // handleGetBurnProof returns a proof of a tx burning pETH

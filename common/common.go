@@ -540,3 +540,14 @@ func IndexOfUint64(target uint64, arr []uint64) int {
 	}
 	return -1
 }
+
+// DecodeETHAddr converts address string (not contain 0x prefix) to 32 bytes slice
+func DecodeETHAddr(addr string) ([]byte, error) {
+	remoteAddr, err := hex.DecodeString(addr)
+	if err != nil {
+		return nil, err
+	}
+	addrFixedLen := [32]byte{}
+	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
+	return addrFixedLen[:], nil
+}
