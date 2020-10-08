@@ -221,6 +221,9 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("limit"))
 	}
 	receivedTxsList, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit))
+	if err != nil {
+		return nil, err
+	}
 	result := struct {
 		Skip uint
 		Limit uint
@@ -230,7 +233,7 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		uint(limit),
 		receivedTxsList.ReceivedTransactions,
 	}
-	return result, err
+	return result, nil
 }
 
 // Get transaction by Hash
