@@ -698,9 +698,17 @@ func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight ui
 	if beaconHeight == 0 {
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
-	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointFixRandShardCM {
+	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP {
 		return privacy.FixedRandomnessShardID
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+
+	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
 }

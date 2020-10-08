@@ -189,32 +189,19 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		numBlock = 1000
 	}
 	// calculate total amount to send
-	totalAmmount := uint64(0)
+	totalAmount := uint64(0)
 	for _, receiver := range paymentInfos {
-		totalAmmount += receiver.Amount
+		totalAmount += receiver.Amount
 	}
-	// get list outputcoins tx
-	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
+
+	// get output native coins for estimate fee
+	candidateOutputCoins, remainOutCoins, candidateOutputCoinAmount, overBalanceAmount, err1 := txService.ChooseOutsCoinByKeysetForEstimateFee(
+		paymentInfos, 0, keySet, shardIDSender)
+	if err1 != nil {
+		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err1)
 	}
-	// remove out coin in mem pool
-	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
-	}
-	if len(outCoins) == 0 && totalAmmount > 0 {
-		return nil, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
-	}
-	// Use Knapsack to get candiate output coin
-	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := txService.chooseBestOutCoinsToSpent(outCoins, totalAmmount)
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
-	}
+
 	// refund out put for sender
-	overBalanceAmount := candidateOutputCoinAmount - totalAmmount
 	if overBalanceAmount > 0 {
 		// add more into output for estimate fee
 		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
@@ -222,12 +209,9 @@ func (txService TxService) chooseOutsCoinByKeyset(
 			Amount:         overBalanceAmount,
 		})
 	}
+
 	// check real fee(nano PRV) per tx
-	beaconState, err := txService.BlockChain.GetClonedBeaconBestState()
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
-	}
-	beaconHeight := beaconState.BeaconHeight
+	beaconHeight := txService.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
@@ -235,7 +219,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
-	if totalAmmount == 0 && realFee == 0 {
+	if totalAmount == 0 && realFee == 0 {
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
 			switch metadataType {
@@ -244,27 +228,68 @@ func (txService TxService) chooseOutsCoinByKeyset(
 					return nil, realFee, nil
 				}
 			}
-			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee))
+			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmount: %+v, realFee: %+v", totalAmount, realFee))
 		}
 		if privacyCustomTokenParams != nil {
 			// for privacy token
 			return nil, 0, nil
 		}
 	}
-	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
+	needToPayFee := int64((totalAmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
-	if needToPayFee > 0 {
-		if len(outCoins) > 0 {
-			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
+	if totalAmount + realFee > candidateOutputCoinAmount {
+		if len(remainOutCoins) > 0 {
+			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(remainOutCoins, uint64(needToPayFee))
 			if err != nil {
 				return nil, 0, NewRPCError(GetOutputCoinError, err1)
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
+		} else {
+			return nil, 0, NewRPCError(RejectInvalidTxFeeError, errors.New("not enough coin for native fee"))
 		}
 	}
-	// convert to inputcoins
+	// convert to input coins
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	return inputCoins, realFee, nil
+}
+
+// chooseOutsCoinByKeyset returns list of input coins native token to estimate fee
+func (txService TxService) ChooseOutsCoinByKeysetForEstimateFee(
+	paymentInfos []*privacy.PaymentInfo, numBlock uint64,
+	keySet *incognitokey.KeySet, shardIDSender byte,
+) ([]*privacy.OutputCoin, []*privacy.OutputCoin, uint64, uint64, *RPCError) {
+	// estimate fee according to 8 recent block
+	if numBlock == 0 {
+		numBlock = 1000
+	}
+	// calculate total amount to send
+	totalAmount := uint64(0)
+	for _, receiver := range paymentInfos {
+		totalAmount += receiver.Amount
+	}
+	// get list outputcoins tx
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
+	if err != nil {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
+	if err != nil {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	if len(outCoins) == 0 && totalAmount > 0 {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
+	}
+	// Use Knapsack to get candiate output coin
+	candidateOutputCoins, remainOutCoins, totalCandidateOutCoinsAmount, err := txService.chooseBestOutCoinsToSpent(outCoins, totalAmount)
+	if err != nil {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, err)
+	}
+
+	overBalance := totalCandidateOutCoinsAmount - totalAmount
+	return candidateOutputCoins, remainOutCoins, totalCandidateOutCoinsAmount, overBalance, nil
 }
 
 // EstimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
