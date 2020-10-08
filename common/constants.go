@@ -79,7 +79,7 @@ const (
 	PendingRole    = "pending"
 	SyncingRole    = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole    = "waiting"
-	MaxShardNumber = 8
+	MaxShardNumber = 2
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -136,7 +136,7 @@ const (
 	PDEFeeWithdrawalRejectedStatus = 2
 
 	MinTxFeesOnTokenRequirement                             = 10000000000000 // 10000 prv, this requirement is applied from beacon height 87301 mainnet
-	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 87301          // milestone of beacon height, when apply min fee on token requirement
+	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 3              // milestone of beacon height, when apply min fee on token requirement
 
 	//portal
 	PortalCustodianDepositAcceptedStatus = 1

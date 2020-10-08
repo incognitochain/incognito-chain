@@ -152,8 +152,8 @@ func init() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
-		BeaconHeightBreakPointBurnAddr: 250000,
+		ConsensusV2Epoch:               100,
+		BeaconHeightBreakPointBurnAddr: 2,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
 		BTCDataFolderName:              TestnetBTCDataFolderName,
@@ -163,8 +163,8 @@ func init() {
 		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutCustodianReturnPubToken:       15 * time.Minute,
+				TimeOutWaitingPortingRequest:         15 * time.Minute,
 				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying

@@ -26,7 +26,7 @@ const (
 	NumberOfFixedBlockValidators  = 4
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
-	SpareTime                     = 1000 // in mili-second
+	SpareTime                     = 1000             // in mili-second
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
@@ -105,17 +105,17 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
+	TestnetEpoch            = 10
+	TestnetRandomTime       = 5
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
