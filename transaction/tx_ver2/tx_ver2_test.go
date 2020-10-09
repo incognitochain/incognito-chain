@@ -10,10 +10,12 @@ import (
 	"encoding/json"
 	"unicode"
 	"math/rand"
+	"bufio"
 	// "time"
 	// "strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -39,8 +41,13 @@ var (
 	minInputs = 1
 
 	maxTries = 100
-	numOfLoops = 10
+	numOfLoops = 1
+
+	positiveTestsFileName = "./testdata/accepted.txt"
+	negativeTestsFileName = "./testdata/rejected.txt"
+	b58 = base58.Base58Check{}
 )
+// variables for initializing stateDB for test
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
 	emptyRoot           = common.HexToHash(common.HexEmptyRoot)
@@ -392,18 +399,86 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		if err!=nil{
 			panic(err)
 		}
+		dumpTransaction(tx, positiveTestsFileName)
 
 		// first, test the json marshaller
 		testTxV2JsonMarshaler(tx, 2, dummyDB, t)
 
 		// testTxV2DeletedProof(tx, t)
-		// testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
+		testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
 		// testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
 		// testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
 		// testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
 		// testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
 		_,_ = isValid,err
 	}
+}
+
+func dumpTransaction(tx *Tx, filename string){
+	file, _ := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+	txBytes,_ := json.Marshal(tx)
+	b58Encoded := b58.Encode(txBytes, common.ZeroByte)
+	file.WriteString(b58Encoded)
+	// file.WriteString("\n")
+	jsonBytes, _, err := b58.Decode(b58Encoded)
+	if err!=nil{
+		panic("END")
+	}
+	_=jsonBytes
+}
+
+func TestPremadeTransactions(t *testing.T){
+	positiveTestFile, err := os.Open(positiveTestsFileName)
+	if err!=nil{
+		fmt.Println("Cannot open testdata (+)")
+		return
+	}
+	defer positiveTestFile.Close()
+	scanner := bufio.NewScanner(positiveTestFile)
+    for scanner.Scan() {
+        b58EncodedTx := scanner.Text()
+        jsonBytes, _, err := b58.Decode(b58EncodedTx)
+        assert.Equal(t, nil, err)
+    	tx := &Tx{}
+    	err = json.Unmarshal(jsonBytes, tx)    	
+    	assert.Equal(t, nil, err)
+    	isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
+		assert.Equal(t,nil,err)
+		assert.Equal(t,true,isValid)
+		isValid,err = tx.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, true, nil, nil)
+		assert.Equal(t,nil,err)
+		assert.Equal(t,true,isValid)
+		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		assert.Equal(t,nil,err)
+	}
+    // negative
+    negativeTestsFile, err := os.Open(negativeTestsFileName)
+    if err!=nil{
+		fmt.Println("Cannot open testdata (-)")
+		return
+	}
+	defer negativeTestsFile.Close()
+	scanner = bufio.NewScanner(negativeTestsFile)
+    for scanner.Scan() {
+        b58EncodedTx := scanner.Text()
+        jsonBytes, _, err := b58.Decode(b58EncodedTx)
+        assert.Equal(t, nil, err)
+    	tx := &Tx{}
+    	err = json.Unmarshal(jsonBytes, tx)
+    	assert.Equal(t, nil, err)
+    	isValid,_ := tx.ValidateSanityData(nil,nil,nil,0)
+		if !isValid{
+			continue
+		}
+		assert.Equal(t,false,isValid)
+		isValid,_ = tx.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, shardID, true, nil, nil)
+		if !isValid{
+			continue
+		}
+		assert.Equal(t,false,isValid)
+		err = tx.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+		assert.NotEqual(t,nil,err)
+    }
 }
 
 func testTxV2DeletedProof(txv2 *Tx, t *testing.T){
@@ -440,6 +515,7 @@ func testTxV2DuplicateInput(db *statedb.StateDB, inputCoins []coin.PlainCoin, pa
 	// validate should reject due to Verify() in PaymentProofV2
 	isValid,_ = malTx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,false,isValid)
+	dumpTransaction(malTx, negativeTestsFileName)
 }
 
 func testTxV2InvalidFee(db *statedb.StateDB, inputCoins []coin.PlainCoin, paymentInfoOut []*key.PaymentInfo, t *testing.T){
@@ -540,6 +616,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	// verify must fail
 	assert.Equal(t,false,isValid)
 	// fmt.Printf("Fake output (wrong amount) -> %v\n",err)
+	dumpTransaction(txv2, negativeTestsFileName)
 	// undo the tampering
 	prvOutput.SetBytes(savedCoinBytes)
 	outs[0] = prvOutput
@@ -575,6 +652,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	// verify must fail
 	assert.Equal(t,false,isValid)
 	// fmt.Printf("Fake output (wrong receiving OTA) -> %v\n",err)
+	dumpTransaction(txv2, negativeTestsFileName)
 	// undo the tampering
 	prvOutput.SetBytes(savedCoinBytes)
 	outs[0] = prvOutput
