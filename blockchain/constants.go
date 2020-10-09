@@ -117,11 +117,11 @@ const (
 	TestnetAssignOffset     = 2
 	TestnetMaxSwapOrAssign  = 1
 
-	TestNetShardCommitteeSize     = 4
-	TestNetMinShardCommitteeSize  = 4
+	TestNetShardCommitteeSize     = 8
+	TestNetMinShardCommitteeSize  = 8
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
