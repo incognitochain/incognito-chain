@@ -6,12 +6,13 @@ import (
 )
 
 type RandomCommitmentAndPublicKeyResult struct {
-	CommitmentIndices  []uint64 `json:"CommitmentIndices"`
+	CommitmentIndices   []uint64 `json:"CommitmentIndices"`
 	PublicKeys 			[]string `json:"PublicKeys"`
-	Commitments        []string `json:"Commitments"`
+	Commitments         []string `json:"Commitments"`
+	AssetTags	        []string `json:"AssetTags"`
 }
 
-func NewRandomCommitmentAndPublicKeyResult(commitmentIndices []uint64, publicKeys, commitments [][]byte) *RandomCommitmentAndPublicKeyResult {
+func NewRandomCommitmentAndPublicKeyResult(commitmentIndices []uint64, publicKeys, commitments, assetTags [][]byte) *RandomCommitmentAndPublicKeyResult {
 	result := &RandomCommitmentAndPublicKeyResult{
 		CommitmentIndices:   commitmentIndices,
 	}
@@ -26,6 +27,12 @@ func NewRandomCommitmentAndPublicKeyResult(commitmentIndices []uint64, publicKey
 		tempPublicKeys = append(tempPublicKeys, base58.Base58Check{}.Encode(pubkey, common.ZeroByte))
 	}
 	result.PublicKeys = tempPublicKeys
+
+	tepmAssetTags := make([]string, 0)
+	for _, a := range assetTags {
+		tepmAssetTags = append(tepmAssetTags, base58.Base58Check{}.Encode(a, common.ZeroByte))
+	}
+	result.AssetTags = tepmAssetTags
 
 	return result
 }

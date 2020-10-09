@@ -412,12 +412,12 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 		}
 	}
 
-	commitmentIndices, publicKeys, commitments, err2 := httpServer.txService.RandomCommitmentsAndPublicKeys(paymentAddressStr, int(numOutputs), tokenID)
+	commitmentIndices, publicKeys, commitments, assetTags, err2 := httpServer.txService.RandomCommitmentsAndPublicKeys(paymentAddressStr, int(numOutputs), tokenID)
 	if err2 != nil {
 		return nil, err2
 	}
 
-	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments)
+	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments, assetTags)
 	return result, nil
 }
 

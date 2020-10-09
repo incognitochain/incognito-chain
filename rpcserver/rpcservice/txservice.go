@@ -1480,18 +1480,18 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 	return commitmentIndexs, myCommitmentIndexs, commitments, nil
 }
 
-func (txService TxService) RandomCommitmentsAndPublicKeys(paymentAddressStr string, numOutputs int, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, *RPCError) {
+func (txService TxService) RandomCommitmentsAndPublicKeys(paymentAddressStr string, numOutputs int, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, [][]byte, *RPCError) {
 	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
 	if err != nil {
 		Logger.log.Debugf("handleRandomCommitmentsAndPublicKeys result: %+v, err: %+v", nil, err)
-		return nil, nil, nil, NewRPCError(UnexpectedError, err)
+		return nil, nil, nil, nil, NewRPCError(UnexpectedError, err)
 	}
 
-	indices, publicKeys, commitments, err := txService.BlockChain.RandomCommitmentsAndPublicKeysProcess(numOutputs, shardIDSender, tokenID)
+	indices, publicKeys, commitments, assetTags, err := txService.BlockChain.RandomCommitmentsAndPublicKeysProcess(numOutputs, shardIDSender, tokenID)
 	if err != nil{
-		return nil, nil, nil, NewRPCError(UnexpectedError, err)
+		return nil, nil, nil, nil, NewRPCError(UnexpectedError, err)
 	}
-	return indices, publicKeys, commitments, nil
+	return indices, publicKeys, commitments, assetTags, nil
 }
 
 func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, transaction.TransactionToken, *RPCError) {
