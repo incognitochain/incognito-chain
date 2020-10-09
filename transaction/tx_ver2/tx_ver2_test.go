@@ -83,6 +83,7 @@ var _ = func() (_ struct{}) {
 
 	inactiveLogger = common.NewBackend(nil).Logger("test", true)
 	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
+	activeLogger = inactiveLogger
 	activeLogger.SetLevel(common.LevelDebug)
 	privacy.LoggerV1.Init(inactiveLogger)
 	privacy.LoggerV2.Init(activeLogger)
@@ -329,6 +330,39 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 			nil,
 			[]byte{},
 		)
+
+		initializingParamsAgain := tx_generic.NewTxPrivacyInitParams(dummyPrivateKeys[0],
+			paymentInfoOut,inputCoins,
+			sumIn-sumOut,hasPrivacyForPRV,
+			nil,
+			&common.PRVCoinID,
+			nil,
+			[]byte{},
+		)
+		jsb, _ := json.Marshal(initializingParamsAgain)
+		fmt.Printf("param : %s\n", string(jsb))
+
+		var inputCoinsAgain [][]byte
+		for _, c := range initializingParams.InputCoins{
+			inputCoinsAgain = append(inputCoinsAgain, c.Bytes())
+		}
+		jsb, _ = json.Marshal(inputCoinsAgain)
+		fmt.Printf("dumped inputs : %s\n", string(jsb))
+
+		var dumpedPastCoins [][]byte
+		var dumpedIndexes []uint64
+		for _, c := range pastCoins{
+			dumpedPastCoins = append(dumpedPastCoins, c.Bytes())
+			ind, err := statedb.GetOTACoinIndex(dummyDB, common.PRVCoinID, c.GetPublicKey().ToBytesS())
+			assert.Equal(t, nil, err)
+			dumpedIndexes = append(dumpedIndexes, ind.Uint64())
+		}
+		jsb, _ = json.Marshal(dumpedPastCoins)
+		fmt.Printf("dumped coins in db : %s\n", string(jsb))
+		jsb, _ = json.Marshal(dumpedIndexes)
+		fmt.Printf("dumped indexes: %s\n", string(jsb))
+
+
 		// creating the TX object
 		tx := &Tx{}
 		// actually making the TX
