@@ -395,6 +395,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		Logger.log.Error(err)
 		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
+	//TODO: @tin
+	// Verify Transactions From ShardBlock here
 
 	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
