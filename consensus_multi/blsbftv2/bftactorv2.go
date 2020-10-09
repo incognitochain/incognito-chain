@@ -454,6 +454,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		v.isValid = true
 		e.voteHistory[v.block.GetHeight()] = v.block
 		e.Logger.Info(e.ChainKey, "sending vote...")
+		go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
 
