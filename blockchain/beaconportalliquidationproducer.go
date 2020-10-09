@@ -383,7 +383,7 @@ func buildInstForLiquidationTopPercentileExchangeRates(
 	insts := [][]string{}
 	exchangeRate := currentPortalState.FinalExchangeRatesState
 	if exchangeRate == nil {
-		Logger.log.Errorf("Exchange key %+v rate not found")
+		Logger.log.Errorf("Final exchange rate is empty")
 		return [][]string{}, nil
 	}
 
@@ -484,6 +484,120 @@ func buildInstForLiquidationTopPercentileExchangeRates(
 	}
 
 	return insts, nil
+}
+
+// TODO:
+func (blockchain *BlockChain) buildInstForLiquidationByExchangeRatesV3(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) ([][]string, error) {
+	//if currentPortalState == nil {
+	//	Logger.log.Errorf("[LIQUIDATIONBYRATES] Current portal state is null")
+	//	return [][]string{}, nil
+	//}
+	//if len(currentPortalState.CustodianPoolState) == 0 {
+	//	return [][]string{}, nil
+	//}
+	//exchangeRate := currentPortalState.FinalExchangeRatesState
+	//if exchangeRate == nil {
+	//	Logger.log.Errorf("[LIQUIDATIONBYRATES] Final exchange rate is empty")
+	//	return [][]string{}, nil
+	//}
+	//
+	//insts := [][]string{}
+	//custodianPoolState := currentPortalState.CustodianPoolState
+	//sortedCustodianStateKeys := make([]string, 0)
+	//for key := range custodianPoolState {
+	//	sortedCustodianStateKeys = append(sortedCustodianStateKeys, key)
+	//}
+	//sort.Strings(sortedCustodianStateKeys)
+	//
+	//for _, custodianKey := range sortedCustodianStateKeys {
+	//	custodianState := custodianPoolState[custodianKey]
+	//	tpRatios, _, err := calAndCheckLiquidationRatioV3(currentPortalState, custodianState, exchangeRate, portalParams)
+	//	if err != nil {
+	//		Logger.log.Errorf("Error when calculating and checking tp ratio %v", err)
+	//		continue
+	//	}
+	//
+	//	liquidationRatios := map[string]metadata.LiquidationByRatesDetailV3{}
+	//
+	//	// reject waiting redeem requests that matching with liquidated custodians
+	//	if len(tpRatios) > 0 {
+	//		sortedTPRatioKeys := make([]string, 0)
+	//		for key := range tpRatios {
+	//			sortedTPRatioKeys = append(sortedTPRatioKeys, key)
+	//		}
+	//		sort.Strings(sortedTPRatioKeys)
+	//		for _, pTokenID := range sortedTPRatioKeys {
+	//			tpRatioDetail := tpRatios[pTokenID]
+	//			if tpRatioDetail.LiquidatedPubTokenAmount > 0 {
+	//				// check and build instruction for waiting redeem request
+	//				instsFromRedeemRequest, err := checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
+	//					beaconHeight,
+	//					currentPortalState,
+	//					custodianState,
+	//					pTokenID,
+	//					portalParams,
+	//				)
+	//				if err != nil {
+	//					Logger.log.Errorf("Error when check and build instruction from redeem request %v\n", err)
+	//					continue
+	//				}
+	//				if len(instsFromRedeemRequest) > 0 {
+	//					Logger.log.Infof("There is % tpRatioDetail instructions for tp exchange rate for redeem request", len(instsFromRedeemRequest))
+	//					insts = append(insts, instsFromRedeemRequest...)
+	//				}
+	//			}
+	//		}
+	//
+	//		remainUnlockAmounts := map[string]uint64{}
+	//		for _, pTokenID := range sortedTPRatioKeys {
+	//			tpRatioDetail := tpRatios[pTokenID]
+	//			liquidatedPubToken := GetTotalHoldPubTokenAmountExcludeMatchedRedeemReqs(currentPortalState, custodianState, pTokenID)
+	//			if liquidatedPubToken <= 0 {
+	//				continue
+	//			}
+	//
+	//			// calculate liquidated amount and remain unlocked amount for custodian
+	//			liquidatedAmountInPRV, remainUnlockAmount, err := CalLiquidatedCollateralAmount(
+	//				currentPortalState,
+	//				custodianKey,
+	//				liquidatedPubToken,
+	//				pTokenID,
+	//				exchangeRate,
+	//				portalParams)
+	//			if err != nil {
+	//				Logger.log.Errorf("Error when calculating unlock collateral amount %v - tokenID %v - Custodian address %v\n",
+	//					err, pTokenID, custodianState.GetIncognitoAddress())
+	//				continue
+	//			}
+	//
+	//			remainUnlockAmounts[pTokenID] += remainUnlockAmount
+	//			liquidationRatios[pTokenID] = metadata.LiquidationByRatesDetailV3{
+	//				Ratio:                            tpRatioDetail.Ratio,
+	//				LiquidatedPubTokenAmount:         0,
+	//				LiquidatedCollateralAmount:       0,
+	//				LiquidatedTokenCollateralsAmount: nil,
+	//			}
+	//		}
+	//
+	//		if len(liquidationRatios) > 0 {
+	//			//update current portal state
+	//			updateCurrentPortalStateOfLiquidationExchangeRates(currentPortalState, custodianKey, custodianState, liquidationRatios, remainUnlockAmounts)
+	//			inst := buildTopPercentileExchangeRatesLiquidationInst(
+	//				custodianState.GetIncognitoAddress(),
+	//				metadata.PortalLiquidateTPExchangeRatesMeta,
+	//				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+	//				liquidationRatios,
+	//				remainUnlockAmounts,
+	//			)
+	//			insts = append(insts, inst)
+	//		}
+	//	}
+	//}
+
+	return [][]string{}, nil
 }
 
 

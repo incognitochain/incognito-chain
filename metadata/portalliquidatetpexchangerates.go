@@ -24,3 +24,20 @@ type LiquidateTopPercentileExchangeRatesStatus struct {
 func NewLiquidateTopPercentileExchangeRatesStatus(custodianAddress string, status byte, rates map[string]LiquidateTopPercentileExchangeRatesDetail) *LiquidateTopPercentileExchangeRatesStatus {
 	return &LiquidateTopPercentileExchangeRatesStatus{CustodianAddress: custodianAddress, Status: status, Rates: rates}
 }
+
+
+
+/*
+	 Liquidation by exchange rates v3
+ */
+type LiquidationByRatesDetailV3 struct {
+	Ratio                            uint64 // ratio between total locked collaterals and holding public tokens when liquidation occurs
+	LiquidatedPubTokenAmount         uint64
+	LiquidatedCollateralAmount       uint64            // PRV collateral
+	LiquidatedTokenCollateralsAmount map[string]uint64 // externalTokenID: amount
+}
+
+type PortalLiquidationByRatesContent struct {
+	CustodianIncAddress string
+	Details             map[string]LiquidationByRatesDetailV3 // portalTokenID: liquidation infos
+}

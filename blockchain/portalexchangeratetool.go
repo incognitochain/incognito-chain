@@ -55,7 +55,7 @@ func NewPortalExchangeRateTool(
 
 // convert converts amount in nano unit from tokenIDFrom to tokenIDTo
 // result in nano unit (smallest unit of token)
-func (t *PortalExchangeRateTool) Convert (tokenIDFrom string, tokenIDTo string, amount uint64) (uint64, error){
+func (t *PortalExchangeRateTool) Convert(tokenIDFrom string, tokenIDTo string, amount uint64) (uint64, error) {
 	rateFrom := t.Rates[tokenIDFrom]
 	rateTo := t.Rates[tokenIDTo]
 	if rateFrom.Rate == 0 || rateTo.Rate == 0 {
@@ -71,7 +71,7 @@ func (t *PortalExchangeRateTool) Convert (tokenIDFrom string, tokenIDTo string, 
 }
 
 // ConvertToUSDT converts amount to usdt amount (in nano)
-func (t *PortalExchangeRateTool) ConvertToUSDT (tokenIDFrom string, amount uint64) (uint64, error){
+func (t *PortalExchangeRateTool) ConvertToUSDT(tokenIDFrom string, amount uint64) (uint64, error) {
 	rateFrom := t.Rates[tokenIDFrom]
 	if rateFrom.Rate == 0 {
 		return 0, errors.New("invalid exchange rate to convert to usdt")
@@ -84,7 +84,7 @@ func (t *PortalExchangeRateTool) ConvertToUSDT (tokenIDFrom string, amount uint6
 }
 
 // ConvertToUSDT converts amount from usdt to token amount (in nano)
-func (t *PortalExchangeRateTool) ConvertFromUSDT (tokenIDTo string, amount uint64) (uint64, error){
+func (t *PortalExchangeRateTool) ConvertFromUSDT(tokenIDTo string, amount uint64) (uint64, error) {
 	rateTo := t.Rates[tokenIDTo]
 	if rateTo.Rate == 0 {
 		return 0, errors.New("invalid exchange rate to convert to usdt")
@@ -94,4 +94,20 @@ func (t *PortalExchangeRateTool) ConvertFromUSDT (tokenIDTo string, amount uint6
 	res = res.Div(res, new(big.Int).SetUint64(rateTo.Rate))
 
 	return res.Uint64(), nil
+}
+
+func (t *PortalExchangeRateTool) ConvertMapTokensToUSDT(tokens map[string]uint64) (uint64, error) {
+	if len(tokens) == 0 {
+		return 0, nil
+	}
+
+	res := uint64(0)
+	for tokenID, amount := range tokens {
+		amountInUSDT, err := t.ConvertToUSDT(tokenID, amount)
+		if err != nil {
+			return 0, nil
+		}
+		res += amountInUSDT
+	}
+	return res, nil
 }
