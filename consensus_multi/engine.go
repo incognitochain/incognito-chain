@@ -57,7 +57,7 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]
 				if ok {
-					if chainValidator[validator.State.ChainID].State.Role == common.PendingRole {
+					if validator.State.Role == common.CommitteeRole {
 						chainValidator[validator.State.ChainID] = validator
 					}
 				} else {
@@ -66,6 +66,8 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 			}
 		}
 	}
+
+	//fmt.Println("GetOneValidatorForEachConsensusProcess", chainValidator[1])
 	return chainValidator
 }
 
@@ -100,6 +102,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 		//group all validator as committee by chainID
 		if role == common.CommitteeRole {
+			//fmt.Println("Consensus", chainID, validator.PrivateSeed, validator.State)
 			ValidatorGroup[chainID] = append(ValidatorGroup[chainID], *validator)
 		}
 	}
@@ -135,6 +138,13 @@ func (s *Engine) WatchCommitteeChange() {
 		s.BFTProcess[chainID].Start()
 		miningProc = s.BFTProcess[chainID]
 	}
+
+	for chainID, proc := range s.BFTProcess {
+		if _, ok := ValidatorGroup[chainID]; !ok {
+			proc.Stop()
+		}
+	}
+
 	s.currentMiningProcess = miningProc
 }
 
