@@ -28,18 +28,18 @@ func getHardcodedMainNetGenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
 }
 
 func getHardcodedTestNet3GenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
-	// Block 1860096 from bitcoin testnet3
-	genesisHash, _ := chainhash.NewHashFromStr("000000000000091e4663b65c1f14c72269e31e43b49057456f285c02ff991e7b")
-	prevBlkHash, _ := chainhash.NewHashFromStr("000000000000009a861f511368483704df637fcdf0a7a1789442e9ae7fe34e61")
-	merkleRoot, _ := chainhash.NewHashFromStr("5d1569f139880f8b951e5700ab0de4c3cfffe8c02bf692213634dcdf37a4f67a")
+	// Block 1861700 from bitcoin testnet3
+	genesisHash, _ := chainhash.NewHashFromStr("0000000000000242af61914b2f14774dbcb5c1fa1742dde2114a3166115c9a15")
+	prevBlkHash, _ := chainhash.NewHashFromStr("000000000000004dede4052d636fcc863d68472a9dab2f9b715feb66c318b136")
+	merkleRoot, _ := chainhash.NewHashFromStr("bb727b9816915a59c3bd882fd5f5fbac26b421c3146cdb3800d77c60700f4fc5")
 	var genesisBlock = wire.MsgBlock{
 		Header: wire.BlockHeader{
 			Version:    int32(536870912),
 			PrevBlock:  *prevBlkHash,
 			MerkleRoot: *merkleRoot,
-			Timestamp:  time.Unix(1602205306, 0),
-			Bits:       uint32(436884112),
-			Nonce:      uint32(164276898),
+			Timestamp:  time.Unix(1602389268, 0),
+			Bits:       uint32(436376740),
+			Nonce:      uint32(3910009057),
 		},
 		Transactions: []*wire.MsgTx{},
 	}
@@ -68,24 +68,24 @@ func getHardcodedTestNet3GenesisBlockForInc2() (*wire.MsgBlock, *chainhash.Hash)
 func putGenesisBlockIntoChainParams(
 	genesisHash *chainhash.Hash,
 	msgBlk *wire.MsgBlock,
-	chainParams *chaincfg.Params,
+	chainParams chaincfg.Params,
 ) *chaincfg.Params {
 	chainParams.GenesisBlock = msgBlk
 	chainParams.GenesisHash = genesisHash
-	return chainParams
+	return &chainParams
 }
 
 func GetMainNetParams() *chaincfg.Params {
 	genesisBlock, genesisHash := getHardcodedMainNetGenesisBlock()
-	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, &chaincfg.MainNetParams)
+	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.MainNetParams)
 }
 
 func GetTestNet3Params() *chaincfg.Params {
 	genesisBlock, genesisHash := getHardcodedTestNet3GenesisBlock()
-	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, &chaincfg.TestNet3Params)
+	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.TestNet3Params)
 }
 
 func GetTestNet3ParamsForInc2() *chaincfg.Params {
 	genesisBlock, genesisHash := getHardcodedTestNet3GenesisBlockForInc2()
-	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, &chaincfg.TestNet3Params)
+	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.TestNet3Params)
 }
