@@ -218,6 +218,8 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
+	//TODO: @tin
+	// For upgrading to dynamic committee size, move activeshards to committeestate package
 	numberOfActiveShards := blockchain.config.ChainParams.ActiveShards
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
@@ -247,13 +249,11 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		rewardForIncDAO := &map[common.Hash]uint64{}
 		rewardForCustodian := &map[common.Hash]uint64{}
 		if curView.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-			//TODO: @tin
-			// For upgrading to dynamic committee size, move activeshards to committeestate package
 			lenShardCommittees := len(curView.beaconCommitteeEngine.GetShardCommittee()[byte(ID)])
 			rewardForBeacon, rewardForIncDAO, rewardForCustodian, err = splitRewardV2(&totalRewards[ID],
 				numberOfActiveShards, percentForIncognitoDAO,
 				isSplitRewardForCustodian, percentCustodianRewards,
-				lenBeaconCommittees, lenShardCommittees, curView.ActiveShards)
+				uint64(lenBeaconCommittees), uint64(lenShardCommittees))
 		} else {
 			rewardForBeacon, rewardForIncDAO, rewardForCustodian, err = splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO, isSplitRewardForCustodian, percentCustodianRewards)
 		}
@@ -370,7 +370,7 @@ func splitRewardV2(
 	devPercent int,
 	isSplitRewardForCustodian bool,
 	percentCustodianRewards uint64,
-	lenBeaconComittees, lenShardCommittees, amountShards int,
+	lenBeaconComittees, lenShardCommittees uint64,
 ) (
 	*map[common.Hash]uint64,
 	*map[common.Hash]uint64,
@@ -382,13 +382,13 @@ func splitRewardV2(
 	rewardForIncDAO := map[common.Hash]uint64{}
 	rewardForCustodian := map[common.Hash]uint64{}
 	for key, value := range *totalReward {
-		totalRewardForDAOAndCustodians := uint64(devPercent) * value / uint64(100)
-		lenCommittees := lenShardCommittees + 2*lenBeaconComittees/amountShards
+		totalRewardForDAOAndCustodians := uint64(devPercent) * value / 100
+		lenCommittees := lenShardCommittees + 2*lenBeaconComittees/uint64(numberOfActiveShards)
 		totalRewardForShardAndBeaconValidators := value - totalRewardForDAOAndCustodians
-		rewardForBeacon[key] = totalRewardForShardAndBeaconValidators - uint64(lenShardCommittees)*(totalRewardForShardAndBeaconValidators/uint64(lenCommittees))
-		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
+		rewardForBeacon[key] = totalRewardForShardAndBeaconValidators - lenShardCommittees*totalRewardForShardAndBeaconValidators/lenCommittees
+		// Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
 		if isSplitRewardForCustodian {
-			rewardForCustodian[key] = uint64(percentCustodianRewards) * totalRewardForDAOAndCustodians / uint64(100)
+			rewardForCustodian[key] = percentCustodianRewards * totalRewardForDAOAndCustodians / 100
 			rewardForIncDAO[key] = totalRewardForDAOAndCustodians - rewardForCustodian[key]
 		} else {
 			rewardForIncDAO[key] = totalRewardForDAOAndCustodians
