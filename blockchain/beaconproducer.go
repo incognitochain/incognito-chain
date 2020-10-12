@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
+// TODO: @tin make private struct for duplicateKeyStakeInstruction
 type shardInstruction struct {
 	stakeInstructions             []*instruction.StakeInstruction
 	duplicateKeyStakeInstructions []*instruction.StakeInstruction
@@ -297,14 +298,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	unstakeInstructionFromShardBlock := []*instruction.UnstakeInstruction{}
 	swapInstructionFromShardBlock := [][]string{}
 	bridgeInstructions := [][]string{}
-	stakeBeaconPublicKeys := []string{}
 	stakeShardPublicKeys := []string{}
-	stakeBeaconTx := []string{}
 	stakeShardTx := []string{}
 	stakeShardRewardReceiver := []string{}
-	stakeBeaconRewardReceiver := []string{}
 	stakeShardAutoStaking := []bool{}
-	stakeBeaconAutoStaking := []bool{}
 	stopAutoStakingPublicKeys := []string{}
 	unstakingPublicKeys := []string{}
 	tempValidStakePublicKeys := []string{}
@@ -379,27 +376,15 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 		tempStakePublicKey = curView.GetValidStakers(tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
-		tempStakePublicKey = common.GetValidStaker(stakeBeaconPublicKeys, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
 
 		if len(tempStakePublicKey) > 0 {
-			if stakeInstruction.Chain == instruction.SHARD_INST {
-				stakeShardPublicKeys = append(stakeShardPublicKeys, tempStakePublicKey...)
-				for i, v := range stakeInstruction.PublicKeys {
-					if common.IndexOfStr(v, tempStakePublicKey) > -1 {
-						stakeShardTx = append(stakeShardTx, stakeInstruction.TxStakes[i])
-						stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakeInstruction.RewardReceivers[i])
-						stakeShardAutoStaking = append(stakeShardAutoStaking, stakeInstruction.AutoStakingFlag[i])
-					}
-				}
-			} else {
-				stakeBeaconPublicKeys = append(stakeBeaconPublicKeys, tempStakePublicKey...)
-				for i, v := range stakeInstruction.PublicKeys {
-					if common.IndexOfStr(v, tempStakePublicKey) > -1 {
-						stakeBeaconTx = append(stakeBeaconTx, stakeInstruction.TxStakes[i])
-						stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakeInstruction.RewardReceivers[i])
-						stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, stakeInstruction.AutoStakingFlag[i])
-					}
+			stakeShardPublicKeys = append(stakeShardPublicKeys, tempStakePublicKey...)
+			for i, v := range stakeInstruction.PublicKeys {
+				if common.IndexOfStr(v, tempStakePublicKey) > -1 {
+					stakeShardTx = append(stakeShardTx, stakeInstruction.TxStakes[i])
+					stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakeInstruction.RewardReceivers[i])
+					stakeShardAutoStaking = append(stakeShardAutoStaking, stakeInstruction.AutoStakingFlag[i])
 				}
 			}
 		}
@@ -438,16 +423,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 			stakeShardAutoStaking,
 		)
 		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, tempStakeShardInstruction)
-	}
-	if len(stakeBeaconPublicKeys) > 0 {
-		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeBeaconPublicKeys...)
-		tempStakeBeaconInstruction := instruction.NewStakeInstructionWithValue(
-			stakeBeaconPublicKeys,
-			instruction.BEACON_INST,
-			stakeBeaconTx, stakeBeaconRewardReceiver,
-			stakeBeaconAutoStaking,
-		)
-		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, tempStakeBeaconInstruction)
 	}
 
 	allCommitteeValidatorCandidate := []string{}

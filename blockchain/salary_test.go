@@ -796,58 +796,6 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	}
 }
 
-func TestBlockChain_addShardCommitteeReward(t *testing.T) {
-	sDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
-	totalRewardShard1_1 := make(map[common.Hash]uint64)
-	wantReward := uint64(1000)
-	totalRewardShard1_1[common.PRVCoinID] = wantReward
-	rewardInstShard1_1 := &metadata.ShardBlockRewardInfo{
-		Epoch:       1,
-		ShardReward: totalRewardShard1_1,
-	}
-	type args struct {
-		rewardStateDB             *statedb.StateDB
-		shardID                   byte
-		rewardInfoShardToProcess  *metadata.ShardBlockRewardInfo
-		committeeOfShardToProcess []incognitokey.CommitteePublicKey
-		rewardReceiver            map[string]string
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "candidate shard 1",
-			args: args{
-				rewardStateDB:             sDB,
-				shardID:                   1,
-				rewardInfoShardToProcess:  rewardInstShard1_1,
-				committeeOfShardToProcess: committeesKeys,
-				rewardReceiver:            rewardReceiver,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			blockchain := &BlockChain{}
-			if err := blockchain.addShardCommitteeReward(tt.args.rewardStateDB, tt.args.shardID, tt.args.rewardInfoShardToProcess, tt.args.committeeOfShardToProcess, tt.args.rewardReceiver); (err != nil) != tt.wantErr {
-				t.Errorf("addShardCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			rootHash, _ := sDB.Commit(true)
-			_ = sDB.Database().TrieDB().Commit(rootHash, false)
-		})
-	}
-	reward, err := statedb.GetCommitteeReward(sDB, committeesKeys[2].GetIncKeyBase58(), common.PRVCoinID)
-	if err != nil {
-		t.Errorf("addShardCommitteeReward() error = %v, wantErr %v", err, nil)
-	}
-	if reward != wantReward/3 {
-		t.Errorf("addShardCommitteeReward() reward = %v, wantReward %v", reward, wantReward/3)
-	}
-}
-
 func Test_splitRewardV2(t *testing.T) {
 
 	hash, _ := common.Hash{}.NewHashFromStr("123")
