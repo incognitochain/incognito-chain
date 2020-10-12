@@ -195,17 +195,17 @@ func init() {
 		CommitteeStateV2Height:           1,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{
-				MinRange:     20 * TestnetEpoch / 100,
+				MinPercent:   20 * TestnetEpoch / 100,
 				Time:         int64(TestnetEpoch * 2.5 * TestNetMinBeaconBlkInterval.Seconds()),
 				ForceUnstake: false,
 			},
 			{
-				MinRange:     35 * TestnetEpoch / 100,
+				MinPercent:   35 * TestnetEpoch / 100,
 				Time:         int64(TestnetEpoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
 				ForceUnstake: false,
 			},
 			{
-				MinRange:     70 * TestnetEpoch / 100,
+				MinPercent:   70 * TestnetEpoch / 100,
 				Time:         int64(TestnetEpoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
 				ForceUnstake: true,
 			},
@@ -297,17 +297,17 @@ func init() {
 		CommitteeStateV2Height:           1,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{
-				MinRange:     20 * Testnet2Epoch / 100,
+				MinPercent:   20 * Testnet2Epoch / 100,
 				Time:         int64(Testnet2Epoch * 2.5 * TestNetMinBeaconBlkInterval.Seconds()),
 				ForceUnstake: false,
 			},
 			{
-				MinRange:     35 * Testnet2Epoch / 100,
+				MinPercent:   35 * Testnet2Epoch / 100,
 				Time:         int64(Testnet2Epoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
 				ForceUnstake: false,
 			},
 			{
-				MinRange:     70 * Testnet2Epoch / 100,
+				MinPercent:   70 * Testnet2Epoch / 100,
 				Time:         int64(Testnet2Epoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
 				ForceUnstake: true,
 			},
@@ -398,17 +398,17 @@ func init() {
 		CommitteeStateV2Height:           1e9,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{
-				MinRange:     800,
+				MinPercent:   800,
 				Time:         302400,
 				ForceUnstake: false,
 			},
 			{
-				MinRange:     1500,
+				MinPercent:   1500,
 				Time:         302400 * 2,
 				ForceUnstake: false,
 			},
 			{
-				MinRange:     3000,
+				MinPercent:   3000,
 				Time:         302400 * 2,
 				ForceUnstake: true,
 			},

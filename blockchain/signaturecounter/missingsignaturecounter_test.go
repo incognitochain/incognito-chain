@@ -16,18 +16,8 @@ var (
 	}
 	samplePenaltyRule = []Penalty{
 		{
-			MinRange:     800,
-			Time:         302400,
-			ForceUnstake: false,
-		},
-		{
-			MinRange:     1500,
-			Time:         302400 * 2,
-			ForceUnstake: false,
-		},
-		{
-			MinRange:     3001,
-			Time:         302400 * 2,
+			MinPercent:   50,
+			Time:         0,
 			ForceUnstake: true,
 		},
 	}
@@ -41,8 +31,8 @@ var _ = func() (_ struct{}) {
 
 func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 	type fields struct {
-		missingSignature           map[string]uint
-		aggregatedMissingSignature map[string]uint
+		missingSignature           map[string]MissingSignature
+		aggregatedMissingSignature map[string]MissingSignature
 	}
 	type args struct {
 		data       string
@@ -61,43 +51,58 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "invalid input 1",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"1I6pNHXngYdBKspO08xZvk3fasdklaw;dkl;alwkd;lawkdl;kawl;dkkAaRQ9VpD+GhmwfT2b8p3PIYzouW4q/BFDxinllrIwUqq+XpugEiDjdmpfsHCAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2],\"AggSig\":\"LuFMS0uCziQOC/AL83xZb0Mortu+3lvx5mZ/kCtyJWE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{},
+				missingSignature: map[string]MissingSignature{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid input 2",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"1I6pNHXngYdBKspO08xZvk3fkAaRQ9VpD+GhmwfT2b8p3PIYzouW4q/BFDxinllrIwUqq+XpugEiDjdmpfsHCAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2],\"AggSig\":\"LuFMS0uCziQOC/AL83xZb0Mortuawdawdawd+3lvx5mZ/kCtyJWE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{},
+				missingSignature: map[string]MissingSignature{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid input, committee slot 3 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"1I6pNHXngYdBKspO08xZvk3fkAaRQ9VpD+GhmwfT2b8p3PIYzouW4q/BFDxinllrIwUqq+XpugEiDjdmpfsHCAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2],\"AggSig\":\"LuFMS0uCziQOC/AL83xZb0Mortu+3lvx5mZ/kCtyJWE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[3]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
 				},
 			},
 			wantErr: false,
@@ -105,15 +110,30 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 3 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"4lEXt6Z5RwRJmG7vK/6q2pLwGc0EcWi3Pw2D+rYvwBM/3YwgDjElAnH8Qb2OrAX4Lx3APk0Wo3oHYp1eO9hj7gA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2],\"AggSig\":\"B93JfdZq3Q110tbR4fC7BWQim3NYICJRG/DZ3xlHw04=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[3]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
 				},
 			},
 			wantErr: false,
@@ -121,15 +141,30 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 2 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"LGcjV69UWOBv90wEVFgeq8pMNRWXaxqVPr82g1wqWA5XMmbdq7TZzECtPJl8pCkrSyzQnGVduAVaODGQrykTNQE=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,3],\"AggSig\":\"Flod04E7A67JW4uPp43RGGLJR6j5ZnS8ZMrmz7MdE/A=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[2]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
 				},
 			},
 			wantErr: false,
@@ -137,15 +172,30 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 1 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"HrpGEaXOUzydou9S9YE96OD48dSAtgI3zzIC2eisytQJJhtj0MgEwqU9MP1HswRk87NW3msE8w7Uyi7C+npWogA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"HTraoh3hx22W3iRl3SB9a7kv+p1N+ESGodAp28yjRDk=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[1]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
 				},
 			},
 			wantErr: false,
@@ -153,15 +203,30 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 1 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"uSpMynim78XpsufwR6imkWcNKT6c5wwz4Nyb1GR+d3FplCfBwSQXNCd3bCgNGhieBuwGqSg5C5KG+zThOpY4rAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"ocFaeoEmrzq0Ivg1N5gAvkuW4xsyDnC+NQiDUnYqQPE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[1]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
 				},
 			},
 			wantErr: false,
@@ -169,15 +234,30 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 1 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]uint),
+				missingSignature: make(map[string]MissingSignature),
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"5fp+nanu4VJoVIU5ZpA+uRASzkrjJgZMZ5eZOfYY5kwRWfnhWW4HlZhZdJ+dw2nzVzoR0KTyiG4Hno+TfMPvewE=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"idOzTlb8oEoL6VsZ7UsQdPiFVf8HUX4Pad+8xxlE1/0=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
 				committees: committeePublicKeyStructs,
 			},
 			wantFields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[1]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
 				},
 			},
 			wantErr: false,
@@ -185,7 +265,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &SignatureCounter{
+			s := &MissingSignatureCounter{
 				missingSignature: tt.fields.missingSignature,
 				lock:             new(sync.RWMutex),
 			}
@@ -196,8 +276,10 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 					t.Errorf("AddMissingSignature() missingSignature = got %v, want %v", s.missingSignature, tt.wantFields.missingSignature)
 				}
 			}
-			for k, _ := range s.missingSignature {
-				aggregatedMissingSignature[k] += 1
+			for k, v := range s.missingSignature {
+				if v.Missing != 0 {
+					aggregatedMissingSignature[k] += 1
+				}
 			}
 		})
 	}
@@ -211,7 +293,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			t.Errorf("AddMissingSignature() missingSignature NOT FOUND want %v ", wantK)
 		} else {
 			if wantV != gotV {
-				t.Errorf("AddMissingSignature() number of missingSignature got = %+v, want = %v ", gotV, wantK)
+				t.Errorf("AddMissingSignature() number of missingSignature got = %+v, want = %v ", gotV, wantV)
 			}
 		}
 	}
@@ -219,7 +301,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 
 func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 	type fields struct {
-		missingSignature map[string]uint
+		missingSignature map[string]MissingSignature
 		penalties        []Penalty
 	}
 	tests := []struct {
@@ -230,160 +312,60 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 		{
 			name: "no penalty",
 			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 799,
-					committeePublicKeys[1]: 0,
-					committeePublicKeys[2]: 798,
-					committeePublicKeys[3]: 1,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 49,
+						Total:   100,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 149,
+						Total:   300,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 239,
+						Total:   480,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 249,
+						Total:   500,
+					},
 				},
 				penalties: samplePenaltyRule,
 			},
 			want: map[string]Penalty{},
 		},
 		{
-			name: "penalty range 800",
+			name: "penalty range >= 50",
 			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 799,
-					committeePublicKeys[1]: 800,
-					committeePublicKeys[2]: 798,
-					committeePublicKeys[3]: 801,
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 51,
+						Total:   100,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 149,
+						Total:   300,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 239,
+						Total:   480,
+					},
+					committeePublicKeys[3]: MissingSignature{
+						Missing: 250,
+						Total:   500,
+					},
 				},
 				penalties: samplePenaltyRule,
 			},
 			want: map[string]Penalty{
-				committeePublicKeys[1]: samplePenaltyRule[0],
+				committeePublicKeys[0]: samplePenaltyRule[0],
 				committeePublicKeys[3]: samplePenaltyRule[0],
-			},
-		},
-		{
-			name: "penalty range 800, 1500",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 1500,
-					committeePublicKeys[1]: 800,
-					committeePublicKeys[2]: 1499,
-					committeePublicKeys[3]: 1501,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[1],
-				committeePublicKeys[1]: samplePenaltyRule[0],
-				committeePublicKeys[2]: samplePenaltyRule[0],
-				committeePublicKeys[3]: samplePenaltyRule[1],
-			},
-		},
-		{
-			name: "penalty range 1500, 3000",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 1500,
-					committeePublicKeys[1]: 3000,
-					committeePublicKeys[2]: 3001,
-					committeePublicKeys[3]: 2999,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[1],
-				committeePublicKeys[1]: samplePenaltyRule[1],
-				committeePublicKeys[2]: samplePenaltyRule[2],
-				committeePublicKeys[3]: samplePenaltyRule[1],
-			},
-		},
-		{
-			name: "penalty range 800, 1500, 3000",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 800,
-					committeePublicKeys[1]: 3000,
-					committeePublicKeys[2]: 3001,
-					committeePublicKeys[3]: 2999,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[0],
-				committeePublicKeys[1]: samplePenaltyRule[1],
-				committeePublicKeys[2]: samplePenaltyRule[2],
-				committeePublicKeys[3]: samplePenaltyRule[1],
-			},
-		},
-		{
-			name: "no penalty, penalty range 800, 1500, 3000",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 800,
-					committeePublicKeys[1]: 799,
-					committeePublicKeys[2]: 3001,
-					committeePublicKeys[3]: 2999,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[0],
-				committeePublicKeys[2]: samplePenaltyRule[2],
-				committeePublicKeys[3]: samplePenaltyRule[1],
-			},
-		},
-		{
-			name: "no penalty, penalty range 1500, 3000",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 1501,
-					committeePublicKeys[1]: 799,
-					committeePublicKeys[2]: 3001,
-					committeePublicKeys[3]: 2999,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[1],
-				committeePublicKeys[2]: samplePenaltyRule[2],
-				committeePublicKeys[3]: samplePenaltyRule[1],
-			},
-		},
-		{
-			name: "penalty range 3000",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 30000,
-					committeePublicKeys[1]: 3002,
-					committeePublicKeys[2]: 3001,
-					committeePublicKeys[3]: 30003,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[2],
-				committeePublicKeys[1]: samplePenaltyRule[2],
-				committeePublicKeys[2]: samplePenaltyRule[2],
-				committeePublicKeys[3]: samplePenaltyRule[2],
-			},
-		},
-		{
-			name: "penalty range 1500",
-			fields: fields{
-				missingSignature: map[string]uint{
-					committeePublicKeys[0]: 1500,
-					committeePublicKeys[1]: 1501,
-					committeePublicKeys[2]: 2999,
-					committeePublicKeys[3]: 3000,
-				},
-				penalties: samplePenaltyRule,
-			},
-			want: map[string]Penalty{
-				committeePublicKeys[0]: samplePenaltyRule[1],
-				committeePublicKeys[1]: samplePenaltyRule[1],
-				committeePublicKeys[2]: samplePenaltyRule[1],
-				committeePublicKeys[3]: samplePenaltyRule[1],
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := SignatureCounter{
+			s := MissingSignatureCounter{
 				missingSignature: tt.fields.missingSignature,
 				penalties:        tt.fields.penalties,
 				lock:             new(sync.RWMutex),

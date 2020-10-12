@@ -57,7 +57,7 @@ type BeaconBestState struct {
 	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeEngine   committeestate.BeaconCommitteeEngine
-	missingSignatureCounter signaturecounter.MissingSignatureCounter
+	missingSignatureCounter signaturecounter.IMissingSignatureCounter
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -102,7 +102,7 @@ func NewBeaconBestState() *BeaconBestState {
 }
 func NewBeaconBestStateWithConfig(netparam *Params,
 	beaconCommitteeEngine committeestate.BeaconCommitteeEngine,
-	missingSignatureCounter signaturecounter.MissingSignatureCounter,
+	missingSignatureCounter signaturecounter.IMissingSignatureCounter,
 ) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
@@ -475,7 +475,7 @@ func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
 	return beaconBestState.BestBlock.Header.Timestamp
 }
 
-func (beaconBestState *BeaconBestState) GetNumberOfMissingSignature() map[string]uint {
+func (beaconBestState *BeaconBestState) GetNumberOfMissingSignature() map[string]signaturecounter.MissingSignature {
 	return beaconBestState.missingSignatureCounter.MissingSignature()
 }
 
@@ -740,7 +740,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 }
 
 func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
-	curView.missingSignatureCounter = signaturecounter.NewSignatureCounterWithValue(make(map[string]uint), bc.config.ChainParams.MissingSignaturePenalty)
+	curView.missingSignatureCounter = signaturecounter.NewSignatureCounterWithValue(make(map[string]signaturecounter.MissingSignature), bc.config.ChainParams.MissingSignaturePenalty)
 	lastEpochBeaconHeight := (curView.Epoch-1)*bc.config.ChainParams.Epoch + 1
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
