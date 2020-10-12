@@ -32,6 +32,8 @@ type Engine struct {
 	currentMiningProcess ConsensusInterface
 }
 
+//just get role of first validator
+//this function support NODE monitor (getmininginfo) which assumed running only 1 validator
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
 		return validator.State.Layer, validator.State.Role, validator.State.ChainID
