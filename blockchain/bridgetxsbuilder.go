@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"math/big"
 	"strconv"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -232,19 +232,20 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		Amount:         issuingAcceptedInst.DepositedAmount,
 		PaymentAddress: issuingAcceptedInst.ReceiverAddr,
 	}
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiver.Amount, receiver.PaymentAddress)
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
-	}
-	issuingRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
 
 	tokenID := issuingAcceptedInst.IncTokenID
 	if tokenID == common.PRVCoinID {
 		Logger.log.Errorf("cannot issue prv in bridge")
 		return nil, errors.New("cannot issue prv in bridge")
 	}
-	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingRes, &tokenID)
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	otaCoin, err := txParam.GenerateOutputCoin()
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
+		return nil, err
+	}
+	issuingRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingRes)
 }
 
 func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
@@ -280,17 +281,17 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		issuingETHAcceptedInst.ExternalTokenID,
 		metadata.IssuingETHResponseMeta,
 	)
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(receiver.Amount, receiver.PaymentAddress)
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
-	}
-	issuingETHRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
 	tokenID := issuingETHAcceptedInst.IncTokenID
 	if tokenID == common.PRVCoinID {
 		Logger.log.Errorf("cannot issue prv in bridge")
 		return nil, errors.New("cannot issue prv in bridge")
 	}
-	return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingETHRes, &tokenID)
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	otaCoin, err := txParam.GenerateOutputCoin()
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
+		return nil, err
+	}
+	issuingETHRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingETHRes)
 }

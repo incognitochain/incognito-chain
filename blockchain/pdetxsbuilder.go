@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -67,22 +68,17 @@ func buildTradeResTx(
 		return nil, err
 	}
 
-	var otaCoin *privacy.CoinV2
+	var txParam transaction.TxSalaryOutputParams
 	if len(txRandomStr) > 0 {
 		publickey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddressStr, txRandomStr)
 		if err != nil {
 			return nil, err
 		}
-		otaCoin = coin.NewCoinFromAmountAndTxRandomBytes(receiveAmt, publickey, txRandom, []byte{})
-
+		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: nil, PublicKey: publickey, TxRandom: txRandom, TokenID: tokenID, Info: []byte{}}
 	} else {
 		return nil, errors.New("Cannnot create trade response without txRandom info")
 	}
-	if tokenIDStr == common.PRVCoinID.String() {
-		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, transactionStateDB, meta)
-	} else {
-		return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, transactionStateDB, meta, tokenID)
-	}
+	return txParam.BuildTxSalary(nil, producerPrivateKey, transactionStateDB, meta)
 }
 
 func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
@@ -222,18 +218,14 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(wdAcceptedContent.DeductingPoolValue, receiverAddr)
+	txParam := transaction.TxSalaryOutputParams{Amount: wdAcceptedContent.DeductingPoolValue, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	otaCoin, err := txParam.GenerateOutputCoin()
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and payment address")
 		return nil, err
 	}
 	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	if withdrawalTokenIDStr == common.PRVCoinID.String() {
-		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
-	} else {
-		return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta, tokenID)
-	}
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
 }
 
 func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
@@ -274,19 +266,15 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// create ota coin
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(refundContribution.ContributedAmount, receiverAddr)
+	txParam := transaction.TxSalaryOutputParams{Amount: refundContribution.ContributedAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	otaCoin, err := txParam.GenerateOutputCoin()
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
 	// set shareRandom for metadata
 	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	if refundTokenIDStr == common.PRVCoinID.String() {
-		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
-	} else {
-		return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta, tokenID)
-	}
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
 }
 
 func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
@@ -330,17 +318,13 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// create ota coin
-	otaCoin, err := coin.NewCoinFromAmountAndReceiver(matchedNReturnedContribution.ReturnedContributedAmount, receiverAddr)
+	txParam := transaction.TxSalaryOutputParams{Amount: matchedNReturnedContribution.ReturnedContributedAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	otaCoin, err := txParam.GenerateOutputCoin()
 	if err != nil {
 		Logger.log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
 	// set shareRandom for metadata
 	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	if tokenIDStr == common.PRVCoinID.String() {
-		return BuildInitTxSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
-	} else {
-		return BuildInitTxTokenSalaryTx(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta, tokenID)
-	}
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
 }

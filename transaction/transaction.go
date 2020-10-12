@@ -55,6 +55,71 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 	return nil, nil
 }
 
+// use this to generate the output coin in salary TXs
+// when ReceiverAddress equals nil, we use public key & txRandom
+type TxSalaryOutputParams struct{
+	Amount 				uint64
+	ReceiverAddress 	*privacy.PaymentAddress
+	PublicKey 			*privacy.Point
+	TxRandom 			*privacy.TxRandom
+	TokenID 			*common.Hash
+	Info 				[]byte
+}
+
+func (pr TxSalaryOutputParams) GenerateOutputCoin() (*privacy.CoinV2, error){
+	var err error
+	var outputCoin *privacy.CoinV2
+	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
+	if pr.ReceiverAddress==nil{
+		outputCoin = privacy.NewCoinFromAmountAndTxRandomBytes(pr.Amount, pr.PublicKey, pr.TxRandom, pr.Info)
+	}else{
+		outputCoin, err = privacy.NewCoinFromPaymentInfo(&privacy.PaymentInfo{Amount: pr.Amount, PaymentAddress: *pr.ReceiverAddress})
+		if err != nil{
+			return nil, err
+		}
+	}
+	// for salary TX, tokenID is never blinded; so when making coin for token transactions, we set an unblinded asset tag
+	if !isPRV{
+		err := outputCoin.SetPlainTokenID(pr.TokenID)
+		if err!=nil{
+			return nil, err
+		}
+	}
+	return outputCoin, err
+}
+
+func (pr TxSalaryOutputParams) BuildTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateKey,
+	stateDB *statedb.StateDB,
+	metaData metadata.Metadata) (metadata.Transaction, error) {
+	var err error
+	if otaCoin==nil{
+		otaCoin, err = pr.GenerateOutputCoin()
+		if err != nil {
+			Logger.Log.Errorf("Cannot create coin for TX salary. Err: %v", err)
+			return nil, err
+		}
+	}
+	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
+
+	if isPRV{
+		res := new(TxVersion2)
+		err = res.InitTxSalary(otaCoin, privateKey, stateDB, metaData)
+		if err != nil {
+			Logger.Log.Errorf("Cannot build Tx Salary. Err: %v", err)
+			return nil, err
+		}
+		return res, nil
+	}else{
+		res := new(TxTokenVersion2)
+		err = res.InitTxTokenSalary(otaCoin, privateKey, stateDB, metaData, pr.TokenID, "")
+		if err != nil {
+			Logger.Log.Errorf("Cannot build Tx Token Salary. Err: %v", err)
+			return nil, err
+		}
+		return res, nil
+	}
+}
+
 // Used to parse json
 type txJsonDataVersion struct {
 	Version int8 `json:"Version"`
