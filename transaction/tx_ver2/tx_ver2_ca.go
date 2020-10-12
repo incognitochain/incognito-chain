@@ -152,6 +152,11 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 
 	sumOutputAssetTags := new(privacy.Point).Identity()
 	for _, oc := range outputCoins{
+		if oc.GetAssetTag()==nil{
+			utils.Logger.Log.Errorf("CA error: missing asset tag for signing in output coin - %v", oc.Bytes())
+			err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : an output coin does not have asset tag"))
+			return nil, nil, nil, err
+		}
 		sumOutputAssetTags.Add(sumOutputAssetTags, oc.GetAssetTag())
 	}
 	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
@@ -179,6 +184,11 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 				if !ok{
 					return nil, nil, nil, errors.New("Cannot cast a coin as v2")
 				}
+				if inputCoin_specific.GetAssetTag()==nil{
+					utils.Logger.Log.Errorf("CA error: missing asset tag for signing in input coin - %v", inputCoin_specific.Bytes())
+					err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : an input coin does not have asset tag"))
+					return nil, nil, nil, err
+				}
 				sumInputAssetTags.Add(sumInputAssetTags, inputCoin_specific.GetAssetTag())
 			}
 		} else {
@@ -196,6 +206,11 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 				}
 				row[j] = coinDB.GetPublicKey()
 				sumInputs.Add(sumInputs, coinDB.GetCommitment())
+				if coinDB.GetAssetTag()==nil{
+					utils.Logger.Log.Errorf("CA error: missing asset tag for signing in DB coin - %v", coinBytes)
+					err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : a CA coin in DB does not have asset tag"))
+					return nil, nil, nil, err
+				}
 				sumInputAssetTags.Add(sumInputAssetTags, coinDB.GetAssetTag())
 			}
 		}
