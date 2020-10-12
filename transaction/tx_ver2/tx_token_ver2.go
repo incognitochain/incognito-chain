@@ -145,16 +145,10 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 
 			// fmt.Printf("While init token, its ID is %s\n", plainTokenID.String())
 			// set the unblinded asset tag
-			assetTag := privacy.HashToPoint(plainTokenID[:])
-			theCoin.SetAssetTag(assetTag)
-
-			// recompute commitment, defined by CA scheme
-			com, err := theCoin.ComputeCommitmentCA()
+			err = theCoin.SetPlainTokenID(plainTokenID)
 			if err!=nil{
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
-			theCoin.SetCommitment(com)
-
 			txToken.TxTokenData.SetPropertyID(*plainTokenID)
 		}
 	case utils.CustomTokenTransfer:

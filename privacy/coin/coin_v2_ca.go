@@ -54,8 +54,19 @@ func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point,e
 	return sharedSecret, nil
 }
 
+func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error{
+	assetTag := operation.HashToPoint(tokenID[:])
+	coin.SetAssetTag(assetTag)
+	com, err := coin.ComputeCommitmentCA()
+	if err != nil{
+		return err
+	}
+	coin.SetCommitment(com)
+	return nil
+}
+
 // for confidential asset only
-func GenerateOTACoinAndSharedSecret(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation.Point, error) {
+func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation.Point, error) {
 	receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 	if err != nil {
 		errStr := fmt.Sprintf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
@@ -79,13 +90,10 @@ func GenerateOTACoinAndSharedSecret(info *key.PaymentInfo, tokenID *common.Hash)
 			panic("Something is wrong with info.paymentAddress.Pk, burning address should be a valid point")
 		}
 		c.SetPublicKey(publicKey)
-		assetTag := operation.HashToPoint(tokenID[:])
-		c.SetAssetTag(assetTag)
-		com, err := c.ComputeCommitmentCA()
-		if err != nil{
-			return nil, nil, errors.New("Cannot compute commitment for confidential asset")
+		err = c.SetPlainTokenID(tokenID)
+		if err!=nil{
+			return nil, nil, err
 		}
-		c.SetCommitment(com)
 		return c, nil, nil
 	}
 

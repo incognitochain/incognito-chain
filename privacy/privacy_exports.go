@@ -166,6 +166,10 @@ func NewCoinFromPaymentInfo(info *PaymentInfo) (*CoinV2, error) {
 	return coin.NewCoinFromPaymentInfo(info)
 }
 
+func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point, txRandom *TxRandom, info []byte) (*CoinV2){
+	return coin.NewCoinFromAmountAndTxRandomBytes(amount, publicKey, txRandom, info)
+}
+
 func ProveV2(inputCoins []PlainCoin, outputCoins []*CoinV2, sharedSecrets []*Point, hasPrivacy bool, paymentInfo []*PaymentInfo) (*ProofV2, error){
 	return privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, hasPrivacy, paymentInfo)
 }
@@ -174,6 +178,6 @@ func ComputeAssetTagBlinder(sharedSecret *Point, indexForShard uint32) (*Scalar,
 	return coin.ComputeAssetTagBlinder(sharedSecret, indexForShard)
 }
 
-func GenerateOTACoinAndSharedSecret(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error){
-	return coin.GenerateOTACoinAndSharedSecret(info, tokenID)
+func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error){
+	return coin.NewCoinCA(info, tokenID)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	"github.com/incognitochain/incognito-chain/wallet"
+	// "github.com/incognitochain/incognito-chain/wallet"
 )
 
 
@@ -437,7 +437,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 		tokenID = &common.PRVCoinID
 	}
 	for i:=privacy.MAX_TRIES_OTA;i>0;i--{
-		c, sharedSecret, err := privacy.GenerateOTACoinAndSharedSecret(paymentInfo, tokenID)
+		c, sharedSecret, err := privacy.NewCoinCA(paymentInfo, tokenID)
 		if tokenID!=nil && sharedSecret!=nil && c!=nil && c.GetAssetTag()!=nil{
 			utils.Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s\n", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
 		}
@@ -446,11 +446,11 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 			return nil, nil, err
 		}
 		// If previously created coin is burning address
-		if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
-			assetTag := privacy.HashToPoint(tokenID[:])
-			c.SetAssetTag(assetTag)
-			return c, nil, nil // No need to check db
-		}
+		// if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
+		// 	assetTag := privacy.HashToPoint(tokenID[:])
+		// 	c.SetAssetTag(assetTag)
+		// 	return c, nil, nil // No need to check db
+		// }
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
 		// here tokenID should always be TokenConfidentialAssetID (for db storage)
