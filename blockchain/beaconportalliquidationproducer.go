@@ -107,20 +107,42 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 
 			// get tokenID from redeemTokenID
 			tokenID := redeemReq.GetTokenID()
+			metaType := metadata.PortalLiquidateCustodianMeta
 
 			liquidatedCustodians := make([]*statedb.MatchingRedeemCustodianDetail, 0)
 			for _, matchCusDetail := range redeemReq.GetCustodians() {
 				//Logger.log.Errorf("matchCusDetail.GetIncognitoAddress(): %v\n", matchCusDetail.GetIncognitoAddress())
 				custodianStateKey := statedb.GenerateCustodianStateObjectKey(matchCusDetail.GetIncognitoAddress()).String()
 				//Logger.log.Errorf("custodianStateKey: %v\n", custodianStateKey)
+
+				// determine meta type
+				for _, v := range currentPortalState.CustodianPoolState[custodianStateKey].GetLockedTokenCollaterals()[tokenID] {
+					if v > 0 {
+						metaType = metadata.PortalLiquidateCustodianMetaV3
+						break
+					}
+				}
+
 				// calculate liquidated amount and remain unlocked amount for custodian
-				liquidatedAmount, remainUnlockAmount, err := CalUnlockCollateralAmountAfterLiquidation(
-					currentPortalState,
-					custodianStateKey,
-					matchCusDetail.GetAmount(),
-					tokenID,
-					exchangeRate,
-					portalParams)
+				var liquidatedAmount, remainUnlockAmount uint64
+				if metaType == metadata.PortalLiquidateCustodianMeta {
+					// return value in prv
+					liquidatedAmount, remainUnlockAmount, err = CalUnlockCollateralAmountAfterLiquidation(
+						currentPortalState,
+						custodianStateKey,
+						matchCusDetail.GetAmount(),
+						tokenID,
+						exchangeRate,
+						portalParams)
+				} else {
+					// return value in usdt
+					liquidatedAmount, remainUnlockAmount, err = CalUnlockCollateralAmountAfterLiquidationV3(
+						currentPortalState,
+						custodianStateKey,
+						matchCusDetail.GetAmount(),
+						tokenID,
+						portalParams)
+				}
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when calculating unlock collateral amount %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
@@ -132,7 +154,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						redeemReq.GetRedeemerAddress(),
 						matchCusDetail.GetIncognitoAddress(),
 						liquidatedByExchangeRate,
-						metadata.PortalLiquidateCustodianMeta,
+						metaType,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
 					)
@@ -142,7 +164,11 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 
 				// update custodian state
 				custodianState := currentPortalState.CustodianPoolState[custodianStateKey]
-				err = updateCustodianStateAfterLiquidateCustodian(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
+				if metaType == metadata.PortalLiquidateCustodianMeta {
+					err = updateCustodianStateAfterLiquidateCustodian(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
+				} else {
+					err = updateCustodianStateAfterLiquidateCustodianV3(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
+				}
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating custodian state %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
@@ -154,7 +180,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						redeemReq.GetRedeemerAddress(),
 						matchCusDetail.GetIncognitoAddress(),
 						liquidatedByExchangeRate,
-						metadata.PortalLiquidateCustodianMeta,
+						metaType,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
 					)
@@ -175,7 +201,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					redeemReq.GetRedeemerAddress(),
 					matchCusDetail.GetIncognitoAddress(),
 					liquidatedByExchangeRate,
-					metadata.PortalLiquidateCustodianMeta,
+					metaType,
 					shardID,
 					common.PortalLiquidateCustodianSuccessChainStatus,
 				)
@@ -250,7 +276,10 @@ func buildInstForExpiredPortingReqByPortingID(
 			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 			continue
 		}
-		updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, tokenID)
+		err = updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.LockedTokenCollaterals, tokenID)
+		if err != nil {
+			return insts, err
+		}
 	}
 
 	// remove waiting porting request from waiting list
@@ -600,7 +629,6 @@ func (blockchain *BlockChain) buildInstForLiquidationByExchangeRatesV3(
 	return [][]string{}, nil
 }
 
-
 /* =======
 Portal Redeem From Liquidation Pool Processor
 ======= */
@@ -747,7 +775,6 @@ func (p *portalRedeemFromLiquidationPoolProcessor) buildNewInsts(
 	)
 	return [][]string{inst}, nil
 }
-
 
 /* =======
 Portal Custodian Topup Processor

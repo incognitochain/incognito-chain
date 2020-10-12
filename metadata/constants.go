@@ -83,6 +83,8 @@ const (
 	PortalCustodianDepositMetaV3         = 131
 	PortalCustodianWithdrawRequestMetaV3 = 132
 	PortalRewardMetaV3                   = 133
+	PortalRedeemRequestMetaV3            = 134
+	PortalLiquidateCustodianMetaV3       = 135
 
 	// Incognito => Ethereum's SC for portal
 	PortalCustodianWithdrawConfirmMetaV3 = 170

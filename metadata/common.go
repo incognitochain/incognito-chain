@@ -91,7 +91,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianDepositResponse{}
 	case PortalUserRequestPTokenResponseMeta:
 		md = &PortalRequestPTokensResponse{}
-	case PortalRedeemRequestMeta:
+	case PortalRedeemRequestMeta, PortalRedeemRequestMetaV3:
 		md = &PortalRedeemRequest{}
 	case PortalRedeemRequestResponseMeta:
 		md = &PortalRedeemRequestResponse{}
@@ -107,7 +107,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianWithdrawRequest{}
 	case PortalCustodianWithdrawResponseMeta:
 		md = &PortalCustodianWithdrawResponse{}
-	case PortalLiquidateCustodianMeta:
+	case PortalLiquidateCustodianMeta, PortalLiquidateCustodianMetaV3:
 		md = &PortalLiquidateCustodian{}
 	case PortalLiquidateCustodianResponseMeta:
 		md = &PortalLiquidateCustodianResponse{}
@@ -175,11 +175,11 @@ func HasBridgeInstructions(instructions [][]string) bool {
 	return false
 }
 
-
 // TODO: add more meta data types
 var portalMetas = []string{
 	strconv.Itoa(PortalCustodianWithdrawConfirmMetaV3),
 }
+
 func HasPortalInstructions(instructions [][]string) bool {
 	for _, inst := range instructions {
 		for _, meta := range portalMetas {

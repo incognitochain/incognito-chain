@@ -63,13 +63,13 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
 			err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// redeem request
-		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
+		case strconv.Itoa(metadata.PortalRedeemRequestMeta), strconv.Itoa(metadata.PortalRedeemRequestMetaV3):
 			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// request unlock collateral
 		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
 			err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// liquidation custodian run away
-		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
+		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta), strconv.Itoa(metadata.PortalLiquidateCustodianMetaV3):
 			err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// portal reward
 		case strconv.Itoa(metadata.PortalRewardMeta), strconv.Itoa(metadata.PortalRewardMetaV3):
@@ -608,7 +608,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(currentPortalState *Curren
 		medianRate := calcMedian(rates)
 
 		if medianRate > 0 {
-			updateFinalExchangeRates[tokenID] = statedb.FinalExchangeRatesDetail{ Amount: medianRate }
+			updateFinalExchangeRates[tokenID] = statedb.FinalExchangeRatesDetail{Amount: medianRate}
 		}
 	}
 	currentPortalState.FinalExchangeRatesState = statedb.NewFinalExchangeRatesStateWithValue(updateFinalExchangeRates)
@@ -860,7 +860,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawV3(
 		currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
 
 		// store withdraw confirm proof
-		err = statedb.StoreWithdrawCollateralConfirmProof(portalStateDB, statusData.TxReqID, beaconHeight + 1)
+		err = statedb.StoreWithdrawCollateralConfirmProof(portalStateDB, statusData.TxReqID, beaconHeight+1)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw confirm proof: %+v", err)
 			return nil

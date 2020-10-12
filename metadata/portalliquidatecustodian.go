@@ -88,7 +88,7 @@ func (liqCustodian PortalLiquidateCustodian) ValidateSanityData(chainRetriever C
 }
 
 func (liqCustodian PortalLiquidateCustodian) ValidateMetadataByItself() bool {
-	return liqCustodian.Type == PortalLiquidateCustodianMeta
+	return liqCustodian.Type == PortalLiquidateCustodianMeta || liqCustodian.Type == PortalLiquidateCustodianMetaV3
 }
 
 func (liqCustodian PortalLiquidateCustodian) Hash() *common.Hash {

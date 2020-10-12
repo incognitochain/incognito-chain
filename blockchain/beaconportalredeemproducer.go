@@ -613,21 +613,40 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 
 	// calculate unlock amount
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
+	var unlockAmount uint64
 	custodianStateKeyStr := custodianStateKey.String()
-	unlockAmount, err := CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID, portalParams)
-	if err != nil {
-		Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
-		return [][]string{rejectInst}, nil
-	}
+	if meta.Type == metadata.PortalRedeemRequestMeta {
+		unlockAmount, err = CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
+		if err != nil {
+			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)
+			return [][]string{rejectInst}, nil
+		}
 
-	// update custodian state (FreeCollateral, LockedAmountCollateral)
-	// unlock amount in usdt
-	err = updateCustodianStateAfterReqUnlockCollateral(
-		currentPortalState.CustodianPoolState[custodianStateKeyStr],
-		unlockAmount, meta.TokenID, portalParams, currentPortalState)
-	if err != nil {
-		Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
-		return [][]string{rejectInst}, nil
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		// unlock amount in prv
+		err = updateCustodianStateAfterReqUnlockCollateral(
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
+			unlockAmount, meta.TokenID)
+		if err != nil {
+			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
+			return [][]string{rejectInst}, nil
+		}
+	} else {
+		unlockAmount, err = CalUnlockCollateralAmountV3(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID, portalParams)
+		if err != nil {
+			Logger.log.Errorf("Error calculating unlock amount for custodian V3 %v", err)
+			return [][]string{rejectInst}, nil
+		}
+
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		// unlock amount in usdt
+		err = updateCustodianStateAfterReqUnlockCollateralV3(
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
+			unlockAmount, meta.TokenID, portalParams, currentPortalState)
+		if err != nil {
+			Logger.log.Errorf("Error when updating custodian state after unlocking collateral %v", err)
+			return [][]string{rejectInst}, nil
+		}
 	}
 
 	// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)

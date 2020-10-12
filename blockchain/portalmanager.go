@@ -109,6 +109,13 @@ func NewPortalManager() *portalManager {
 				actions: map[byte][][]string{},
 			},
 		},
+
+		metadata.PortalRedeemRequestMetaV3: &portalRedeemRequestProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+
 		metadata.PortalReqMatchingRedeemMeta: &portalRequestMatchingRedeemProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},

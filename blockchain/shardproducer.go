@@ -371,7 +371,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalRedeemRequestMeta:
+			case metadata.PortalRedeemRequestMeta, metadata.PortalRedeemRequestMetaV3:
 				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}

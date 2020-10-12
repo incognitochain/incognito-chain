@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"strconv"
 )
 
 func (blockchain *BlockChain) processPortalLiquidateCustodian(
@@ -34,7 +35,12 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 			return nil
 		}
 
-		err := updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.LiquidatedCollateralAmount, actionData.RemainUnlockAmountForCustodian, actionData.TokenID)
+		if instructions[0] == strconv.Itoa(metadata.PortalLiquidateCustodianMeta) {
+			err = updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.LiquidatedCollateralAmount, actionData.RemainUnlockAmountForCustodian, actionData.TokenID)
+		} else {
+			err = updateCustodianStateAfterLiquidateCustodianV3(custodianState, actionData.LiquidatedCollateralAmount, actionData.RemainUnlockAmountForCustodian, actionData.TokenID)
+		}
+
 		if err != nil {
 			Logger.log.Errorf("[processPortalLiquidateCustodian] Error when update custodian state after liquidation %v", err)
 			return nil
@@ -573,7 +579,11 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 				continue
 			}
-			updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, tokenID)
+			err = updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.LockedTokenCollaterals, tokenID)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occured while update state for expired porting request: %+v", err)
+				return nil
+			}
 		}
 
 		// remove waiting porting request from waiting list

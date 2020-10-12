@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"strconv"
 )
 
 func (blockchain *BlockChain) processPortalRedeemRequest(
@@ -370,7 +371,8 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestUnlockCollateralContent
-	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	var err error
+	err = json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
@@ -383,9 +385,16 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		err := updateCustodianStateAfterReqUnlockCollateral(
-			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			actionData.UnlockAmount, tokenID, portalParams, currentPortalState)
+		// portal unlock collateral v2 and v3
+		if instructions[0] == strconv.Itoa(metadata.PortalRedeemRequestMeta) {
+			err = updateCustodianStateAfterReqUnlockCollateral(
+				currentPortalState.CustodianPoolState[custodianStateKeyStr],
+				actionData.UnlockAmount, tokenID)
+		} else {
+			err = updateCustodianStateAfterReqUnlockCollateralV3(
+				currentPortalState.CustodianPoolState[custodianStateKeyStr],
+				actionData.UnlockAmount, tokenID, portalParams, currentPortalState)
+		}
 		if err != nil {
 			Logger.log.Errorf("Error when update custodian state", err)
 			return nil

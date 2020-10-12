@@ -167,7 +167,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 }
 
 func (redeemReq PortalRedeemRequest) ValidateMetadataByItself() bool {
-	return redeemReq.Type == PortalRedeemRequestMeta
+	return redeemReq.Type == PortalRedeemRequestMeta || redeemReq.Type == PortalRedeemRequestMetaV3
 }
 
 func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
@@ -194,7 +194,7 @@ func (redeemReq *PortalRedeemRequest) BuildReqActions(tx Transaction, chainRetri
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRedeemRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(redeemReq.Type), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

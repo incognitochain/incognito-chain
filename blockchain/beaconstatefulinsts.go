@@ -49,8 +49,10 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.RelayingBTCHeaderMeta,
 			metadata.PortalCustodianWithdrawRequestMeta,
 			metadata.PortalRedeemRequestMeta,
+			metadata.PortalRedeemRequestMetaV3,
 			metadata.PortalRequestUnlockCollateralMeta,
 			metadata.PortalLiquidateCustodianMeta,
+			metadata.PortalLiquidateCustodianMetaV3,
 			metadata.PortalRequestWithdrawRewardMeta,
 			metadata.PortalRedeemFromLiquidationPoolMeta,
 			metadata.PortalCustodianTopupMetaV2,
@@ -188,7 +190,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PortalCustodianWithdrawRequestMeta:
 				pm.portalInstructions[metadata.PortalCustodianWithdrawRequestMeta].putAction(action, shardID)
 
-			case metadata.PortalRedeemRequestMeta:
+			case metadata.PortalRedeemRequestMeta, metadata.PortalRedeemRequestMetaV3:
 				pm.portalInstructions[metadata.PortalRedeemRequestMeta].putAction(action, shardID)
 			case metadata.PortalRequestUnlockCollateralMeta:
 				pm.portalInstructions[metadata.PortalRequestUnlockCollateralMeta].putAction(action, shardID)
