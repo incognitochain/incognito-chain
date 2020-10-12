@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,11 +13,7 @@ import (
 
 func (httpServer *HttpServer) handleGetMultiValKeyState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	states := httpServer.config.ConsensusEngine.GetAllValidatorKeyState()
-	result, err := json.Marshal(states)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	return result, nil
+	return states, nil
 }
 func (httpServer *HttpServer) handleAddMultiValKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var key string
