@@ -209,12 +209,10 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 	engine.shardCommitteeStateV2.mu.RUnlock()
 
 	newCommitteeState := engine.uncommittedShardCommitteeStateV2
-
 	committeeChange, err := newCommitteeState.forceUpdateCommitteesFromBeacon(env, NewCommitteeChange())
 	if err != nil {
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-
 	hashes, err := engine.generateUncommittedCommitteeHashes()
 	if err != nil {
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -261,8 +259,7 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
-	s.shardCommittee = make([]incognitokey.CommitteePublicKey, len(env.CommitteesFromBeaconView()))
-	copy(s.shardCommittee, env.CommitteesFromBeaconView())
+	s.shardCommittee = env.CommitteesFromBeaconView()
 	s.committeeFromBlock = env.CommitteesFromBlock()
 	return newCommitteeChange, nil
 }
