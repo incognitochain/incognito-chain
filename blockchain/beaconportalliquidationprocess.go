@@ -38,7 +38,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		if instructions[0] == strconv.Itoa(metadata.PortalLiquidateCustodianMeta) {
 			err = updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.LiquidatedCollateralAmount, actionData.RemainUnlockAmountForCustodian, actionData.TokenID)
 		} else {
-			err = updateCustodianStateAfterLiquidateCustodianV3(custodianState, actionData.LiquidatedCollateralAmount, actionData.RemainUnlockAmountForCustodian, actionData.TokenID)
+			err = updateCustodianStateAfterLiquidateCustodianV3(custodianState, actionData.LiquidatedCollateralAmount, actionData.RemainUnlockAmountForCustodian, actionData.LiquidatedCollateralAmounts, actionData.RemainUnlockAmountsForCustodian, actionData.TokenID)
 		}
 
 		if err != nil {
@@ -73,17 +73,19 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 
 		// track liquidation custodian status by redeemID and custodian address into DB
 		custodianLiquidationTrackData := metadata.PortalLiquidateCustodianStatus{
-			Status:                         common.PortalLiquidateCustodianSuccessStatus,
-			UniqueRedeemID:                 actionData.UniqueRedeemID,
-			TokenID:                        actionData.TokenID,
-			RedeemPubTokenAmount:           actionData.RedeemPubTokenAmount,
-			LiquidatedCollateralAmount:     actionData.LiquidatedCollateralAmount,
-			RemainUnlockAmountForCustodian: actionData.RemainUnlockAmountForCustodian,
-			RedeemerIncAddressStr:          actionData.RedeemerIncAddressStr,
-			CustodianIncAddressStr:         actionData.CustodianIncAddressStr,
-			LiquidatedByExchangeRate:       actionData.LiquidatedByExchangeRate,
-			ShardID:                        actionData.ShardID,
-			LiquidatedBeaconHeight:         beaconHeight + 1,
+			Status:                          common.PortalLiquidateCustodianSuccessStatus,
+			UniqueRedeemID:                  actionData.UniqueRedeemID,
+			TokenID:                         actionData.TokenID,
+			RedeemPubTokenAmount:            actionData.RedeemPubTokenAmount,
+			LiquidatedCollateralAmount:      actionData.LiquidatedCollateralAmount,
+			RemainUnlockAmountForCustodian:  actionData.RemainUnlockAmountForCustodian,
+			LiquidatedCollateralAmounts:     actionData.LiquidatedCollateralAmounts,
+			RemainUnlockAmountsForCustodian: actionData.RemainUnlockAmountsForCustodian,
+			RedeemerIncAddressStr:           actionData.RedeemerIncAddressStr,
+			CustodianIncAddressStr:          actionData.CustodianIncAddressStr,
+			LiquidatedByExchangeRate:        actionData.LiquidatedByExchangeRate,
+			ShardID:                         actionData.ShardID,
+			LiquidatedBeaconHeight:          beaconHeight + 1,
 		}
 		custodianLiquidationTrackDataBytes, _ := json.Marshal(custodianLiquidationTrackData)
 		err = statedb.StorePortalLiquidationCustodianRunAwayStatus(
@@ -100,17 +102,19 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	} else if reqStatus == common.PortalLiquidateCustodianFailedChainStatus {
 		// track liquidation custodian status by redeemID and custodian address into DB
 		custodianLiquidationTrackData := metadata.PortalLiquidateCustodianStatus{
-			Status:                         common.PortalLiquidateCustodianFailedStatus,
-			UniqueRedeemID:                 actionData.UniqueRedeemID,
-			TokenID:                        actionData.TokenID,
-			RedeemPubTokenAmount:           actionData.RedeemPubTokenAmount,
-			LiquidatedCollateralAmount:     actionData.LiquidatedCollateralAmount,
-			RemainUnlockAmountForCustodian: actionData.RemainUnlockAmountForCustodian,
-			RedeemerIncAddressStr:          actionData.RedeemerIncAddressStr,
-			CustodianIncAddressStr:         actionData.CustodianIncAddressStr,
-			LiquidatedByExchangeRate:       actionData.LiquidatedByExchangeRate,
-			ShardID:                        actionData.ShardID,
-			LiquidatedBeaconHeight:         beaconHeight + 1,
+			Status:                          common.PortalLiquidateCustodianFailedStatus,
+			UniqueRedeemID:                  actionData.UniqueRedeemID,
+			TokenID:                         actionData.TokenID,
+			RedeemPubTokenAmount:            actionData.RedeemPubTokenAmount,
+			LiquidatedCollateralAmount:      actionData.LiquidatedCollateralAmount,
+			RemainUnlockAmountForCustodian:  actionData.RemainUnlockAmountForCustodian,
+			LiquidatedCollateralAmounts:     actionData.LiquidatedCollateralAmounts,
+			RemainUnlockAmountsForCustodian: actionData.RemainUnlockAmountsForCustodian,
+			RedeemerIncAddressStr:           actionData.RedeemerIncAddressStr,
+			CustodianIncAddressStr:          actionData.CustodianIncAddressStr,
+			LiquidatedByExchangeRate:        actionData.LiquidatedByExchangeRate,
+			ShardID:                         actionData.ShardID,
+			LiquidatedBeaconHeight:          beaconHeight + 1,
 		}
 		custodianLiquidationTrackDataBytes, _ := json.Marshal(custodianLiquidationTrackData)
 		err = statedb.StorePortalLiquidationCustodianRunAwayStatus(

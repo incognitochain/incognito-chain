@@ -20,6 +20,8 @@ func buildCustodianRunAwayLiquidationInst(
 	redeemPubTokenAmount uint64,
 	mintedCollateralAmount uint64,
 	remainUnlockAmountForCustodian uint64,
+	mintedCollateralAmounts map[string]uint64,
+	remainUnlockAmountsForCustodian map[string]uint64,
 	redeemerIncAddrStr string,
 	custodianIncAddrStr string,
 	liquidatedByExchangeRate bool,
@@ -37,6 +39,9 @@ func buildCustodianRunAwayLiquidationInst(
 		CustodianIncAddressStr:         custodianIncAddrStr,
 		LiquidatedByExchangeRate:       liquidatedByExchangeRate,
 		ShardID:                        shardID,
+		// portal v3
+		LiquidatedCollateralAmounts:     mintedCollateralAmounts,
+		RemainUnlockAmountsForCustodian: remainUnlockAmountsForCustodian,
 	}
 	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
 	return []string{
@@ -125,6 +130,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 
 				// calculate liquidated amount and remain unlocked amount for custodian
 				var liquidatedAmount, remainUnlockAmount uint64
+				var liquidatedAmounts, remainUnlockAmounts map[string]uint64
 				if metaType == metadata.PortalLiquidateCustodianMeta {
 					// return value in prv
 					liquidatedAmount, remainUnlockAmount, err = CalUnlockCollateralAmountAfterLiquidation(
@@ -136,7 +142,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						portalParams)
 				} else {
 					// return value in usdt
-					liquidatedAmount, remainUnlockAmount, err = CalUnlockCollateralAmountAfterLiquidationV3(
+					liquidatedAmount, remainUnlockAmount, liquidatedAmounts, remainUnlockAmounts, err = CalUnlockCollateralAmountAfterLiquidationV3(
 						currentPortalState,
 						custodianStateKey,
 						matchCusDetail.GetAmount(),
@@ -151,6 +157,8 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.GetAmount(),
 						0,
 						0,
+						liquidatedAmounts,
+						remainUnlockAmounts,
 						redeemReq.GetRedeemerAddress(),
 						matchCusDetail.GetIncognitoAddress(),
 						liquidatedByExchangeRate,
@@ -167,7 +175,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				if metaType == metadata.PortalLiquidateCustodianMeta {
 					err = updateCustodianStateAfterLiquidateCustodian(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
 				} else {
-					err = updateCustodianStateAfterLiquidateCustodianV3(custodianState, liquidatedAmount, remainUnlockAmount, tokenID)
+					err = updateCustodianStateAfterLiquidateCustodianV3(custodianState, liquidatedAmount, remainUnlockAmount, liquidatedAmounts, remainUnlockAmounts, tokenID)
 				}
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating custodian state %v\n: ", err)
@@ -177,6 +185,8 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.GetAmount(),
 						liquidatedAmount,
 						remainUnlockAmount,
+						liquidatedAmounts,
+						remainUnlockAmounts,
 						redeemReq.GetRedeemerAddress(),
 						matchCusDetail.GetIncognitoAddress(),
 						liquidatedByExchangeRate,
@@ -198,6 +208,8 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					matchCusDetail.GetAmount(),
 					liquidatedAmount,
 					remainUnlockAmount,
+					liquidatedAmounts,
+					remainUnlockAmounts,
 					redeemReq.GetRedeemerAddress(),
 					matchCusDetail.GetIncognitoAddress(),
 					liquidatedByExchangeRate,

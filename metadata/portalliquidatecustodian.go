@@ -32,6 +32,9 @@ type PortalLiquidateCustodianContent struct {
 	CustodianIncAddressStr         string
 	LiquidatedByExchangeRate       bool
 	ShardID                        byte
+
+	RemainUnlockAmountsForCustodian map[string]uint64
+	LiquidatedCollateralAmounts     map[string]uint64 // minted PRV amount for sending back to users
 }
 
 // PortalLiquidateCustodianStatus - Beacon tracks status of custodian liquidation into db
@@ -47,6 +50,9 @@ type PortalLiquidateCustodianStatus struct {
 	LiquidatedByExchangeRate       bool
 	ShardID                        byte
 	LiquidatedBeaconHeight         uint64
+
+	RemainUnlockAmountsForCustodian map[string]uint64
+	LiquidatedCollateralAmounts     map[string]uint64 // minted PRV amount for sending back to users
 }
 
 func NewPortalLiquidateCustodian(

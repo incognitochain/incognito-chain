@@ -384,7 +384,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 					}
 				}
-			case metadata.PortalLiquidateCustodianMeta:
+			case metadata.PortalLiquidateCustodianMeta, metadata.PortalLiquidateCustodianMetaV3:
 				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
 					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
 				}

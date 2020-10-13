@@ -632,7 +632,7 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 			return [][]string{rejectInst}, nil
 		}
 	} else {
-		unlockAmount, err = CalUnlockCollateralAmountV3(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID, portalParams)
+		unlockAmount, _, err = CalUnlockCollateralAmountV3(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID, portalParams)
 		if err != nil {
 			Logger.log.Errorf("Error calculating unlock amount for custodian V3 %v", err)
 			return [][]string{rejectInst}, nil

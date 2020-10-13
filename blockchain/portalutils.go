@@ -675,11 +675,11 @@ func CalUnlockCollateralAmountV3(
 	custodianStateKey string,
 	redeemAmount uint64,
 	tokenID string,
-	portalParams PortalParams) (uint64, error) {
+	portalParams PortalParams) (uint64, map[string]uint64, error) {
 	custodianState := portalState.CustodianPoolState[custodianStateKey]
 	if custodianState == nil {
 		Logger.log.Errorf("[test][CalUnlockCollateralAmount] Custodian not found %v\n", custodianStateKey)
-		return 0, fmt.Errorf("Custodian not found %v\n", custodianStateKey)
+		return 0, nil, fmt.Errorf("Custodian not found %v\n", custodianStateKey)
 	}
 
 	totalHoldingPubToken := GetTotalHoldPubTokenAmount(portalState, custodianState, tokenID)
@@ -690,7 +690,7 @@ func CalUnlockCollateralAmountV3(
 	tokenAmountList := GetTotalLockedCollateralAmountInWaitingPortingsV3(portalState, custodianState, tokenID)
 	if totalHoldingPubToken == 0 {
 		Logger.log.Errorf("[CalUnlockCollateralAmount] Total holding public token amount of custodianAddr %v is zero", custodianState.GetIncognitoAddress())
-		return 0, errors.New("[CalUnlockCollateralAmount] Total holding public token amount is zero")
+		return 0, nil, errors.New("[CalUnlockCollateralAmount] Total holding public token amount is zero")
 	}
 
 	lockedAmountCollateral := uint64(0)
@@ -698,13 +698,14 @@ func CalUnlockCollateralAmountV3(
 	listLockedTokens[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[tokenID]
 	for tokenCollateralID, token := range listLockedTokens {
 		if token < tokenAmountList[tokenCollateralID] {
-			return 0, errors.New("[CalUnlockCollateralAmountV3] got error while remove locked token porting in waiting state")
+			return 0, nil, errors.New("[CalUnlockCollateralAmountV3] got error while remove locked token porting in waiting state")
 		}
 		token -= tokenAmountList[tokenCollateralID]
+		listLockedTokens[tokenCollateralID] = token
 		tokenValueLocked, err := convertRateTool.ConvertToUSDT(tokenCollateralID, token)
 		if err != nil {
 			Logger.log.Errorf("[CalUnlockCollateralAmountV3] got error %v", err.Error())
-			return 0, errors.New("[CalUnlockCollateralAmountV3] got error while get convert from collateral to USDT ")
+			return 0, nil, errors.New("[CalUnlockCollateralAmountV3] got error while get convert from collateral to USDT ")
 		}
 		lockedAmountCollateral += tokenValueLocked
 	}
@@ -715,9 +716,9 @@ func CalUnlockCollateralAmountV3(
 	unlockAmount := new(big.Int).Div(tmp, new(big.Int).SetUint64(totalHoldingPubToken)).Uint64()
 	if unlockAmount <= 0 {
 		Logger.log.Errorf("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian %v\n", unlockAmount)
-		return 0, errors.New("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian")
+		return 0, nil, errors.New("[CalUnlockCollateralAmount] Can not calculate unlock amount for custodian")
 	}
-	return unlockAmount, nil
+	return unlockAmount, listLockedTokens, nil
 }
 
 func CalUnlockCollateralAmountAfterLiquidation(
@@ -754,11 +755,11 @@ func CalUnlockCollateralAmountAfterLiquidationV3(
 	liquidatedCustodianStateKey string,
 	amountPubToken uint64,
 	tokenID string,
-	portalParams PortalParams) (uint64, uint64, error) {
-	totalUnlockCollateralAmount, err := CalUnlockCollateralAmountV3(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID, portalParams)
+	portalParams PortalParams) (uint64, uint64, map[string]uint64, map[string]uint64, error) {
+	totalUnlockCollateralAmount, listAvailableToUnlock, err := CalUnlockCollateralAmountV3(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID, portalParams)
 	if err != nil {
-		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error : %v\n", err)
-		return 0, 0, err
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error : %v\n", err)
+		return 0, 0, nil, nil, err
 	}
 
 	// convert free collaterals of custodians to usdt to compare and sort descending
@@ -768,8 +769,8 @@ func CalUnlockCollateralAmountAfterLiquidationV3(
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
 	liquidatedAmountInUSDT, err := convertRateTool.ConvertToUSDT(tokenID, liquidatedAmountInPToken)
 	if err != nil {
-		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error converting rate : %v\n", err)
-		return 0, 0, err
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
+		return 0, 0, nil, nil, err
 	}
 
 	if liquidatedAmountInUSDT > totalUnlockCollateralAmount {
@@ -777,7 +778,77 @@ func CalUnlockCollateralAmountAfterLiquidationV3(
 	}
 
 	remainUnlockAmountForCustodian := totalUnlockCollateralAmount - liquidatedAmountInUSDT
-	return liquidatedAmountInUSDT, remainUnlockAmountForCustodian, nil
+
+	tokenIDKeys := make([]string, 0)
+	for tokenID := range listAvailableToUnlock {
+		tokenIDKeys = append(tokenIDKeys, tokenID)
+	}
+	sort.Strings(tokenIDKeys)
+	tokenIDKeys = append([]string{common.PRVIDStr}, tokenIDKeys...)
+	var liquidatedAmountInPrv, remainUnlockAmountForCustodianInPrv uint64
+	liquidatedAmounts := make(map[string]uint64)
+	remainUnlockAmountsForCustodian := make(map[string]uint64)
+
+	for _, tokenCollateralID := range tokenIDKeys {
+		tokenValueInUSDT, err := convertRateTool.ConvertToUSDT(tokenCollateralID, listAvailableToUnlock[tokenCollateralID])
+		if err != nil {
+			Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
+			return 0, 0, nil, nil, err
+		}
+		if tokenValueInUSDT > 0 {
+			if liquidatedAmountInUSDT > 0 {
+				if liquidatedAmountInUSDT > tokenValueInUSDT {
+					liquidatedAmountInUSDT -= tokenValueInUSDT
+					liquidatedAmounts[tokenCollateralID] = listAvailableToUnlock[tokenCollateralID]
+					continue
+				} else {
+					tokenValueInUSDT -= liquidatedAmountInUSDT
+					tokenValueInCollateralToken, err := convertRateTool.ConvertFromUSDT(tokenCollateralID, liquidatedAmountInUSDT)
+					if err != nil {
+						Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
+						return 0, 0, nil, nil, err
+					}
+					liquidatedAmounts[tokenCollateralID] = tokenValueInCollateralToken
+					liquidatedAmountInUSDT = 0
+				}
+			}
+
+			if remainUnlockAmountForCustodian > 0 {
+				if tokenValueInUSDT > 0 {
+					tmpTokenValueInUSDT := uint64(0)
+					if remainUnlockAmountForCustodian > tokenValueInUSDT {
+						remainUnlockAmountForCustodian -= tokenValueInUSDT
+						tmpTokenValueInUSDT = tokenValueInUSDT
+					} else {
+						tmpTokenValueInUSDT = remainUnlockAmountForCustodian
+						remainUnlockAmountForCustodian = 0
+					}
+					tokenValueInCollateralToken, err := convertRateTool.ConvertFromUSDT(tokenCollateralID, tmpTokenValueInUSDT)
+					if err != nil {
+						Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
+						return 0, 0, nil, nil, err
+					}
+					remainUnlockAmountsForCustodian[tokenCollateralID] = tokenValueInCollateralToken
+					if remainUnlockAmountForCustodian == 0 {
+						break
+					}
+				}
+			} else {
+				break
+			}
+		}
+	}
+
+	if liquidatedAmountInUSDT > 0 || remainUnlockAmountForCustodian > 0 {
+		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error not enough locked token to liquidate custodian")
+		return 0, 0, nil, nil, err
+	}
+	liquidatedAmountInPrv = liquidatedAmounts[common.PRVIDStr]
+	remainUnlockAmountForCustodianInPrv = remainUnlockAmountsForCustodian[common.PRVIDStr]
+	delete(liquidatedAmounts, common.PRVIDStr)
+	delete(remainUnlockAmountsForCustodian, common.PRVIDStr)
+
+	return liquidatedAmountInPrv, remainUnlockAmountForCustodianInPrv, liquidatedAmounts, remainUnlockAmountsForCustodian, nil
 }
 
 // updateRedeemRequestStatusByRedeemId updates status of redeem request into db
@@ -833,8 +904,7 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState *statedb.Custodi
 	return nil
 }
 
-// TODO: liquidate collateral of custodian
-func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.CustodianState, liquidatedAmount uint64, remainUnlockAmountForCustodian uint64, tokenID string) error {
+func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.CustodianState, liquidatedAmount, remainUnlockAmountForCustodian uint64, liquidatedAmounts, remainUnlockAmounts map[string]uint64, tokenID string) error {
 	if custodianState == nil {
 		Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] custodian not found")
 		return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] custodian not found")
@@ -855,6 +925,29 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 	custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 
 	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + remainUnlockAmountForCustodian)
+
+	if len(liquidatedAmounts) > 0 || len(remainUnlockAmounts) > 0 {
+		lockedCollaterals := custodianState.GetLockedTokenCollaterals()
+		freeCollaterals := custodianState.GetFreeTokenCollaterals()
+		for tokenCollateralId, tokenValue := range lockedCollaterals[tokenID] {
+			if custodianState.GetTotalTokenCollaterals()[tokenCollateralId] < liquidatedAmounts[tokenCollateralId] {
+				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than liquidated amount")
+				return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than liquidated amount")
+			}
+			if tokenValue < liquidatedAmounts[tokenCollateralId]+remainUnlockAmounts[tokenCollateralId] {
+				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] locked amount less than total unlock amount")
+				return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] locked amount less than total unlock amount")
+			}
+			lockedCollaterals[tokenID][tokenCollateralId] = tokenValue - lockedCollaterals[tokenID][tokenCollateralId] - remainUnlockAmounts[tokenCollateralId]
+		}
+
+		for tokenCollateralId, _ := range freeCollaterals {
+			freeCollaterals[tokenCollateralId] += remainUnlockAmounts[tokenCollateralId]
+		}
+
+		custodianState.SetFreeTokenCollaterals(freeCollaterals)
+		custodianState.SetLockedTokenCollaterals(lockedCollaterals)
+	}
 
 	return nil
 }
@@ -1871,7 +1964,7 @@ func CalLiquidatedCollateralAmount(
 	liquidatedTokenCollaterals := map[string]uint64{}
 
 	// get total unlock collateral amount in usdt
-	totalUnlockCollateralAmountInUSDT, err := CalUnlockCollateralAmountV3(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID, portalParams)
+	totalUnlockCollateralAmountInUSDT, _, err := CalUnlockCollateralAmountV3(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID, portalParams)
 	if err != nil {
 		Logger.log.Errorf("CalLiquidatedCollateralAmount error : %v\n", err)
 		return 0, nil, err
