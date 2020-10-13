@@ -6,6 +6,11 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
+type BlockValidation interface {
+	common.BlockInterface
+	AddValidationField(validationData string) error
+}
+
 type Consensus struct {
 	Blockchain *blockchain.BlockChain
 }

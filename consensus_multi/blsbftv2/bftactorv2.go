@@ -170,7 +170,6 @@ func (e *BLSBFT_V2) Start() error {
 				newTimeSlot := false
 				if e.currentTimeSlot != common.CalculateTimeSlot(e.currentTime) {
 					newTimeSlot = true
-
 				}
 
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
