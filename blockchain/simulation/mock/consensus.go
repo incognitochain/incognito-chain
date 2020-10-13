@@ -1,11 +1,14 @@
 package mock
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-type Consensus struct{}
+type Consensus struct {
+	Blockchain *blockchain.BlockChain
+}
 
 func (c *Consensus) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
 	return nil
