@@ -4,7 +4,9 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
@@ -183,4 +185,188 @@ func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instruct
 	}
 
 	return nil
+}
+
+func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(instructions [][]string, shardID byte) *shardInstruction {
+	res := &shardInstruction{
+		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
+	}
+	// extract instructions
+	for _, inst := range instructions {
+		if len(inst) > 0 {
+			if inst[0] == instruction.STAKE_ACTION {
+				if err := instruction.ValidateStakeInstructionSanity(inst); err != nil {
+					Logger.log.Errorf("SKIP Stake Instruction Error %+v", err)
+					continue
+				}
+				tempStakeInstruction := instruction.ImportStakeInstructionFromString(inst)
+				res.stakeInstructions = append(res.stakeInstructions, tempStakeInstruction)
+			}
+			if inst[0] == instruction.SWAP_ACTION {
+				// validate swap instruction
+				// only allow shard to swap committee for it self
+				if err := instruction.ValidateSwapInstructionSanity(inst); err != nil {
+					Logger.log.Errorf("SKIP Swap Instruction Error %+v", err)
+					continue
+				}
+				tempSwapInstruction := instruction.ImportSwapInstructionFromString(inst)
+				res.swapInstructions[shardID] = append(res.swapInstructions[shardID], tempSwapInstruction)
+			}
+			if inst[0] == instruction.STOP_AUTO_STAKE_ACTION {
+				if err := instruction.ValidateStopAutoStakeInstructionSanity(inst); err != nil {
+					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
+					continue
+				}
+				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
+				res.stopAutoStakeInstructions = append(res.stopAutoStakeInstructions, tempStopAutoStakeInstruction)
+			}
+			if inst[0] == instruction.UNSTAKE_ACTION {
+				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
+					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
+					continue
+				}
+				tempUnstakeInstruction := instruction.ImportUnstakeInstructionFromString(inst)
+				res.unstakeInstructions = append(res.unstakeInstructions, tempUnstakeInstruction)
+			}
+		}
+	}
+
+	if len(res.stakeInstructions) != 0 {
+		Logger.log.Info("Beacon Producer/ Process Stakers List ", res.stakeInstructions)
+	}
+	if len(res.swapInstructions[shardID]) != 0 {
+		Logger.log.Info("Beacon Producer/ Process Stakers List ", res.swapInstructions[shardID])
+	}
+
+	return res
+}
+
+func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
+	shardInstructions *shardInstruction, validStakePublicKeys []string) (
+	*shardInstruction, *duplicateKeyStakeInstruction) {
+
+	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
+	newShardInstructions := shardInstructions
+	stakeInstructions := []*instruction.StakeInstruction{}
+	stakeShardPublicKeys := []string{}
+	stakeShardTx := []string{}
+	stakeShardRewardReceiver := []string{}
+	stakeShardAutoStaking := []bool{}
+	tempValidStakePublicKeys := []string{}
+
+	// Process Stake Instruction form Shard Block
+	// Validate stake instruction => extract only valid stake instruction
+	for _, stakeInstruction := range shardInstructions.stakeInstructions {
+		tempStakePublicKey := stakeInstruction.PublicKeys
+		duplicateStakePublicKeys := []string{}
+		// list of stake public keys and stake transaction and reward receiver must have equal length
+
+		tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
+		tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
+		tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
+
+		if len(tempStakePublicKey) > 0 {
+			stakeShardPublicKeys = append(stakeShardPublicKeys, tempStakePublicKey...)
+			for i, v := range stakeInstruction.PublicKeys {
+				if common.IndexOfStr(v, tempStakePublicKey) > -1 {
+					stakeShardTx = append(stakeShardTx, stakeInstruction.TxStakes[i])
+					stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakeInstruction.RewardReceivers[i])
+					stakeShardAutoStaking = append(stakeShardAutoStaking, stakeInstruction.AutoStakingFlag[i])
+				}
+			}
+		}
+
+		if beaconBestState.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION &&
+			(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
+			duplicateStakePublicKeys = common.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
+			if len(duplicateStakePublicKeys) > 0 {
+				stakingTxs := []string{}
+				autoStaking := []bool{}
+				rewardReceivers := []string{}
+				for i, v := range stakeInstruction.PublicKeys {
+					if common.IndexOfStr(v, duplicateStakePublicKeys) > -1 {
+						stakingTxs = append(stakingTxs, stakeInstruction.TxStakes[i])
+						rewardReceivers = append(rewardReceivers, stakeInstruction.RewardReceivers[i])
+						autoStaking = append(autoStaking, stakeInstruction.AutoStakingFlag[i])
+					}
+				}
+				duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
+					duplicateStakePublicKeys,
+					stakeInstruction.Chain,
+					stakingTxs,
+					rewardReceivers,
+					autoStaking,
+				)
+				duplicateKeyStakeInstruction.instructions = append(duplicateKeyStakeInstruction.instructions, duplicateStakeInstruction)
+			}
+		}
+	}
+
+	if len(stakeShardPublicKeys) > 0 {
+		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
+		tempStakeShardInstruction := instruction.NewStakeInstructionWithValue(
+			stakeShardPublicKeys,
+			instruction.SHARD_INST,
+			stakeShardTx, stakeShardRewardReceiver,
+			stakeShardAutoStaking,
+		)
+		stakeInstructions = append(stakeInstructions, tempStakeShardInstruction)
+		validStakePublicKeys = append(validStakePublicKeys, stakeShardPublicKeys...)
+	}
+
+	newShardInstructions.stakeInstructions = stakeInstructions
+	return newShardInstructions, duplicateKeyStakeInstruction
+}
+
+func (beaconBestState *BeaconBestState) processStopAutoStakeInstructionFromShardBlock(
+	shardInstructions *shardInstruction, allCommitteeValidatorCandidate []string) *shardInstruction {
+
+	stopAutoStakingPublicKeys := []string{}
+	stopAutoStakeInstructions := []*instruction.StopAutoStakeInstruction{}
+
+	for _, stopAutoStakeInstruction := range shardInstructions.stopAutoStakeInstructions {
+		for _, tempStopAutoStakingPublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
+			if common.IndexOfStr(tempStopAutoStakingPublicKey, allCommitteeValidatorCandidate) > -1 {
+				stopAutoStakingPublicKeys = append(stopAutoStakingPublicKeys, tempStopAutoStakingPublicKey)
+			}
+		}
+	}
+
+	if len(stopAutoStakingPublicKeys) > 0 {
+		tempStopAutoStakeInstruction := instruction.NewStopAutoStakeInstructionWithValue(stopAutoStakingPublicKeys)
+		stopAutoStakeInstructions = append(stopAutoStakeInstructions, tempStopAutoStakeInstruction)
+	}
+
+	shardInstructions.stopAutoStakeInstructions = stopAutoStakeInstructions
+	return shardInstructions
+}
+
+func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
+	shardInstructions *shardInstruction,
+	allCommitteeValidatorCandidate []string,
+	shardID byte,
+	validUnstakePublicKeys map[string]bool) *shardInstruction {
+	unstakingPublicKeys := []string{}
+	unstakeInstructions := []*instruction.UnstakeInstruction{}
+
+	for _, unstakeInstruction := range shardInstructions.unstakeInstructions {
+		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
+			if validUnstakePublicKeys[tempUnstakePublicKey] {
+				Logger.log.Infof("SHARD %v | UNSTAKE duplicated unstake instruction | ", shardID)
+				continue
+			}
+			if common.IndexOfStr(tempUnstakePublicKey, allCommitteeValidatorCandidate) > -1 {
+				unstakingPublicKeys = append(unstakingPublicKeys, tempUnstakePublicKey)
+			}
+			validUnstakePublicKeys[tempUnstakePublicKey] = true
+		}
+	}
+	if len(unstakingPublicKeys) > 0 {
+		tempUnstakeInstruction := instruction.NewUnstakeInstructionWithValue(unstakingPublicKeys)
+		unstakeInstructions = append(unstakeInstructions, tempUnstakeInstruction)
+	}
+
+	shardInstructions.unstakeInstructions = unstakeInstructions
+	return shardInstructions
+
 }

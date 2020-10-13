@@ -160,16 +160,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	committees := []incognitokey.CommitteePublicKey{}
-	if shouldValidate {
-		if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-			committees = curView.GetShardCommittee()
-		} else {
-			beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
-			if err != nil {
-				return err
-			}
-			committees = beaconView.GetShardCommittee()[curView.ShardID]
+	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		committees = curView.GetShardCommittee()
+	} else {
+		beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
+		if err != nil {
+			return err
 		}
+		committees = beaconView.GetShardCommittee()[curView.ShardID]
 	}
 
 	if shouldValidate {
@@ -220,12 +218,19 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if err2 != nil {
 		return err2
 	}
-	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 
+	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
+		newBestState.ShardID, shardBlock.Header.Height, blockHash)
+	if err2 = newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
+		return err2
+	}
+
+	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
 	if err2 != nil {
 		return err2
 	}
+
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
