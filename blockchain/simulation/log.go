@@ -8,6 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/jrick/logrotate/rotator"
 )
 
@@ -16,10 +18,13 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	backendLog       = common.NewBackend(logWriter{})
-	dbLogger         = backendLog.Logger("Database log", false)
-	blockchainLogger = backendLog.Logger("BlockChain log", false)
-	bridgeLogger     = backendLog.Logger("DeBridge log", false)
+	backendLog             = common.NewBackend(logWriter{})
+	dbLogger               = backendLog.Logger("Database log", false)
+	blockchainLogger       = backendLog.Logger("BlockChain log", false)
+	bridgeLogger           = backendLog.Logger("DeBridge log", false)
+	rpcLogger              = backendLog.Logger("RPC log", false)
+	rpcServiceLogger       = backendLog.Logger("RPC service log", false)
+	rpcServiceBridgeLogger = backendLog.Logger("RPC service DeBridge log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -36,13 +41,19 @@ func init() {
 	incdb.Logger.Init(dbLogger)
 	blockchain.Logger.Init(blockchainLogger)
 	blockchain.BLogger.Init(bridgeLogger)
+	rpcserver.Logger.Init(rpcLogger)
+	rpcservice.Logger.Init(rpcServiceLogger)
+	rpcservice.BLogger.Init(rpcServiceBridgeLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
 var subsystemLoggers = map[string]common.Logger{
-	"DABA": dbLogger,
-	"BLOC": blockchainLogger,
-	"DEBR": bridgeLogger,
+	"DABA":              dbLogger,
+	"BLOC":              blockchainLogger,
+	"DEBR":              bridgeLogger,
+	"RPCS":              rpcLogger,
+	"RPCSservice":       rpcServiceLogger,
+	"RPCSbridgeservice": rpcServiceBridgeLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

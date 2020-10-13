@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 type simInstance struct {
@@ -31,6 +33,7 @@ type simInstance struct {
 	server      *mock.Server
 	cPendingTxs chan metadata.Transaction
 	cRemovedTxs chan metadata.Transaction
+	rpcServer   *rpcserver.RpcServer
 	cQuit       chan struct{}
 }
 
@@ -99,6 +102,21 @@ func newSimInstance(simName string) *simInstance {
 		panic(err)
 	}
 
+	listenFunc := net.Listen
+	listener, err := listenFunc("tcp", "0.0.0.0:8000")
+	if err != nil {
+		panic(err)
+	}
+	rpcConfig := rpcserver.RpcServerConfig{
+		HttpListenters: []net.Listener{listener},
+		RPCMaxClients:  1,
+		DisableAuth:    true,
+		ChainParams:    activeNetParams,
+		BlockChain:     &bc,
+		Blockgen:       blockgen,
+	}
+	rpcServer := &rpcserver.RpcServer{}
+
 	db, err := incdb.OpenMultipleDB("leveldb", filepath.Join("./"+simName, "database"))
 	// Create db and use it.
 	if err != nil {
@@ -148,8 +166,11 @@ func newSimInstance(simName string) *simInstance {
 		server:      &server,
 		cPendingTxs: cPendingTxs,
 		cRemovedTxs: cRemovedTxs,
+		rpcServer:   rpcServer,
 		cQuit:       cQuit,
 	}
+
+	rpcServer.Init(&rpcConfig)
 
 	go func() {
 		for {
@@ -158,10 +179,10 @@ func newSimInstance(simName string) *simInstance {
 				return
 			case <-cRemovedTxs:
 			}
-
 		}
 	}()
 	go blockgen.Start(cQuit)
+	go rpcServer.Start()
 
 	log.Printf("Done sim %v instance\n", simName)
 	return sim
@@ -191,10 +212,14 @@ func (sim *simInstance) Run() {
 				panic(err)
 			}
 			prevTimeSlot = common.CalculateTimeSlot(currentTime)
-			if newBlock.GetHeight() == 5 {
-				break
-			}
+			// if newBlock.GetHeight() == 5 {
+			// 	break
+			// }
 		}
 	}
+
+}
+
+func (sim *simInstance) RunTxFeeder() {
 
 }
