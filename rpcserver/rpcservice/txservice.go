@@ -36,7 +36,6 @@ type TxService struct {
 type TxInfo struct {
 	BlockHash common.Hash
 	Tx metadata.Transaction
-	FromShardID byte
 }
 
 func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
@@ -1675,13 +1674,12 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 
 
 func (txService TxService) buildTxDetails(
-	txInfos []*TxInfo,
+	txInfos []TxInfo,
 	keySet incognitokey.KeySet,
 ) []jsonresult.ReceivedTransaction {
 	txDetails := []jsonresult.ReceivedTransaction{}
 	for _, txInfo := range txInfos {
 		item := jsonresult.ReceivedTransaction{
-			FromShardID:     txInfo.FromShardID,
 			ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
 		}
 		if len(keySet.ReadonlyKey.Rk) != 0 {
@@ -1818,6 +1816,19 @@ func (txService TxService) buildTxDetails(
 	return txDetails
 }
 
+func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo) {
+	txInfos := []TxInfo{}
+	for _, txHash := range txHashs {
+		_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+		txInfo := TxInfo{
+			BlockHash: blockHash,
+			Tx: txDetail,
+		}
+		txInfos = append(txInfos, txInfo)
+	}
+	ch <- txInfos
+}
+
 // GetTransactionByReceiverV2 - from keyset of receiver, we can get list tx hash which be sent to receiver
 // if this keyset contain payment-addr, we can detect tx hash
 // if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
@@ -1825,29 +1836,45 @@ func (txService TxService) buildTxDetails(
 func (txService TxService) GetTransactionByReceiverV2(
 	keySet incognitokey.KeySet,
 	skip, limit uint,
-) (*jsonresult.ListReceivedTransaction, *RPCError) {
+) (*jsonresult.ListReceivedTransaction, uint, *RPCError) {
 	result := &jsonresult.ListReceivedTransaction{
 		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
 	}
 	if len(keySet.PaymentAddress.Pk) == 0 {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
+		return nil, 0, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
 	}
 	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
+		return nil, 0, NewRPCError(UnexpectedError, errors.New("Cannot find any tx"))
 	}
 
-	txInfos := []*TxInfo{}
-	for shardID, txHashs := range listTxsHash {
-		for _, txHash := range txHashs {
-			_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
-			txInfo := &TxInfo{
-				BlockHash: blockHash,
-				Tx: txDetail,
-				FromShardID: shardID,
-			}
-			txInfos = append(txInfos, txInfo)
-		}
+	allTxHashs := []common.Hash{}
+	for _, txHashs := range listTxsHash {
+		allTxHashs = append(allTxHashs, txHashs...)
+	}
+	totalTxHashs := len(allTxHashs)
+	chunksNum := 32 // number of concurrent gorountines
+	chunkSize := totalTxHashs / (chunksNum + 1)
+	if chunkSize == 0 {
+		chunkSize = 1
+	}
+
+	actualChunksNum := chunksNum
+	if chunkSize == 1 {
+		actualChunksNum = totalTxHashs
+	}
+	ch := make(chan []TxInfo)
+	for i := 0; i < actualChunksNum; i++ {
+		start := chunkSize * i
+		end := start + chunkSize
+		chunk := allTxHashs[start : end]
+		go txService.getTxsByHashs(chunk, ch)
+	}
+
+	txInfos := []TxInfo{}
+	for i := 0; i < actualChunksNum; i++ {
+		chunkedTxInfos := <- ch
+		txInfos = append(txInfos, chunkedTxInfos...)
 	}
 
 	sort.SliceStable(txInfos, func(i, j int) bool {
@@ -1855,15 +1882,16 @@ func (txService TxService) GetTransactionByReceiverV2(
 	})
 	txNum := uint(len(txInfos))
 	if skip >= txNum {
-		return result, nil
+		return result, 0, nil
 	}
-	if skip + limit > txNum {
+	limit = skip + limit
+	if limit > txNum {
 		limit = txNum
 	}
 	pagingTxInfos := txInfos[skip:limit]
 	txDetails := txService.buildTxDetails(pagingTxInfos, keySet)
 	result.ReceivedTransactions = txDetails
-	return result, nil
+	return result, txNum, nil
 }
 
 func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incognitokey.KeySet, txHashStr string) (map[string]interface{}, *RPCError) {

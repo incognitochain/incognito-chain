@@ -220,15 +220,17 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 	if !ok || limit < 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("limit"))
 	}
-	receivedTxsList, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit))
+	receivedTxsList, total, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit))
 	if err != nil {
 		return nil, err
 	}
 	result := struct {
+		Total uint
 		Skip uint
 		Limit uint
 		ReceivedTransactions []jsonresult.ReceivedTransaction
 	}{
+		total,
 		uint(skip),
 		uint(limit),
 		receivedTxsList.ReceivedTransactions,
