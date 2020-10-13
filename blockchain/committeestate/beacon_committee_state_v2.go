@@ -993,3 +993,8 @@ func (b *BeaconCommitteeStateV2) getAllSubstituteCommittees() ([]string, error) 
 
 	return validators, nil
 }
+
+//ActiveShards ...
+func (engine *BeaconCommitteeEngineV2) ActiveShards() int {
+	return len(engine.finalBeaconCommitteeStateV2.shardCommittee)
+}
