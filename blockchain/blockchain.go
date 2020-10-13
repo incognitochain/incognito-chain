@@ -275,14 +275,24 @@ func (blockchain *BlockChain) GetClonedBeaconBestState() (*BeaconBestState, erro
 func (blockchain *BlockChain) GetClonedAllShardBestState() map[byte]*ShardBestState {
 	result := make(map[byte]*ShardBestState)
 	for _, v := range blockchain.ShardChain {
-		result[byte(v.GetShardID())] = v.GetBestState()
+		sidState := NewShardBestState()
+		err := sidState.cloneShardBestStateFrom(blockchain.ShardChain[v.GetShardID()].GetBestState())
+		if err != nil {
+			return nil
+		}
+		result[byte(v.GetShardID())] = sidState
 	}
 	return result
 }
 
 // GetReadOnlyShard - return a copy of Shard of BestState
 func (blockchain *BlockChain) GetClonedAShardBestState(shardID byte) (*ShardBestState, error) {
-	return blockchain.ShardChain[int(shardID)].GetBestState(), nil
+	result := NewShardBestState()
+	err := result.cloneShardBestStateFrom(blockchain.ShardChain[int(shardID)].GetBestState())
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {

@@ -32,6 +32,8 @@ type Engine struct {
 	currentMiningProcess ConsensusInterface
 }
 
+//just get role of first validator
+//this function support NODE monitor (getmininginfo) which assumed running only 1 validator
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
 		return validator.State.Layer, validator.State.Role, validator.State.ChainID
@@ -57,7 +59,7 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]
 				if ok {
-					if chainValidator[validator.State.ChainID].State.Role == common.PendingRole {
+					if validator.State.Role == common.CommitteeRole {
 						chainValidator[validator.State.ChainID] = validator
 					}
 				} else {
@@ -66,6 +68,8 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 			}
 		}
 	}
+
+	//fmt.Println("GetOneValidatorForEachConsensusProcess", chainValidator[1])
 	return chainValidator
 }
 
@@ -100,6 +104,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 		//group all validator as committee by chainID
 		if role == common.CommitteeRole {
+			//fmt.Println("Consensus", chainID, validator.PrivateSeed, validator.State)
 			ValidatorGroup[chainID] = append(ValidatorGroup[chainID], *validator)
 		}
 	}
@@ -135,6 +140,13 @@ func (s *Engine) WatchCommitteeChange() {
 		s.BFTProcess[chainID].Start()
 		miningProc = s.BFTProcess[chainID]
 	}
+
+	for chainID, proc := range s.BFTProcess {
+		if _, ok := ValidatorGroup[chainID]; !ok {
+			proc.Stop()
+		}
+	}
+
 	s.currentMiningProcess = miningProc
 }
 
@@ -245,7 +257,7 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 func (engine *Engine) GetAllValidatorKeyState() map[string]consensus.MiningState {
 	result := make(map[string]consensus.MiningState)
 	for _, validator := range engine.validators {
-		result[validator.MiningKey.GetPublicKey().GetMiningKeyBase58("bls")] = validator.State
+		result[validator.PrivateSeed] = validator.State
 	}
 	return result
 }
@@ -262,12 +274,12 @@ func (engine *Engine) AddValidatorKey(key string) error {
 	return nil
 }
 
-// func (engine *Engine) SetValidatorKeyLimit(newLimit int) error {
-// 	engine.validatorsLimit = newLimit
-// 	newLimitBytes, _ := json.Marshal(newLimit)
-// 	engine.config.Blockchain.GetBeaconChainDatabase().Put([]byte("CONSENSUSKEYLIMIT"), []byte(newLimitBytes))
-// 	return nil
-// }
+func (engine *Engine) SetValidatorKeyLimit(newLimit int) error {
+	engine.config.ValidatorsLimit = newLimit
+	// newLimitBytes, _ := json.Marshal(newLimit)
+	// engine.config.Blockchain.GetBeaconChainDatabase().Put([]byte("CONSENSUSKEYLIMIT"), []byte(newLimitBytes))
+	return nil
+}
 
 func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 	if shard, ok := engine.BFTProcess[int(shardID)]; ok {
