@@ -34,6 +34,10 @@ type BeaconCommitteeStateEnvironment struct {
 	LatestShardsState                  map[byte][]types.ShardState
 	SwapSubType                        uint
 	ShardID                            byte
+	TotalReward                        map[common.Hash]uint64
+	IsSplitRewardForCustodian          bool
+	PercentCustodianReward             uint64
+	DAOPercent                         uint64
 }
 
 type BeaconCommitteeStateHash struct {

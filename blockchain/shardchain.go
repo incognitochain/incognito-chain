@@ -282,11 +282,6 @@ func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitok
 	}
 	result := []incognitokey.CommitteePublicKey{}
 
-	// TODO: [review] @tin very dangerous style of code [review]
-	// 1. caller of this func can pass any types of block
-	// 2. this function only accept one type of block, why don't change type into *types.ShardBlock to make this function more explicity
-	// Note: This fucntion is used for two type of chain BeaconChain and ShardChain
-	// So it also need to receive a block interface input for processing
 	shardBlock := block.(*types.ShardBlock)
 	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
 	if err != nil {

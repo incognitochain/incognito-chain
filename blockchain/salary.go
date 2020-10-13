@@ -232,7 +232,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 				isSplitRewardForCustodian, percentCustodianRewards,
 				uint64(lenBeaconCommittees), uint64(lenShardCommittees))
 		} else {
-			//TODO: migrate to committee state using interface
+			//TODO: @tin migrate to committee state using interface
 			rewardForBeacon, rewardForIncDAO, rewardForCustodian, err = splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO, isSplitRewardForCustodian, percentCustodianRewards)
 		}
 		if err != nil {
