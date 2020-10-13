@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"sync"
 
@@ -20,12 +21,14 @@ type BeaconCommitteeStateV2 struct {
 	shardCommittee             map[byte][]incognitokey.CommitteePublicKey
 	shardSubstitute            map[byte][]incognitokey.CommitteePublicKey
 	shardCommonPool            []incognitokey.CommitteePublicKey
+	probationPool              map[string]signaturecounter.Penalty
 	numberOfAssignedCandidates int
 
 	autoStake      map[string]bool                   // committee public key => reward receiver payment address
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
-	numberOfRound  map[string]int                    // committee public key => number of round in epoch
+	// TODO: @hung remove
+	numberOfRound map[string]int // committee public key => number of round in epoch
 
 	mu *sync.RWMutex
 }
@@ -449,19 +452,18 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		shardID := byte(i)
 		committees := engine.finalBeaconCommitteeStateV2.shardCommittee[shardID]
 		substitutes := engine.finalBeaconCommitteeStateV2.shardSubstitute[shardID]
-		if len(substitutes) == 0 {
-			continue
-		}
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		swapShardInstruction, _, err := createSwapShardInstructionV2(
+		swapShardInstruction, _, err := createSwapShardInstructionV3(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
+			env.MinShardCommitteeSize,
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidators,
+			env.MissingSignaturePenalty,
 		)
 		if err != nil {
 			return swapShardInstructions, err
@@ -709,7 +711,6 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 			newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], outPublicKeyStructs[index])
 			b.numberOfRound[outPublicKeys[index]]++
 		} else {
-			// TODO: @hung check substitute must be finished all round before swap out or not?
 			err := b.deleteStakerInfo(outPublicKeyStructs[index], env.ConsensusStateDB)
 			if err != nil {
 				return newCommitteeChange, err

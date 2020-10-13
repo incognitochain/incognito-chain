@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,18 +19,54 @@ func createSwapShardInstructionV2(
 	substitutes, committees []string,
 	maxCommitteeSize int,
 	typeIns int,
-	numberOfFixedValidators uint64,
+	numberOfFixedValidators int,
 ) (*instruction.SwapShardInstruction, []string, error) {
+	changedCommittees := committees[numberOfFixedValidators:]
+	fixCommittees := committees[:numberOfFixedValidators]
 	_, newSubstitutes, swappedOutCommittees, swapInCommittees, err := swapCommitteesV2(
-		committees,
+		changedCommittees,
 		substitutes,
 		maxCommitteeSize,
 		numberOfFixedValidators,
 	)
+	committees = append(fixCommittees, changedCommittees...)
 
 	if err != nil {
 		return &instruction.SwapShardInstruction{}, []string{}, err
 	}
+
+	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
+		swapInCommittees,
+		swappedOutCommittees,
+		int(shardID),
+		typeIns,
+	)
+
+	return swapShardInstruction, newSubstitutes, nil
+}
+
+// createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
+// return params
+// #1: swap instruction
+// #2: new substitute list
+// #3: error
+func createSwapShardInstructionV3(
+	shardID byte,
+	substitutes, committees []string,
+	minCommitteeSize int,
+	maxCommitteeSize int,
+	typeIns int,
+	numberOfFixedValidators int,
+	penalty map[string]signaturecounter.Penalty,
+) (*instruction.SwapShardInstruction, []string, error) {
+	committees, slashingCommittees, normalSwapCommittees :=
+		swapOut(committees, penalty, minCommitteeSize, maxCommitteeSize, numberOfFixedValidators)
+
+	swappedOutCommittees := append(slashingCommittees, normalSwapCommittees...)
+
+	committees, newSubstitutes, swapInCommittees :=
+		swapInAfterSwapOut(committees, substitutes, maxCommitteeSize)
+
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
 		swapInCommittees,
 		swappedOutCommittees,
@@ -78,33 +115,17 @@ func swapCommitteesV2(
 	committees []string,
 	substitutes []string,
 	maxCommitteeSize int,
-	numberOfFixedValidators uint64,
+	numberOfFixedValidators int,
 ) ([]string, []string, []string, []string, error) {
 	swappedInCommittees := []string{}
 	swappedOutCommittees := []string{}
+	swapOffset := getSwapOffset(len(substitutes), len(committees)+numberOfFixedValidators, maxCommitteeSize)
 	// if swap offset = 0 then do nothing
-
-	rootCommittees := committees
-	committees = committees[numberOfFixedValidators:]
-	swapOffset := (len(substitutes) + len(committees)) / MAX_SWAP_OR_ASSIGN_PERCENT
-
-	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
 	if swapOffset == 0 {
-		return rootCommittees, substitutes, swappedOutCommittees, swappedInCommittees, nil
-	}
-
-	// swap offset must be less than or equal to maxCommitteeSize
-	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
-	if swapOffset > maxCommitteeSize {
-		swapOffset = maxCommitteeSize
-	}
-	// swapOffset must be less than or equal to substitutes length
-	if swapOffset > len(substitutes) {
-		swapOffset = len(substitutes)
+		return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
 	}
 	// vacantSlot must be equal to or greater than 0
 	vacantSlot := maxCommitteeSize - len(committees)
-	fixedValidators := committees[:numberOfFixedValidators]
 
 	if vacantSlot >= swapOffset {
 		// vacantSlot is greater than number of swap offset
@@ -131,9 +152,94 @@ func swapCommitteesV2(
 		// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
 		substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
 	}
-	committees = append(fixedValidators, committees...)
-
 	return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+}
+
+func getSwapOffset(numberOfSubstitutes, numberOfCommittees, maxCommitteeSize int) int {
+
+	swapOffset := (numberOfSubstitutes + numberOfCommittees) / MAX_SWAP_OR_ASSIGN_PERCENT
+
+	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
+	if swapOffset == 0 {
+		return 0
+	}
+
+	// swap offset must be less than or equal to maxCommitteeSize
+	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
+	if swapOffset > maxCommitteeSize {
+		swapOffset = maxCommitteeSize
+	}
+	// swapOffset must be less than or equal to substitutes length
+	if swapOffset > numberOfSubstitutes {
+		swapOffset = numberOfSubstitutes
+	}
+	return swapOffset
+}
+
+// swapOut swap node out of committee
+// because of penalty or end of epoch
+func swapOut(
+	committees []string,
+	penalty map[string]signaturecounter.Penalty,
+	minCommitteeSize int,
+	maxCommitteeSize int,
+	numberOfFixedValidator int,
+) (
+	[]string,
+	[]string,
+	[]string,
+) {
+	if len(committees) == minCommitteeSize {
+		return committees, []string{}, []string{}
+	}
+
+	startSwapOutPosition := numberOfFixedValidator
+	if startSwapOutPosition < minCommitteeSize {
+		startSwapOutPosition = minCommitteeSize
+	}
+
+	fixedCommittees := committees[:startSwapOutPosition]
+	changedCommittees := committees[startSwapOutPosition:]
+	remainChangedCommittees := []string{}
+	slashingCommittees := []string{}
+	normalSwapOutCommittees := []string{}
+	numberOfSwapOutCommittee := maxCommitteeSize / 3
+	if len(changedCommittees) < numberOfSwapOutCommittee {
+		numberOfSwapOutCommittee = len(changedCommittees)
+	}
+
+	for _, changedCommittee := range changedCommittees {
+		if _, ok := penalty[changedCommittee]; ok && numberOfSwapOutCommittee > 0 {
+			slashingCommittees = append(slashingCommittees, changedCommittee)
+			numberOfSwapOutCommittee--
+		} else {
+			remainChangedCommittees = append(remainChangedCommittees, changedCommittee)
+		}
+	}
+
+	if numberOfSwapOutCommittee > 0 {
+		normalSwapOutCommittees = remainChangedCommittees[:numberOfSwapOutCommittee]
+		remainChangedCommittees = remainChangedCommittees[numberOfSwapOutCommittee:]
+	}
+
+	committees = append(fixedCommittees, remainChangedCommittees...)
+	return committees, slashingCommittees, normalSwapOutCommittees
+}
+
+// swapInAfterSwapOut must be perform after swapOut function is executed
+func swapInAfterSwapOut(committees, substitutes []string, maxCommitteeSize int) (
+	[]string,
+	[]string,
+	[]string,
+) {
+	vacantSlot := maxCommitteeSize - len(committees)
+	if vacantSlot > len(substitutes) {
+		vacantSlot = len(substitutes)
+	}
+	newCommittees := substitutes[:vacantSlot]
+	committees = append(committees, newCommittees...)
+	substitutes = substitutes[vacantSlot:]
+	return committees, substitutes, newCommittees
 }
 
 // assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number

@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -27,7 +28,8 @@ type BeaconCommitteeStateEnvironment struct {
 	ConsensusStateDB                   *statedb.StateDB
 	IsReplace                          bool
 	NumberOfFixedBeaconBlockValidators uint64
-	NumberOfFixedShardBlockValidators  uint64
+	NumberOfFixedShardBlockValidators  int
+	MissingSignaturePenalty            map[string]signaturecounter.Penalty
 	allCandidateSubstituteCommittee    []string
 	unassignedCommonPool               []string
 	allSubstituteCommittees            []string
