@@ -42,20 +42,72 @@ func TestBeaconCommitteeEngineV2_SplitReward(t *testing.T) {
 				beaconHeight: 10,
 				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
+						*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
 					},
 					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{
 							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
 						},
 						1: []incognitokey.CommitteePublicKey{
 							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
 						},
 						2: []incognitokey.CommitteePublicKey{
 							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
 						},
 						3: []incognitokey.CommitteePublicKey{
 							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						4: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						5: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						6: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						7: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
 						},
 					},
 				},
@@ -64,418 +116,421 @@ func TestBeaconCommitteeEngineV2_SplitReward(t *testing.T) {
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
 					DAOPercent:                10,
-					ActiveShards:              4,
+					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
 					PercentCustodianReward:    0,
 					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
+						common.PRVCoinID: 984596 + 109399,
 					},
+					TotalRewardForBeacon:    make(map[common.Hash]uint64),
+					TotalRewardForIncDAO:    make(map[common.Hash]uint64),
+					TotalRewardForCustodian: make(map[common.Hash]uint64),
 				},
 			},
 			want: map[common.Hash]uint64{
-				*hash: 675,
+				common.PRVCoinID: 29837,
 			},
 			want1: map[common.Hash]uint64{
-				*hash: 2025,
+				common.PRVCoinID: 954759,
 			},
 			want2: map[common.Hash]uint64{
-				*hash: 300,
+				common.PRVCoinID: 109399,
 			},
 			want3:   map[common.Hash]uint64{},
 			wantErr: false,
 		},
-		{
-			name: "Year 2",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                9,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 683,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2047,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 270,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 3",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                8,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 690,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2070,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 240,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 4",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                7,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 698,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2092,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 210,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 5",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                6,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 705,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2115,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 180,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 6",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                5,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 713,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2137,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 150,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 7",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                4,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 720,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2160,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 120,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 8",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                3,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 728,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2182,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 90,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
-			name: "Year 9",
-			fields: fields{
-				beaconHash:   *hash,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						2: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-						3: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						},
-					},
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					DAOPercent:                3,
-					ActiveShards:              4,
-					IsSplitRewardForCustodian: false,
-					PercentCustodianReward:    0,
-					TotalRewardForShard: map[common.Hash]uint64{
-						*hash: 3000,
-					},
-				},
-			},
-			want: map[common.Hash]uint64{
-				*hash: 728,
-			},
-			want1: map[common.Hash]uint64{
-				*hash: 2182,
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 90,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
+		//{
+		//	name: "Year 2",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                9,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				common.PRVCoinID: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		common.PRVCoinID: 683,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		common.PRVCoinID: 2047,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		common.PRVCoinID: 270,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 3",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                8,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				common.PRVCoinID: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		common.PRVCoinID: 690,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		common.PRVCoinID: 2070,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		common.PRVCoinID: 240,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 4",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                7,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				common.PRVCoinID: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		common.PRVCoinID: 698,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		common.PRVCoinID: 2092,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		common.PRVCoinID: 210,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 5",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                6,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				*hash: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		*hash: 705,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		*hash: 2115,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		*hash: 180,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 6",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                5,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				*hash: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		*hash: 713,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		*hash: 2137,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		*hash: 150,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 7",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                4,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				*hash: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		*hash: 720,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		*hash: 2160,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		*hash: 120,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 8",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                3,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				*hash: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		*hash: 728,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		*hash: 2182,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		*hash: 90,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "Year 9",
+		//	fields: fields{
+		//		beaconHash:   *hash,
+		//		beaconHeight: 10,
+		//		finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+		//			beaconCommittee: []incognitokey.CommitteePublicKey{
+		//				*incKey0, *incKey, *incKey2, *incKey3,
+		//			},
+		//			shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		//				0: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				1: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				2: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//				3: []incognitokey.CommitteePublicKey{
+		//					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		//				},
+		//			},
+		//		},
+		//		uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+		//	},
+		//	args: args{
+		//		env: &BeaconCommitteeStateEnvironment{
+		//			DAOPercent:                3,
+		//			ActiveShards:              4,
+		//			IsSplitRewardForCustodian: false,
+		//			PercentCustodianReward:    0,
+		//			TotalRewardForShard: map[common.Hash]uint64{
+		//				*hash: 3000,
+		//			},
+		//		},
+		//	},
+		//	want: map[common.Hash]uint64{
+		//		*hash: 728,
+		//	},
+		//	want1: map[common.Hash]uint64{
+		//		*hash: 2182,
+		//	},
+		//	want2: map[common.Hash]uint64{
+		//		*hash: 90,
+		//	},
+		//	want3:   map[common.Hash]uint64{},
+		//	wantErr: false,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

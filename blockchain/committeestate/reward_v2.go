@@ -1,11 +1,12 @@
 package committeestate
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/pkg/errors"
 )
 
 //SplitReward ...
+// TODO: @tin rewrite
 func (b *BeaconCommitteeEngineV2) SplitReward(
 	env *BeaconCommitteeStateEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
@@ -13,30 +14,33 @@ func (b *BeaconCommitteeEngineV2) SplitReward(
 	hasValue := false
 	devPercent := uint64(env.DAOPercent)
 	totalRewardForShard := env.TotalRewardForShard
-	rewardForBeacon := map[common.Hash]uint64{}
-	rewardForIncDAO := map[common.Hash]uint64{}
-	rewardForCustodian := map[common.Hash]uint64{}
+	totalRewardForBeacon := env.TotalRewardForBeacon
+	totalRewardForIncDAO := env.TotalRewardForIncDAO
+	totalRewardForCustodian := env.TotalRewardForCustodian
 	lenBeaconCommittees := uint64(len(b.finalBeaconCommitteeStateV2.beaconCommittee))
 	lenShardCommittees := uint64(len(b.finalBeaconCommitteeStateV2.shardCommittee[env.ShardID]))
 	beaconAndShardCommitteesSize := lenShardCommittees + 2*lenBeaconCommittees/uint64(env.ActiveShards)
+
 	for key, value := range totalRewardForShard {
 		totalRewardForDAOAndCustodians := uint64(devPercent) * value / 100
 		totalRewardForShardAndBeaconValidators := value - totalRewardForDAOAndCustodians
-		rewardForBeacon[key] = totalRewardForShardAndBeaconValidators - lenShardCommittees*totalRewardForShardAndBeaconValidators/beaconAndShardCommitteesSize
+		totalRewardForBeacon[key] += totalRewardForShardAndBeaconValidators - lenShardCommittees*totalRewardForShardAndBeaconValidators/beaconAndShardCommitteesSize
 		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
 		if env.IsSplitRewardForCustodian {
-			rewardForCustodian[key] = env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
-			rewardForIncDAO[key] = totalRewardForDAOAndCustodians - rewardForCustodian[key]
+			totalRewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			totalRewardForIncDAO[key] += totalRewardForDAOAndCustodians - totalRewardForCustodian[key]
 		} else {
-			rewardForIncDAO[key] = totalRewardForDAOAndCustodians
+			totalRewardForIncDAO[key] += totalRewardForDAOAndCustodians
 		}
-		totalRewardForShard[key] = value - rewardForBeacon[key] - totalRewardForDAOAndCustodians
+		totalRewardForShard[key] = value - totalRewardForBeacon[key] - totalRewardForDAOAndCustodians
 		if !hasValue {
 			hasValue = true
 		}
 	}
+
 	if !hasValue {
-		return nil, nil, nil, nil, errors.New("Not enough reward")
+		return nil, nil, nil, nil, NewCommitteeStateError(ErrNotEnoughReward, fmt.Errorf("have no reward value"))
 	}
-	return rewardForBeacon, totalRewardForShard, rewardForIncDAO, rewardForCustodian, nil
+
+	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
 }

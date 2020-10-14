@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 
@@ -16,18 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
-
-func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
-	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
-	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
-	n := (blkHeight - 1) / blockInYear
-	reward := uint64(blockchain.config.ChainParams.BasicReward)
-	for ; n > 0; n-- {
-		reward *= 91
-		reward /= 100
-	}
-	return reward
-}
 
 func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB) error {
 	for _, inst := range beaconBlock.Body.Instructions {
@@ -182,12 +169,13 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(
 	return nil
 }
 
+// TODO: @tin split function + rewrite + unittest
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	curView *BeaconBestState,
 	blkHeight, epoch uint64,
 	rewardStateDB *statedb.StateDB,
 	isSplitRewardForCustodian bool,
-	percentCustodianRewards uint64) ([][]string, map[common.Hash]uint64, error) {
+	percentCustodianReward uint64) ([][]string, map[common.Hash]uint64, error) {
 
 	//Decalre variables
 	var resInst [][]string
@@ -195,8 +183,6 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-	//TODO: @tin
-	// For upgrading to dynamic committee size, move activeshards to committeestate package
 	numberOfActiveShards := curView.beaconCommitteeEngine.ActiveShards()
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
@@ -221,16 +207,17 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			}
 		}
 
-		env := &committeestate.BeaconCommitteeStateEnvironment{}
-		env.TotalRewardForBeacon = totalRewardForBeacon
-		env.TotalRewardForShard = totalRewards[id]
-		env.TotalRewardForIncDAO = totalRewardForIncDAO
-		env.TotalRewardForCustodian = totalRewardForCustodian
-		env.PercentCustodianReward = percentCustodianRewards
-		env.DAOPercent = percentForIncognitoDAO
-		env.IsSplitRewardForCustodian = isSplitRewardForCustodian
-		env.ActiveShards = numberOfActiveShards
-		env.ShardID = byte(id)
+		env := curView.NewBeaconCommitteeStateEnvironmentForReward(
+			totalRewardForBeacon,
+			totalRewards[id],
+			totalRewardForIncDAO,
+			totalRewardForCustodian,
+			percentCustodianReward,
+			percentForIncognitoDAO,
+			isSplitRewardForCustodian,
+			numberOfActiveShards,
+			byte(id),
+		)
 
 		totalRewardForBeacon, totalRewards[id], totalRewardForIncDAO, totalRewardForCustodian, err = curView.
 			beaconCommitteeEngine.SplitReward(env)
@@ -324,6 +311,18 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 		responseMeta,
 		requestDetail.TokenID,
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
+}
+
+func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
+	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
+	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
+	n := (blkHeight - 1) / blockInYear
+	reward := uint64(blockchain.config.ChainParams.BasicReward)
+	for ; n > 0; n-- {
+		reward *= 91
+		reward /= 100
+	}
+	return reward
 }
 
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
