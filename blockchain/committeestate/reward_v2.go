@@ -12,14 +12,15 @@ func (b *BeaconCommitteeEngineV2) SplitReward(
 
 	hasValue := false
 	devPercent := uint64(env.DAOPercent)
-	totalRewardForShard := env.TotalRewardForShard
+	totalReward := env.TotalReward
 	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForShard := map[common.Hash]uint64{}
 	rewardForIncDAO := map[common.Hash]uint64{}
 	rewardForCustodian := map[common.Hash]uint64{}
 	lenBeaconCommittees := uint64(len(b.finalBeaconCommitteeStateV2.beaconCommittee))
 	lenShardCommittees := uint64(len(b.finalBeaconCommitteeStateV2.shardCommittee[env.ShardID]))
 	beaconAndShardCommitteesSize := lenShardCommittees + 2*lenBeaconCommittees/uint64(env.ActiveShards)
-	for key, value := range totalRewardForShard {
+	for key, value := range totalReward {
 		totalRewardForDAOAndCustodians := uint64(devPercent) * value / 100
 		totalRewardForShardAndBeaconValidators := value - totalRewardForDAOAndCustodians
 		rewardForBeacon[key] = totalRewardForShardAndBeaconValidators - lenShardCommittees*totalRewardForShardAndBeaconValidators/beaconAndShardCommitteesSize
@@ -30,7 +31,7 @@ func (b *BeaconCommitteeEngineV2) SplitReward(
 		} else {
 			rewardForIncDAO[key] = totalRewardForDAOAndCustodians
 		}
-		totalRewardForShard[key] = value - rewardForBeacon[key] - totalRewardForDAOAndCustodians
+		rewardForShard[key] = value - rewardForBeacon[key] - totalRewardForDAOAndCustodians
 		if !hasValue {
 			hasValue = true
 		}
@@ -38,5 +39,5 @@ func (b *BeaconCommitteeEngineV2) SplitReward(
 	if !hasValue {
 		return nil, nil, nil, nil, errors.New("Not enough reward")
 	}
-	return rewardForBeacon, totalRewardForShard, rewardForIncDAO, rewardForCustodian, nil
+	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }

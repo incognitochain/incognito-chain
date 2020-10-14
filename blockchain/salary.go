@@ -182,6 +182,60 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(
 	return nil
 }
 
+func (beaconBestState *BeaconBestState) calculateReward(
+	blockchain *BlockChain,
+	blkHeight, epoch uint64,
+	rewardStateDB *statedb.StateDB,
+	isSplitRewardForCustodian bool,
+	percentCustodianRewards uint64) (map[common.Hash]uint64,
+	[]map[common.Hash]uint64,
+	map[common.Hash]uint64,
+	map[common.Hash]uint64, error) {
+
+	//TODO: @tin
+	// For upgrading to dynamic committee size, move activeshards to committeestate package
+	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
+	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
+	// blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
+	// percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
+	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
+	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
+	totalRewardForBeacon := map[common.Hash]uint64{}
+	totalRewardForIncDAO := map[common.Hash]uint64{}
+	totalRewardForCustodian := map[common.Hash]uint64{}
+	var err error
+
+	// lenBeaconCommittees := len(curView.beaconCommitteeEngine.GetBeaconCommittee())
+	for id := 0; id < numberOfActiveShards; id++ {
+		if totalRewards[id] == nil {
+			totalRewards[id] = map[common.Hash]uint64{}
+		}
+		for _, coinID := range allCoinID {
+			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
+			if err != nil {
+				return nil, nil, nil, nil, err
+			}
+			if totalRewards[id][coinID] == 0 {
+				delete(totalRewards[id], coinID)
+			}
+		}
+		env := &committeestate.BeaconCommitteeStateEnvironment{}
+		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := beaconBestState.
+			beaconCommitteeEngine.SplitReward(env)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		mapPlusMap(rewardForBeacon, totalRewardForBeacon)
+		mapPlusMap(rewardForShard, totalRewardForShard[id])
+		mapPlusMap(rewardForDAO, totalRewardForIncDAO)
+		mapPlusMap(rewardForCustodian, totalRewardForCustodian)
+	}
+
+	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
+
+}
+
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	curView *BeaconBestState,
 	blkHeight, epoch uint64,
@@ -195,54 +249,23 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-	//TODO: @tin
-	// For upgrading to dynamic committee size, move activeshards to committeestate package
-	numberOfActiveShards := curView.beaconCommitteeEngine.ActiveShards()
-	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
-	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
-	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
-	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
-	totalRewardForBeacon := map[common.Hash]uint64{}
-	totalRewardForIncDAO := map[common.Hash]uint64{}
-	totalRewardForCustodian := map[common.Hash]uint64{}
 
-	// lenBeaconCommittees := len(curView.beaconCommitteeEngine.GetBeaconCommittee())
-	for id := 0; id < numberOfActiveShards; id++ {
-		if totalRewards[id] == nil {
-			totalRewards[id] = map[common.Hash]uint64{}
-		}
-		for _, coinID := range allCoinID {
-			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
-			if err != nil {
-				return nil, nil, err
-			}
-			if totalRewards[id][coinID] == 0 {
-				delete(totalRewards[id], coinID)
-			}
-		}
-
-		env := &committeestate.BeaconCommitteeStateEnvironment{}
-		env.TotalRewardForBeacon = totalRewardForBeacon
-		env.TotalRewardForShard = totalRewards[id]
-		env.TotalRewardForIncDAO = totalRewardForIncDAO
-		env.TotalRewardForCustodian = totalRewardForCustodian
-		env.PercentCustodianReward = percentCustodianRewards
-		env.DAOPercent = percentForIncognitoDAO
-		env.IsSplitRewardForCustodian = isSplitRewardForCustodian
-		env.ActiveShards = numberOfActiveShards
-		env.ShardID = byte(id)
-
-		totalRewardForBeacon, totalRewards[id], totalRewardForIncDAO, totalRewardForCustodian, err = curView.
-			beaconCommitteeEngine.SplitReward(env)
-
+	totalRewardForBeacon,
+		totalRewardForShard,
+		totalRewardForIncDAO,
+		totalRewardForCustodian,
+		err := curView.calculateReward(blockchain, blkHeight, epoch, rewardStateDB, isSplitRewardForCustodian, percentCustodianRewards)
+	if err != nil {
+		return nil, nil, err
 	}
+
 	if len(totalRewardForBeacon) > 0 {
 		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
-	instRewardForShards, err = blockchain.buildInstRewardForShards(epoch, totalRewards)
+	instRewardForShards, err = blockchain.buildInstRewardForShards(epoch, totalRewardForShard)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -336,5 +359,14 @@ func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
 		return LowerBoundPercentForIncDAO
 	} else {
 		return UpperBoundPercentForIncDAO - int(year)
+	}
+}
+
+// mapPlusMap(src, dst): dst = dst + src
+func mapPlusMap(src, dst map[common.Hash]uint64) {
+	if src != nil {
+		for key, value := range src {
+			dst[key] += value
+		}
 	}
 }
