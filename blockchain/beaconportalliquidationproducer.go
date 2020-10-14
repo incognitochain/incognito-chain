@@ -121,11 +121,9 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				//Logger.log.Errorf("custodianStateKey: %v\n", custodianStateKey)
 
 				// determine meta type
-				for _, v := range currentPortalState.CustodianPoolState[custodianStateKey].GetLockedTokenCollaterals()[tokenID] {
-					if v > 0 {
-						metaType = metadata.PortalLiquidateCustodianMetaV3
-						break
-					}
+				lockedCollaterals := currentPortalState.CustodianPoolState[custodianStateKey].GetLockedTokenCollaterals()
+				if lockedCollaterals != nil && len(lockedCollaterals[tokenID]) != 0 {
+					metaType = metadata.PortalLiquidateCustodianMetaV3
 				}
 
 				// calculate liquidated amount and remain unlocked amount for custodian
