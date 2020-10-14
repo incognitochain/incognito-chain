@@ -32,6 +32,8 @@ type Engine struct {
 	currentMiningProcess ConsensusInterface
 }
 
+//just get role of first validator
+//this function support NODE monitor (getmininginfo) which assumed running only 1 validator
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
 		return validator.State.Layer, validator.State.Role, validator.State.ChainID
@@ -255,7 +257,7 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 func (engine *Engine) GetAllValidatorKeyState() map[string]consensus.MiningState {
 	result := make(map[string]consensus.MiningState)
 	for _, validator := range engine.validators {
-		result[validator.MiningKey.GetPublicKey().GetMiningKeyBase58("bls")] = validator.State
+		result[validator.PrivateSeed] = validator.State
 	}
 	return result
 }
@@ -272,12 +274,12 @@ func (engine *Engine) AddValidatorKey(key string) error {
 	return nil
 }
 
-// func (engine *Engine) SetValidatorKeyLimit(newLimit int) error {
-// 	engine.validatorsLimit = newLimit
-// 	newLimitBytes, _ := json.Marshal(newLimit)
-// 	engine.config.Blockchain.GetBeaconChainDatabase().Put([]byte("CONSENSUSKEYLIMIT"), []byte(newLimitBytes))
-// 	return nil
-// }
+func (engine *Engine) SetValidatorKeyLimit(newLimit int) error {
+	engine.config.ValidatorsLimit = newLimit
+	// newLimitBytes, _ := json.Marshal(newLimit)
+	// engine.config.Blockchain.GetBeaconChainDatabase().Put([]byte("CONSENSUSKEYLIMIT"), []byte(newLimitBytes))
+	return nil
+}
 
 func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 	if shard, ok := engine.BFTProcess[int(shardID)]; ok {
