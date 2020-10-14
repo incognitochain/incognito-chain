@@ -545,7 +545,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
 	hash6, err := common.Hash{}.NewHashFromStr("456")
-	statedb.StoreStakerInfoV2(
+	statedb.StoreStakerInfoV1(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -798,7 +798,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
 
-	statedb.StoreStakerInfoV2(
+	statedb.StoreStakerInfoV1(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey0},
 		map[string]privacy.PaymentAddress{
@@ -1302,7 +1302,7 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
 	hash6, err := common.Hash{}.NewHashFromStr("456")
-	statedb.StoreStakerInfoV2(
+	statedb.StoreStakerInfoV1(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1322,7 +1322,7 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 			key6: 0,
 		},
 	)
-	statedb.StoreStakerInfoV2(
+	statedb.StoreStakerInfoV1(
 		sDB2,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1342,7 +1342,7 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 			key6: 0,
 		},
 	)
-	statedb.StoreStakerInfoV2(
+	statedb.StoreStakerInfoV1(
 		sDB3,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1835,7 +1835,7 @@ func TestBeaconCommitteeEngineV2_BuildIncurredInstructions(t *testing.T) {
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 
 	hash, _ := common.Hash{}.NewHashFromStr("123")
-	err := statedb.StoreStakerInfoV2(
+	err := statedb.StoreStakerInfoV1(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
@@ -2077,7 +2077,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfoV2(
+	statedb.StoreStakerInfoV1(
 		validSDB,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
