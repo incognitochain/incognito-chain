@@ -335,15 +335,6 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	engine.beaconCommitteeStateV1.clone(engine.uncommittedBeaconCommitteeStateV1)
 	var err error
 	incurredInstructions := [][]string{}
-	env.unassignedCommonPool, err = engine.beaconCommitteeStateV1.getSubstituteCandidates()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	env.allSubstituteCommittees, err = engine.beaconCommitteeStateV1.getAllSubstituteCommittees()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	env.allCandidateSubstituteCommittee = append(env.unassignedCommonPool, env.allSubstituteCommittees...)
 	engine.beaconCommitteeStateV1.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	committeeChange := NewCommitteeChange()
@@ -382,21 +373,6 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 			}
 			newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
-		case instruction.UNSTAKE_ACTION:
-			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
-				continue
-			}
-			tempIncurredIns := [][]string{}
-			committeeChange, tempIncurredIns, err =
-				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
-			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			if tempIncurredIns != nil {
-				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
-			}
 		}
 		if len(tempNewBeaconCandidates) > 0 {
 			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
@@ -528,46 +504,7 @@ func (b *BeaconCommitteeEngineV1) GenerateAllSwapShardInstructions(env *BeaconCo
 func (engine BeaconCommitteeEngineV1) BuildIncurredInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[][]string, error) {
-	newB := NewBeaconCommitteeStateV1()
-	engine.beaconCommitteeStateV1.clone(newB)
-	committeeChange := NewCommitteeChange()
-
 	incurredInstructions := [][]string{}
-	if env == nil {
-		return incurredInstructions, errors.New("Environment Variable Is Null")
-	}
-	if len(env.BeaconInstructions) == 0 {
-		return incurredInstructions, nil
-	}
-	var err error
-
-	env.unassignedCommonPool, err = newB.getSubstituteCandidates()
-	if err != nil {
-		return incurredInstructions, err
-	}
-	env.allSubstituteCommittees, err = newB.getAllSubstituteCommittees()
-	if err != nil {
-		return incurredInstructions, err
-	}
-	for _, inst := range env.BeaconInstructions {
-		switch inst[0] {
-		case instruction.UNSTAKE_ACTION:
-			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
-				return incurredInstructions, err
-			}
-			_, incurredInsFromUnstake, err :=
-				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
-			if err != nil {
-				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
-			}
-			if incurredInsFromUnstake != nil {
-				incurredInstructions = append(incurredInstructions, incurredInsFromUnstake...)
-			}
-		}
-	}
-
 	return incurredInstructions, nil
 }
 
@@ -940,7 +877,31 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 	return nil
 }
 
+func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
+
+	newCommitteeChange := committeeChange
+
+	unstakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(newCommitteeChange.Unstake)
+	if err != nil {
+		return newCommitteeChange, err
+	}
+	err = statedb.StoreStakerInfoV1(
+		env.ConsensusStateDB,
+		unstakingIncognitoKey,
+		b.rewardReceiver,
+		b.autoStake,
+		b.stakingTx,
+	)
+
+	return newCommitteeChange, err
+}
+
 //HasSwappedCommittees ...
-func (b *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
+func (engine *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
 	return false, nil
+}
+
+//ActiveShards ...
+func (engine *BeaconCommitteeEngineV1) ActiveShards() int {
+	return len(engine.beaconCommitteeStateV1.shardCommittee)
 }

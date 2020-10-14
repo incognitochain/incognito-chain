@@ -363,6 +363,7 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 	}
 	if len(unstakingPublicKeys) > 0 {
 		tempUnstakeInstruction := instruction.NewUnstakeInstructionWithValue(unstakingPublicKeys)
+		tempUnstakeInstruction.SetCommitteePublicKeys(unstakingPublicKeys)
 		unstakeInstructions = append(unstakeInstructions, tempUnstakeInstruction)
 	}
 

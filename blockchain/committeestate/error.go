@@ -19,6 +19,7 @@ const (
 	ErrGenerateShardCommitteeStateHash
 	ErrBuildIncurredInstruction
 	ErrUpdateCommitteeStateByBeacon
+	ErrNotEnoughReward
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -41,6 +42,8 @@ var ErrCodeMessage = map[int]struct {
 	ErrBuildIncurredInstruction: {-4000, "Build Incurred Instruction Error"},
 
 	ErrUpdateCommitteeStateByBeacon: {-5000, "Update Committee State By Beacon Error"},
+
+	ErrNotEnoughReward: {-6000, "Not Enough Reward"},
 }
 
 type CommitteeStateError struct {
