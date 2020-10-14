@@ -530,7 +530,6 @@ func storeStakerInfo(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
-	numberOfRound map[string]int,
 ) error {
 	for _, committee := range committees {
 		keyBytes, err := committee.RawBytes()
@@ -539,15 +538,10 @@ func storeStakerInfo(
 		}
 		key := GetStakerInfoKey(keyBytes)
 		committeeString, err := committee.ToBase58()
-		tempNumberOfRound, ok := numberOfRound[committeeString]
-		if !ok {
-			tempNumberOfRound = 0
-		}
 		value := NewStakerInfoWithValue(
 			rewardReceiver[committee.GetIncKeyBase58()],
 			autoStaking[committeeString],
 			stakingTx[committeeString],
-			tempNumberOfRound,
 		)
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
@@ -564,26 +558,7 @@ func StoreStakerInfoV1(
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 ) error {
-	numberOfRound := make(map[string]int)
-	for _, committee := range committees {
-		committeeString, err := committee.ToBase58()
-		if err != nil {
-			return err
-		}
-		numberOfRound[committeeString] = 0
-	}
-	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, numberOfRound)
-}
-
-func StoreStakerInfoV2(
-	stateDB *StateDB,
-	committees []incognitokey.CommitteePublicKey,
-	rewardReceiver map[string]privacy.PaymentAddress,
-	autoStaking map[string]bool,
-	stakingTx map[string]common.Hash,
-	numberOfRound map[string]int,
-) error {
-	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, numberOfRound)
+	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx)
 }
 
 func GetBeaconCommitteeEnterTime(

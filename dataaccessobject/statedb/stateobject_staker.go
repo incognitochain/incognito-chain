@@ -14,7 +14,6 @@ type StakerInfo struct {
 	rewardReceiver privacy.PaymentAddress
 	txStakingID    common.Hash
 	autoStaking    bool
-	numberOfRound  int
 }
 
 func NewStakerInfo() *StakerInfo {
@@ -25,13 +24,11 @@ func NewStakerInfoWithValue(
 	rewardReceiver privacy.PaymentAddress,
 	autoStaking bool,
 	txStakingID common.Hash,
-	numberOfRound int,
 ) *StakerInfo {
 	return &StakerInfo{
 		rewardReceiver: rewardReceiver,
 		autoStaking:    autoStaking,
 		txStakingID:    txStakingID,
-		numberOfRound:  numberOfRound,
 	}
 }
 
@@ -47,7 +44,6 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		TxStakingID:    c.txStakingID,
 		AutoStaking:    c.autoStaking,
 		ShardID:        c.shardID,
-		NumberOfRound:  c.numberOfRound,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -72,16 +68,7 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	c.rewardReceiver = temp.RewardReceiver
 	c.autoStaking = temp.AutoStaking
 	c.shardID = temp.ShardID
-	c.numberOfRound = temp.NumberOfRound
 	return nil
-}
-
-func (c *StakerInfo) NumberOfRound() int {
-	return c.numberOfRound
-}
-
-func (c *StakerInfo) SetNumberOfRound(numberOfRound int) {
-	c.numberOfRound = numberOfRound
 }
 
 func (s *StakerInfo) SetRewardReceiver(r privacy.PaymentAddress) {
