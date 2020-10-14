@@ -30,7 +30,6 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 			receiverPaymentAddressStructs[0],
 			true,
 			txHashes[0],
-			0,
 		)
 		m1[key1] = stakerInfo
 	}

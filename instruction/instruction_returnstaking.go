@@ -11,9 +11,9 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-//ReturnStakeIns :
+//ReturnStakeInstruction :
 // format: "return", "key1,key2,key3", "2", "1231231,312312321,12312321", "100,100,100,100"
-type ReturnStakeIns struct {
+type ReturnStakeInstruction struct {
 	PublicKeys       []string
 	PublicKeysStruct []incognitokey.CommitteePublicKey
 	ShardID          byte
@@ -26,26 +26,28 @@ func NewReturnStakeInsWithValue(
 	publicKeys []string,
 	sID byte,
 	txStake []string,
-	pReturn []uint,
-) *ReturnStakeIns {
-	return &ReturnStakeIns{
-		PublicKeys:     publicKeys,
-		ShardID:        sID,
-		StakingTXIDs:   txStake,
-		PercentReturns: pReturn,
+) *ReturnStakeInstruction {
+	rsI := &ReturnStakeInstruction{
+		ShardID: sID,
 	}
+	rsI, _ = rsI.SetPublicKeys(publicKeys)
+	rsI, _ = rsI.SetPublicKeys(txStake)
+	for _, _ = range publicKeys {
+		rsI.PercentReturns = append(rsI.PercentReturns, 100)
+	}
+	return rsI
 }
 
-func NewReturnStakeIns() *ReturnStakeIns {
-	return &ReturnStakeIns{}
+func NewReturnStakeIns() *ReturnStakeInstruction {
+	return &ReturnStakeInstruction{}
 }
 
-func (rsI *ReturnStakeIns) SetShardID(sID byte) error {
+func (rsI *ReturnStakeInstruction) SetShardID(sID byte) error {
 	rsI.ShardID = sID
 	return nil
 }
 
-func (rsI *ReturnStakeIns) SetPublicKeys(publicKeys []string) (*ReturnStakeIns, error) {
+func (rsI *ReturnStakeInstruction) SetPublicKeys(publicKeys []string) (*ReturnStakeInstruction, error) {
 	if publicKeys == nil {
 		return nil, errors.New("Public Keys Are Null")
 	}
@@ -58,7 +60,7 @@ func (rsI *ReturnStakeIns) SetPublicKeys(publicKeys []string) (*ReturnStakeIns, 
 	return rsI, nil
 }
 
-func (rsI *ReturnStakeIns) SetStakingTXIDs(txIDs []string) (*ReturnStakeIns, error) {
+func (rsI *ReturnStakeInstruction) SetStakingTXIDs(txIDs []string) (*ReturnStakeInstruction, error) {
 	if txIDs == nil {
 		return nil, errors.New("Tx Hashes Are Null")
 	}
@@ -74,32 +76,32 @@ func (rsI *ReturnStakeIns) SetStakingTXIDs(txIDs []string) (*ReturnStakeIns, err
 	return rsI, nil
 }
 
-func (rsI *ReturnStakeIns) SetPercentReturns(percentReturns []uint) error {
+func (rsI *ReturnStakeInstruction) SetPercentReturns(percentReturns []uint) error {
 	rsI.PercentReturns = percentReturns
 	return nil
 }
 
-func (rsI *ReturnStakeIns) GetType() string {
+func (rsI *ReturnStakeInstruction) GetType() string {
 	return RETURN_ACTION
 }
 
-func (rsI *ReturnStakeIns) GetShardID() byte {
+func (rsI *ReturnStakeInstruction) GetShardID() byte {
 	return rsI.ShardID
 }
 
-func (rsI *ReturnStakeIns) GetPercentReturns() []uint {
+func (rsI *ReturnStakeInstruction) GetPercentReturns() []uint {
 	return rsI.PercentReturns
 }
 
-func (rsI *ReturnStakeIns) GetStakingTX() []string {
+func (rsI *ReturnStakeInstruction) GetStakingTX() []string {
 	return rsI.StakingTXIDs
 }
 
-func (rsI *ReturnStakeIns) GetPublicKey() []string {
+func (rsI *ReturnStakeInstruction) GetPublicKey() []string {
 	return rsI.PublicKeys
 }
 
-func (rsI *ReturnStakeIns) ToString() []string {
+func (rsI *ReturnStakeInstruction) ToString() []string {
 	returnStakeInsStr := []string{RETURN_ACTION}
 	returnStakeInsStr = append(returnStakeInsStr, strings.Join(rsI.PublicKeys, SPLITTER))
 	returnStakeInsStr = append(returnStakeInsStr, strconv.Itoa(int(rsI.ShardID)))
@@ -112,14 +114,25 @@ func (rsI *ReturnStakeIns) ToString() []string {
 	return returnStakeInsStr
 }
 
-func ValidateAndImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeIns, error) {
+func (rsI *ReturnStakeInstruction) AddInTheSameShard(publicKey string, stakingTx string) *ReturnStakeInstruction {
+	rsI.PublicKeys = append(rsI.PublicKeys, publicKey)
+	publicKeyStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{publicKey})
+	rsI.PublicKeysStruct = append(rsI.PublicKeysStruct, publicKeyStruct[0])
+	rsI.StakingTXIDs = append(rsI.StakingTXIDs, stakingTx)
+	stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingTx)
+	rsI.StakingTxHashes = append(rsI.StakingTxHashes, *stakingTxHash)
+	rsI.PercentReturns = append(rsI.PercentReturns, 100)
+	return rsI
+}
+
+func ValidateAndImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeInstruction, error) {
 	if err := ValidateReturnStakingInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
 	return ImportReturnStakingInstructionFromString(instruction)
 }
 
-func ImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeIns, error) {
+func ImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeInstruction, error) {
 	returnStakingIns := NewReturnStakeIns()
 	var err error
 	returnStakingIns, err = returnStakingIns.SetPublicKeys(strings.Split(instruction[1], SPLITTER))

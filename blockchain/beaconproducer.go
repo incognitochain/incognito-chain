@@ -422,7 +422,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 				stakeInstruction.PublicKeys,
 				shardID,
 				stakeInstruction.TxStakes,
-				percentReturns,
 			)
 			instructions = append(instructions, returnStakingIns.ToString())
 		}
