@@ -30,7 +30,7 @@ func TestReturnStakeIns_SetPublicKeys(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *ReturnStakeIns
+		want    *ReturnStakeInstruction
 		wantErr bool
 	}{
 		{
@@ -47,7 +47,7 @@ func TestReturnStakeIns_SetPublicKeys(t *testing.T) {
 			args: args{
 				publicKeys: []string{},
 			},
-			want: &ReturnStakeIns{
+			want: &ReturnStakeInstruction{
 				PublicKeys:       []string{},
 				PublicKeysStruct: []incognitokey.CommitteePublicKey{},
 			},
@@ -71,7 +71,7 @@ func TestReturnStakeIns_SetPublicKeys(t *testing.T) {
 					key1, key2, key3, key4,
 				},
 			},
-			want: &ReturnStakeIns{
+			want: &ReturnStakeInstruction{
 				PublicKeys: []string{
 					key1, key2, key3, key4,
 				},
@@ -84,7 +84,7 @@ func TestReturnStakeIns_SetPublicKeys(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rsI := &ReturnStakeIns{
+			rsI := &ReturnStakeInstruction{
 				PublicKeys:       tt.fields.PublicKeys,
 				PublicKeysStruct: tt.fields.PublicKeysStruct,
 				ShardID:          tt.fields.ShardID,
@@ -94,11 +94,11 @@ func TestReturnStakeIns_SetPublicKeys(t *testing.T) {
 			}
 			got, err := rsI.SetPublicKeys(tt.args.publicKeys)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ReturnStakeIns.SetPublicKeys() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReturnStakeInstruction.SetPublicKeys() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReturnStakeIns.SetPublicKeys() = %v, want %v", got, tt.want)
+				t.Errorf("ReturnStakeInstruction.SetPublicKeys() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -115,7 +115,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *ReturnStakeIns
+		want    *ReturnStakeInstruction
 		wantErr bool
 	}{
 		{
@@ -235,7 +235,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 					strings.Join([]string{"100", "100", "100", "100"}, SPLITTER),
 				},
 			},
-			want: &ReturnStakeIns{
+			want: &ReturnStakeInstruction{
 				PublicKeys: []string{
 					key1, key2, key3, key4,
 				},
@@ -279,7 +279,7 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *ReturnStakeIns
+		want    *ReturnStakeInstruction
 		wantErr bool
 	}{
 		{
@@ -370,7 +370,7 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 					strings.Join([]string{"100", "100", "100", "100"}, SPLITTER),
 				},
 			},
-			want: &ReturnStakeIns{
+			want: &ReturnStakeInstruction{
 				PublicKeys: []string{
 					key1, key2, key3, key4,
 				},
@@ -583,7 +583,7 @@ func TestReturnStakeIns_ToString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rsI := &ReturnStakeIns{
+			rsI := &ReturnStakeInstruction{
 				PublicKeys:       tt.fields.PublicKeys,
 				PublicKeysStruct: tt.fields.PublicKeysStruct,
 				ShardID:          tt.fields.ShardID,
@@ -592,7 +592,7 @@ func TestReturnStakeIns_ToString(t *testing.T) {
 				PercentReturns:   tt.fields.PercentReturns,
 			}
 			if got := rsI.ToString(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReturnStakeIns.ToString() = %v, want %v", got, tt.want)
+				t.Errorf("ReturnStakeInstruction.ToString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -617,7 +617,7 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *ReturnStakeIns
+		want    *ReturnStakeInstruction
 		wantErr bool
 	}{
 		{
@@ -634,7 +634,7 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 			args: args{
 				txIDs: []string{},
 			},
-			want: &ReturnStakeIns{
+			want: &ReturnStakeInstruction{
 				StakingTXIDs:    []string{},
 				StakingTxHashes: []common.Hash{},
 			},
@@ -648,7 +648,7 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 					"xyz", "xyz1", "xyz2", "xyz3",
 				},
 			},
-			want:    &ReturnStakeIns{},
+			want:    &ReturnStakeInstruction{},
 			wantErr: true,
 		},
 		{
@@ -659,7 +659,7 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 					txHash1, txHash2, txHash3, txHash4,
 				},
 			},
-			want: &ReturnStakeIns{
+			want: &ReturnStakeInstruction{
 				StakingTXIDs: []string{
 					txHash1, txHash2, txHash3, txHash4,
 				},
@@ -672,7 +672,7 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rsI := &ReturnStakeIns{
+			rsI := &ReturnStakeInstruction{
 				PublicKeys:       tt.fields.PublicKeys,
 				PublicKeysStruct: tt.fields.PublicKeysStruct,
 				ShardID:          tt.fields.ShardID,
@@ -685,12 +685,12 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 			log.Println("err:", err)
 			log.Println("tt.wantErr:", tt.wantErr)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ReturnStakeIns.SetStakingTXIDs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReturnStakeInstruction.SetStakingTXIDs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr {
 				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("ReturnStakeIns.SetStakingTXIDs() = %v, want %v", got, tt.want)
+					t.Errorf("ReturnStakeInstruction.SetStakingTXIDs() = %v, want %v", got, tt.want)
 				}
 			}
 		})

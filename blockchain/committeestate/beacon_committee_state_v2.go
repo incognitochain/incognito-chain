@@ -333,6 +333,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
 	var err error
 	incurredInstructions := [][]string{}
+	returnStakingIntructions := make(map[byte]*instruction.ReturnStakeInstruction)
 
 	engine.finalBeaconCommitteeStateV2.mu.RLock()
 	engine.finalBeaconCommitteeStateV2.clone(engine.uncommittedBeaconCommitteeStateV2)
@@ -392,14 +393,10 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			tempIncurredIns := [][]string{}
-			committeeChange, tempIncurredIns, err =
-				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
+			committeeChange, returnStakingIntructions, err =
+				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange, returnStakingIntructions)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			if tempIncurredIns != nil {
-				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
@@ -423,7 +420,9 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	if err != nil {
 		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-
+	for _, returnStakingIntruction := range returnStakingIntructions {
+		incurredInstructions = append(incurredInstructions, returnStakingIntruction.ToString())
+	}
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
@@ -477,7 +476,7 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 		return incurredInstructions, nil
 	}
 	var err error
-
+	returnStakingInstructions := make(map[byte]*instruction.ReturnStakeInstruction)
 	env.unassignedCommonPool, err = newB.unassignedCommonPool()
 	if err != nil {
 		return incurredInstructions, err
@@ -494,13 +493,13 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
 				return incurredInstructions, err
 			}
-			_, incurredInsFromUnstake, err :=
-				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange)
+			_, returnStakingInstructions, err =
+				newB.processUnstakeInstruction(unstakeInstruction, env, committeeChange, returnStakingInstructions)
 			if err != nil {
 				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
 			}
-			if incurredInsFromUnstake != nil {
-				incurredInstructions = append(incurredInstructions, incurredInsFromUnstake...)
+			for _, returnStakingInstruction := range returnStakingInstructions {
+				incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
 			}
 		}
 	}
@@ -720,12 +719,9 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	unstakeInstruction *instruction.UnstakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
-) (*CommitteeChange, [][]string, error) {
+	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+) (*CommitteeChange, map[byte]*instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	incurredInstructions := [][]string{}
-	returnStakerInfoPublicKeys := make(map[byte][]string)
-	stakingTxs := make(map[byte][]string)
-	percentReturns := make(map[byte][]uint)
 	indexNextEpochShardCandidate := make(map[string]int)
 	for i, v := range b.shardCommonPool {
 		key, err := v.ToBase58()
@@ -758,12 +754,12 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			newCommitteeChange.NextEpochShardCandidateRemoved =
 				append(newCommitteeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
 
-			returnStakerInfoPublicKeys[stakerInfo.ShardID()] =
-				append(returnStakerInfoPublicKeys[stakerInfo.ShardID()], committeePublicKey)
-			percentReturns[stakerInfo.ShardID()] =
-				append(percentReturns[stakerInfo.ShardID()], 100)
-			stakingTxs[stakerInfo.ShardID()] =
-				append(stakingTxs[stakerInfo.ShardID()], stakerInfo.TxStakingID().String())
+			returnStakingInstructions = buildReturnStakingInstruction(
+				returnStakingInstructions,
+				committeePublicKey,
+				stakerInfo.ShardID(),
+				stakerInfo.TxStakingID().String(),
+			)
 
 			err2 := b.deleteStakerInfo(unstakeInstruction.CommitteePublicKeysStruct[index], env.ConsensusStateDB)
 			if err2 != nil {
@@ -772,19 +768,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 		}
 	}
 
-	for i, v := range returnStakerInfoPublicKeys {
-		if v != nil {
-			returnStakingIns := buildReturnStakingInstruction(
-				v,
-				i,
-				stakingTxs[i],
-				percentReturns[i],
-			)
-			incurredInstructions = append(incurredInstructions, returnStakingIns.ToString())
-		}
-	}
-
-	return newCommitteeChange, incurredInstructions, nil
+	return newCommitteeChange, returnStakingInstructions, nil
 }
 
 func (engine *BeaconCommitteeEngineV2) generateUncommittedCommitteeHashes() (*BeaconCommitteeStateHash, error) {
@@ -973,15 +957,21 @@ func (engine *BeaconCommitteeEngineV2) ActiveShards() int {
 }
 
 func buildReturnStakingInstruction(
-	publicKeys []string,
+	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+	publicKey string,
 	shardID byte,
-	txStake []string,
-	pReturn []uint,
-) *instruction.ReturnStakeIns {
-	return instruction.NewReturnStakeInsWithValue(
-		publicKeys,
-		shardID,
-		txStake,
-		pReturn,
-	)
+	txStake string,
+) map[byte]*instruction.ReturnStakeInstruction {
+	returnStakingInstruction, ok := returnStakingInstructions[shardID]
+	if !ok {
+		returnStakingInstruction = instruction.NewReturnStakeInsWithValue(
+			[]string{publicKey},
+			shardID,
+			[]string{txStake},
+		)
+	} else {
+		returnStakingInstruction.AddInTheSameShard(publicKey, txStake)
+	}
+	returnStakingInstructions[shardID] = returnStakingInstruction
+	return returnStakingInstructions
 }
