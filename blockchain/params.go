@@ -230,7 +230,7 @@ func init() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
-		PortalETHContractAddressStr: "0x1B4c8873Fd83aB7E2eaB66cDB238F884827a61d4", // todo: update sc address
+		PortalETHContractAddressStr: "0x8c13AFB7815f10A8333955854E6ec7503eD841B7", // todo: update sc address
 	}
 	// END TESTNET
 

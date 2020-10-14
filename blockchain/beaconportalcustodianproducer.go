@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math/big"
@@ -490,59 +490,65 @@ func (p *portalRequestWithdrawCollateralProcessorV3) prepareDataBeforeProcessing
 	return nil, nil
 }
 
-// buildCustodianWithdrawCollateralInstV3 builds new instructions to allow custodian withdraw collateral from Portal SC
-func buildCustodianWithdrawCollateralInstV3(
+// buildConfirmWithdrawCollateralInstV3 builds new instructions to allow custodians/users withdraw collateral from Portal SC
+func buildConfirmWithdrawCollateralInstV3(
 	metaType int,
 	shardID byte,
-	custodianIncAddress string,
-	custodianExtAddress string,
-	extTokenID string,
-	amount *big.Int,
+	incAddress string,
+	extAddress string,
+	extCollaterals map[string]*big.Int,
 	txReqID common.Hash,
 	beaconHeight uint64,
 ) []string {
+	// convert extCollaterals to bytes (include padding)
+	// the first byte is len(extCollaterals)
+	extCollateralBytes := []byte{byte(len(extCollaterals))}
+	for tokenID, amount := range extCollaterals {
+		tokenIDBytes, _ := common.DecodeETHAddr(tokenID)
+		amountBytes := common.AddPaddingBigInt(amount, 32)
+		extCollateralBytes = append(extCollateralBytes, tokenIDBytes...)
+		extCollateralBytes = append(extCollateralBytes, amountBytes...)
+	}
+	extCollateralStrs := base58.Base58Check{}.Encode(extCollateralBytes, common.ZeroByte)
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		custodianIncAddress,
-		custodianExtAddress,
-		extTokenID,
-		amount.String(),
+		incAddress,
+		extAddress,
+		extCollateralStrs,
 		txReqID.String(),
 		strconv.Itoa(int(beaconHeight)),
 	}
 }
 
-func buildPortalCustodianWithdrawStatusFromInstV3(
-	inst []string,
-) (*metadata.CustodianWithdrawRequestStatusV3, error) {
-	if len(inst) != 8 {
-		return nil, errors.New("Portal custodian withdraw confirm instruction should have len = 8")
+// buildCustodianWithdrawCollateralInstV3 builds new instructions to allow custodian withdraw collateral from Portal SC
+func buildCustodianWithdrawCollateralInstV3(
+	metaType int,
+	shardID byte,
+	status string,
+	custodianIncAddress string,
+	custodianExtAddress string,
+	extTokenID string,
+	amount *big.Int,
+	txReqID common.Hash,
+) []string {
+	custodianWithdrawContent := metadata.PortalCustodianWithdrawRequestContentV3{
+		CustodianIncAddress:      custodianIncAddress,
+		CustodianExternalAddress: custodianExtAddress,
+		ExternalTokenID:          extTokenID,
+		Amount:                   amount,
+		TxReqID:                  txReqID,
+		ShardID:                  shardID,
 	}
-
-	metaType := inst[0]
-	paymentAddress := inst[2]
-	externalAddress := inst[3]
-	externalTokenID:= inst[4]
-	amount, _ := new(big.Int).SetString(inst[5], 10)
-	txIDStr := inst[6]
-	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
-
-	statusType := common.PortalCustodianWithdrawReqV3RejectStatus
-	if metaType == strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3) {
-		statusType = common.PortalCustodianWithdrawReqV3AcceptedStatus
+	custodianWithdrawContentBytes, _ := json.Marshal(custodianWithdrawContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(custodianWithdrawContentBytes),
 	}
-
-	status := metadata.NewCustodianWithdrawRequestStatusV3(
-		paymentAddress,
-		externalAddress,
-		externalTokenID,
-		amount,
-		*txID,
-		statusType,
-	)
-	return status, nil
 }
+
 func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 	bc *BlockChain,
 	contentStr string,
@@ -564,16 +570,23 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		Logger.log.Errorf("Have an error occurred while unmarshal custodian withdraw request action v3: %+v", err)
 		return [][]string{}, nil
 	}
+
 	amount := big.NewInt(0).SetUint64(actionData.Meta.Amount)
+	externalTokenID := actionData.Meta.ExternalTokenID
+	// Convert amount to big.Int to get bytes later
+	if bytes.Equal(common.FromHex(externalTokenID), common.FromHex(common.EthAddrStr)) {
+		// Convert Gwei to Wei for Ether
+		amount = amount.Mul(amount, big.NewInt(1000000000))
+	}
 	rejectInst := buildCustodianWithdrawCollateralInstV3(
 		actionData.Meta.Type,
 		shardID,
+		common.PortalCustodianWithdrawRequestV3RejectedChainStatus,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
 		amount,
 		actionData.TxReqID,
-		beaconHeight+1,
 	)
 
 	if currentPortalState == nil {
@@ -594,8 +607,8 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
+	// validate fee token collaterals
 	freeTokenCollaterals := custodian.GetFreeTokenCollaterals()
-	externalTokenID := actionData.Meta.ExternalTokenID
 	if freeTokenCollaterals == nil || freeTokenCollaterals[externalTokenID] == 0 {
 		Logger.log.Errorf("Custodian has no free token collaterals")
 		return [][]string{rejectInst}, nil
@@ -606,19 +619,25 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	// Convert amount to big.Int to get bytes later
-	if bytes.Equal(common.FromHex(externalTokenID), common.FromHex(common.EthAddrStr)) {
-		// Convert Gwei to Wei for Ether
-		amount = amount.Mul(amount, big.NewInt(1000000000))
-	}
-
-	inst := buildCustodianWithdrawCollateralInstV3(
-		metadata.PortalCustodianWithdrawConfirmMetaV3,
+	acceptedInst := buildCustodianWithdrawCollateralInstV3(
+		actionData.Meta.Type,
 		shardID,
+		common.PortalCustodianWithdrawRequestV3AcceptedChainStatus,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
 		amount,
+		actionData.TxReqID,
+	)
+
+	confirmInst := buildConfirmWithdrawCollateralInstV3(
+		metadata.PortalCustodianWithdrawConfirmMetaV3,
+		shardID,
+		actionData.Meta.CustodianIncAddress,
+		actionData.Meta.CustodianExternalAddress,
+		map[string]*big.Int{
+			externalTokenID: amount,
+		},
 		actionData.TxReqID,
 		beaconHeight+1,
 	)
@@ -626,5 +645,5 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 	// update custodian state
 	newCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, externalTokenID, actionData.Meta.Amount)
 	currentPortalState.CustodianPoolState[custodianKeyStr] = newCustodian
-	return [][]string{inst}, nil
+	return [][]string{acceptedInst, confirmInst}, nil
 }

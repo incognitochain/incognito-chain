@@ -44,6 +44,16 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
+	// for portal instructions
+	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
+		var err error
+		metaType, _ := strconv.Atoi(inst[0])
+		incProof := NewIncProof(metaType)
+		flatten, err = incProof.ConvertInstToBytes(inst)
+		if err != nil {
+			return nil, err
+		}
+
 	default:
 		for _, part := range inst {
 			flatten = append(flatten, []byte(part)...)
