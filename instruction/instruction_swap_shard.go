@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -45,6 +46,12 @@ func (s *SwapShardInstruction) ToString() []string {
 	SwapShardInstructionStr = append(SwapShardInstructionStr, fmt.Sprintf("%v", s.ChainID))
 	SwapShardInstructionStr = append(SwapShardInstructionStr, fmt.Sprintf("%v", s.Type))
 	return SwapShardInstructionStr
+}
+
+func (s *SwapShardInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewSwapInstruction()) ||
+		len(s.OutPublicKeyStructs) == 0 && len(s.OutPublicKeys) == 0 &&
+			len(s.InPublicKeyStructs) == 0 && len(s.InPublicKeys) == 0
 }
 
 func (s *SwapShardInstruction) SetInPublicKeys(inPublicKeys []string) (*SwapShardInstruction, error) {

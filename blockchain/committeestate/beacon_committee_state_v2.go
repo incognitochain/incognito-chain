@@ -454,7 +454,10 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		if err != nil {
 			return swapShardInstructions, err
 		}
-		swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+
+		if !swapShardInstruction.IsEmpty() {
+			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+		}
 	}
 	return swapShardInstructions, nil
 }
