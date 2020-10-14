@@ -502,7 +502,7 @@ func buildConfirmWithdrawCollateralInstV3(
 ) []string {
 	// convert extCollaterals to bytes (include padding)
 	// the first byte is len(extCollaterals)
-	extCollateralBytes := []byte{byte(len(extCollaterals))}
+	extCollateralBytes := []byte{}
 	for tokenID, amount := range extCollaterals {
 		tokenIDBytes, _ := common.DecodeETHAddr(tokenID)
 		amountBytes := common.AddPaddingBigInt(amount, 32)
@@ -513,6 +513,7 @@ func buildConfirmWithdrawCollateralInstV3(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
+		strconv.Itoa(len(extCollaterals)),
 		incAddress,
 		extAddress,
 		extCollateralStrs,

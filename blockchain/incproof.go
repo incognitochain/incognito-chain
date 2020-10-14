@@ -39,11 +39,11 @@ type PortalWithdrawCollateralProof struct {
 // FindConfirmInst finds a specific instruction in a list, returns it along with its index
 func (withdrawProof PortalWithdrawCollateralProof) FindConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
 	for i, inst := range insts {
-		if inst[0] != strconv.Itoa(withdrawProof.metaType) || len(inst) < 7 {
+		if inst[0] != strconv.Itoa(withdrawProof.metaType) || len(inst) < 8 {
 			continue
 		}
 
-		h, err := common.Hash{}.NewHashFromStr(inst[5])
+		h, err := common.Hash{}.NewHashFromStr(inst[6])
 		if err != nil {
 			continue
 		}
@@ -76,7 +76,7 @@ func (withdrawProof PortalWithdrawCollateralProof) FindBeaconBlockWithConfirmIns
 }
 
 func (withdrawProof PortalWithdrawCollateralProof) ConvertInstToBytes(inst []string) ([]byte, error) {
-	if len(inst) < 7 {
+	if len(inst) < 8 {
 		return nil, errors.New("invalid length of WithdrawCollateralConfirm inst")
 	}
 
@@ -84,22 +84,24 @@ func (withdrawProof PortalWithdrawCollateralProof) ConvertInstToBytes(inst []str
 	metaType := byte(m)
 	s, _ := strconv.Atoi(inst[1])
 	shardID := byte(s)
-	cusPaymentAddress := []byte(inst[2])
-	externalAddress, err := common.DecodeETHAddr(inst[3])
+	l, _ := strconv.Atoi(inst[2])
+	lenExternalCollateral := byte(l)
+	cusPaymentAddress := []byte(inst[3])
+	externalAddress, err := common.DecodeETHAddr(inst[4])
 	if err != nil {
 		Logger.log.Errorf("Decode external address error: ", err)
 		return nil, err
 	}
-	exteralCollaterals, _, err := base58.Base58Check{}.Decode(inst[4])
+	exteralCollaterals, _, err := base58.Base58Check{}.Decode(inst[5])
 	if err != nil {
 		Logger.log.Errorf("Decode exteral collaterals error: ", err)
 		return nil, err
 	}
 
-	txIDStr := inst[5]
+	txIDStr := inst[6]
 	txID, _ := common.Hash{}.NewHashFromStr(txIDStr)
 
-	beaconHeightStr := inst[6]
+	beaconHeightStr := inst[7]
 	bcHeightBN, _ := new(big.Int).SetString(beaconHeightStr, 10)
 	bcHeightBytes := common.AddPaddingBigInt(bcHeightBN, 32)
 
@@ -115,6 +117,7 @@ func (withdrawProof PortalWithdrawCollateralProof) ConvertInstToBytes(inst []str
 	flatten := []byte{}
 	flatten = append(flatten, metaType)
 	flatten = append(flatten, shardID)
+	flatten = append(flatten, lenExternalCollateral)
 	flatten = append(flatten, cusPaymentAddress...)
 	flatten = append(flatten, externalAddress...)
 	flatten = append(flatten, exteralCollaterals...)

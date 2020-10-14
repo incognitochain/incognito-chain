@@ -894,11 +894,11 @@ func (blockchain *BlockChain) processPortalConfirmWithdrawInstV3(
 		return nil
 	}
 
-	if len(instructions) != 7 {
+	if len(instructions) != 8 {
 		return nil // skip the instruction
 	}
 
-	txReqIDStr := instructions[5]
+	txReqIDStr := instructions[6]
 	txReqID, _ := common.Hash{}.NewHashFromStr(txReqIDStr)
 
 	// store withdraw confirm proof
