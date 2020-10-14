@@ -1516,7 +1516,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:     shardID,
-				ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
+				ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
@@ -1562,7 +1562,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[common.PRVCoinID] = info
+									item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
 								}
 							}
 						}
@@ -1607,7 +1607,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[common.PRVCoinID] = info
+									item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
 								}
 							}
 						}
@@ -1640,7 +1640,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
+									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID], info)
 								}
 							}
 						}
@@ -1680,7 +1680,8 @@ func (txService TxService) buildTxDetails(
 	txDetails := []jsonresult.ReceivedTransaction{}
 	for _, txInfo := range txInfos {
 		item := jsonresult.ReceivedTransaction{
-			ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
+			ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
+			InputSerialNumbers: map[common.Hash][]string{},
 		}
 		if len(keySet.ReadonlyKey.Rk) != 0 {
 			_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(*txInfo.Tx.Hash())
@@ -1701,6 +1702,13 @@ func (txService TxService) buildTxDetails(
 
 					proof := normalTx.GetProof()
 					if proof != nil {
+						// add list input coins' serial number
+						inputCoins := proof.GetInputCoins()
+						for _, in := range inputCoins {
+							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
+								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+						}
+
 						outputs := proof.GetOutputCoins()
 						for _, output := range outputs {
 							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
@@ -1726,7 +1734,7 @@ func (txService TxService) buildTxDetails(
 								if temp.CoinDetailsEncrypted != nil {
 									info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 								}
-								item.ReceivedAmounts[common.PRVCoinID] = info
+								item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
 							}
 						}
 					}
@@ -1746,6 +1754,13 @@ func (txService TxService) buildTxDetails(
 					// prv proof
 					proof := privacyTokenTx.GetProof()
 					if proof != nil {
+						// list serial number of native input coins
+						nativeInputCoins := proof.GetInputCoins()
+						for _, in := range nativeInputCoins {
+							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
+								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+						}
+
 						outputs := proof.GetOutputCoins()
 						for _, output := range outputs {
 							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
@@ -1771,7 +1786,7 @@ func (txService TxService) buildTxDetails(
 								if temp.CoinDetailsEncrypted != nil {
 									info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 								}
-								item.ReceivedAmounts[common.PRVCoinID] = info
+								item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
 							}
 						}
 					}
@@ -1779,6 +1794,13 @@ func (txService TxService) buildTxDetails(
 					// token proof
 					proof = privacyTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
 					if proof != nil {
+						// list serial number of ptoken input coins
+						ptokenInputCoins := proof.GetInputCoins()
+						for _, in := range ptokenInputCoins {
+							item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID],
+								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+						}
+
 						outputs := proof.GetOutputCoins()
 						for _, output := range outputs {
 							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
@@ -1804,7 +1826,7 @@ func (txService TxService) buildTxDetails(
 								if temp.CoinDetailsEncrypted != nil {
 									info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 								}
-								item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
+								item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID], info)
 							}
 						}
 					}
