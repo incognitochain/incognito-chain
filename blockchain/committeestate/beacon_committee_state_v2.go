@@ -433,6 +433,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		shardID := byte(key)
 		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
+
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
