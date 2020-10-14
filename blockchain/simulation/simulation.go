@@ -39,6 +39,7 @@ type simInstance struct {
 
 func main() {
 	instance1 := newSimInstance("test1")
+	instance1.DisableLog(true)
 	instance1.Run()
 	instance1.Stop()
 }
@@ -223,3 +224,44 @@ func (sim *simInstance) Run() {
 func (sim *simInstance) RunTxFeeder() {
 
 }
+
+func (sim *simInstance) DisableLog(disable bool) {
+	if disable {
+		dbLogger.SetLevel(common.LevelOff)
+		blockchainLogger.SetLevel(common.LevelOff)
+		bridgeLogger.SetLevel(common.LevelOff)
+		rpcLogger.SetLevel(common.LevelOff)
+		rpcServiceLogger.SetLevel(common.LevelOff)
+		rpcServiceBridgeLogger.SetLevel(common.LevelOff)
+	} else {
+		dbLogger.SetLevel(common.LevelTrace)
+		blockchainLogger.SetLevel(common.LevelTrace)
+		bridgeLogger.SetLevel(common.LevelTrace)
+		rpcLogger.SetLevel(common.LevelTrace)
+		rpcServiceLogger.SetLevel(common.LevelTrace)
+		rpcServiceBridgeLogger.SetLevel(common.LevelTrace)
+	}
+}
+
+type TxReceiver struct {
+	ReceiverPbK string
+	Amount      int
+}
+
+func (sim *simInstance) CreateTx(senderPrk string, receivers []TxReceiver) (metadata.Transaction, error) {
+	return nil, nil
+}
+
+func (sim *simInstance) GenerateBlock(chainID int, blocks int) error {
+	return nil
+}
+
+func (sim *simInstance) InjectBlock(chainID int, blocks []common.BlockInterface) error {
+	return nil
+}
+
+func (sim *simInstance) InjectTxs(txs []metadata.Transaction) error {
+	return nil
+}
+
+func (sim *simInstance) 
