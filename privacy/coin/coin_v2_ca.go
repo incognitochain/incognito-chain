@@ -34,7 +34,7 @@ func ComputeCommitmentCA(assetTag *operation.Point, r, v *operation.Scalar) (*op
 
 func ComputeAssetTagBlinder(sharedSecret *operation.Point, indexForShard uint32) (*operation.Scalar,error){
 	if sharedSecret==nil{
-		return nil, errors.New("missing arguments for asset tag blinder")
+		return nil, errors.New("Missing arguments for asset tag blinder")
 	}
 	blinder := operation.HashToScalar(append(sharedSecret.ToBytesS(), append([]byte("assettag"), common.Uint32ToBytes(indexForShard)...)...))
 	return blinder, nil
@@ -48,10 +48,42 @@ func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point,e
 	// this is g^SharedRandom, previously created by sender of the coin
 	sharedRanPoint, _, err := coin.GetTxRandomDetail()
 	if err != nil {
-		return nil, errors.New("cannot retrieve tx random detail")
+		return nil, errors.New("Cannot retrieve tx random detail")
 	}
 	sharedSecret := new(operation.Point).ScalarMult(sharedRanPoint, sk)
 	return sharedSecret, nil
+}
+
+func (coin *CoinV2) ValidateAssetTag(sharedSecret *operation.Point, tokenID *common.Hash) (bool, error){
+	if coin.GetAssetTag()==nil{
+		if tokenID==nil || *tokenID==common.PRVCoinID{
+			// a valid PRV coin
+			return true, nil
+		}
+		return false, errors.New("CA coin must have asset tag")
+	}
+	if tokenID==nil || *tokenID==common.PRVCoinID{
+		// invalid
+		return false, errors.New("PRV coin cannot have asset tag")
+	}
+	recomputedAssetTag := operation.HashToPoint(tokenID[:])
+	if operation.IsPointEqual(recomputedAssetTag, coin.GetAssetTag()){
+		return true, nil
+	}
+	_, indexForShard, err := coin.GetTxRandomDetail()
+	if err != nil {
+		return false, errors.New("Cannot retrieve tx random detail")
+	}
+	blinder, err := ComputeAssetTagBlinder(sharedSecret, indexForShard)
+	if err != nil {
+		return false, err
+	}
+	
+	recomputedAssetTag.Add(recomputedAssetTag, new(operation.Point).ScalarMult(operation.PedCom.G[PedersenRandomnessIndex], blinder))
+	if operation.IsPointEqual(recomputedAssetTag, coin.GetAssetTag()){
+		return true, nil
+	}
+	return false, nil
 }
 
 func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error{
