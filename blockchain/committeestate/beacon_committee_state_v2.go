@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
+	"sort"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -422,8 +423,15 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	if err != nil {
 		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	for _, returnStakingInstruction := range returnStakingInstructions {
-		incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
+
+	keys := []int{}
+	for k, _ := range returnStakingInstructions {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, key := range keys {
+		shardID := byte(key)
+		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
 	return hashes, committeeChange, incurredInstructions, nil
 }
