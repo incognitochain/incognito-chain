@@ -202,10 +202,10 @@ func pickBurningConfirmInstructionV1(
 
 // pickBridgeSwapConfirmInst finds all BridgeSwapConfirmMeta instructions in a shard to beacon block
 func pickBridgeSwapConfirmInst(
-	block *ShardToBeaconBlock,
+	instructions [][]string,
 ) [][]string {
 	metaType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
-	return pickInstructionWithType(block.Instructions, metaType)
+	return pickInstructionWithType(instructions, metaType)
 }
 
 // parseAndConcatPubkeys parses pubkeys of a commmittee (stored as string), converts them to addresses and concat them together

@@ -79,9 +79,8 @@ func InitBurningRequestTx(args string, serverTime int64) (string, error) {
 		return "", nil
 	}
 	burnerAddress := keyWalletBurner.KeySet.PaymentAddress
-
-	burningAmount, ok := metaDataParam["BurningAmount"].(float64)
-	if !ok {
+	burningAmount, err := common.AssertAndConvertStrToNumber(metaDataParam["BurningAmount"])
+	if err != nil {
 		println("Invalid meta data burning amount param")
 		return "", errors.New("Invalid meta data burning amount param")
 	}

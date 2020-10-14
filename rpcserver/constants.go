@@ -71,7 +71,9 @@ const (
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
 	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
+	gettransactionhashbyreceiverv2             = "gettransactionhashbyreceiverv2"
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
+	gettransactionbyreceiverv2                 = "gettransactionbyreceiverv2"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	getPrivacyCustomToken                      = "getprivacycustomtoken"
@@ -255,18 +257,15 @@ const (
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
 	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
 
-	getBeaconPoolInfo        = "getbeaconpoolinfo"
-	getShardToBeaconPoolInfo = "getshardtobeaconpoolinfo"
-	getShardPoolInfo         = "getshardpoolinfo"
-	getCrossShardPoolInfo    = "getcrossshardpoolinfo"
-	getAllView               = "getallview"
-	getAllViewDetail         = "getallviewdetail"
+	getBeaconPoolInfo     = "getbeaconpoolinfo"
+	getShardPoolInfo      = "getshardpoolinfo"
+	getCrossShardPoolInfo = "getcrossshardpoolinfo"
+	getAllView            = "getallview"
+	getAllViewDetail      = "getallviewdetail"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
-
-	// TODO: tpp
-	// portal v3
+	getTotalStaker = "gettotalstaker"
 )
 
 const (

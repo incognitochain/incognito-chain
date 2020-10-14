@@ -229,6 +229,18 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
+	if tx.GetType() == common.TxReturnStakingType{
+		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
+	}
+	if tx.GetType() == common.TxCustomTokenPrivacyType{
+		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		if !ok {
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
+		}
+		if tempTx.TxPrivacyTokenData.Mintable{
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
+		}
+	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight)
 	//==========
 	if err != nil {
@@ -285,7 +297,13 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
+
+	boolParams := make(map[string]bool)
+	boolParams["isNewTransaction"] = false
+	boolParams["isBatch"] = true
+	boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+
+	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), boolParams)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -517,7 +535,14 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
+		isNewZKP := tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+
+		boolParams := make(map[string]bool)
+		boolParams["hasPrivacy"] = tx.IsPrivacy()
+		boolParams["isNewTransaction"] = isNewTransaction
+		boolParams["isNewZKP"] = isNewZKP
+
+		validated, errValidateTxByItself := tx.ValidateTxByItself(boolParams, shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
 		}

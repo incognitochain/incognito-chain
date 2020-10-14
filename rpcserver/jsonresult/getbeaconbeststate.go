@@ -141,3 +141,13 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	}
 	return result
 }
+
+type GetTotalStaker struct {
+	TotalStaker int `json:"TotalStaker"`
+}
+
+func NewGetTotalStaker(total int) *GetTotalStaker {
+	return &GetTotalStaker{
+		TotalStaker: total,
+	}
+}

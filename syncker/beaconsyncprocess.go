@@ -31,7 +31,6 @@ type BeaconSyncProcess struct {
 	server              Server
 	chain               Chain
 	beaconPool          *BlkPool
-	s2bSyncProcess      *S2BSyncProcess
 	actionCh            chan func()
 	lastCrossShardState map[byte]map[byte]uint64
 }
@@ -55,7 +54,6 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 		actionCh:            make(chan func()),
 		lastCrossShardState: make(map[byte]map[byte]uint64),
 	}
-	s.s2bSyncProcess = NewS2BSyncProcess(server, s, chain)
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
@@ -63,12 +61,6 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
-			if s.isCommittee {
-				s.s2bSyncProcess.start()
-			} else {
-				s.s2bSyncProcess.stop()
-			}
-
 			select {
 			case f := <-s.actionCh:
 				f()
@@ -107,7 +99,6 @@ func (s *BeaconSyncProcess) start() {
 
 func (s *BeaconSyncProcess) stop() {
 	s.status = STOP_SYNC
-	s.s2bSyncProcess.stop()
 }
 
 //helper function to access map in atomic way

@@ -27,7 +27,7 @@ type PortalParams struct {
 	TP130                                uint64
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
-	SupportedCollateralTokens          []PortalCollateral
+	SupportedCollateralTokens            []PortalCollateral
 }
 
 /*
@@ -80,7 +80,7 @@ type Params struct {
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
-	BCHeightBreakPointFixRandShardCM uint64
+	BCHeightBreakPointNewZKP         uint64
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 }
 
@@ -175,8 +175,8 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
 		MinShardBlockInterval:            TestNetMinShardBlkInterval,
 		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
@@ -220,17 +220,17 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:          getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:            getSupportedPortalCollaterals(),
 			},
 		},
-		PortalTokens:                     initPortalTokensForTestNet(),
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 2070000,
-		ETHRemoveBridgeSigEpoch:          21920,
-		PortalETHContractAddressStr:      "0x1B4c8873Fd83aB7E2eaB66cDB238F884827a61d4", // todo: update sc address
+		PortalTokens:                initPortalTokensForTestNet(),
+		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:      1,
+		IsBackup:                    false,
+		PreloadAddress:              "",
+		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:     21920,
+		PortalETHContractAddressStr: "0x1B4c8873Fd83aB7E2eaB66cDB238F884827a61d4", // todo: update sc address
 	}
 	// END TESTNET
 
@@ -261,8 +261,8 @@ func init() {
 		StakingAmountShard:     TestNet2StakingAmountShard,
 		ActiveShards:           TestNet2ActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
 		MinShardBlockInterval:            TestNet2MinShardBlkInterval,
 		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
@@ -306,17 +306,17 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:          getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:            getSupportedPortalCollaterals(),
 			},
 		},
-		PortalTokens:                     initPortalTokensForTestNet(),
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 120000,
-		ETHRemoveBridgeSigEpoch:          2085,
-		PortalETHContractAddressStr:      "", // todo: update sc address
+		PortalTokens:                initPortalTokensForTestNet(),
+		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:      1,
+		IsBackup:                    false,
+		PreloadAddress:              "",
+		BCHeightBreakPointNewZKP:    260000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:     2085,
+		PortalETHContractAddressStr: "", // todo: update sc address
 	}
 	// END TESTNET-2
 
@@ -345,8 +345,8 @@ func init() {
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
 		MinShardBlockInterval:            MainnetMinShardBlkInterval,
 		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
@@ -390,17 +390,17 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:          getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:            getSupportedPortalCollaterals(),
 			},
 		},
-		PortalTokens:                     initPortalTokensForMainNet(),
-		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           559380,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 644000,
-		ETHRemoveBridgeSigEpoch:          1e18,
-		PortalETHContractAddressStr:      "", // todo: update sc address
+		PortalTokens:                initPortalTokensForMainNet(),
+		EpochBreakPointSwapNewKey:   MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:      559380,
+		IsBackup:                    false,
+		PreloadAddress:              "",
+		BCHeightBreakPointNewZKP:    737450,
+		ETHRemoveBridgeSigEpoch:     1e18,
+		PortalETHContractAddressStr: "", // todo: update sc address
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

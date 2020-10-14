@@ -42,6 +42,7 @@ const (
 	GetClonedShardBestStateError
 	GetShardBlockByHeightError
 	GetShardBestBlockError
+	GetLatestFinalizedShardBlockError
 	GetShardBlockByHashError
 	GetBeaconBlockByHashError
 	GetBeaconBlockByHeightError
@@ -125,6 +126,8 @@ const (
 	RestoreCandidateBeaconWaitingForNextRandom
 	RestoreCandidateShardWaitingForCurrentRandom
 	RestoreCandidateShardWaitingForNextRandom
+
+	GetTotalStakerError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -161,13 +164,14 @@ var ErrCodeMessage = map[int]struct {
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
 	// for block -2xxx
-	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
-	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},
-	GetShardBestBlockError:      {-2002, "Get shard best block error"},
-	GetBeaconBlockByHashError:   {-2003, "Get beacon block by hash error"},
-	GetBeaconBlockByHeightError: {-2004, "Get beacon block by height error"},
-	GetBeaconBestBlockHashError: {-2004, "Get beacon best block hash error"},
-	GetBeaconBestBlockError:     {-2005, "Get beacon best block error"},
+	GetShardBlockByHeightError:        {-2000, "Get shard block by height error"},
+	GetShardBlockByHashError:          {-2001, "Get shard block by hash error"},
+	GetShardBestBlockError:            {-2002, "Get shard best block error"},
+	GetBeaconBlockByHashError:         {-2003, "Get beacon block by hash error"},
+	GetBeaconBlockByHeightError:       {-2004, "Get beacon block by height error"},
+	GetBeaconBestBlockHashError:       {-2004, "Get beacon best block hash error"},
+	GetBeaconBestBlockError:           {-2005, "Get beacon best block error"},
+	GetLatestFinalizedShardBlockError: {-2006, "Get Latest Finalized Shard Block Error"},
 
 	// best state -3xxx
 	GetClonedBeaconBestStateError: {-3000, "Get Cloned Beacon Best State Error"},
@@ -251,6 +255,7 @@ var ErrCodeMessage = map[int]struct {
 	RestoreCandidateShardWaitingForCurrentRandom:  {-12007, "Restore candidate shard waiting for current random"},
 	RestoreCandidateShardWaitingForNextRandom:     {-12008, "Restore candidate shard waiting for next random"},
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
+	GetTotalStakerError:                           {-12010, "Get total staker return error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

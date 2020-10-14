@@ -378,7 +378,7 @@ func categorizeNSortPDECrossPoolTradeInstsByFee(
 	}
 
 	// sort tradable actions by trading fee
-	sort.Slice(tradableActions, func(i, j int) bool {
+	sort.SliceStable(tradableActions, func(i, j int) bool {
 		firstTradingFee, firstSellAmount := prepareInfoForSorting(
 			currentPDEState,
 			beaconHeight,

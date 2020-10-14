@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -15,24 +16,18 @@ const (
 	RANDOM_NUMBER                 = 3
 	SHARD_BLOCK_VERSION           = 1
 	DefaultMaxBlkReqPerPeer       = 900
-	DefaultMaxBlkReqPerTime       = 900
-	MinCommitteeSize              = 3                // min size to run bft
-	DefaultBroadcastStateTime     = 6 * time.Second  // in second
-	DefaultStateUpdateTime        = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
-	DefaultCacheCleanupTime       = 40 * time.Second // in second
+	MinCommitteeSize              = 3 // min size to run bft
 	WorkerNumber                  = 5
 	MAX_S2B_BLOCK                 = 30
 	MAX_BEACON_BLOCK              = 5
 	LowerBoundPercentForIncDAO    = 3
 	UpperBoundPercentForIncDAO    = 10
-	GetValidBlock                 = 20
 	TestRandom                    = true
 	NumberOfFixedBlockValidators  = 4
-	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
 	SpareTime                     = 1000 // in mili-second
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
 // burning addresses
@@ -70,7 +65,9 @@ const (
 	MainnetBasicReward = 1386666000 //1.386666 PRV
 	//MainETHContractAddressStr = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7" // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
 	//MainETHContractAddressStr               = "0x3c8ec94213f09A1575f773470830124dfb40042e"                                                              // v3-main - mainnet
-	MainETHContractAddressStr               = "0x6CC3873C3ca91cf5500DaD8B1A2c620B4f20507c"                                                              // v4-main - mainnet
+	//MainETHContractAddressStr               = "0x6CC3873C3ca91cf5500DaD8B1A2c620B4f20507c"                                                              // v4-main - mainnet
+	//MainETHContractAddressStr               = "0xED5309daac912a52d985c317576a1b3f5020FDc9"                                                              // v5-main - mainnet
+	MainETHContractAddressStr               = "0x97875355eF55Ae35613029df8B1C8Cf8f89c9066"                                                              // v6-main - mainnet
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
@@ -135,7 +132,7 @@ const (
 	// relaying header chain
 	TestnetBNBChainID        = "Binance-Chain-Ganges"
 	TestnetBTCChainID        = "Bitcoin-Testnet"
-	TestnetBTCDataFolderName = "btcrelayingv8"
+	TestnetBTCDataFolderName = "btcrelayingv13"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
@@ -177,7 +174,7 @@ const (
 	// relaying header chain
 	Testnet2BNBChainID        = "Binance-Chain-Ganges"
 	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
-	Testnet2BTCDataFolderName = "btcrelayingv9"
+	Testnet2BTCDataFolderName = "btcrelayingv10"
 
 	// BNB fullnode
 	Testnet2BNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
@@ -318,4 +315,26 @@ const (
 	StakeAction   = "stake"
 	AssignAction  = "assign"
 	StopAutoStake = "stopautostake"
+)
+
+var (
+	shardInsertBlockTimer                  = metrics.NewRegisteredTimer("shard/insert", nil)
+	shardVerifyPreprocesingTimer           = metrics.NewRegisteredTimer("shard/verify/preprocessing", nil)
+	shardVerifyPreprocesingForPreSignTimer = metrics.NewRegisteredTimer("shard/verify/preprocessingpresign", nil)
+	shardVerifyWithBestStateTimer          = metrics.NewRegisteredTimer("shard/verify/withbeststate", nil)
+	shardVerifyPostProcessingTimer         = metrics.NewRegisteredTimer("shard/verify/postprocessing", nil)
+	shardStoreBlockTimer                   = metrics.NewRegisteredTimer("shard/storeblock", nil)
+	shardUpdateBestStateTimer              = metrics.NewRegisteredTimer("shard/updatebeststate", nil)
+
+	beaconInsertBlockTimer                  = metrics.NewRegisteredTimer("beacon/insert", nil)
+	beaconVerifyPreprocesingTimer           = metrics.NewRegisteredTimer("beacon/verify/preprocessing", nil)
+	beaconVerifyPreprocesingForPreSignTimer = metrics.NewRegisteredTimer("beacon/verify/preprocessingpresign", nil)
+	beaconVerifyWithBestStateTimer          = metrics.NewRegisteredTimer("beacon/verify/withbeststate", nil)
+	beaconVerifyPostProcessingTimer         = metrics.NewRegisteredTimer("beacon/verify/postprocessing", nil)
+	beaconStoreBlockTimer                   = metrics.NewRegisteredTimer("beacon/storeblock", nil)
+	beaconUpdateBestStateTimer              = metrics.NewRegisteredTimer("beacon/updatebeststate", nil)
+)
+
+const (
+	Duration = 1000000
 )
