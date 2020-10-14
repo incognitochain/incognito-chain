@@ -451,7 +451,7 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		swapShardInstruction, _, _, err := createSwapShardInstructionV3(
+		swapShardInstruction, _, _, _, _ := createSwapShardInstructionV3(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
@@ -461,9 +461,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 			env.NumberOfFixedShardBlockValidator,
 			env.MissingSignaturePenalty,
 		)
-		if err != nil {
-			return swapShardInstructions, err
-		}
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 		}
@@ -636,7 +633,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-	_, newCommittees, newSubstitutes, err := createSwapShardInstructionV3(
+	_, newCommittees, newSubstitutes, slashingCommittees, normalCommittees := createSwapShardInstructionV3(
 		shardID,
 		tempSubstitutes,
 		tempCommittees,
@@ -664,11 +661,16 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	}
 
 	// process after swap for assign old committees to current shard pool
-	newCommitteeChange, returnStakingInstructions, err = b.processAfterSwap(env,
-		swapShardInstruction.OutPublicKeys,
-		swapShardInstruction.OutPublicKeyStructs,
-		shardID,
+	newCommitteeChange, returnStakingInstructions, err = b.processAfterNormalSwap(
+		env,
+		normalCommittees,
 		newCommitteeChange,
+		returnStakingInstructions,
+	)
+
+	returnStakingInstructions, err = b.processSlashing(
+		env,
+		slashingCommittees,
 		returnStakingInstructions,
 	)
 
@@ -679,20 +681,19 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	return newCommitteeChange, returnStakingInstructions, nil
 }
 
-// processAfterSwap process swapped out committee public key
+// processAfterNormalSwap process swapped out committee public key
 // if number of round is less than MAX_NUMBER_OF_ROUND go back to THAT shard pool, and increase number of round
 // if number of round is equal to or greater than MAX_NUMBER_OF_ROUND
 // - auto stake is false then remove completely out of any committee, candidate, substitute list
 // - auto stake is true then using assignment rule v2 to assign this committee public key
-func (b *BeaconCommitteeStateV2) processAfterSwap(
+func (b *BeaconCommitteeStateV2) processAfterNormalSwap(
 	env *BeaconCommitteeStateEnvironment,
 	outPublicKeys []string,
-	outPublicKeyStructs []incognitokey.CommitteePublicKey,
-	shardID byte,
 	committeeChange *CommitteeChange,
 	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
 ) (*CommitteeChange, map[byte]*instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
+	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
 	newCommitteeChange := committeeChange
 	for index, outPublicKey := range outPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
@@ -705,7 +706,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 		if stakerInfo.AutoStaking() {
 			candidates = append(candidates, outPublicKey)
 		} else {
-			returnStakingInstructions, err := b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
 				returnStakingInstructions,
 				outPublicKeyStructs[index],
 				outPublicKey,
@@ -720,6 +721,40 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 
 	newCommitteeChange = b.assign(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange)
 	return newCommitteeChange, returnStakingInstructions, nil
+}
+
+// processAfterNormalSwap process swapped out committee public key
+// if number of round is less than MAX_NUMBER_OF_ROUND go back to THAT shard pool, and increase number of round
+// if number of round is equal to or greater than MAX_NUMBER_OF_ROUND
+// - auto stake is false then remove completely out of any committee, candidate, substitute list
+// - auto stake is true then using assignment rule v2 to assign this committee public key
+func (b *BeaconCommitteeStateV2) processSlashing(
+	env *BeaconCommitteeStateEnvironment,
+	slashingPublicKeys []string,
+	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+) (map[byte]*instruction.ReturnStakeInstruction, error) {
+	slashingPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(slashingPublicKeys)
+	for index, outPublicKey := range slashingPublicKeys {
+		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
+		if err != nil {
+			return returnStakingInstructions, err
+		}
+		if !has {
+			return returnStakingInstructions, errors.Errorf("Can not found info of this public key %v", outPublicKey)
+		}
+		returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstructions,
+			slashingPublicKeyStructs[index],
+			outPublicKey,
+			stakerInfo,
+			env.ConsensusStateDB,
+		)
+		if err != nil {
+			return returnStakingInstructions, err
+		}
+	}
+
+	return returnStakingInstructions, nil
 }
 
 //processUnstakeInstruction : process unstake instruction from beacon block

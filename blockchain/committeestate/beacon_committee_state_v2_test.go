@@ -1809,16 +1809,16 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 				numberOfRound:              tt.fields.numberOfRound,
 				mu:                         tt.fields.mu,
 			}
-			got, err := b.processAfterSwap(tt.args.env, tt.args.outPublicKeys, tt.args.outPublicKeyStructs, tt.args.shardID, tt.args.committeeChange)
+			got, err := b.processAfterNormalSwap(tt.args.env, tt.args.outPublicKeys, tt.args.outPublicKeyStructs, tt.args.shardID, tt.args.committeeChange)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("processAfterSwap() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(tt.fields, tt.fieldsAfterProcess) {
-				t.Errorf("processAfterSwap() tt.fields = %v, tt.fieldsAfterProcess %v", tt.fields, tt.fieldsAfterProcess)
+				t.Errorf("processAfterNormalSwap() tt.fields = %v, tt.fieldsAfterProcess %v", tt.fields, tt.fieldsAfterProcess)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("processAfterSwap() got = %v, want %v", got, tt.want)
+				t.Errorf("processAfterNormalSwap() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -2348,7 +2348,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 				t.Errorf("processStopAutoStakeInstruction() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(tt.fields, tt.fieldsAfterProcess) {
-				t.Errorf("processAfterSwap() tt.fields = %v, tt.fieldsAfterProcess %v", tt.fields, tt.fieldsAfterProcess)
+				t.Errorf("processAfterNormalSwap() tt.fields = %v, tt.fieldsAfterProcess %v", tt.fields, tt.fieldsAfterProcess)
 			}
 		})
 	}
