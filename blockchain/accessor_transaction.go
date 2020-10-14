@@ -262,9 +262,17 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *inco
 			fmt.Println("PublicKey = ", c.GetPublicKey())
 			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
 			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
-			fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
-			if coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey) {
-				outCoinsBytes = append(outCoinsBytes, c.Bytes())
+			// fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
+			if pass, sharedSecret := c.IsCoinBelongToViewKey(keyset.ReadonlyKey); pass {
+				cv2, ok := c.(*privacy.CoinV2)
+				if !ok{
+					Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
+					return nil, errors.New("Cannot cast a coin to version 2")
+				}
+				pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
+				if pass{
+					outCoinsBytes = append(outCoinsBytes, c.Bytes())
+				}
 			}
 		}
 	}
@@ -366,9 +374,21 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 			Logger.log.Errorf("Cannot create coin from byte %v", err)
 			return nil, err
 		}
-		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-		if decryptedOut != nil {
-			results = append(results, decryptedOut)
+		if pass, sharedSecret := outCoin.IsCoinBelongToViewKey(keyset.ReadonlyKey); pass {
+			cv2, ok := outCoin.(*privacy.CoinV2)
+			var pass bool = false
+			if ok{
+				pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
+			}else{
+				// v1: no asset tag to check
+				pass = true
+			}
+			if pass{
+				decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+				if decryptedOut != nil {
+					results = append(results, decryptedOut)
+				}
+			}
 		}
 	}
 	return results, nil
