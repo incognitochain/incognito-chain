@@ -623,12 +623,6 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
 
-	// add count signature
-	err := curView.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
-	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
-	}
-
 	// processing instruction
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
@@ -663,7 +657,13 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
-	if beaconBestState.BeaconHeight%chainParamEpoch == 0 {
+	// add count signature
+	err = curView.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
+	if err != nil {
+		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+	}
+
+	if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset()
 	}

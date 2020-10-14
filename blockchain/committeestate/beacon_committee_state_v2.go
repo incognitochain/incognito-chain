@@ -455,20 +455,22 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		swapShardInstruction, _, err := createSwapShardInstructionV3(
+		swapShardInstruction, _, _, err := createSwapShardInstructionV3(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
 			env.MinShardCommitteeSize,
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
-			env.NumberOfFixedShardBlockValidators,
+			env.NumberOfFixedShardBlockValidator,
 			env.MissingSignaturePenalty,
 		)
 		if err != nil {
 			return swapShardInstructions, err
 		}
-		swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+		if !swapShardInstruction.IsEmpty() {
+			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+		}
 	}
 	return swapShardInstructions, nil
 }
@@ -635,38 +637,44 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	*CommitteeChange, error) {
 
 	var err error
-	chainID := byte(swapShardInstruction.ChainID)
+	shardID := byte(swapShardInstruction.ChainID)
+	committees := b.shardCommittee[shardID]
+	substitutes := b.shardSubstitute[shardID]
+	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
+
+	_, newCommittees, newSubstitutes, err := createSwapShardInstructionV3(
+		shardID,
+		tempSubstitutes,
+		tempCommittees,
+		env.MinShardCommitteeSize,
+		env.MaxShardCommitteeSize,
+		instruction.SWAP_BY_END_EPOCH,
+		env.NumberOfFixedShardBlockValidator,
+		env.MissingSignaturePenalty,
+	)
+
+	b.shardCommittee[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newCommittees)
+	b.shardSubstitute[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)
+
 	newCommitteeChange := committeeChange
 	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
 	tempSwapInPublicKeys := swapShardInstruction.InPublicKeyStructs
-	numberFixedValidators := env.NumberOfFixedShardBlockValidators
 
-	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
-		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
-			return newCommitteeChange, errors.New("Swap Out Not Valid In List Committees Public Key")
-		}
-		b.shardCommittee[chainID] = append(b.shardCommittee[chainID][:numberFixedValidators],
-			b.shardCommittee[chainID][numberFixedValidators+1:]...)
-		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
+		newCommitteeChange.ShardCommitteeRemoved[shardID] = append(newCommitteeChange.ShardCommitteeRemoved[shardID], v)
 	}
-	b.shardCommittee[chainID] = append(b.shardCommittee[chainID], tempSwapInPublicKeys...)
 
-	// process list shard pool
 	for _, v := range tempSwapInPublicKeys {
-		if !v.IsEqual(b.shardSubstitute[chainID][0]) {
-			return newCommitteeChange, errors.New("Swap In Not Valid In List Subtitutes Public Key")
-		}
-		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
-		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
+		newCommitteeChange.ShardSubstituteRemoved[shardID] = append(newCommitteeChange.ShardSubstituteRemoved[shardID], v)
+		newCommitteeChange.ShardCommitteeAdded[shardID] = append(newCommitteeChange.ShardCommitteeAdded[shardID], v)
 	}
-	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, err = b.processAfterSwap(env,
 		swapShardInstruction.OutPublicKeys,
 		swapShardInstruction.OutPublicKeyStructs,
-		chainID,
+		shardID,
 		newCommitteeChange,
 	)
 

@@ -56,16 +56,20 @@ func createSwapShardInstructionV3(
 	minCommitteeSize int,
 	maxCommitteeSize int,
 	typeIns int,
-	numberOfFixedValidators int,
+	numberOfFixedValidator int,
 	penalty map[string]signaturecounter.Penalty,
-) (*instruction.SwapShardInstruction, []string, error) {
+) (*instruction.SwapShardInstruction, []string, []string, error) {
 	committees, slashingCommittees, normalSwapCommittees :=
-		swapOut(committees, penalty, minCommitteeSize, maxCommitteeSize, numberOfFixedValidators)
+		swapOut(committees, penalty, minCommitteeSize, maxCommitteeSize, numberOfFixedValidator)
 
 	swappedOutCommittees := append(slashingCommittees, normalSwapCommittees...)
 
-	committees, newSubstitutes, swapInCommittees :=
+	newCommittees, newSubstitutes, swapInCommittees :=
 		swapInAfterSwapOut(committees, substitutes, maxCommitteeSize)
+
+	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
+		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, nil
+	}
 
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
 		swapInCommittees,
@@ -74,7 +78,7 @@ func createSwapShardInstructionV3(
 		typeIns,
 	)
 
-	return swapShardInstruction, newSubstitutes, nil
+	return swapShardInstruction, newCommittees, newSubstitutes, nil
 }
 
 // removeValidatorV2 remove validator and return removed list
@@ -189,7 +193,7 @@ func swapOut(
 	[]string,
 	[]string,
 ) {
-	if len(committees) == minCommitteeSize {
+	if len(committees) == numberOfFixedValidator {
 		return committees, []string{}, []string{}
 	}
 

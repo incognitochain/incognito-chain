@@ -435,8 +435,8 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
-					NumberOfFixedShardBlockValidators: 0,
-					ActiveShards:                      2,
+					NumberOfFixedShardBlockValidator: 0,
+					ActiveShards:                     2,
 				},
 			},
 			want:    []*instruction.SwapShardInstruction{},
@@ -466,9 +466,9 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
-					NumberOfFixedShardBlockValidators: 0,
-					ActiveShards:                      2,
-					MaxShardCommitteeSize:             4,
+					NumberOfFixedShardBlockValidator: 0,
+					ActiveShards:                     2,
+					MaxShardCommitteeSize:            4,
 				},
 			},
 			want: []*instruction.SwapShardInstruction{
@@ -591,72 +591,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Swap Out Not Valid In List Committees Public Key",
-			fields: fields{
-				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey, *incKey2, *incKey3, *incKey4,
-					},
-				},
-				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-				},
-				numberOfRound:  map[string]int{},
-				autoStake:      map[string]bool{},
-				rewardReceiver: map[string]privacy.PaymentAddress{},
-				stakingTx:      map[string]common.Hash{},
-			},
-			args: args{
-				swapShardInstruction: &instruction.SwapShardInstruction{
-					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey6,
-					},
-				},
-				env: &BeaconCommitteeStateEnvironment{
-					ConsensusStateDB:                  sDB,
-					NumberOfFixedShardBlockValidators: 0,
-				},
-				committeeChange: NewCommitteeChange(),
-			},
-			want:    NewCommitteeChange(),
-			wantErr: true,
-		},
-		{
-			name: "Swap In Not Valid In List Substitutes Public Key",
-			fields: fields{
-				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey, *incKey2, *incKey3, *incKey4,
-					},
-				},
-				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-				},
-				numberOfRound:  map[string]int{},
-				autoStake:      map[string]bool{},
-				rewardReceiver: map[string]privacy.PaymentAddress{},
-				stakingTx:      map[string]common.Hash{},
-			},
-			args: args{
-				swapShardInstruction: &instruction.SwapShardInstruction{
-					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey6,
-					},
-				},
-				env: &BeaconCommitteeStateEnvironment{
-					ConsensusStateDB:                  sDB,
-					NumberOfFixedShardBlockValidators: 0,
-				},
-				committeeChange: NewCommitteeChange(),
-			},
-			want:    NewCommitteeChange(),
-			wantErr: true,
-		},
-		{
 			name: "Valid Input [Back Directly To This Shard Pool]",
 			fields: fields{
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -687,8 +621,10 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					OutPublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					ConsensusStateDB:                  sDB,
-					NumberOfFixedShardBlockValidators: 0,
+					ConsensusStateDB:                 sDB,
+					NumberOfFixedShardBlockValidator: 0,
+					MaxShardCommitteeSize:            4,
+					MinShardCommitteeSize:            0,
 				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
@@ -735,7 +671,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					},
 				},
 				numberOfRound: map[string]int{
-					key: 1,
+					key: 0,
 				},
 				autoStake:      map[string]bool{},
 				rewardReceiver: map[string]privacy.PaymentAddress{},
@@ -752,10 +688,12 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					OutPublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					NumberOfFixedShardBlockValidators: 0,
-					ConsensusStateDB:                  sDB,
-					RandomNumber:                      5000,
-					ActiveShards:                      1,
+					NumberOfFixedShardBlockValidator: 0,
+					ConsensusStateDB:                 sDB,
+					RandomNumber:                     5000,
+					ActiveShards:                     1,
+					MaxShardCommitteeSize:            4,
+					MinShardCommitteeSize:            4,
 				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
@@ -1218,9 +1156,12 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 							"1",
 						},
 					},
-					ActiveShards:     1,
-					ConsensusStateDB: sDB,
-					RandomNumber:     5000,
+					ActiveShards:                     1,
+					ConsensusStateDB:                 sDB,
+					RandomNumber:                     5000,
+					MaxShardCommitteeSize:            4,
+					MinShardCommitteeSize:            0,
+					NumberOfFixedShardBlockValidator: 0,
 				},
 			},
 			want:    &BeaconCommitteeStateHash{},
