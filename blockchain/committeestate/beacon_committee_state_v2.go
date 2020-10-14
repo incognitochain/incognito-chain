@@ -411,7 +411,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if tempIncurredIns != nil {
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
-
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
