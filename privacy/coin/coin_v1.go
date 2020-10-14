@@ -587,3 +587,8 @@ func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 func (c *CoinV1) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []byte, amount uint64) bool {
 	return bytes.Equal(c.GetPublicKey().ToBytesS(), paymentAdd.GetPublicSpend().ToBytesS()) && amount == c.GetValue()
 }
+
+// Check whether the utxo is from this address
+func (c *CoinV1) IsCoinBelongToViewKey(viewKey key.ViewingKey) (bool, *operation.Point) {
+	return operation.IsPointEqual(viewKey.GetPublicSpend(), c.GetPublicKey()), nil
+}

@@ -495,3 +495,20 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 	tmpPubKey := new(operation.Point).Add(HrKG, paymentAdd.GetPublicSpend())
 	return bytes.Equal(tmpPubKey.ToBytesS(), c.publicKey.ToBytesS())
 }
+
+// Check whether the utxo is from this address
+func (c *CoinV2) IsCoinBelongToViewKey(viewKey key.ViewingKey) (bool, *operation.Point) {
+	txRandomPoint, index, err1 :=  c.GetTxRandomDetail()
+	if err1 != nil {
+		return false, nil
+	}
+	rK := new(operation.Point).ScalarMult(txRandomPoint, viewKey.GetPrivateView())
+
+	hashed := operation.HashToScalar(
+		append(rK.ToBytesS(), common.Uint32ToBytes(index)...),
+	)
+	HnG := new(operation.Point).ScalarMultBase(hashed)
+	KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
+
+	return operation.IsPointEqual(KCheck, viewKey.GetPublicSpend()), rK
+}

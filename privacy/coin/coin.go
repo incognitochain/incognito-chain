@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -33,6 +32,7 @@ type Coin interface {
 	SetBytes([]byte) error
 
 	CheckCoinValid(key.PaymentAddress, []byte, uint64) bool
+	IsCoinBelongToViewKey(viewKey key.ViewingKey) (bool, *operation.Point)
 }
 
 type PlainCoin interface {
@@ -106,33 +106,6 @@ func NewCoinFromByte(b []byte) (Coin, error) {
 	} else {
 		fmt.Println("New Coin From Byte V2", coinV2.publicKey)
 		return coinV2, nil
-	}
-}
-
-// Check whether the utxo is from this address
-func IsCoinBelongToViewKey(coin Coin, viewKey key.ViewingKey) bool {
-	if coin.GetVersion() == 1 {
-		return operation.IsPointEqual(viewKey.GetPublicSpend(), coin.GetPublicKey())
-	} else if coin.GetVersion() == 2 {
-		c, err := coin.(*CoinV2)
-		if err == false {
-			return false
-		}
-		txRandomPoint, index, err1 :=  c.GetTxRandomDetail()
-		if err1 != nil {
-			return false
-		}
-		rK := new(operation.Point).ScalarMult(txRandomPoint, viewKey.GetPrivateView())
-
-		hashed := operation.HashToScalar(
-			append(rK.ToBytesS(), common.Uint32ToBytes(index)...),
-		)
-		HnG := new(operation.Point).ScalarMultBase(hashed)
-		KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
-
-		return operation.IsPointEqual(KCheck, viewKey.GetPublicSpend())
-	} else {
-		return false
 	}
 }
 
