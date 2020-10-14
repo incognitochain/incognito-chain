@@ -162,6 +162,10 @@ func GetOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []
 }
 
 func GetOTACoinPrefix(tokenID common.Hash, shardID byte, height []byte) []byte {
+	// non-PRV coins will be indexed together
+	if tokenID != common.PRVCoinID {
+		tokenID = common.ConfidentialAssetID
+	}
 	h := common.HashH(append(otaCoinPrefix, append(tokenID[:], append(height, shardID)...)...))
 	return h[:][:prefixHashKeyLength]
 }

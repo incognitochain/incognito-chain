@@ -167,7 +167,7 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 				}
 
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
-				idx, err := statedb.GetOTACoinIndex(db, common.PRVCoinID, publicKeyBytes)
+				idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
 				if err != nil{
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
@@ -254,7 +254,7 @@ func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []inte
 				}
 
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
-				idx, err := statedb.GetOTACoinIndex(db, common.PRVCoinID, publicKeyBytes)
+				idx, err := statedb.GetOTACoinIndex(db, *tokenID, publicKeyBytes)
 				if err != nil{
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
