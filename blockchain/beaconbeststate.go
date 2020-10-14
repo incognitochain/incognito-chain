@@ -610,6 +610,24 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
+func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForReward(
+	totalReward map[common.Hash]uint64,
+	percentCustodianReward uint64,
+	percentForIncognitoDAO int,
+	isSplitRewardForCustodian bool,
+	activeShards int,
+	shardID byte,
+) *committeestate.BeaconCommitteeStateEnvironment {
+	env := committeestate.NewBeaconCommitteeStateEnvironment()
+	env.TotalReward = env.TotalReward
+	env.PercentCustodianReward = percentCustodianReward
+	env.DAOPercent = percentForIncognitoDAO
+	env.IsSplitRewardForCustodian = isSplitRewardForCustodian
+	env.ActiveShards = activeShards
+	env.ShardID = shardID
+	return env
+}
+
 func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}

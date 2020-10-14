@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 
@@ -16,18 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
-
-func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
-	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
-	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
-	n := (blkHeight - 1) / blockInYear
-	reward := uint64(blockchain.config.ChainParams.BasicReward)
-	for ; n > 0; n-- {
-		reward *= 91
-		reward /= 100
-	}
-	return reward
-}
 
 func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB) error {
 	for _, inst := range beaconBlock.Body.Instructions {
@@ -195,9 +182,10 @@ func (beaconBestState *BeaconBestState) calculateReward(
 	//TODO: @tin
 	// For upgrading to dynamic committee size, move activeshards to committeestate package
 	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
+	// fmt.Println("numberOfActiveShards:", numberOfActiveShards)
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
-	// blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
-	// percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
+	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
+	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
@@ -210,6 +198,9 @@ func (beaconBestState *BeaconBestState) calculateReward(
 		if totalRewards[id] == nil {
 			totalRewards[id] = map[common.Hash]uint64{}
 		}
+		if totalRewardForShard[id] == nil {
+			totalRewardForShard[id] = map[common.Hash]uint64{}
+		}
 		for _, coinID := range allCoinID {
 			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
 			if err != nil {
@@ -219,7 +210,15 @@ func (beaconBestState *BeaconBestState) calculateReward(
 				delete(totalRewards[id], coinID)
 			}
 		}
-		env := &committeestate.BeaconCommitteeStateEnvironment{}
+		env := beaconBestState.NewBeaconCommitteeStateEnvironmentForReward(
+			totalRewards[id],
+			percentCustodianRewards,
+			percentForIncognitoDAO,
+			isSplitRewardForCustodian,
+			numberOfActiveShards,
+			byte(id),
+		)
+		// fmt.Println("env.ShardID:", env.ShardID)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := beaconBestState.
 			beaconCommitteeEngine.SplitReward(env)
 		if err != nil {
@@ -265,16 +264,19 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			return nil, nil, err
 		}
 	}
+
 	instRewardForShards, err = blockchain.buildInstRewardForShards(epoch, totalRewardForShard)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if len(totalRewardForIncDAO) > 0 {
 		instRewardForIncDAO, err = blockchain.buildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
+
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
 	return resInst, totalRewardForCustodian, nil
 }
@@ -347,6 +349,18 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 		responseMeta,
 		requestDetail.TokenID,
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
+}
+
+func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
+	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
+	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
+	n := (blkHeight - 1) / blockInYear
+	reward := uint64(blockchain.config.ChainParams.BasicReward)
+	for ; n > 0; n-- {
+		reward *= 91
+		reward /= 100
+	}
+	return reward
 }
 
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {

@@ -411,7 +411,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if tempIncurredIns != nil {
 				incurredInstructions = append(incurredInstructions, tempIncurredIns...)
 			}
-
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
@@ -709,7 +708,6 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 			newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], outPublicKeyStructs[index])
 			b.numberOfRound[outPublicKeys[index]]++
 		} else {
-			// TODO: @hung check substitute must be finished all round before swap out or not?
 			err := b.deleteStakerInfo(outPublicKeyStructs[index], env.ConsensusStateDB)
 			if err != nil {
 				return newCommitteeChange, err
