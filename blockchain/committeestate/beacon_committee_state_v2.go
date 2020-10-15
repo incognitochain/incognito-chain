@@ -319,6 +319,7 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 			continue
 		}
 		if inst[0] == instruction.STAKE_ACTION {
+			Logger.log.Info("[swap-v2] inst:", inst)
 			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
 			for index, candidate := range stakeInstruction.PublicKeyStructs {
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
@@ -648,7 +649,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
 		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
-			return newCommitteeChange, returnStakingInstructions, errors.New("Swap Out Not Valid In List Committees Public Key")
+			return nil, returnStakingInstructions, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
 		b.shardCommittee[chainID] = append(b.shardCommittee[chainID][:numberFixedValidators],
 			b.shardCommittee[chainID][numberFixedValidators+1:]...)
@@ -659,7 +660,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process list shard pool
 	for _, v := range tempSwapInPublicKeys {
 		if !v.IsEqual(b.shardSubstitute[chainID][0]) {
-			return newCommitteeChange, returnStakingInstructions, errors.New("Swap In Not Valid In List Subtitutes Public Key")
+			return nil, returnStakingInstructions, errors.New("Swap In Not Valid In List Subtitutes Public Key")
 		}
 		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
 		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
@@ -676,7 +677,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	)
 
 	if err != nil {
-		return newCommitteeChange, returnStakingInstructions, err
+		return nil, returnStakingInstructions, err
 	}
 
 	return newCommitteeChange, returnStakingInstructions, nil
@@ -1009,12 +1010,16 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 			if err != nil {
 				return err
 			}
-			if b.autoStake[key] {
-				err := b.deleteStakerInfo(value, env.ConsensusStateDB)
-				if err != nil {
-					return err
-				}
+			if !b.autoStake[key] {
+				removedStakerKeys = append(removedStakerKeys, value)
 			}
+		}
+	}
+
+	for _, v := range removedStakerKeys {
+		err := b.deleteStakerInfo(v, env.ConsensusStateDB)
+		if err != nil {
+			return err
 		}
 	}
 
