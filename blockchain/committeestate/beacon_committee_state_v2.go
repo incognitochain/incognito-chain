@@ -319,7 +319,6 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 			continue
 		}
 		if inst[0] == instruction.STAKE_ACTION {
-			Logger.log.Info("[swap-v2] inst:", inst)
 			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
 			for index, candidate := range stakeInstruction.PublicKeyStructs {
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]

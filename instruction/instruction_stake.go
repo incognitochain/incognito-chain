@@ -70,12 +70,6 @@ func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeIn
 	s.RewardReceivers = rewardReceivers
 	for _, v := range rewardReceivers {
 		wl, _ := wallet.Base58CheckDeserialize(v)
-		// if s.RewardReceiverStructs == nil {
-		// 	fmt.Println("[swap-v2] 1")
-		// }
-		// if wl == nil {
-		// 	fmt.Println("[swap-v2] 2")
-		// }
 		s.RewardReceiverStructs = append(s.RewardReceiverStructs, wl.KeySet.PaymentAddress)
 	}
 	return s
