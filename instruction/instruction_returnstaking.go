@@ -31,7 +31,7 @@ func NewReturnStakeInsWithValue(
 		ShardID: sID,
 	}
 	rsI, _ = rsI.SetPublicKeys(publicKeys)
-	rsI, _ = rsI.SetPublicKeys(txStake)
+	rsI, _ = rsI.SetStakingTXIDs(txStake)
 	for _, _ = range publicKeys {
 		rsI.PercentReturns = append(rsI.PercentReturns, 100)
 	}

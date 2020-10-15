@@ -675,7 +675,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	)
 
 	if err != nil {
-		return newCommitteeChange, returnStakingInstructions, err
+		return nil, returnStakingInstructions, err
 	}
 
 	return newCommitteeChange, returnStakingInstructions, nil
