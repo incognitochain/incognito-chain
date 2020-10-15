@@ -440,6 +440,19 @@ func GetLiquidationByExchangeRateStatus(stateDB *StateDB, beaconHeight uint64, c
 	return data, nil
 }
 
+func StoreLiquidationByExchangeRateStatusV3(stateDB *StateDB, beaconHeight uint64, custodianAddress string, statusContent []byte) error {
+	statusType := PortalLiquidationTpExchangeRatesStatusPrefixV3()
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	statusSuffix := append(beaconHeightBytes, []byte(custodianAddress)...)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreLiquidationByExchangeRatesStatusError, err)
+	}
+
+	return nil
+}
+
 func StoreCustodianTopupStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalLiquidationCustodianDepositStatusPrefix()
 	statusSuffix := []byte(txID)

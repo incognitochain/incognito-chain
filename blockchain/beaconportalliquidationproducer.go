@@ -75,6 +75,27 @@ func buildTopPercentileExchangeRatesLiquidationInst(
 	}
 }
 
+func buildLiquidationByExchangeRateInstV3(
+	custodianAddress string,
+	metaType int,
+	status string,
+	liquidationInfo map[string]metadata.LiquidationByRatesDetailV3,
+	remainUnlockCollaterals map[string]metadata.RemainUnlockCollateral,
+) []string {
+	liquidationContent := metadata.PortalLiquidationByRatesContentV3{
+		CustodianIncAddress: custodianAddress,
+		Details:             liquidationInfo,
+		RemainUnlockCollaterals: remainUnlockCollaterals,
+	}
+	liquidationContentBytes, _ := json.Marshal(liquidationContent)
+	return []string{
+		strconv.Itoa(metaType),
+		"-1",
+		status,
+		string(liquidationContentBytes),
+	}
+}
+
 // checkAndBuildInstForCustodianLiquidation checks and builds liquidation instructions
 // when custodians didn't return public token to users after timeout
 func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
@@ -407,6 +428,53 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 	return insts, nil
 }
 
+func buildInstRejectRedeemRequestByLiquidationExchangeRate(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	wRedeemID string,
+) ([]string, error) {
+	redeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(wRedeemID).String()
+	redeemReq := currentPortalState.WaitingRedeemRequests[redeemReqKey]
+
+	// reject waiting redeem request, return ptoken and redeem fee for users
+	// update custodian state (return holding public token amount)
+	err := UpdateCustodianStateAfterRejectRedeemRequestByLiquidation(currentPortalState, redeemReq, beaconHeight)
+	if err != nil {
+		Logger.log.Errorf("[buildInstRejectRedeemRequestByLiquidationExchangeRate] Error when updating custodian state %v - RedeemID %v\n: ",
+			err, redeemReq.GetUniqueRedeemID())
+		return []string{}, nil
+	}
+
+	// remove redeem request from waiting redeem requests list
+	deleteWaitingRedeemRequest(currentPortalState, redeemReqKey)
+
+	// get shardId of redeemer
+	redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
+	if err != nil {
+		Logger.log.Errorf("[buildInstRejectRedeemRequestByLiquidationExchangeRate] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
+			redeemReq.GetUniqueRedeemID(), err)
+		return []string{}, nil
+	}
+	shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
+
+	// build instruction
+	inst := buildRedeemRequestInst(
+		redeemReq.GetUniqueRedeemID(),
+		redeemReq.GetTokenID(),
+		redeemReq.GetRedeemAmount(),
+		redeemReq.GetRedeemerAddress(),
+		redeemReq.GetRedeemerRemoteAddress(),
+		redeemReq.GetRedeemFee(),
+		redeemReq.GetCustodians(),
+		metadata.PortalRedeemRequestMeta,
+		shardID,
+		common.Hash{},
+		common.PortalRedeemReqCancelledByLiquidationChainStatus,
+	)
+
+	return inst, nil
+}
+
 /*
 Top percentile (TP): 150 (TP150), 130 (TP130), 120 (TP120)
 if TP down, we are need liquidation custodian and notify to custodians (or users)
@@ -525,118 +593,61 @@ func buildInstForLiquidationTopPercentileExchangeRates(
 	return insts, nil
 }
 
-// TODO:
 func (blockchain *BlockChain) buildInstForLiquidationByExchangeRatesV3(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portalParams PortalParams) ([][]string, error) {
-	//if currentPortalState == nil {
-	//	Logger.log.Errorf("[LIQUIDATIONBYRATES] Current portal state is null")
-	//	return [][]string{}, nil
-	//}
-	//if len(currentPortalState.CustodianPoolState) == 0 {
-	//	return [][]string{}, nil
-	//}
-	//exchangeRate := currentPortalState.FinalExchangeRatesState
-	//if exchangeRate == nil {
-	//	Logger.log.Errorf("[LIQUIDATIONBYRATES] Final exchange rate is empty")
-	//	return [][]string{}, nil
-	//}
-	//
-	//insts := [][]string{}
-	//custodianPoolState := currentPortalState.CustodianPoolState
-	//sortedCustodianStateKeys := make([]string, 0)
-	//for key := range custodianPoolState {
-	//	sortedCustodianStateKeys = append(sortedCustodianStateKeys, key)
-	//}
-	//sort.Strings(sortedCustodianStateKeys)
-	//
-	//for _, custodianKey := range sortedCustodianStateKeys {
-	//	custodianState := custodianPoolState[custodianKey]
-	//	tpRatios, _, err := calAndCheckLiquidationRatioV3(currentPortalState, custodianState, exchangeRate, portalParams)
-	//	if err != nil {
-	//		Logger.log.Errorf("Error when calculating and checking tp ratio %v", err)
-	//		continue
-	//	}
-	//
-	//	liquidationRatios := map[string]metadata.LiquidationByRatesDetailV3{}
-	//
-	//	// reject waiting redeem requests that matching with liquidated custodians
-	//	if len(tpRatios) > 0 {
-	//		sortedTPRatioKeys := make([]string, 0)
-	//		for key := range tpRatios {
-	//			sortedTPRatioKeys = append(sortedTPRatioKeys, key)
-	//		}
-	//		sort.Strings(sortedTPRatioKeys)
-	//		for _, pTokenID := range sortedTPRatioKeys {
-	//			tpRatioDetail := tpRatios[pTokenID]
-	//			if tpRatioDetail.LiquidatedPubTokenAmount > 0 {
-	//				// check and build instruction for waiting redeem request
-	//				instsFromRedeemRequest, err := checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
-	//					beaconHeight,
-	//					currentPortalState,
-	//					custodianState,
-	//					pTokenID,
-	//					portalParams,
-	//				)
-	//				if err != nil {
-	//					Logger.log.Errorf("Error when check and build instruction from redeem request %v\n", err)
-	//					continue
-	//				}
-	//				if len(instsFromRedeemRequest) > 0 {
-	//					Logger.log.Infof("There is % tpRatioDetail instructions for tp exchange rate for redeem request", len(instsFromRedeemRequest))
-	//					insts = append(insts, instsFromRedeemRequest...)
-	//				}
-	//			}
-	//		}
-	//
-	//		remainUnlockAmounts := map[string]uint64{}
-	//		for _, pTokenID := range sortedTPRatioKeys {
-	//			tpRatioDetail := tpRatios[pTokenID]
-	//			liquidatedPubToken := GetTotalHoldPubTokenAmountExcludeMatchedRedeemReqs(currentPortalState, custodianState, pTokenID)
-	//			if liquidatedPubToken <= 0 {
-	//				continue
-	//			}
-	//
-	//			// calculate liquidated amount and remain unlocked amount for custodian
-	//			liquidatedAmountInPRV, remainUnlockAmount, err := CalLiquidatedCollateralAmount(
-	//				currentPortalState,
-	//				custodianKey,
-	//				liquidatedPubToken,
-	//				pTokenID,
-	//				exchangeRate,
-	//				portalParams)
-	//			if err != nil {
-	//				Logger.log.Errorf("Error when calculating unlock collateral amount %v - tokenID %v - Custodian address %v\n",
-	//					err, pTokenID, custodianState.GetIncognitoAddress())
-	//				continue
-	//			}
-	//
-	//			remainUnlockAmounts[pTokenID] += remainUnlockAmount
-	//			liquidationRatios[pTokenID] = metadata.LiquidationByRatesDetailV3{
-	//				Ratio:                            tpRatioDetail.Ratio,
-	//				LiquidatedPubTokenAmount:         0,
-	//				LiquidatedCollateralAmount:       0,
-	//				LiquidatedTokenCollateralsAmount: nil,
-	//			}
-	//		}
-	//
-	//		if len(liquidationRatios) > 0 {
-	//			//update current portal state
-	//			updateCurrentPortalStateOfLiquidationExchangeRates(currentPortalState, custodianKey, custodianState, liquidationRatios, remainUnlockAmounts)
-	//			inst := buildTopPercentileExchangeRatesLiquidationInst(
-	//				custodianState.GetIncognitoAddress(),
-	//				metadata.PortalLiquidateTPExchangeRatesMeta,
-	//				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
-	//				liquidationRatios,
-	//				remainUnlockAmounts,
-	//			)
-	//			insts = append(insts, inst)
-	//		}
-	//	}
-	//}
+	if currentPortalState == nil {
+		Logger.log.Errorf("[LIQUIDATIONBYRATES] Current portal state is null")
+		return [][]string{}, nil
+	}
+	if len(currentPortalState.CustodianPoolState) == 0 {
+		return [][]string{}, nil
+	}
+	exchangeRate := currentPortalState.FinalExchangeRatesState
+	if exchangeRate == nil {
+		Logger.log.Errorf("[LIQUIDATIONBYRATES] Final exchange rate is empty")
+		return [][]string{}, nil
+	}
 
-	return [][]string{}, nil
+	insts := [][]string{}
+	custodianPoolState := currentPortalState.CustodianPoolState
+	sortedCustodianStateKeys := make([]string, 0)
+	for key := range custodianPoolState {
+		sortedCustodianStateKeys = append(sortedCustodianStateKeys, key)
+	}
+	sort.Strings(sortedCustodianStateKeys)
+
+	for _, custodianKey := range sortedCustodianStateKeys {
+		custodianState := custodianPoolState[custodianKey]
+		tpRatios, remainUnlockColalterals, rejectedWRedeemIDs, err := calAndCheckLiquidationRatioV3(currentPortalState, custodianState, exchangeRate, portalParams)
+		if err != nil {
+			Logger.log.Errorf("Error when calculating and checking tp ratio %v", err)
+			continue
+		}
+
+		// reject waiting redeem requests that matching with liquidated custodians
+		for _, wRedeemId := range rejectedWRedeemIDs {
+			inst, err := buildInstRejectRedeemRequestByLiquidationExchangeRate(beaconHeight, currentPortalState, wRedeemId)
+			if err != nil {
+				Logger.log.Errorf("[LIQUIDATIONBYRATES] Error when building instruction reject redeem request ID %v - %v", wRedeemId, err)
+				continue
+			}
+			insts = append(insts, inst)
+		}
+
+		// update current portal state after liquidation custodianKey
+		updateCurrentPortalStateAfterLiquidationByRatesV3(currentPortalState, custodianKey, tpRatios, remainUnlockColalterals)
+		inst := buildLiquidationByExchangeRateInstV3(
+			custodianState.GetIncognitoAddress(),
+			metadata.PortalLiquidateByRatesMetaV3,
+			common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+			tpRatios,
+			remainUnlockColalterals)
+		insts = append(insts, inst)
+	}
+
+	return insts, nil
 }
 
 /* =======

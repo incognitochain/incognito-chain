@@ -664,3 +664,51 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 
 	return nil
 }
+
+func (blockchain *BlockChain) processLiquidationByExchangeRatesV3(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+
+	// unmarshal instructions content
+	var actionData metadata.PortalLiquidationByRatesContentV3
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
+	}
+
+	cusStateKeyStr := statedb.GenerateCustodianStateObjectKey(actionData.CustodianIncAddress).String()
+	custodianState, ok := currentPortalState.CustodianPoolState[cusStateKeyStr]
+	if !ok || custodianState == nil {
+		Logger.log.Errorf("Custodian not found")
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
+		liquidationInfo := actionData.Details
+
+		//update current portal state
+		updateCurrentPortalStateAfterLiquidationByRatesV3(currentPortalState, cusStateKeyStr, liquidationInfo, actionData.RemainUnlockCollaterals)
+
+		// store db
+		status := metadata.PortalLiquidationByRatesStatusV3{
+			CustodianIncAddress: actionData.CustodianIncAddress,
+			Details:             actionData.Details,
+		}
+		statusBytes, _ := json.Marshal(status)
+		err = statedb.StoreLiquidationByExchangeRateStatusV3(
+			portalStateDB,
+			beaconHeight,
+			custodianState.GetIncognitoAddress(),
+			statusBytes)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store liquidation by exchange rates v3 %v", err)
+			return nil
+		}
+	}
+	return nil
+}

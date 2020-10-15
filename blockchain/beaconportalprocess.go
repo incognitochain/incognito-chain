@@ -93,6 +93,10 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			// custodian request withdraw collateral v3
 		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3):
 			err = blockchain.processPortalCustodianWithdrawV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+			// liquidation by exchange rate v3
+		case strconv.Itoa(metadata.PortalLiquidateByRatesMetaV3):
+			err = blockchain.processLiquidationByExchangeRatesV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+
 		// for Portal smart contract
 		// todo: add more metadata need to unlock token from sc
 		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):

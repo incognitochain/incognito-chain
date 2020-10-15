@@ -37,7 +37,19 @@ type LiquidationByRatesDetailV3 struct {
 	LiquidatedTokenCollateralsAmount map[string]uint64 // externalTokenID: amount
 }
 
-type PortalLiquidationByRatesContent struct {
+type RemainUnlockCollateral struct {
+	PrvAmount    uint64
+	TokenAmounts map[string]uint64
+}
+
+type PortalLiquidationByRatesContentV3 struct {
+	CustodianIncAddress string
+	Details             map[string]LiquidationByRatesDetailV3 // portalTokenID: liquidation infos
+	RemainUnlockCollaterals map[string]RemainUnlockCollateral
+}
+
+
+type PortalLiquidationByRatesStatusV3 struct {
 	CustodianIncAddress string
 	Details             map[string]LiquidationByRatesDetailV3 // portalTokenID: liquidation infos
 }

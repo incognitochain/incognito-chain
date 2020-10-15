@@ -1138,6 +1138,86 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(
 	//end
 }
 
+func updateCurrentPortalStateAfterLiquidationByRatesV3(
+	currentPortalState *CurrentPortalState,
+	custodianKey string,
+	liquidationInfo map[string]metadata.LiquidationByRatesDetailV3,
+	remainUnlockAmounts map[string]metadata.RemainUnlockCollateral,
+) {
+	custodianState := currentPortalState.CustodianPoolState[custodianKey]
+
+	freePRVCollateral := custodianState.GetFreeCollateral()
+	freeTokenCollaterals := custodianState.GetFreeTokenCollaterals()
+
+	// update custodian state
+	for portalTokenID, lInfo := range liquidationInfo {
+		//hold public token amount
+		holdingPubTokenTmp := custodianState.GetHoldingPublicTokens()
+		holdingPubTokenTmp[portalTokenID] -= lInfo.LiquidatedPubTokenAmount
+		custodianState.SetHoldingPublicTokens(holdingPubTokenTmp)
+
+		// locked prv collateral
+		remainUnlockByPortalTokenID := remainUnlockAmounts[portalTokenID]
+		lockedAmountTmp := custodianState.GetLockedAmountCollateral()
+		lockedAmountTmp[portalTokenID] = lockedAmountTmp[portalTokenID] - lInfo.LiquidatedCollateralAmount - remainUnlockByPortalTokenID.PrvAmount
+		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+
+		// locked token collaterals
+		lockedTokenAmountTmp := custodianState.GetLockedTokenCollaterals()
+		lockedTokenByPortalTokenID := lockedTokenAmountTmp[portalTokenID]
+
+		for extTokenID := range lockedTokenByPortalTokenID {
+			lockedTokenByPortalTokenID[extTokenID] = lockedTokenByPortalTokenID[extTokenID] - lInfo.LiquidatedTokenCollateralsAmount[extTokenID] - remainUnlockByPortalTokenID.TokenAmounts[extTokenID]
+		}
+		lockedTokenAmountTmp[portalTokenID] = lockedTokenByPortalTokenID
+		custodianState.SetLockedTokenCollaterals(lockedTokenAmountTmp)
+
+		// set total collaterals
+		custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - lInfo.LiquidatedCollateralAmount)
+
+		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
+		for extTokenID := range totalTokenCollaterals {
+			totalTokenCollaterals[extTokenID] -= lInfo.LiquidatedTokenCollateralsAmount[extTokenID]
+		}
+		custodianState.SetTotalTokenCollaterals(totalTokenCollaterals)
+
+		// free collaterals
+		freePRVCollateral += remainUnlockByPortalTokenID.PrvAmount
+		for extTokenID, amount := range remainUnlockByPortalTokenID.TokenAmounts {
+			freeTokenCollaterals[extTokenID] += amount
+		}
+	}
+	custodianState.SetFreeCollateral(freePRVCollateral)
+	custodianState.SetFreeTokenCollaterals(freeTokenCollaterals)
+	currentPortalState.CustodianPoolState[custodianKey] = custodianState
+
+	// update LiquidationPool
+	liquidationPoolKey := statedb.GeneratePortalLiquidationPoolObjectKey()
+	liquidationPool, ok := currentPortalState.LiquidationPool[liquidationPoolKey.String()]
+	if !ok || liquidationPool == nil {
+		liquidationPool = new(statedb.LiquidationPool)
+	}
+	if liquidationPool.Rates() == nil {
+		liquidationPool.SetRates(map[string]statedb.LiquidationPoolDetail{})
+	}
+
+	liquidationPoolRates := liquidationPool.Rates()
+	for portalTokenID, lInfo := range liquidationInfo {
+		liquidatedTokenCollateralTmp := liquidationPoolRates[portalTokenID].TokensCollateralAmount
+		for extTokenID, amount := range lInfo.LiquidatedTokenCollateralsAmount {
+			liquidatedTokenCollateralTmp[extTokenID] += amount
+		}
+
+		liquidationPoolRates[portalTokenID] = statedb.LiquidationPoolDetail{
+			CollateralAmount:       liquidationPoolRates[portalTokenID].CollateralAmount + lInfo.LiquidatedCollateralAmount,
+			PubTokenAmount:         liquidationPoolRates[portalTokenID].PubTokenAmount + lInfo.LiquidatedPubTokenAmount,
+			TokensCollateralAmount: liquidatedTokenCollateralTmp,
+		}
+	}
+	liquidationPool.SetRates(liquidationPoolRates)
+	currentPortalState.LiquidationPool[liquidationPoolKey.String()] = liquidationPool
+}
+
 func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, error) {
 	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB)
 	if err != nil {
@@ -1952,47 +2032,6 @@ func GetHoldPubTokensByCustodian(portalState *CurrentPortalState, custodianState
 	return
 }
 
-//todo: CalUnlockCollateralAmountAfterLiquidationv3
-func CalLiquidatedCollateralAmount(
-	portalState *CurrentPortalState,
-	liquidatedCustodianStateKey string,
-	amountPubToken uint64,
-	tokenID string,
-	exchangeRate *statedb.FinalExchangeRatesState,
-	portalParams PortalParams) (uint64, map[string]uint64, error) {
-	liquidatedPRVCollateral := uint64(0)
-	liquidatedTokenCollaterals := map[string]uint64{}
-
-	// get total unlock collateral amount in usdt
-	totalUnlockCollateralAmountInUSDT, _, err := CalUnlockCollateralAmountV3(portalState, liquidatedCustodianStateKey, amountPubToken, tokenID, portalParams)
-	if err != nil {
-		Logger.log.Errorf("CalLiquidatedCollateralAmount error : %v\n", err)
-		return 0, nil, err
-	}
-
-	// calculate max liquidated amount in usdt from hold public token amount
-	exchangeTool := NewPortalExchangeRateTool(exchangeRate, portalParams.SupportedCollateralTokens)
-	liquidatedAmountInPToken := upPercent(amountPubToken, portalParams.MaxPercentLiquidatedCollateralAmount)
-	liquidatedAmountInUSDT, err := exchangeTool.ConvertToUSDT(tokenID, liquidatedAmountInPToken)
-	if err != nil {
-		Logger.log.Errorf("CalLiquidatedCollateralAmount error converting rate : %v\n", err)
-		return 0, nil, err
-	}
-
-	if liquidatedAmountInUSDT > totalUnlockCollateralAmountInUSDT {
-		liquidatedAmountInUSDT = totalUnlockCollateralAmountInUSDT
-	}
-
-	// calculate liquidated PRV collateral amount
-	custodianState := portalState.CustodianPoolState[liquidatedCustodianStateKey]
-	if custodianState == nil {
-		Logger.log.Errorf("CalLiquidatedCollateralAmount custodian not found")
-		return 0, nil, err
-	}
-	// todo: to be continued
-	return liquidatedPRVCollateral, liquidatedTokenCollaterals, nil
-}
-
 // calAndCheckLiquidationRatioV3 calculates between amount locked collaterals and amount holding public tokens
 // if ratio < 120%, reject waiting redeem reqs that matched to the custodian
 // and calculate liquidated amount
@@ -2000,19 +2039,20 @@ func calAndCheckLiquidationRatioV3(
 	portalState *CurrentPortalState,
 	custodianState *statedb.CustodianState,
 	finalExchange *statedb.FinalExchangeRatesState,
-	portalParams PortalParams) (map[string]metadata.LiquidationByRatesDetailV3, []string, error) {
+	portalParams PortalParams) (map[string]metadata.LiquidationByRatesDetailV3, map[string]metadata.RemainUnlockCollateral, []string, error) {
 	result := make(map[string]metadata.LiquidationByRatesDetailV3)
+	remainUnlockCollaterals := make(map[string]metadata.RemainUnlockCollateral)
 	exchangeTool := NewPortalExchangeRateTool(finalExchange, portalParams.SupportedCollateralTokens)
 
 	// locked collaterals in usdt exclude waiting porting requests
 	lockedAmount, err := convertLockCollateralsToUSDTExcludeWPorting(exchangeTool, custodianState, portalState)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
-		return nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
+		return nil, nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
 	}
 
-	// gte all holding public tokens (in both waiting redeem and matched redeem)
-	totalHoldPubToken, _, _, wRedeemIDs := GetHoldPubTokensByCustodian(portalState, custodianState)
+	// get all holding public tokens (in both waiting redeem and matched redeem)
+	totalHoldPubToken, _, holdPubTokenInMatchedRedeem, wRedeemIDs := GetHoldPubTokensByCustodian(portalState, custodianState)
 
 	// convert totalHoldPubToken to USDT
 	totalHoldPubTokenInUSDT := map[string]uint64{}
@@ -2020,7 +2060,7 @@ func calAndCheckLiquidationRatioV3(
 		amounInUSDT, err := exchangeTool.ConvertToUSDT(tokenId, amount)
 		if err != nil {
 			Logger.log.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
-			return nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
+			return nil, nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
 		}
 		totalHoldPubTokenInUSDT[tokenId] = amounInUSDT
 	}
@@ -2049,9 +2089,26 @@ func calAndCheckLiquidationRatioV3(
 
 		// calculate liquidated amount hold public tokens (exclude matched redeem reqs, because we don't liquidate matched redeem)
 		// and liquidated amount locked collaterals
-		// TODO:
-		//liquidatedHoldPubTokenAmount := totalHoldPubToken[tokenID] - holdPubTokenInMatchedRedeem[tokenID]
+		liquidatedHoldPubTokenAmount := totalHoldPubToken[tokenID] - holdPubTokenInMatchedRedeem[tokenID]
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianState.GetIncognitoAddress()).String()
+		liquidatedPRVCollateral, remainUnlockPRVCollateral, liquidatedExtTokens, remainUnlockTokenCollaterals, err := CalUnlockCollateralAmountAfterLiquidationV3(portalState, custodianStateKey, liquidatedHoldPubTokenAmount, tokenID, portalParams)
+		if err != nil {
+			Logger.log.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
+			return nil, nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
+		}
+
+		result[tokenID] = metadata.LiquidationByRatesDetailV3{
+			Ratio:                            ratio,
+			LiquidatedPubTokenAmount:         liquidatedHoldPubTokenAmount,
+			LiquidatedCollateralAmount:       liquidatedPRVCollateral,
+			LiquidatedTokenCollateralsAmount: liquidatedExtTokens,
+		}
+
+		remainUnlockCollaterals[tokenID] = metadata.RemainUnlockCollateral{
+			PrvAmount:    remainUnlockPRVCollateral,
+			TokenAmounts: remainUnlockTokenCollaterals,
+		}
 	}
 
-	return result, wRedeemIDs, nil
+	return result, remainUnlockCollaterals, wRedeemIDs, nil
 }
