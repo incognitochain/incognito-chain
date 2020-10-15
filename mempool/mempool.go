@@ -47,7 +47,9 @@ type Config struct {
 	PersistMempool    bool
 	RelayShards       []byte
 	// UserKeyset            *incognitokey.KeySet
-	PubSubManager *pubsub.PubSubManager
+	PubSubManager interface {
+		PublishMessage(message *pubsub.Message)
+	}
 	// RoleInCommitteesEvent pubsub.EventChannel
 }
 
