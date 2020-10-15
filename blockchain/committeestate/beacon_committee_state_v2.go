@@ -638,7 +638,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process list shard committees
 	for _, v := range tempSwapOutPublicKeys {
 		if !v.IsEqual(b.shardCommittee[chainID][numberFixedValidators]) {
-			return newCommitteeChange, returnStakingInstructions, errors.New("Swap Out Not Valid In List Committees Public Key")
+			return nil, returnStakingInstructions, errors.New("Swap Out Not Valid In List Committees Public Key")
 		}
 		b.shardCommittee[chainID] = append(b.shardCommittee[chainID][:numberFixedValidators],
 			b.shardCommittee[chainID][numberFixedValidators+1:]...)
@@ -649,7 +649,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process list shard pool
 	for _, v := range tempSwapInPublicKeys {
 		if !v.IsEqual(b.shardSubstitute[chainID][0]) {
-			return newCommitteeChange, returnStakingInstructions, errors.New("Swap In Not Valid In List Subtitutes Public Key")
+			return nil, returnStakingInstructions, errors.New("Swap In Not Valid In List Subtitutes Public Key")
 		}
 		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
 		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
@@ -666,7 +666,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	)
 
 	if err != nil {
-		return newCommitteeChange, returnStakingInstructions, err
+		return nil, returnStakingInstructions, err
 	}
 
 	return newCommitteeChange, returnStakingInstructions, nil
@@ -698,7 +698,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 		if stakerInfo.AutoStaking() {
 			candidates = append(candidates, outPublicKey)
 		} else {
-			returnStakingInstructions, err := b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
 				returnStakingInstructions,
 				outPublicKeyStructs[index],
 				outPublicKey,
