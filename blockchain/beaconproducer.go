@@ -105,7 +105,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 
-	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
+	if beaconBestState.BeaconHeight%blockchain.config.ChainParams.Epoch == 0 {
 		featureStateDB := beaconBestState.GetBeaconFeatureStateDB()
 		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
@@ -128,6 +128,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	if err != nil {
 		return nil, NewBlockChainError(GenerateShardStateError, err)
 	}
+
+	shardInstruction.compose()
 
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(

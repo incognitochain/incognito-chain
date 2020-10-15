@@ -623,10 +623,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 }
 
 func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForReward(
-	totalRewardForBeacon map[common.Hash]uint64,
-	totalRewardForShard map[common.Hash]uint64,
-	totalRewardForIncDAO map[common.Hash]uint64,
-	totalRewardForCustodian map[common.Hash]uint64,
+	totalReward map[common.Hash]uint64,
 	percentCustodianReward uint64,
 	percentForIncognitoDAO int,
 	isSplitRewardForCustodian bool,
@@ -634,10 +631,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 	shardID byte,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	env := committeestate.NewBeaconCommitteeStateEnvironment()
-	env.TotalRewardForBeacon = totalRewardForBeacon
-	env.TotalRewardForShard = totalRewardForShard
-	env.TotalRewardForIncDAO = totalRewardForIncDAO
-	env.TotalRewardForCustodian = totalRewardForCustodian
+	env.TotalReward = env.TotalReward
 	env.PercentCustodianReward = percentCustodianReward
 	env.DAOPercent = percentForIncognitoDAO
 	env.IsSplitRewardForCustodian = isSplitRewardForCustodian

@@ -158,11 +158,15 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
+			if len(stakingMetadata.CommitteePublicKey) == 0 {
+				continue
+			}
 			if stakingMetadata.AutoReStaking {
 				stakeShardAutoStaking = append(stakeShardAutoStaking, "true")
 			} else {
 				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
 			}
+
 		case metadata.BeaconStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
@@ -177,17 +181,21 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "false")
 			}
 		case metadata.StopAutoStakingMeta:
-			{
-				stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
-				if !ok {
-					return nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
-				}
+			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(stopAutoStakingMetadata.CommitteePublicKey) != 0 {
 				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
 			}
+			stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
 		case metadata.UnStakingMeta:
 			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(unstakingMetadata.CommitteePublicKey) != 0 {
+				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
 			}
 			unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
 		}

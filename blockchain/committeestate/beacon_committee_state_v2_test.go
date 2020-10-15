@@ -164,21 +164,9 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 			if !reflect.DeepEqual(b.stakingTx, tt.wantSideEffect.stakingTx) {
 				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), stakingTx = %v, want %v", got, tt.want)
 			}
-			stakerInfo, has, err := statedb.GetStakerInfo(tt.args.env.ConsensusStateDB, key)
-			if err != nil {
-				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), StoreStakerInfo err, %+v", err)
-			}
-			if !has {
-				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), StoreStakerInfo not found, %+v", key)
-			}
-			if !reflect.DeepEqual(stakerInfo.RewardReceiver(), paymentAddress) {
-				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), stakerInfo.RewardReceiver() = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(stakerInfo.AutoStaking(), true) {
-				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), stakerInfo.AutoStaking() = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(stakerInfo.TxStakingID(), *txHash) {
-				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), stakerInfo.TxStakingID() = %v, want %v", got, tt.want)
+			_, has, _ := statedb.GetStakerInfo(tt.args.env.ConsensusStateDB, key)
+			if has {
+				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), StoreStakerInfo found, %+v", key)
 			}
 		})
 	}
