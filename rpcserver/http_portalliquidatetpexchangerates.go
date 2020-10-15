@@ -61,59 +61,6 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
-	}
-
-	if len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
-	}
-	// get meta data from params
-	data, ok := arrayParams[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
-	}
-
-	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	custodianAddress, ok := data["CustodianAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
-	}
-
-	pTokenID, ok := data["TokenID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
-	}
-
-	if !metadata.IsPortalToken(pTokenID) {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
-	}
-
-	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
-	}
-	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
-	}
-
-	portalParam := httpServer.config.BlockChain.GetPortalParams(uint64(beaconHeight))
-
-	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(stateDB, custodianAddress, pTokenID, portalParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
-	}
-
-	return result, nil
-}
-
 func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -431,6 +378,69 @@ func (httpServer *HttpServer) handleGetPortalCustodianTopupWaitingPortingStatus(
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 1"))
+	}
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	// default get best beacon height
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	beaconHeightParam, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err == nil || beaconHeightParam > 0 {
+		beaconHeight = beaconHeightParam
+	}
+
+	custodianAddress, ok := data["CustodianAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
+	}
+
+	portalTokenID, ok := data["PortalTokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
+	if !metadata.IsPortalToken(portalTokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
+	}
+
+	collateralTokenID := common.PRVIDStr
+	collateralTokenIDParam, ok := data["CollateralTokenID"].(string)
+	if ok && collateralTokenIDParam != "" {
+		collateralTokenID = collateralTokenIDParam
+	}
+	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))
+	}
+
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), beaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
+	}
+
+	portalParam := httpServer.config.BlockChain.GetPortalParams(beaconHeight)
+
+	result, err := httpServer.portal.CalculateTopupAmountForCustodianState(stateDB, custodianAddress, portalTokenID, collateralTokenID, portalParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
+	}
+
+	return result, nil
+}
+
 func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
@@ -445,7 +455,24 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param CustodianAddress is invalid"))
 	}
 
-	result, err := httpServer.blockService.GetAmountTopUpWaitingPorting(custodianAddr)
+	// default get best beacon height
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	beaconHeightParam, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err == nil || beaconHeightParam > 0 {
+		beaconHeight = beaconHeightParam
+	}
+
+	// default collateralTokenID is PRV
+	collateralTokenID := common.PRVIDStr
+	collateralTokenIDParam, ok := data["CollateralTokenID"].(string)
+	if ok && collateralTokenIDParam != "" {
+		collateralTokenID = collateralTokenIDParam
+	}
+	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))
+	}
+
+	result, err := httpServer.blockService.GetAmountTopUpWaitingPorting(custodianAddr, collateralTokenID, beaconHeight)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetAmountTopUpWaitingPortingError, err)
 	}

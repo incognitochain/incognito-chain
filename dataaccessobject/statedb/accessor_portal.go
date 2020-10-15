@@ -233,7 +233,7 @@ func GetCustodianDepositStatusV3(stateDB *StateDB, txID string) ([]byte, error) 
 	return data, nil
 }
 
-func GetOneCustodian(stateDB *StateDB, custodianAddress string) (*CustodianState, error) {
+func GetCustodianByIncAddress(stateDB *StateDB, custodianAddress string) (*CustodianState, error) {
 	key := GenerateCustodianStateObjectKey(custodianAddress)
 	custodianState, has, err := stateDB.getCustodianByKey(key)
 	if err != nil {

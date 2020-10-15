@@ -122,34 +122,30 @@ func (s *PortalService) GetPortingFees(finalExchangeRates *statedb.FinalExchange
 	return blockchain.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates, portalParam)
 }
 
-func (s *PortalService) CalculateAmountNeededCustodianDepositLiquidation(
+func (s *PortalService) CalculateTopupAmountForCustodianState(
 	stateDB *statedb.StateDB,
 	custodianAddress string,
-	pTokenId string,
-	portalParam blockchain.PortalParams) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
-	custodian, err := statedb.GetOneCustodian(stateDB, custodianAddress)
+	portalTokenID string,
+	collateralTokenID string,
+	portalParam blockchain.PortalParams) (uint64, error) {
+	custodian, err := statedb.GetCustodianByIncAddress(stateDB, custodianAddress)
 	if err != nil {
-		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
+		return 0, err
 	}
 
 	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB)
 	if err != nil {
-		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
+		return 0, err
 	}
 
 	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
 	if err != nil {
-		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
+		return 0, err
 	}
 
-	amountNeeded, err := blockchain.CalAmountNeededDepositLiquidate(currentPortalState, custodian, finalExchangeRates, pTokenId, portalParam)
+	topupAmount, err := blockchain.CalTopupAmountForCustodianState(currentPortalState, custodian, finalExchangeRates, portalTokenID, collateralTokenID, portalParam)
 
-	result := jsonresult.GetLiquidateAmountNeededCustodianDeposit{
-		Amount:  amountNeeded,
-		TokenId: pTokenId,
-	}
-
-	return result, nil
+	return topupAmount, nil
 }
 
 func (s *PortalService) GetLiquidateExchangeRatesPool(
