@@ -243,10 +243,10 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 					time.Sleep(30 * time.Second)
 				}
-				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
-					Logger.Infof("Cannot find beacon for inserting shard block")
-					return
-				}
+				// if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
+				// 	Logger.Infof("Cannot find beacon for inserting shard block")
+				// 	return
+				// }
 			}
 
 			if uint64(len(blockBuffer)) >= 500 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*2000)) {
