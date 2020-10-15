@@ -1029,7 +1029,6 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
-				NumOfBlocksByProducers:   tt.fields.NumOfBlocksByProducers,
 				BlockInterval:            tt.fields.BlockInterval,
 				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
 				consensusStateDB:         tt.fields.consensusStateDB,

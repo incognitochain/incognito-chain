@@ -761,7 +761,6 @@ func (b *BeaconCommitteeStateV2) processSlashing(
 			slashingPublicKeyStructs[index],
 			outPublicKey,
 			stakerInfo,
-			env.ConsensusStateDB,
 		)
 		if err != nil {
 			return returnStakingInstructions, err
