@@ -637,14 +637,14 @@ func Test_swapCommitteesV2(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "len(committees) == 0 && len(subtitutes) == 1",
+			name: "len(committees) == 1 && len(subtitutes) == 1, Swap Off Set == 0",
 			args: args{
-				committees:              []string{key, key2, key3, key4},
+				committees:              []string{key},
 				substitutes:             []string{key5},
 				maxCommitteeSize:        4,
-				numberOfFixedValidators: 4,
+				numberOfFixedValidators: 0,
 			},
-			want:    []string{key, key2, key3, key4},
+			want:    []string{key},
 			want1:   []string{key5},
 			want2:   []string{},
 			want3:   []string{},
@@ -1030,11 +1030,8 @@ func Test_createSwapShardInstructionV3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2, err := createSwapShardInstructionV3(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidator, tt.args.penalty)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("createSwapShardInstructionV3() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, got1, got2, _, _ := createSwapShardInstructionV3(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidator, tt.args.penalty)
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createSwapShardInstructionV3() got = %v, want %v", got, tt.want)
 			}

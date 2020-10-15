@@ -668,6 +668,10 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		returnStakingInstructions,
 	)
 
+	if err != nil {
+		return nil, returnStakingInstructions, err
+	}
+
 	returnStakingInstructions, err = b.processSlashing(
 		env,
 		slashingCommittees,

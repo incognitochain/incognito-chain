@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"sync"
 	"testing"
@@ -558,74 +559,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Swap Out Not Valid In List Committees Public Key",
-			fields: fields{
-				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey, *incKey2, *incKey3, *incKey4,
-					},
-				},
-				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-				},
-				autoStake:      map[string]bool{},
-				rewardReceiver: map[string]privacy.PaymentAddress{},
-				stakingTx:      map[string]common.Hash{},
-			},
-			args: args{
-				swapShardInstruction: &instruction.SwapShardInstruction{
-					OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey6,
-					},
-				},
-				env: &BeaconCommitteeStateEnvironment{
-					ConsensusStateDB:                  sDB,
-					NumberOfFixedShardBlockValidators: 0,
-				},
-				committeeChange:           NewCommitteeChange(),
-				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
-			},
-			want1:   nil,
-			want2:   make(map[byte]*instruction.ReturnStakeInstruction),
-			wantErr: true,
-		},
-		{
-			name: "Swap In Not Valid In List Substitutes Public Key",
-			fields: fields{
-				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey, *incKey2, *incKey3, *incKey4,
-					},
-				},
-				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-				},
-				autoStake:      map[string]bool{},
-				rewardReceiver: map[string]privacy.PaymentAddress{},
-				stakingTx:      map[string]common.Hash{},
-			},
-			args: args{
-				swapShardInstruction: &instruction.SwapShardInstruction{
-					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey6,
-					},
-				},
-				env: &BeaconCommitteeStateEnvironment{
-					ConsensusStateDB:                  sDB,
-					NumberOfFixedShardBlockValidators: 0,
-				},
-				committeeChange:           NewCommitteeChange(),
-				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
-			},
-			want1:   nil,
-			want2:   make(map[byte]*instruction.ReturnStakeInstruction),
-			wantErr: true,
-		},
-		{
 			name: "Swap Out But Not found In Committee List",
 			fields: fields{
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -650,8 +583,14 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					instruction.SWAP_BY_END_EPOCH,
 				),
 				env: &BeaconCommitteeStateEnvironment{
-					ConsensusStateDB:                  sDB,
+					MissingSignaturePenalty:           make(map[string]signaturecounter.Penalty),
 					NumberOfFixedShardBlockValidators: 0,
+					ConsensusStateDB:                  sDB,
+					RandomNumber:                      5000,
+					ActiveShards:                      1,
+					NumberOfFixedShardBlockValidator:  0,
+					MaxShardCommitteeSize:             4,
+					MinShardCommitteeSize:             0,
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
@@ -688,13 +627,14 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					OutPublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
+					MissingSignaturePenalty:           make(map[string]signaturecounter.Penalty),
 					NumberOfFixedShardBlockValidators: 0,
 					ConsensusStateDB:                  sDB,
 					RandomNumber:                      5000,
 					ActiveShards:                      1,
-					NumberOfFixedShardBlockValidator: 0,
-					MaxShardCommitteeSize:            4,
-					MinShardCommitteeSize:            0,
+					NumberOfFixedShardBlockValidator:  0,
+					MaxShardCommitteeSize:             4,
+					MinShardCommitteeSize:             0,
 				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
@@ -728,8 +668,9 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			},
 			want2:   make(map[byte]*instruction.ReturnStakeInstruction),
 			wantErr: false,
-		}, {
-			name: "Valid Input [Swap Out]",
+		},
+		{
+			name: "Valid Input [Normal Swap Out]",
 			fields: fields{
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
@@ -753,12 +694,13 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					instruction.SWAP_BY_END_EPOCH,
 				),
 				env: &BeaconCommitteeStateEnvironment{
+					MissingSignaturePenalty:          make(map[string]signaturecounter.Penalty),
 					NumberOfFixedShardBlockValidator: 0,
 					ConsensusStateDB:                 sDB,
 					RandomNumber:                     5000,
 					ActiveShards:                     1,
 					MaxShardCommitteeSize:            4,
-					MinShardCommitteeSize:            4,
+					MinShardCommitteeSize:            0,
 				},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
@@ -791,6 +733,76 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					[]string{key6},
 					0,
 					[]string{hash6.String()},
+				),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid Input [Slashing Force Swap Out]",
+			fields: fields{
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey6, *incKey2, *incKey3, *incKey,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				autoStake:      map[string]bool{},
+				rewardReceiver: map[string]privacy.PaymentAddress{},
+				stakingTx:      map[string]common.Hash{},
+			},
+			args: args{
+				swapShardInstruction: instruction.NewSwapShardInstructionWithValue(
+					[]string{key5},
+					[]string{key},
+					0,
+					instruction.SWAP_BY_END_EPOCH,
+				),
+				env: &BeaconCommitteeStateEnvironment{
+					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
+						key: samplePenalty,
+					},
+					NumberOfFixedShardBlockValidator: 0,
+					ConsensusStateDB:                 sDB,
+					RandomNumber:                     5000,
+					ActiveShards:                     1,
+					MaxShardCommitteeSize:            4,
+					MinShardCommitteeSize:            0,
+				},
+				committeeChange: &CommitteeChange{
+					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
+					ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
+				},
+				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
+			},
+			want1: &CommitteeChange{
+				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{},
+				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+				},
+				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey,
+					},
+				},
+			},
+			want2: map[byte]*instruction.ReturnStakeInstruction{
+				0: instruction.NewReturnStakeInsWithValue(
+					[]string{key},
+					0,
+					[]string{hash.String()},
 				),
 			},
 			wantErr: false,
@@ -1328,7 +1340,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	}
 }
 
-func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
+func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 
 	initPublicKey()
 	initLog()
@@ -1701,19 +1713,19 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 				stakingTx:                  tt.fields.stakingTx,
 				mu:                         tt.fields.mu,
 			}
-			got1, got2, err := b.processAfterSwap(tt.args.env, tt.args.outPublicKeys, tt.args.outPublicKeyStructs, tt.args.shardID, tt.args.committeeChange, tt.args.returnStakeInstructions)
+			got1, got2, err := b.processAfterNormalSwap(tt.args.env, tt.args.outPublicKeys, tt.args.committeeChange, tt.args.returnStakeInstructions)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("processAfterSwap() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(tt.fields, tt.fieldsAfterProcess) {
-				t.Errorf("processAfterSwap() tt.fields = %v, tt.fieldsAfterProcess %v", tt.fields, tt.fieldsAfterProcess)
+				t.Errorf("processAfterNormalSwap() tt.fields = %v, tt.fieldsAfterProcess %v", tt.fields, tt.fieldsAfterProcess)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("processAfterSwap() got1 = %v, want1 %v", got1, tt.want1)
+				t.Errorf("processAfterNormalSwap() got1 = %v, want1 %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("processAfterSwap() got2 = %v, want2 %v", got2, tt.want2)
+				t.Errorf("processAfterNormalSwap() got2 = %v, want2 %v", got2, tt.want2)
 			}
 		})
 	}
