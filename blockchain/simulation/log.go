@@ -8,8 +8,11 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/jrick/logrotate/rotator"
 )
 
@@ -25,6 +28,11 @@ var (
 	rpcLogger              = backendLog.Logger("RPC log", false)
 	rpcServiceLogger       = backendLog.Logger("RPC service log", false)
 	rpcServiceBridgeLogger = backendLog.Logger("RPC service DeBridge log", false)
+	transactionLogger      = backendLog.Logger("Transaction log", false)
+	privacyLogger          = backendLog.Logger("Privacy log", false)
+	mempoolLogger          = backendLog.Logger("Mempool log", false)
+
+	disableStdoutLog = false
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -32,7 +40,9 @@ var (
 type logWriter struct{}
 
 func (logWriter) Write(p []byte) (n int, err error) {
-	os.Stdout.Write(p)
+	if !disableStdoutLog {
+		os.Stdout.Write(p)
+	}
 	logRotator.Write(p)
 	return len(p), nil
 }
@@ -44,6 +54,9 @@ func init() {
 	rpcserver.Logger.Init(rpcLogger)
 	rpcservice.Logger.Init(rpcServiceLogger)
 	rpcservice.BLogger.Init(rpcServiceBridgeLogger)
+	transaction.Logger.Init(transactionLogger)
+	privacy.Logger.Init(privacyLogger)
+	mempool.Logger.Init(mempoolLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -54,6 +67,9 @@ var subsystemLoggers = map[string]common.Logger{
 	"RPCS":              rpcLogger,
 	"RPCSservice":       rpcServiceLogger,
 	"RPCSbridgeservice": rpcServiceBridgeLogger,
+	"TRAN":              transactionLogger,
+	"PRIV":              privacyLogger,
+	"MEMP":              mempoolLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

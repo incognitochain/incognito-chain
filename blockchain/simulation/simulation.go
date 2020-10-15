@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,13 +15,17 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/simulation/mock"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type simInstance struct {
@@ -26,8 +34,8 @@ type simInstance struct {
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
 	cs          *mock.Consensus
-	txpool      *mock.TxPool
-	temppool    *mock.TxPool
+	txpool      *mempool.TxPool
+	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
 	sync        *mock.Syncker
 	server      *mock.Server
@@ -37,11 +45,17 @@ type simInstance struct {
 	cQuit       chan struct{}
 }
 
+type simSession struct {
+	instance        *simInstance
+	scenerioActions []ScenerioAction
+}
+
 func main() {
+	disableLog(true)
 	instance1 := newSimInstance("test1")
-	instance1.DisableLog(true)
 	instance1.Run()
-	instance1.Stop()
+	select {}
+	// instance1.Stop()
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -82,18 +96,30 @@ func newSimInstance(simName string) *simInstance {
 		log.Println(err)
 	}
 	initLogRotator(filepath.Join(path, simName+"/"+simName+".log"))
+	dbLogger.SetLevel(common.LevelTrace)
+	blockchainLogger.SetLevel(common.LevelTrace)
+	bridgeLogger.SetLevel(common.LevelTrace)
+	rpcLogger.SetLevel(common.LevelTrace)
+	rpcServiceLogger.SetLevel(common.LevelTrace)
+	rpcServiceBridgeLogger.SetLevel(common.LevelTrace)
+	transactionLogger.SetLevel(common.LevelTrace)
+	privacyLogger.SetLevel(common.LevelTrace)
+	mempoolLogger.SetLevel(common.LevelTrace)
 	activeNetParams := &blockchain.ChainTest2Param
 	cs := mock.Consensus{}
-	txpool := mock.TxPool{}
-	temppool := mock.TxPool{}
+	txpool := mempool.TxPool{}
+	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
 	sync := mock.Syncker{}
 	server := mock.Server{}
 	ps := mock.Pubsub{}
-	fees := make(map[byte]blockchain.FeeEstimator)
+	fees := make(map[byte]*mempool.FeeEstimator)
 	bc := blockchain.BlockChain{}
 	for i := byte(0); i < byte(activeNetParams.ActiveShards); i++ {
-		fees[i] = &mock.Fee{}
+		fees[i] = mempool.NewFeeEstimator(
+			mempool.DefaultEstimateFeeMaxRollback,
+			mempool.DefaultEstimateFeeMinRegisteredBlocks,
+			0)
 	}
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
@@ -115,6 +141,7 @@ func newSimInstance(simName string) *simInstance {
 		ChainParams:    activeNetParams,
 		BlockChain:     &bc,
 		Blockgen:       blockgen,
+		TxMemPool:      &txpool,
 	}
 	rpcServer := &rpcserver.RpcServer{}
 
@@ -132,6 +159,35 @@ func newSimInstance(simName string) *simInstance {
 	if err != nil {
 		panic(err)
 	}
+
+	txpool.Init(&mempool.Config{
+		ConsensusEngine: &cs,
+		BlockChain:      &bc,
+		DataBase:        db,
+		ChainParams:     activeNetParams,
+		FeeEstimator:    fees,
+		TxLifeTime:      100,
+		MaxTx:           1000,
+		// DataBaseMempool:   dbmp,
+		IsLoadFromMempool: false,
+		PersistMempool:    false,
+		RelayShards:       nil,
+		PubSubManager:     &ps,
+	})
+	// serverObj.blockChain.AddTxPool(serverObj.memPool)
+	txpool.InitChannelMempool(cPendingTxs, cRemovedTxs)
+
+	temppool.Init(&mempool.Config{
+		BlockChain:    &bc,
+		DataBase:      db,
+		ChainParams:   activeNetParams,
+		FeeEstimator:  fees,
+		MaxTx:         1000,
+		PubSubManager: &ps,
+	})
+	txpool.IsBlockGenStarted = true
+	go temppool.Start(cQuit)
+	go txpool.Start(cQuit)
 
 	err = bc.Init(&blockchain.Config{
 		BTCChain:        btcChain,
@@ -194,7 +250,82 @@ func (sim *simInstance) Stop() {
 }
 
 func (sim *simInstance) Run() {
+	tx, err := sim.createTx("", nil)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(tx)
+	err = sim.injectTxs([]string{tx.Base58CheckData})
+	if err != nil {
+		panic(err)
+	}
+	err = sim.GenerateBlocks(0, 5)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func disableLog(disable bool) {
+	disableStdoutLog = disable
+}
+
+type TxReceiver struct {
+	ReceiverPbK string
+	Amount      int
+}
+
+func (sim *simInstance) createTx(senderPrk string, receivers []TxReceiver) (*jsonresult.CreateTransactionResult, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createtransaction",
+		"params": []interface{}{"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", map[string]int{
+			"12Rtc3sbfHTTSqmS8efnhgb7Rc6ineoQCwJyX63MMRK4HF6JGo51GJp5rk25QfviU7GPjyptT9q3JguQmDEG3uKpPUDEY5CSUJtttfU": 10000,
+		}, 1, 1},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	txResp := struct {
+		Result jsonresult.CreateTransactionResult
+	}{}
+	err = json.Unmarshal(body, &txResp)
+	if err != nil {
+		return nil, err
+	}
+	return &txResp.Result, nil
+}
+
+func (sim *simInstance) injectTxs(txsBase58 []string) error {
+	for _, txB58Check := range txsBase58 {
+		rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
+		if err != nil {
+			return err
+		}
+		var tx transaction.Tx
+		err = json.Unmarshal(rawTxBytes, &tx)
+		if err != nil {
+			return err
+		}
+		sim.cPendingTxs <- &tx
+	}
+
+	return nil
+}
+
+func (sim *simInstance) GenerateBlocks(chainID int, blocks int) error {
 	prevTimeSlot := int64(0)
+	blockCount := 0
 	for {
 		currentTime := time.Now().Unix()
 		currentTimeSlot := common.CalculateTimeSlot(currentTime)
@@ -203,65 +334,47 @@ func (sim *simInstance) Run() {
 			newTimeSlot = true
 		}
 		if newTimeSlot {
-			newBlock, err := sim.bc.ShardChain[0].CreateNewBlock(2, "", 1, currentTime)
-			if err != nil {
-				panic(err)
+			if chainID == -1 {
+				newBlock, err := sim.bc.BeaconChain.CreateNewBlock(2, "", 1, currentTime)
+				if err != nil {
+					return err
+				}
+				newBlock.(mock.BlockValidation).AddValidationField("test")
+				err = sim.bc.InsertBeaconBlock(newBlock.(*blockchain.BeaconBlock), true)
+				if err != nil {
+					return err
+				}
+				blockCount++
+				prevTimeSlot = common.CalculateTimeSlot(currentTime)
+			} else {
+				newBlock, err := sim.bc.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, currentTime)
+				if err != nil {
+					return err
+				}
+				newBlock.(mock.BlockValidation).AddValidationField("test")
+				err = sim.bc.InsertShardBlock(newBlock.(*blockchain.ShardBlock), true)
+				if err != nil {
+					return err
+				}
+				blockCount++
+				prevTimeSlot = common.CalculateTimeSlot(currentTime)
 			}
-			newBlock.(mock.BlockValidation).AddValidationField("test")
-			err = sim.bc.InsertShardBlock(newBlock.(*blockchain.ShardBlock), true)
-			if err != nil {
-				panic(err)
+			if blockCount == blocks {
+				break
 			}
-			prevTimeSlot = common.CalculateTimeSlot(currentTime)
-			// if newBlock.GetHeight() == 5 {
-			// 	break
-			// }
 		}
 	}
-
-}
-
-func (sim *simInstance) RunTxFeeder() {
-
-}
-
-func (sim *simInstance) DisableLog(disable bool) {
-	if disable {
-		dbLogger.SetLevel(common.LevelOff)
-		blockchainLogger.SetLevel(common.LevelOff)
-		bridgeLogger.SetLevel(common.LevelOff)
-		rpcLogger.SetLevel(common.LevelOff)
-		rpcServiceLogger.SetLevel(common.LevelOff)
-		rpcServiceBridgeLogger.SetLevel(common.LevelOff)
-	} else {
-		dbLogger.SetLevel(common.LevelTrace)
-		blockchainLogger.SetLevel(common.LevelTrace)
-		bridgeLogger.SetLevel(common.LevelTrace)
-		rpcLogger.SetLevel(common.LevelTrace)
-		rpcServiceLogger.SetLevel(common.LevelTrace)
-		rpcServiceBridgeLogger.SetLevel(common.LevelTrace)
-	}
-}
-
-type TxReceiver struct {
-	ReceiverPbK string
-	Amount      int
-}
-
-func (sim *simInstance) CreateTx(senderPrk string, receivers []TxReceiver) (metadata.Transaction, error) {
-	return nil, nil
-}
-
-func (sim *simInstance) GenerateBlock(chainID int, blocks int) error {
 	return nil
 }
 
-func (sim *simInstance) InjectBlock(chainID int, blocks []common.BlockInterface) error {
+func (sim *simInstance) SwitchToManual() error {
 	return nil
 }
 
-func (sim *simInstance) InjectTxs(txs []metadata.Transaction) error {
+func (sim *simInstance) manualCreateBlock() error {
 	return nil
 }
 
-func (sim *simInstance) 
+func (sim *simInstance) manualInjectBlock(chainID int, block common.BlockInterface) error {
+	return nil
+}

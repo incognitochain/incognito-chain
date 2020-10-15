@@ -26,3 +26,7 @@ func (c *Consensus) ValidateProducerSig(block common.BlockInterface, consensusTy
 func (c *Consensus) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	return nil
 }
+
+func (c *Consensus) IsCommitteeInShard(byte) bool {
+	return true
+}
