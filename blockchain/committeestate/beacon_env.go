@@ -47,3 +47,11 @@ type BeaconCommitteeStateHash struct {
 	ShardCommitteeAndValidatorHash  common.Hash
 	AutoStakeHash                   common.Hash
 }
+
+func NewBeaconCommitteeStateEnvironmentForUpdateDB(
+	statedb *statedb.StateDB,
+) *BeaconCommitteeStateEnvironment {
+	return &BeaconCommitteeStateEnvironment{
+		ConsensusStateDB: statedb,
+	}
+}

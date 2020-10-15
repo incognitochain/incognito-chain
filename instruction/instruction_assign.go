@@ -3,6 +3,7 @@ package instruction
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -32,6 +33,11 @@ func NewAssignInstruction() *AssignInstruction {
 
 func (a *AssignInstruction) GetType() string {
 	return ASSIGN_ACTION
+}
+
+func (a *AssignInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(a, NewAssignInstruction()) ||
+		len(a.ShardCandidates) == 0 && len(a.ShardCandidatesStruct) == 0
 }
 
 func (a *AssignInstruction) ToString() []string {

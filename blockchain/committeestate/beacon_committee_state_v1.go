@@ -905,3 +905,11 @@ func (engine *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommittee
 func (engine *BeaconCommitteeEngineV1) ActiveShards() int {
 	return len(engine.beaconCommitteeStateV1.shardCommittee)
 }
+
+//UpdateDB ...
+func (engine *BeaconCommitteeEngineV1) UpdateDB(
+	hash *BeaconCommitteeStateHash,
+	committeeChange *CommitteeChange,
+	env *BeaconCommitteeStateEnvironment) error {
+	return nil
+}

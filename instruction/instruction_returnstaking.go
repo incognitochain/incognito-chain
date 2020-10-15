@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -40,6 +41,11 @@ func NewReturnStakeInsWithValue(
 
 func NewReturnStakeIns() *ReturnStakeInstruction {
 	return &ReturnStakeInstruction{}
+}
+
+func (rsI *ReturnStakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(rsI, NewReturnStakeIns()) ||
+		len(rsI.PublicKeysStruct) == 0 && len(rsI.PublicKeys) == 0
 }
 
 func (rsI *ReturnStakeInstruction) SetShardID(sID byte) error {

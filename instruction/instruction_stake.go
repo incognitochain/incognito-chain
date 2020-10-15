@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -30,6 +31,11 @@ func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []
 
 func NewStakeInstruction() *StakeInstruction {
 	return &StakeInstruction{}
+}
+
+func (s *StakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewStakeInstruction()) ||
+		len(s.PublicKeyStructs) == 0 && len(s.PublicKeys) == 0
 }
 
 func (s *StakeInstruction) GetType() string {

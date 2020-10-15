@@ -371,3 +371,36 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 	return shardInstructions
 
 }
+
+func (shardInstruction *shardInstruction) compose() {
+	stakeInstruction := &instruction.StakeInstruction{}
+	unstakeInstruction := &instruction.UnstakeInstruction{}
+	stopAutoStakeInstruction := &instruction.StopAutoStakeInstruction{}
+
+	for _, v := range shardInstruction.stakeInstructions {
+		stakeInstruction.PublicKeys = append(stakeInstruction.PublicKeys, v.PublicKeys...)
+		stakeInstruction.PublicKeyStructs = append(stakeInstruction.PublicKeyStructs, v.PublicKeyStructs...)
+		stakeInstruction.TxStakeHashes = append(stakeInstruction.TxStakeHashes, v.TxStakeHashes...)
+		stakeInstruction.TxStakes = append(stakeInstruction.TxStakes, v.TxStakes...)
+		stakeInstruction.RewardReceivers = append(stakeInstruction.RewardReceivers, v.RewardReceivers...)
+		stakeInstruction.RewardReceiverStructs = append(stakeInstruction.RewardReceiverStructs, v.RewardReceiverStructs...)
+		stakeInstruction.Chain = v.Chain
+		stakeInstruction.AutoStakingFlag = append(stakeInstruction.AutoStakingFlag, v.AutoStakingFlag...)
+	}
+
+	for _, v := range shardInstruction.unstakeInstructions {
+		unstakeInstruction.CommitteePublicKeys = append(unstakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
+		unstakeInstruction.CommitteePublicKeysStruct = append(unstakeInstruction.CommitteePublicKeysStruct, v.CommitteePublicKeysStruct...)
+	}
+
+	for _, v := range shardInstruction.stopAutoStakeInstructions {
+		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
+	}
+
+	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
+	shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
+	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
+	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
+	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+}

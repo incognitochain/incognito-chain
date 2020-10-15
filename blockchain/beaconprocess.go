@@ -209,7 +209,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange, hashes); err2 != nil {
 		return err2
 	}
 
@@ -759,6 +759,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
+	committeeHash *committeestate.BeaconCommitteeStateHash,
 ) error {
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
@@ -962,7 +963,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if newFinalView == nil {
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
-				panic("Database is corrupt")
+				// panic("Database is corrupt")
+				return err
 			}
 		} else {
 			storeBlock = newFinalView.GetBlock()
@@ -971,7 +973,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
-		panic("Backup shard view error")
+		// panic("Backup shard view error")
+		return err
+	}
+
+	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
+	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeHash, committeeChange, env)
+	if err != nil {
+		return err
 	}
 
 	if err := batch.Write(); err != nil {
