@@ -252,32 +252,50 @@ func (engine *BeaconCommitteeEngineV2) GetAllCandidateSubstituteCommittee() []st
 	return engine.finalBeaconCommitteeStateV2.getAllCandidateSubstituteCommittee()
 }
 
+func (engine *BeaconCommitteeEngineV2) compareHashes(hash1, hash2 *BeaconCommitteeStateHash) error {
+	if !hash1.BeaconCommitteeAndValidatorHash.IsEqual(&hash2.BeaconCommitteeAndValidatorHash) {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,
+			fmt.Errorf("Uncommitted BeaconCommitteeAndValidatorHash want value %+v but have %+v",
+				hash1.BeaconCommitteeAndValidatorHash, hash2.BeaconCommitteeAndValidatorHash))
+	}
+	if !hash1.BeaconCandidateHash.IsEqual(&hash2.BeaconCandidateHash) {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,
+			fmt.Errorf("Uncommitted BeaconCandidateHash want value %+v but have %+v",
+				hash1.BeaconCandidateHash, hash2.BeaconCandidateHash))
+	}
+	if !hash1.ShardCandidateHash.IsEqual(&hash2.ShardCandidateHash) {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,
+			fmt.Errorf("Uncommitted ShardCandidateHash want value %+v but have %+v",
+				hash1.ShardCandidateHash, hash2.ShardCandidateHash))
+	}
+	if !hash1.ShardCommitteeAndValidatorHash.IsEqual(&hash2.ShardCommitteeAndValidatorHash) {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,
+			fmt.Errorf("Uncommitted ShardCommitteeAndValidatorHash want value %+v but have %+v",
+				hash1.ShardCommitteeAndValidatorHash, hash2.ShardCommitteeAndValidatorHash))
+	}
+	if !hash1.AutoStakeHash.IsEqual(&hash2.AutoStakeHash) {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,
+			fmt.Errorf("Uncommitted AutoStakingHash want value %+v but have %+v",
+				hash1.AutoStakeHash, hash2.AutoStakeHash))
+	}
+	return nil
+}
+
 func (engine *BeaconCommitteeEngineV2) Commit(hashes *BeaconCommitteeStateHash) error {
-	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV2, NewBeaconCommitteeStateV1()) {
+	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV2, NewBeaconCommitteeStateV2()) {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV2))
 	}
 	engine.uncommittedBeaconCommitteeStateV2.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV2.mu.Unlock()
 	engine.finalBeaconCommitteeStateV2.mu.Lock()
 	defer engine.finalBeaconCommitteeStateV2.mu.Unlock()
-	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
+	comparedHashes, err := engine.generateCommitteeHashes(engine.uncommittedBeaconCommitteeStateV2)
 	if err != nil {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
 	}
-	if !comparedHashes.BeaconCommitteeAndValidatorHash.IsEqual(&hashes.BeaconCommitteeAndValidatorHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted BeaconCommitteeAndValidatorHash want value %+v but have %+v", comparedHashes.BeaconCommitteeAndValidatorHash, hashes.BeaconCommitteeAndValidatorHash))
-	}
-	if !comparedHashes.BeaconCandidateHash.IsEqual(&hashes.BeaconCandidateHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted BeaconCandidateHash want value %+v but have %+v", comparedHashes.BeaconCandidateHash, hashes.BeaconCandidateHash))
-	}
-	if !comparedHashes.ShardCandidateHash.IsEqual(&hashes.ShardCandidateHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted ShardCandidateHash want value %+v but have %+v", comparedHashes.ShardCandidateHash, hashes.ShardCandidateHash))
-	}
-	if !comparedHashes.ShardCommitteeAndValidatorHash.IsEqual(&hashes.ShardCommitteeAndValidatorHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeAndValidatorHash want value %+v but have %+v", comparedHashes.ShardCommitteeAndValidatorHash, hashes.ShardCommitteeAndValidatorHash))
-	}
-	if !comparedHashes.AutoStakeHash.IsEqual(&hashes.AutoStakeHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted AutoStakingHash want value %+v but have %+v", comparedHashes.AutoStakeHash, hashes.AutoStakeHash))
+	err = engine.compareHashes(comparedHashes, hashes)
+	if err != nil {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
 	}
 	engine.uncommittedBeaconCommitteeStateV2.clone(engine.finalBeaconCommitteeStateV2)
 	engine.uncommittedBeaconCommitteeStateV2.reset()
@@ -301,6 +319,7 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 			continue
 		}
 		if inst[0] == instruction.STAKE_ACTION {
+			Logger.log.Info("[swap-v2] inst:", inst)
 			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
 			for index, candidate := range stakeInstruction.PublicKeyStructs {
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
@@ -412,12 +431,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		}
 	}
 
-	err = newB.processAutoStakingChange(committeeChange, env)
-	if err != nil {
-		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	hashes, err := engine.generateUncommittedCommitteeHashes()
+	hashes, err := engine.generateCommitteeHashes(engine.uncommittedBeaconCommitteeStateV2)
 	if err != nil {
 		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
@@ -465,6 +479,8 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+		} else {
+			Logger.log.Infof("[swap-instructions] Generate empty instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
 		}
 	}
 	return swapShardInstructions, nil
@@ -510,7 +526,9 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
 			}
 			for _, returnStakingInstruction := range returnStakingInstructions {
-				incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
+				if !returnStakingInstruction.IsEmpty() {
+					incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
+				}
 			}
 		}
 	}
@@ -559,13 +577,6 @@ func (b *BeaconCommitteeStateV2) processStakeInstruction(
 	}
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 	b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeyStructs...)
-	err = statedb.StoreStakerInfoV1(
-		env.ConsensusStateDB,
-		stakeInstruction.PublicKeyStructs,
-		b.rewardReceiver,
-		b.autoStake,
-		b.stakingTx,
-	)
 	return committeeChange, err
 }
 
@@ -687,7 +698,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 ) (*CommitteeChange, map[byte]*instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
 	newCommitteeChange := committeeChange
-	for index, outPublicKey := range outPublicKeys {
+	for _, outPublicKey := range outPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
 		if err != nil {
 			return newCommitteeChange, returnStakingInstructions, err
@@ -698,16 +709,12 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 		if stakerInfo.AutoStaking() {
 			candidates = append(candidates, outPublicKey)
 		} else {
-			returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstructions = buildReturnStakingInstruction(
 				returnStakingInstructions,
-				outPublicKeyStructs[index],
 				outPublicKey,
-				stakerInfo,
-				env.ConsensusStateDB,
+				stakerInfo.ShardID(),
+				stakerInfo.TxStakingID().String(),
 			)
-			if err != nil {
-				return newCommitteeChange, returnStakingInstructions, err
-			}
 		}
 	}
 
@@ -755,27 +762,23 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			newCommitteeChange.NextEpochShardCandidateRemoved =
 				append(newCommitteeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
 
-			returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstructions = buildReturnStakingInstruction(
 				returnStakingInstructions,
-				unstakeInstruction.CommitteePublicKeysStruct[index],
 				publicKey,
-				stakerInfo,
-				env.ConsensusStateDB,
+				stakerInfo.ShardID(),
+				stakerInfo.TxStakingID().String(),
 			)
-			if err != nil {
-				return newCommitteeChange, returnStakingInstructions, err
-			}
 		}
 	}
 
 	return newCommitteeChange, returnStakingInstructions, nil
 }
 
-func (engine *BeaconCommitteeEngineV2) generateUncommittedCommitteeHashes() (*BeaconCommitteeStateHash, error) {
-	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV2, NewBeaconCommitteeStateV1()) {
+func (engine *BeaconCommitteeEngineV2) generateCommitteeHashes(state *BeaconCommitteeStateV2) (*BeaconCommitteeStateHash, error) {
+	if reflect.DeepEqual(state, NewBeaconCommitteeStateV2()) {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
-	newB := engine.uncommittedBeaconCommitteeStateV2
+	newB := state
 	// beacon committee
 	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(newB.beaconCommittee)
 	if err != nil {
@@ -858,21 +861,6 @@ func (b *BeaconCommitteeStateV2) getAllCandidateSubstituteCommittee() []string {
 	return res
 }
 
-func (b *BeaconCommitteeStateV2) processAutoStakingChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) error {
-	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreStakerInfoV1(
-		env.ConsensusStateDB,
-		stopAutoStakingIncognitoKey,
-		b.rewardReceiver,
-		b.autoStake,
-		b.stakingTx,
-	)
-	return nil
-}
-
 //HasSwappedCommittees ...
 func (engine *BeaconCommitteeEngineV2) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
 	if env.BeaconHeight%env.ParamEpoch == 0 {
@@ -938,26 +926,6 @@ func (engine *BeaconCommitteeEngineV2) ActiveShards() int {
 	return len(engine.finalBeaconCommitteeStateV2.shardCommittee)
 }
 
-func (b *BeaconCommitteeStateV2) buildReturnStakingInstructionAndDeleteStakerInfo(
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
-	committeePublicKeyStruct incognitokey.CommitteePublicKey,
-	publicKey string,
-	stakerInfo *statedb.StakerInfo,
-	consensusStateDB *statedb.StateDB,
-) (map[byte]*instruction.ReturnStakeInstruction, error) {
-	returnStakingInstructions = buildReturnStakingInstruction(
-		returnStakingInstructions,
-		publicKey,
-		stakerInfo.ShardID(),
-		stakerInfo.TxStakingID().String(),
-	)
-	err := b.deleteStakerInfo(committeePublicKeyStruct, consensusStateDB)
-	if err != nil {
-		return returnStakingInstructions, err
-	}
-	return returnStakingInstructions, nil
-}
-
 func buildReturnStakingInstruction(
 	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
 	publicKey string,
@@ -993,5 +961,67 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
+	return nil
+}
+
+//UpdateDB ...
+func (engine *BeaconCommitteeEngineV2) UpdateDB(
+	hashes *BeaconCommitteeStateHash,
+	committeeChange *CommitteeChange,
+	env *BeaconCommitteeStateEnvironment) error {
+	b := engine.finalBeaconCommitteeStateV2
+	if reflect.DeepEqual(b, NewBeaconCommitteeStateV2()) {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV2))
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	comparedHashes, err := engine.generateCommitteeHashes(b)
+	if err != nil {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
+	}
+	err = engine.compareHashes(comparedHashes, hashes)
+	if err != nil {
+		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
+	}
+	removedStakerKeys := []incognitokey.CommitteePublicKey{}
+	addedStakerKeys, err := incognitokey.
+		CommitteeBase58KeyListToStruct(append(committeeChange.Unstake, committeeChange.StopAutoStake...))
+	if err != nil {
+		return err
+	}
+
+	addedStakerKeys = append(addedStakerKeys, committeeChange.NextEpochShardCandidateAdded...)
+
+	err = statedb.StoreStakerInfoV1(
+		env.ConsensusStateDB,
+		addedStakerKeys,
+		b.rewardReceiver,
+		b.autoStake,
+		b.stakingTx,
+	)
+	if err != nil {
+		return err
+	}
+
+	removedStakerKeys = append(removedStakerKeys, committeeChange.NextEpochShardCandidateRemoved...)
+	for _, v := range committeeChange.ShardCommitteeRemoved {
+		for _, value := range v {
+			key, err := value.ToBase58()
+			if err != nil {
+				return err
+			}
+			if !b.autoStake[key] {
+				removedStakerKeys = append(removedStakerKeys, value)
+			}
+		}
+	}
+
+	for _, v := range removedStakerKeys {
+		err := b.deleteStakerInfo(v, env.ConsensusStateDB)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

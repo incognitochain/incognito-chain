@@ -2,37 +2,37 @@ package committeestate
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 //SplitReward ...
-// TODO: @tin rewrite
 func (b *BeaconCommitteeEngineV2) SplitReward(
 	env *BeaconCommitteeStateEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
 
 	hasValue := false
 	devPercent := uint64(env.DAOPercent)
-	totalRewardForShard := env.TotalRewardForShard
-	totalRewardForBeacon := env.TotalRewardForBeacon
-	totalRewardForIncDAO := env.TotalRewardForIncDAO
-	totalRewardForCustodian := env.TotalRewardForCustodian
-	lenBeaconCommittees := uint64(len(b.finalBeaconCommitteeStateV2.beaconCommittee))
-	lenShardCommittees := uint64(len(b.finalBeaconCommitteeStateV2.shardCommittee[env.ShardID]))
-	beaconAndShardCommitteesSize := lenShardCommittees + 2*lenBeaconCommittees/uint64(env.ActiveShards)
-
-	for key, value := range totalRewardForShard {
+	totalReward := env.TotalReward
+	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForShard := map[common.Hash]uint64{}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
+	lenBeaconCommittees := uint64(len(b.GetBeaconCommittee()))
+	lenShardCommittees := uint64(len(b.GetShardCommittee()[env.ShardID]))
+	for key, value := range totalReward {
 		totalRewardForDAOAndCustodians := uint64(devPercent) * value / 100
 		totalRewardForShardAndBeaconValidators := value - totalRewardForDAOAndCustodians
-		totalRewardForBeacon[key] += totalRewardForShardAndBeaconValidators - lenShardCommittees*totalRewardForShardAndBeaconValidators/beaconAndShardCommitteesSize
+		eachValidatorReceive := float64(float64(lenShardCommittees) + float64(2*float64(lenBeaconCommittees)/float64(env.ActiveShards)))
+		rewardForShard[key] = uint64(float64(lenShardCommittees) * float64(totalRewardForShardAndBeaconValidators) / eachValidatorReceive)
 		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
 		if env.IsSplitRewardForCustodian {
-			totalRewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
-			totalRewardForIncDAO[key] += totalRewardForDAOAndCustodians - totalRewardForCustodian[key]
+			rewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians - rewardForCustodian[key]
 		} else {
-			totalRewardForIncDAO[key] += totalRewardForDAOAndCustodians
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
 		}
-		totalRewardForShard[key] = value - totalRewardForBeacon[key] - totalRewardForDAOAndCustodians
+		rewardForBeacon[key] += value - rewardForShard[key] - totalRewardForDAOAndCustodians
 		if !hasValue {
 			hasValue = true
 		}
@@ -41,6 +41,5 @@ func (b *BeaconCommitteeEngineV2) SplitReward(
 	if !hasValue {
 		return nil, nil, nil, nil, NewCommitteeStateError(ErrNotEnoughReward, fmt.Errorf("have no reward value"))
 	}
-
-	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
+	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }

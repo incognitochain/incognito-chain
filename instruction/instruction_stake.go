@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -30,6 +31,11 @@ func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []
 
 func NewStakeInstruction() *StakeInstruction {
 	return &StakeInstruction{}
+}
+
+func (s *StakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewStakeInstruction()) ||
+		len(s.PublicKeyStructs) == 0 && len(s.PublicKeys) == 0
 }
 
 func (s *StakeInstruction) GetType() string {
@@ -64,6 +70,12 @@ func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeIn
 	s.RewardReceivers = rewardReceivers
 	for _, v := range rewardReceivers {
 		wl, _ := wallet.Base58CheckDeserialize(v)
+		// if s.RewardReceiverStructs == nil {
+		// 	fmt.Println("[swap-v2] 1")
+		// }
+		// if wl == nil {
+		// 	fmt.Println("[swap-v2] 2")
+		// }
 		s.RewardReceiverStructs = append(s.RewardReceiverStructs, wl.KeySet.PaymentAddress)
 	}
 	return s

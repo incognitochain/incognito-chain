@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -19,6 +20,10 @@ func NewStopAutoStakeInstruction() *StopAutoStakeInstruction {
 
 func (s *StopAutoStakeInstruction) GetType() string {
 	return STOP_AUTO_STAKE_ACTION
+}
+
+func (s *StopAutoStakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewStopAutoStakeInstruction()) || len(s.CommitteePublicKeys) == 0
 }
 
 func (s *StopAutoStakeInstruction) ToString() []string {
