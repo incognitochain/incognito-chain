@@ -177,8 +177,8 @@ func (beaconBestState *BeaconBestState) calculateReward(
 	percentCustodianRewards uint64) (map[common.Hash]uint64,
 	[]map[common.Hash]uint64,
 	map[common.Hash]uint64,
-	map[common.Hash]uint64, error) {
-
+	map[common.Hash]uint64, error,
+) {
 	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
@@ -197,6 +197,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 		if totalRewardForShard[id] == nil {
 			totalRewardForShard[id] = map[common.Hash]uint64{}
 		}
+
 		for _, coinID := range allCoinID {
 			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
 			if err != nil {
@@ -206,6 +207,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 				delete(totalRewards[id], coinID)
 			}
 		}
+
 		env := beaconBestState.NewBeaconCommitteeStateEnvironmentForReward(
 			totalRewards[id],
 			percentCustodianRewards,
@@ -220,14 +222,13 @@ func (beaconBestState *BeaconBestState) calculateReward(
 			return nil, nil, nil, nil, err
 		}
 
-		mapPlusMap(rewardForBeacon, totalRewardForBeacon)
-		mapPlusMap(rewardForShard, totalRewardForShard[id])
-		mapPlusMap(rewardForDAO, totalRewardForIncDAO)
-		mapPlusMap(rewardForCustodian, totalRewardForCustodian)
+		plusMap(rewardForBeacon, totalRewardForBeacon)
+		plusMap(rewardForShard, totalRewardForShard[id])
+		plusMap(rewardForDAO, totalRewardForIncDAO)
+		plusMap(rewardForCustodian, totalRewardForCustodian)
 	}
 
 	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
-
 }
 
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
@@ -371,8 +372,8 @@ func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
 	}
 }
 
-// mapPlusMap(src, dst): dst = dst + src
-func mapPlusMap(src, dst map[common.Hash]uint64) {
+// plusMap(src, dst): dst = dst + src
+func plusMap(src, dst map[common.Hash]uint64) {
 	if src != nil {
 		for key, value := range src {
 			dst[key] += value

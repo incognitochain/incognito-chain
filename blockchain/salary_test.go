@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/trie"
@@ -732,39 +733,20 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
-	rewards := []uint64{1093995, 109399}
-	beaconReward := []uint64{29837, 196919}
-	shardReward := []uint64{954759, 787677}
+	rewards := []uint64{1093995, 1093995}
+	beaconReward := []uint64{51054, 196919}
+	shardReward := []uint64{933543, 787677}
 	daoReward := []uint64{109399, 109399}
 	sDBs := []*statedb.StateDB{}
 	committeeEngines := []*mocks.BeaconCommitteeEngine{}
 	for i := 0; i < 2; i++ {
 		sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 		assert.Nil(t, err)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 0, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 1, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 2, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 3, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 4, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 5, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 6, *hash, rewards[i],
-		)
-		statedb.AddShardRewardRequest(
-			sDB, 1, 7, *hash, rewards[i],
-		)
+		for j := 0; j < 8; j++ {
+			statedb.AddShardRewardRequest(
+				sDB, 1, byte(j), *hash, rewards[i],
+			)
+		}
 		sDBs = append(sDBs, sDB)
 		committeeEngine := &mocks.BeaconCommitteeEngine{}
 		committeeEngine.On("ActiveShards").Return(8)
@@ -935,32 +917,32 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				rewardStateDB: sDBs[0],
 			},
 			want: map[common.Hash]uint64{
-				*hash: 29837 * 8,
+				*hash: 51054 * 8,
 			},
 			want1: []map[common.Hash]uint64{
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 				map[common.Hash]uint64{
-					*hash: 954759,
+					*hash: 933543,
 				},
 			},
 			want2: map[common.Hash]uint64{
