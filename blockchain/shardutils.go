@@ -1,47 +1,18 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
-	"sort"
-	"strconv"
-	"strings"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"sort"
 )
 
-func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
-	beaconBlocks := []*types.BeaconBlock{}
-	for i := from; i <= to; i++ {
-		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
-		if err != nil {
-			return nil, err
-		}
-		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
-		if err != nil {
-			return beaconBlocks, err
-		}
-		beaconBlock := types.BeaconBlock{}
-		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
-		if err != nil {
-			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
-		}
-		beaconBlocks = append(beaconBlocks, &beaconBlock)
-	}
-	return beaconBlocks, nil
-}
-
-func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
+func createCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
 	crossIDs := []byte{}
 	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {
@@ -76,36 +47,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	return crossIDs
 }
 
-// CreateSwapInstruction creates swap inst and return new validator list
-// Return param:
-// #1: swap inst
-// #2: new pending validator list after swapped
-// #3: new committees after swapped
-// #4: error
-func CreateSwapInstruction(
-	pendingValidator []string,
-	commitees []string,
-	maxCommitteeSize int,
-	minCommitteeSize int,
-	shardID byte,
-	producersBlackList map[string]uint8,
-	badProducersWithPunishment map[string]uint8,
-	offset int,
-	swapOffset int,
-) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID)), string(badProducersWithPunishmentBytes)}
-	return swapInstruction, newPendingValidator, newShardCommittees, nil
-}
-
-func CreateShardSwapActionForKeyListV2(
+func createShardSwapActionForKeyListV2(
 	genesisParam *GenesisParams,
 	shardCommittees []string,
 	minCommitteeSize int,
@@ -116,131 +58,6 @@ func CreateShardSwapActionForKeyListV2(
 	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
 	remainShardCommittees := shardCommittees[minCommitteeSize:]
 	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
-}
-
-// CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
-// Stake:
-//  ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
-//	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
-// Stop Auto Staking:
-//	["stopautostaking" "pubkey1,pubkey2,..."]
-// Unstake:
-//  ["unstake", "pubkey1,pubkey2,..."]
-func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
-	// Generate stake action
-	stakeShardPublicKey := []string{}
-	stakeBeaconPublicKey := []string{}
-	stakeShardTxID := []string{}
-	stakeBeaconTxID := []string{}
-	stakeShardRewardReceiver := []string{}
-	stakeBeaconRewardReceiver := []string{}
-	stakeShardAutoStaking := []string{}
-	stakeBeaconAutoStaking := []string{}
-	stopAutoStaking := []string{}
-	unstaking := []string{}
-	for _, tx := range transactions {
-		metadataValue := tx.GetMetadata()
-		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
-			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-			if err == nil {
-				instructions = append(instructions, actionPairs...)
-			} else {
-				Logger.log.Errorf("Build Request Action Error %+v", err)
-			}
-		}
-		switch tx.GetMetadataType() {
-		case metadata.ShardStakingMeta:
-			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
-			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
-			}
-			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
-			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
-			stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
-			if len(stakingMetadata.CommitteePublicKey) == 0 {
-				continue
-			}
-			if stakingMetadata.AutoReStaking {
-				stakeShardAutoStaking = append(stakeShardAutoStaking, "true")
-			} else {
-				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
-			}
-
-		case metadata.BeaconStakingMeta:
-			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
-			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
-			}
-			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
-			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
-			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
-			if stakingMetadata.AutoReStaking {
-				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "true")
-			} else {
-				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "false")
-			}
-		case metadata.StopAutoStakingMeta:
-			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
-			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
-			}
-			if len(stopAutoStakingMetadata.CommitteePublicKey) != 0 {
-				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
-			}
-			stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
-		case metadata.UnStakingMeta:
-			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
-			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
-			}
-			if len(unstakingMetadata.CommitteePublicKey) != 0 {
-				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
-			}
-			unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
-		}
-	}
-	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
-		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) && len(stakeShardRewardReceiver) != len(stakeShardAutoStaking) {
-			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoStaking)))
-		}
-		stakeShardPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeShardPublicKey)
-		if err != nil {
-			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
-		}
-		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		inst := []string{
-			instruction.STAKE_ACTION,
-			strings.Join(stakeShardPublicKey, ","),
-			"shard", strings.Join(stakeShardTxID, ","),
-			strings.Join(stakeShardRewardReceiver, ","),
-			strings.Join(stakeShardAutoStaking, ","),
-		}
-		instructions = append(instructions, inst)
-	}
-	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
-		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) && len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoStaking) {
-			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver), len(stakeBeaconAutoStaking)))
-		}
-		stakeBeaconPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeBeaconPublicKey)
-		if err != nil {
-			return nil, fmt.Errorf("Failed To Convert Stake Beacon Public Key to Base58 Short Form")
-		}
-		// ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		inst := []string{instruction.STAKE_ACTION, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
-		instructions = append(instructions, inst)
-	}
-	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
-		// ["stopautostaking" "pubkey1,pubkey2,..."]
-		inst := []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
-		instructions = append(instructions, inst)
-	}
-	if !reflect.DeepEqual(unstaking, []string{}) {
-		// ["unstake" "pubkey1,pubkey2,..."]
-		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
-		instructions = append(instructions, inst)
-	}
-	return instructions, nil
 }
 
 func checkReturnStakingTxExistence(txId string, shardBlock *types.ShardBlock) bool {
@@ -325,25 +142,6 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 	return merklePathShard, merkleShardRoot
 }
 
-// VerifyCrossShardBlockUTXO Calculate Final Hash as Hash of:
-//	1. CrossTransactionFinalHash
-//	2. TxTokenDataVoutFinalHash
-//	3. CrossTxTokenPrivacyData
-// These hashes will be calculated as comment in getCrossShardDataHash function
-func VerifyCrossShardBlockUTXO(block *types.CrossShardBlock, merklePathShard []common.Hash) bool {
-	var outputCoinHash common.Hash
-	var txTokenDataHash common.Hash
-	var txTokenPrivacyDataHash common.Hash
-	outCoins := block.CrossOutputCoin
-	outputCoinHash = calHashOutCoinCrossShard(outCoins)
-	txTokenDataHash = calHashTxTokenDataHashList()
-	txTokenPrivacyDataList := block.CrossTxTokenPrivacyData
-	txTokenPrivacyDataHash = calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
-	tmpByte := append(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...), txTokenPrivacyDataHash.GetBytes()...)
-	finalHash := common.HashH(tmpByte)
-	return Merkle{}.VerifyMerkleRootFromMerklePath(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
-}
-
 //  getCrossShardDataHash
 //	Helper function: group OutputCoin into shard and get the hash of each group
 //	Return value
@@ -410,7 +208,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 							txTokenPrivacyDataMap[shardID] = make(map[common.Hash]*types.ContentCrossShardTokenPrivacyData)
 						}
 						if _, ok := txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID]; !ok {
-							contentCrossTokenPrivacyData := cloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxPrivacyTokenData)
+							contentCrossTokenPrivacyData := CloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxPrivacyTokenData)
 							txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID] = &contentCrossTokenPrivacyData
 						}
 						txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID].OutputCoin = append(txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID].OutputCoin, *outCoin)
@@ -435,50 +233,6 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	return combinedHash
 }
 
-// getCrossShardData get cross data (send to a shard) from list of transaction:
-// 1. (Privacy) PRV: Output coin
-// 2. Tx Custom Token: Tx Token Data
-// 3. Privacy Custom Token: Token Data + Output coin
-func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin, []types.ContentCrossShardTokenPrivacyData) {
-	coinList := []privacy.OutputCoin{}
-	txTokenPrivacyDataMap := make(map[common.Hash]*types.ContentCrossShardTokenPrivacyData)
-	var txTokenPrivacyDataList []types.ContentCrossShardTokenPrivacyData
-	for _, tx := range txList {
-		if tx.GetProof() != nil {
-			for _, outCoin := range tx.GetProof().GetOutputCoins() {
-				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
-				if lastByte == shardID {
-					coinList = append(coinList, *outCoin)
-				}
-			}
-		}
-		if tx.GetType() == common.TxCustomTokenPrivacyType {
-			customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
-			if customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof() != nil {
-				for _, outCoin := range customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof().GetOutputCoins() {
-					lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
-					if lastByte == shardID {
-						if _, ok := txTokenPrivacyDataMap[customTokenPrivacyTx.TxPrivacyTokenData.PropertyID]; !ok {
-							contentCrossTokenPrivacyData := cloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxPrivacyTokenData)
-							txTokenPrivacyDataMap[customTokenPrivacyTx.TxPrivacyTokenData.PropertyID] = &contentCrossTokenPrivacyData
-						}
-						txTokenPrivacyDataMap[customTokenPrivacyTx.TxPrivacyTokenData.PropertyID].OutputCoin = append(txTokenPrivacyDataMap[customTokenPrivacyTx.TxPrivacyTokenData.PropertyID].OutputCoin, *outCoin)
-					}
-				}
-			}
-		}
-	}
-	if len(txTokenPrivacyDataMap) != 0 {
-		for _, value := range txTokenPrivacyDataMap {
-			txTokenPrivacyDataList = append(txTokenPrivacyDataList, *value)
-		}
-		sort.SliceStable(txTokenPrivacyDataList[:], func(i, j int) bool {
-			return txTokenPrivacyDataList[i].PropertyID.String() < txTokenPrivacyDataList[j].PropertyID.String()
-		})
-	}
-	return coinList, txTokenPrivacyDataList
-}
-
 func calHashOutCoinCrossShard(outCoins []privacy.OutputCoin) common.Hash {
 	tmpByte := []byte{}
 	var outputCoinHash common.Hash
@@ -496,10 +250,6 @@ func calHashOutCoinCrossShard(outCoins []privacy.OutputCoin) common.Hash {
 }
 
 func calHashTxTokenDataHashFromMap() common.Hash {
-	return common.HashH([]byte(""))
-}
-
-func calHashTxTokenDataHashList() common.Hash {
 	return common.HashH([]byte(""))
 }
 
@@ -531,58 +281,6 @@ func calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []types.ContentCro
 	return common.HashH(tmpByte)
 }
 
-func cloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPrivacyTokenData) types.ContentCrossShardTokenPrivacyData {
-	newContentCrossTokenPrivacyData := types.ContentCrossShardTokenPrivacyData{
-		PropertyID:     txTokenPrivacyData.PropertyID,
-		PropertyName:   txTokenPrivacyData.PropertyName,
-		PropertySymbol: txTokenPrivacyData.PropertySymbol,
-		Mintable:       txTokenPrivacyData.Mintable,
-		Amount:         txTokenPrivacyData.Amount,
-		Type:           transaction.CustomTokenCrossShard,
-	}
-	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
-	return newContentCrossTokenPrivacyData
-}
-func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]types.CrossOutputCoin) (*common.Hash, error) {
-	if len(crossOutputCoins) == 0 {
-		res, err := generateZeroValueHash()
-
-		return &res, err
-	}
-	keys := []int{}
-	crossOutputCoinHashes := []*common.Hash{}
-	for k := range crossOutputCoins {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
-	for _, shardID := range keys {
-		for _, value := range crossOutputCoins[byte(shardID)] {
-			hash := value.Hash()
-			hashByte := hash.GetBytes()
-			newHash, err := common.Hash{}.NewHash(hashByte)
-			if err != nil {
-				return &common.Hash{}, NewBlockChainError(HashError, err)
-			}
-			crossOutputCoinHashes = append(crossOutputCoinHashes, newHash)
-		}
-	}
-	merkle := Merkle{}
-	merkleTree := merkle.BuildMerkleTreeOfHashes(crossOutputCoinHashes, len(crossOutputCoinHashes))
-	return merkleTree[len(merkleTree)-1], nil
-}
-
-func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]types.CrossOutputCoin, rootHash common.Hash) bool {
-	res, err := CreateMerkleCrossOutputCoin(crossOutputCoins)
-	if err != nil {
-		return false
-	}
-	hashByte := rootHash.GetBytes()
-	newHash, err := common.Hash{}.NewHash(hashByte)
-	if err != nil {
-		return false
-	}
-	return newHash.IsEqual(res)
-}
 func CreateMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransaction) (*common.Hash, error) {
 	if len(crossTransactions) == 0 {
 		res, err := generateZeroValueHash()

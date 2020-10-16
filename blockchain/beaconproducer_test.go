@@ -2,23 +2,21 @@ package blockchain
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"reflect"
-	"testing"
-	"time"
-
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+	"time"
 )
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

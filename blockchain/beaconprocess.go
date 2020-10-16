@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -544,7 +545,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		}
 	}
 	//=============Verify Stake Public Key
-	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*beaconBlock)
+	newBeaconCandidate, newShardCandidate := getStakingCandidate(*beaconBlock)
 	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 		validBeaconCandidate := beaconBestState.GetValidStakers(newBeaconCandidate)
 		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
@@ -1011,6 +1012,21 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	return nil
 }
 
-func isNil(v interface{}) bool {
-	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
+	beacon := []string{}
+	shard := []string{}
+	beaconBlockBody := beaconBlock.Body
+	for _, v := range beaconBlockBody.Instructions {
+		if len(v) < 1 {
+			continue
+		}
+		if v[0] == instruction.STAKE_ACTION && v[2] == "beacon" {
+			beacon = strings.Split(v[1], ",")
+		}
+		if v[0] == instruction.STAKE_ACTION && v[2] == "shard" {
+			shard = strings.Split(v[1], ",")
+		}
+	}
+
+	return beacon, shard
 }
