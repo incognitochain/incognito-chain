@@ -406,6 +406,15 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(l) >= 4 && l[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
 					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(l[3], producerPrivateKey, shardID)
 				}
+			//redeem from liquidation pool
+			case metadata.PortalRedeemFromLiquidationPoolMetaV3:
+				if len(l) >= 4 {
+					if l[2] == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
+						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTxV3(l[3], producerPrivateKey, shardID)
+					} else if l[2] == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
+						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTxV3(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+					}
+				}
 			default:
 				continue
 			}

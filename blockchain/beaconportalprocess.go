@@ -96,10 +96,14 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			// liquidation by exchange rate v3
 		case strconv.Itoa(metadata.PortalLiquidateByRatesMetaV3):
 			err = blockchain.processLiquidationByExchangeRatesV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+			// redeem from liquidation pool v3
+		case strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolMetaV3):
+			err = blockchain.processPortalRedeemFromLiquidationPoolV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 
 		// for Portal smart contract
 		// todo: add more metadata need to unlock token from sc
-		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
+		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
+			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3):
 			err = blockchain.processPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 
 		}

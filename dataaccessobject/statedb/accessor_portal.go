@@ -414,6 +414,28 @@ func StoreRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB *StateDB, txID st
 	return nil
 }
 
+func GetRedeemRequestFromLiquidationPoolByTxIDStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalLiquidationRedeemRequestStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalRedeemRequestFromLiquidationByTxIDStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StoreRedeemRequestFromLiquidationPoolByTxIDStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalLiquidationRedeemRequestStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalRedeemRequestFromLiquidationByTxIDStatusError, err)
+	}
+
+	return nil
+}
+
 func StoreLiquidationByExchangeRateStatus(stateDB *StateDB, beaconHeight uint64, custodianAddress string, statusContent []byte) error {
 	statusType := PortalLiquidationTpExchangeRatesStatusPrefix()
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))

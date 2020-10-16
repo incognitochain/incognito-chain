@@ -143,6 +143,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianDepositV3{}
 	case PortalCustodianWithdrawRequestMetaV3:
 		md = &PortalCustodianWithdrawRequestV3{}
+	case PortalRedeemFromLiquidationPoolMetaV3:
+		md = &PortalRedeemFromLiquidationPoolV3{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -178,6 +180,7 @@ func HasBridgeInstructions(instructions [][]string) bool {
 // TODO: add more meta data types
 var portalMetas = []string{
 	strconv.Itoa(PortalCustodianWithdrawConfirmMetaV3),
+	strconv.Itoa(PortalRedeemFromLiquidationPoolConfirmMetaV3),
 }
 
 func HasPortalInstructions(instructions [][]string) bool {

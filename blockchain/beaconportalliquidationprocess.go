@@ -712,3 +712,87 @@ func (blockchain *BlockChain) processLiquidationByExchangeRatesV3(
 	}
 	return nil
 }
+
+func (blockchain *BlockChain) processPortalRedeemFromLiquidationPoolV3(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
+	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData metadata.PortalRedeemFromLiquidationPoolContentV3
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+
+	status := byte(common.PortalRedeemFromLiquidationPoolRejectedStatus)
+	if reqStatus == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
+		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
+		liquidateExchangeRates := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
+
+		UpdateLiquidationPoolAfterRedeemFrom(
+			currentPortalState, liquidateExchangeRates, actionData.TokenID, actionData.RedeemAmount,
+			actionData.MintedPRVCollateral, actionData.UnlockedTokenCollaterals)
+		status = byte(common.PortalRedeemFromLiquidationPoolSuccessStatus)
+
+		// update bridge/portal token info
+		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: Can not new hash from porting incTokenID: %+v", err)
+			return nil
+		}
+		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
+		if found {
+			updatingInfo.deductAmt += actionData.RedeemAmount
+		} else {
+			updatingInfo = UpdatingInfo{
+				countUpAmt:      0,
+				deductAmt:       actionData.RedeemAmount,
+				tokenID:         *incTokenID,
+				externalTokenID: nil,
+				isCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[*incTokenID] = updatingInfo
+	}
+
+	// store db status
+	redeem := metadata.PortalRedeemFromLiquidationPoolStatusV3{
+		TokenID:                  actionData.TokenID,
+		RedeemAmount:             actionData.RedeemAmount,
+		RedeemerIncAddressStr:    actionData.RedeemerIncAddressStr,
+		RedeemerExtAddressStr:    actionData.RedeemerExtAddressStr,
+		TxReqID:                  actionData.TxReqID,
+		MintedPRVCollateral:      actionData.MintedPRVCollateral,
+		UnlockedTokenCollaterals: actionData.UnlockedTokenCollaterals,
+		Status:                   status,
+	}
+
+	contentStatusBytes, _ := json.Marshal(redeem)
+	err = statedb.StoreRedeemRequestFromLiquidationPoolByTxIDStatusV3(
+		portalStateDB,
+		actionData.TxReqID.String(),
+		contentStatusBytes,
+	)
+
+	if err != nil {
+		Logger.log.Errorf("Store redeem liquidate exchange rates error %v\n", err)
+		return nil
+	}
+
+	return nil
+}

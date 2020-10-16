@@ -2152,3 +2152,57 @@ func calAndCheckLiquidationRatioV3(
 
 	return result, remainUnlockCollaterals, wRedeemIDs, nil
 }
+
+func calUnlockedCollateralRedeemFromLiquidationPoolV3(
+	redeemAmount uint64,
+	lInfo statedb.LiquidationPoolDetail,
+	exchangeTool PortalExchangeRateTool) (uint64, map[string]uint64, error) {
+
+	if lInfo.PubTokenAmount == 0 {
+		return 0, nil, errors.New("Liquidation pool is invalid")
+	}
+
+	// calculate total liquidated collaterals in usdt
+	liquidatedPRVCollateralInUSDT, err := exchangeTool.ConvertToUSDT(common.PRVIDStr, lInfo.CollateralAmount)
+	if err != nil{
+		return 0, nil, err
+	}
+	liquidatedTokenCollateralsInUSDT, err := exchangeTool.ConvertMapTokensToUSDT(lInfo.TokensCollateralAmount)
+	if err != nil{
+		return 0, nil, err
+	}
+	liquidatedCollateralAmountInUSDT := liquidatedPRVCollateralInUSDT + liquidatedTokenCollateralsInUSDT
+
+	// calculate unlocked collaterals by percent of redeemAmount
+	unlockedAmountInUSDT := new(big.Int).Mul(
+		new(big.Int).SetUint64(redeemAmount),
+		new(big.Int).SetUint64(liquidatedCollateralAmountInUSDT),
+	)
+	unlockedAmountInUSDT = unlockedAmountInUSDT.Div(
+		unlockedAmountInUSDT,
+		new(big.Int).SetUint64(lInfo.PubTokenAmount))
+
+	return exchangeTool.ConvertMapTokensFromUSDT(unlockedAmountInUSDT.Uint64(), lInfo.CollateralAmount, lInfo.TokensCollateralAmount)
+}
+
+func UpdateLiquidationPoolAfterRedeemFrom(
+	currentPortalState *CurrentPortalState,
+	liquidationPool *statedb.LiquidationPool,
+	portalTokenID string,
+	redeemAmount uint64,
+	mintedPRVCollateral uint64,
+	unlockedTokenCollaterals map[string]uint64) {
+	liquidationInfoByPortalTokenID := liquidationPool.Rates()[portalTokenID]
+
+	updatedTokensCollateral := liquidationInfoByPortalTokenID.TokensCollateralAmount
+	for tokenID, amount := range unlockedTokenCollaterals {
+		updatedTokensCollateral[tokenID] -= amount
+	}
+	liquidationPool.Rates()[portalTokenID] = statedb.LiquidationPoolDetail{
+		CollateralAmount:       liquidationInfoByPortalTokenID.CollateralAmount - mintedPRVCollateral,
+		PubTokenAmount:         liquidationInfoByPortalTokenID.PubTokenAmount - redeemAmount,
+		TokensCollateralAmount: updatedTokensCollateral,
+	}
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey().String()
+	currentPortalState.LiquidationPool[liquidateExchangeRatesKey] = liquidationPool
+}

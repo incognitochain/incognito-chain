@@ -45,7 +45,8 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 		}
 
 	// for portal instructions
-	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3):
+	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
+		strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3):
 		var err error
 		metaType, _ := strconv.Atoi(inst[0])
 		incProof := NewIncProof(metaType)

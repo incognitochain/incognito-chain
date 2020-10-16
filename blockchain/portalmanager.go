@@ -146,6 +146,11 @@ func NewPortalManager() *portalManager {
 				actions: map[byte][][]string{},
 			},
 		},
+		metadata.PortalRedeemFromLiquidationPoolMetaV3: &portalRedeemFromLiquidationPoolProcessorV3{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
 	}
 
 	return &portalManager{

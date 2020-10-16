@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
@@ -30,6 +29,12 @@ func (httpServer *HttpServer) handleGetPortalWithdrawCollateralProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	// validate metaType is valid
+	metaTypeParam, ok := data["MetadataType"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param MetadataType should be a number"))
+	}
+
 	// Get beacon block height from txID
 	height, err := httpServer.portal.GetWithdrawCollateralConfirm(*txID)
 	if err != nil {
@@ -37,6 +42,6 @@ func (httpServer *HttpServer) handleGetPortalWithdrawCollateralProof(
 	}
 
 	// get withdraw proof
-	return retrieveIncProof(metadata.PortalCustodianWithdrawConfirmMetaV3, true, height, txID, httpServer)
+	return retrieveIncProof(int(metaTypeParam), true, height, txID, httpServer)
 }
 

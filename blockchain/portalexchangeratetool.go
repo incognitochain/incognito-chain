@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math"
 	"math/big"
+	"sort"
 )
 
 type RateInfo struct {
@@ -110,4 +111,76 @@ func (t *PortalExchangeRateTool) ConvertMapTokensToUSDT(tokens map[string]uint64
 		res += amountInUSDT
 	}
 	return res, nil
+}
+
+func (t *PortalExchangeRateTool) ConvertMapTokensFromUSDT(amountInUSDT uint64, maxPRVAmount uint64, maxTokenAmounts map[string]uint64) (uint64, map[string]uint64, error) {
+	if amountInUSDT == 0 {
+		return 0, nil, nil
+	}
+
+	prvAmountRes := uint64(0)
+	tokenAmountsRes := map[string]uint64{}
+
+	// convert to prv amount first
+	maxPRVInUSDT, err := t.ConvertToUSDT(common.PRVIDStr, maxPRVAmount)
+	if err != nil {
+		return 0, nil, nil
+	}
+
+	if maxPRVInUSDT <= amountInUSDT {
+		prvAmountRes = maxPRVAmount
+		amountInUSDT -= maxPRVInUSDT
+	} else {
+		prvAmountRes, err = t.ConvertFromUSDT(common.PRVIDStr, amountInUSDT)
+		if err != nil {
+			return 0, nil, nil
+		}
+		amountInUSDT = 0
+	}
+
+	if amountInUSDT == 0 {
+		return prvAmountRes, tokenAmountsRes, nil
+	}
+
+	// sort token by amountInUSDT descending
+	type tokenInfo struct {
+		tokenID string
+		amount uint64
+		amountInUSDT uint64
+	}
+	tokenInfos := make([]tokenInfo, 0)
+	for tokenID, maxAmount := range maxTokenAmounts {
+		maxAmountInUSDT, err := t.ConvertToUSDT(tokenID, maxAmount)
+		if err != nil {
+			return 0, nil, nil
+		}
+
+		tokenInfos = append(tokenInfos, tokenInfo{
+			tokenID:      tokenID,
+			amount: maxAmount,
+			amountInUSDT: maxAmountInUSDT,
+		})
+	}
+	sort.SliceStable(tokenInfos, func(i, j int) bool {
+		return tokenInfos[i].amountInUSDT > tokenInfos[j].amountInUSDT
+	})
+
+	for _, tInfo := range tokenInfos {
+		if tInfo.amountInUSDT <= amountInUSDT {
+			tokenAmountsRes[tInfo.tokenID] = tInfo.amount
+			amountInUSDT -= tInfo.amountInUSDT
+		} else {
+			tokenAmountsRes[tInfo.tokenID], err = t.ConvertFromUSDT(tInfo.tokenID, amountInUSDT)
+			if err != nil {
+				return 0, nil, nil
+			}
+			amountInUSDT = 0
+		}
+
+		if amountInUSDT == 0 {
+			return prvAmountRes, tokenAmountsRes, nil
+		}
+	}
+
+	return 0, nil, errors.New("Not enough token to convert")
 }

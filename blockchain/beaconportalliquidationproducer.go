@@ -1,8 +1,10 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"sort"
 	"strconv"
 	"time"
@@ -83,8 +85,8 @@ func buildLiquidationByExchangeRateInstV3(
 	remainUnlockCollaterals map[string]metadata.RemainUnlockCollateral,
 ) []string {
 	liquidationContent := metadata.PortalLiquidationByRatesContentV3{
-		CustodianIncAddress: custodianAddress,
-		Details:             liquidationInfo,
+		CustodianIncAddress:     custodianAddress,
+		Details:                 liquidationInfo,
 		RemainUnlockCollaterals: remainUnlockCollaterals,
 	}
 	liquidationContentBytes, _ := json.Marshal(liquidationContent)
@@ -795,6 +797,169 @@ func (p *portalRedeemFromLiquidationPoolProcessor) buildNewInsts(
 		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 	)
 	return [][]string{inst}, nil
+}
+
+type portalRedeemFromLiquidationPoolProcessorV3 struct {
+	*portalInstProcessor
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessorV3) getActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessorV3) putAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessorV3) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func buildRedeemFromLiquidationPoolInstV3(
+	tokenID string,
+	redeemAmount uint64,
+	incAddressStr string,
+	extAddressStr string,
+	mintedPRVCollateral uint64,
+	unlockedTokenCollaterals map[string]uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	redeemRequestContent := metadata.PortalRedeemFromLiquidationPoolContentV3{
+		TokenID:                  tokenID,
+		RedeemAmount:             redeemAmount,
+		RedeemerIncAddressStr:    incAddressStr,
+		RedeemerExtAddressStr:    extAddressStr,
+		TxReqID:                  txReqID,
+		ShardID:                  shardID,
+		MintedPRVCollateral:      mintedPRVCollateral,
+		UnlockedTokenCollaterals: unlockedTokenCollaterals,
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(redeemRequestContentBytes),
+	}
+}
+
+func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
+	bc *BlockChain,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	portalParams PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal redeem liquidate exchange rate action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalRedeemFromLiquidationPoolActionV3
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal redeem liquidate exchange rate action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	meta := actionData.Meta
+	rejectInst := buildRedeemFromLiquidationPoolInstV3(
+		meta.TokenID,
+		meta.RedeemAmount,
+		meta.RedeemerIncAddressStr,
+		meta.RedeemerExtAddressStr,
+		0,
+		map[string]uint64{},
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
+	)
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Current Portal state is null.")
+		// need to mint ptoken to user
+		return [][]string{rejectInst}, nil
+	}
+
+	//get exchange rates
+	exchangeRatesState := currentPortalState.FinalExchangeRatesState
+	if exchangeRatesState == nil {
+		Logger.log.Errorf("exchange rates not found")
+		return [][]string{rejectInst}, nil
+	}
+	exchangeTool := NewPortalExchangeRateTool(exchangeRatesState, portalParams.SupportedCollateralTokens)
+
+	// check liquidation pool
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
+	liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
+	if !ok || liquidateExchangeRates == nil || liquidateExchangeRates.Rates() == nil {
+		Logger.log.Errorf("Liquidation pool not found")
+		return [][]string{rejectInst}, nil
+	}
+
+	liquidationInfoByPortalTokenID, ok := liquidateExchangeRates.Rates()[meta.TokenID]
+	if !ok || liquidationInfoByPortalTokenID.PubTokenAmount == 0 {
+		Logger.log.Errorf("Liquidation for portalTokenID %v is empty", meta.TokenID)
+		return [][]string{rejectInst}, nil
+	}
+
+	// calculate minted PRV collateral and unlocked token collaterals from liquidation pool
+	mintedPRVCollateral, unlockedTokenCollaterals, err := calUnlockedCollateralRedeemFromLiquidationPoolV3(meta.RedeemAmount, liquidationInfoByPortalTokenID, *exchangeTool)
+	if err != nil {
+		Logger.log.Errorf("Calculate total liquidation error %v", err)
+		return [][]string{rejectInst}, nil
+	}
+
+	// update liquidation pool
+	UpdateLiquidationPoolAfterRedeemFrom(
+		currentPortalState, liquidateExchangeRates, meta.TokenID, meta.RedeemAmount,
+		mintedPRVCollateral, unlockedTokenCollaterals)
+
+	inst := buildRedeemFromLiquidationPoolInstV3(
+		meta.TokenID,
+		meta.RedeemAmount,
+		meta.RedeemerIncAddressStr,
+		meta.RedeemerExtAddressStr,
+		mintedPRVCollateral,
+		unlockedTokenCollaterals,
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
+	)
+
+	unlockedTokens := map[string]*big.Int{}
+	for tokenID, amount := range unlockedTokenCollaterals {
+		amountBN := big.NewInt(0).SetUint64(amount)
+		// Convert amount to big.Int to get bytes later
+		if bytes.Equal(common.FromHex(tokenID), common.FromHex(common.EthAddrStr)) {
+			// Convert Gwei to Wei for Ether
+			amountBN = amountBN.Mul(amountBN, big.NewInt(1000000000))
+		}
+	}
+
+	confirmInst := buildConfirmWithdrawCollateralInstV3(
+		metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3,
+		shardID,
+		meta.RedeemerIncAddressStr,
+		meta.RedeemerExtAddressStr,
+		unlockedTokens,
+		actionData.TxReqID,
+		beaconHeight+1,
+	)
+	return [][]string{inst, confirmInst}, nil
 }
 
 /* =======
