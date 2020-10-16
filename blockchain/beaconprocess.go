@@ -769,6 +769,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
+	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
+	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeHash, committeeChange, env)
+	if err != nil {
+		return err
+	}
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -975,12 +980,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
 		// panic("Backup shard view error")
-		return err
-	}
-
-	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
-	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeHash, committeeChange, env)
-	if err != nil {
 		return err
 	}
 

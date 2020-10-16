@@ -990,16 +990,9 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 	if reflect.DeepEqual(b, NewBeaconCommitteeStateV2()) {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV2))
 	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	comparedHashes, err := engine.generateCommitteeHashes(b)
-	if err != nil {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
-	}
-	err = engine.compareHashes(comparedHashes, hashes)
-	if err != nil {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
-	}
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
 	removedStakerKeys := []incognitokey.CommitteePublicKey{}
 	addedStakerKeys, err := incognitokey.
 		CommitteeBase58KeyListToStruct(append(committeeChange.Unstake, committeeChange.StopAutoStake...))
