@@ -31,9 +31,12 @@ func HasSerialNumber(stateDB *StateDB, tokenID common.Hash, serialNumber []byte,
 	if err != nil {
 		return false, NewStatedbError(GetSerialNumberError, err)
 	}
-	if has && bytes.Compare(s.SerialNumber(), serialNumber) != 0 {
-		panic("same key wrong value")
-		return false, nil
+	if has {
+		if bytes.Compare(s.SerialNumber(), serialNumber) != 0 {
+			panic("same key wrong value")
+			return false, nil
+		}
+		return has, nil
 	}
 	// db key for version 1
 	key = GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)

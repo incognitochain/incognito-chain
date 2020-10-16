@@ -446,11 +446,11 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 			return nil, nil, err
 		}
 		// If previously created coin is burning address
-		// if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
-		// 	assetTag := privacy.HashToPoint(tokenID[:])
-		// 	c.SetAssetTag(assetTag)
-		// 	return c, nil, nil // No need to check db
-		// }
+		if sharedSecret==nil {
+			// assetTag := privacy.HashToPoint(tokenID[:])
+			// c.SetAssetTag(assetTag)
+			return c, nil, nil // No need to check db
+		}
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
 		// here tokenID should always be TokenConfidentialAssetID (for db storage)
