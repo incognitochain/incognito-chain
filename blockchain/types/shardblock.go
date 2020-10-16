@@ -626,3 +626,16 @@ func (crossTransaction CrossTransaction) Bytes() []byte {
 func (crossTransaction CrossTransaction) Hash() common.Hash {
 	return common.HashH(crossTransaction.Bytes())
 }
+
+func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPrivacyTokenData) ContentCrossShardTokenPrivacyData {
+	newContentCrossTokenPrivacyData := ContentCrossShardTokenPrivacyData{
+		PropertyID:     txTokenPrivacyData.PropertyID,
+		PropertyName:   txTokenPrivacyData.PropertyName,
+		PropertySymbol: txTokenPrivacyData.PropertySymbol,
+		Mintable:       txTokenPrivacyData.Mintable,
+		Amount:         txTokenPrivacyData.Amount,
+		Type:           transaction.CustomTokenCrossShard,
+	}
+	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
+	return newContentCrossTokenPrivacyData
+}

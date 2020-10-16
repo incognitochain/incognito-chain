@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -255,7 +256,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		Height:             shardBestState.ShardHeight + 1,
 		Round:              round,
 		Epoch:              epoch,
-		CrossShardBitMap:   CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		CrossShardBitMap:   createCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
 		BeaconHeight:       beaconHeight,
 		BeaconHash:         *beaconHash,
 		TotalTxsFee:        totalTxsFee,
@@ -543,7 +544,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		}
 		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-			swapOrConfirmShardSwapInstruction, shardCommittee = CreateShardSwapActionForKeyListV2(blockchain.config.GenesisParams, backupShardCommittee, NumberOfFixedShardBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
+			swapOrConfirmShardSwapInstruction, shardCommittee = createShardSwapActionForKeyListV2(blockchain.config.GenesisParams, backupShardCommittee, NumberOfFixedShardBlockValidators, blockchain.config.ChainParams.ActiveShards, shardID, epoch)
 		} else {
 			tempSwapInstruction := instruction.NewSwapInstruction()
 			env := committeestate.NewShardEnvBuilder().
@@ -835,4 +836,150 @@ func committeeChanged(swap []string) bool {
 	in := swap[1]
 	out := swap[2]
 	return len(in) > 0 || len(out) > 0
+}
+
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
+	beaconBlocks := []*types.BeaconBlock{}
+	for i := from; i <= to; i++ {
+		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
+		if err != nil {
+			return nil, err
+		}
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
+		if err != nil {
+			return beaconBlocks, err
+		}
+		beaconBlock := types.BeaconBlock{}
+		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
+		if err != nil {
+			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
+		}
+		beaconBlocks = append(beaconBlocks, &beaconBlock)
+	}
+	return beaconBlocks, nil
+}
+
+// CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
+// Stake:
+//  ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
+//	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
+// Stop Auto Staking:
+//	["stopautostaking" "pubkey1,pubkey2,..."]
+// Unstake:
+//  ["unstake", "pubkey1,pubkey2,..."]
+func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
+	// Generate stake action
+	stakeShardPublicKey := []string{}
+	stakeBeaconPublicKey := []string{}
+	stakeShardTxID := []string{}
+	stakeBeaconTxID := []string{}
+	stakeShardRewardReceiver := []string{}
+	stakeBeaconRewardReceiver := []string{}
+	stakeShardAutoStaking := []string{}
+	stakeBeaconAutoStaking := []string{}
+	stopAutoStaking := []string{}
+	unstaking := []string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue != nil {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
+			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
+			if err == nil {
+				instructions = append(instructions, actionPairs...)
+			} else {
+				Logger.log.Errorf("Build Request Action Error %+v", err)
+			}
+		}
+		switch tx.GetMetadataType() {
+		case metadata.ShardStakingMeta:
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
+			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
+			stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
+			if len(stakingMetadata.CommitteePublicKey) == 0 {
+				continue
+			}
+			if stakingMetadata.AutoReStaking {
+				stakeShardAutoStaking = append(stakeShardAutoStaking, "true")
+			} else {
+				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
+			}
+
+		case metadata.BeaconStakingMeta:
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
+			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
+			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
+			if stakingMetadata.AutoReStaking {
+				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "true")
+			} else {
+				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "false")
+			}
+		case metadata.StopAutoStakingMeta:
+			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(stopAutoStakingMetadata.CommitteePublicKey) != 0 {
+				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
+			}
+			stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
+		case metadata.UnStakingMeta:
+			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(unstakingMetadata.CommitteePublicKey) != 0 {
+				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
+			}
+			unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
+		}
+	}
+	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
+		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) && len(stakeShardRewardReceiver) != len(stakeShardAutoStaking) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoStaking)))
+		}
+		stakeShardPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeShardPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
+		}
+		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
+		inst := []string{
+			instruction.STAKE_ACTION,
+			strings.Join(stakeShardPublicKey, ","),
+			"shard", strings.Join(stakeShardTxID, ","),
+			strings.Join(stakeShardRewardReceiver, ","),
+			strings.Join(stakeShardAutoStaking, ","),
+		}
+		instructions = append(instructions, inst)
+	}
+	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
+		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) && len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoStaking) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver), len(stakeBeaconAutoStaking)))
+		}
+		stakeBeaconPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeBeaconPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("Failed To Convert Stake Beacon Public Key to Base58 Short Form")
+		}
+		// ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
+		inst := []string{instruction.STAKE_ACTION, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
+		// ["stopautostaking" "pubkey1,pubkey2,..."]
+		inst := []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(stopAutoStaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	if !reflect.DeepEqual(unstaking, []string{}) {
+		// ["unstake" "pubkey1,pubkey2,..."]
+		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	return instructions, nil
 }

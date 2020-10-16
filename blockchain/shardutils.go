@@ -208,7 +208,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 							txTokenPrivacyDataMap[shardID] = make(map[common.Hash]*types.ContentCrossShardTokenPrivacyData)
 						}
 						if _, ok := txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID]; !ok {
-							contentCrossTokenPrivacyData := CloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxPrivacyTokenData)
+							contentCrossTokenPrivacyData := types.CloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxPrivacyTokenData)
 							txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID] = &contentCrossTokenPrivacyData
 						}
 						txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID].OutputCoin = append(txTokenPrivacyDataMap[shardID][customTokenPrivacyTx.TxPrivacyTokenData.PropertyID].OutputCoin, *outCoin)
@@ -279,6 +279,10 @@ func calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []types.ContentCro
 		return common.HashH([]byte(""))
 	}
 	return common.HashH(tmpByte)
+}
+
+func calHashTxTokenDataHashList() common.Hash {
+	return common.HashH([]byte(""))
 }
 
 func CreateMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransaction) (*common.Hash, error) {

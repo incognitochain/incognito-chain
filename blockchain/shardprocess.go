@@ -410,7 +410,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		}
 	}
 	// Verify Cross Shards
-	crossShards := CreateCrossShardByteArray(shardBlock.Body.Transactions, shardID)
+	crossShards := createCrossShardByteArray(shardBlock.Body.Transactions, shardID)
 	if len(crossShards) != len(shardBlock.Header.CrossShardBitMap) {
 		return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect number of cross shardID is %+v but get %+v", len(shardBlock.Header.CrossShardBitMap), len(crossShards)))
 	}
