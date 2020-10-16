@@ -1007,7 +1007,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 	}
 
 	addedStakerKeys = append(addedStakerKeys, committeeChange.NextEpochShardCandidateAdded...)
-
 	err = statedb.StoreStakerInfoV1(
 		env.ConsensusStateDB,
 		addedStakerKeys,
@@ -1019,7 +1018,20 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 		return err
 	}
 
-	removedStakerKeys = append(removedStakerKeys, committeeChange.NextEpochShardCandidateRemoved...)
+	shardSubstituteAdded := map[string]bool{}
+	for _, v := range committeeChange.ShardSubstituteAdded {
+		for _, value := range v {
+			key, _ := value.ToBase58()
+			shardSubstituteAdded[key] = true
+		}
+	}
+	for _, v := range committeeChange.NextEpochShardCandidateRemoved {
+		key, _ := v.ToBase58()
+		if !shardSubstituteAdded[key] {
+			removedStakerKeys = append(removedStakerKeys, v)
+		}
+	}
+
 	for _, v := range committeeChange.ShardCommitteeRemoved {
 		for _, value := range v {
 			key, err := value.ToBase58()
@@ -1032,12 +1044,5 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 		}
 	}
 
-	for _, v := range removedStakerKeys {
-		err := statedb.DeleteStakerInfo(env.ConsensusStateDB, []incognitokey.CommitteePublicKey{v})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return statedb.DeleteStakerInfo(env.ConsensusStateDB, removedStakerKeys)
 }

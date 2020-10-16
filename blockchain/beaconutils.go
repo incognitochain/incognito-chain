@@ -373,6 +373,7 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 }
 
 func (shardInstruction *shardInstruction) compose() {
+
 	stakeInstruction := &instruction.StakeInstruction{}
 	unstakeInstruction := &instruction.UnstakeInstruction{}
 	stopAutoStakeInstruction := &instruction.StopAutoStakeInstruction{}
@@ -397,10 +398,16 @@ func (shardInstruction *shardInstruction) compose() {
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
 	}
 
-	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
-	shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
-	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
-	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
-	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
-	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	if len(stakeInstruction.PublicKeys) != 0 {
+		shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
+		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
+	}
+	if len(unstakeInstruction.CommitteePublicKeys) != 0 {
+		shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
+		shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
+	}
+	if len(stopAutoStakeInstruction.CommitteePublicKeys) != 0 {
+		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	}
 }
