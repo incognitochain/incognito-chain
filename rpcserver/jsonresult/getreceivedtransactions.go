@@ -6,8 +6,10 @@ import (
 
 type ReceivedTransaction struct {
 	TransactionDetail
-	ReceivedAmounts map[common.Hash]ReceivedInfo `json:"ReceivedAmounts"`
+	ReceivedAmounts map[common.Hash][]ReceivedInfo `json:"ReceivedAmounts"`
+	InputSerialNumbers map[common.Hash][]string `json:"InputSerialNumbers"`
 	FromShardID     byte                         `json:"FromShardID"`
+
 }
 
 type ReceivedInfo struct {

@@ -9,8 +9,6 @@ import (
 	"sort"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/incognitochain/incognito-chain/multiview"
-
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -19,12 +17,12 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
-
 	"github.com/pkg/errors"
 )
 
@@ -599,10 +597,16 @@ func (blockchain *BlockChain) GetNodeMode() string {
 	return blockchain.config.NodeMode
 }
 
-func (blockchain *BlockChain) GetWantedShard() map[byte]struct{} {
+func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}
-	for _, sID := range blockchain.config.RelayShards {
-		res[sID] = struct{}{}
+	if isBeaconCommittee {
+		for sID := byte(0); sID < byte(blockchain.config.ChainParams.ActiveShards); sID++ {
+			res[sID] = struct{}{}
+		}
+	} else {
+		for _, sID := range blockchain.config.RelayShards {
+			res[sID] = struct{}{}
+		}
 	}
 	return res
 }

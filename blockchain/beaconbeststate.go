@@ -104,14 +104,14 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 // var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
-	return &BeaconBestState{}
+	beaconBestState := new(BeaconBestState)
+	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
-	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
-	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
 	beaconBestState.BeaconCommittee = []incognitokey.CommitteePublicKey{}
 	beaconBestState.BeaconPendingValidator = []incognitokey.CommitteePublicKey{}
@@ -573,6 +573,60 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map
 	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, nil
 }
 
+func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []string {
+	for _, committees := range beaconBestState.GetShardCommittee() {
+		committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
+		if err != nil {
+			panic(err)
+		}
+		stakers = common.GetValidStaker(committeesStr, stakers)
+	}
+	for _, validators := range beaconBestState.GetShardPendingValidator() {
+		validatorsStr, err := incognitokey.CommitteeKeyListToString(validators)
+		if err != nil {
+			panic(err)
+		}
+		stakers = common.GetValidStaker(validatorsStr, stakers)
+	}
+
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(beaconCommitteeStr, stakers)
+
+	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(beaconPendingValidatorStr, stakers)
+
+	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(candidateBeaconWaitingForCurrentRandomStr, stakers)
+
+	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(candidateBeaconWaitingForNextRandomStr, stakers)
+
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(candidateShardWaitingForCurrentRandomStr, stakers)
+
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(candidateShardWaitingForNextRandomStr, stakers)
+	return stakers
+}
+
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
 	res := []string{}
 	for _, committee := range beaconBestState.GetShardCommittee() {
@@ -674,4 +728,18 @@ func (blockchain *BlockChain) GetBeaconRootsHash(stateDB *statedb.StateDB, heigh
 	bRH := &BeaconRootHash{}
 	err := json.Unmarshal(data, bRH)
 	return bRH, err
+}
+
+func (bc *BlockChain) GetTotalStaker() (int, error) {
+	// var beaconConsensusRootHash common.Hash
+	bcBestState := bc.GetBeaconBestState()
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bcBestState, bcBestState.GetHeight())
+	if err != nil {
+		return 0, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", bcBestState.GetHeight(), err)
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, fmt.Errorf("init beacon consensus statedb return error", err)
+	}
+	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
