@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -43,19 +45,28 @@ type simInstance struct {
 	cRemovedTxs chan metadata.Transaction
 	rpcServer   *rpcserver.RpcServer
 	cQuit       chan struct{}
-}
 
-type simSession struct {
-	instance        *simInstance
-	scenerioActions []ScenerioAction
+	scenerioActions    []ScenerioAction
+	autoGenerateBlocks map[int]bool
 }
 
 func main() {
 	disableLog(true)
 	instance1 := newSimInstance("test1")
+
+	scnString := `{
+		"Action":"GENERATEBLOCKS",
+		"Params": [{"ChainID":0,"Blocks":100,"IsBlocking":true},{"ChainID":1,"Blocks":100,"IsBlocking":true}]
+		}`
+	scn := ScenerioAction{}
+	err := json.Unmarshal([]byte(scnString), &scn)
+	if err != nil {
+		panic(err)
+	}
+	instance1.scenerioActions = append(instance1.scenerioActions, scn)
 	instance1.Run()
-	select {}
-	// instance1.Stop()
+	instance1.Stop()
+
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -225,10 +236,11 @@ func newSimInstance(simName string) *simInstance {
 		cRemovedTxs: cRemovedTxs,
 		rpcServer:   rpcServer,
 		cQuit:       cQuit,
+
+		autoGenerateBlocks: make(map[int]bool),
 	}
 
 	rpcServer.Init(&rpcConfig)
-
 	go func() {
 		for {
 			select {
@@ -246,23 +258,104 @@ func newSimInstance(simName string) *simInstance {
 }
 
 func (sim *simInstance) Stop() {
+	sim.rpcServer.Stop()
 	sim.cQuit <- struct{}{}
 }
 
 func (sim *simInstance) Run() {
-	tx, err := sim.createTx("", nil)
-	if err != nil {
-		log.Println(err)
+	for _, action := range sim.scenerioActions {
+		switch action.Action {
+		case GENERATEBLOCKS:
+			arrayParams := common.InterfaceSlice(action.Params)
+			var wg sync.WaitGroup
+			for _, param := range arrayParams {
+				param := param.(map[string]interface{})
+				p := GenerateBlocksParam{
+					ChainID:    int(param["ChainID"].(float64)),
+					Blocks:     int(param["Blocks"].(float64)),
+					IsBlocking: param["IsBlocking"].(bool),
+				}
+				if p.IsBlocking {
+					wg.Add(1)
+				}
+				go func(data GenerateBlocksParam) {
+					if enable, ok := sim.autoGenerateBlocks[p.ChainID]; enable && ok {
+						log.Fatalln(errors.New("Can't generate blocks if autogenerate is enable"))
+						return
+					}
+					err := sim.GenerateBlocks(data.ChainID, data.Blocks)
+					if err != nil {
+						log.Fatalln(err)
+					}
+					if p.IsBlocking {
+						wg.Done()
+					}
+				}(p)
+			}
+			wg.Wait()
+		case AUTOGENERATEBLOCKS:
+			arrayParams := common.InterfaceSlice(action.Params)
+			for _, param := range arrayParams {
+				param := param.(map[string]interface{})
+				p := AutoGenerateBlocks{
+					ChainID: int(param["ChainID"].(float64)),
+					Enable:  param["Enable"].(bool),
+				}
+				if p.Enable {
+					if enable, ok := sim.autoGenerateBlocks[p.ChainID]; !enable || !ok {
+						go func(chainID int) {
+							err := sim.GenerateBlocks(chainID, 0)
+							if err != nil {
+								log.Fatalln(err)
+							}
+						}(p.ChainID)
+					}
+				}
+				sim.autoGenerateBlocks[p.ChainID] = p.Enable
+			}
+		case GENERATETXS:
+			arrayParams := common.InterfaceSlice(action.Params)
+			for _, param := range arrayParams {
+				param := param.(map[string]interface{})
+				receivers := param["Receivers"].(map[string]interface{})
+				p := GenerateTxParam{
+					SenderPrK: param["SenderPrk"].(string),
+					Receivers: make(map[string]int),
+				}
+				for receiver, amount := range receivers {
+					p.Receivers[receiver] = int(amount.(float64))
+				}
+				err := sim.generateTxs(p.SenderPrK, p.Receivers)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+		case CREATETXSANDINJECT:
+
+		case CHECKBALANCES:
+
+		case CHECKBESTSTATES:
+
+		case SWITCHTOMANUAL:
+		}
 	}
-	log.Println(tx)
-	err = sim.injectTxs([]string{tx.Base58CheckData})
-	if err != nil {
-		panic(err)
-	}
-	err = sim.GenerateBlocks(0, 5)
-	if err != nil {
-		panic(err)
-	}
+
+	// tx, err := sim.createTx("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", []TxReceiver{TxReceiver{
+	// 	ReceiverPbK: "12Rtc3sbfHTTSqmS8efnhgb7Rc6ineoQCwJyX63MMRK4HF6JGo51GJp5rk25QfviU7GPjyptT9q3JguQmDEG3uKpPUDEY5CSUJtttfU",
+	// 	Amount:      10000,
+	// }})
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// log.Println(tx)
+	// err = sim.injectTxs([]string{tx.Base58CheckData})
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = sim.GenerateBlocks(0, 5)
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
 func disableLog(disable bool) {
@@ -274,14 +367,28 @@ type TxReceiver struct {
 	Amount      int
 }
 
-func (sim *simInstance) createTx(senderPrk string, receivers []TxReceiver) (*jsonresult.CreateTransactionResult, error) {
+func (sim *simInstance) generateTxs(senderPrk string, receivers map[string]int) error {
+	tx, err := sim.createTx(senderPrk, receivers)
+	if err != nil {
+		return err
+	}
+	err = sim.injectTxs([]string{tx.Base58CheckData})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sim *simInstance) createAndInjectTx(senderPrk string, receivers map[string]int) error {
+	return nil
+}
+
+func (sim *simInstance) createTx(senderPrk string, receivers map[string]int) (*jsonresult.CreateTransactionResult, error) {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createtransaction",
-		"params": []interface{}{"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", map[string]int{
-			"12Rtc3sbfHTTSqmS8efnhgb7Rc6ineoQCwJyX63MMRK4HF6JGo51GJp5rk25QfviU7GPjyptT9q3JguQmDEG3uKpPUDEY5CSUJtttfU": 10000,
-		}, 1, 1},
-		"id": 1,
+		"params":  []interface{}{senderPrk, receivers, 1, 1},
+		"id":      1,
 	})
 	if err != nil {
 		return nil, err
@@ -319,7 +426,6 @@ func (sim *simInstance) injectTxs(txsBase58 []string) error {
 		}
 		sim.cPendingTxs <- &tx
 	}
-
 	return nil
 }
 
@@ -334,34 +440,39 @@ func (sim *simInstance) GenerateBlocks(chainID int, blocks int) error {
 			newTimeSlot = true
 		}
 		if newTimeSlot {
-			if chainID == -1 {
-				newBlock, err := sim.bc.BeaconChain.CreateNewBlock(2, "", 1, currentTime)
-				if err != nil {
-					return err
-				}
-				newBlock.(mock.BlockValidation).AddValidationField("test")
-				err = sim.bc.InsertBeaconBlock(newBlock.(*blockchain.BeaconBlock), true)
-				if err != nil {
-					return err
-				}
-				blockCount++
-				prevTimeSlot = common.CalculateTimeSlot(currentTime)
-			} else {
-				newBlock, err := sim.bc.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, currentTime)
-				if err != nil {
-					return err
-				}
-				newBlock.(mock.BlockValidation).AddValidationField("test")
-				err = sim.bc.InsertShardBlock(newBlock.(*blockchain.ShardBlock), true)
-				if err != nil {
-					return err
-				}
-				blockCount++
-				prevTimeSlot = common.CalculateTimeSlot(currentTime)
+			err := sim.createAndInsertBlock(chainID, blocks, currentTime)
+			if err != nil {
+				return err
 			}
-			if blockCount == blocks {
-				break
-			}
+			blockCount++
+			prevTimeSlot = common.CalculateTimeSlot(currentTime)
+		}
+		if enable, ok := sim.autoGenerateBlocks[chainID]; !enable && ok {
+			return nil
+		}
+	}
+}
+
+func (sim *simInstance) createAndInsertBlock(chainID int, blocks int, currentTime int64) error {
+	if chainID == -1 {
+		newBlock, err := sim.bc.BeaconChain.CreateNewBlock(2, "", 1, currentTime)
+		if err != nil {
+			return err
+		}
+		newBlock.(mock.BlockValidation).AddValidationField("test")
+		err = sim.bc.InsertBeaconBlock(newBlock.(*blockchain.BeaconBlock), true)
+		if err != nil {
+			return err
+		}
+	} else {
+		newBlock, err := sim.bc.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, currentTime)
+		if err != nil {
+			return err
+		}
+		newBlock.(mock.BlockValidation).AddValidationField("test")
+		err = sim.bc.InsertShardBlock(newBlock.(*blockchain.ShardBlock), true)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

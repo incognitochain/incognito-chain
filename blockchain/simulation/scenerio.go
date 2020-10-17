@@ -18,8 +18,9 @@ const (
 )
 
 type GenerateBlocksParam struct {
-	ChainID int
-	Blocks  int
+	ChainID    int
+	Blocks     int
+	IsBlocking bool
 }
 
 type AutoGenerateBlocks struct {
@@ -38,10 +39,15 @@ type CreateTxsAndInjectParam struct {
 
 type CheckBestStateParam struct {
 	ChainID           int
+	AtHeight          uint64
 	CheckLengthFields map[string]int
 	CheckDataFields   map[string]string
+	IsBlocking        bool
 }
 
 type CheckBalanceParam struct {
 	PrivateKey string
+	Interval   int
+	Until      map[string]int
+	IsBlocking bool
 }
