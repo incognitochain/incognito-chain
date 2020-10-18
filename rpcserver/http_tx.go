@@ -211,6 +211,17 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		keySet.PaymentAddress = paymentAddress.KeySet.PaymentAddress
 	}
 
+	// tokenID
+	tokenID := common.PRVIDStr
+	tokenIDParam, ok := keys["TokenID"].(string)
+	if ok && tokenIDParam != "" {
+		tokenID = tokenIDParam
+	}
+	tokenIDHash, err1 := common.Hash{}.NewHashFromStr(tokenID)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is invalid"))
+	}
+
 	skip, ok := keys["Skip"].(float64)
 	if !ok || skip < 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("skip"))
@@ -220,7 +231,7 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 	if !ok || limit < 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("limit"))
 	}
-	receivedTxsList, total, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit))
+	receivedTxsList, total, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit), *tokenIDHash)
 	if err != nil {
 		return nil, err
 	}
