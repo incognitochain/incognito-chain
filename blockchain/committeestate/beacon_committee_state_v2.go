@@ -980,6 +980,7 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 	return nil
 }
 
+// TODO: @tin we should move this function to processStoreBeaconBlock, or this module have to carry on the store database job, which it shouldn't
 //UpdateDB ...
 func (engine *BeaconCommitteeEngineV2) UpdateDB(
 	committeeChange *CommitteeChange,
@@ -1043,5 +1044,10 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 		return err
 	}
 
-	return statedb.DeleteStakerInfo(env.ConsensusStateDB, removedStakerKeys)
+	err = statedb.DeleteStakerInfo(env.ConsensusStateDB, removedStakerKeys)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
