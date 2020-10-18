@@ -747,7 +747,6 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[publicKey]; ok {
 					b.autoStake[publicKey] = false
-					newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, publicKey)
 				}
 			}
 		} else {
@@ -774,6 +773,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				return newCommitteeChange, returnStakingInstructions, errors.New("Can't find staker info")
 			}
 		}
+		newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, publicKey)
 	}
 
 	return newCommitteeChange, returnStakingInstructions, nil
@@ -982,7 +982,6 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 
 //UpdateDB ...
 func (engine *BeaconCommitteeEngineV2) UpdateDB(
-	hashes *BeaconCommitteeStateHash,
 	committeeChange *CommitteeChange,
 	env *BeaconCommitteeStateEnvironment) error {
 	b := engine.finalBeaconCommitteeStateV2
@@ -993,26 +992,34 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 	defer b.mu.RUnlock()
 
 	removedStakerKeys := []incognitokey.CommitteePublicKey{}
-	addedStakerKeys, err := incognitokey.
-		CommitteeBase58KeyListToStruct(append(committeeChange.Unstake, committeeChange.StopAutoStake...))
+	addedStakerKeys, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
 	if err != nil {
 		return err
 	}
-
 	addedStakerKeys = append(addedStakerKeys, committeeChange.NextEpochShardCandidateAdded...)
 
-	err = statedb.StoreStakerInfoV1(
-		env.ConsensusStateDB,
-		addedStakerKeys,
-		b.rewardReceiver,
-		b.autoStake,
-		b.stakingTx,
-	)
-	if err != nil {
-		return err
+	unstakeKeys := make(map[string]bool)
+	for _, v := range committeeChange.Unstake {
+		unstakeKeys[v] = true
 	}
 
-	removedStakerKeys = append(removedStakerKeys, committeeChange.NextEpochShardCandidateRemoved...)
+	for _, v := range committeeChange.NextEpochShardCandidateRemoved {
+		key, _ := v.ToBase58()
+		if unstakeKeys[key] {
+			removedStakerKeys = append(removedStakerKeys, v)
+			delete(unstakeKeys, key)
+		}
+	}
+
+	for k, _ := range unstakeKeys {
+		incKey := incognitokey.CommitteePublicKey{}
+		err := incKey.FromBase58(k)
+		if err != nil {
+			return err
+		}
+		addedStakerKeys = append(addedStakerKeys, incKey)
+	}
+
 	for _, v := range committeeChange.ShardCommitteeRemoved {
 		for _, value := range v {
 			key, err := value.ToBase58()
@@ -1025,12 +1032,16 @@ func (engine *BeaconCommitteeEngineV2) UpdateDB(
 		}
 	}
 
-	for _, v := range removedStakerKeys {
-		err := statedb.DeleteStakerInfo(env.ConsensusStateDB, []incognitokey.CommitteePublicKey{v})
-		if err != nil {
-			return err
-		}
+	err = statedb.StoreStakerInfoV1(
+		env.ConsensusStateDB,
+		addedStakerKeys,
+		b.rewardReceiver,
+		b.autoStake,
+		b.stakingTx,
+	)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return statedb.DeleteStakerInfo(env.ConsensusStateDB, removedStakerKeys)
 }

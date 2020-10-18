@@ -2,11 +2,12 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/rand"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -817,10 +818,16 @@ func (shardInstruction *shardInstruction) compose() {
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
 	}
 
-	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
-	shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
-	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
-	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
-	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
-	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	if len(stakeInstruction.PublicKeys) != 0 {
+		shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
+		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
+	}
+	if len(unstakeInstruction.CommitteePublicKeys) != 0 {
+		shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
+		shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
+	}
+	if len(stopAutoStakeInstruction.CommitteePublicKeys) != 0 {
+		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	}
 }

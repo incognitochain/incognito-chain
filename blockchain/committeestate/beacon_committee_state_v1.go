@@ -908,7 +908,6 @@ func (engine *BeaconCommitteeEngineV1) ActiveShards() int {
 
 //UpdateDB ...
 func (engine *BeaconCommitteeEngineV1) UpdateDB(
-	hash *BeaconCommitteeStateHash,
 	committeeChange *CommitteeChange,
 	env *BeaconCommitteeStateEnvironment) error {
 	return nil

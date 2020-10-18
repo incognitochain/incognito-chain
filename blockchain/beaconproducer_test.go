@@ -2,6 +2,18 @@ package blockchain
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+	"time"
+
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,11 +24,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
-	"reflect"
-	"testing"
-	"time"
 )
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -772,6 +779,103 @@ func TestBeaconBestState_processUnstakeInstructionFromShardBlock(t *testing.T) {
 			for i, v := range got.unstakeInstructions {
 				if !reflect.DeepEqual(v, tt.want.unstakeInstructions[i]) {
 					t.Errorf("v = %v, want.tt.want.unstakeInstructions[i] %v", v, tt.want.unstakeInstructions[i])
+				}
+			}
+		})
+	}
+}
+
+func Test_shardInstruction_compose(t *testing.T) {
+	type fields struct {
+		stakeInstructions         []*instruction.StakeInstruction
+		unstakeInstructions       []*instruction.UnstakeInstruction
+		swapInstructions          map[byte][]*instruction.SwapInstruction
+		stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+	}{
+		{
+			name: "compose stake instructions",
+			fields: fields{
+				stakeInstructions: []*instruction.StakeInstruction{
+					&instruction.StakeInstruction{
+						PublicKeys: []string{"key1", "key2"},
+					},
+					&instruction.StakeInstruction{
+						PublicKeys: []string{"key3", "key4"},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				stakeInstructions: []*instruction.StakeInstruction{
+					&instruction.StakeInstruction{
+						PublicKeys: []string{
+							"key1", "key2", "key3", "key4",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "compose unstake instructions",
+			fields: fields{
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{"key1", "key2"},
+					},
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{"key3", "key4"},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{
+							"key1", "key2", "key3", "key4",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "compose stop auto stake instructions",
+			fields: fields{
+				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
+					&instruction.StopAutoStakeInstruction{
+						CommitteePublicKeys: []string{"key1", "key2"},
+					},
+					&instruction.StopAutoStakeInstruction{
+						CommitteePublicKeys: []string{"key3", "key4"},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
+					&instruction.StopAutoStakeInstruction{
+						CommitteePublicKeys: []string{
+							"key1", "key2", "key3", "key4",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			shardInstruction := &shardInstruction{
+				stakeInstructions:         tt.fields.stakeInstructions,
+				unstakeInstructions:       tt.fields.unstakeInstructions,
+				swapInstructions:          tt.fields.swapInstructions,
+				stopAutoStakeInstructions: tt.fields.stopAutoStakeInstructions,
+			}
+			shardInstruction.compose()
+			for i, v := range shardInstruction.stakeInstructions {
+				if !reflect.DeepEqual(v, tt.fieldsAfterProcess.stakeInstructions[i]) {
+					t.Errorf("got = %v, want %v", v, tt.fieldsAfterProcess.stakeInstructions[i])
 				}
 			}
 		})

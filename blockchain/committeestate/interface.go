@@ -28,7 +28,7 @@ type BeaconCommitteeEngine interface {
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
 	Commit(*BeaconCommitteeStateHash) error
-	UpdateDB(*BeaconCommitteeStateHash, *CommitteeChange, *BeaconCommitteeStateEnvironment) error
+	UpdateDB(*CommitteeChange, *BeaconCommitteeStateEnvironment) error
 	AbortUncommittedBeaconState()
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,

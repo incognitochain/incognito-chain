@@ -210,7 +210,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange, hashes); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
 	}
 
@@ -760,7 +760,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
-	committeeHash *committeestate.BeaconCommitteeStateHash,
 ) error {
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
@@ -770,7 +769,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	//statedb===========================START
 	// Added
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
-	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeHash, committeeChange, env)
+	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeChange, env)
 	if err != nil {
 		return err
 	}
