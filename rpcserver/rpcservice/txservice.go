@@ -1868,7 +1868,12 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 				continue
 			}
 
-			pTokenProof := txDetail.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal.GetProof()
+			txPToken := txDetail.(*transaction.TxCustomTokenPrivacy)
+			if !bytes.Equal(txPToken.GetTokenID().Bytes(), tokenID.Bytes()) {
+				continue
+			}
+
+			pTokenProof := txPToken.TxPrivacyTokenData.TxNormal.GetProof()
 			if pTokenProof == nil {
 				continue
 			}
