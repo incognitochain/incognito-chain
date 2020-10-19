@@ -499,6 +499,30 @@ func GetCustodianTopupStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
+func StoreCustodianTopupStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalLiquidationCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreCustodianTopupStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianTopupStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalLiquidationCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetCustodianTopupStatusError, err)
+	}
+
+	return data, nil
+}
+
 func StoreCustodianTopupWaitingPortingStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalTopUpWaitingPortingStatusPrefix()
 	statusSuffix := []byte(txID)

@@ -2206,3 +2206,62 @@ func UpdateLiquidationPoolAfterRedeemFrom(
 	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey().String()
 	currentPortalState.LiquidationPool[liquidateExchangeRatesKey] = liquidationPool
 }
+
+// UpdateCustodianAfterTopup - v2 and v3
+func UpdateCustodianAfterTopup(
+	currentPortalState *CurrentPortalState,
+	custodian *statedb.CustodianState,
+	portalTokenID string,
+	depositAmount uint64,
+	freeCollateralAmount uint64,
+	collateralTokenID string) error {
+
+	if collateralTokenID == common.PRVIDStr {
+		// v2: topup PRV collateral
+		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + depositAmount)
+		topUpAmt := depositAmount
+		if freeCollateralAmount > 0 {
+			topUpAmt += freeCollateralAmount
+			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - freeCollateralAmount)
+		}
+		lockedPRVCollateral := custodian.GetLockedAmountCollateral()
+		if lockedPRVCollateral == nil {
+			lockedPRVCollateral = map[string]uint64{}
+		}
+		lockedPRVCollateral[portalTokenID] += topUpAmt
+		custodian.SetLockedAmountCollateral(lockedPRVCollateral)
+	} else {
+		// v3: topup token collaterals
+		totalTokenCollaterals := custodian.GetTotalTokenCollaterals()
+		if totalTokenCollaterals == nil {
+			return errors.New("UpdateCustodianAfterTopup total token collaterals is empty")
+		}
+		totalTokenCollaterals[collateralTokenID] += depositAmount
+		custodian.SetTotalTokenCollaterals(totalTokenCollaterals)
+
+		topUpAmt := depositAmount
+		if freeCollateralAmount > 0 {
+			topUpAmt += freeCollateralAmount
+			freeTokenCollaterals := custodian.GetFreeTokenCollaterals()
+			if freeTokenCollaterals == nil {
+				return errors.New("UpdateCustodianAfterTopup free token collaterals is empty")
+			}
+			freeTokenCollaterals[collateralTokenID] -= freeCollateralAmount
+			custodian.SetFreeTokenCollaterals(freeTokenCollaterals)
+		}
+
+		lockedTokenCollaterals := custodian.GetLockedTokenCollaterals()
+		if lockedTokenCollaterals == nil {
+			lockedTokenCollaterals = map[string]map[string]uint64{}
+		}
+		if lockedTokenCollaterals[portalTokenID] == nil {
+			lockedTokenCollaterals[portalTokenID] = map[string]uint64{}
+		}
+		lockedTokenCollaterals[portalTokenID][collateralTokenID] += topUpAmt
+		custodian.SetLockedTokenCollaterals(lockedTokenCollaterals)
+	}
+
+	custodianKeyStr := statedb.GenerateCustodianStateObjectKey(custodian.GetIncognitoAddress()).String()
+	currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
+	return nil
+}

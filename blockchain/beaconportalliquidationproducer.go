@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -1234,6 +1235,270 @@ func (p *portalTopupWaitingPortingReqProcessor) buildNewInsts(
 		meta.DepositedAmount,
 		meta.FreeCollateralAmount,
 		common.PortalTopUpWaitingPortingSuccessChainStatus,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+	)
+	return [][]string{inst}, nil
+}
+
+/* =======
+Portal Custodian Topup Processor v3
+======= */
+
+type portalCustodianTopupProcessorV3 struct {
+	*portalInstProcessor
+}
+
+func (p *portalCustodianTopupProcessorV3) getActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalCustodianTopupProcessorV3) putAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalCustodianTopupProcessorV3) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian topup action v3: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while decoding content string of portal custodian topup action v3: %+v", err)
+	}
+	var actionData metadata.PortalLiquidationCustodianDepositActionV3
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action v3: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action v3: %+v", err)
+	}
+	meta := actionData.Meta
+	if meta.DepositAmount > 0 {
+		// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
+		// so must build unique external tx as combination of chain name and block hash and tx index.
+		uniqExternalTxID := metadata.GetUniqExternalTxID(common.ETHChainName, meta.BlockHash, meta.TxIndex)
+		isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
+			return nil, fmt.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
+		}
+
+		optionalData := make(map[string]interface{})
+		optionalData["isSubmitted"] = isSubmitted
+		optionalData["uniqExternalTxID"] = uniqExternalTxID
+		return optionalData, nil
+	}
+	return nil, nil
+}
+
+func buildLiquidationCustodianDepositInstV3(
+	incogAddress string,
+	portalTokenId string,
+	collateralTokenID string,
+	depositedAmount uint64,
+	freeCollateralAmount uint64,
+	uniqExternalTxID []byte,
+	status string,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+) []string {
+	redeemRequestContent := metadata.PortalLiquidationCustodianDepositContentV3{
+		IncogAddressStr:           incogAddress,
+		PortalTokenID:             portalTokenId,
+		CollateralTokenID:         collateralTokenID,
+		DepositAmount:             depositedAmount,
+		FreeTokenCollateralAmount: freeCollateralAmount,
+		UniqExternalTxID:          uniqExternalTxID,
+		TxReqID:                   txReqID,
+		ShardID:                   shardID,
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(redeemRequestContentBytes),
+	}
+}
+
+func (p *portalCustodianTopupProcessorV3) buildNewInsts(
+	bc *BlockChain,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	portalParams PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal liquidation custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalLiquidationCustodianDepositActionV3
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal liquidation custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	meta := actionData.Meta
+	rejectInst := buildLiquidationCustodianDepositInstV3(
+		meta.IncogAddressStr,
+		meta.PortalTokenID,
+		meta.CollateralTokenID,
+		meta.DepositAmount,
+		meta.FreeTokenCollateralAmount,
+		nil,
+		common.PortalCustodianTopupRejectedChainStatus,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+	)
+	rejectInst2 := []string{}
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Current Portal state is null.")
+		return [][]string{rejectInst}, nil
+	}
+
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.IncogAddressStr)
+	custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
+	if !ok {
+		Logger.log.Errorf("Custodian not found")
+		return [][]string{rejectInst}, nil
+	}
+
+	// check locked token collaterals for PortalTokenID
+	lockedTokenCollaterals := custodian.GetLockedTokenCollaterals()
+	if _, ok := lockedTokenCollaterals[meta.PortalTokenID]; !ok {
+		Logger.log.Errorf("PortalTokenID is not existed in LockTokenCollaterals")
+		return [][]string{rejectInst}, nil
+	}
+
+	// check total hold public tokens
+	totalHoldPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodian, meta.PortalTokenID)
+	if totalHoldPubTokenAmount <= 0 {
+		Logger.log.Errorf("Holding public token amount is zero, don't need to top up")
+		return [][]string{rejectInst}, nil
+	}
+
+	// check free token collaterals
+	freeTokenCollaterals := custodian.GetFreeTokenCollaterals()
+	if meta.FreeTokenCollateralAmount > 0 && freeTokenCollaterals == nil {
+		Logger.log.Errorf("Free token collaterals of custodian's state is nil")
+		return [][]string{rejectInst}, nil
+	}
+	if meta.FreeTokenCollateralAmount > custodian.GetFreeTokenCollaterals()[meta.CollateralTokenID] {
+		Logger.log.Errorf("Free token collateral topup amount is greater than free token collateral of custodian's state")
+		return [][]string{rejectInst}, nil
+	}
+
+	// check deposit amount and deposit proof
+	uniqExternalTxID := []byte{}
+	if meta.DepositAmount > 0 {
+		// check uniqExternalTxID from optionalData which get from statedb
+		if optionalData == nil {
+			Logger.log.Errorf("Topup v3: optionalData is null")
+			return [][]string{rejectInst}, nil
+		}
+		uniqExternalTxID, ok = optionalData["uniqExternalTxID"].([]byte)
+		if !ok || len(uniqExternalTxID) == 0 {
+			Logger.log.Errorf("Topup v3: optionalData uniqExternalTxID is invalid")
+			return [][]string{rejectInst}, nil
+		}
+
+		// reject instruction with uniqExternalTxID
+		rejectInst2 = buildLiquidationCustodianDepositInstV3(
+			meta.IncogAddressStr,
+			meta.PortalTokenID,
+			meta.CollateralTokenID,
+			meta.DepositAmount,
+			meta.FreeTokenCollateralAmount,
+			uniqExternalTxID,
+			common.PortalCustodianTopupRejectedChainStatus,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		isExist, ok := optionalData["isSubmitted"].(bool)
+		if !ok {
+			Logger.log.Errorf("Topup v3: optionalData isSubmitted is invalid")
+			return [][]string{rejectInst2}, nil
+		}
+		if isExist {
+			Logger.log.Errorf("Topup v3: Unique external id exist in db %v", uniqExternalTxID)
+			return [][]string{rejectInst2}, nil
+		}
+
+		// verify proof and parse receipt
+		ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+		if err != nil {
+			Logger.log.Errorf("Topup v3: Verify eth proof error: %+v", err)
+			return [][]string{rejectInst2}, nil
+		}
+		if ethReceipt == nil {
+			Logger.log.Errorf("Topup v3: The eth proof's receipt could not be null.")
+			return [][]string{rejectInst2}, nil
+		}
+
+		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, bc.GetPortalETHContractAddrStr(), "Deposit")
+		if err != nil {
+			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
+			return [][]string{rejectInst2}, nil
+		}
+		if logMap == nil {
+			Logger.log.Errorf("WARNING: could not find log map out from receipt")
+			return [][]string{rejectInst2}, nil
+		}
+
+		// parse info from log map and validate info
+		custodianIncAddr, externalTokenIDStr, depositAmount, err := metadata.ParseInfoFromLogMap(logMap)
+		if err != nil {
+			Logger.log.Errorf("Topup v3: Error when parsing info from log map : %+v", err)
+			return [][]string{rejectInst2}, nil
+		}
+		externalTokenIDStr = common.Remove0xPrefix(externalTokenIDStr)
+
+		if externalTokenIDStr != meta.CollateralTokenID {
+			Logger.log.Errorf("Topup v3: Collateral token id in meta %v is different from in deposit proof %+v", meta.CollateralTokenID, externalTokenIDStr)
+			return [][]string{rejectInst2}, nil
+		}
+
+		if custodianIncAddr != meta.IncogAddressStr {
+			Logger.log.Errorf("Topup v3: Custodian incognito address in meta %v is different from in deposit proof %+v", meta.IncogAddressStr, custodianIncAddr)
+			return [][]string{rejectInst2}, nil
+		}
+
+		if depositAmount != meta.DepositAmount {
+			Logger.log.Errorf("Topup v3: Custodian incognito address in meta %v is different from in deposit proof %+v", meta.IncogAddressStr, custodianIncAddr)
+			return [][]string{rejectInst2}, nil
+		}
+	}
+
+	err = UpdateCustodianAfterTopup(currentPortalState, custodian, meta.PortalTokenID, meta.DepositAmount, meta.FreeTokenCollateralAmount, meta.CollateralTokenID)
+	if err != nil {
+		Logger.log.Errorf("Topup v3: Update custodian state error %+v", err)
+		if len(rejectInst2) > 0 {
+			return [][]string{rejectInst2}, nil
+		}
+		return [][]string{rejectInst}, nil
+	}
+
+	inst := buildLiquidationCustodianDepositInstV3(
+		meta.IncogAddressStr,
+		meta.PortalTokenID,
+		meta.CollateralTokenID,
+		meta.DepositAmount,
+		meta.FreeTokenCollateralAmount,
+		uniqExternalTxID,
+		common.PortalCustodianTopupSuccessChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,

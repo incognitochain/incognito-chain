@@ -796,3 +796,90 @@ func (blockchain *BlockChain) processPortalRedeemFromLiquidationPoolV3(
 
 	return nil
 }
+
+func (blockchain *BlockChain) processPortalLiquidationCustodianDepositV3(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData metadata.PortalLiquidationCustodianDepositContentV3
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Error when unmarshaling portal liquidation custodian deposit content %v - %v", instructions[3], err)
+		return nil
+	}
+
+	depositStatus := instructions[2]
+
+	if depositStatus == common.PortalCustodianTopupSuccessChainStatus {
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
+		custodianStateKeyStr := custodianStateKey.String()
+		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
+		if !ok {
+			Logger.log.Errorf("Process custodian topop v3 error: Custodian not found")
+			return nil
+		}
+
+		err = UpdateCustodianAfterTopup(currentPortalState, custodian, actionData.PortalTokenID, actionData.DepositAmount, actionData.FreeTokenCollateralAmount, actionData.CollateralTokenID)
+		if !ok {
+			Logger.log.Errorf("Process custodian topop v3 error: %+v", err)
+			return nil
+		}
+
+		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus3(
+			actionData.IncogAddressStr,
+			actionData.PortalTokenID,
+			actionData.CollateralTokenID,
+			actionData.DepositAmount,
+			actionData.FreeTokenCollateralAmount,
+			actionData.UniqExternalTxID,
+			actionData.TxReqID,
+			common.PortalCustodianTopupSuccessStatus,
+		)
+
+		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
+		err = statedb.StoreCustodianTopupStatusV3(
+			portalStateDB,
+			actionData.TxReqID.String(),
+			contentStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit v3 error %v", err)
+			return nil
+		}
+	} else if depositStatus == common.PortalCustodianTopupRejectedChainStatus {
+		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus3(
+			actionData.IncogAddressStr,
+			actionData.PortalTokenID,
+			actionData.CollateralTokenID,
+			actionData.DepositAmount,
+			actionData.FreeTokenCollateralAmount,
+			actionData.UniqExternalTxID,
+			actionData.TxReqID,
+			common.PortalCustodianTopupRejectedStatus,
+		)
+
+		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
+		err = statedb.StoreCustodianTopupStatusV3(
+			portalStateDB,
+			actionData.TxReqID.String(),
+			contentStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit v3 error %v", err)
+			return nil
+		}
+	}
+
+	return nil
+}

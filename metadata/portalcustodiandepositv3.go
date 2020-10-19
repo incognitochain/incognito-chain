@@ -180,6 +180,9 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	if len(custodianDeposit.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("ProofStrs should be not empty"))
 	}
+	if len(custodianDeposit.BlockHash.Bytes()) == 0 {
+		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("BlockHash should be not empty"))
+	}
 
 	return true, true, nil
 }
