@@ -59,10 +59,15 @@ type simInstance struct {
 func main() {
 	disableLog(true)
 	instance1 := newSimInstance("test1")
+	// scnString := `{
+	// 	"Action":"GENERATEBLOCKS",
+	// 	"Params": [{"ChainID":0,"Blocks":100,"IsBlocking":true},{"ChainID":1,"Blocks":100,"IsBlocking":true}]
+	// 	}`
+
 	scnString := `{
-		"Action":"GENERATEBLOCKS",
-		"Params": [{"ChainID":0,"Blocks":100,"IsBlocking":true},{"ChainID":1,"Blocks":100,"IsBlocking":true}]
-		}`
+		"Action":"CHECKBALANCES",
+		"Params":[{"PrivateKey":"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or","IsBlocking":true}]
+	}`
 	scn := ScenerioAction{}
 	err := json.Unmarshal([]byte(scnString), &scn)
 	if err != nil {
@@ -366,10 +371,36 @@ func (sim *simInstance) Run() {
 				}
 			}
 		case CHECKBALANCES:
-			// arrayParams := common.InterfaceSlice(action.Params)
-			// for _, param := range arrayParams {
-
-			// }
+			arrayParams := common.InterfaceSlice(action.Params)
+			for _, param := range arrayParams {
+				data := CheckBalanceParam{
+					Tokens: make(map[string]uint64),
+				}
+				param := param.(map[string]interface{})
+				data.PrivateKey = param["PrivateKey"].(string)
+				data.IsBlocking = param["IsBlocking"].(bool)
+				data.Interval = param["Interval"].(int)
+				until := param["Until"].(map[string]float64)
+				data.Until.ChainID = int(until["ChainID"])
+				data.Until.Height = uint64(until["Height"])
+				tokens := param["Tokens"].(map[string]interface{})
+				for token, amount := range tokens {
+					data.Tokens[token] = uint64(amount.(float64))
+				}
+				if data.IsBlocking {
+					err := sim.CheckBalance(data)
+					if err != nil {
+						log.Fatalln(err)
+					}
+				} else {
+					go func(d CheckBalanceParam) {
+						err := sim.CheckBalance(d)
+						if err != nil {
+							log.Fatalln(err)
+						}
+					}(data)
+				}
+			}
 		case CHECKBESTSTATES:
 
 		case SWITCHTOMANUAL:
@@ -559,6 +590,8 @@ func (sim *simInstance) InsertBlock(block common.BlockInterface, chainID int) er
 }
 
 func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
+
+	tokenList := make(map[string]uint64)
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getbalancebyprivatekey",
@@ -579,7 +612,55 @@ func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
 	if err != nil {
 		return err
 	}
-	log.Println(txResp)
+	tokenList["PRV"] = txResp.Result
+
+	requestBody2, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getlistprivacycustomtokenbalance",
+		"params":  []interface{}{data.PrivateKey},
+		"id":      1,
+	})
+	if err != nil {
+		return err
+	}
+	body2, err := sendRequest(requestBody2)
+	if err != nil {
+		return err
+	}
+	txResp2 := struct {
+		Result jsonresult.ListCustomTokenBalance
+	}{}
+	err = json.Unmarshal(body2, &txResp2)
+	if err != nil {
+		return err
+	}
+	for _, token := range txResp2.Result.ListCustomTokenBalance {
+		log.Println(token.Name, token.Amount)
+		tokenList[token.Name] = token.Amount
+	}
+
+	amountNotMatch := make(map[string]uint64)
+	for token, amount := range data.Tokens {
+		if a, ok := tokenList[token]; ok {
+			if a != amount {
+				amountNotMatch[token] = a
+			}
+		}
+	}
+
+	if len(amountNotMatch) > 0 {
+		if data.Until.Height != 0 {
+			if data.Until.ChainID == -1 {
+				if sim.bc.GetBeaconBestState().GetHeight() <= data.Until.Height {
+					return sim.CheckBalance(data)
+				}
+			} else {
+				if sim.bc.GetBestStateShard(byte(data.Until.ChainID)).GetHeight() <= data.Until.Height {
+					return sim.CheckBalance(data)
+				}
+			}
+		}
+	}
 	return nil
 }
 

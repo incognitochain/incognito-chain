@@ -50,8 +50,11 @@ type CheckBestStateParam struct {
 
 type CheckBalanceParam struct {
 	PrivateKey string
-	Token      string
+	Tokens     map[string]uint64
 	Interval   int
-	Until      map[string]int
+	Until      struct {
+		ChainID int
+		Height  uint64
+	}
 	IsBlocking bool
 }
