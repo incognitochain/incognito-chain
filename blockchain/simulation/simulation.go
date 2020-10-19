@@ -58,23 +58,23 @@ type simInstance struct {
 
 func main() {
 	disableLog(true)
-	instance1 := newSimInstance("test1")
-	// scnString := `{
-	// 	"Action":"GENERATEBLOCKS",
-	// 	"Params": [{"ChainID":0,"Blocks":100,"IsBlocking":true},{"ChainID":1,"Blocks":100,"IsBlocking":true}]
-	// 	}`
-
+	instance1 := NewSimInstance("test1")
 	scnString := `{
-		"Action":"CHECKBALANCES",
-		"Params":[{"PrivateKey":"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or","IsBlocking":true}]
-	}`
+		"Action":"GENERATEBLOCKS",
+		"Params": [{"ChainID":-1,"Blocks":500,"IsBlocking":true},{"ChainID":0,"Blocks":100,"IsBlocking":true},{"ChainID":1,"Blocks":100,"IsBlocking":true}]
+		}`
+
+	// scnString := `{
+	// 	"Action":"CHECKBALANCES",
+	// 	"Params":[{"PrivateKey":"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or","IsBlocking":true}]
+	// }`
 	scn := ScenerioAction{}
 	err := json.Unmarshal([]byte(scnString), &scn)
 	if err != nil {
 		panic(err)
 	}
 	instance1.scenerioActions = append(instance1.scenerioActions, scn)
-	instance1.Run()
+	instance1.run()
 	instance1.Stop()
 
 }
@@ -110,7 +110,7 @@ func getBNBRelayingChainState(bnbRelayingChainID string, dataFolder string) (*bn
 	return bnbChainState, nil
 }
 
-func newSimInstance(simName string) *simInstance {
+func NewSimInstance(simName string) *simInstance {
 	log.Printf("Creating sim %v instance...\n", simName)
 	path, err := os.Getwd()
 	if err != nil {
@@ -272,7 +272,7 @@ func (sim *simInstance) Stop() {
 	sim.cQuit <- struct{}{}
 }
 
-func (sim *simInstance) Run() {
+func (sim *simInstance) run() {
 	for _, action := range sim.scenerioActions {
 		switch action.Action {
 		case GENERATEBLOCKS:
@@ -338,7 +338,7 @@ func (sim *simInstance) Run() {
 				}
 				createTxs = append(createTxs, p)
 			}
-			err := sim.generateTxs(createTxs)
+			err := sim.GenerateTxs(createTxs)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -365,7 +365,7 @@ func (sim *simInstance) Run() {
 					createTxs = append(createTxs, p)
 				}
 
-				err := sim.createAndInjectTx(createTxs, data.InjectAt.ChainID, data.InjectAt.Height)
+				err := sim.CreateAndInjectTx(createTxs, data.InjectAt.ChainID, data.InjectAt.Height)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -413,26 +413,26 @@ func disableLog(disable bool) {
 	disableStdoutLog = disable
 }
 
-func (sim *simInstance) generateTxs(createTxs []GenerateTxParam) error {
+func (sim *simInstance) GenerateTxs(createTxs []GenerateTxParam) error {
 	txsInject := []string{}
 	for _, createTxMeta := range createTxs {
-		tx, err := sim.createTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
+		tx, err := sim.CreateTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
 		if err != nil {
 			return err
 		}
 		txsInject = append(txsInject, tx.Base58CheckData)
 	}
-	err := sim.injectTxs(txsInject)
+	err := sim.InjectTxs(txsInject)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (sim *simInstance) createAndInjectTx(createTxs []GenerateTxParam, chainID int, height uint64) error {
+func (sim *simInstance) CreateAndInjectTx(createTxs []GenerateTxParam, chainID int, height uint64) error {
 	txsInject := []string{}
 	for _, createTxMeta := range createTxs {
-		tx, err := sim.createTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
+		tx, err := sim.CreateTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
 		if err != nil {
 			return err
 		}
@@ -442,7 +442,7 @@ func (sim *simInstance) createAndInjectTx(createTxs []GenerateTxParam, chainID i
 	for {
 		if chainID == -1 {
 			if sim.bc.BeaconChain.GetBestView().GetHeight() >= height {
-				err := sim.injectTxs(txsInject)
+				err := sim.InjectTxs(txsInject)
 				if err != nil {
 					return err
 				}
@@ -450,7 +450,7 @@ func (sim *simInstance) createAndInjectTx(createTxs []GenerateTxParam, chainID i
 			}
 		} else {
 			if sim.bc.ShardChain[byte(chainID)].GetBestView().GetHeight() >= height {
-				err := sim.injectTxs(txsInject)
+				err := sim.InjectTxs(txsInject)
 				if err != nil {
 					return err
 				}
@@ -461,7 +461,7 @@ func (sim *simInstance) createAndInjectTx(createTxs []GenerateTxParam, chainID i
 	}
 }
 
-func (sim *simInstance) createTx(senderPrk string, receivers map[string]int) (*jsonresult.CreateTransactionResult, error) {
+func (sim *simInstance) CreateTx(senderPrk string, receivers map[string]int) (*jsonresult.CreateTransactionResult, error) {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createtransaction",
@@ -485,7 +485,7 @@ func (sim *simInstance) createTx(senderPrk string, receivers map[string]int) (*j
 	return &txResp.Result, nil
 }
 
-func (sim *simInstance) injectTxs(txsBase58 []string) error {
+func (sim *simInstance) InjectTxs(txsBase58 []string) error {
 	for _, txB58Check := range txsBase58 {
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
 		if err != nil {
@@ -590,7 +590,6 @@ func (sim *simInstance) InsertBlock(block common.BlockInterface, chainID int) er
 }
 
 func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
-
 	tokenList := make(map[string]uint64)
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
@@ -635,7 +634,6 @@ func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
 		return err
 	}
 	for _, token := range txResp2.Result.ListCustomTokenBalance {
-		log.Println(token.Name, token.Amount)
 		tokenList[token.Name] = token.Amount
 	}
 
@@ -654,10 +652,12 @@ func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
 				if sim.bc.GetBeaconBestState().GetHeight() <= data.Until.Height {
 					return sim.CheckBalance(data)
 				}
+				return errors.New("token balance not match")
 			} else {
 				if sim.bc.GetBestStateShard(byte(data.Until.ChainID)).GetHeight() <= data.Until.Height {
 					return sim.CheckBalance(data)
 				}
+				return errors.New("token balance not match")
 			}
 		}
 	}
