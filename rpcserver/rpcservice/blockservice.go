@@ -1094,6 +1094,22 @@ func (blockService BlockService) GetCustodianTopupStatus(txID string) (*metadata
 	return &status, nil
 }
 
+func (blockService BlockService) GetCustodianTopupStatusV3(txID string) (*metadata.LiquidationCustodianDepositStatusV3, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetCustodianTopupStatusV3(stateDB, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.LiquidationCustodianDepositStatusV3
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
 func (blockService BlockService) GetCustodianTopupWaitingPortingStatus(txID string) (*metadata.PortalTopUpWaitingPortingRequestStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetCustodianTopupWaitingPortingStatus(stateDB, txID)
