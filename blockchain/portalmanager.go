@@ -151,6 +151,16 @@ func NewPortalManager() *portalManager {
 				actions: map[byte][][]string{},
 			},
 		},
+		metadata.PortalCustodianTopupMetaV3: &portalCustodianTopupProcessorV3{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalTopUpWaitingPortingRequestMetaV3: &portalTopupWaitingPortingReqProcessorV3{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
 	}
 
 	return &portalManager{

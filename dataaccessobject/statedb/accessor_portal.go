@@ -547,6 +547,30 @@ func GetCustodianTopupWaitingPortingStatus(stateDB *StateDB, txID string) ([]byt
 	return data, nil
 }
 
+func StoreCustodianTopupWaitingPortingStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalTopUpWaitingPortingStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreCustodianTopupStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianTopupWaitingPortingStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalTopUpWaitingPortingStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetCustodianTopupStatusError, err)
+	}
+
+	return data, nil
+}
+
 func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error) {
 	key := GeneratePortalStatusObjectKey(PortalPortingRequestStatusPrefix(), statusSuffix)
 	_, has, err := stateDB.getPortalStatusByKey(key)

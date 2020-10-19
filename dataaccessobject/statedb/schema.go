@@ -57,6 +57,7 @@ var (
 	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
 	portalLiquidationCustodianDepositStatusPrefixV3 = []byte("portalliquidationcustodiandepositstatusv3-")
 	portalTopUpWaitingPortingStatusPrefix         = []byte("portaltopupwaitingportingstatus-")
+	portalTopUpWaitingPortingStatusPrefixV3         = []byte("portaltopupwaitingportingstatusv3-")
 	portalLiquidationRedeemRequestStatusPrefix    = []byte("portalliquidationredeemrequeststatus-")
 	portalLiquidationRedeemRequestStatusPrefixV3    = []byte("portalliquidationredeemrequeststatusv3-")
 	portalWaitingPortingRequestPrefix             = []byte("portalwaitingportingrequest-")
@@ -343,6 +344,10 @@ func PortalLiquidationCustodianDepositStatusPrefixV3() []byte {
 
 func PortalTopUpWaitingPortingStatusPrefix() []byte {
 	return portalTopUpWaitingPortingStatusPrefix
+}
+
+func PortalTopUpWaitingPortingStatusPrefixV3() []byte {
+	return portalTopUpWaitingPortingStatusPrefixV3
 }
 
 func PortalLiquidationRedeemRequestStatusPrefix() []byte {

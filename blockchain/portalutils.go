@@ -2214,14 +2214,13 @@ func UpdateCustodianAfterTopup(
 	portalTokenID string,
 	depositAmount uint64,
 	freeCollateralAmount uint64,
-	collateralTokenID string) error {
+	collateralTokenID string) (uint64, error) {
 
+	topUpAmt  := depositAmount + freeCollateralAmount
 	if collateralTokenID == common.PRVIDStr {
 		// v2: topup PRV collateral
 		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + depositAmount)
-		topUpAmt := depositAmount
 		if freeCollateralAmount > 0 {
-			topUpAmt += freeCollateralAmount
 			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - freeCollateralAmount)
 		}
 		lockedPRVCollateral := custodian.GetLockedAmountCollateral()
@@ -2234,17 +2233,15 @@ func UpdateCustodianAfterTopup(
 		// v3: topup token collaterals
 		totalTokenCollaterals := custodian.GetTotalTokenCollaterals()
 		if totalTokenCollaterals == nil {
-			return errors.New("UpdateCustodianAfterTopup total token collaterals is empty")
+			return 0, errors.New("UpdateCustodianAfterTopup total token collaterals is empty")
 		}
 		totalTokenCollaterals[collateralTokenID] += depositAmount
 		custodian.SetTotalTokenCollaterals(totalTokenCollaterals)
 
-		topUpAmt := depositAmount
 		if freeCollateralAmount > 0 {
-			topUpAmt += freeCollateralAmount
 			freeTokenCollaterals := custodian.GetFreeTokenCollaterals()
 			if freeTokenCollaterals == nil {
-				return errors.New("UpdateCustodianAfterTopup free token collaterals is empty")
+				return 0, errors.New("UpdateCustodianAfterTopup free token collaterals is empty")
 			}
 			freeTokenCollaterals[collateralTokenID] -= freeCollateralAmount
 			custodian.SetFreeTokenCollaterals(freeTokenCollaterals)
@@ -2263,5 +2260,42 @@ func UpdateCustodianAfterTopup(
 
 	custodianKeyStr := statedb.GenerateCustodianStateObjectKey(custodian.GetIncognitoAddress()).String()
 	currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
+	return topUpAmt, nil
+}
+
+// UpdateCustodianAfterTopup - v2 and v3
+func UpdateCustodianAfterTopupWaitingPorting(
+	currentPortalState *CurrentPortalState,
+	waitingPortingReq *statedb.WaitingPortingRequest,
+	custodian *statedb.CustodianState,
+	portalTokenID string,
+	depositAmount uint64,
+	freeCollateralAmount uint64,
+	collateralTokenID string) error {
+
+	// update custodian state
+	topUpAmt, err := UpdateCustodianAfterTopup(currentPortalState, custodian, portalTokenID, depositAmount, freeCollateralAmount, collateralTokenID)
+	if err != nil {
+		return err
+	}
+
+	// update waiting porting req
+	matchedCustodians := waitingPortingReq.Custodians()
+	for _, cus := range matchedCustodians {
+		if cus.IncAddress != custodian.GetIncognitoAddress() {
+			continue
+		}
+
+		if collateralTokenID == common.PRVIDStr {
+			cus.LockedAmountCollateral += topUpAmt
+		} else {
+			if cus.LockedTokenCollaterals == nil {
+				cus.LockedTokenCollaterals = map[string]uint64{}
+			}
+			cus.LockedTokenCollaterals[collateralTokenID] += topUpAmt
+		}
+		waitingPortingReq.SetCustodians(matchedCustodians)
+		break
+	}
 	return nil
 }

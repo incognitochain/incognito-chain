@@ -381,26 +381,11 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 			return nil
 		}
 
-		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.DepositedAmount)
-
-		topUpAmt := actionData.DepositedAmount
-		if actionData.FreeCollateralAmount > 0 {
-			topUpAmt += actionData.FreeCollateralAmount
-			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - actionData.FreeCollateralAmount)
+		err = UpdateCustodianAfterTopupWaitingPorting(currentPortalState, waitingPortingReq, custodian, actionData.PTokenID, actionData.DepositedAmount, actionData.FreeCollateralAmount, common.PRVIDStr)
+		if err != nil {
+			Logger.log.Errorf("Update portal state error: %+v", err)
+			return nil
 		}
-
-		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
-		lockedAmountCollateral[actionData.PTokenID] += topUpAmt
-		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
-		custodiansByPortingID := waitingPortingReq.Custodians()
-		for _, cus := range custodiansByPortingID {
-			if cus.IncAddress == actionData.IncogAddressStr {
-				cus.LockedAmountCollateral += topUpAmt
-			}
-		}
-		waitingPortingReq.SetCustodians(custodiansByPortingID)
-		currentPortalState.CustodianPoolState[custodianStateKey.String()] = custodian
-		currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()] = waitingPortingReq
 
 		topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatus(
 			actionData.TxReqID,
@@ -830,7 +815,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDepositV3(
 			return nil
 		}
 
-		err = UpdateCustodianAfterTopup(currentPortalState, custodian, actionData.PortalTokenID, actionData.DepositAmount, actionData.FreeTokenCollateralAmount, actionData.CollateralTokenID)
+		_, err = UpdateCustodianAfterTopup(currentPortalState, custodian, actionData.PortalTokenID, actionData.DepositAmount, actionData.FreeTokenCollateralAmount, actionData.CollateralTokenID)
 		if !ok {
 			Logger.log.Errorf("Process custodian topop v3 error: %+v", err)
 			return nil
@@ -857,6 +842,13 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDepositV3(
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit v3 error %v", err)
 			return nil
 		}
+
+		// store uniq external tx
+		err := statedb.InsertPortalExternalTxHashSubmitted(portalStateDB, actionData.UniqExternalTxID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
+			return nil
+		}
 	} else if depositStatus == common.PortalCustodianTopupRejectedChainStatus {
 		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatus3(
 			actionData.IncogAddressStr,
@@ -881,5 +873,124 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDepositV3(
 		}
 	}
 
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalTopUpWaitingPortingV3(
+	portalStateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams,
+) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	var actionData metadata.PortalTopUpWaitingPortingRequestContentV3
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Error when unmarshaling portal top up waiting porting action %v - %v", instructions[3], err)
+		return nil
+	}
+
+	depositStatus := instructions[2]
+	if depositStatus == common.PortalTopUpWaitingPortingRejectedChainStatus {
+		topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatusV3(
+			actionData.IncogAddressStr,
+			actionData.PortalTokenID,
+			actionData.CollateralTokenID,
+			actionData.DepositAmount,
+			actionData.FreeTokenCollateralAmount,
+			actionData.PortingID,
+			actionData.UniqExternalTxID,
+			actionData.TxReqID,
+			common.PortalTopUpWaitingPortingRejectedStatus,
+		)
+		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
+		err = statedb.StoreCustodianTopupWaitingPortingStatusV3(
+			portalStateDB,
+			actionData.TxReqID.String(),
+			statusContentBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
+		}
+	} else if depositStatus == common.PortalTopUpWaitingPortingSuccessChainStatus {
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
+		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
+		if !ok {
+			Logger.log.Errorf("Custodian not found")
+			return nil
+		}
+
+		waitingPortingRequestKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.PortingID)
+		waitingPortingReq, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()]
+		if !ok || waitingPortingReq == nil || waitingPortingReq.TokenID() != actionData.PortalTokenID {
+			Logger.log.Errorf("Waiting porting request with portingID (%s) not found", actionData.PortingID)
+			return nil
+		}
+
+		err = UpdateCustodianAfterTopupWaitingPorting(currentPortalState, waitingPortingReq, custodian, actionData.PortalTokenID, actionData.DepositAmount, actionData.FreeTokenCollateralAmount, actionData.CollateralTokenID)
+		if err != nil {
+			Logger.log.Errorf("Update portal state error: %+v", err)
+			return nil
+		}
+
+		topUpWaitingPortingReq := metadata.NewPortalTopUpWaitingPortingRequestStatusV3(
+			actionData.IncogAddressStr,
+			actionData.PortalTokenID,
+			actionData.CollateralTokenID,
+			actionData.DepositAmount,
+			actionData.FreeTokenCollateralAmount,
+			actionData.PortingID,
+			actionData.UniqExternalTxID,
+			actionData.TxReqID,
+			common.PortalTopUpWaitingPortingSuccessStatus,
+		)
+		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
+		err = statedb.StoreCustodianTopupWaitingPortingStatusV3(
+			portalStateDB,
+			actionData.TxReqID.String(),
+			statusContentBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
+		}
+
+		// update state of porting request by portingID
+		newPortingRequestState := metadata.NewPortingRequestStatus(
+			waitingPortingReq.UniquePortingID(),
+			waitingPortingReq.TxReqID(),
+			waitingPortingReq.TokenID(),
+			waitingPortingReq.PorterAddress(),
+			waitingPortingReq.Amount(),
+			waitingPortingReq.Custodians(),
+			waitingPortingReq.PortingFee(),
+			common.PortalPortingReqWaitingStatus,
+			beaconHeight+1,
+		)
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
+		err = statedb.StorePortalPortingRequestStatus(
+			portalStateDB,
+			waitingPortingReq.UniquePortingID(),
+			newPortingRequestStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+			return nil
+		}
+
+		// store uniq external tx
+		err := statedb.InsertPortalExternalTxHashSubmitted(portalStateDB, actionData.UniqExternalTxID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
+			return nil
+		}
+	}
 	return nil
 }

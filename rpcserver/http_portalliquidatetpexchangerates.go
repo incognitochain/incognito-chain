@@ -393,6 +393,7 @@ func (httpServer *HttpServer) handleGetPortalCustodianTopupStatusV3(params inter
 	}
 
 	status, err := httpServer.blockService.GetCustodianTopupStatusV3(txID)
+
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupStatusError, err)
 	}
