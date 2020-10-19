@@ -399,6 +399,27 @@ func (httpServer *HttpServer) handleGetPortalCustodianTopupStatusV3(params inter
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetPortalCustodianTopupWaitingPortingStatusV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	txID, ok := data["TxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param TxID is invalid"))
+	}
+
+	status, err := httpServer.blockService.GetCustodianTopupWaitingPortingStatusV3(txID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupWaitingPortingStatusError, err)
+	}
+	return status, nil
+}
+
 func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {

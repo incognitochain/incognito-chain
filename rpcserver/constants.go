@@ -233,7 +233,9 @@ const (
 	createAndSendTxWithReqMatchingRedeem          = "createandsendtxwithreqmatchingredeem"
 	getReqMatchingRedeemStatus                    = "getreqmatchingredeemstatus"
 	getPortalCustodianTopupStatus                 = "getcustodiantopupstatus"
+	getPortalCustodianTopupStatusV3               = "getcustodiantopupstatusv3"
 	getPortalCustodianTopupWaitingPortingStatus   = "getcustodiantopupwaitingportingstatus"
+	getPortalCustodianTopupWaitingPortingStatusV3 = "getcustodiantopupwaitingportingstatusv3"
 	getAmountTopUpWaitingPorting                  = "getamounttopupwaitingporting"
 	getPortalReqRedeemByTxIDStatus                = "getreqredeemstatusbytxid"
 	getReqRedeemFromLiquidationPoolByTxIDStatus   = "getreqredeemfromliquidationpoolbytxidstatus"
@@ -265,7 +267,7 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
-	getTotalStaker = "gettotalstaker"
+	getTotalStaker   = "gettotalstaker"
 )
 
 const (
