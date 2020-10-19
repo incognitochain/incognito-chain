@@ -47,12 +47,18 @@ type simInstance struct {
 
 	scenerioActions    []ScenerioAction
 	autoGenerateBlocks map[int]bool
+
+	hooks struct {
+		preCreateBlock  func()
+		postCreateBlock func(block common.BlockInterface)
+		preInsertBlock  func(block common.BlockInterface)
+		postInsertBlock func()
+	}
 }
 
 func main() {
 	disableLog(true)
 	instance1 := newSimInstance("test1")
-
 	scnString := `{
 		"Action":"GENERATEBLOCKS",
 		"Params": [{"ChainID":0,"Blocks":100,"IsBlocking":true},{"ChainID":1,"Blocks":100,"IsBlocking":true}]
@@ -314,6 +320,7 @@ func (sim *simInstance) Run() {
 			}
 		case GENERATETXS:
 			arrayParams := common.InterfaceSlice(action.Params)
+			createTxs := []GenerateTxParam{}
 			for _, param := range arrayParams {
 				param := param.(map[string]interface{})
 				receivers := param["Receivers"].(map[string]interface{})
@@ -324,28 +331,22 @@ func (sim *simInstance) Run() {
 				for receiver, amount := range receivers {
 					p.Receivers[receiver] = int(amount.(float64))
 				}
-				err := sim.generateTxs(p.SenderPrK, p.Receivers)
-				if err != nil {
-					log.Fatalln(err)
-				}
+				createTxs = append(createTxs, p)
+			}
+			err := sim.generateTxs(createTxs)
+			if err != nil {
+				log.Fatalln(err)
 			}
 		case CREATETXSANDINJECT:
 			arrayParams := common.InterfaceSlice(action.Params)
 			for _, param := range arrayParams {
-				data := CreateTxsAndInjectParam{
-					InjectAt: make(map[int]int),
-				}
+				data := CreateTxsAndInjectParam{}
 				param := param.(map[string]interface{})
-				injectAt := param["InjectAt"].(map[float64]float64)
-				if len(injectAt) > 1 {
-					log.Fatalln("")
-					return
-				}
-				for i1, i2 := range injectAt {
-					data.InjectAt[int(i1)] = int(i2)
-				}
-
+				injectAt := param["InjectAt"].(map[string]float64)
+				data.InjectAt.ChainID = int(injectAt["ChainID"])
+				data.InjectAt.Height = uint64(injectAt["Height"])
 				txs := common.InterfaceSlice(param["Txs"])
+				createTxs := []GenerateTxParam{}
 				for _, tx := range txs {
 					txParam := tx.(map[string]interface{})
 					receivers := txParam["Receivers"].(map[string]interface{})
@@ -356,15 +357,19 @@ func (sim *simInstance) Run() {
 					for receiver, amount := range receivers {
 						p.Receivers[receiver] = int(amount.(float64))
 					}
-					err := sim.generateTxs(p.SenderPrK, p.Receivers)
-					if err != nil {
-						log.Fatalln(err)
-					}
+					createTxs = append(createTxs, p)
 				}
 
+				err := sim.createAndInjectTx(createTxs, data.InjectAt.ChainID, data.InjectAt.Height)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
 		case CHECKBALANCES:
+			// arrayParams := common.InterfaceSlice(action.Params)
+			// for _, param := range arrayParams {
 
+			// }
 		case CHECKBESTSTATES:
 
 		case SWITCHTOMANUAL:
@@ -377,25 +382,52 @@ func disableLog(disable bool) {
 	disableStdoutLog = disable
 }
 
-type TxReceiver struct {
-	ReceiverPbK string
-	Amount      int
-}
-
-func (sim *simInstance) generateTxs(senderPrk string, receivers map[string]int) error {
-	tx, err := sim.createTx(senderPrk, receivers)
-	if err != nil {
-		return err
+func (sim *simInstance) generateTxs(createTxs []GenerateTxParam) error {
+	txsInject := []string{}
+	for _, createTxMeta := range createTxs {
+		tx, err := sim.createTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
+		if err != nil {
+			return err
+		}
+		txsInject = append(txsInject, tx.Base58CheckData)
 	}
-	err = sim.injectTxs([]string{tx.Base58CheckData})
+	err := sim.injectTxs(txsInject)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (sim *simInstance) createAndInjectTx(senderPrk string, receivers map[string]int) error {
-	return nil
+func (sim *simInstance) createAndInjectTx(createTxs []GenerateTxParam, chainID int, height uint64) error {
+	txsInject := []string{}
+	for _, createTxMeta := range createTxs {
+		tx, err := sim.createTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
+		if err != nil {
+			return err
+		}
+		txsInject = append(txsInject, tx.Base58CheckData)
+	}
+
+	for {
+		if chainID == -1 {
+			if sim.bc.BeaconChain.GetBestView().GetHeight() >= height {
+				err := sim.injectTxs(txsInject)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		} else {
+			if sim.bc.ShardChain[byte(chainID)].GetBestView().GetHeight() >= height {
+				err := sim.injectTxs(txsInject)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func (sim *simInstance) createTx(senderPrk string, receivers map[string]int) (*jsonresult.CreateTransactionResult, error) {
@@ -408,13 +440,7 @@ func (sim *simInstance) createTx(senderPrk string, receivers map[string]int) (*j
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := sendRequest(requestBody)
 	if err != nil {
 		return nil, err
 	}
@@ -455,12 +481,15 @@ func (sim *simInstance) GenerateBlocks(chainID int, blocks int) error {
 			newTimeSlot = true
 		}
 		if newTimeSlot {
-			err := sim.createAndInsertBlock(chainID, blocks, currentTime)
+			err := sim.createAndInsertBlock(chainID, currentTime)
 			if err != nil {
 				return err
 			}
 			blockCount++
 			prevTimeSlot = common.CalculateTimeSlot(currentTime)
+			if blockCount == blocks {
+				return nil
+			}
 		}
 		if enable, ok := sim.autoGenerateBlocks[chainID]; !enable && ok {
 			return nil
@@ -468,28 +497,89 @@ func (sim *simInstance) GenerateBlocks(chainID int, blocks int) error {
 	}
 }
 
-func (sim *simInstance) createAndInsertBlock(chainID int, blocks int, currentTime int64) error {
+func (sim *simInstance) createAndInsertBlock(chainID int, currentTime int64) error {
+	newBlock, err := sim.CreateBlock(chainID, currentTime)
+	if err != nil {
+		return err
+	}
+	return sim.InsertBlock(newBlock, chainID)
+}
+
+func (sim *simInstance) CreateBlock(chainID int, currentTime int64) (common.BlockInterface, error) {
+	var block common.BlockInterface
+
+	if sim.hooks.preCreateBlock != nil {
+		sim.hooks.preCreateBlock()
+	}
+
 	if chainID == -1 {
 		newBlock, err := sim.bc.BeaconChain.CreateNewBlock(2, "", 1, currentTime)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		newBlock.(mock.BlockValidation).AddValidationField("test")
-		err = sim.bc.InsertBeaconBlock(newBlock.(*blockchain.BeaconBlock), true)
+
+		block = newBlock
+	} else {
+		newBlock, err := sim.bc.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, currentTime)
+		if err != nil {
+			return nil, err
+		}
+		newBlock.(mock.BlockValidation).AddValidationField("test")
+		block = newBlock
+	}
+
+	if sim.hooks.postCreateBlock != nil {
+		sim.hooks.postCreateBlock(block)
+	}
+	return block, nil
+}
+func (sim *simInstance) InsertBlock(block common.BlockInterface, chainID int) error {
+
+	if sim.hooks.preInsertBlock != nil {
+		sim.hooks.preInsertBlock(block)
+	}
+
+	if chainID == -1 {
+		err := sim.bc.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
 		if err != nil {
 			return err
 		}
 	} else {
-		newBlock, err := sim.bc.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, currentTime)
-		if err != nil {
-			return err
-		}
-		newBlock.(mock.BlockValidation).AddValidationField("test")
-		err = sim.bc.InsertShardBlock(newBlock.(*blockchain.ShardBlock), true)
+		err := sim.bc.InsertShardBlock(block.(*blockchain.ShardBlock), true)
 		if err != nil {
 			return err
 		}
 	}
+
+	if sim.hooks.postInsertBlock != nil {
+		sim.hooks.postInsertBlock()
+	}
+	return nil
+}
+
+func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbalancebyprivatekey",
+		"params":  []interface{}{data.PrivateKey},
+		"id":      1,
+	})
+	if err != nil {
+		return err
+	}
+	body, err := sendRequest(requestBody)
+	if err != nil {
+		return err
+	}
+	txResp := struct {
+		Result uint64
+	}{}
+	err = json.Unmarshal(body, &txResp)
+	if err != nil {
+		return err
+	}
+	log.Println(txResp)
 	return nil
 }
 
@@ -503,4 +593,18 @@ func (sim *simInstance) manualCreateBlock() error {
 
 func (sim *simInstance) manualInjectBlock(chainID int, block common.BlockInterface) error {
 	return nil
+}
+
+func sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }

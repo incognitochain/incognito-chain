@@ -33,8 +33,11 @@ type GenerateTxParam struct {
 }
 
 type CreateTxsAndInjectParam struct {
-	InjectAt map[int]int
-	Txs      []GenerateTxParam
+	InjectAt struct {
+		ChainID int
+		Height  uint64
+	}
+	Txs []GenerateTxParam
 }
 
 type CheckBestStateParam struct {
