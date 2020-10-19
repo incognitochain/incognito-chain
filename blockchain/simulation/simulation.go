@@ -32,7 +32,6 @@ import (
 
 type simInstance struct {
 	simName     string
-	dbDir       string
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
 	cs          *mock.Consensus
@@ -331,31 +330,47 @@ func (sim *simInstance) Run() {
 				}
 			}
 		case CREATETXSANDINJECT:
+			arrayParams := common.InterfaceSlice(action.Params)
+			for _, param := range arrayParams {
+				data := CreateTxsAndInjectParam{
+					InjectAt: make(map[int]int),
+				}
+				param := param.(map[string]interface{})
+				injectAt := param["InjectAt"].(map[float64]float64)
+				if len(injectAt) > 1 {
+					log.Fatalln("")
+					return
+				}
+				for i1, i2 := range injectAt {
+					data.InjectAt[int(i1)] = int(i2)
+				}
 
+				txs := common.InterfaceSlice(param["Txs"])
+				for _, tx := range txs {
+					txParam := tx.(map[string]interface{})
+					receivers := txParam["Receivers"].(map[string]interface{})
+					p := GenerateTxParam{
+						SenderPrK: txParam["SenderPrk"].(string),
+						Receivers: make(map[string]int),
+					}
+					for receiver, amount := range receivers {
+						p.Receivers[receiver] = int(amount.(float64))
+					}
+					err := sim.generateTxs(p.SenderPrK, p.Receivers)
+					if err != nil {
+						log.Fatalln(err)
+					}
+				}
+
+			}
 		case CHECKBALANCES:
 
 		case CHECKBESTSTATES:
 
 		case SWITCHTOMANUAL:
+
 		}
 	}
-
-	// tx, err := sim.createTx("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", []TxReceiver{TxReceiver{
-	// 	ReceiverPbK: "12Rtc3sbfHTTSqmS8efnhgb7Rc6ineoQCwJyX63MMRK4HF6JGo51GJp5rk25QfviU7GPjyptT9q3JguQmDEG3uKpPUDEY5CSUJtttfU",
-	// 	Amount:      10000,
-	// }})
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// log.Println(tx)
-	// err = sim.injectTxs([]string{tx.Base58CheckData})
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = sim.GenerateBlocks(0, 5)
-	// if err != nil {
-	// 	panic(err)
-	// }
 }
 
 func disableLog(disable bool) {
