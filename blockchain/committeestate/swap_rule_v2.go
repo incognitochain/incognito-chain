@@ -9,41 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-// createSwapShardInstructionV2 create swap instruction and new substitutes list
-// swap procedure is only completed after both swap out and swap in is performed
-// Output
-// #1: swap instruction
-// #2: new committee list
-// #3: new substitute list
-// #3: swapped out committee list
-func createSwapShardInstructionV2(
-	shardID byte,
-	substitutes, committees []string,
-	minCommitteeSize int,
-	maxCommitteeSize int,
-	typeIns int,
-	numberOfFixedValidator int,
-) (*instruction.SwapShardInstruction, []string, []string, []string) {
-	committees, swappedOutCommittees :=
-		normalSwapOut(committees, substitutes, minCommitteeSize, numberOfFixedValidator)
-
-	newCommittees, newSubstitutes, swapInCommittees :=
-		swapInAfterSwapOut(committees, substitutes, maxCommitteeSize)
-
-	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
-		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, swappedOutCommittees
-	}
-
-	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
-		swapInCommittees,
-		swappedOutCommittees,
-		int(shardID),
-		typeIns,
-	)
-
-	return swapShardInstruction, newCommittees, newSubstitutes, swappedOutCommittees
-}
-
 // createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
 // return params
 // #1: swap instruction
@@ -181,40 +146,6 @@ func slashingSwapOut(
 	committees = append(fixedCommittees, flexAfterSlashingCommittees...)
 
 	return committees, slashingCommittees, normalSwapOutCommittees
-}
-
-// normalSwapOut swap node out of committee
-// after normal swap out, committees list could have invalid length
-// Output:
-// #1: new committees list
-// #2: swapped out committees list
-func normalSwapOut(
-	committees []string,
-	substitutes []string,
-	minCommitteeSize int,
-	numberOfFixedValidator int,
-) (
-	[]string,
-	[]string,
-) {
-	if len(committees) == numberOfFixedValidator {
-		return committees, []string{}
-	}
-
-	fixedCommittees := make([]string, len(committees[:numberOfFixedValidator]))
-	copy(fixedCommittees, committees[:numberOfFixedValidator])
-	flexCommittees := make([]string, len(committees[numberOfFixedValidator:]))
-	copy(flexCommittees, committees[numberOfFixedValidator:])
-	normalSwapOutCommittees := []string{}
-
-	swapOutOffset := getSwapOutOffset(len(substitutes), len(committees), numberOfFixedValidator, minCommitteeSize)
-	if swapOutOffset > 0 {
-		normalSwapOutCommittees = flexCommittees[:swapOutOffset]
-		flexCommittees = flexCommittees[swapOutOffset:]
-	}
-
-	committees = append(fixedCommittees, flexCommittees...)
-	return committees, normalSwapOutCommittees
 }
 
 // swapInAfterSwapOut must be perform after normalSwapOut function is executed
