@@ -722,7 +722,8 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			snapshotShardCommonPool,
 			snapshotShardCommittee,
 			snapshotShardSubstitute,
-			params.MaxSwapOrAssign,
+			NumberOfFixedShardBlockValidators,
+			params.MinShardCommitteeSize,
 		)
 	}
 
