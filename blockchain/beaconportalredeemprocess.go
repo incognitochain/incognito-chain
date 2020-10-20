@@ -46,6 +46,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			actionData.RedeemFee,
 			beaconHeight+1,
 			actionData.TxReqID,
+			actionData.ShardID,
+			actionData.ShardHeight,
 		)
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 
@@ -60,6 +62,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
 		}
 		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
 		err := statedb.StorePortalRedeemRequestStatus(
@@ -82,6 +86,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -123,6 +129,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -164,6 +172,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 redeemReq.GetTxReqID(),
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
 		}
 		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
 		err = statedb.StorePortalRedeemRequestStatus(

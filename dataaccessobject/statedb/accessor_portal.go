@@ -28,6 +28,8 @@ func StoreWaitingRedeemRequests(
 			waitingReq.redeemFee,
 			waitingReq.beaconHeight,
 			waitingReq.txReqID,
+			waitingReq.shardID,
+			waitingReq.shardHeight,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -130,6 +132,8 @@ func StoreMatchedRedeemRequests(
 			waitingReq.redeemFee,
 			waitingReq.beaconHeight,
 			waitingReq.txReqID,
+			waitingReq.shardID,
+			waitingReq.shardHeight,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -385,7 +389,7 @@ func GetPortalPortingRequestByTxIDStatus(stateDB *StateDB, portingID string) ([]
 	statusType := PortalPortingRequestTxStatusPrefix()
 	statusSuffix := []byte(portingID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
-	if err != nil  {
+	if err != nil {
 		return nil, NewStatedbError(GetPortalPortingRequestByTxIDStatusError, err)
 	}
 
@@ -756,7 +760,6 @@ func GetPortalExchangeRateStatus(stateDB *StateDB, txID string) ([]byte, error) 
 
 	return data, nil
 }
-
 
 //======================  Portal reward  ======================
 // GetPortalRewardsByBeaconHeight gets portal reward state at beaconHeight

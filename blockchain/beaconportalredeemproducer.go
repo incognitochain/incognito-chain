@@ -199,6 +199,8 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		meta.RedeemFee,
 		beaconHeight+1,
 		actionData.TxReqID,
+		actionData.ShardID,
+		actionData.ShardHeight,
 	)
 	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 

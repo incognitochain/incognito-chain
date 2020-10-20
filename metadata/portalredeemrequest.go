@@ -28,9 +28,10 @@ type PortalRedeemRequest struct {
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
 type PortalRedeemRequestAction struct {
-	Meta    PortalRedeemRequest
-	TxReqID common.Hash
-	ShardID byte
+	Meta        PortalRedeemRequest
+	TxReqID     common.Hash
+	ShardID     byte
+	ShardHeight uint64
 }
 
 // PortalRedeemRequestContent - Beacon builds a new instruction with this content after receiving a instruction from shard
@@ -46,6 +47,7 @@ type PortalRedeemRequestContent struct {
 	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
+	ShardHeight             uint64
 }
 
 // PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
@@ -59,6 +61,8 @@ type PortalRedeemRequestStatus struct {
 	RedeemFee               uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
 	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
 	TxReqID                 common.Hash
+	ShardID                 byte
+	ShardHeight             uint64
 }
 
 func NewPortalRedeemRequest(
@@ -68,7 +72,8 @@ func NewPortalRedeemRequest(
 	redeemAmount uint64,
 	incAddressStr string,
 	remoteAddr string,
-	redeemFee uint64) (*PortalRedeemRequest, error) {
+	redeemFee uint64,
+) (*PortalRedeemRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -184,9 +189,10 @@ func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
 
 func (redeemReq *PortalRedeemRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRedeemRequestAction{
-		Meta:    *redeemReq,
-		TxReqID: *tx.Hash(),
-		ShardID: shardID,
+		Meta:        *redeemReq,
+		TxReqID:     *tx.Hash(),
+		ShardID:     shardID,
+		ShardHeight: shardHeight,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
