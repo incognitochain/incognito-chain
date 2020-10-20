@@ -2053,6 +2053,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			},
 			want: &CommitteeChange{
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{*incKey},
+				Unstake:                        []string{key},
 			},
 			want1: map[byte]*instruction.ReturnStakeInstruction{
 				0: instruction.NewReturnStakeInsWithValue(
