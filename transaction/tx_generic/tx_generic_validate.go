@@ -78,7 +78,7 @@ func GetTxBurnData(tx metadata.Transaction) (bool, privacy.Coin, *common.Hash, e
 	return false, nil, nil, nil
 }
 
-func ValidateTxWithBlockChain(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
@@ -94,23 +94,14 @@ func ValidateTxWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 			return nil
 		}
 	}
-	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
+	return nil
 }
 
-func ValidateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, isNewTransaction bool) (bool, error) {
-	prvCoinID := &common.Hash{}
-	err := prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return false, err
-	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
-	if !ok {
-		return false, err
-	}
+func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, isNewTransaction bool) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
 		if hasPrivacy && tx.GetVersion() == 1{
-			return false, errors.New("Metadata can not exist in not privacy tx")
+			return false, errors.New("Metadata can only exist in non-privacy tx")
 		}
 		validateMetadata := meta.ValidateMetadataByItself()
 		if validateMetadata {
@@ -135,7 +126,7 @@ func ValidateTxByItself(tx metadata.Transaction, hasPrivacy bool, transactionSta
 // 	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 // }
 
-func ValidateSanityMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) ( bool, error) {
+func MdValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) ( bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
 		isValid, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx )
@@ -146,7 +137,7 @@ func ValidateSanityMetadata(tx metadata.Transaction, chainRetriever metadata.Cha
 	return true, nil
 }
 
-func ValidateSanityTxWithoutMetadata(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	//check version
 	if tx.GetVersion() > utils.TxVersion2Number {
 		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), utils.CurrentTxVersion))

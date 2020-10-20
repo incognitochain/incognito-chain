@@ -280,7 +280,8 @@ func GetTxTokenDataFromTransaction(tx metadata.Transaction) *tx_generic.TxTokenD
 	// } else if tx.GetVersion() == utils.TxVersion2Number || tx.GetVersion() == utils.TxConversionVersion12Number {
 	case *TxTokenVersion2:
 		// txTemp := tx.(*TxTokenVersion2)
-		return &tx_specific.TxTokenData
+		res := tx_specific.GetTxTokenData()
+		return &res
 	default:
 		return nil
 	}

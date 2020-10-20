@@ -193,17 +193,14 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 
 func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
-	if ok, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
+	valid, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
+	if !valid {
 		return false, err
 	}
 	// check for metadata
-	meta := txToken.GetMetadata()
-	if meta != nil {
-		validateMetadata := meta.ValidateMetadataByItself()
-		if !validateMetadata {
-			return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid"))
-		}
-		return validateMetadata, nil
+	valid, err = tx_generic.MdValidate(&txToken, hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+	if !valid {
+		return false, err
 	}
 	return true, nil
 }
@@ -241,7 +238,7 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 
 func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	// validate metadata
-	check, err := tx_generic.ValidateSanityMetadata(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	check, err := tx_generic.MdValidateSanity(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
@@ -249,12 +246,12 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
 	}
 	// validate sanity for tx pToken + metadata
-	check, err = tx_generic.ValidateSanityTxWithoutMetadata(txToken.TxTokenData.TxNormal, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	check, err = tx_generic.ValidateSanity(txToken.TxTokenData.TxNormal, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
 	// validate sanity for tx pToken + without metadata
-	check1, err1 := tx_generic.ValidateSanityTxWithoutMetadata(txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	check1, err1 := tx_generic.ValidateSanity(txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check1 || err1 != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err1)
 	}

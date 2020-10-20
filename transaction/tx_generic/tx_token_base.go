@@ -86,9 +86,20 @@ func NewTxTokenParams(senderKey *privacy.PrivateKey,
 // ========== Get/Set FUNCTION ============
 
 func (txToken TxTokenBase) GetTxBase() metadata.Transaction    { return txToken.Tx }
-func (txToken *TxTokenBase) SetTxBase(tx metadata.Transaction) { txToken.Tx = tx }
+func (txToken *TxTokenBase) SetTxBase(tx metadata.Transaction) error{ 
+	txToken.Tx = tx 
+	return nil
+}
+func (txToken TxTokenBase) GetTxNormal() metadata.Transaction    { return txToken.TxTokenData.TxNormal }
+func (txToken *TxTokenBase) SetTxNormal(tx metadata.Transaction) error{ 
+	txToken.TxTokenData.TxNormal = tx 
+	return nil
+}
 func (txToken TxTokenBase) GetTxTokenData() TxTokenData { return txToken.TxTokenData }
-func (txToken *TxTokenBase) SetTxTokenData(data TxTokenData) { txToken.TxTokenData = data }
+func (txToken *TxTokenBase) SetTxTokenData(data TxTokenData)error { 
+	txToken.TxTokenData = data
+	return nil
+}
 
 func (txToken TxTokenBase) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) {
 	tokenID := txToken.TxTokenData.GetPropertyID()

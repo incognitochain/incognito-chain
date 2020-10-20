@@ -358,12 +358,12 @@ func (tx *Tx) Sign(sigPrivakey []byte) error {//For testing-purpose only, remove
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
 func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if check, err := tx_generic.ValidateSanityTxWithoutMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
+	if check, err := tx_generic.ValidateSanity(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
 		utils.Logger.Log.Errorf("Cannot check sanity of version, size, proof, type and info: err %v", err)
 		return false, err
 	}
 
-	if check, err := tx_generic.ValidateSanityMetadata(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
+	if check, err := tx_generic.MdValidateSanity(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
 		utils.Logger.Log.Errorf("Cannot check sanity of metadata: err %v", err)
 		return false, err
 	}
@@ -683,7 +683,11 @@ func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return 
 func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	return tx_generic.ValidateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+	if err!=nil{
+		return err
+	}
+	return tx.TxBase.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
 func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
@@ -698,7 +702,20 @@ func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.St
 }
 
 func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	return tx_generic.ValidateTxByItself(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+	prvCoinID := &common.Hash{}
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
+	}
+	valid, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
+	if !valid {
+		return false, err
+	}
+	valid, err = tx_generic.MdValidate(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+	if !valid {
+		return false, err
+	}
+	return true, nil
 }
 
 func (tx Tx) GetTxActualSize() uint64 {

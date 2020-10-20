@@ -77,10 +77,11 @@ func TestInitAndTransferTxPrivacyToken(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		// convert to JSON string and revert
-		txJsonString := tx.JSONString()
+		jsb, err := json.Marshal(tx)
+		assert.Equal(t, nil, err)
 		txHash := tx.Hash()
 		tx1 := new(TxToken)
-		tx1.UnmarshalJSON([]byte(txJsonString))
+		json.Unmarshal(jsb, tx1)
 		txHash1 := tx1.Hash()
 		assert.Equal(t, txHash, txHash1)
 
@@ -536,20 +537,16 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 
 func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxToken, params *tx_generic.TxTokenParams, nonPrivacyParams *tx_generic.TxPrivacyInitParams) error {
 	var err error
-	txOuter, ok := txToken.Tx.(*Tx)
-	if !ok {
-		activeLogger.Errorf("Test Error : cast")
-		return utils.NewTransactionErr(-1000, nil, "Cast failed")
-	}
-	txToken.Tx = nil
+	txOuter := &txToken.tx
+	txToken.tx = Tx{}
 	txOuter.SetCachedHash(nil)
 
-	txn := txToken.TxTokenData.TxNormal.(*Tx)
-	txn.SetCachedHash(nil)
+	txn, ok := txToken.GetTxNormal().(*Tx)
 	if !ok {
 		activeLogger.Errorf("Test Error : cast")
 		return utils.NewTransactionErr(-1000, nil, "Cast failed")
 	}
+	txn.SetCachedHash(nil)
 
 	// NOTE : hasPrivacy has been deprecated in the real flow.
 	if nonPrivacyParams == nil {
@@ -577,21 +574,27 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			params.MetaData,
 			params.Info,
 		)
-		txInner, ok := txToken.GetTxTokenData().TxNormal.(*Tx)
+		txInner, ok := txToken.GetTxNormal().(*Tx)
 		if !ok {
 			activeLogger.Errorf("Test Error : cast inner")
 			return utils.NewTransactionErr(-1000, nil, "Cast failed")
 		}
-
-		err = resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &txToken.TxTokenData)
+		compatTokenData := txToken.tokenData.ToCompatTokenData(txInner)
+		err = resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &compatTokenData)
 		err = resignUnprovenTx(decryptingKeys, txInner, paramsInner, nil)
 
-		txToken.Tx = txOuter
+		txToken.tx = *txOuter
 		return err
 	} else {
 		paramsOuter := nonPrivacyParams
-		err := resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &txToken.TxTokenData)
-		txToken.Tx = txOuter
+		txInner, ok := txToken.GetTxNormal().(*Tx)
+		if !ok {
+			activeLogger.Errorf("Test Error : cast inner")
+			return utils.NewTransactionErr(-1000, nil, "Cast failed")
+		}
+		compatTokenData := txToken.tokenData.ToCompatTokenData(txInner)
+		err := resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &compatTokenData)
+		txToken.tx = *txOuter
 		return err
 	}
 

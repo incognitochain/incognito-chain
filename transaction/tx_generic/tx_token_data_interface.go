@@ -38,9 +38,11 @@ type TransactionToken interface {
 	SetMetadata(metadata.Metadata)
 
 	GetTxTokenData() TxTokenData
-	SetTxTokenData(TxTokenData)
+	SetTxTokenData(TxTokenData) error
 	GetTxBase() metadata.Transaction
-	SetTxBase(metadata.Transaction)
+	SetTxBase(metadata.Transaction) error
+	GetTxNormal() metadata.Transaction
+	SetTxNormal(metadata.Transaction) error
 
 	// =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 	GetTxActualSize() uint64

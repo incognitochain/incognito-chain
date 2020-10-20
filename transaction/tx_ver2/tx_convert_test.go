@@ -420,11 +420,11 @@ func TestProveVerifyTxNormalConversion(t *testing.T) {
 		err = proveConversion(txConvertOutput, txConvertParams)
 		assert.Equal(t, nil, err, "proveConversion returns an error: %v", err)
 
-		res, err := tx_generic.ValidateSanityTxWithoutMetadata(txConvertOutput, nil, nil, nil, 0)
+		res, err := tx_generic.ValidateSanity(txConvertOutput, nil, nil, nil, 0)
 		assert.Equal(t, true, err == nil, "validateConversionVer1ToVer2 should not return any error")
 		assert.Equal(t, true, res, "validateConversionVer1ToVer2 should be true")
 
-		res, err = tx_generic.ValidateTxByItself(txConvertOutput, false, txConvertParams.stateDB, nil, 0, true)
+		res, err = tx_generic.MdValidate(txConvertOutput, false, txConvertParams.stateDB, nil, 0, true)
 		// res, err := validateConversionVer1ToVer2(txConvertOutput, txConvertParams.stateDB, 0, &common.PRVCoinID)
 		assert.Equal(t, true, err == nil, "validateConversionVer1ToVer2 should not return any error")
 		assert.Equal(t, true, res, "validateConversionVer1ToVer2 should be true")
@@ -512,12 +512,13 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 
 		}
 		//Attempt to verify
-		isValidSanity, _ := tx_generic.ValidateSanityTxWithoutMetadata(txConversionOutput, nil, nil, nil, 0)
+		isValidSanity, _ := txConversionOutput.ValidateSanityData(nil, nil, nil, 0)
 		var isValid bool
 		if !isValidSanity {
 			isValid = false
 		} else {
-			isValid, err = tx_generic.ValidateTxByItself(txConversionOutput, false, txConversionParams.stateDB, nil, 0, true)
+			isValid, err = txConversionOutput.ValidateTxByItself(false, txConversionParams.stateDB, nil, nil, 0, true, nil, nil)
+			tx_generic.MdValidate(txConversionOutput, false, txConversionParams.stateDB, nil, 0, true)
 		}
 		// assert.Equal(t, false, isValid, "validateConversionVer1ToVer2 on corrupted data should not be true")
 		if isValid {

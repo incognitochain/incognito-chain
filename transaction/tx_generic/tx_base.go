@@ -40,11 +40,6 @@ type TxBase struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
-func (tx TxBase) ClearCacheHash(){//For testing-purpose only, remove when deploy
-	tx.cachedHash = nil
-}
-
-
 // Function that choose which version to create metadata Transaction
 
 type TxPrivacyInitParams struct {
