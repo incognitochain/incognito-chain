@@ -852,6 +852,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 
 	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
+	committeeChangeProcessUnstakeInstruction.Unstake = []string{key0}
 
 	statedb.StoreStakerInfoV1(
 		sDB,
@@ -2083,7 +2084,9 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
 			},
-			want:    &CommitteeChange{},
+			want: &CommitteeChange{
+				Unstake: []string{key},
+			},
 			want1:   make(map[byte]*instruction.ReturnStakeInstruction),
 			wantErr: false,
 		},
