@@ -27,7 +27,7 @@ type BeaconCommitteeStateEnvironment struct {
 	ConsensusStateDB                   *statedb.StateDB
 	IsReplace                          bool
 	NumberOfFixedBeaconBlockValidators uint64
-	NumberOfFixedShardBlockValidators  uint64
+	NumberOfFixedShardBlockValidators  int
 	allCandidateSubstituteCommittee    []string
 	unassignedCommonPool               []string
 	allSubstituteCommittees            []string
