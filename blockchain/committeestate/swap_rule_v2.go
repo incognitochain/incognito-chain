@@ -59,7 +59,7 @@ func createSwapShardInstructionV3(
 	penalty map[string]signaturecounter.Penalty,
 ) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
 	committees, slashingCommittees, normalSwapCommittees :=
-		swapOut(committees, penalty, minCommitteeSize, maxCommitteeSize, numberOfFixedValidator)
+		slashingSwapOut(committees, substitutes, penalty, minCommitteeSize, numberOfFixedValidator)
 
 	swappedOutCommittees := append(slashingCommittees, normalSwapCommittees...)
 
@@ -125,7 +125,7 @@ func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedVali
 	}
 
 	noReplaceOffset := 0
-	for swapOffset > 0 || numberOfCommittees > minCommitteeSize {
+	for swapOffset > 0 && numberOfCommittees > minCommitteeSize {
 		swapOffset--
 		noReplaceOffset++
 		numberOfCommittees--
@@ -137,6 +137,50 @@ func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedVali
 	}
 
 	return noReplaceOffset + replaceSwapOffset
+}
+
+// slashingSwapOut swap node out of committee
+// because of penalty or end of epoch
+func slashingSwapOut(
+	committees, substitutes []string,
+	penalty map[string]signaturecounter.Penalty,
+	minCommitteeSize int,
+	numberOfFixedValidator int,
+) (
+	[]string,
+	[]string,
+	[]string,
+) {
+	if len(committees) == numberOfFixedValidator {
+		return committees, []string{}, []string{}
+	}
+
+	fixedCommittees := make([]string, len(committees[:numberOfFixedValidator]))
+	copy(fixedCommittees, committees[:numberOfFixedValidator])
+	flexCommittees := make([]string, len(committees[numberOfFixedValidator:]))
+	copy(flexCommittees, committees[numberOfFixedValidator:])
+	flexAfterSlashingCommittees := []string{}
+	slashingCommittees := []string{}
+
+	swapOutOffset := getSwapOutOffset(len(substitutes), len(committees), numberOfFixedValidator, minCommitteeSize)
+
+	for _, flexCommittee := range flexCommittees {
+		if _, ok := penalty[flexCommittee]; ok && swapOutOffset > 0 {
+			slashingCommittees = append(slashingCommittees, flexCommittee)
+			swapOutOffset--
+		} else {
+			flexAfterSlashingCommittees = append(flexAfterSlashingCommittees, flexCommittee)
+		}
+	}
+
+	normalSwapOutCommittees := make([]string, len(flexAfterSlashingCommittees[:swapOutOffset]))
+	copy(normalSwapOutCommittees, flexAfterSlashingCommittees[:swapOutOffset])
+
+	flexAfterSlashingCommittees = flexAfterSlashingCommittees[swapOutOffset:]
+
+	committees = append(fixedCommittees, flexAfterSlashingCommittees...)
+
+	return committees, slashingCommittees, normalSwapOutCommittees
 }
 
 // normalSwapOut swap node out of committee
