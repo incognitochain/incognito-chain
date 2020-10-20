@@ -988,7 +988,7 @@ func (p *portalCustodianTopupProcessor) prepareDataBeforeProcessing(stateDB *sta
 	return nil, nil
 }
 
-func buildLiquidationCustodianDepositInst(
+func buildPortalCustodianTopupInst(
 	pTokenId string,
 	incogAddress string,
 	depositedAmount uint64,
@@ -1037,7 +1037,7 @@ func (p *portalCustodianTopupProcessor) buildNewInsts(
 	}
 
 	meta := actionData.Meta
-	rejectInst := buildLiquidationCustodianDepositInst(
+	rejectInst := buildPortalCustodianTopupInst(
 		meta.PTokenId,
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
@@ -1076,16 +1076,13 @@ func (p *portalCustodianTopupProcessor) buildNewInsts(
 		Logger.log.Errorf("Free collateral topup amount is greater than free collateral of custodian's state")
 		return [][]string{rejectInst}, nil
 	}
-	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + meta.DepositedAmount)
-	topUpAmt := meta.DepositedAmount
-	if meta.FreeCollateralAmount > 0 {
-		topUpAmt += meta.FreeCollateralAmount
-		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - meta.FreeCollateralAmount)
+
+	_, err = UpdateCustodianAfterTopup(currentPortalState, custodian, meta.PTokenId, meta.DepositedAmount, meta.FreeCollateralAmount, common.PRVIDStr)
+	if err != nil {
+		Logger.log.Errorf("Update custodians state error : %+v", err)
+		return [][]string{rejectInst}, nil
 	}
-	lockedAmountCollateral[meta.PTokenId] += topUpAmt
-	custodian.SetLockedAmountCollateral(lockedAmountCollateral)
-	currentPortalState.CustodianPoolState[custodianStateKey.String()] = custodian
-	inst := buildLiquidationCustodianDepositInst(
+	inst := buildPortalCustodianTopupInst(
 		meta.PTokenId,
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
@@ -1295,7 +1292,7 @@ func (p *portalCustodianTopupProcessorV3) prepareDataBeforeProcessing(stateDB *s
 	return nil, nil
 }
 
-func buildLiquidationCustodianDepositInstV3(
+func buildPortalCustodianTopupV3(
 	incogAddress string,
 	portalTokenId string,
 	collateralTokenID string,
@@ -1348,7 +1345,7 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 	}
 
 	meta := actionData.Meta
-	rejectInst := buildLiquidationCustodianDepositInstV3(
+	rejectInst := buildPortalCustodianTopupV3(
 		meta.IncogAddressStr,
 		meta.PortalTokenID,
 		meta.CollateralTokenID,
@@ -1407,7 +1404,7 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 		}
 
 		// reject instruction with uniqExternalTxID
-		rejectInst2 = buildLiquidationCustodianDepositInstV3(
+		rejectInst2 = buildPortalCustodianTopupV3(
 			meta.IncogAddressStr,
 			meta.PortalTokenID,
 			meta.CollateralTokenID,
@@ -1484,7 +1481,7 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	inst := buildLiquidationCustodianDepositInstV3(
+	inst := buildPortalCustodianTopupV3(
 		meta.IncogAddressStr,
 		meta.PortalTokenID,
 		meta.CollateralTokenID,

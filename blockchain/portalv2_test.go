@@ -430,7 +430,7 @@ func processPortalInstructions(
 			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//liquidation custodian deposit
 		case strconv.Itoa(metadata.PortalCustodianTopupMetaV2):
-			err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+			err = blockchain.processPortalCustodianTopup(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		//waiting porting top up
 		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta):
 			err = blockchain.processPortalTopUpWaitingPorting(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
