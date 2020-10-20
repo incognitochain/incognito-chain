@@ -818,15 +818,15 @@ func (shardInstruction *shardInstruction) compose() {
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
 	}
 
-	if len(stakeInstruction.PublicKeys) != 0 {
+	if !stakeInstruction.IsEmpty() {
 		shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
 		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
 	}
-	if len(unstakeInstruction.CommitteePublicKeys) != 0 {
+	if !unstakeInstruction.IsEmpty() {
 		shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 		shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
 	}
-	if len(stopAutoStakeInstruction.CommitteePublicKeys) != 0 {
+	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
 	}
