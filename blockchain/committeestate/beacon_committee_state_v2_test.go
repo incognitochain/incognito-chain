@@ -291,10 +291,11 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 	initLog()
 
 	type args struct {
-		shardCommonPool   []incognitokey.CommitteePublicKey
-		shardCommittee    map[byte][]incognitokey.CommitteePublicKey
-		shardSubstitute   map[byte][]incognitokey.CommitteePublicKey
-		maxAssignPerShard int
+		shardCommonPool                   []incognitokey.CommitteePublicKey
+		shardCommittee                    map[byte][]incognitokey.CommitteePublicKey
+		shardSubstitute                   map[byte][]incognitokey.CommitteePublicKey
+		numberOfFixedShardBlockValidators int
+		minShardCommitteeSize             int
 	}
 	tests := []struct {
 		name                           string
@@ -319,7 +320,6 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 						*incKey5, *incKey6,
 					},
 				},
-				maxAssignPerShard: 5,
 			},
 			wantNumberOfAssignedCandidates: 1,
 		},
@@ -342,14 +342,18 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 						*incKey4, *incKey5, *incKey6,
 					},
 				},
-				maxAssignPerShard: 1,
 			},
 			wantNumberOfAssignedCandidates: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.maxAssignPerShard); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
+			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(
+				tt.args.shardCommonPool,
+				tt.args.shardCommittee,
+				tt.args.shardSubstitute,
+				tt.args.numberOfFixedShardBlockValidators,
+				tt.args.minShardCommitteeSize); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
 				t.Errorf("SnapshotShardCommonPoolV2() = %v, want %v", gotNumberOfAssignedCandidates, tt.wantNumberOfAssignedCandidates)
 			}
 		})
