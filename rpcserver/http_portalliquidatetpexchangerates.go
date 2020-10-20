@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -148,7 +149,7 @@ func (httpServer *HttpServer) handleCreateAndSendRedeemLiquidationExchangeRates(
 	return sendResult, nil
 }
 
-func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) createCustodianTopup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
@@ -221,8 +222,8 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendLiquidationCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.createLiquidationCustodianDeposit(params, closeChan)
+func (httpServer *HttpServer) handleCreateAndSendCustodianTopup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.createCustodianTopup(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -376,6 +377,264 @@ func (httpServer *HttpServer) handleGetPortalCustodianTopupWaitingPortingStatus(
 		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianTopupWaitingPortingStatusError, err)
 	}
 	return status, nil
+}
+
+// todo:
+func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+	incognitoAddress, ok := data["IncognitoAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress is invalid"))
+	}
+
+	pTokenId, ok := data["PTokenId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
+	}
+
+	if !metadata.IsPortalToken(pTokenId) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
+	}
+
+	collateralTokenId, ok := data["CollateralTokenId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenId param is invalid"))
+	}
+	collateralTokenId = common.Remove0xPrefix(collateralTokenId)
+	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BeaconHeight
+	if !metadata.IsSupportedTokenCollateralV3(httpServer.blockService.BlockChain, beaconHeight, collateralTokenId) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
+	}
+
+	freeCollateralAmount, err := common.AssertAndConvertStrToNumber(data["FreeCollateralAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	blockHashStr, ok := data["BlockHash"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BlockHash should be a string"))
+	}
+	blockHash := eCommon.HexToHash(blockHashStr)
+
+	txIndexFloat, ok := data["TxIndex"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TxIndex should be a number"))
+	}
+	txIdx := uint(txIndexFloat)
+
+	proofsRaw, ok := data["ProofStrs"].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ProofStrs should be an array of string"))
+	}
+	proofStrs := []string{}
+	for _, item := range proofsRaw {
+		proofStrs = append(proofStrs, item.(string))
+	}
+
+	meta, _ := metadata.NewPortalLiquidationCustodianDepositV3(
+		metadata.PortalCustodianTopupMetaV3,
+		incognitoAddress,
+		pTokenId,
+		collateralTokenId,
+		depositedAmount,
+		freeCollateralAmount,
+		blockHash,
+		txIdx,
+		proofStrs,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendCustodianTopupV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.createCustodianTopupV3(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+	portingID, ok := data["PortingID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingID is invalid"))
+	}
+
+	incognitoAddress, ok := data["IncognitoAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress is invalid"))
+	}
+
+	pTokenId, ok := data["PTokenId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
+	}
+	if !metadata.IsPortalToken(pTokenId) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
+	}
+
+	collateralTokenId, ok := data["CollateralTokenId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenId param is invalid"))
+	}
+	collateralTokenId = common.Remove0xPrefix(collateralTokenId)
+	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BeaconHeight
+	if !metadata.IsSupportedTokenCollateralV3(httpServer.blockService.BlockChain, beaconHeight, collateralTokenId) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
+	}
+
+	freeCollateralAmount, err := common.AssertAndConvertStrToNumber(data["FreeCollateralAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	depositedAmount, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	blockHashStr, ok := data["BlockHash"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BlockHash should be a string"))
+	}
+	blockHash := eCommon.HexToHash(blockHashStr)
+
+	txIndexFloat, ok := data["TxIndex"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TxIndex should be a number"))
+	}
+	txIdx := uint(txIndexFloat)
+
+	proofsRaw, ok := data["ProofStrs"].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ProofStrs should be an array of string"))
+	}
+	proofStrs := []string{}
+	for _, item := range proofsRaw {
+		proofStrs = append(proofStrs, item.(string))
+	}
+
+	meta, _ := metadata.NewPortalTopUpWaitingPortingRequestV3(
+		metadata.PortalTopUpWaitingPortingRequestMetaV3,
+		incognitoAddress,
+		pTokenId,
+		collateralTokenId,
+		depositedAmount,
+		freeCollateralAmount,
+		portingID,
+		blockHash,
+		txIdx,
+		proofStrs,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTopUpWaitingPortingV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.createTopUpWaitingPortingV3(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
 }
 
 func (httpServer *HttpServer) handleGetPortalCustodianTopupStatusV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

@@ -435,7 +435,7 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
+func (blockchain *BlockChain) processPortalCustodianTopup(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -468,17 +468,11 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(
 			return nil
 		}
 
-		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.DepositedAmount)
-
-		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
-		topUpAmt := actionData.DepositedAmount
-		if actionData.FreeCollateralAmount > 0 {
-			topUpAmt += actionData.FreeCollateralAmount
-			custodian.SetFreeCollateral(custodian.GetFreeCollateral() - actionData.FreeCollateralAmount)
+		_, err = UpdateCustodianAfterTopup(currentPortalState, custodian, actionData.PTokenId, actionData.DepositedAmount, actionData.FreeCollateralAmount, common.PRVIDStr)
+		if err != nil {
+			Logger.log.Errorf("Update custodians state error : %+v", err)
+			return nil
 		}
-		lockedAmountCollateral[actionData.PTokenId] += topUpAmt
-		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
-		currentPortalState.CustodianPoolState[custodianStateKeyStr] = custodian
 
 		newLiquidationCustodianDeposit := metadata.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
@@ -786,7 +780,7 @@ func (blockchain *BlockChain) processPortalRedeemFromLiquidationPoolV3(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalLiquidationCustodianDepositV3(
+func (blockchain *BlockChain) processPortalCustodianTopupV3(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
