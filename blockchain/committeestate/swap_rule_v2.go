@@ -88,7 +88,7 @@ func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedVali
 	}
 
 	noReplaceOffset := 0
-	for swapOffset > 0 || numberOfCommittees > minCommitteeSize {
+	for swapOffset > 0 && numberOfCommittees > minCommitteeSize {
 		swapOffset--
 		noReplaceOffset++
 		numberOfCommittees--
