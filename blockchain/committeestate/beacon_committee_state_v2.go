@@ -464,17 +464,15 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		swapShardInstruction, _, err := createSwapShardInstructionV2(
+		swapShardInstruction, _, _, _ := createSwapShardInstructionV2(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
+			env.MinShardCommitteeSize,
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidators,
 		)
-		if err != nil {
-			return swapShardInstructions, err
-		}
 
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
