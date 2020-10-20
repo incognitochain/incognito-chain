@@ -631,7 +631,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 	shardID byte,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	env := committeestate.NewBeaconCommitteeStateEnvironment()
-	env.TotalReward = env.TotalReward
+	env.TotalReward = totalReward
 	env.PercentCustodianReward = percentCustodianReward
 	env.DAOPercent = percentForIncognitoDAO
 	env.IsSplitRewardForCustodian = isSplitRewardForCustodian

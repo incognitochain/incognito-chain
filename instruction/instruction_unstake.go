@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -47,6 +48,11 @@ func (unstakeIns *UnstakeInstruction) ToString() []string {
 	unstakeInstructionStr := []string{UNSTAKE_ACTION}
 	unstakeInstructionStr = append(unstakeInstructionStr, strings.Join(unstakeIns.CommitteePublicKeys, SPLITTER))
 	return unstakeInstructionStr
+}
+
+func (unstakeIns *UnstakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(unstakeIns, NewUnstakeInstruction()) ||
+		len(unstakeIns.CommitteePublicKeysStruct) == 0 && len(unstakeIns.CommitteePublicKeys) == 0
 }
 
 //ValidateAndImportUnstakeInstructionFromString : Validate and import unstake instruction from string

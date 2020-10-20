@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -186,7 +187,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange, hashes); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
 	}
 
@@ -507,7 +508,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		}
 	}
 	//=============Verify Stake Public Key
-	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*beaconBlock)
+	newBeaconCandidate, newShardCandidate := getStakingCandidate(*beaconBlock)
 	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 		validBeaconCandidate := beaconBestState.GetValidStakers(newBeaconCandidate)
 		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
@@ -761,7 +762,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
-	committeeHash *committeestate.BeaconCommitteeStateHash,
 ) error {
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
@@ -770,6 +770,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
+	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
+	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeChange, env)
+	if err != nil {
+		return err
+	}
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -977,12 +982,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 
-	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
-	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeHash, committeeChange, env)
-	if err != nil {
-		return err
-	}
-
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
@@ -1009,4 +1008,23 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	return nil
+}
+
+func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
+	beacon := []string{}
+	shard := []string{}
+	beaconBlockBody := beaconBlock.Body
+	for _, v := range beaconBlockBody.Instructions {
+		if len(v) < 1 {
+			continue
+		}
+		if v[0] == instruction.STAKE_ACTION && v[2] == "beacon" {
+			beacon = strings.Split(v[1], ",")
+		}
+		if v[0] == instruction.STAKE_ACTION && v[2] == "shard" {
+			shard = strings.Split(v[1], ",")
+		}
+	}
+
+	return beacon, shard
 }
