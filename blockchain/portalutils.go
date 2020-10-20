@@ -747,10 +747,11 @@ func CalUnlockCollateralAmountAfterLiquidation(
 		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error : %v\n", err)
 		return 0, 0, err
 	}
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
+	exchangeTool := NewPortalExchangeRateTool(exchangeRate, portalParams.SupportedCollateralTokens)
+
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(amountPubToken), new(big.Int).SetUint64(uint64(portalParams.MaxPercentLiquidatedCollateralAmount)))
 	liquidatedAmountInPToken := new(big.Int).Div(tmp, new(big.Int).SetUint64(100)).Uint64()
-	liquidatedAmountInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, liquidatedAmountInPToken)
+	liquidatedAmountInPRV, err := exchangeTool.Convert(tokenID, common.PRVIDStr, liquidatedAmountInPToken)
 	if err != nil {
 		Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidation error converting rate : %v\n", err)
 		return 0, 0, err
@@ -1019,77 +1020,6 @@ func deleteWaitingPortingRequest(state *CurrentPortalState, waitingPortingReques
 	delete(state.WaitingPortingRequests, waitingPortingRequestKey)
 }
 
-// todo: replace it by PortalExchangeRateTool
-type ConvertExchangeRatesObject struct {
-	finalExchangeRates *statedb.FinalExchangeRatesState
-}
-
-func NewConvertExchangeRatesObject(finalExchangeRates *statedb.FinalExchangeRatesState) *ConvertExchangeRatesObject {
-	return &ConvertExchangeRatesObject{finalExchangeRates: finalExchangeRates}
-}
-
-func (c ConvertExchangeRatesObject) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) (uint64, error) {
-	switch pTokenId {
-	case common.PortalBTCIDStr:
-		result, err := c.ExchangeBTC2PRV(value)
-		if err != nil {
-			return 0, err
-		}
-
-		return result, nil
-	case common.PortalBNBIDStr:
-		result, err := c.ExchangeBNB2PRV(value)
-		if err != nil {
-			return 0, err
-		}
-
-		return result, nil
-	}
-
-	return 0, errors.New("Ptoken is not support")
-}
-
-func (c *ConvertExchangeRatesObject) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error) {
-	//convert to pusdt
-	total := new(big.Int).Mul(new(big.Int).SetUint64(value), new(big.Int).SetUint64(ratesFrom))
-
-	if RatesTo <= 0 {
-		return 0, errors.New("Can not divide zero")
-	}
-
-	//pusdt -> new coin
-	roundNumber := new(big.Int).Div(total, new(big.Int).SetUint64(RatesTo))
-	return roundNumber.Uint64(), nil
-
-}
-
-func (c *ConvertExchangeRatesObject) ExchangeBTC2PRV(value uint64) (uint64, error) {
-	//input : nano
-	//todo: check rates exist
-	BTCRates := c.finalExchangeRates.Rates()[common.PortalBTCIDStr].Amount //return nano pUSDT
-	PRVRates := c.finalExchangeRates.Rates()[common.PRVIDStr].Amount       //return nano pUSDT
-	valueExchange, err := c.convert(value, BTCRates, PRVRates)
-
-	if err != nil {
-		return 0, err
-	}
-	//nano
-	return valueExchange, nil
-}
-
-func (c *ConvertExchangeRatesObject) ExchangeBNB2PRV(value uint64) (uint64, error) {
-	BNBRates := c.finalExchangeRates.Rates()[common.PortalBNBIDStr].Amount
-	PRVRates := c.finalExchangeRates.Rates()[common.PRVIDStr].Amount
-
-	valueExchange, err := c.convert(value, BNBRates, PRVRates)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return valueExchange, nil
-}
-
 func updateCurrentPortalStateOfLiquidationExchangeRates(
 	currentPortalState *CurrentPortalState,
 	custodianKey string,
@@ -1294,7 +1224,7 @@ func calAndCheckTPRatio(
 	finalExchange *statedb.FinalExchangeRatesState,
 	portalParams PortalParams) (map[string]metadata.LiquidateTopPercentileExchangeRatesDetail, error) {
 	result := make(map[string]metadata.LiquidateTopPercentileExchangeRatesDetail)
-	convertExchangeRatesObj := NewConvertExchangeRatesObject(finalExchange)
+	exchangeTool := NewPortalExchangeRateTool(finalExchange, portalParams.SupportedCollateralTokens)
 
 	lockedAmount := make(map[string]uint64)
 	for tokenID, amount := range custodianState.GetLockedAmountCollateral() {
@@ -1332,7 +1262,7 @@ func calAndCheckTPRatio(
 		}
 
 		// convert amountPubToken to PRV
-		amountPTokenInPRV, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, amountPubToken)
+		amountPTokenInPRV, err := exchangeTool.Convert(tokenID, common.PRVIDStr, amountPubToken)
 		if err != nil || amountPTokenInPRV == 0 {
 			Logger.log.Errorf("Error when convert exchange rate %v\n", err)
 			return nil, fmt.Errorf("Error when convert exchange rate %v", err)
