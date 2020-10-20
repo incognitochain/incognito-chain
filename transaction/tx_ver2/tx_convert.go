@@ -330,11 +330,11 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 }
 
 func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2InitParams) error {
-	txToken.tokenData.Type = utils.CustomTokenTransfer
-	txToken.tokenData.PropertyName = ""
-	txToken.tokenData.PropertySymbol = ""
-	txToken.tokenData.Mintable = false
-	txToken.tokenData.PropertyID = *params.tokenParams.tokenID
+	txToken.TokenData.Type = utils.CustomTokenTransfer
+	txToken.TokenData.PropertyName = ""
+	txToken.TokenData.PropertySymbol = ""
+	txToken.TokenData.Mintable = false
+	txToken.TokenData.PropertyID = *params.tokenParams.tokenID
 
 	existed := statedb.PrivacyTokenIDExisted(params.stateDB, *params.tokenParams.tokenID)
 	if !existed {
@@ -362,7 +362,7 @@ func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2Init
 }
 
 func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPrivacyInitParams) error {
-	txTokenDataHash, err := txToken.tokenData.Hash()
+	txTokenDataHash, err := txToken.TokenData.Hash()
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 		return err

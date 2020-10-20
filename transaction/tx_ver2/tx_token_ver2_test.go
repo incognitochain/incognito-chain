@@ -537,8 +537,8 @@ func testTxTokenV2Salary(tokenID *common.Hash, db *statedb.StateDB, t *testing.T
 
 func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxToken, params *tx_generic.TxTokenParams, nonPrivacyParams *tx_generic.TxPrivacyInitParams) error {
 	var err error
-	txOuter := &txToken.tx
-	txToken.tx = Tx{}
+	txOuter := &txToken.Tx
+	txToken.Tx = Tx{}
 	txOuter.SetCachedHash(nil)
 
 	txn, ok := txToken.GetTxNormal().(*Tx)
@@ -579,11 +579,11 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			activeLogger.Errorf("Test Error : cast inner")
 			return utils.NewTransactionErr(-1000, nil, "Cast failed")
 		}
-		compatTokenData := txToken.tokenData.ToCompatTokenData(txInner)
+		compatTokenData := txToken.TokenData.ToCompatTokenData(txInner)
 		err = resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &compatTokenData)
 		err = resignUnprovenTx(decryptingKeys, txInner, paramsInner, nil)
 
-		txToken.tx = *txOuter
+		txToken.Tx = *txOuter
 		return err
 	} else {
 		paramsOuter := nonPrivacyParams
@@ -592,9 +592,9 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 			activeLogger.Errorf("Test Error : cast inner")
 			return utils.NewTransactionErr(-1000, nil, "Cast failed")
 		}
-		compatTokenData := txToken.tokenData.ToCompatTokenData(txInner)
+		compatTokenData := txToken.TokenData.ToCompatTokenData(txInner)
 		err := resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &compatTokenData)
-		txToken.tx = *txOuter
+		txToken.Tx = *txOuter
 		return err
 	}
 

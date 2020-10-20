@@ -68,14 +68,14 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) Tx{
 }
 
 type TxToken struct {
-	tx 				Tx 					`json:"Tx"`
-	tokenData 		TxTokenDataVersion2 `json:"TokenData"`
+	Tx 				Tx 					`json:"Tx"`
+	TokenData 		TxTokenDataVersion2 `json:"TxTokenPrivacyData"`
 	cachedTxNormal	*Tx
 }
 
 func (tx *TxToken) Hash() *common.Hash{
-	firstHash := tx.tx.Hash()
-	secondHash, err := tx.tokenData.Hash()
+	firstHash := tx.Tx.Hash()
+	secondHash, err := tx.TokenData.Hash()
 	if err!=nil{
 		return nil
 	}
@@ -108,21 +108,21 @@ func decomposeTokenData(td tx_generic.TxTokenData) (*TxTokenDataVersion2, *Tx, e
 	return &result, tx, nil
 }
 func (tx *TxToken) GetTxBase() metadata.Transaction{
-	return &tx.tx
+	return &tx.Tx
 }
 func (tx *TxToken) SetTxBase(inTx metadata.Transaction) error{
 	temp, ok := inTx.(*Tx)
 	if !ok{
 		return errors.New("Cannot set TxBase : wrong type")
 	}
-	tx.tx = *temp
+	tx.Tx = *temp
 	return nil
 }
 func (tx *TxToken) GetTxNormal() metadata.Transaction{
 	if tx.cachedTxNormal!=nil{
 		return tx.cachedTxNormal
 	}
-	result := makeTxToken(&tx.tx, tx.tokenData.SigPubKey, tx.tokenData.Sig, tx.tokenData.Proof)
+	result := makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
 	tx.cachedTxNormal = &result
 	return &result
 }
@@ -131,9 +131,9 @@ func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
 	if !ok{
 		return errors.New("Cannot set TxNormal : wrong type")
 	}
-	tx.tokenData.SigPubKey = temp.SigPubKey
-	tx.tokenData.Sig = temp.Sig
-	tx.tokenData.Proof = temp.Proof
+	tx.TokenData.SigPubKey = temp.SigPubKey
+	tx.TokenData.Sig = temp.Sig
+	tx.TokenData.Proof = temp.Proof
 	tx.cachedTxNormal = nil
 	return nil
 }
@@ -182,10 +182,10 @@ func (tx *Tx) proveToken(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 }
 
 func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
-	txToken.tokenData.Type = params.TokenParams.TokenTxType
-	txToken.tokenData.PropertyName = params.TokenParams.PropertyName
-	txToken.tokenData.PropertySymbol = params.TokenParams.PropertySymbol
-	txToken.tokenData.Mintable = params.TokenParams.Mintable
+	txToken.TokenData.Type = params.TokenParams.TokenTxType
+	txToken.TokenData.PropertyName = params.TokenParams.PropertyName
+	txToken.TokenData.PropertySymbol = params.TokenParams.PropertySymbol
+	txToken.TokenData.Mintable = params.TokenParams.Mintable
 
 	switch params.TokenParams.TokenTxType {
 	case utils.CustomTokenInit:
@@ -195,7 +195,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 			temp.SetType(common.TxNormalType)
 			temp.Proof = new(privacy.ProofV2)
 			temp.Proof.Init()
-			
+
 			// set output coins; hash everything but commitment; save the hash to compute the new token ID later
 			message := []byte{}
 			if len(params.TokenParams.Receiver[0].Message) > 0 {
@@ -215,12 +215,12 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				return err
 			}
 			createdTokenCoin.SetCommitment(new(privacy.Point).Identity())
-			hashInitToken, err := txToken.tokenData.Hash()
+			hashInitToken, err := txToken.TokenData.Hash()
 			if err != nil {
 				utils.Logger.Log.Error(errors.New("can't hash this token data"))
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
-			
+
 			temp.Sig, _, err = tx_generic.SignNoPrivacy(params.SenderKey, temp.Hash()[:])
 			if err != nil {
 				utils.Logger.Log.Error(errors.New("can't signOnMessage this tx"))
@@ -228,7 +228,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 			}
 			temp.SigPubKey = params.TokenParams.Receiver[0].PaymentAddress.Pk
 			txToken.SetTxNormal(temp)
-			
+
 			var plainTokenID *common.Hash
 			if params.TokenParams.Mintable {
 				propertyID, err := common.Hash{}.NewHashFromStr(params.TokenParams.PropertyID)
@@ -246,7 +246,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 					return utils.NewTransactionErr(utils.TokenIDExistedError, errors.New("this token is existed in network"))
 				}
 				plainTokenID = &newHashInitToken
-				utils.Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txToken.tokenData.PropertyID.String())
+				utils.Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txToken.TokenData.PropertyID.String())
 			}
 
 			// fmt.Printf("While init token, its ID is %s\n", plainTokenID.String())
@@ -255,7 +255,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 			if err!=nil{
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
-			txToken.tokenData.PropertyID = *plainTokenID
+			txToken.TokenData.PropertyID = *plainTokenID
 			return nil
 		}
 	case utils.CustomTokenTransfer:
@@ -283,10 +283,10 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 			txToken.SetTxNormal(txNormal)
 			if isBurning{
 				// show plain tokenID if this is a burning TX
-				txToken.tokenData.PropertyID = *propertyID
+				txToken.TokenData.PropertyID = *propertyID
 			}else{
 				// tokenID is already hidden in asset tags in coin, here we use the umbrella ID
-				txToken.tokenData.PropertyID = dbFacingTokenID
+				txToken.TokenData.PropertyID = dbFacingTokenID
 			}
 			return nil
 		}
@@ -326,7 +326,7 @@ func (tx *Tx) provePRV(params *tx_generic.TxPrivacyInitParams, hashedTokenMessag
 }
 
 func (txToken *TxToken) initPRV(feeTx * Tx, params *tx_generic.TxPrivacyInitParams) error {
-	txTokenDataHash, err := txToken.tokenData.Hash()
+	txTokenDataHash, err := txToken.TokenData.Hash()
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 		return err
@@ -336,7 +336,7 @@ func (txToken *TxToken) initPRV(feeTx * Tx, params *tx_generic.TxPrivacyInitPara
 	}
 	// override TxCustomTokenPrivacyType type
 	feeTx.SetType(common.TxCustomTokenPrivacyType)
-	txToken.tx = *feeTx
+	txToken.Tx = *feeTx
 
 	return nil
 }
@@ -391,7 +391,6 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
-
 	// Init PRV Fee on the whole transaction
 	if err := txToken.initPRV(tx, txPrivacyParams); err != nil {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
@@ -419,11 +418,11 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	// Create TxToken
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], coinID[:])
-	txToken.tokenData.PropertyID = propertyID
-	txToken.tokenData.Type = utils.CustomTokenInit
-	txToken.tokenData.PropertyName = coinName
-	txToken.tokenData.PropertySymbol = coinName
-	txToken.tokenData.Mintable= true
+	txToken.TokenData.PropertyID = propertyID
+	txToken.TokenData.Type = utils.CustomTokenInit
+	txToken.TokenData.PropertyName = coinName
+	txToken.TokenData.PropertySymbol = coinName
+	txToken.TokenData.Mintable= true
 
 	tempOutputCoin := []privacy.Coin{otaCoin}
 	proof := new(privacy.ProofV2)
@@ -455,7 +454,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	tx.SetType(common.TxCustomTokenPrivacyType)
 	tx.SetPrivateKey(*txPrivacyParams.SenderSK)
 
-	hashedTokenMessage, err := txToken.tokenData.Hash()
+	hashedTokenMessage, err := txToken.TokenData.Hash()
 	if err!=nil{
 		return utils.NewTransactionErr(utils.SignTxError, err)
 	}
@@ -472,7 +471,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 
 func (tx *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// verify signature
-	if valid, err := tx_generic.VerifySigNoPrivacy(tx.tx.Sig, tx.tx.SigPubKey, tx.Hash()[:]); !valid {
+	if valid, err := tx_generic.VerifySigNoPrivacy(tx.Tx.Sig, tx.Tx.SigPubKey, tx.Hash()[:]); !valid {
 		if err != nil {
 			utils.Logger.Log.Debugf("Error verifying signature of tx: %+v", err)
 			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
@@ -499,7 +498,7 @@ func (tx *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 		errStr := fmt.Sprintf("error when getting coin shardID, err: %v", errShard)
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
 	}
-	if coinShardID != common.GetShardIDFromLastByte(tx.tx.PubKeyLastByteSender) {
+	if coinShardID != common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender) {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output coin's shardID is different from tx pubkey last byte"))
 	}
 
@@ -518,7 +517,7 @@ func (tx *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 
 func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	// check input transaction
-	txFee := &txToken.tx
+	txFee := &txToken.Tx
 	if txFee.GetSig() == nil || txFee.GetSigPubKey() == nil {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be a signed one"))
 	}
@@ -526,7 +525,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 	// Verify TxToken Salary: NonPrivacyNonInput
 	if txFee.GetProof() == nil {
-		hashedTokenMessage, err := txToken.tokenData.Hash()
+		hashedTokenMessage, err := txToken.TokenData.Hash()
 		if err!=nil{
 			return false, err
 		}
@@ -570,7 +569,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 		return false, err
 	}
 
-	txTokenDataHash, err := txToken.tokenData.Hash()
+	txTokenDataHash, err := txToken.TokenData.Hash()
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when getting txTokenData Hash: %v ", err)
 		return false, err
@@ -604,10 +603,10 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}else {
 		// validate for pToken
-		tokenID := txToken.tokenData.PropertyID
-		switch txToken.tokenData.Type {
+		tokenID := txToken.TokenData.PropertyID
+		switch txToken.TokenData.Type {
 		case utils.CustomTokenInit:
-			if txToken.tokenData.Mintable {
+			if txToken.TokenData.Mintable {
 				return true, nil
 			} else {
 				// check exist token
@@ -626,11 +625,11 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 				if err!= nil{
 					return resTxTokenData, err
 				}
-				txFeeProof := txToken.tx.GetProof()
+				txFeeProof := txToken.Tx.GetProof()
 				if txFeeProof == nil {
 					return resTxTokenData, nil
 				}
-				resTxFee, err := txFeeProof.Verify(false, txToken.tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
+				resTxFee, err := txFeeProof.Verify(false, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
 				return resTxFee && resTxTokenData, err
 
 			}
@@ -648,7 +647,7 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
 	}
 	// validate metadata
-	check, err := tx_generic.MdValidateSanity(&txToken.tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	check, err := tx_generic.MdValidateSanity(&txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
@@ -658,7 +657,7 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
 	// validate sanity for tx pToken + without metadata
-	check1, err1 := tx_generic.ValidateSanity(&txToken.tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	check1, err1 := tx_generic.ValidateSanity(&txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check1 || err1 != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err1)
 	}
@@ -667,17 +666,17 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 
 // TODO : update this
 func (txToken TxToken) GetTxActualSize() uint64 {
-	sizeTx := tx_generic.GetTxActualSizeInBytes(&txToken.tx)
+	sizeTx := tx_generic.GetTxActualSizeInBytes(&txToken.Tx)
 
 	sizeTx += tx_generic.GetTxActualSizeInBytes(txToken.GetTxNormal())
-	sizeTx += uint64(len(txToken.tokenData.PropertyName))
-	sizeTx += uint64(len(txToken.tokenData.PropertySymbol))
-	sizeTx += uint64(len(txToken.tokenData.PropertyID))
+	sizeTx += uint64(len(txToken.TokenData.PropertyName))
+	sizeTx += uint64(len(txToken.TokenData.PropertySymbol))
+	sizeTx += uint64(len(txToken.TokenData.PropertyID))
 	sizeTx += 4 // Type
 	sizeTx += 1 // Mintable
 	sizeTx += 8 // Amount
 
-	meta := txToken.tx.GetMetadata()
+	meta := txToken.Tx.GetMetadata()
 	if meta != nil {
 		sizeTx += meta.CalculateSize()
 	}
@@ -687,38 +686,38 @@ func (txToken TxToken) GetTxActualSize() uint64 {
 }
 
 //-- OVERRIDE--
-func (tx TxToken) GetVersion() int8 { return tx.tx.Version }
+func (tx TxToken) GetVersion() int8 { return tx.Tx.Version }
 
-func (tx *TxToken) SetVersion(version int8) { tx.tx.Version = version }
+func (tx *TxToken) SetVersion(version int8) { tx.Tx.Version = version }
 
 func (tx TxToken) GetMetadataType() int {
-	if tx.tx.Metadata != nil {
-		return tx.tx.Metadata.GetType()
+	if tx.Tx.Metadata != nil {
+		return tx.Tx.Metadata.GetType()
 	}
 	return metadata.InvalidMeta
 }
 
-func (tx TxToken) GetType() string { return tx.tx.Type }
+func (tx TxToken) GetType() string { return tx.Tx.Type }
 
-func (tx *TxToken) SetType(t string) { tx.tx.Type = t }
+func (tx *TxToken) SetType(t string) { tx.Tx.Type = t }
 
-func (tx TxToken) GetLockTime() int64 { return tx.tx.LockTime }
+func (tx TxToken) GetLockTime() int64 { return tx.Tx.LockTime }
 
-func (tx *TxToken) SetLockTime(locktime int64) { tx.tx.LockTime = locktime }
+func (tx *TxToken) SetLockTime(locktime int64) { tx.Tx.LockTime = locktime }
 
-func (tx TxToken) GetSenderAddrLastByte() byte { return tx.tx.PubKeyLastByteSender }
+func (tx TxToken) GetSenderAddrLastByte() byte { return tx.Tx.PubKeyLastByteSender }
 
-func (tx *TxToken) SetGetSenderAddrLastByte(b byte) { tx.tx.PubKeyLastByteSender = b }
+func (tx *TxToken) SetGetSenderAddrLastByte(b byte) { tx.Tx.PubKeyLastByteSender = b }
 
-func (tx TxToken) GetTxFee() uint64 { return tx.tx.Fee }
+func (tx TxToken) GetTxFee() uint64 { return tx.Tx.Fee }
 
-func (tx *TxToken) SetTxFee(fee uint64) { tx.tx.Fee = fee }
+func (tx *TxToken) SetTxFee(fee uint64) { tx.Tx.Fee = fee }
 
 func (tx TxToken) GetTxFeeToken() uint64 { return uint64(0) }
 
-func (tx TxToken) GetInfo() []byte { return tx.tx.Info }
+func (tx TxToken) GetInfo() []byte { return tx.Tx.Info }
 
-func (tx *TxToken) SetInfo(info []byte) { tx.tx.Info = info }
+func (tx *TxToken) SetInfo(info []byte) { tx.Tx.Info = info }
 
 // not supported
 func (tx TxToken) GetSigPubKey() []byte { return []byte{} }
@@ -740,16 +739,16 @@ func (tx *TxToken) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, 
 	return false, nil
 }
 
-func (tx TxToken) GetTokenID() *common.Hash { return &tx.tokenData.PropertyID }
+func (tx TxToken) GetTokenID() *common.Hash { return &tx.TokenData.PropertyID }
 
-func (tx TxToken) GetMetadata() metadata.Metadata { return tx.tx.Metadata }
+func (tx TxToken) GetMetadata() metadata.Metadata { return tx.Tx.Metadata }
 
-func (tx *TxToken) SetMetadata(meta metadata.Metadata) { tx.tx.Metadata = meta }
+func (tx *TxToken) SetMetadata(meta metadata.Metadata) { tx.Tx.Metadata = meta }
 func (tx TxToken) GetPrivateKey() []byte{
-	return tx.tx.GetPrivateKey()
+	return tx.Tx.GetPrivateKey()
 }
 func (tx *TxToken) SetPrivateKey(sk []byte){
-	tx.tx.SetPrivateKey(sk)
+	tx.Tx.SetPrivateKey(sk)
 }
 
 func (tx TxToken) GetReceivers() ([][]byte, []uint64) {
@@ -758,8 +757,8 @@ func (tx TxToken) GetReceivers() ([][]byte, []uint64) {
 
 func (tx TxToken) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
-	if tx.tx.GetProof() != nil {
-		for _, d := range tx.tx.GetProof().GetInputCoins() {
+	if tx.Tx.GetProof() != nil {
+		for _, d := range tx.Tx.GetProof().GetInputCoins() {
 			hash := common.HashH(d.GetKeyImage().ToBytesS())
 			result = append(result, hash)
 		}
@@ -782,11 +781,11 @@ func (tx TxToken) String() string {
 		return ""
 	}
 	return string(jsb)
-	// record := strconv.Itoa(int(tx.tx.Version))
-	// record += strconv.FormatInt(tx.tx.LockTime, 10)
-	// record += strconv.FormatUint(tx.tx.Fee, 10)
+	// record := strconv.Itoa(int(tx.Tx.Version))
+	// record += strconv.FormatInt(tx.Tx.LockTime, 10)
+	// record += strconv.FormatUint(tx.Tx.Fee, 10)
 	// if tx.Proof != nil {
-	// 	record += base64.StdEncoding.EncodeToString(tx.tx.Proof.Bytes())
+	// 	record += base64.StdEncoding.EncodeToString(tx.Tx.Proof.Bytes())
 	// }
 	// if tx.Metadata != nil {
 	// 	metadataHash := tx.Metadata.Hash()
@@ -827,20 +826,20 @@ func (tx *TxToken) CalculateTxValue() uint64 {
 }
 
 func (tx TxToken) CheckTxVersion(maxTxVersion int8) bool {
-	return !(tx.tx.Version > maxTxVersion)
+	return !(tx.Tx.Version > maxTxVersion)
 }
 func (tx TxToken) ShouldSignMetaData() bool {
-	if tx.tx.GetMetadata() == nil {
+	if tx.Tx.GetMetadata() == nil {
 		return false
 	}
-	return tx.tx.GetMetadata().ShouldSignMetaData()
+	return tx.Tx.GetMetadata().ShouldSignMetaData()
 }
 
 func (tx TxToken) IsSalaryTx() bool {
-	if tx.tx.GetType() != common.TxRewardType {
+	if tx.Tx.GetType() != common.TxRewardType {
 		return false
 	}
-	if len(tx.tokenData.Proof.GetInputCoins()) > 0 {
+	if len(tx.TokenData.Proof.GetInputCoins()) > 0 {
 		return false
 	}
 	return true
@@ -848,10 +847,10 @@ func (tx TxToken) IsSalaryTx() bool {
 
 func (tx TxToken) IsPrivacy() bool {
 	// In the case of NonPrivacyNonInput, we do not have proof
-	if tx.tx.Proof == nil {
+	if tx.Tx.Proof == nil {
 		return false
 	}
-	return tx.tx.Proof.IsPrivacy()
+	return tx.Tx.Proof.IsPrivacy()
 }
 
 func (txToken *TxToken) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
@@ -868,8 +867,8 @@ func (txToken *TxToken) CheckAuthorizedSender([]byte) (bool, error) {
 }
 
 func (tx *TxToken) GetReceiverData() ([]privacy.Coin, error) {
-	if tx.tx.Proof != nil && len(tx.tx.Proof.GetOutputCoins()) > 0 {
-		return tx.tx.Proof.GetOutputCoins(), nil
+	if tx.Tx.Proof != nil && len(tx.Tx.Proof.GetOutputCoins()) > 0 {
+		return tx.Tx.Proof.GetOutputCoins(), nil
 	}
 	return nil, nil
 }
@@ -878,17 +877,17 @@ func (txToken *TxToken) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	pubkeys, amounts := txToken.GetTxNormal().GetReceivers()
 	if len(pubkeys) == 0 {
 		utils.Logger.Log.Error("GetTransferData receive 0 output, it should has exactly 1 output")
-		return false, nil, 0, &txToken.tokenData.PropertyID
+		return false, nil, 0, &txToken.TokenData.PropertyID
 	}
 	if len(pubkeys) > 1 {
 		utils.Logger.Log.Error("GetTransferData receiver: More than 1 receiver")
-		return false, nil, 0, &txToken.tokenData.PropertyID
+		return false, nil, 0, &txToken.TokenData.PropertyID
 	}
-	return true, pubkeys[0], amounts[0], &txToken.tokenData.PropertyID
+	return true, pubkeys[0], amounts[0], &txToken.TokenData.PropertyID
 }
 
 func (txToken TxToken) ValidateType() bool {
-	return txToken.tx.GetType() == common.TxCustomTokenPrivacyType
+	return txToken.Tx.GetType() == common.TxCustomTokenPrivacyType
 }
 
 func (txToken *TxToken) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
@@ -899,8 +898,8 @@ func (txToken *TxToken) ValidateTxWithCurrentMempool(mr metadata.MempoolRetrieve
 		return utils.NewTransactionErr(utils.DoubleSpendError, err)
 	}
 	// TODO: will move this to mempool process
-	if txToken.tokenData.Type == utils.CustomTokenInit && txToken.tx.GetMetadata() == nil {
-		initTokenID := txToken.tokenData.PropertyID
+	if txToken.TokenData.Type == utils.CustomTokenInit && txToken.Tx.GetMetadata() == nil {
+		initTokenID := txToken.TokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()
 		for _, tx := range txsInMem {
 			// try parse to TxTokenBase
@@ -921,14 +920,14 @@ func (txToken *TxToken) ValidateTxWithCurrentMempool(mr metadata.MempoolRetrieve
 
 func (txToken *TxToken) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
 	// check proof of PRV and pToken
-	if txToken.tx.GetProof() == nil && txToken.GetTxNormal().GetProof() == nil {
+	if txToken.Tx.GetProof() == nil && txToken.GetTxNormal().GetProof() == nil {
 		return errors.New("empty tx")
 	}
 
 	// collect serial number for PRV
 	temp := make(map[common.Hash]interface{})
-	if txToken.tx.GetProof() != nil {
-		for _, desc := range txToken.tx.GetProof().GetInputCoins() {
+	if txToken.Tx.GetProof() != nil {
+		for _, desc := range txToken.Tx.GetProof().GetInputCoins() {
 			hash := common.HashH(desc.GetKeyImage().ToBytesS())
 			temp[hash] = nil
 		}
@@ -954,10 +953,10 @@ func (txToken *TxToken) validateDoubleSpendTxWithCurrentMempool(poolSerialNumber
 }
 
 func (txToken *TxToken) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	if !txToken.tokenData.Mintable {
+	if !txToken.TokenData.Mintable {
 		return true, nil
 	}
-	meta := txToken.tx.GetMetadata()
+	meta := txToken.Tx.GetMetadata()
 	if meta == nil {
 		utils.Logger.Log.Error("Mintable custom token must contain metadata")
 		return false, nil
@@ -968,23 +967,23 @@ func (txToken *TxToken) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metad
 	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, txToken, bcr, accumulatedValues, retriever, viewRetriever)
 }
 
-func (txToken *TxToken) GetTxTokenData() tx_generic.TxTokenData { return txToken.tokenData.ToCompatTokenData(txToken.GetTxNormal()) }
-func (txToken *TxToken) SetTxTokenData(data tx_generic.TxTokenData) error{ 
+func (txToken *TxToken) GetTxTokenData() tx_generic.TxTokenData { return txToken.TokenData.ToCompatTokenData(txToken.GetTxNormal()) }
+func (txToken *TxToken) SetTxTokenData(data tx_generic.TxTokenData) error{
 	td, txN, err := decomposeTokenData(data)
 	if err == nil{
-		txToken.tokenData = *td
+		txToken.TokenData = *td
 		return txToken.SetTxNormal(txN)
 	}
 	return err
 }
 
 func (txToken *TxToken) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) {
-	tokenID := txToken.tokenData.PropertyID
+	tokenID := txToken.TokenData.PropertyID
 	return tx_generic.GetTxMintData(txToken.GetTxNormal(), &tokenID)
 }
 
 func (txToken *TxToken) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) {
-	tokenID := txToken.tokenData.PropertyID
+	tokenID := txToken.TokenData.PropertyID
 	isBurn, burnCoin, _, err := txToken.GetTxNormal().GetTxBurnData()
 	return isBurn, burnCoin, &tokenID, err
 }
@@ -1001,10 +1000,10 @@ func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stat
 			return err
 		}
 	}
-	if tx.tx.Proof == nil {
+	if tx.Tx.Proof == nil {
 		return nil
 	}
-	err = tx.tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
+	err = tx.Tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err!=nil{
 		return err
 	}
@@ -1034,12 +1033,12 @@ func (tx *TxToken) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { retu
 // 	temp := &struct {
 // 		TxTokenData tx_generic.TxTokenData `json:"TxTokenPrivacyData"`
 // 	}{}
-// 	temp.tokenData.TxNormal = &Tx{}
+// 	temp.TokenData.TxNormal = &Tx{}
 // 	err = json.Unmarshal(data, &temp)
 // 	if err != nil {
 // 		utils.Logger.Log.Error(err)
 // 		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, err)
 // 	}
-// 	txToken.tokenData = temp.tokenData
+// 	txToken.TokenData = temp.TokenData
 // 	return nil
 // }
