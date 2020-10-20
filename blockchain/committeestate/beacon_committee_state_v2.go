@@ -529,6 +529,21 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 					incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
 				}
 			}
+		case instruction.SWAP_SHARD_ACTION:
+			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+			if err != nil {
+				return incurredInstructions, err
+			}
+			committeeChange, returnStakingInstructions, err = newB.
+				processSwapShardInstruction(swapShardInstruction, env, committeeChange, returnStakingInstructions)
+			if err != nil {
+				return incurredInstructions, err
+			}
+			for _, returnStakingInstruction := range returnStakingInstructions {
+				if !returnStakingInstruction.IsEmpty() {
+					incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
+				}
+			}
 		}
 	}
 
@@ -620,6 +635,7 @@ func (b *BeaconCommitteeStateV2) assign(
 		numberOfValidator[byte(i)] += len(b.shardSubstitute[byte(i)])
 		numberOfValidator[byte(i)] += len(b.shardCommittee[byte(i)])
 	}
+
 	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
 	for shardID, tempCandidates := range assignedCandidates {
 		candidates, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
