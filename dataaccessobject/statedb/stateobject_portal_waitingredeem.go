@@ -19,7 +19,7 @@ type RedeemRequest struct {
 	txReqID               common.Hash
 
 	shardHeight uint64
-	shardID byte
+	shardID     byte
 }
 
 type MatchingRedeemCustodianDetail struct {
@@ -100,6 +100,22 @@ func (rq *RedeemRequest) SetTxReqID(txReqID common.Hash) {
 	rq.txReqID = txReqID
 }
 
+func (rq RedeemRequest) ShardHeight() uint64 {
+	return rq.shardHeight
+}
+
+func (rq *RedeemRequest) SetShardHeight(shardHeight uint64) {
+	rq.shardHeight = shardHeight
+}
+
+func (rq RedeemRequest) ShardID() byte {
+	return rq.shardID
+}
+
+func (rq *RedeemRequest) SetShardID(shardID byte) {
+	rq.shardID = shardID
+}
+
 func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueRedeemID        string
@@ -111,6 +127,8 @@ func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
 		RedeemFee             uint64
 		BeaconHeight          uint64
 		TxReqID               common.Hash
+		ShardID               byte
+		ShardHeight           uint64
 	}{
 		UniqueRedeemID:        rq.uniqueRedeemID,
 		TokenID:               rq.tokenID,
@@ -121,6 +139,8 @@ func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
 		RedeemFee:             rq.redeemFee,
 		BeaconHeight:          rq.beaconHeight,
 		TxReqID:               rq.txReqID,
+		ShardID:               rq.shardID,
+		ShardHeight:           rq.shardHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -139,6 +159,8 @@ func (rq *RedeemRequest) UnmarshalJSON(data []byte) error {
 		RedeemFee             uint64
 		BeaconHeight          uint64
 		TxReqID               common.Hash
+		ShardHeight           uint64
+		ShardID               byte
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -153,6 +175,8 @@ func (rq *RedeemRequest) UnmarshalJSON(data []byte) error {
 	rq.redeemFee = temp.RedeemFee
 	rq.beaconHeight = temp.BeaconHeight
 	rq.txReqID = temp.TxReqID
+	rq.shardHeight = temp.ShardHeight
+	rq.shardID = temp.ShardID
 	return nil
 }
 
@@ -237,7 +261,9 @@ func NewRedeemRequestWithValue(
 	custodians []*MatchingRedeemCustodianDetail,
 	redeemFee uint64,
 	beaconHeight uint64,
-	txReqID common.Hash) *RedeemRequest {
+	txReqID common.Hash,
+	sharID byte,
+	shardHeight uint64) *RedeemRequest {
 
 	return &RedeemRequest{
 		uniqueRedeemID:        uniqueRedeemID,
@@ -249,6 +275,8 @@ func NewRedeemRequestWithValue(
 		redeemFee:             redeemFee,
 		beaconHeight:          beaconHeight,
 		txReqID:               txReqID,
+		shardID:               sharID,
+		shardHeight:           shardHeight,
 	}
 }
 

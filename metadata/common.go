@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"encoding/json"
+	ec "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -198,7 +200,11 @@ func HasPortalInstructions(instructions [][]string) bool {
 	return false
 }
 
-// todo:
+// todo: thachtb
 func ValidateRemoteAddress(chainName string, tokenID string, address string) (bool, error) {
+	switch chainName {
+	case common.ETHChainName:
+		return ec.IsHexAddress(address), nil
+	}
 	return true, nil
 }

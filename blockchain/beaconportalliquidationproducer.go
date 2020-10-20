@@ -124,7 +124,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	sort.Strings(sortedMatchedRedeemReqKeys)
 	for _, redeemReqKey := range sortedMatchedRedeemReqKeys {
 		redeemReq := currentPortalState.MatchedRedeemRequests[redeemReqKey]
-		if (beaconHeight+1)-redeemReq.GetBeaconHeight() >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutCustodianReturnPubToken) {
+		if blockchain.checkBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), blockchain.ShardChain[redeemReq.ShardID()].multiView.GetBestView().GetHeight(), redeemReq.ShardHeight(), portalParams) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -240,6 +240,28 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					common.PortalLiquidateCustodianSuccessChainStatus,
 				)
 				insts = append(insts, inst)
+
+				// create inst to liquidate token from custodian to user
+				var confirmInst []string
+				if metaType == metadata.PortalLiquidateCustodianMetaV3 {
+					liquidatedBigIntAmounts := make(map[string]*big.Int)
+					for tokenLiquidateId, tokenAmount := range liquidatedAmounts {
+						liquidatedBigIntAmounts[tokenLiquidateId] = new(big.Int).SetUint64(tokenAmount)
+					}
+					confirmInst = buildConfirmWithdrawCollateralInstV3(
+						metadata.PortalCustodianWithdrawConfirmMetaV3,
+						shardID,
+						redeemReq.GetRedeemerAddress(),
+						redeemReq.GetRedeemerRemoteAddress(),
+						liquidatedBigIntAmounts,
+						redeemReq.GetTxReqID(),
+						beaconHeight+1,
+					)
+				}
+				if confirmInst != nil {
+					insts = append(insts, confirmInst)
+				}
+
 			}
 
 			updatedCustodians := currentPortalState.MatchedRedeemRequests[redeemReqKey].GetCustodians()
@@ -337,6 +359,12 @@ func (blockchain *BlockChain) convertDurationTimeToBeaconBlocks(duration time.Du
 	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds())
 }
 
+// convertDurationTimeToBeaconBlocks returns number of beacon blocks corresponding to duration time
+func (blockchain *BlockChain) checkBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, portalParams PortalParams) bool {
+	return (recentBeaconHeight+1)-beaconHeight >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest) &&
+		(recentShardHeight+1)-shardHeight >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest)
+}
+
 func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
@@ -350,7 +378,7 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	sort.Strings(sortedWaitingPortingReqKeys)
 	for _, portingReqKey := range sortedWaitingPortingReqKeys {
 		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
-		if (beaconHeight+1)-portingReq.BeaconHeight() >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest) {
+		if blockchain.checkBlockTimeIsReached(beaconHeight, portingReq.BeaconHeight(), blockchain.ShardChain[portingReq.ShardID()].multiView.GetBestView().GetHeight(), portingReq.ShardHeight(), portalParams) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
@@ -1496,7 +1524,6 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-
 /* =======
 Portal Custodian Topup Processor v3
 ======= */
@@ -1570,7 +1597,7 @@ func buildPortalTopupWaitingPortingInstV3(
 		DepositAmount:             depositedAmount,
 		FreeTokenCollateralAmount: freeCollateralAmount,
 		UniqExternalTxID:          uniqExternalTxID,
-		PortingID: portingID,
+		PortingID:                 portingID,
 		TxReqID:                   txReqID,
 		ShardID:                   shardID,
 	}

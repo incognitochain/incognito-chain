@@ -66,8 +66,10 @@ func NewPortingRequestStatus(
 	custodians []*statedb.MatchingPortingCustodianDetail,
 	portingFee uint64,
 	status int,
-	beaconHeight uint64) *PortingRequestStatus {
-	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight}
+	beaconHeight uint64,
+	shardHeight uint64,
+	shardID byte) *PortingRequestStatus {
+	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight, ShardHeight: shardHeight, ShardID: shardID}
 }
 
 func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error) {

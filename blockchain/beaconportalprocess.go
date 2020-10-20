@@ -329,6 +329,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			portingFee,
 			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
+			shardHeight,
+			shardId,
 		)
 
 		newPortingTxRequestState := metadata.NewPortingRequestStatus(
@@ -341,6 +343,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			portingFee,
 			common.PortalPortingTxRequestAcceptedStatus,
 			beaconHeight+1,
+			shardHeight,
+			shardId,
 		)
 
 		//save transaction
@@ -392,6 +396,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			portingFee,
 			common.PortalPortingTxRequestRejectedStatus,
 			beaconHeight+1,
+			shardHeight,
+			shardId,
 		)
 
 		//save transaction

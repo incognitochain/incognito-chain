@@ -418,6 +418,8 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPorting(
 			waitingPortingReq.PortingFee(),
 			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
+			waitingPortingReq.ShardHeight(),
+			waitingPortingReq.ShardID(),
 		)
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
 		err = statedb.StorePortalPortingRequestStatus(
@@ -588,7 +590,9 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 			waitingPortingReq.Custodians(),
 			waitingPortingReq.PortingFee(),
 			portingReqStatus,
-			waitingPortingReq.BeaconHeight())
+			waitingPortingReq.BeaconHeight(),
+			waitingPortingReq.ShardHeight(),
+			waitingPortingReq.ShardID())
 
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
 		err = statedb.StorePortalPortingRequestStatus(
@@ -967,6 +971,8 @@ func (blockchain *BlockChain) processPortalTopUpWaitingPortingV3(
 			waitingPortingReq.PortingFee(),
 			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
+			waitingPortingReq.ShardHeight(),
+			waitingPortingReq.ShardID(),
 		)
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
 		err = statedb.StorePortalPortingRequestStatus(
