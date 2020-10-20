@@ -1,15 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -68,6 +71,10 @@ func main() {
 	// 	"Action":"CHECKBALANCES",
 	// 	"Params":[{"PrivateKey":"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or","IsBlocking":true}]
 	// }`
+	// scnString := `{
+	// 	"Action":"SWITCHTOMANUAL"
+	// }`
+
 	scn := ScenerioAction{}
 	err := json.Unmarshal([]byte(scnString), &scn)
 	if err != nil {
@@ -404,7 +411,7 @@ func (sim *simInstance) run() {
 		case CHECKBESTSTATES:
 
 		case SWITCHTOMANUAL:
-
+			sim.SwitchToManual()
 		}
 	}
 }
@@ -589,54 +596,61 @@ func (sim *simInstance) InsertBlock(block common.BlockInterface, chainID int) er
 	return nil
 }
 
-func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
+func (sim *simInstance) GetBalance(privateKey string) (map[string]uint64, error) {
 	tokenList := make(map[string]uint64)
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getbalancebyprivatekey",
-		"params":  []interface{}{data.PrivateKey},
+		"params":  []interface{}{privateKey},
 		"id":      1,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	body, err := sendRequest(requestBody)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	txResp := struct {
 		Result uint64
 	}{}
 	err = json.Unmarshal(body, &txResp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tokenList["PRV"] = txResp.Result
 
 	requestBody2, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getlistprivacycustomtokenbalance",
-		"params":  []interface{}{data.PrivateKey},
+		"params":  []interface{}{privateKey},
 		"id":      1,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	body2, err := sendRequest(requestBody2)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	txResp2 := struct {
 		Result jsonresult.ListCustomTokenBalance
 	}{}
 	err = json.Unmarshal(body2, &txResp2)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, token := range txResp2.Result.ListCustomTokenBalance {
 		tokenList[token.Name] = token.Amount
 	}
+	return tokenList, nil
+}
 
+func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
+	tokenList, err := sim.GetBalance(data.PrivateKey)
+	if err != nil {
+		return err
+	}
 	amountNotMatch := make(map[string]uint64)
 	for token, amount := range data.Tokens {
 		if a, ok := tokenList[token]; ok {
@@ -645,7 +659,6 @@ func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
 			}
 		}
 	}
-
 	if len(amountNotMatch) > 0 {
 		if data.Until.Height != 0 {
 			if data.Until.ChainID == -1 {
@@ -665,15 +678,73 @@ func (sim *simInstance) CheckBalance(data CheckBalanceParam) error {
 }
 
 func (sim *simInstance) SwitchToManual() error {
-	return nil
-}
+	// tempTxs := []string{}
+	// tempBlocks := make(map[int]common.BlockInterface)
 
-func (sim *simInstance) manualCreateBlock() error {
-	return nil
-}
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print(">Command: ")
+		text, _ := reader.ReadString('\n')
+		text = strings.TrimSuffix(strings.ToLower(text), "\n")
+		params := strings.Split(text, " ")
+		switch params[0] {
+		case MANUALEXIT:
+			return nil
+		case MANUALHELP:
 
-func (sim *simInstance) manualInjectBlock(chainID int, block common.BlockInterface) error {
-	return nil
+		case MANUALCREATE:
+			if len(params) >= 3 {
+				//create block -1
+				//create tx prv addr amount
+				if len(params) >= 3 {
+					switch params[1] {
+					case "tx":
+					case "block":
+					}
+				}
+			}
+			fmt.Println("Incorrect command")
+		case MANUALINSERT:
+			// insert blocks -1
+			// insert txs
+			if len(params) >= 2 {
+				switch params[1] {
+				case "tx":
+				case "block":
+				}
+			}
+			fmt.Println("Incorrect command")
+		case MANUALGENERATE:
+			// generate tx prv addr amount
+			// generate	block -1 amount
+			if len(params) >= 4 {
+				switch params[1] {
+				case "tx":
+				case "block":
+				}
+			}
+			fmt.Println("Incorrect command")
+		case MANUALGETBALANCE:
+			// balance prk
+			if len(params) == 2 {
+				balances, err := sim.GetBalance(params[1])
+				if err != nil {
+					fmt.Println("Err:", err)
+					break
+				}
+				fmt.Println(balances)
+			}
+			fmt.Println("Incorrect command")
+		case MANUALGETBESTSTATE:
+			// beststate -1
+			if len(params) == 2 {
+
+			}
+			fmt.Println("Incorrect command")
+		default:
+			fmt.Println("Unknown command")
+		}
+	}
 }
 
 func sendRequest(requestBody []byte) ([]byte, error) {
