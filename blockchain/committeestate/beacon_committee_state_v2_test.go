@@ -713,7 +713,8 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			},
 			want2:   make(map[byte]*instruction.ReturnStakeInstruction),
 			wantErr: false,
-		}, {
+		},
+		{
 			name: "Valid Input [Swap Out]",
 			fields: fields{
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{

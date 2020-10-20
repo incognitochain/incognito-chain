@@ -24,7 +24,10 @@ type AssignInstruction struct {
 }
 
 func NewAssignInstructionWithValue(chainID int, shardCandidates []string) *AssignInstruction {
-	return &AssignInstruction{ChainID: chainID, ShardCandidates: shardCandidates}
+	assignInstruction := &AssignInstruction{}
+	assignInstruction.SetChainID(chainID)
+	assignInstruction.SetShardCandidates(shardCandidates)
+	return assignInstruction
 }
 
 func NewAssignInstruction() *AssignInstruction {

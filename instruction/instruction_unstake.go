@@ -17,7 +17,9 @@ type UnstakeInstruction struct {
 
 //NewUnstakeInstructionWithValue : Constructor with value
 func NewUnstakeInstructionWithValue(committeePublicKeys []string) *UnstakeInstruction {
-	return &UnstakeInstruction{CommitteePublicKeys: committeePublicKeys}
+	unstakeInstruction := &UnstakeInstruction{}
+	unstakeInstruction.SetCommitteePublicKeys(committeePublicKeys)
+	return unstakeInstruction
 }
 
 func (unstakeInstruction *UnstakeInstruction) SetCommitteePublicKeys(publicKeys []string) error {

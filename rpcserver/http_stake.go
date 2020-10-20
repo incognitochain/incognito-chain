@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -99,6 +100,17 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+
+	beaconview := httpServer.blockService.BlockChain.BeaconChain.GetFinalView()
+	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
+	check, ok := beaconFinalView.GetAutoStaking()[unStakingMetadata.CommitteePublicKey]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key has not staked yet"))
+	}
+	if !check {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key AutoStaking has been already false"))
+	}
+
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, unStakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
