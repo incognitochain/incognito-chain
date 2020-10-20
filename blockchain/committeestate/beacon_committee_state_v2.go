@@ -374,7 +374,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			newB.shardCommonPool,
 			newB.shardCommittee,
 			newB.shardSubstitute,
-			env.MaxShardCommitteeSize,
+			env.NumberOfFixedShardBlockValidators,
+			env.MinShardCommitteeSize,
 		)
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newB.numberOfAssignedCandidates)
 	}
@@ -552,18 +553,16 @@ func SnapshotShardCommonPoolV2(
 	shardCommonPool []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
-	maxAssignPerShard int,
+	numberOfFixedValidator int,
+	minCommitteeSize int,
 ) (numberOfAssignedCandidates int) {
 	for k, v := range shardCommittee {
-		shardCommitteeSize := len(v)
-		shardCommitteeSize += len(shardSubstitute[k])
-		assignPerShard := shardCommitteeSize / MAX_SWAP_OR_ASSIGN_PERCENT
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, shardCommitteeSize %+v", k, shardCommitteeSize)
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, assignPerShard %+v", k, assignPerShard)
-		if assignPerShard > maxAssignPerShard {
-			assignPerShard = maxAssignPerShard
-		}
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, maxAssignPerShard %+v", k, maxAssignPerShard)
+		assignPerShard := getSwapOutOffset(
+			len(shardSubstitute[k]),
+			len(v),
+			numberOfFixedValidator,
+			minCommitteeSize,
+		)
 		numberOfAssignedCandidates += assignPerShard
 		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
