@@ -353,7 +353,13 @@ func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2Init
 		nil,
 		params.info,
 	)
-	txNormal := new(Tx)
+	txToken.cachedTxNormal = nil
+	txNormal, ok := txToken.GetTxNormal().(*Tx)
+	if !ok{
+		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("TX should have been ver2"))
+	}
+	txNormal.SetSig(nil)
+	txNormal.SetSigPubKey(nil)
 	if err := InitConversion(txNormal, txConvertParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
@@ -361,21 +367,21 @@ func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2Init
 	return nil
 }
 
-func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPrivacyInitParams) error {
-	txTokenDataHash, err := txToken.TokenData.Hash()
+func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPrivacyInitParams) ([]privacy.PlainCoin, []*privacy.CoinV2, error) {
+	// txTokenDataHash, err := txToken.TokenData.Hash()
+	// if err != nil {
+	// 	utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
+	// 	return err
+	// }
+	inps, outs, err := feeTx.provePRV(params)
 	if err != nil {
-		utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
-		return err
-	}
-	if err := feeTx.provePRV(params, txTokenDataHash[:]); err != nil {
-		return utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
+		return nil, nil, utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	feeTx.SetVersion(utils.TxVersion2Number)
-	feeTx.SetType(common.TxTokenConversionType)
+	feeTx.SetVersion(utils.TxConversionVersion12Number)
+	feeTx.SetType(common.TxConversionType)
 	txToken.SetTxBase(feeTx)
-
-	return nil
+	return inps, outs, nil
 }
 
 func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitParams) error {
@@ -396,17 +402,19 @@ func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitP
 		return err
 	}
 
-	// Init Token first
+	// Init PRV Fee
+	inps, outs, err := txToken.initPRVFeeConversion(tx, txPrivacyParams)
+	if err != nil {
+		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
+		return err
+	}
+	// Init Token
 	if err := txToken.initTokenConversion(params); err != nil {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
 
-	// Init PRV Fee on the whole transaction
-	if err := txToken.initPRVFeeConversion(tx, txPrivacyParams); err != nil {
-		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
-		return err
-	}
+	err = txToken.Tx.signOnMessage(inps, outs, txPrivacyParams, txToken.Hash()[:])
 
 	return nil
 }
