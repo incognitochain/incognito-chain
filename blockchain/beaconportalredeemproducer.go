@@ -378,7 +378,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 	sort.Strings(waitingRedeemKeys)
 	for _, waitingRedeemKey := range waitingRedeemKeys {
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
-		if (beaconHeight+1)-waitingRedeem.GetBeaconHeight() < blockchain.convertDurationTimeToBeaconBlocks(blockchain.GetPortalParams(beaconHeight).TimeOutWaitingRedeemRequest) {
+		if !blockchain.checkBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), blockchain.ShardChain[waitingRedeem.ShardID()].multiView.GetBestView().GetHeight(), waitingRedeem.ShardHeight(), blockchain.GetPortalParams(beaconHeight)) {
 			continue
 		}
 
