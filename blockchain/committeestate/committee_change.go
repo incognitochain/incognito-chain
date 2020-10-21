@@ -14,10 +14,10 @@ type CommitteeChange struct {
 	NextEpochShardCandidateRemoved     []incognitokey.CommitteePublicKey
 	CurrentEpochShardCandidateAdded    []incognitokey.CommitteePublicKey
 	CurrentEpochShardCandidateRemoved  []incognitokey.CommitteePublicKey
-	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey //
-	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey //
-	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey //
-	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey //
+	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey
+	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey
+	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey
+	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey
 	BeaconSubstituteAdded              []incognitokey.CommitteePublicKey
 	BeaconSubstituteRemoved            []incognitokey.CommitteePublicKey
 	BeaconCommitteeAdded               []incognitokey.CommitteePublicKey
@@ -26,6 +26,47 @@ type CommitteeChange struct {
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
 	Unstake                            []string
+}
+
+//GetStakerKeys ...
+func (committeeChange *CommitteeChange) GetStakerKeys() []incognitokey.CommitteePublicKey {
+	return committeeChange.NextEpochShardCandidateAdded
+}
+
+//GetUnstakerKeys ...
+func (committeeChange *CommitteeChange) GetUnstakerKeys(autoStake map[string]bool) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+	removedKeys := []incognitokey.CommitteePublicKey{}
+	stopAutoStakeKeys := []incognitokey.CommitteePublicKey{}
+
+	unstakeKeys := make(map[string]bool)
+	for _, v := range committeeChange.Unstake {
+		unstakeKeys[v] = true
+	}
+
+	for _, v := range committeeChange.NextEpochShardCandidateRemoved {
+		key, _ := v.ToBase58()
+		if unstakeKeys[key] {
+			removedKeys = append(removedKeys, v)
+			delete(unstakeKeys, key)
+		}
+	}
+
+	for k, _ := range unstakeKeys {
+		incKey := incognitokey.CommitteePublicKey{}
+		incKey.FromBase58(k)
+		stopAutoStakeKeys = append(stopAutoStakeKeys, incKey)
+	}
+
+	for _, v := range committeeChange.ShardCommitteeRemoved {
+		for _, value := range v {
+			key, _ := value.ToBase58()
+			if !autoStake[key] {
+				removedKeys = append(removedKeys, value)
+			}
+		}
+	}
+
+	return removedKeys, stopAutoStakeKeys
 }
 
 func NewCommitteeChange() *CommitteeChange {

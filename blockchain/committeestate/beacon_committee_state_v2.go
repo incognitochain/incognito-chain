@@ -374,7 +374,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			newB.shardCommonPool,
 			newB.shardCommittee,
 			newB.shardSubstitute,
-			env.MaxShardCommitteeSize,
+			env.NumberOfFixedShardBlockValidators,
+			env.MinShardCommitteeSize,
 		)
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newB.numberOfAssignedCandidates)
 	}
@@ -464,17 +465,15 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		swapShardInstruction, _, err := createSwapShardInstructionV2(
+		swapShardInstruction, _, _, _ := createSwapShardInstructionV2(
 			shardID,
 			tempSubstitutes,
 			tempCommittees,
+			env.MinShardCommitteeSize,
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidators,
 		)
-		if err != nil {
-			return swapShardInstructions, err
-		}
 
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
@@ -554,18 +553,16 @@ func SnapshotShardCommonPoolV2(
 	shardCommonPool []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
-	maxAssignPerShard int,
+	numberOfFixedValidator int,
+	minCommitteeSize int,
 ) (numberOfAssignedCandidates int) {
 	for k, v := range shardCommittee {
-		shardCommitteeSize := len(v)
-		shardCommitteeSize += len(shardSubstitute[k])
-		assignPerShard := shardCommitteeSize / MAX_SWAP_OR_ASSIGN_PERCENT
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, shardCommitteeSize %+v", k, shardCommitteeSize)
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, assignPerShard %+v", k, assignPerShard)
-		if assignPerShard > maxAssignPerShard {
-			assignPerShard = maxAssignPerShard
-		}
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, maxAssignPerShard %+v", k, maxAssignPerShard)
+		assignPerShard := getSwapOutOffset(
+			len(shardSubstitute[k]),
+			len(v),
+			numberOfFixedValidator,
+			minCommitteeSize,
+		)
 		numberOfAssignedCandidates += assignPerShard
 		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
@@ -993,77 +990,5 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
-	return nil
-}
-
-// TODO: @tin we should move this function to processStoreBeaconBlock, or this module have to carry on the store database job, which it shouldn't
-//UpdateDB ...
-func (engine *BeaconCommitteeEngineV2) UpdateDB(
-	committeeChange *CommitteeChange,
-	env *BeaconCommitteeStateEnvironment) error {
-	b := engine.finalBeaconCommitteeStateV2
-	if reflect.DeepEqual(b, NewBeaconCommitteeStateV2()) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV2))
-	}
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-
-	removedStakerKeys := []incognitokey.CommitteePublicKey{}
-	addedStakerKeys, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
-	if err != nil {
-		return err
-	}
-	addedStakerKeys = append(addedStakerKeys, committeeChange.NextEpochShardCandidateAdded...)
-
-	unstakeKeys := make(map[string]bool)
-	for _, v := range committeeChange.Unstake {
-		unstakeKeys[v] = true
-	}
-
-	for _, v := range committeeChange.NextEpochShardCandidateRemoved {
-		key, _ := v.ToBase58()
-		if unstakeKeys[key] {
-			removedStakerKeys = append(removedStakerKeys, v)
-			delete(unstakeKeys, key)
-		}
-	}
-
-	for k, _ := range unstakeKeys {
-		incKey := incognitokey.CommitteePublicKey{}
-		err := incKey.FromBase58(k)
-		if err != nil {
-			return err
-		}
-		addedStakerKeys = append(addedStakerKeys, incKey)
-	}
-
-	for _, v := range committeeChange.ShardCommitteeRemoved {
-		for _, value := range v {
-			key, err := value.ToBase58()
-			if err != nil {
-				return err
-			}
-			if !b.autoStake[key] {
-				removedStakerKeys = append(removedStakerKeys, value)
-			}
-		}
-	}
-
-	err = statedb.StoreStakerInfoV1(
-		env.ConsensusStateDB,
-		addedStakerKeys,
-		b.rewardReceiver,
-		b.autoStake,
-		b.stakingTx,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = statedb.DeleteStakerInfo(env.ConsensusStateDB, removedStakerKeys)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

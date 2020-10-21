@@ -9,27 +9,30 @@ import (
 )
 
 // createSwapShardInstructionV2 create swap instruction and new substitutes list
-// return params
+// swap procedure is only completed after both swap out and swap in is performed
+// Output
 // #1: swap instruction
-// #2: new substitute list
-// #3: error
+// #2: new committee list
+// #3: new substitute list
+// #3: swapped out committee list
 func createSwapShardInstructionV2(
 	shardID byte,
 	substitutes, committees []string,
+	minCommitteeSize int,
 	maxCommitteeSize int,
 	typeIns int,
-	numberOfFixedValidators uint64,
-) (*instruction.SwapShardInstruction, []string, error) {
-	_, newSubstitutes, swappedOutCommittees, swapInCommittees, err := swapCommitteesV2(
-		committees,
-		substitutes,
-		maxCommitteeSize,
-		numberOfFixedValidators,
-	)
+	numberOfFixedValidator int,
+) (*instruction.SwapShardInstruction, []string, []string, []string) {
+	committees, swappedOutCommittees :=
+		normalSwapOut(committees, substitutes, minCommitteeSize, numberOfFixedValidator)
 
-	if err != nil {
-		return &instruction.SwapShardInstruction{}, []string{}, err
+	newCommittees, newSubstitutes, swapInCommittees :=
+		swapInAfterSwapOut(committees, substitutes, maxCommitteeSize)
+
+	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
+		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, swappedOutCommittees
 	}
+
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
 		swapInCommittees,
 		swappedOutCommittees,
@@ -37,7 +40,7 @@ func createSwapShardInstructionV2(
 		typeIns,
 	)
 
-	return swapShardInstruction, newSubstitutes, nil
+	return swapShardInstruction, newCommittees, newSubstitutes, swappedOutCommittees
 }
 
 // removeValidatorV2 remove validator and return removed list
@@ -66,74 +69,92 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 	return validators, nil
 }
 
-//swapCommitteesV2
-// Input:
-// committees list, subtitutes list, max committee size, number of fixed validators
+// getSwapOutOffset assumes that numberOfFixedValidator <= minCommitteeSize and won't replace fixed nodes
+// CONDITION:
+// #1 swapOutOffset <= floor(numberOfCommittees/3)
+// #2 swapOutOffset <=  numberOfCommittees - numberOfFixedValidator
+// #3 committees length after both swap out and swap in must remain >= minCommitteeSize
+// #4 swap operation must begin from start position (which is fixed node validator position) as a queue
+// #5 number of swap out nodes >= number of swap in nodes
+func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedValidator, minCommitteeSize int) int {
+
+	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+	if swapOffset == 0 {
+		return 0
+	}
+
+	if swapOffset > numberOfCommittees-numberOfFixedValidator {
+		swapOffset = numberOfCommittees - numberOfFixedValidator
+	}
+
+	noReplaceOffset := 0
+	for swapOffset > 0 && numberOfCommittees > minCommitteeSize {
+		swapOffset--
+		noReplaceOffset++
+		numberOfCommittees--
+	}
+
+	replaceSwapOffset := swapOffset
+	if numberOfSubstitutes < swapOffset {
+		replaceSwapOffset = numberOfSubstitutes
+	}
+
+	return noReplaceOffset + replaceSwapOffset
+}
+
+// normalSwapOut swap node out of committee
+// after normal swap out, committees list could have invalid length
 // Output:
-// #1 new committees list
-// #2 remained substitutes list
-// #3 swapped out committees list (removed from committees list
-// #4 swapped in committees list (new committees from substitutes list)
-func swapCommitteesV2(
+// #1: new committees list
+// #2: swapped out committees list
+func normalSwapOut(
 	committees []string,
 	substitutes []string,
-	maxCommitteeSize int,
-	numberOfFixedValidators uint64,
-) ([]string, []string, []string, []string, error) {
-	swappedInCommittees := []string{}
-	swappedOutCommittees := []string{}
-	// if swap offset = 0 then do nothing
-
-	rootCommittees := committees
-	committees = committees[numberOfFixedValidators:]
-	swapOffset := (len(substitutes) + len(committees)) / MAX_SWAP_OR_ASSIGN_PERCENT
-
-	Logger.log.Info("Swap Rule V2, Swap Offset ", swapOffset)
-	if swapOffset == 0 {
-		return rootCommittees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+	minCommitteeSize int,
+	numberOfFixedValidator int,
+) (
+	[]string,
+	[]string,
+) {
+	if len(committees) == numberOfFixedValidator {
+		return committees, []string{}
 	}
 
-	// swap offset must be less than or equal to maxCommitteeSize
-	// maxCommitteeSize mainnet is 10 => swapOffset is <= 10
-	if swapOffset > maxCommitteeSize {
-		swapOffset = maxCommitteeSize
+	fixedCommittees := make([]string, len(committees[:numberOfFixedValidator]))
+	copy(fixedCommittees, committees[:numberOfFixedValidator])
+	flexCommittees := make([]string, len(committees[numberOfFixedValidator:]))
+	copy(flexCommittees, committees[numberOfFixedValidator:])
+	normalSwapOutCommittees := []string{}
+
+	swapOutOffset := getSwapOutOffset(len(substitutes), len(committees), numberOfFixedValidator, minCommitteeSize)
+	if swapOutOffset > 0 {
+		normalSwapOutCommittees = flexCommittees[:swapOutOffset]
+		flexCommittees = flexCommittees[swapOutOffset:]
 	}
-	// swapOffset must be less than or equal to substitutes length
-	if swapOffset > len(substitutes) {
-		swapOffset = len(substitutes)
-	}
-	// vacantSlot must be equal to or greater than 0
+
+	committees = append(fixedCommittees, flexCommittees...)
+	return committees, normalSwapOutCommittees
+}
+
+// swapInAfterSwapOut must be perform after normalSwapOut function is executed
+// swap in as many as possible
+// output:
+// #1 new committee list
+// #2 new substitutes list
+// #3 swapped in committee list (from substitutes)
+func swapInAfterSwapOut(committees, substitutes []string, maxCommitteeSize int) (
+	[]string,
+	[]string,
+	[]string,
+) {
 	vacantSlot := maxCommitteeSize - len(committees)
-	fixedValidators := committees[:numberOfFixedValidators]
-
-	if vacantSlot >= swapOffset {
-		// vacantSlot is greater than number of swap offset
-		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffset]...)
-		committees = append(committees, swappedInCommittees...)
-		substitutes = substitutes[swapOffset:]
-	} else {
-		// vacantSlot is less than number of swap offset
-		// get new committee from substitute list for push in only
-		swappedInCommittees = append(swappedInCommittees, substitutes[:vacantSlot]...)
-		// un-queue substitutes if vacant slot > 0
-		substitutes = substitutes[vacantSlot:]
-
-		swapOffsetAfterFillVacantSlot := swapOffset - vacantSlot
-
-		// swapped out committees: record swapped out committees
-		swappedOutCommittees = append(swappedOutCommittees, committees[:swapOffsetAfterFillVacantSlot]...)
-		// un-queue committees:  start from index 0 to swapOffsetAfterFillVacantSlot - 1
-		committees = committees[swapOffsetAfterFillVacantSlot:]
-		// swapped in: (continue) to un-queue substitute from index from 0 to swapOffsetAfterFillVacantSlot -1
-		swappedInCommittees = append(swappedInCommittees, substitutes[:swapOffsetAfterFillVacantSlot]...)
-		// en-queue new validator: from substitute list to committee list
-		committees = append(committees, swappedInCommittees...)
-		// un-queue substitutes: start from index 0 to swapOffsetAfterFillVacantSlot - 1
-		substitutes = substitutes[swapOffsetAfterFillVacantSlot:]
+	if vacantSlot > len(substitutes) {
+		vacantSlot = len(substitutes)
 	}
-	committees = append(fixedValidators, committees...)
-
-	return committees, substitutes, swappedOutCommittees, swappedInCommittees, nil
+	newCommittees := substitutes[:vacantSlot]
+	committees = append(committees, newCommittees...)
+	substitutes = substitutes[vacantSlot:]
+	return committees, substitutes, newCommittees
 }
 
 // assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number

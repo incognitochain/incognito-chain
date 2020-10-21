@@ -774,8 +774,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
-	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeChange, env)
+	err = newBestState.updateDBFromCommitteeState(committeeChange)
 	if err != nil {
 		return err
 	}
@@ -1033,4 +1032,23 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	}
 
 	return beacon, shard
+}
+
+func (beaconBestState *BeaconBestState) updateDBFromCommitteeState(committeeChange *committeestate.CommitteeChange) error {
+	stakerKeys := committeeChange.GetStakerKeys()
+	removedStakerKeys, stopAutoStakerKeys := committeeChange.GetUnstakerKeys(beaconBestState.beaconCommitteeEngine.GetAutoStaking())
+	addedStakerKeys := append(stakerKeys, stopAutoStakerKeys...)
+
+	err := statedb.StoreStakerInfoV1(
+		beaconBestState.consensusStateDB,
+		addedStakerKeys,
+		beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
+		beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
+		beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+	)
+	if err != nil {
+		return err
+	}
+
+	return statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
 }
