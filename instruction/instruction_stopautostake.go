@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type StopAutoStakeInstruction struct {
-	CommitteePublicKeys []string
+	CommitteePublicKeys       []string
+	CommitteePublicKeysStruct []incognitokey.CommitteePublicKey
 }
 
 func NewStopAutoStakeInstructionWithValue(publicKeys []string) *StopAutoStakeInstruction {
-	return &StopAutoStakeInstruction{CommitteePublicKeys: publicKeys}
+	res := &StopAutoStakeInstruction{}
+	res.SetPublicKeys(publicKeys)
+	return res
 }
 
 func NewStopAutoStakeInstruction() *StopAutoStakeInstruction {
@@ -24,6 +29,16 @@ func (s *StopAutoStakeInstruction) GetType() string {
 
 func (s *StopAutoStakeInstruction) IsEmpty() bool {
 	return reflect.DeepEqual(s, NewStopAutoStakeInstruction()) || len(s.CommitteePublicKeys) == 0
+}
+
+func (s *StopAutoStakeInstruction) SetPublicKeys(publicKeys []string) (*StopAutoStakeInstruction, error) {
+	s.CommitteePublicKeys = publicKeys
+	publicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return nil, err
+	}
+	s.CommitteePublicKeysStruct = publicKeyStructs
+	return s, nil
 }
 
 func (s *StopAutoStakeInstruction) ToString() []string {
@@ -43,7 +58,7 @@ func ImportStopAutoStakeInstructionFromString(instruction []string) *StopAutoSta
 	stopAutoStakeInstruction := NewStopAutoStakeInstruction()
 	if len(instruction[1]) > 0 {
 		publicKeys := strings.Split(instruction[1], SPLITTER)
-		stopAutoStakeInstruction.CommitteePublicKeys = publicKeys
+		stopAutoStakeInstruction, _ = stopAutoStakeInstruction.SetPublicKeys(publicKeys)
 	}
 	return stopAutoStakeInstruction
 }
@@ -54,6 +69,11 @@ func ValidateStopAutoStakeInstructionSanity(instruction []string) error {
 	}
 	if instruction[0] != STOP_AUTO_STAKE_ACTION {
 		return fmt.Errorf("invalid stop auto stake action, %+v", instruction)
+	}
+	publicKeys := strings.Split(instruction[1], SPLITTER)
+	_, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return err
 	}
 	return nil
 }

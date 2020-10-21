@@ -5,7 +5,6 @@ const (
 )
 
 const (
-	// TODO: optimize later
 	SELF_SWAP_SHARD_VERSION = 1
 	SLASHING_VERSION        = 2
 )

@@ -292,10 +292,11 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 	initLog()
 
 	type args struct {
-		shardCommonPool   []incognitokey.CommitteePublicKey
-		shardCommittee    map[byte][]incognitokey.CommitteePublicKey
-		shardSubstitute   map[byte][]incognitokey.CommitteePublicKey
-		maxAssignPerShard int
+		shardCommonPool        []incognitokey.CommitteePublicKey
+		shardCommittee         map[byte][]incognitokey.CommitteePublicKey
+		shardSubstitute        map[byte][]incognitokey.CommitteePublicKey
+		numberOfFixedValidator int
+		minCommitteeSize       int
 	}
 	tests := []struct {
 		name                           string
@@ -303,54 +304,56 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 		wantNumberOfAssignedCandidates int
 	}{
 		{
-			name: "maxAssignPerShard >= len(shardcommittes + subtitutes)",
+			name: "number of assigned candidates < number of committee in shard pool",
 			args: args{
 				shardCommonPool: []incognitokey.CommitteePublicKey{
-					*incKey2,
-					*incKey3,
-					*incKey4,
+					*incKey8, *incKey9, *incKey10,
 				},
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
-						*incKey,
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey4, *incKey5, *incKey6, *incKey7,
 					},
 				},
-				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5, *incKey6,
-					},
-				},
-				maxAssignPerShard: 5,
+				shardSubstitute:        map[byte][]incognitokey.CommitteePublicKey{},
+				numberOfFixedValidator: 1,
+				minCommitteeSize:       3,
 			},
-			wantNumberOfAssignedCandidates: 1,
+			wantNumberOfAssignedCandidates: 2,
 		},
 		{
-			name: "maxAssignPerShard < len(shardcommittes + subtitutes)",
+			name: "number of assigned candidates > number of committee in shard pool",
 			args: args{
 				shardCommonPool: []incognitokey.CommitteePublicKey{
-					*incKey7,
-					*incKey8,
+					*incKey8, *incKey9, *incKey10,
 				},
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
-						*incKey,
-						*incKey2,
-						*incKey3,
+						*incKey, *incKey0, *incKey2, *incKey3, *incKey11, *incKey12,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey4, *incKey5, *incKey6, *incKey7, *incKey13, *incKey14,
 					},
 				},
 				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
-						*incKey4, *incKey5, *incKey6,
+						*incKey15, *incKey16,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey17, *incKey18,
 					},
 				},
-				maxAssignPerShard: 1,
+				numberOfFixedValidator: 4,
+				minCommitteeSize:       6,
 			},
-			wantNumberOfAssignedCandidates: 1,
+			wantNumberOfAssignedCandidates: 3,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.maxAssignPerShard); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
+			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.numberOfFixedValidator, tt.args.minCommitteeSize); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
 				t.Errorf("SnapshotShardCommonPoolV2() = %v, want %v", gotNumberOfAssignedCandidates, tt.wantNumberOfAssignedCandidates)
 			}
 		})
@@ -868,6 +871,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 
 	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
+	committeeChangeProcessUnstakeInstruction.Unstake = []string{key0}
 
 	statedb.StoreStakerInfoV1(
 		sDB,
@@ -2073,6 +2077,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			},
 			want: &CommitteeChange{
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{*incKey},
+				Unstake:                        []string{key},
 			},
 			want1: map[byte]*instruction.ReturnStakeInstruction{
 				0: instruction.NewReturnStakeInsWithValue(
@@ -2101,7 +2106,9 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
 			},
-			want:    &CommitteeChange{},
+			want: &CommitteeChange{
+				Unstake: []string{key},
+			},
 			want1:   make(map[byte]*instruction.ReturnStakeInstruction),
 			wantErr: false,
 		},

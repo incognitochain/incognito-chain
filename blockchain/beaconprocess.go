@@ -72,6 +72,7 @@ CONTINUE_VERIFY:
 	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBestState, beaconBlock, isPreSign); err != nil {
 		return err
 	}
+
 	// Verify block with previous best state
 	// not verify agg signature in this function
 	if err := beaconBestState.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
@@ -431,9 +432,14 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
 
-	beaconCommitteeStateEnv := committeestate.NewBeaconCommitteeStateEnvironment()
-	beaconCommitteeStateEnv.ConsensusStateDB = curView.consensusStateDB
-	beaconCommitteeStateEnv.BeaconInstructions = tempInstruction
+	isFoundRandomInstruction := false
+	isBeaconRandomTime := false
+
+	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
+		blockchain.config.ChainParams,
+		tempInstruction,
+		isFoundRandomInstruction, isBeaconRandomTime,
+	)
 
 	incurredInstructions, err := curView.beaconCommitteeEngine.BuildIncurredInstructions(beaconCommitteeStateEnv)
 	if err != nil {

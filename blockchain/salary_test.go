@@ -829,6 +829,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				DAOPercent:             10,
 				PercentCustodianReward: 0,
 				ShardID:                byte(j),
+				TotalReward:            make(map[common.Hash]uint64),
 			}).Return(
 				map[common.Hash]uint64{
 					*hash: beaconReward[i],
