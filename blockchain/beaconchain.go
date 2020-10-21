@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -157,7 +158,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
+	round int, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
 	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
@@ -171,7 +173,8 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int
 }
 
 //this function for version 2
-func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string,
+	startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.BeaconBlock)
 	json.Unmarshal(b, &newBlock)
@@ -309,4 +312,39 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 
 func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+//CommitteesByShardID ...
+func (chain *BeaconChain) CommitteesByShardID(shardID byte) []incognitokey.CommitteePublicKey {
+	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
+	return finalView.GetShardCommittee()[shardID]
+}
+
+//GetProposerByTimeSlot ...
+func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version int) incognitokey.CommitteePublicKey {
+	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
+
+	//TODO: add recalculate proposer index here when swap committees
+	// chainParamEpoch := chain.Blockchain.config.ChainParams.Epoch
+	// id := -1
+	// if ok, err := finalView.HasSwappedCommittee(shardID, chainParamEpoch); err == nil && ok {
+	// 	id = 0
+	// } else {
+	// 	id = GetProposerByTimeSlot(ts, finalView.MinShardCommitteeSize)
+	// }
+
+	id := GetProposerByTimeSlot(ts, finalView.MinShardCommitteeSize)
+	return finalView.GetShardCommittee()[shardID][id]
+}
+
+func (chain *BeaconChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
+}
+
+func (chain *BeaconChain) CommitteeStateVersion() uint {
+	return chain.GetBestView().(*BeaconBestState).beaconCommitteeEngine.Version()
+}
+
+func (chain *BeaconChain) FinalView() multiview.View {
+	return chain.GetFinalView()
 }

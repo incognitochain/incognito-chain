@@ -257,6 +257,9 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
+
+	// stake
+	unstake = "createunstaketransaction"
 )
 
 const (

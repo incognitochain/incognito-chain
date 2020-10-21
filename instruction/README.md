@@ -23,3 +23,8 @@
   
 ## Random 
   ```["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]```
+  
+## Request Shard Swap
+    ```["request_shard_swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "{shardID}" "epoch" "RandomNumber"] ```
+## Confirm Shard Swap    
+    ```["confirm_shard_swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "{shardID}" "epoch" "RandomNumber"] ```

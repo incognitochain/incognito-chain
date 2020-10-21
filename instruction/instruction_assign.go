@@ -3,6 +3,7 @@ package instruction
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,9 @@ var (
 	ErrAssignInstruction = errors.New("assign instruction error")
 )
 
+//AssignInstruction :
+//Assign instruction format:
+// ["assign action", publickeys, shard or beacon chain, shard_id]
 type AssignInstruction struct {
 	ChainID               int
 	ShardCandidates       []string
@@ -20,7 +24,10 @@ type AssignInstruction struct {
 }
 
 func NewAssignInstructionWithValue(chainID int, shardCandidates []string) *AssignInstruction {
-	return &AssignInstruction{ChainID: chainID, ShardCandidates: shardCandidates}
+	assignInstruction := &AssignInstruction{}
+	assignInstruction.SetChainID(chainID)
+	assignInstruction.SetShardCandidates(shardCandidates)
+	return assignInstruction
 }
 
 func NewAssignInstruction() *AssignInstruction {
@@ -29,6 +36,11 @@ func NewAssignInstruction() *AssignInstruction {
 
 func (a *AssignInstruction) GetType() string {
 	return ASSIGN_ACTION
+}
+
+func (a *AssignInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(a, NewAssignInstruction()) ||
+		len(a.ShardCandidates) == 0 && len(a.ShardCandidatesStruct) == 0
 }
 
 func (a *AssignInstruction) ToString() []string {

@@ -2,13 +2,18 @@ package instruction
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strings"
 )
 
+//StakeInstruction :
+//StakeInstruction Format:
+// ["STAKE_ACTION", list_public_keys, chain or beacon, list_txs, list_reward_addresses, list_autostaking_status(boolean)]
 type StakeInstruction struct {
 	PublicKeys            []string
 	PublicKeyStructs      []incognitokey.CommitteePublicKey
@@ -20,12 +25,26 @@ type StakeInstruction struct {
 	AutoStakingFlag       []bool
 }
 
-func NewStakeInstructionWithValue(publicKeys []string, chain string, txStakes []string, rewardReceivers []string, autoStakingFlag []bool) *StakeInstruction {
-	return &StakeInstruction{PublicKeys: publicKeys, Chain: chain, TxStakes: txStakes, RewardReceivers: rewardReceivers, AutoStakingFlag: autoStakingFlag}
+func NewStakeInstructionWithValue(
+	publicKeys []string, chain string,
+	txStakes []string, rewardReceivers []string,
+	autoStakingFlag []bool) *StakeInstruction {
+	stakeInstruction := &StakeInstruction{}
+	stakeInstruction.SetPublicKeys(publicKeys)
+	stakeInstruction.SetChain(chain)
+	stakeInstruction.SetTxStakes(txStakes)
+	stakeInstruction.SetRewardReceivers(rewardReceivers)
+	stakeInstruction.SetAutoStakingFlag(autoStakingFlag)
+	return stakeInstruction
 }
 
 func NewStakeInstruction() *StakeInstruction {
 	return &StakeInstruction{}
+}
+
+func (s *StakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewStakeInstruction()) ||
+		len(s.PublicKeyStructs) == 0 && len(s.PublicKeys) == 0
 }
 
 func (s *StakeInstruction) GetType() string {

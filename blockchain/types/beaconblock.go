@@ -89,8 +89,13 @@ func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
+
 func (beaconBlock BeaconBlock) GetShardID() int {
 	return -1
+}
+
+func (beaconBlock BeaconBlock) CommitteeFromBlock() common.Hash {
+	return common.Hash{}
 }
 
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
@@ -109,9 +114,9 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (beaconBlock *BeaconBlock) AddValidationField(validationData string) error {
+func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
 	beaconBlock.ValidationData = validationData
-	return nil
+	return
 }
 func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData

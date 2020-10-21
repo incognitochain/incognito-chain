@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -129,6 +128,51 @@ func StoreNextEpochShardCandidate(
 	err1 := storeCommittee(stateDB, CandidateChainID, NextEpochShardCandidate, candidate, defaultEnterTime)
 	if err1 != nil {
 		return NewStatedbError(StoreNextEpochCandidateError, err1)
+	}
+	return nil
+}
+
+func StoreMembersAtCommonShardPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, CandidateChainID, CommonShardPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberCommonShardPoolError, err)
+	}
+	return nil
+}
+
+func StoreMembersAtCommonBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, BeaconChainID, CommonBeaconPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func StoreMembersAtBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, BeaconChainID, BeaconPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func StoreMembersAtShardPool(
+	stateDB *StateDB,
+	shardID byte,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := storeCommittee(stateDB, int(shardID), ShardPool, members, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreMemberShardPoolError, err)
 	}
 	return nil
 }
@@ -480,40 +524,6 @@ func DeleteBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incogn
 	return nil
 }
 
-//at shard, the stakingTx is all staker tx from the beginning (with replacement if stake more than once)
-//staker A stake for committee pk B with stakingTx C (B could be not staking any more)
-//staker A stake for committee pk A with staking Tx D
-//we have {B: C,A: D}
-//staker E stake for committee pk B with staking Tx F
-//finally, we have {B: F,A: D};
-//Note1: A and E in same shard,means if A and E in different shard, then there is no replacement
-//Note2: only staking tx is used in this staker info
-//func StoreStakerInfoAtShardDB(stateDB *StateDB, committeeStr string, stakingTX string) error {
-//	var committee = new(incognitokey.CommitteePublicKey)
-//	if err := committee.FromString(committeeStr); err != nil {
-//		return err
-//	}
-//	keyBytes, err := committee.RawBytes()
-//	if err != nil {
-//		fmt.Println("get raw byte fail", err)
-//		return err
-//	}
-//	key := GetStakerInfoKey(keyBytes)
-//	value := NewStakerInfo()
-//	stakingTXHash, err := common.Hash{}.NewHashFromStr(stakingTX)
-//	if err != nil {
-//		fmt.Println("import hash fail!", err)
-//		return err
-//	}
-//	value.SetTxStakingID(*stakingTXHash)
-//	value.SetRewardReceiver(privacy.PaymentAddress{Pk: privacy.PublicKey{0}, Tk: privacy.TransmissionKey{0}})
-//	err = stateDB.SetStateObject(StakerObjectType, key, value)
-//	if err != nil {
-//		fmt.Println("set state fail!", err)
-//	}
-//	return err
-//}
-
 func storeStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
@@ -528,62 +538,20 @@ func storeStakerInfo(
 		}
 		key := GetStakerInfoKey(keyBytes)
 		committeeString, err := committee.ToBase58()
-		if err != nil {
-			return err
-		}
-		value := NewStakerInfo()
-		has := false
-		value, has, err = stateDB.getStakerInfo(key)
-		if err != nil {
-			return err
-		}
-		autoStakingValue, ok := autoStaking[committeeString]
-		if !has {
-			if !ok {
-				return fmt.Errorf("auto staking of %+v not found", committeeString)
-			}
-			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
-			if !ok {
-				return fmt.Errorf("reward receiver of %+v not found", committeeString)
-			}
-			txStakingID, ok := stakingTx[committeeString]
-			if !ok {
-				return fmt.Errorf("txStakingID of %+v not found", committeeString)
-			}
-			value = NewStakerInfoWithValue(rewardReceiverPaymentAddress, autoStakingValue, txStakingID)
-		} else {
-			if !ok {
-				// In this case, this committee is already storage in db, it just swap out of committee and rejoin waiting candidate without change autostaking param
-				continue
-			}
-			value.autoStaking = autoStakingValue
-			//Just for temporary fix
-			rewardReceiverPaymentAddress, ok := rewardReceiver[committee.GetIncKeyBase58()]
-			if ok {
-				//If ok, it mean old data will be rewrite
-				value.rewardReceiver = rewardReceiverPaymentAddress
-			}
-			txStakingID, ok := stakingTx[committeeString]
-			if ok {
-				value.txStakingID = txStakingID
-			}
-		}
+		value := NewStakerInfoWithValue(
+			rewardReceiver[committee.GetIncKeyBase58()],
+			autoStaking[committeeString],
+			stakingTx[committeeString],
+		)
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
 			return err
-		}
-		// delete(autoStaking, committeeString)
-		if _, ok := stakingTx[committeeString]; ok {
-			delete(stakingTx, committeeString)
-		}
-		if _, ok := rewardReceiver[committee.GetIncKeyBase58()]; ok {
-			delete(stakingTx, committee.GetIncKeyBase58())
 		}
 	}
 	return nil
 }
 
-func StoreStakerInfo(
+func StoreStakerInfoV1(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,
@@ -621,4 +589,66 @@ func GetOneShardCommitteeEnterTime(
 		list = append(list, tempShardCommitteeState.EnterTime())
 	}
 	return list
+}
+
+func DeleteMembersAtCommonShardPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, CandidateChainID, CommonShardPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberCommonShardPoolError, err)
+	}
+	return nil
+}
+
+func DeleteMembersAtCommonBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, BeaconChainID, CommonBeaconPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func DeleteMembersAtBeaconPool(
+	stateDB *StateDB,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, BeaconChainID, BeaconPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberCommonBeaconPoolError, err)
+	}
+	return nil
+}
+
+func DeleteMembersAtShardPool(
+	stateDB *StateDB,
+	shardID byte,
+	members []incognitokey.CommitteePublicKey,
+) error {
+	err := deleteCommittee(stateDB, int(shardID), ShardPool, members)
+	if err != nil {
+		return NewStatedbError(DeleteMemberShardPoolError, err)
+	}
+	return nil
+}
+
+//DeleteStakerInfo :
+func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	return deleteStakerInfo(stateDB, stakers)
+}
+
+func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	for _, staker := range stakers {
+		keyBytes, err := staker.RawBytes()
+		if err != nil {
+			return err
+		}
+		key := GetStakerInfoKey(keyBytes)
+		stateDB.MarkDeleteStateObject(StakerObjectType, key)
+	}
+	return nil
 }

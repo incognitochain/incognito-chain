@@ -13,27 +13,28 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                       = 1
-	RANDOM_NUMBER                 = 3
-	DefaultMaxBlkReqPerPeer       = 900
-	DefaultMaxBlkReqPerTime       = 900
-	MinCommitteeSize              = 3                // min size to run bft
-	DefaultBroadcastStateTime     = 6 * time.Second  // in second
-	DefaultStateUpdateTime        = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
-	DefaultCacheCleanupTime       = 40 * time.Second // in second
-	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 5
-	MAX_BEACON_BLOCK              = 5
-	LowerBoundPercentForIncDAO    = 3
-	UpperBoundPercentForIncDAO    = 10
-	GetValidBlock                 = 20
-	TestRandom                    = true
-	NumberOfFixedBlockValidators  = 4
-	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
-	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize          = 30
-	SpareTime                     = 1000 // in mili-second
+	VERSION                            = 1
+	RANDOM_NUMBER                      = 3
+	DefaultMaxBlkReqPerPeer            = 900
+	DefaultMaxBlkReqPerTime            = 900
+	MinCommitteeSize                   = 3                // min size to run bft
+	DefaultBroadcastStateTime          = 6 * time.Second  // in second
+	DefaultStateUpdateTime             = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
+	DefaultCacheCleanupTime            = 40 * time.Second // in second
+	WorkerNumber                       = 5
+	MAX_S2B_BLOCK                      = 5
+	MAX_BEACON_BLOCK                   = 5
+	LowerBoundPercentForIncDAO         = 3
+	UpperBoundPercentForIncDAO         = 10
+	GetValidBlock                      = 20
+	TestRandom                         = true
+	NumberOfFixedBeaconBlockValidators = 4
+	NumberOfFixedShardBlockValidators  = 4
+	BEACON_ID                          = -1         // CommitteeID of beacon chain, used for highway
+	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize               = 30
+	SpareTime                          = 1000 // in mili-second
 )
 
 // burning addresses
@@ -54,6 +55,7 @@ const (
 	MainnetOffset           = 4
 	MainnetSwapOffset       = 4
 	MainnetAssignOffset     = 8
+	MainnetMaxSwapOrAssign  = 10
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 22
@@ -84,8 +86,7 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
-
-	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -114,8 +115,9 @@ const (
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
+	TestnetMaxSwapOrAssign  = 1
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 4
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4

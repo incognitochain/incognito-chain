@@ -138,9 +138,9 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 
 func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
 
-	//check producer,proposer,agg sig with this version
-	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == 1 {
+		//check producer,proposer,agg sig with this version
+		producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
 			return fmt.Errorf("Cannot base58 a committee")

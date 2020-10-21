@@ -1,8 +1,9 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -32,35 +33,38 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	Name                             string // Name defines a human-readable identifier for the network.
-	Net                              uint32 // Net defines the magic bytes used to identify the network.
-	DefaultPort                      string // DefaultPort defines the default peer-to-peer port for the network.
-	GenesisParams                    *GenesisParams
-	MaxShardCommitteeSize            int
-	MinShardCommitteeSize            int
-	MaxBeaconCommitteeSize           int
-	MinBeaconCommitteeSize           int
-	MinShardBlockInterval            time.Duration
-	MaxShardBlockCreation            time.Duration
-	MinBeaconBlockInterval           time.Duration
-	MaxBeaconBlockCreation           time.Duration
-	StakingAmountShard               uint64
-	ActiveShards                     int
-	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
-	BasicReward                      uint64
-	Epoch                            uint64
-	RandomTime                       uint64
-	SlashLevels                      []SlashLevel
-	EthContractAddressStr            string // smart contract of ETH for bridge
-	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
-	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
+	Name                   string // Name defines a human-readable identifier for the network.
+	Net                    uint32 // Net defines the magic bytes used to identify the network.
+	DefaultPort            string // DefaultPort defines the default peer-to-peer port for the network.
+	GenesisParams          *GenesisParams
+	MaxShardCommitteeSize  int
+	MinShardCommitteeSize  int
+	MaxBeaconCommitteeSize int
+	MinBeaconCommitteeSize int
+	MinShardBlockInterval  time.Duration
+	MaxShardBlockCreation  time.Duration
+	MinBeaconBlockInterval time.Duration
+	MaxBeaconBlockCreation time.Duration
+	StakingAmountShard     uint64
+	ActiveShards           int
+	GenesisBeaconBlock     *types.BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock      *types.ShardBlock  // GenesisBlock defines the first block of the chain.
+	BasicReward            uint64
+	Epoch                  uint64
+	RandomTime             uint64
+	SlashLevels            []SlashLevel
+	EthContractAddressStr  string // smart contract of ETH for bridge
+	Offset                 int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
+	SwapOffset             int    // is used for case that good producers length is equal to max committee size
+	// TODO: @hung remove
+	MaxSwapOrAssign                  int
 	IncognitoDAOAddress              string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
+	ConsensusV3Epoch                 uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
@@ -74,7 +78,9 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
+	UpgradeCommitteeEngineV2Height   uint64
 	BCHeightBreakPointFixRandShardCM uint64
+	CommitteeStateV2                 uint64
 }
 
 type GenesisParams struct {
@@ -114,7 +120,7 @@ func init() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		//InitialIncognito: IntegrationTestInitPRV,
+		// InitialIncognito: IntegrationTestInitPRV,
 		InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
@@ -142,6 +148,7 @@ func init() {
 		Offset:                           TestnetOffset,
 		AssignOffset:                     TestnetAssignOffset,
 		SwapOffset:                       TestnetSwapOffset,
+		MaxSwapOrAssign:                  TestnetMaxSwapOrAssign,
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
@@ -153,6 +160,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
+		ConsensusV3Epoch:               20000,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
@@ -181,7 +189,9 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
+		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 2070000,
+		CommitteeStateV2:                 1,
 	}
 	// END TESTNET
 
@@ -235,6 +245,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
+		ConsensusV3Epoch:               20000,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -264,6 +275,7 @@ func init() {
 		IsBackup:                         false,
 		PreloadAddress:                   "",
 		BCHeightBreakPointFixRandShardCM: 120000,
+		CommitteeStateV2:                 1,
 	}
 	// END TESTNET-2
 
@@ -304,6 +316,7 @@ func init() {
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
 		AssignOffset:                     MainnetAssignOffset,
+		MaxSwapOrAssign:                  MainnetMaxSwapOrAssign,
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
@@ -315,6 +328,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
+		ConsensusV3Epoch:               20000,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
@@ -339,12 +353,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-
 		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:           559380,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
+		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 644000,
+		CommitteeStateV2:                 1e9,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
