@@ -180,6 +180,7 @@ type PortalBNBTokenProcessor struct {
 }
 
 func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, portingReq *statedb.WaitingPortingRequest, bc *BlockChain) (bool, error) {
+	return true, nil
 	// parse PortingProof in meta
 	txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(proof)
 	if err != nil {
@@ -287,6 +288,7 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, po
 }
 
 func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForRedeem(proof string, redeemReq *statedb.RedeemRequest, bc *BlockChain, matchedCustodian *statedb.MatchingRedeemCustodianDetail) (bool, error){
+	return true, nil
 	// parse RedeemProof in meta
 	txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(proof)
 	if err != nil {

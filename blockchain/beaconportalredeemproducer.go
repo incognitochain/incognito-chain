@@ -617,7 +617,7 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(meta.CustodianAddressStr)
 	var unlockAmount uint64
 	custodianStateKeyStr := custodianStateKey.String()
-	if meta.Type == metadata.PortalRedeemRequestMeta {
+	if meta.Type == metadata.PortalRequestUnlockCollateralMeta {
 		unlockAmount, err = CalUnlockCollateralAmount(currentPortalState, custodianStateKeyStr, meta.RedeemAmount, meta.TokenID)
 		if err != nil {
 			Logger.log.Errorf("Error calculating unlock amount for custodian %v", err)

@@ -171,7 +171,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 }
 
 func (redeemReq PortalRedeemRequest) ValidateMetadataByItself() bool {
-	return redeemReq.Type == PortalRedeemRequestMeta || redeemReq.Type == PortalRedeemRequestMetaV3
+	return redeemReq.Type == PortalRedeemRequestMeta
 }
 
 func (redeemReq PortalRedeemRequest) Hash() *common.Hash {

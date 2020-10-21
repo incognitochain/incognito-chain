@@ -83,16 +83,16 @@ const (
 	PortalCustodianDepositMetaV3                  = 131
 	PortalCustodianWithdrawRequestMetaV3          = 132
 	PortalRewardMetaV3                            = 133
-	PortalRedeemRequestMetaV3                     = 134
+	PortalRequestUnlockCollateralMetaV3           = 134
 	PortalLiquidateCustodianMetaV3                = 135
 	PortalLiquidateByRatesMetaV3                  = 136
 	PortalRedeemFromLiquidationPoolMetaV3         = 137
 	PortalRedeemFromLiquidationPoolResponseMetaV3 = 138
-	PortalCustodianTopupMetaV3                  = 139
-	PortalTopUpWaitingPortingRequestMetaV3            = 140
+	PortalCustodianTopupMetaV3                    = 139
+	PortalTopUpWaitingPortingRequestMetaV3        = 140
 
 	// Incognito => Ethereum's SC for portal
-	PortalCustodianWithdrawConfirmMetaV3 = 170
+	PortalCustodianWithdrawConfirmMetaV3         = 170
 	PortalRedeemFromLiquidationPoolConfirmMetaV3 = 171
 
 	//Note: don't use this metadata type for others
