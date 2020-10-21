@@ -110,18 +110,17 @@ func NewPortalManager() *portalManager {
 			},
 		},
 
-		metadata.PortalRedeemRequestMetaV3: &portalRedeemRequestProcessor{
-			portalInstProcessor: &portalInstProcessor{
-				actions: map[byte][][]string{},
-			},
-		},
-
 		metadata.PortalReqMatchingRedeemMeta: &portalRequestMatchingRedeemProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},
 		},
 		metadata.PortalRequestUnlockCollateralMeta: &portalRequestUnlockCollateralProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalRequestUnlockCollateralMetaV3: &portalRequestUnlockCollateralProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},

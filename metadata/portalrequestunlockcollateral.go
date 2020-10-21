@@ -123,7 +123,7 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 }
 
 func (meta PortalRequestUnlockCollateral) ValidateMetadataByItself() bool {
-	return meta.Type == PortalRequestUnlockCollateralMeta
+	return meta.Type == PortalRequestUnlockCollateralMeta || meta.Type == PortalRequestUnlockCollateralMetaV3
 }
 
 func (meta PortalRequestUnlockCollateral) Hash() *common.Hash {
@@ -149,7 +149,7 @@ func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chain
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRequestUnlockCollateralMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(meta.Type), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

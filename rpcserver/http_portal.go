@@ -227,12 +227,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
 	}
 
-	version, ok := tokenParamsRaw["Type"].(int)
-	if !ok || version != metadata.PortalRedeemRequestMetaV3 && version != metadata.PortalRedeemRequestMeta {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Type is invalid"))
-	}
-
-	meta, _ := metadata.NewPortalRedeemRequest(version, uniqueRedeemID,
+	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
@@ -309,7 +304,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	}
 
 	meta, _ := metadata.NewPortalRequestUnlockCollateral(
-		metadata.PortalRequestUnlockCollateralMeta,
+		metadata.PortalRequestUnlockCollateralMetaV3,
 		uniqueRedeemID,
 		tokenID,
 		incognitoAddress,

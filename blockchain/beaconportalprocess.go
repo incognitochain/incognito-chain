@@ -63,7 +63,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 
 		// ============ Redeem flow ============
 		// redeem request
-		case strconv.Itoa(metadata.PortalRedeemRequestMeta), strconv.Itoa(metadata.PortalRedeemRequestMetaV3):
+		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
 			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// custodian request matching waiting redeem requests
 		case strconv.Itoa(metadata.PortalReqMatchingRedeemMeta):
@@ -71,9 +71,8 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		case strconv.Itoa(metadata.PortalPickMoreCustodianForRedeemMeta):
 			err = blockchain.processPortalPickMoreCustodiansForTimeOutWaitingRedeemReq(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// request unlock collateral
-		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
+		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta), strconv.Itoa(metadata.PortalRequestUnlockCollateralMetaV3):
 			err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
 
 		// ============ Liquidation ============
 		// liquidation custodian run away
