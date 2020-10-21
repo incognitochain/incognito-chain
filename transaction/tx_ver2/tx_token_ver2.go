@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"sort"
 	"bytes"
@@ -47,23 +46,31 @@ func (td *TxTokenDataVersion2) Hash() (*common.Hash, error){
 	return &hash, nil
 }
 
-func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) Tx{
-	result := Tx{
+func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
+	result := &Tx{
 		TxBase: tx_generic.TxBase{
 			Version: 	txPRV.Version,
 			Type: 		txPRV.Type,
 			LockTime: 	txPRV.LockTime,
 			Fee: 		0,
-			Info: 		[]byte{},
 			PubKeyLastByteSender: txPRV.PubKeyLastByteSender,
 			Metadata: 	nil,
-			SigPubKey: 	pubkey,
-			Sig:		sig,
-			Proof: 		proof,
 		},
 	}
-	// if there is a signing key we cached previously, use it
-	result.SetPrivateKey(txPRV.GetPrivateKey())
+	clonedInfo := make([]byte, len(txPRV.Info))
+	copy(clonedInfo, txPRV.Info)
+	clonedProof, err := utils.ParseProof(proof, txPRV.Version, txPRV.Type)
+	if err!=nil{
+		return nil
+	}
+	clonedSig := make([]byte, len(sig))
+	copy(clonedSig, sig)
+	clonedPk := make([]byte, len(pubkey))
+	copy(clonedPk, pubkey)
+	result.SetProof(clonedProof)
+	result.SetSig(clonedSig)
+	result.SetSigPubKey(clonedPk)
+
 	return result
 }
 
@@ -123,8 +130,8 @@ func (tx *TxToken) GetTxNormal() metadata.Transaction{
 		return tx.cachedTxNormal
 	}
 	result := makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
-	tx.cachedTxNormal = &result
-	return &result
+	tx.cachedTxNormal = result
+	return result
 }
 func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
 	temp, ok := inTx.(*Tx)
@@ -666,23 +673,11 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 
 // TODO : update this
 func (txToken TxToken) GetTxActualSize() uint64 {
-	sizeTx := tx_generic.GetTxActualSizeInBytes(&txToken.Tx)
-
-	sizeTx += tx_generic.GetTxActualSizeInBytes(txToken.GetTxNormal())
-	sizeTx += uint64(len(txToken.TokenData.PropertyName))
-	sizeTx += uint64(len(txToken.TokenData.PropertySymbol))
-	sizeTx += uint64(len(txToken.TokenData.PropertyID))
-	sizeTx += 4 // Type
-	sizeTx += 1 // Mintable
-	sizeTx += 8 // Amount
-
-	meta := txToken.Tx.GetMetadata()
-	if meta != nil {
-		sizeTx += meta.CalculateSize()
+	jsb, err := json.Marshal(txToken)
+	if err!=nil{
+		return 0
 	}
-
-	result := uint64(math.Ceil(float64(sizeTx) / 1024))
-	return result
+	return uint64(len(jsb)) / 1024
 }
 
 //-- OVERRIDE--
@@ -1023,22 +1018,46 @@ func (tx *TxToken) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { retu
 
 
 
-// func (txToken *TxToken) UnmarshalJSON(data []byte) error {
-// 	var err error
-// 	txToken.Tx = &Tx{}
-// 	if err = json.Unmarshal(data, txToken.Tx); err != nil {
-// 		return err
-// 	}
+func (txToken *TxToken) UnmarshalJSON(data []byte) error {
+	var err error
+	type TxTokenHolder struct {
+		Tx 					json.RawMessage
+		TxTokenPrivacyData 	json.RawMessage
+	}
+	var holder TxTokenHolder
+	if err = json.Unmarshal(data, &holder); err!=nil{
+		return err
+	}
+	
+	if err = json.Unmarshal(holder.Tx, &txToken.Tx); err != nil {
+		return err
+	}
 
-// 	temp := &struct {
-// 		TxTokenData tx_generic.TxTokenData `json:"TxTokenPrivacyData"`
-// 	}{}
-// 	temp.TokenData.TxNormal = &Tx{}
-// 	err = json.Unmarshal(data, &temp)
-// 	if err != nil {
-// 		utils.Logger.Log.Error(err)
-// 		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, err)
-// 	}
-// 	txToken.TokenData = temp.TokenData
-// 	return nil
-// }
+	switch txToken.Tx.Type{
+	case common.TxTokenConversionType:
+		if txToken.Tx.Version!=utils.TxConversionVersion12Number{
+			return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof version"))
+		}
+		txToken.TokenData.Proof = &privacy.ProofForConversion{}
+		txToken.TokenData.Proof.Init()
+	case common.TxCustomTokenPrivacyType:
+		if txToken.Tx.Version!=utils.TxVersion2Number{
+			return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof version"))
+		}
+		txToken.TokenData.Proof = &privacy.ProofV2{}
+		txToken.TokenData.Proof.Init()
+	case common.TxConversionType:
+		panic("WHY")
+	default:
+		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof type"))
+	}
+	err = json.Unmarshal(holder.TxTokenPrivacyData, &txToken.TokenData)
+	if err != nil {
+		utils.Logger.Log.Error(err)
+		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, err)
+	}
+	// proof := txToken.TokenData.Proof.(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
+	// fmt.Printf("Unmarshalled proof into token data: %v\n", agg)
+	txToken.cachedTxNormal = nil
+	return nil
+}

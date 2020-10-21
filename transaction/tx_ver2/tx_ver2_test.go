@@ -791,13 +791,13 @@ func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) [
 		}
 
 
-		// reconstructedTx, err = NewTransactionFromJsonBytes([]byte(string(theRunes)))
-		err := json.Unmarshal([]byte(string(theRunes)), reconstructedTx)
+		temp := &Tx{}
+		err := json.Unmarshal([]byte(string(theRunes)), temp)
 		if err != nil{
 			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
 		}
-		result = append(result,reconstructedTx)
+		result = append(result,temp)
 	}
 	// fmt.Printf("Made %d dummy faulty txs\n",len(result))
 	return result
@@ -837,12 +837,13 @@ func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *tes
 
 
 		// reconstructedTx, err = NewTransactionTokenFromJsonBytes([]byte(string(theRunes)))
-		err := json.Unmarshal([]byte(string(theRunes)), reconstructedTx)
+		temp := &TxToken{}
+		err := json.Unmarshal([]byte(string(theRunes)), temp)
 		if err != nil{
 			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
 		}
-		result = append(result,reconstructedTx)
+		result = append(result,temp)
 	}
 	return result
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"time"
@@ -626,12 +625,12 @@ func (tx Tx) StringWithoutMetadataSig() string {
 	return record
 }
 
-func (tx Tx) Hash() *common.Hash {
+func (tx *Tx) Hash() *common.Hash {
 	// leave out signature & its public key when hashing tx
 	tempSig := tx.Sig
 	tempPk := tx.SigPubKey
-	tx.Sig = []byte{}
-	tx.SigPubKey = []byte{}
+	tx.Sig = nil
+	tx.SigPubKey = nil
 	inBytes, err := json.Marshal(tx)
 	if err!=nil{
 		return nil
@@ -717,12 +716,10 @@ func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.Sta
 }
 
 func (tx Tx) GetTxActualSize() uint64 {
-	if tx.GetCachedActualSize() != nil {
-		return *tx.GetCachedActualSize()
+	jsb, err := json.Marshal(tx)
+	if err!=nil{
+		return 0
 	}
-	sizeTx := tx_generic.GetTxActualSizeInBytes(&tx)
-	result := uint64(math.Ceil(float64(sizeTx) / 1024))
-	tx.SetCachedActualSize(&result)
-	return result
+	return uint64(len(jsb)) / 1024
 }
 
