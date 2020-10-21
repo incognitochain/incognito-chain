@@ -735,8 +735,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	Logger.log.Infof("There are %v instruction for custodian liquidation in portal\n", len(custodianLiqInsts))
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
-
-	exchangeRatesLiqInsts, err := buildInstForLiquidationTopPercentileExchangeRates(beaconHeight, currentPortalState, portalParams)
+	exchangeRatesLiqInsts, err := blockchain.buildInstForLiquidationByExchangeRatesV3(beaconHeight, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build exchange rates liquidation %v\n", err)
 	}

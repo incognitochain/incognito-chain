@@ -414,8 +414,8 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenId param is invalid"))
 	}
 	collateralTokenId = common.Remove0xPrefix(collateralTokenId)
-	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BeaconHeight
-	if !metadata.IsSupportedTokenCollateralV3(httpServer.blockService.BlockChain, beaconHeight, collateralTokenId) {
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
 	}
 
@@ -544,8 +544,8 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenId param is invalid"))
 	}
 	collateralTokenId = common.Remove0xPrefix(collateralTokenId)
-	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BeaconHeight
-	if !metadata.IsSupportedTokenCollateralV3(httpServer.blockService.BlockChain, beaconHeight, collateralTokenId) {
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
 	}
 
