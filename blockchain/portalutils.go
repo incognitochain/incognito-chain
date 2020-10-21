@@ -2055,6 +2055,7 @@ func calAndCheckLiquidationRatioV3(
 		ratioBN := new(big.Int).Mul(new(big.Int).SetUint64(amountLockedCollateralInUSDT), big.NewInt(100))
 		ratioBN = ratioBN.Div(ratioBN, new(big.Int).SetUint64(amountPubTokenInUSDT))
 		ratio := ratioBN.Uint64()
+		Logger.log.Errorf("Custodian %v - PortalTokenID %v - Ratio %v", custodianState.GetIncognitoAddress(), tokenID, ratio)
 		if ratio > portalParams.TP120 {
 			continue
 		}
@@ -2062,6 +2063,10 @@ func calAndCheckLiquidationRatioV3(
 		// calculate liquidated amount hold public tokens (exclude matched redeem reqs, because we don't liquidate matched redeem)
 		// and liquidated amount locked collaterals
 		liquidatedHoldPubTokenAmount := totalHoldPubToken[tokenID] - holdPubTokenInMatchedRedeem[tokenID]
+		if liquidatedHoldPubTokenAmount == 0 {
+			continue
+		}
+
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianState.GetIncognitoAddress()).String()
 		liquidatedPRVCollateral, remainUnlockPRVCollateral, liquidatedExtTokens, remainUnlockTokenCollaterals, err := CalUnlockCollateralAmountAfterLiquidationV3(portalState, custodianStateKey, liquidatedHoldPubTokenAmount, tokenID, portalParams)
 		if err != nil {

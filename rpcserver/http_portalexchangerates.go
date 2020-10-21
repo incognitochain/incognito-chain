@@ -15,11 +15,6 @@ import (
 
 func (httpServer *HttpServer) createPortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-
-	if len(arrayParams) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
-	}
-
 	if len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
 	}
@@ -36,36 +31,31 @@ func (httpServer *HttpServer) createPortalExchangeRate(params interface{}, close
 	}
 
 	var exchangeRate = make([]*metadata.ExchangeRateInfo, 0)
-
 	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
 	}
-
-	if len(exchangeRateMap) <= 0 {
+	if len(exchangeRateMap) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
 	}
 
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	for pTokenID, value := range exchangeRateMap {
-		if !metadata.IsPortalExchangeRateToken(pTokenID, httpServer.GetBlockchain(), beaconHeight) {
+	for tokenID, value := range exchangeRateMap {
+		tokenID = common.Remove0xPrefix(tokenID)
+		if !metadata.IsPortalExchangeRateToken(tokenID, httpServer.config.BlockChain, beaconHeight) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
 
 		amount, err := common.AssertAndConvertStrToNumber(value)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-		}
-
-		if amount <= 0 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Exchange rates should be larger than 0"))
+		if err != nil || amount == 0 {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Value of exchange rate is invalid %v", err))
 		}
 
 		exchangeRate = append(
 			exchangeRate,
 			&metadata.ExchangeRateInfo{
-				PTokenID: pTokenID,
-				Rate:     uint64(amount),
+				PTokenID: tokenID,
+				Rate:     amount,
 			})
 	}
 
