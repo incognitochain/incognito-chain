@@ -273,21 +273,19 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 
 //CommitteesV2 get committees by block for shardChain
 // Input block must be ShardBlock
-func (chain *ShardChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *ShardChain) GetCommitteeV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+	var err error
 	shardView := chain.GetBestState()
-
-	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-		result := []incognitokey.CommitteePublicKey{}
-		return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...), nil
-	}
 	result := []incognitokey.CommitteePublicKey{}
 
-	shardBlock := block.(*types.ShardBlock)
-	beaconView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
-	if err != nil {
-		return result, err
+	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		result = append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+	} else {
+		result, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
+		if err != nil {
+			return result, err
+		}
 	}
-	result = beaconView.GetShardCommittee()[byte(chain.shardID)]
 
 	return result, nil
 }

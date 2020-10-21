@@ -691,30 +691,30 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	}
 	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
 		// TODO: @hung fix this later
-		tempBeaconHeight := (beaconBestState.Epoch-1)*params.Epoch + params.RandomTime - 1
-		tempRootHash, err := bc.GetBeaconConsensusRootHash(beaconBestState, tempBeaconHeight)
-		if err != nil {
-			panic(err)
-		}
-		dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
-		consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash, dbWarper)
-		snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-			_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
-		snapshotShardCommonPool := snapshotNextEpochShardCandidate
-		snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-		snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
-		delete(snapshotCurrentValidator, statedb.BeaconChainID)
-		delete(snapshotSubstituteValidator, statedb.BeaconChainID)
-		for k, v := range snapshotCurrentValidator {
-			snapshotShardCommittee[byte(k)] = v
-		}
-		for k, v := range snapshotSubstituteValidator {
-			snapshotShardSubstitute[byte(k)] = v
-		}
+		//tempBeaconHeight := (beaconBestState.Epoch-1)*params.Epoch + params.RandomTime - 1
+		//tempRootHash, err := bc.GetBeaconBlockByHeight(bc.GetBeaconChainDatabase(), tempBeaconHeight)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
+		//consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash, dbWarper)
+		//snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
+		//	_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+		//snapshotShardCommonPool := snapshotNextEpochShardCandidate
+		//snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+		//snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+		//delete(snapshotCurrentValidator, statedb.BeaconChainID)
+		//delete(snapshotSubstituteValidator, statedb.BeaconChainID)
+		//for k, v := range snapshotCurrentValidator {
+		//	snapshotShardCommittee[byte(k)] = v
+		//}
+		//for k, v := range snapshotSubstituteValidator {
+		//	snapshotShardSubstitute[byte(k)] = v
+		//}
 
-		//snapshotShardCommonPool := shardCommonPool
-		//snapshotShardCommittee := shardCommittee
-		//snapshotShardSubstitute := shardSubstitute
+		snapshotShardCommonPool := shardCommonPool
+		snapshotShardCommittee := shardCommittee
+		snapshotShardSubstitute := shardSubstitute
 
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
 			snapshotShardCommonPool,
@@ -743,37 +743,6 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		beaconCommitteeStateV2,
 	)
 	return beaconCommitteeEngine
-}
-
-func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(height)
-	if e != nil {
-		return common.Hash{}, e
-	}
-	return bRH.ConsensusStateDBRootHash, nil
-
-}
-
-func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(height)
-	if e != nil {
-		return common.Hash{}, e
-	}
-	return bRH.FeatureStateDBRootHash, nil
-}
-
-func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash, error) {
-	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
-	if e != nil {
-		return nil, e
-	}
-	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), *h)
-	if e != nil {
-		return nil, e
-	}
-	bRH := &BeaconRootHash{}
-	err := json.Unmarshal(data, bRH)
-	return bRH, err
 }
 
 //GetStakerInfo : Return staker info from statedb

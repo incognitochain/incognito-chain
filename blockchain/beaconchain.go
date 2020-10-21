@@ -337,7 +337,7 @@ func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version 
 	return finalView.GetShardCommittee()[shardID][id]
 }
 
-func (chain *BeaconChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *BeaconChain) GetCommitteeV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
 }
 
