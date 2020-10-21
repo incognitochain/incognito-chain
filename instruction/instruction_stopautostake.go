@@ -58,7 +58,7 @@ func ImportStopAutoStakeInstructionFromString(instruction []string) *StopAutoSta
 	stopAutoStakeInstruction := NewStopAutoStakeInstruction()
 	if len(instruction[1]) > 0 {
 		publicKeys := strings.Split(instruction[1], SPLITTER)
-		stopAutoStakeInstruction.CommitteePublicKeys = publicKeys
+		stopAutoStakeInstruction, _ = stopAutoStakeInstruction.SetPublicKeys(publicKeys)
 	}
 	return stopAutoStakeInstruction
 }
@@ -69,6 +69,11 @@ func ValidateStopAutoStakeInstructionSanity(instruction []string) error {
 	}
 	if instruction[0] != STOP_AUTO_STAKE_ACTION {
 		return fmt.Errorf("invalid stop auto stake action, %+v", instruction)
+	}
+	publicKeys := strings.Split(instruction[1], SPLITTER)
+	_, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -8,12 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"os"
-	"path/filepath"
-	"reflect"
-	"testing"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -260,9 +254,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			},
 			want: &shardInstruction{
 				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
-					&instruction.StopAutoStakeInstruction{
-						CommitteePublicKeys: []string{key0},
-					},
+					instruction.NewStopAutoStakeInstructionWithValue([]string{key0}),
 				},
 			},
 		},
@@ -600,18 +592,14 @@ func TestBeaconBestState_processStopAutoStakeInstructionFromShardBlock(t *testin
 			args: args{
 				shardInstructions: &shardInstruction{
 					stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
-						&instruction.StopAutoStakeInstruction{
-							CommitteePublicKeys: []string{key},
-						},
+						instruction.NewStopAutoStakeInstructionWithValue([]string{key}),
 					},
 				},
 				allCommitteeValidatorCandidate: []string{key},
 			},
 			want: &shardInstruction{
 				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
-					&instruction.StopAutoStakeInstruction{
-						CommitteePublicKeys: []string{key},
-					},
+					instruction.NewStopAutoStakeInstructionWithValue([]string{key}),
 				},
 			},
 		},

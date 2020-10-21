@@ -1,6 +1,7 @@
 package instruction
 
 import (
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"strings"
 	"testing"
@@ -76,7 +77,8 @@ func TestValidateAndImportStopAutoStakeInstructionFromString(t *testing.T) {
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1, key2, key3, key4}, SPLITTER)},
 			},
 			want: &StopAutoStakeInstruction{
-				[]string{key1, key2, key3, key4},
+				CommitteePublicKeys:       []string{key1, key2, key3, key4},
+				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey1, *incKey2, *incKey3, *incKey4},
 			},
 			wantErr: false,
 		},
@@ -112,7 +114,8 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1}, SPLITTER)},
 			},
 			want: &StopAutoStakeInstruction{
-				CommitteePublicKeys: []string{key1},
+				CommitteePublicKeys:       []string{key1},
+				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey1},
 			},
 		},
 		{
@@ -121,7 +124,8 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1, key2, key3}, SPLITTER)},
 			},
 			want: &StopAutoStakeInstruction{
-				CommitteePublicKeys: []string{key1, key2, key3},
+				CommitteePublicKeys:       []string{key1, key2, key3},
+				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey1, *incKey2, *incKey3},
 			},
 		},
 	}
