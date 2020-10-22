@@ -205,6 +205,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
+	err2 = newBestState.updateDBFromCommitteeState(committeeChange)
+	if err2 != nil {
+		return err2
+	}
+
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
@@ -774,10 +779,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	err = newBestState.updateDBFromCommitteeState(committeeChange)
-	if err != nil {
-		return err
-	}
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -1035,10 +1036,11 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 }
 
 func (beaconBestState *BeaconBestState) updateDBFromCommitteeState(committeeChange *committeestate.CommitteeChange) error {
-	stakerKeys := committeeChange.GetStakerKeys()
-	removedStakerKeys, stopAutoStakerKeys := committeeChange.GetUnstakerKeys(beaconBestState.beaconCommitteeEngine.GetAutoStaking())
-	addedStakerKeys := append(stakerKeys, stopAutoStakerKeys...)
+	stakerKeys := committeeChange.StakerKeys()
+	removedStakerKeys := committeeChange.UnstakeKeys()
+	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
 
+	addedStakerKeys := append(stakerKeys, stopAutoStakerKeys...)
 	err := statedb.StoreStakerInfoV1(
 		beaconBestState.consensusStateDB,
 		addedStakerKeys,
@@ -1049,6 +1051,5 @@ func (beaconBestState *BeaconBestState) updateDBFromCommitteeState(committeeChan
 	if err != nil {
 		return err
 	}
-
 	return statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
 }

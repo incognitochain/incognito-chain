@@ -86,7 +86,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	currentCommittees := []incognitokey.CommitteePublicKey{}
 
 	var beaconFinalView *BeaconBestState
-	beaconFinalBlockHash := common.Hash{}
+	committeeFromBlockHash := common.Hash{}
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommittees = shardBestState.GetShardCommittee()
 		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
@@ -96,7 +96,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconFinalView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	} else {
 		beaconFinalView = committeeFinalView.(*BeaconBestState)
-		beaconFinalBlockHash = *beaconFinalView.GetHash()
+		committeeFromBlockHash = *beaconFinalView.GetHash()
 		currentCommittees = beaconFinalView.GetShardCommittee()[shardBestState.ShardID]
 		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
 		if err != nil {
@@ -119,14 +119,14 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, errors.New("Waiting For Beacon Produce Block")
 	}
 
-	if beaconFinalBlockHash.String() != shardBestState.CommitteeFromBlock().String() {
+	if committeeFromBlockHash.String() != shardBestState.CommitteeFromBlock().String() {
 		emptyHash := common.Hash{}
 		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
 			oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
 			if err != nil {
 				return nil, err
 			}
-			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconFinalBlockHash)
+			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
 			if err != nil {
 				return nil, err
 			}
@@ -136,6 +136,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 						newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
 			}
 		}
+	} else {
+		committeeFromBlockHash = shardBestState.CommitteeFromBlock()
 	}
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
@@ -261,7 +263,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		BeaconHash:         *beaconHash,
 		TotalTxsFee:        totalTxsFee,
 		ConsensusType:      shardBestState.ConsensusAlgorithm,
-		CommitteeFromBlock: beaconFinalBlockHash,
+		CommitteeFromBlock: committeeFromBlockHash,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
