@@ -115,7 +115,6 @@ const (
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
-	TestnetMaxSwapOrAssign  = 1
 
 	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
