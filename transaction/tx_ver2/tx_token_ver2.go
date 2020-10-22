@@ -130,18 +130,22 @@ func (tx *TxToken) GetTxNormal() metadata.Transaction{
 		return tx.cachedTxNormal
 	}
 	result := makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
-	tx.cachedTxNormal = result
+	// tx.cachedTxNormal = result
 	return result
 }
 func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
 	temp, ok := inTx.(*Tx)
 	if !ok{
-		return errors.New("Cannot set TxNormal : wrong type")
+		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Cannot set TxNormal : wrong type"))
 	}
 	tx.TokenData.SigPubKey = temp.SigPubKey
 	tx.TokenData.Sig = temp.Sig
 	tx.TokenData.Proof = temp.Proof
 	tx.cachedTxNormal = nil
+	tx.cachedTxNormal, ok = tx.GetTxNormal().(*Tx)
+	if !ok{
+		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Cannot update TxNormal to cache : wrong type"))
+	}
 	return nil
 }
 
@@ -241,7 +245,6 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				return utils.NewTransactionErr(utils.SignTxError, err)
 			}
 			temp.SigPubKey = params.TokenParams.Receiver[0].PaymentAddress.Pk
-			txToken.SetTxNormal(temp)
 
 			var plainTokenID *common.Hash
 			if params.TokenParams.Mintable {
@@ -260,16 +263,16 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 					return utils.NewTransactionErr(utils.TokenIDExistedError, errors.New("this token is existed in network"))
 				}
 				plainTokenID = &newHashInitToken
-				utils.Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txToken.TokenData.PropertyID.String())
+				utils.Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", newHashInitToken.String())
 			}
 
-			// fmt.Printf("While init token, its ID is %s\n", plainTokenID.String())
 			// set the unblinded asset tag
 			err = theCoinOnProof.SetPlainTokenID(plainTokenID)
 			if err!=nil{
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
+			txToken.SetTxNormal(temp)
 			return nil
 		}
 	case utils.CustomTokenTransfer:
@@ -300,7 +303,6 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 			if err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 			}
-			txToken.SetTxNormal(txNormal)
 			if isBurning{
 				// show plain tokenID if this is a burning TX
 				txToken.TokenData.PropertyID = *propertyID
@@ -308,6 +310,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				// tokenID is already hidden in asset tags in coin, here we use the umbrella ID
 				txToken.TokenData.PropertyID = dbFacingTokenID
 			}
+			txToken.SetTxNormal(txNormal)
 			return nil
 		}
 	default:
@@ -597,7 +600,7 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 				return true, nil
 			}
 		case utils.CustomTokenTransfer:
-			if txToken.GetType() == common.TxConversionType {
+			if txToken.GetType() == common.TxTokenConversionType {
 				return validateConversionVer1ToVer2(txToken.GetTxNormal(), transactionStateDB, shardID, &tokenID)
 			} else {
 				resTxTokenData, err :=  txToken.GetTxNormal().ValidateTransaction(
@@ -1024,8 +1027,6 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 		}
 		txToken.TokenData.Proof = &privacy.ProofV2{}
 		txToken.TokenData.Proof.Init()
-	case common.TxConversionType:
-		panic("WHY")
 	default:
 		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof type"))
 	}
@@ -1037,5 +1038,11 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	// proof := txToken.TokenData.Proof.(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
 	// fmt.Printf("Unmarshalled proof into token data: %v\n", agg)
 	txToken.cachedTxNormal = nil
+	var ok bool
+	txToken.cachedTxNormal, ok = txToken.GetTxNormal().(*Tx)
+	if !ok{
+		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Error while unmarshalling TX token v2 : TxNormal is corrupted"))
+	}
 	return nil
 }
+
