@@ -3958,6 +3958,7 @@ func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[strin
 			req.GetTxReqID(),
 			req.ShardID(),
 			req.ShardHeight(),
+			req.GetRedeemAddressForLiquidating(),
 		)
 	}
 	return newReqs
@@ -4338,11 +4339,11 @@ func calUnlockedCollateralRedeemFromLiquidationPoolV3(
 
 	// calculate total liquidated collaterals in usdt
 	liquidatedPRVCollateralInUSDT, err := exchangeTool.ConvertToUSDT(common.PRVIDStr, lInfo.CollateralAmount)
-	if err != nil{
+	if err != nil {
 		return 0, nil, err
 	}
 	liquidatedTokenCollateralsInUSDT, err := exchangeTool.ConvertMapTokensToUSDT(lInfo.TokensCollateralAmount)
-	if err != nil{
+	if err != nil {
 		return 0, nil, err
 	}
 	liquidatedCollateralAmountInUSDT := liquidatedPRVCollateralInUSDT + liquidatedTokenCollateralsInUSDT
@@ -4390,7 +4391,7 @@ func UpdateCustodianAfterTopup(
 	freeCollateralAmount uint64,
 	collateralTokenID string) (uint64, error) {
 
-	topUpAmt  := depositAmount + freeCollateralAmount
+	topUpAmt := depositAmount + freeCollateralAmount
 	if collateralTokenID == common.PRVIDStr {
 		// v2: topup PRV collateral
 		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + depositAmount)

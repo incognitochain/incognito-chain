@@ -30,6 +30,7 @@ func StoreWaitingRedeemRequests(
 			waitingReq.txReqID,
 			waitingReq.shardID,
 			waitingReq.shardHeight,
+			waitingReq.redeemerAddressForLiquidating,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -134,6 +135,7 @@ func StoreMatchedRedeemRequests(
 			waitingReq.txReqID,
 			waitingReq.shardID,
 			waitingReq.shardHeight,
+			waitingReq.redeemerAddressForLiquidating,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
