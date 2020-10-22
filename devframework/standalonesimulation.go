@@ -1,11 +1,12 @@
 package devframework
 
 import (
+	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/simulation/mock"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/devframework/mock"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -74,7 +75,10 @@ func (sim *SimulationEngine) init() {
 	transactionLogger.SetLevel(common.LevelTrace)
 	privacyLogger.SetLevel(common.LevelTrace)
 	mempoolLogger.SetLevel(common.LevelTrace)
+
 	activeNetParams := &blockchain.ChainTest2Param
+	activeNetParams.ActiveShards = sim.config.ShardNumber
+
 	cs := mock.Consensus{}
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
@@ -257,26 +261,73 @@ func (sim *SimulationEngine) AutoGenerateBlock(numBlk int) {
 func (sim *SimulationEngine) GenerateBlock(h *Hook) {
 	//beacon
 	chain := sim.bc
+	var block interface{} = nil
+	var err error
 
-	block, err := chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
-	if err != nil {
-		fmt.Println("NewBlockError", err)
-		goto PASS_BEACON
+	//Create
+	if h != nil && h.Create != nil {
+		h.Create(-1, chain, func() (blk interface{}, err error) {
+			block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
+			if err != nil {
+				block = nil
+				return nil, err
+			}
+			return block, nil
+		})
+	} else {
+		block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
+		if err != nil {
+			block = nil
+			fmt.Println("NewBlockError", err)
+		}
 	}
 
-	err = chain.VerifyPreSignBeaconBlock(block, true)
-	if err != nil {
-		fmt.Println("VerifyBlockErr", err)
-		goto PASS_BEACON
+	//Validation
+	if h != nil && h.Validation != nil {
+		h.Validation(-1, chain, block, func(blk interface{}) (err error) {
+			if blk == nil {
+				return errors.New("No block for validation")
+			}
+			err = chain.VerifyPreSignBeaconBlock(blk.(*blockchain.BeaconBlock), true)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	} else {
+		if block == nil {
+			fmt.Println("VerifyBlockErr no block")
+		} else {
+			err = chain.VerifyPreSignBeaconBlock(block.(*blockchain.BeaconBlock), true)
+			if err != nil {
+				fmt.Println("VerifyBlockErr", err)
+			}
+		}
+
 	}
 
-	err = chain.InsertBeaconBlock(block, true)
-	if err != nil {
-		fmt.Println("InsertBlkErr", err)
-		goto PASS_BEACON
+	//Insert
+	if h != nil && h.Insert != nil {
+		h.Insert(-1, chain, block, func(blk interface{}) (err error) {
+			if blk == nil {
+				return errors.New("No block for insert")
+			}
+			err = chain.InsertBeaconBlock(blk.(*blockchain.BeaconBlock), true)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	} else {
+		if block == nil {
+			fmt.Println("InsertBlkErr no block")
+		} else {
+			err = chain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
+			if err != nil {
+				fmt.Println("InsertBlkErr", err)
+			}
+		}
 	}
-
-PASS_BEACON:
 
 	////shard
 	//for i := 0; i < sim.config.ShardNumber; i++ {

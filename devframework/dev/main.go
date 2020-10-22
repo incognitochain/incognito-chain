@@ -16,17 +16,17 @@ func main() {
 		Create: func(chainID int, chain interface{}, doCreate func() (blk interface{}, err error)) {
 			fmt.Println("PreCreate block", chainID)
 			blk, err := doCreate()
-			fmt.Println("PostCreate block", chainID, blk, err)
+			fmt.Printf("PostCreate block %+v %v\n", blk, err)
 		},
 		Validation: func(chainID int, chain interface{}, block interface{}, doValidation func(interface{}) error) {
 			fmt.Println("PreValidation block", chainID)
 			err := doValidation(block)
-			fmt.Println("PostValidation block", chainID, err)
+			fmt.Printf("PostValidation %v\n", err)
 		},
 		Insert: func(chainID int, chain interface{}, block interface{}, doInsert func(interface{}) error) {
 			fmt.Println("PreInsert block", chainID)
 			err := doInsert(block)
-			fmt.Println("PostInsert block", chainID, err)
+			fmt.Printf("PostInsert %v\n", err)
 		},
 	})
 
