@@ -384,7 +384,7 @@ func (sim *simInstance) run() {
 			txs := []string{}
 			for _, param := range arrayParams {
 				param := param.(map[string]interface{})
-				data := CreateStakingTx{
+				data := StakingTxParam{
 					SenderPrk:   param["SenderPrk"].(string),
 					MinerPrk:    param["MinerPrk"].(string),
 					RewardAddr:  param["RewardAddr"].(string),
@@ -392,6 +392,25 @@ func (sim *simInstance) run() {
 					AutoRestake: param["AutoRestake"].(bool),
 				}
 				tx, err := sim.CreateTxStaking(data)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				txs = append(txs, tx.Base58CheckData)
+			}
+			err := sim.InjectTxs(txs)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		case STOPSTAKINGTX:
+			arrayParams := common.InterfaceSlice(action.Params)
+			txs := []string{}
+			for _, param := range arrayParams {
+				param := param.(map[string]interface{})
+				data := StopStakingParam{
+					SenderPrk: param["SenderPrk"].(string),
+					MinerPrk:  param["MinerPrk"].(string),
+				}
+				tx, err := sim.CreateTxUnstake(data)
 				if err != nil {
 					log.Fatalln(err)
 				}

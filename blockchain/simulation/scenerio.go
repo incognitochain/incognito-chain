@@ -13,6 +13,7 @@ const (
 	GENERATETXS        Action = "GENERATETXS"
 	CREATETXSANDINJECT Action = "CREATETXSANDINJECT"
 	CREATESTAKINGTX    Action = "CREATESTAKINGTX"
+	STOPSTAKINGTX      Action = "STOPSTAKINGTX"
 	CHECKBESTSTATES    Action = "BESTSTATES"
 	CHECKBALANCES      Action = "CHECKBALANCES"
 	SWITCHTOMANUAL     Action = "SWITCHTOMANUAL"
@@ -33,12 +34,17 @@ type GenerateTxParam struct {
 	Receivers map[string]int
 }
 
-type CreateStakingTx struct {
+type StakingTxParam struct {
 	SenderPrk   string
 	MinerPrk    string
 	RewardAddr  string
 	StakeShard  bool
 	AutoRestake bool
+}
+
+type StopStakingParam struct {
+	SenderPrk string
+	MinerPrk  string
 }
 
 type CreateTxsAndInjectParam struct {

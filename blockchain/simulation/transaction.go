@@ -14,7 +14,7 @@ const (
 	stakeBeaceonAmount int = stakeShardAmount * 3
 )
 
-func (sim *simInstance) CreateTxStaking(stakeMeta CreateStakingTx) (*jsonresult.CreateTransactionResult, error) {
+func (sim *simInstance) CreateTxStaking(stakeMeta StakingTxParam) (*jsonresult.CreateTransactionResult, error) {
 	stakeAmount := 0
 	stakingType := 0
 	if stakeMeta.StakeShard {
@@ -53,6 +53,46 @@ func (sim *simInstance) CreateTxStaking(stakeMeta CreateStakingTx) (*jsonresult.
 			"PrivateSeed":                  privateSeed,
 			"RewardReceiverPaymentAddress": stakeMeta.RewardAddr,
 			"AutoReStaking":                stakeMeta.AutoRestake,
+		}},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	txResp := struct {
+		Result jsonresult.CreateTransactionResult
+	}{}
+	err = json.Unmarshal(body, &txResp)
+	if err != nil {
+		return nil, err
+	}
+	return &txResp.Result, nil
+}
+
+func (sim *simInstance) CreateTxUnstake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
+
+	if stopStakeMeta.MinerPrk == "" {
+		stopStakeMeta.MinerPrk = stopStakeMeta.SenderPrk
+	}
+	wl, err := wallet.Base58CheckDeserialize(stopStakeMeta.MinerPrk)
+	if err != nil {
+		return nil, err
+	}
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	minerPayment := base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.ZeroByte)
+
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendstopautostakingtransaction",
+		"params": []interface{}{stopStakeMeta.SenderPrk, map[string]int{"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 0}, -1, 0, map[string]interface{}{
+			"StopAutoStakingType":     127,
+			"CandidatePaymentAddress": minerPayment,
+			"PrivateSeed":             privateSeed,
 		}},
 		"id": 1,
 	})
