@@ -1695,7 +1695,10 @@ func (txService TxService) buildTxDetails(
 			switch item.Type {
 			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 				{
-					normalTx := txDetail.(*transaction.Tx)
+					normalTx, ok := txDetail.(*transaction.Tx)
+					if !ok || normalTx == nil {
+						continue
+					}
 					item.Version = normalTx.Version
 					item.IsPrivacy = normalTx.IsPrivacy()
 					item.Fee = normalTx.Fee
@@ -1741,7 +1744,10 @@ func (txService TxService) buildTxDetails(
 				}
 			case common.TxCustomTokenPrivacyType:
 				{
-					privacyTokenTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+					privacyTokenTx, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+					if !ok || privacyTokenTx == nil {
+						continue
+					}
 					item.Version = privacyTokenTx.Version
 					item.IsPrivacy = privacyTokenTx.IsPrivacy()
 					item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
@@ -1846,7 +1852,11 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 		if bytes.Equal(tokenID.Bytes(), common.PRVCoinID.Bytes()) {
 			// case 1: tokenID is PRVID, include normal Tx and privacyTx that have native output coins for public key
 			if txDetail.GetType() == common.TxCustomTokenPrivacyType {
-				nativeProof := txDetail.(*transaction.TxCustomTokenPrivacy).GetProof()
+				txPToken, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+				if !ok || txPToken == nil {
+					continue
+				}
+				nativeProof := txPToken.GetProof()
 				if nativeProof == nil {
 					continue
 				}
@@ -1868,7 +1878,15 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 				continue
 			}
 
-			pTokenProof := txDetail.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal.GetProof()
+			txPToken, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+			if !ok || txPToken == nil {
+				continue
+			}
+			if !bytes.Equal(txPToken.GetTokenID().Bytes(), tokenID.Bytes()) {
+				continue
+			}
+
+			pTokenProof := txPToken.TxPrivacyTokenData.TxNormal.GetProof()
 			if pTokenProof == nil {
 				continue
 			}
