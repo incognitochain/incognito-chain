@@ -29,9 +29,9 @@ type Config struct {
 }
 
 type Hook struct {
-	Create     func(chainID int, chain interface{}, doCreate func() (blk interface{}, err error))
-	Validation func(chainID int, chain interface{}, block interface{}, doValidation func(blk interface{}) error)
-	Insert     func(chainID int, chain interface{}, block interface{}, doInsert func(blk interface{}) error)
+	Create     func(chain interface{}, doCreate func() (blk common.BlockInterface, err error))
+	Validation func(chain interface{}, block common.BlockInterface, doValidation func(blk common.BlockInterface) error)
+	Insert     func(chain interface{}, block common.BlockInterface, doInsert func(blk common.BlockInterface) error)
 }
 type SimulationEngine struct {
 	config      Config
@@ -79,7 +79,7 @@ func (sim *SimulationEngine) init() {
 
 	activeNetParams := &blockchain.ChainTest2Param
 	activeNetParams.ActiveShards = sim.config.ShardNumber
-
+	bc := blockchain.BlockChain{}
 	cs := mock.Consensus{}
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
@@ -252,57 +252,73 @@ func (sim *SimulationEngine) Pause() {
 }
 
 //Auto generate block
-func (sim *SimulationEngine) AutoGenerateBlock(numBlk int) {
+func (sim *SimulationEngine) AutoGenerateBlock(chainID int, numBlk int) {
 	for i := 0; i < numBlk; i++ {
-		sim.GenerateBlock(nil)
+		sim.GenerateBlock(chainID, nil)
 	}
 }
 
 //life cycle of a block generation process:
 //PreCreate -> PreValidation -> PreInsert ->
-func (sim *SimulationEngine) GenerateBlock(h *Hook) {
+func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 	//beacon
 	chain := sim.bc
-	var block interface{} = nil
+	var block common.BlockInterface = nil
 	var err error
 
 	//Create
 	if h != nil && h.Create != nil {
-		h.Create(-1, chain, func() (blk interface{}, err error) {
+		h.Create(chain, func() (blk common.BlockInterface, err error) {
+			if chainID == -1 {
+				block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
+				if err != nil {
+					block = nil
+					return nil, err
+				}
+				return block, nil
+			} else {
+
+			}
+		})
+	} else {
+		if chainID == -1 {
 			block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
 			if err != nil {
 				block = nil
-				return nil, err
+				fmt.Println("NewBlockError", err)
 			}
-			return block, nil
-		})
-	} else {
-		block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
-		if err != nil {
-			block = nil
-			fmt.Println("NewBlockError", err)
+		} else {
+
 		}
 	}
 
 	//Validation
 	if h != nil && h.Validation != nil {
-		h.Validation(-1, chain, block, func(blk interface{}) (err error) {
+		h.Validation(chain, block, func(blk common.BlockInterface) (err error) {
 			if blk == nil {
 				return errors.New("No block for validation")
 			}
-			err = chain.VerifyPreSignBeaconBlock(blk.(*blockchain.BeaconBlock), true)
-			if err != nil {
-				return err
+			if chainID == -1 {
+				err = chain.VerifyPreSignBeaconBlock(blk.(*blockchain.BeaconBlock), true)
+				if err != nil {
+					return err
+				}
+				return nil
+			} else {
+
 			}
-			return nil
 		})
 	} else {
 		if block == nil {
 			fmt.Println("VerifyBlockErr no block")
 		} else {
-			err = chain.VerifyPreSignBeaconBlock(block.(*blockchain.BeaconBlock), true)
-			if err != nil {
-				fmt.Println("VerifyBlockErr", err)
+			if chainID == -1 {
+				err = chain.VerifyPreSignBeaconBlock(block.(*blockchain.BeaconBlock), true)
+				if err != nil {
+					fmt.Println("VerifyBlockErr", err)
+				}
+			} else {
+
 			}
 		}
 
@@ -310,23 +326,31 @@ func (sim *SimulationEngine) GenerateBlock(h *Hook) {
 
 	//Insert
 	if h != nil && h.Insert != nil {
-		h.Insert(-1, chain, block, func(blk interface{}) (err error) {
+		h.Insert(chain, block, func(blk common.BlockInterface) (err error) {
 			if blk == nil {
 				return errors.New("No block for insert")
 			}
-			err = chain.InsertBeaconBlock(blk.(*blockchain.BeaconBlock), true)
-			if err != nil {
-				return err
+			if chainID == -1 {
+				err = chain.InsertBeaconBlock(blk.(*blockchain.BeaconBlock), true)
+				if err != nil {
+					return err
+				}
+				return
+			} else {
+
 			}
-			return nil
 		})
 	} else {
 		if block == nil {
 			fmt.Println("InsertBlkErr no block")
 		} else {
-			err = chain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
-			if err != nil {
-				fmt.Println("InsertBlkErr", err)
+			if chainID == -1 {
+				err = chain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
+				if err != nil {
+					fmt.Println("InsertBlkErr", err)
+				}
+			} else {
+
 			}
 		}
 	}
