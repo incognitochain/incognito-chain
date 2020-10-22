@@ -134,15 +134,17 @@ func NewSimInstance(simName string) *simInstance {
 	privacyLogger.SetLevel(common.LevelTrace)
 	mempoolLogger.SetLevel(common.LevelTrace)
 	activeNetParams := &blockchain.ChainTest2Param
+	bc := blockchain.BlockChain{}
 	cs := mock.Consensus{}
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
-	sync := mock.Syncker{}
+	sync := mock.Syncker{
+		Bc: &bc,
+	}
 	server := mock.Server{}
 	ps := mock.Pubsub{}
 	fees := make(map[byte]*mempool.FeeEstimator)
-	bc := blockchain.BlockChain{}
 	for i := byte(0); i < byte(activeNetParams.ActiveShards); i++ {
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
@@ -376,6 +378,28 @@ func (sim *simInstance) run() {
 				if err != nil {
 					log.Fatalln(err)
 				}
+			}
+		case CREATESTAKINGTX:
+			arrayParams := common.InterfaceSlice(action.Params)
+			txs := []string{}
+			for _, param := range arrayParams {
+				param := param.(map[string]interface{})
+				data := CreateStakingTx{
+					SenderPrk:   param["SenderPrk"].(string),
+					MinerPrk:    param["MinerPrk"].(string),
+					RewardAddr:  param["RewardAddr"].(string),
+					StakeShard:  param["StakeShard"].(bool),
+					AutoRestake: param["AutoRestake"].(bool),
+				}
+				tx, err := sim.CreateTxStaking(data)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				txs = append(txs, tx.Base58CheckData)
+			}
+			err := sim.InjectTxs(txs)
+			if err != nil {
+				log.Fatalln(err)
 			}
 		case CHECKBALANCES:
 			arrayParams := common.InterfaceSlice(action.Params)

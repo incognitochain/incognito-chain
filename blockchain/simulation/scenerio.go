@@ -12,6 +12,7 @@ const (
 	AUTOGENERATEBLOCKS Action = "AUTOGENERATEBLOCKS"
 	GENERATETXS        Action = "GENERATETXS"
 	CREATETXSANDINJECT Action = "CREATETXSANDINJECT"
+	CREATESTAKINGTX    Action = "CREATESTAKINGTX"
 	CHECKBESTSTATES    Action = "BESTSTATES"
 	CHECKBALANCES      Action = "CHECKBALANCES"
 	SWITCHTOMANUAL     Action = "SWITCHTOMANUAL"
@@ -30,6 +31,14 @@ type AutoGenerateBlocks struct {
 type GenerateTxParam struct {
 	SenderPrK string
 	Receivers map[string]int
+}
+
+type CreateStakingTx struct {
+	SenderPrk   string
+	MinerPrk    string
+	RewardAddr  string
+	StakeShard  bool
+	AutoRestake bool
 }
 
 type CreateTxsAndInjectParam struct {

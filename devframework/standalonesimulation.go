@@ -3,6 +3,12 @@ package devframework
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,11 +21,6 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"log"
-	"net"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 type Config struct {
@@ -83,11 +84,12 @@ func (sim *SimulationEngine) init() {
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
-	sync := mock.Syncker{}
+	sync := mock.Syncker{
+		Bc: &bc,
+	}
 	server := mock.Server{}
 	ps := mock.Pubsub{}
 	fees := make(map[byte]*mempool.FeeEstimator)
-	bc := blockchain.BlockChain{}
 	for i := byte(0); i < byte(activeNetParams.ActiveShards); i++ {
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
