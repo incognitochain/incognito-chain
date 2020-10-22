@@ -88,11 +88,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		committees = shardBestState.GetShardCommittee()
 	} else {
-		beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
-		if err != nil {
-			return err
-		}
-		committees = beaconView.GetShardCommittee()[shardBestState.ShardID]
+		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 	}
 	//
 
@@ -163,11 +159,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		committees = curView.GetShardCommittee()
 	} else {
-		beaconView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.CommitteeFromBlock)
+		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 		if err != nil {
 			return err
 		}
-		committees = beaconView.GetShardCommittee()[curView.ShardID]
 	}
 
 	if shouldValidate {
@@ -1217,4 +1212,26 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
 	}()
+}
+
+func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
+	committeeFromBlock common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
+	_, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlock)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
+	}
+
+	bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), committeeFromBlock)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(
+		bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
+	}
+	committees := statedb.GetOneShardCommittee(stateDB, shardID)
+
+	return committees, nil
 }

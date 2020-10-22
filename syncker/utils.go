@@ -49,7 +49,7 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 	epochCommittee := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
-		epochCommittee, err = chain.CommitteesV2(sameCommitteeBlock[0])
+		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}

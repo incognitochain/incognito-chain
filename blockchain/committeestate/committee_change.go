@@ -34,6 +34,7 @@ func (committeeChange *CommitteeChange) GetStakerKeys() []incognitokey.Committee
 }
 
 //GetUnstakerKeys ...
+// TODO: @tin split function, 1. remove committee (2 cases), 2. stop auto stake committee (check removed committee before update)
 func (committeeChange *CommitteeChange) GetUnstakerKeys(autoStake map[string]bool) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	removedKeys := []incognitokey.CommitteePublicKey{}
 	stopAutoStakeKeys := []incognitokey.CommitteePublicKey{}
@@ -51,6 +52,7 @@ func (committeeChange *CommitteeChange) GetUnstakerKeys(autoStake map[string]boo
 		}
 	}
 
+	// TODO: @tin move stop auto stake to committeeChange.StopAutoStake
 	for k, _ := range unstakeKeys {
 		incKey := incognitokey.CommitteePublicKey{}
 		incKey.FromBase58(k)
