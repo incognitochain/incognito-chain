@@ -1973,9 +1973,10 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	// Init data for testcases
 	initStateDB()
 	initPublicKey()
+	initLog()
 
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
-	assert.Nil(t, err)
+	// sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	// assert.Nil(t, err)
 	rewardReceiverkey := incKey.GetIncKeyBase58()
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 
@@ -2119,6 +2120,9 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{*incKey},
 				},
+				autoStake: map[string]bool{
+					key: true,
+				},
 			},
 			args: args{
 				unstakeInstruction: &instruction.UnstakeInstruction{
@@ -2132,7 +2136,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
 			},
 			want: &CommitteeChange{
-				Unstake: []string{key},
+				StopAutoStake: []string{key},
 			},
 			want1:   make(map[byte]*instruction.ReturnStakeInstruction),
 			wantErr: false,
