@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -230,11 +231,15 @@ type TxChoice struct{
 func deserializeTransaction(data []byte) (*TxChoice, error){
 	result := &TxChoice{}
 	holder := make(map[string]interface{})
-	err := json.Unmarshal(data, holder)
+	err := json.Unmarshal(data, &holder)
+	if err!=nil{
+		return nil, err
+	}
 	_, isTokenTx := holder["TxTokenPrivacyData"]
+	_, hasVersionOutside := holder["Version"]
 	var verHolder txJsonDataVersion
-	err = json.Unmarshal(data, &verHolder)
-	if err==nil {
+	json.Unmarshal(data, &verHolder)
+	if hasVersionOutside {
 		switch verHolder.Version{
 		case utils.TxVersion1Number:
 			if isTokenTx{
@@ -259,7 +264,7 @@ func deserializeTransaction(data []byte) (*TxChoice, error){
 				return result, err
 			}
 		default:
-			return nil, errors.New("Error unmarshalling TX from JSON : wrong version")
+			return nil, errors.New(fmt.Sprintf("Error unmarshalling TX from JSON : wrong version of %d", verHolder.Version))
 		}
 	}else{
 		if isTokenTx{
