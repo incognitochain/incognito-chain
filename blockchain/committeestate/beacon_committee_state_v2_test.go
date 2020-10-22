@@ -349,6 +349,50 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 			},
 			wantNumberOfAssignedCandidates: 3,
 		},
+		{
+			name: "First time assign candidates",
+			args: args{
+				shardCommonPool: []incognitokey.CommitteePublicKey{
+					*incKey4,
+				},
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+					1: []incognitokey.CommitteePublicKey{},
+				},
+				numberOfFixedValidator: 0,
+				minCommitteeSize:       4,
+			},
+			wantNumberOfAssignedCandidates: 1,
+		},
+		{
+			name: "assign 0 candidates",
+			args: args{
+				shardCommonPool: []incognitokey.CommitteePublicKey{},
+				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+				},
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+					1: []incognitokey.CommitteePublicKey{},
+				},
+				numberOfFixedValidator: 0,
+				minCommitteeSize:       4,
+			},
+			wantNumberOfAssignedCandidates: 0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

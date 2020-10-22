@@ -455,6 +455,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			for _, assignInstruction := range assignInstructions {
 				instructions = append(instructions, assignInstruction.ToString())
 			}
+			Logger.log.Info("assignInstructions:", assignInstructions)
 		}
 	}
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
