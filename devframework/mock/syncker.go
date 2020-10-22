@@ -105,9 +105,7 @@ func (s *Syncker) GetCrossShardBlocksForShardProducer(toShard byte, limit map[by
 }
 
 func (s *Syncker) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
-	var result map[byte][]interface{}
-	result = make(map[byte][]interface{})
-	return result, nil
+	return s.GetCrossShardBlocksForShardProducer(toShard, list), nil
 }
 
 func (s *Syncker) SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash) {

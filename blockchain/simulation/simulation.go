@@ -790,6 +790,12 @@ func (sim *simInstance) SwitchToManual() error {
 	}
 }
 
+func (sim *simInstance) Pause() {
+	fmt.Print("Simulation pause! Press Enter to continue ...")
+	var input string
+	fmt.Scanln(&input)
+}
+
 func sendRequest(requestBody []byte) ([]byte, error) {
 	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
