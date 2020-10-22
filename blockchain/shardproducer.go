@@ -62,34 +62,31 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	version int, proposer string,
 	round int, start time.Time, committeeFinalView multiview.View) (*types.ShardBlock, error) {
 	var (
-		transactionsForNewBlock = make([]metadata.Transaction, 0)
-		totalTxsFee             = make(map[common.Hash]uint64)
-		newShardBlock           = types.NewShardBlock()
-		shardInstructions       = [][]string{}
-		isOldBeaconHeight       = false
-		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset()
-		shardBestState          = NewShardBestState()
-		shardID                 = curView.ShardID
+		transactionsForNewBlock           = make([]metadata.Transaction, 0)
+		totalTxsFee                       = make(map[common.Hash]uint64)
+		newShardBlock                     = types.NewShardBlock()
+		shardInstructions                 = [][]string{}
+		isOldBeaconHeight                 = false
+		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset()
+		shardBestState                    = NewShardBestState()
+		shardID                           = curView.ShardID
+		currentCommitteePublicKeys        = []string{}
+		currentCommitteePublicKeysStructs = []incognitokey.CommitteePublicKey{}
+		beaconFinalBlockHash              = common.Hash{}
+		beaconFinalView                   *BeaconBestState
+		err                               error
 	)
 
-	//========Verify newShardBlock with previous best state
-	// Get Beststate of previous newShardBlock == previous best state
+	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	// Clone best state value into new variable
-	// // startStep := time.Now()
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
-
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
-	var err error
-	currentCommitteePubKeys := []string{}
-	currentCommittees := []incognitokey.CommitteePublicKey{}
 
-	var beaconFinalView *BeaconBestState
-	beaconFinalBlockHash := common.Hash{}
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-		currentCommittees = shardBestState.GetShardCommittee()
-		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
+		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
+		currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
 		if err != nil {
 			return nil, err
 		}
@@ -97,17 +94,15 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	} else {
 		beaconFinalView = committeeFinalView.(*BeaconBestState)
 		beaconFinalBlockHash = *beaconFinalView.GetHash()
-		currentCommittees = beaconFinalView.GetShardCommittee()[shardBestState.ShardID]
-		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
+		currentCommitteePublicKeysStructs = beaconFinalView.GetShardCommittee()[shardBestState.ShardID]
+		currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
 		if err != nil {
 			return nil, err
 		}
 	}
 	beaconHeight := beaconFinalView.GetHeight()
 
-	Logger.log.Criticalf("⛏ Creating Shard Block %+v", shardBestState.ShardHeight+1)
-	//==========Fetch Beacon Blocks============
-	// // startStep = time.Now()
+	// Fetch Beacon Blocks
 	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
@@ -140,7 +135,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
 	if err != nil {
-		fmt.Println("cannot find beacon block ", beaconHeight)
+		Logger.log.Errorf("Beacon block %+v not found", beaconHeight)
 		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
 
@@ -223,7 +218,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	shardInstructions, _, _, err = blockchain.generateInstruction(shardBestState, shardID,
 		beaconHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
-		shardPendingValidatorStr, currentCommitteePubKeys)
+		shardPendingValidatorStr, currentCommitteePublicKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -265,7 +260,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, currentCommittees)
+	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, currentCommitteePublicKeysStructs)
 	if err != nil {
 		return nil, err
 	}
