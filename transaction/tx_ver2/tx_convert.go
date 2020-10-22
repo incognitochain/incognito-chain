@@ -360,11 +360,21 @@ func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2Init
 	}
 	txNormal.SetSig(nil)
 	txNormal.SetSigPubKey(nil)
-	if err := InitConversion(txNormal, txConvertParams); err != nil {
+	if err := validateTxConvertVer1ToVer2Params(txConvertParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
-	txToken.SetTxNormal(txNormal)
-	return nil
+	if err := initializeTxConversion(txNormal, txConvertParams); err != nil {
+		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
+	}
+	txNormal.SetType(common.TxTokenConversionType)
+	if err := proveConversion(txNormal, txConvertParams); err != nil {
+		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
+	}
+	// if err := InitConversion(txNormal, txConvertParams); err != nil {
+	// 	return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
+	// }
+	err := txToken.SetTxNormal(txNormal)
+	return err
 }
 
 func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPrivacyInitParams) ([]privacy.PlainCoin, []*privacy.CoinV2, error) {
@@ -379,7 +389,7 @@ func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPri
 	}
 	// override TxCustomTokenPrivacyType type
 	feeTx.SetVersion(utils.TxConversionVersion12Number)
-	feeTx.SetType(common.TxConversionType)
+	feeTx.SetType(common.TxTokenConversionType)
 	txToken.SetTxBase(feeTx)
 	return inps, outs, nil
 }

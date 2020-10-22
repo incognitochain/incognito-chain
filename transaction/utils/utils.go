@@ -58,14 +58,15 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 	}
 
 	var res privacy.Proof
-	if txType == common.TxConversionType {
+	switch txType {
+	case common.TxConversionType, common.TxTokenConversionType:
 		if ver == TxConversionVersion12Number {
 			res = new(privacy.ProofForConversion)
 			res.Init()
 		} else {
 			return nil, errors.New("ParseProof: TxConversion version is incorrect")
 		}
-	} else {
+	default:
 		switch ver {
 		case TxVersion1Number, TxVersion0Number:
 			res = new(privacy.ProofV1)
