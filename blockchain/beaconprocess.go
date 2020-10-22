@@ -205,8 +205,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
-	err2 = newBestState.updateDBFromCommitteeState(committeeChange)
+	err2 = newBestState.updateDBFromCommitteeStateForPrevState(committeeChange)
 	if err2 != nil {
+		// Logger.log.Info("[swap-v2] err2:", err2)
+		// panic(100)
 		return err2
 	}
 
@@ -779,6 +781,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
+	err = newBestState.updateDBFromCommitteeStateForCurState(committeeChange)
+	if err != nil {
+		return err
+	}
+
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -1035,21 +1042,47 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	return beacon, shard
 }
 
-func (beaconBestState *BeaconBestState) updateDBFromCommitteeState(committeeChange *committeestate.CommitteeChange) error {
+func (beaconBestState *BeaconBestState) updateDBFromCommitteeStateForCurState(committeeChange *committeestate.CommitteeChange) error {
 	stakerKeys := committeeChange.StakerKeys()
+	if len(stakerKeys) != 0 {
+		err := statedb.StoreStakerInfoV1(
+			beaconBestState.consensusStateDB,
+			stakerKeys,
+			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
+			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
+			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) updateDBFromCommitteeStateForPrevState(committeeChange *committeestate.CommitteeChange) error {
+
 	removedStakerKeys := committeeChange.UnstakeKeys()
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
 
-	addedStakerKeys := append(stakerKeys, stopAutoStakerKeys...)
-	err := statedb.StoreStakerInfoV1(
-		beaconBestState.consensusStateDB,
-		addedStakerKeys,
-		beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
-		beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-		beaconBestState.beaconCommitteeEngine.GetStakingTx(),
-	)
-	if err != nil {
-		return err
+	if len(stopAutoStakerKeys) != 0 {
+		err := statedb.StoreStakerInfoV1(
+			beaconBestState.consensusStateDB,
+			stopAutoStakerKeys,
+			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
+			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
+			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+		)
+		if err != nil {
+			return err
+		}
 	}
-	return statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
+
+	if len(removedStakerKeys) != 0 {
+		err := statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
