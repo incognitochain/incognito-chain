@@ -29,46 +29,20 @@ type CommitteeChange struct {
 }
 
 //GetStakerKeys ...
-func (committeeChange *CommitteeChange) GetStakerKeys() []incognitokey.CommitteePublicKey {
+func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded
 }
 
-//GetUnstakerKeys ...
-// TODO: @tin split function, 1. remove committee (2 cases), 2. stop auto stake committee (check removed committee before update)
-func (committeeChange *CommitteeChange) GetUnstakerKeys(autoStake map[string]bool) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
-	removedKeys := []incognitokey.CommitteePublicKey{}
-	stopAutoStakeKeys := []incognitokey.CommitteePublicKey{}
+func (committeeChange *CommitteeChange) UnstakeKeys() []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.Unstake)
+	return res
+}
 
-	unstakeKeys := make(map[string]bool)
-	for _, v := range committeeChange.Unstake {
-		unstakeKeys[v] = true
-	}
-
-	for _, v := range committeeChange.NextEpochShardCandidateRemoved {
-		key, _ := v.ToBase58()
-		if unstakeKeys[key] {
-			removedKeys = append(removedKeys, v)
-			delete(unstakeKeys, key)
-		}
-	}
-
-	// TODO: @tin move stop auto stake to committeeChange.StopAutoStake
-	for k, _ := range unstakeKeys {
-		incKey := incognitokey.CommitteePublicKey{}
-		incKey.FromBase58(k)
-		stopAutoStakeKeys = append(stopAutoStakeKeys, incKey)
-	}
-
-	for _, v := range committeeChange.ShardCommitteeRemoved {
-		for _, value := range v {
-			key, _ := value.ToBase58()
-			if !autoStake[key] {
-				removedKeys = append(removedKeys, value)
-			}
-		}
-	}
-
-	return removedKeys, stopAutoStakeKeys
+func (committeeChange *CommitteeChange) StopAutoStakeKeys() []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
+	return res
 }
 
 func NewCommitteeChange() *CommitteeChange {

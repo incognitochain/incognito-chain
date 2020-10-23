@@ -765,7 +765,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			if common.IndexOfStr(publicKey, env.allSubstituteCommittees) != -1 {
 				// if found in committee list then turn off auto staking
 				if _, ok := b.autoStake[publicKey]; ok {
-					b.autoStake[publicKey] = false
+					newCommitteeChange = b.stopAutoStake(publicKey, newCommitteeChange)
 				}
 			}
 		} else {
@@ -791,8 +791,8 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			if err != nil {
 				return newCommitteeChange, returnStakingInstructions, errors.New("Can't find staker info")
 			}
+			newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, publicKey)
 		}
-		newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, publicKey)
 	}
 
 	return newCommitteeChange, returnStakingInstructions, nil
@@ -900,6 +900,12 @@ func (engine *BeaconCommitteeEngineV2) HasSwappedCommittees(env *BeaconCommittee
 		}
 	}
 	return false, nil
+}
+
+func (b *BeaconCommitteeStateV2) stopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
+	b.autoStake[publicKey] = false
+	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, publicKey)
+	return committeeChange
 }
 
 func (b *BeaconCommitteeStateV2) unassignedCommonPool() ([]string, error) {
