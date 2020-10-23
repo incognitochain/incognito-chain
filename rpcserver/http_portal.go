@@ -231,6 +231,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemerAddressForLiquidating is invalid"))
 	}
+	if len(redeemerAddressForLiquidating) >= 2 && redeemerAddressForLiquidating[0] == '0' && (redeemerAddressForLiquidating[1] == 'x' || redeemerAddressForLiquidating[1] == 'X') {
+		redeemerAddressForLiquidating = redeemerAddressForLiquidating[2:]
+	}
 
 	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee, redeemerAddressForLiquidating)
