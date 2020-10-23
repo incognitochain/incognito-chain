@@ -57,19 +57,34 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 			Metadata: 	nil,
 		},
 	}
-	clonedInfo := make([]byte, len(txPRV.Info))
-	copy(clonedInfo, txPRV.Info)
-	clonedProof, err := utils.ParseProof(proof, txPRV.Version, txPRV.Type)
-	if err!=nil{
-		return nil
+	var clonedInfo []byte = nil
+	var err error
+	if txPRV.Info!=nil{
+		clonedInfo = make([]byte, len(txPRV.Info))
+		copy(clonedInfo, txPRV.Info)
 	}
-	clonedSig := make([]byte, len(sig))
-	copy(clonedSig, sig)
-	clonedPk := make([]byte, len(pubkey))
-	copy(clonedPk, pubkey)
-	result.SetProof(clonedProof)
-	result.SetSig(clonedSig)
-	result.SetSigPubKey(clonedPk)
+	var clonedProof privacy.Proof = nil
+	if proof!=nil{
+		clonedProof, err = utils.ParseProof(proof, txPRV.Version, txPRV.Type)
+		if err!=nil{
+			jsb, _ := json.Marshal(proof)
+			utils.Logger.Log.Errorf("What kind of proof is this ? %s, %v, %v", string(jsb), txPRV.Version, txPRV.Type)
+			return nil
+		}
+	}
+	var clonedSig []byte = nil
+	if sig!=nil{		
+		clonedSig = make([]byte, len(sig))
+		copy(clonedSig, sig)
+	}
+	var clonedPk []byte = nil
+	if pubkey!=nil{
+		clonedPk = make([]byte, len(pubkey))
+		copy(clonedPk, pubkey)
+	}
+	result.Proof = clonedProof
+	result.Sig = clonedSig
+	result.SigPubKey = clonedPk
 
 	return result
 }
@@ -141,11 +156,7 @@ func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
 	tx.TokenData.SigPubKey = temp.SigPubKey
 	tx.TokenData.Sig = temp.Sig
 	tx.TokenData.Proof = temp.Proof
-	tx.cachedTxNormal = nil
-	tx.cachedTxNormal, ok = tx.GetTxNormal().(*Tx)
-	if !ok{
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Cannot update TxNormal to cache : wrong type"))
-	}
+	tx.cachedTxNormal = makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
 	return nil
 }
 
@@ -182,6 +193,7 @@ func (tx *Tx) proveToken(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	}
 
 	// Init tx and params (tx and params will be changed)
+	utils.Logger.Log.Warnf("init token with receivers : %v", params.PaymentInfo)
 	if err := tx.InitializeTxAndParams(params); err != nil {
 		return false, err
 	}
@@ -193,7 +205,7 @@ func (tx *Tx) proveToken(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	return isBurning, nil
 }
 
-func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
+func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams) error {
 	txToken.TokenData.Type = params.TokenParams.TokenTxType
 	txToken.TokenData.PropertyName = params.TokenParams.PropertyName
 	txToken.TokenData.PropertySymbol = params.TokenParams.PropertySymbol
@@ -202,10 +214,7 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 	switch params.TokenParams.TokenTxType {
 	case utils.CustomTokenInit:
 		{
-			temp, ok := txToken.GetTxNormal().(*Tx)
-			if !ok{
-				return utils.NewTransactionErr(utils.UnexpectedError, errors.New("sub-TX should have been ver2"))
-			}
+			temp := txNormal
 			temp.Proof = new(privacy.ProofV2)
 			temp.Proof.Init()
 
@@ -273,6 +282,8 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
 			txToken.SetTxNormal(temp)
+			jsb, _ := json.Marshal(txToken.GetTxNormal())
+			utils.Logger.Log.Warnf("TX token-init creation finished : %s\n", string(jsb))
 			return nil
 		}
 	case utils.CustomTokenTransfer:
@@ -292,13 +303,6 @@ func (txToken *TxToken) initToken(params *tx_generic.TxTokenParams) error {
 				nil,
 				nil,
 			)
-			txToken.cachedTxNormal = nil
-			txNormal, ok := txToken.GetTxNormal().(*Tx)
-			if !ok{
-				return utils.NewTransactionErr(utils.UnexpectedError, errors.New("sub-TX should have been ver2"))
-			}
-			txNormal.SetSig(nil)
-			txNormal.SetSigPubKey(nil)
 			isBurning, err := txNormal.proveToken(txParams)
 			if err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
@@ -360,7 +364,7 @@ func (txToken *TxToken) initPRV(feeTx *Tx, params *tx_generic.TxPrivacyInitParam
 		return nil, nil, utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	txToken.Tx = *feeTx
+	// txToken.SetTxBase(feeTx)
 
 	return inps, outs, nil
 }
@@ -385,6 +389,8 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		params.MetaData,
 		params.Info,
 	)
+	jsb, _ := json.Marshal(params.TokenParams)
+	utils.Logger.Log.Infof("INITTX with token params %s", string(jsb))
 	if err := tx_generic.ValidateTxParams(txPrivacyParams); err != nil {
 		return err
 	}
@@ -416,13 +422,25 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
+	txn := makeTxToken(tx, nil, nil, nil)
 	// Init, prove and sign(CA) Token
-	if err := txToken.initToken(params); err != nil {
+	if err := txToken.initToken(txn, params); err != nil {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
-	message := txToken.Hash()
-	err = txToken.Tx.signOnMessage(inps, outs, txPrivacyParams, message[:])
+	tdh, err := txToken.TokenData.Hash()
+	if err!=nil{
+		return err
+	}
+	message := common.HashH(append(tx.Hash()[:], tdh[:]...))
+	err = tx.signOnMessage(inps, outs, txPrivacyParams, message[:])
+	if err!=nil{
+		return err
+	}
+	
+	err = txToken.SetTxBase(tx)
+	jsb, _ = json.Marshal(txToken)
+	utils.Logger.Log.Warnf("INITTX complete ! The resulting transaction is : %s", string(jsb))
 	return err
 }
 
