@@ -75,7 +75,7 @@ type TransactionToken interface {
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
 	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, metadata.ChainRetriever, byte, bool, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
+	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, []privacy.Proof, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock(*metadata.MintData, byte, metadata.ChainRetriever, *metadata.AccumulatedValues, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
 
 	// Init Transaction, the input should be params such as: TxPrivacyInitParams

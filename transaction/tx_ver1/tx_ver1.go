@@ -690,14 +690,22 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 	return tx.TxBase.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, []privacy.Proof, error) {
 	switch tx.GetType() {
 	case common.TxRewardType:
-		return tx.ValidateTxSalary(transactionStateDB)
+		valid, err := tx.ValidateTxSalary(transactionStateDB)
+		return valid, nil, err
 	case common.TxReturnStakingType:
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil
+		return tx.ValidateTxReturnStaking(transactionStateDB), nil, nil
 	default:
-		return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+		valid, err := tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+		resultProofs := []privacy.Proof{}
+		if isBatch && hasPrivacy{
+			if tx.GetProof()!=nil{
+				resultProofs = append(resultProofs, tx.GetProof())
+			}
+		}
+		return valid, resultProofs, err
 	}
 }
 
@@ -707,7 +715,7 @@ func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.Sta
 	if err != nil {
 		return false, err
 	}
-	valid, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
+	valid, _, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
 	if !valid {
 		return false, err
 	}

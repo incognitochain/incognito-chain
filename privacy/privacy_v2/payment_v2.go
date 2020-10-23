@@ -452,7 +452,6 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 	return proof, nil
 }
 
-// TODO PRIVACY (recheck before devnet)
 func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, error) {
 	cmsValues := proof.aggregatedRangeProof.GetCommitments()
 	if len(proof.GetOutputCoins())!=len(cmsValues){
@@ -472,22 +471,20 @@ func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, erro
 			return false, errors.New("Coin & Proof Commitments mismatch")
 		}
 	}
-	// TODO : handle for batch
-	if isBatch == false {
-		theBase, err := bulletproofs.GetFirstAssetTag(proof.outputCoins)
-		if err != nil {
-			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
-		}
-		valid, err := proof.aggregatedRangeProof.VerifyUsingBase(theBase)
-		if !valid {
-			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF V2: Multi-range failed")
-			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
-		}
+	// for CA, batching is not supported
+	theBase, err := bulletproofs.GetFirstAssetTag(proof.outputCoins)
+	if err != nil {
+		return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
+	}
+	valid, err := proof.aggregatedRangeProof.VerifyUsingBase(theBase)
+	if !valid {
+		Logger.Log.Errorf("VERIFICATION PAYMENT PROOF V2: Multi-range failed")
+		return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
 	}
 	return true, nil
 }
 
-func (proof PaymentProofV2) verifyHasNoPrivacy(isBatch bool) (bool, error) {
+func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 	cmsValues := proof.aggregatedRangeProof.GetCommitments()
 	if len(proof.GetOutputCoins())!=len(cmsValues){
 		return false, errors.New("Commitment length mismatch")
@@ -552,7 +549,7 @@ func (proof PaymentProofV2) Verify(hasConfidentialAsset bool, pubKey key.PublicK
 	}
 
 	if !hasConfidentialAsset{
-		return proof.verifyHasNoPrivacy(isBatch)
+		return proof.verifyHasNoCA(isBatch)
 	}
 	return proof.verifyHasConfidentialAsset(isBatch)
 }

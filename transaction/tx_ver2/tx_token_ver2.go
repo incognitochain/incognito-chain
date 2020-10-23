@@ -565,7 +565,8 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
-	valid, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
+	// isBatch = false
+	valid, _, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
 	if !valid {
 		return false, err
 	}
@@ -576,49 +577,60 @@ func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateD
 	return true, nil
 }
 
-func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, []privacy.Proof, error) {
 	var err error
+	jsb, _ := json.Marshal(txToken)
+	utils.Logger.Log.Infof("Begin verifying token TX %s\n", string(jsb))
 	if tokenID, err = tx_generic.ParseTokenID(tokenID); err != nil {
-		return false, err
+		return false, nil, err
 	}
 	ok, err := txToken.verifySig(transactionStateDB, shardID, tokenID)
 	if !ok {
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v \n", txToken.Hash().String(), err)
-		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
+		return false, nil, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}else {
 		// validate for pToken
 		tokenID := txToken.TokenData.PropertyID
 		switch txToken.TokenData.Type {
 		case utils.CustomTokenInit:
+			// handle PRV bullet proof ?
 			if txToken.TokenData.Mintable {
-				return true, nil
+				return true, nil, nil
 			} else {
 				// check exist token
 				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
-					return false, errors.New("Cannot validate Tx Init Token. It is tx mint from User")
+					return false, nil, errors.New("Cannot validate Tx Init Token. It is tx mint from User")
 				}
-				return true, nil
+				return true, nil, nil
 			}
 		case utils.CustomTokenTransfer:
 			if txToken.GetType() == common.TxTokenConversionType {
-				return validateConversionVer1ToVer2(txToken.GetTxNormal(), transactionStateDB, shardID, &tokenID)
+				valid, err := validateConversionVer1ToVer2(txToken.GetTxNormal(), transactionStateDB, shardID, &tokenID)
+				return valid, nil, err
 			} else {
-				resTxTokenData, err :=  txToken.GetTxNormal().ValidateTransaction(
-					true,
-					transactionStateDB, bridgeStateDB, shardID, &tokenID, isBatch, isNewTransaction)
+				// for CA, bulletproof batching is not supported
+				resTxTokenData, _, err :=  txToken.GetTxNormal().ValidateTransaction(true, transactionStateDB, bridgeStateDB, shardID, &tokenID, false, isNewTransaction)
 				if err!= nil{
-					return resTxTokenData, err
+					return resTxTokenData, nil, err
 				}
 				txFeeProof := txToken.Tx.GetProof()
 				if txFeeProof == nil {
-					return resTxTokenData, nil
+					return false, nil, errors.New("Missing proof for PRV")
 				}
-				resTxFee, err := txFeeProof.Verify(false, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
-				return resTxFee && resTxTokenData, err
+				
+				bulletProofIsCA := false
+				// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
+				bpValid, err := txFeeProof.Verify(bulletProofIsCA, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
+				resultProofs := []privacy.Proof{}
+				if isBatch{
+					resultProofs = append(resultProofs, txFeeProof)
+				}
+				
+				return bpValid && resTxTokenData, resultProofs, err
 
 			}
 		default:
-			return false, errors.New("Cannot validate Tx Token. Unavailable type")
+			return false, nil, errors.New("Cannot validate Tx Token. Unavailable type")
 		}
 	}
 }
