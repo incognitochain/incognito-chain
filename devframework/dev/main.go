@@ -2,33 +2,80 @@ package main
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 	F "github.com/incognitochain/incognito-chain/devframework"
 )
 
 func main() {
-	sim := F.NewStandaloneSimulation("sim", F.Config{
+	sim := F.NewStandaloneSimulation("sim1", F.Config{
 		ShardNumber: 2,
 	})
 
 	sim.Pause()
+	sim.GenerateBlock(0, nil)
+	time.Sleep(9 * time.Second)
+	sim.GenerateBlock(0, &F.Hook{
+		Create: func(chain interface{}, doCreate func(time time.Time) (common.BlockInterface, error)) {
+			fmt.Println("PreCreate block", 0)
+			createTxs := []F.GenerateTxParam{}
+			createTxs = append(createTxs, F.GenerateTxParam{
+				SenderPrK: "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
+				Receivers: map[string]int{
+					"12RqRRt4q6nVis3bfVVf7L4fGquHU8KReA4ZWjjs43kH3VfWRFfGHwZjexHBgSkWMrAQrmq5CeWPkjD1hYt4KousUY7GUWn3Cg3iyJk": 100000,
+					"12RquWY3vpaSPMtAQEozAB1pgbJJnnphzhJTux2VGaX5eHBxYGKcUTYEqJqQdAUsjzr8cpNQRnSTygnduxBpBvrqH1XthdrJMxCQyaC": 100000,
+				},
+			})
 
-	sim.GenerateBlock(&F.Hook{
-		Create: func(chainID int, chain interface{}, doCreate func() (blk interface{}, err error)) {
-			fmt.Println("PreCreate block", chainID)
-			blk, err := doCreate()
-			fmt.Printf("PostCreate block %+v %v\n", blk, err)
+			err := sim.GenerateTxs(createTxs)
+			if err != nil {
+				panic(err)
+			}
+			blk, err := doCreate(time.Now())
+			fmt.Println("PostCreate block", 0, blk, err)
 		},
-		Validation: func(chainID int, chain interface{}, block interface{}, doValidation func(interface{}) error) {
-			fmt.Println("PreValidation block", chainID)
+		Validation: func(chain interface{}, block common.BlockInterface, doValidation func(common.BlockInterface) error) {
+			fmt.Println("PreValidation block", 0)
 			err := doValidation(block)
-			fmt.Printf("PostValidation %v\n", err)
+			fmt.Println("PostValidation block", 0, err)
 		},
-		Insert: func(chainID int, chain interface{}, block interface{}, doInsert func(interface{}) error) {
-			fmt.Println("PreInsert block", chainID)
+		Insert: func(chain interface{}, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
+			fmt.Println("PreInsert block", 0)
 			err := doInsert(block)
-			fmt.Printf("PostInsert %v\n", err)
+			fmt.Println("PostInsert block", 0, err)
+			bl1, err := sim.GetBalance("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
+			fmt.Println(bl1)
+			bl2, err := sim.GetBalance("112t8rncBDbGaFrAE7MZz14d2NPVWprXQuHHXCD2TgSV8USaDFZY3MihVWSqKjwy47sTQ6XvBgNYgdKH2iDVZruKQpRSB5JqxDAX6sjMoUT6")
+			fmt.Println(bl2)
+			bl3, err := sim.GetBalance("112t8rnY3WLfkE9MsKyW9s3Z5qGnPgCkeutTXJzcT5KJgAMS3vgTL9YbaJ7wyc52CzMnrj8QtwHuCpDzo47PV1qCnrui2dfJzKpuYJ3H6fa9")
+			fmt.Println(bl3)
 		},
 	})
-
+	sim.Pause()
+	time.Sleep(9 * time.Second)
+	sim.GenerateBlock(0, nil)
+	time.Sleep(9 * time.Second)
+	sim.GenerateBlock(0, nil)
+	fmt.Println(sim.GetBlockchain().ShardChain[0].GetBestViewHeight(), sim.GetBlockchain().ShardChain[0].GetFinalViewHeight())
+	time.Sleep(10 * time.Second)
+	sim.GenerateBlock(-1, nil)
+	time.Sleep(10 * time.Second)
+	sim.GenerateBlock(-1, nil)
+	time.Sleep(10 * time.Second)
+	sim.GenerateBlock(-1, nil)
+	fmt.Println(sim.GetBlockchain().BeaconChain.GetBestViewHeight(), sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
+	time.Sleep(10 * time.Second)
+	sim.GenerateBlock(1, nil)
+	time.Sleep(10 * time.Second)
+	sim.GenerateBlock(1, &F.Hook{
+		Insert: func(chain interface{}, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
+			fmt.Println("PreInsert block", 1)
+			err := doInsert(block)
+			fmt.Println("PostInsert block", 1, err)
+			bl3, err := sim.GetBalance("112t8rnY3WLfkE9MsKyW9s3Z5qGnPgCkeutTXJzcT5KJgAMS3vgTL9YbaJ7wyc52CzMnrj8QtwHuCpDzo47PV1qCnrui2dfJzKpuYJ3H6fa9")
+			fmt.Println(bl3)
+		},
+	})
 	sim.Pause()
 }

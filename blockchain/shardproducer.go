@@ -60,7 +60,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
 		isOldBeaconHeight       = false
-		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset()
+		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset(start.Unix())
 		shardBestState          = NewShardBestState()
 		beaconHeight            = blockchain.BeaconChain.GetFinalView().GetHeight()
 		shardID                 = curView.ShardID
@@ -744,8 +744,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
-	rand.Seed(time.Now().UnixNano())
+func (blockGenerator *BlockGenerator) createTempKeyset(seedNumber int64) privacy.PrivateKey {
+	rand.Seed(seedNumber)
 	seed := make([]byte, 16)
 	rand.Read(seed)
 	return privacy.GeneratePrivateKey(seed)

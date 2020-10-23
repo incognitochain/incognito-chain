@@ -1,10 +1,14 @@
 package devframework
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,6 +16,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
@@ -21,6 +26,8 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type Config struct {
@@ -29,7 +36,7 @@ type Config struct {
 }
 
 type Hook struct {
-	Create     func(chain interface{}, doCreate func() (blk common.BlockInterface, err error))
+	Create     func(chain interface{}, doCreate func(time time.Time) (blk common.BlockInterface, err error))
 	Validation func(chain interface{}, block common.BlockInterface, doValidation func(blk common.BlockInterface) error)
 	Insert     func(chain interface{}, block common.BlockInterface, doInsert func(blk common.BlockInterface) error)
 }
@@ -85,7 +92,8 @@ func (sim *SimulationEngine) init() {
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
 	sync := mock.Syncker{
-		Bc: &bc,
+		Bc:                  &bc,
+		LastCrossShardState: make(map[byte]map[byte]uint64),
 	}
 	server := mock.Server{}
 	ps := mock.Pubsub{}
@@ -209,6 +217,7 @@ func (sim *SimulationEngine) init() {
 			}
 		}
 	}()
+	go sync.UpdateConfirmCrossShard()
 	go blockgen.Start(cQuit)
 	go rpcServer.Start()
 
@@ -268,27 +277,39 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 
 	//Create
 	if h != nil && h.Create != nil {
-		h.Create(chain, func() (blk common.BlockInterface, err error) {
+		h.Create(chain, func(time time.Time) (blk common.BlockInterface, err error) {
 			if chainID == -1 {
-				block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
+				block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, time.Unix())
 				if err != nil {
 					block = nil
 					return nil, err
 				}
+				block.(mock.BlockValidation).AddValidationField("test")
 				return block, nil
 			} else {
-
+				block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, time.Unix())
+				if err != nil {
+					return nil, err
+				}
+				block.(mock.BlockValidation).AddValidationField("test")
+				return block, nil
 			}
 		})
 	} else {
 		if chainID == -1 {
-			block, err = chain.NewBlockBeacon(chain.GetBeaconBestState(), 2, "x", 1, time.Now().Unix())
+			block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, time.Now().Unix())
 			if err != nil {
 				block = nil
 				fmt.Println("NewBlockError", err)
 			}
+			block.(mock.BlockValidation).AddValidationField("test")
 		} else {
-
+			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, time.Now().Unix())
+			if err != nil {
+				block = nil
+				fmt.Println("NewBlockError", err)
+			}
+			block.(mock.BlockValidation).AddValidationField("test")
 		}
 	}
 
@@ -305,7 +326,11 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 				}
 				return nil
 			} else {
-
+				err = chain.VerifyPreSignShardBlock(block.(*blockchain.ShardBlock), byte(chainID))
+				if err != nil {
+					return err
+				}
+				return nil
 			}
 		})
 	} else {
@@ -318,7 +343,10 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 					fmt.Println("VerifyBlockErr", err)
 				}
 			} else {
-
+				err = chain.VerifyPreSignShardBlock(block.(*blockchain.ShardBlock), byte(chainID))
+				if err != nil {
+					fmt.Println("VerifyBlockErr", err)
+				}
 			}
 		}
 
@@ -337,7 +365,11 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 				}
 				return
 			} else {
-
+				err = chain.InsertShardBlock(blk.(*blockchain.ShardBlock), true)
+				if err != nil {
+					return err
+				}
+				return
 			}
 		})
 	} else {
@@ -350,31 +382,13 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 					fmt.Println("InsertBlkErr", err)
 				}
 			} else {
-
+				err = chain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
+				if err != nil {
+					fmt.Println("InsertBlkErr", err)
+				}
 			}
 		}
 	}
-
-	////shard
-	//for i := 0; i < sim.config.ShardNumber; i++ {
-	//	sim.bc
-	//	block, err := chain.NewBlockShard(chain.GetBestStateShard(byte(i)), 2, "x", 1, time.Now())
-	//	if err != nil {
-	//		goto PASS_SHARD
-	//	}
-	//
-	//	err = chain.VerifyPreSignShardBlock(block, byte(i))
-	//	if err != nil {
-	//		goto PASS_SHARD
-	//	}
-	//
-	//	err = chain.InsertShardBlock(block, true)
-	//	if err != nil {
-	//		goto PASS_SHARD
-	//	}
-	//PASS_SHARD:
-	//}
-
 	sim.ForwardToFuture()
 }
 
@@ -382,4 +396,128 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 //default = round interval
 func (sim *SimulationEngine) ForwardToFuture(args ...interface{}) {
 
+}
+
+func (sim *SimulationEngine) GenerateTxs(createTxs []GenerateTxParam) error {
+	txsInject := []string{}
+	for _, createTxMeta := range createTxs {
+		tx, err := sim.CreateTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
+		if err != nil {
+			return err
+		}
+		txsInject = append(txsInject, tx.Base58CheckData)
+	}
+	err := sim.InjectTxs(txsInject)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sim *SimulationEngine) CreateTx(senderPrk string, receivers map[string]int) (*jsonresult.CreateTransactionResult, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createtransaction",
+		"params":  []interface{}{senderPrk, receivers, 1, 1},
+		"id":      1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	txResp := struct {
+		Result jsonresult.CreateTransactionResult
+	}{}
+	err = json.Unmarshal(body, &txResp)
+	if err != nil {
+		return nil, err
+	}
+	return &txResp.Result, nil
+}
+
+func (sim *SimulationEngine) InjectTxs(txsBase58 []string) error {
+	for _, txB58Check := range txsBase58 {
+		rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
+		if err != nil {
+			return err
+		}
+		var tx transaction.Tx
+		err = json.Unmarshal(rawTxBytes, &tx)
+		if err != nil {
+			return err
+		}
+		sim.cPendingTxs <- &tx
+	}
+	return nil
+}
+
+func (sim *SimulationEngine) GetBalance(privateKey string) (map[string]uint64, error) {
+	tokenList := make(map[string]uint64)
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbalancebyprivatekey",
+		"params":  []interface{}{privateKey},
+		"id":      1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	txResp := struct {
+		Result uint64
+	}{}
+	err = json.Unmarshal(body, &txResp)
+	if err != nil {
+		return nil, err
+	}
+	tokenList["PRV"] = txResp.Result
+
+	requestBody2, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getlistprivacycustomtokenbalance",
+		"params":  []interface{}{privateKey},
+		"id":      1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body2, err := sendRequest(requestBody2)
+	if err != nil {
+		return nil, err
+	}
+	txResp2 := struct {
+		Result jsonresult.ListCustomTokenBalance
+	}{}
+	err = json.Unmarshal(body2, &txResp2)
+	if err != nil {
+		return nil, err
+	}
+	for _, token := range txResp2.Result.ListCustomTokenBalance {
+		tokenList[token.Name] = token.Amount
+	}
+	return tokenList, nil
+}
+
+func (sim *SimulationEngine) GetBlockchain() *blockchain.BlockChain {
+	return sim.bc
+}
+
+func sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
