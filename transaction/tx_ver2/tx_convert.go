@@ -383,13 +383,14 @@ func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPri
 	// 	utils.Logger.Log.Errorf("Cannot calculate txPrivacyTokenData Hash, err %v", err)
 	// 	return err
 	// }
+	feeTx.SetVersion(utils.TxConversionVersion12Number)
+	feeTx.SetType(common.TxTokenConversionType)
 	inps, outs, err := feeTx.provePRV(params)
 	if err != nil {
 		return nil, nil, utils.NewTransactionErr(utils.PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
-	feeTx.SetVersion(utils.TxConversionVersion12Number)
-	feeTx.SetType(common.TxTokenConversionType)
+	
 	txToken.SetTxBase(feeTx)
 	return inps, outs, nil
 }

@@ -677,7 +677,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		_ = mySupposedlyPersonalKey
-		// testProveVerifyTxTokenConversionTampered(mySupposedlyPersonalKey, txToken, txTokenConversionParams, tokenID, t)
+		testProveVerifyTxTokenConversionTampered(mySupposedlyPersonalKey, txToken, txTokenConversionParams, tokenID, t)
 		// res, err := txToken.ValidateTransaction(false, testDB, bridgeDB, 0, &common.PRVCoinID, false, true)
 		// assert.Equal(t, true, res, "ValidateTransaction returns an error: %v", err)
 
@@ -703,9 +703,9 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 		txConversionOutput.GetTxBase().SetTxFee(uint64(common.RandIntInterval(0, 1000)))
 
 		//Re-sign transaction
-		txInner.Sig, txInner.SigPubKey, err = tx_generic.SignNoPrivacy(convParam.senderSK, txInner.Hash()[:])
-		assert.Equal(t, nil, err)
-		txConversionOutput.SetTxNormal(txInner)
+		// txInner.Sig, txInner.SigPubKey, err = tx_generic.SignNoPrivacy(convParam.senderSK, txInner.Hash()[:])
+		// assert.Equal(t, nil, err)
+		// txConversionOutput.SetTxNormal(txInner)
 		resignUnprovenTxToken([]*incognitokey.KeySet{decryptingKey}, txConversionOutput, nil, txPrivacyParams)
 
 		// fmt.Println(err)
@@ -735,7 +735,7 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 	//attempt to convert used coins (used serial numbers)
 	case 2:
 		fmt.Println("------------------Tampering with serial numbers-------------------")
-		bothInputCoins := append(txConversionOutput.GetProof().GetInputCoins(), txConversionOutput.GetTxNormal().GetProof().GetInputCoins()...)
+		bothInputCoins := append(txConversionOutput.Tx.GetProof().GetInputCoins(), txConversionOutput.GetTxNormal().GetProof().GetInputCoins()...)
 		usedIndex := common.RandInt() % len(bothInputCoins)
 		inputCoin := bothInputCoins[usedIndex]
 
@@ -747,7 +747,7 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 	//tamper with OTAs
 	case 3:
 		fmt.Println("------------------Tampering with OTAs-------------------")
-		bothOutputCoins := append(txConversionOutput.GetProof().GetOutputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()...)
+		bothOutputCoins := append(txConversionOutput.Tx.GetProof().GetOutputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()...)
 		usedIndex := common.RandInt() % len(bothOutputCoins)
 		outputCoin := bothOutputCoins[usedIndex]
 
@@ -759,7 +759,7 @@ func testProveVerifyTxTokenConversionTampered(decryptingKey *incognitokey.KeySet
 	case 4:
 		fmt.Println("------------------Tampering with commitment-------------------")
 		//fmt.Println("Tx hash before altered", txConversionOutput.Hash().String())
-		bothOutputCoins := append(txConversionOutput.GetProof().GetOutputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()...)
+		bothOutputCoins := append(txConversionOutput.Tx.GetProof().GetOutputCoins(), txConversionOutput.GetTxTokenData().TxNormal.GetProof().GetOutputCoins()...)
 		usedIndex := common.RandInt() % len(bothOutputCoins)
 		outputCoin := bothOutputCoins[usedIndex]
 		outputCoinSpecific, ok := outputCoin.(*coin.CoinV2)
