@@ -113,7 +113,7 @@ func TestBeaconBestState_processStakeInstruction(t *testing.T) {
 				BeaconCommittee:        tt.fields.BeaconCommittee,
 				BeaconPendingValidator: tt.fields.BeaconPendingValidator,
 			}
-			got, got1, got2, got3 := beaconBestState.processInstruction(tt.args.instruction, tt.args.blockchain, tt.args.committeeChange)
+			got, got1, got2, got3 := beaconBestState.processInstruction(tt.args.instruction, tt.args.blockchain, tt.args.committeeChange, nil, []string{})
 
 			if tt.want1 && got.Error() == tt.want.Error() {
 				t.Errorf("processInstruction() got = %v, want %v", got, tt.want)
