@@ -133,7 +133,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	}
 
 	shardInstruction.compose()
-
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstruction,
@@ -488,6 +487,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			}
 		}
 	}
+
 	return instructions, nil
 }
 
