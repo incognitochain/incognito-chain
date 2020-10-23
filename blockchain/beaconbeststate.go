@@ -691,17 +691,20 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	}
 	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
 		var err error
+		var tempBeaconBlock = types.NewBeaconBlock()
+		var randomTimeBeaconHash = beaconBestState.BestBlockHash
 		randomTimeBeaconHeight := (beaconBestState.Epoch-1)*params.Epoch + params.RandomTime - 1
 		tempBeaconHeight := beaconBestState.BeaconHeight
-		tempBeaconBlock := &beaconBestState.BestBlock
+		previousBeaconHash := beaconBestState.PreviousBestBlockHash
 		for tempBeaconHeight > randomTimeBeaconHeight {
-			tempBeaconBlock, tempBeaconHeight, err = bc.GetBeaconBlockByHash(tempBeaconBlock.GetPrevHash())
+			tempBeaconBlock, _, err = bc.GetBeaconBlockByHash(previousBeaconHash)
 			if err != nil {
 				panic(err)
 			}
 			tempBeaconHeight--
+			randomTimeBeaconHash = tempBeaconBlock.Header.Hash()
 		}
-		tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), tempBeaconBlock.Header.Hash())
+		tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), randomTimeBeaconHash)
 		if err != nil {
 			panic(err)
 		}
