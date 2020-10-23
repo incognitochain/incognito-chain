@@ -129,7 +129,7 @@ type txJsonDataVersion struct {
 
 // For PRV and the Fee inside TokenTx
 func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
-	choices, err := deserializeTransaction(data)
+	choices, err := DeserializeTransactionJSON(data)
 	if err!=nil{
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 
 // Return token transaction from bytes
 func NewTransactionTokenFromJsonBytes(data []byte) (tx_generic.TransactionToken, error) {
-	choices, err := deserializeTransaction(data)
+	choices, err := DeserializeTransactionJSON(data)
 	if err!=nil{
 		return nil, err
 	}
@@ -228,7 +228,23 @@ type TxChoice struct{
 	Version2 		*TxVersion2 		`json:"TxVersion2,omitempty"`
 	TokenVersion2 	*TxTokenVersion2 	`json:"TxTokenVersion2,omitempty"`
 }
-func deserializeTransaction(data []byte) (*TxChoice, error){
+func (ch *TxChoice) ToTx() metadata.Transaction{
+	// `choice` struct only ever contains 1 non-nil field
+	if ch.Version1!=nil{
+		return ch.Version1
+	}
+	if ch.Version2!=nil{
+		return ch.Version2
+	}
+	if ch.TokenVersion1!=nil{
+		return ch.TokenVersion1
+	}
+	if ch.TokenVersion2!=nil{
+		return ch.TokenVersion2
+	}
+	return nil
+}
+func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 	result := &TxChoice{}
 	holder := make(map[string]interface{})
 	err := json.Unmarshal(data, &holder)

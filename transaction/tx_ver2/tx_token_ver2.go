@@ -1035,12 +1035,7 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	}
 	// proof := txToken.TokenData.Proof.(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
 	// fmt.Printf("Unmarshalled proof into token data: %v\n", agg)
-	txToken.cachedTxNormal = nil
-	var ok bool
-	txToken.cachedTxNormal, ok = txToken.GetTxNormal().(*Tx)
-	if !ok{
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Error while unmarshalling TX token v2 : TxNormal is corrupted"))
-	}
+	txToken.cachedTxNormal = makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
 	return nil
 }
 

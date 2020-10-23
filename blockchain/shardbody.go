@@ -29,7 +29,7 @@ because we have many types of block, so we can need to customize data from marsh
 func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	type Alias ShardBody
 	temp := &struct {
-		Transactions []map[string]*json.RawMessage
+		Transactions []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(shardBody),
@@ -42,35 +42,41 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
-		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
+		// txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
 		var tx metadata.Transaction
 		var parseErr error
-		txType := ""
-
-		if txTemp["Type"] != nil {
-			if err = json.Unmarshal(*txTemp["Type"], &txType); err != nil {
-				panic(fmt.Sprintf("Cannot parse Tx Type from Shard Body: %v", txTemp))
-				return NewBlockChainError(UnmashallJsonShardBlockError, err)
-			}
-		} else {
-			panic(fmt.Sprintf("Cannot parse Shard Body from data : %v", txTemp))
-			return NewBlockChainError(UnmashallJsonShardBlockError, err)
+		var txChoice *transaction.TxChoice
+		txChoice, parseErr = transaction.DeserializeTransactionJSON(txTemp)
+		tx = txChoice.ToTx()
+		if tx==nil{
+			return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("corrupted TX"))
 		}
+		// txType := ""
 
-		switch txType {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
-			{
-				tx, parseErr = transaction.NewTransactionFromJsonBytes(txTempJson)
-			}
-		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
-			{
-				tx, parseErr = transaction.NewTransactionTokenFromJsonBytes(txTempJson)
-			}
-		default:
-			{
-				return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("Cannot parse a wrong tx "))
-			}
-		}
+		// if txTemp["Type"] != nil {
+		// 	if err = json.Unmarshal(*txTemp["Type"], &txType); err != nil {
+		// 		panic(fmt.Sprintf("Cannot parse Tx Type from Shard Body: %v", txTemp))
+		// 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
+		// 	}
+		// } else {
+		// 	panic(fmt.Sprintf("Cannot parse Shard Body from data : %v", txTemp))
+		// 	return NewBlockChainError(UnmashallJsonShardBlockError, err)
+		// }
+
+		// switch txType {
+		// case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
+		// 	{
+		// 		tx, parseErr = transaction.NewTransactionFromJsonBytes(txTempJson)
+		// 	}
+		// case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
+		// 	{
+		// 		tx, parseErr = transaction.NewTransactionTokenFromJsonBytes(txTempJson)
+		// 	}
+		// default:
+		// 	{
+		// 		return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("Cannot parse a wrong tx "))
+		// 	}
+		// }
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonShardBlockError, parseErr)
 		}
