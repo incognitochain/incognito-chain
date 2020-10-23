@@ -406,10 +406,10 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 
 		// testTxV2DeletedProof(tx, t)
 		testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
-		// testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
+		testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
 		// testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
 		// testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
-		// testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
+		testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
 		_,_ = isValid,err
 	}
 }

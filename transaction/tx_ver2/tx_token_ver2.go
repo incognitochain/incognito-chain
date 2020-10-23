@@ -635,16 +635,14 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
 	}
 	// validate metadata
-	check, err := tx_generic.MdValidateSanity(&txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	check, err := tx_generic.MdValidateSanity(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
-	// validate sanity for tx pToken + metadata
 	check, err = tx_generic.ValidateSanity(txn, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
-	// validate sanity for tx pToken + without metadata
 	check1, err1 := tx_generic.ValidateSanity(&txToken.Tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	if !check1 || err1 != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err1)
