@@ -690,31 +690,36 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		shardSubstitute[byte(k)] = v
 	}
 	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
-		// TODO: @hung fix this later
-		//tempBeaconHeight := (beaconBestState.Epoch-1)*params.Epoch + params.RandomTime - 1
-		//tempRootHash, err := bc.GetBeaconBlockByHeight(bc.GetBeaconChainDatabase(), tempBeaconHeight)
-		//if err != nil {
-		//	panic(err)
-		//}
-		//dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
-		//consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash, dbWarper)
-		//snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-		//	_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
-		//snapshotShardCommonPool := snapshotNextEpochShardCandidate
-		//snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-		//snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
-		//delete(snapshotCurrentValidator, statedb.BeaconChainID)
-		//delete(snapshotSubstituteValidator, statedb.BeaconChainID)
-		//for k, v := range snapshotCurrentValidator {
-		//	snapshotShardCommittee[byte(k)] = v
-		//}
-		//for k, v := range snapshotSubstituteValidator {
-		//	snapshotShardSubstitute[byte(k)] = v
-		//}
-
-		snapshotShardCommonPool := shardCommonPool
-		snapshotShardCommittee := shardCommittee
-		snapshotShardSubstitute := shardSubstitute
+		var err error
+		randomTimeBeaconHeight := (beaconBestState.Epoch-1)*params.Epoch + params.RandomTime - 1
+		tempBeaconHeight := beaconBestState.BeaconHeight
+		tempBeaconBlock := &beaconBestState.BestBlock
+		for tempBeaconHeight > randomTimeBeaconHeight {
+			tempBeaconBlock, tempBeaconHeight, err = bc.GetBeaconBlockByHash(tempBeaconBlock.GetPrevHash())
+			if err != nil {
+				panic(err)
+			}
+			tempBeaconHeight--
+		}
+		tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), tempBeaconBlock.Header.Hash())
+		if err != nil {
+			panic(err)
+		}
+		dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
+		consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
+		snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
+			_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+		snapshotShardCommonPool := snapshotNextEpochShardCandidate
+		snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+		snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+		delete(snapshotCurrentValidator, statedb.BeaconChainID)
+		delete(snapshotSubstituteValidator, statedb.BeaconChainID)
+		for k, v := range snapshotCurrentValidator {
+			snapshotShardCommittee[byte(k)] = v
+		}
+		for k, v := range snapshotSubstituteValidator {
+			snapshotShardSubstitute[byte(k)] = v
+		}
 
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
 			snapshotShardCommonPool,

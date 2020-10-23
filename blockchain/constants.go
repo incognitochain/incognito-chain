@@ -110,8 +110,8 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 20
-	TestnetRandomTime       = 10
+	TestnetEpoch            = 30
+	TestnetRandomTime       = 15
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
