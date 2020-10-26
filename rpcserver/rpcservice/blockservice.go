@@ -1183,6 +1183,24 @@ func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatus(txI
 	return nil, nil
 }
 
+func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatusV3(txID string) (*metadata.PortalRedeemFromLiquidationPoolStatusV3, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetRedeemRequestFromLiquidationPoolByTxIDStatusV3(stateDB, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalRedeemFromLiquidationPoolStatusV3
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &status)
+		if err != nil {
+			return nil, err
+		}
+		return &status, nil
+	}
+
+	return nil, nil
+}
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()

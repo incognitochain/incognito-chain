@@ -552,6 +552,10 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 		return nil, nil
 	}
 
+	if liqCustodian.LiquidatedCollateralAmount == 0 {
+		return nil, nil
+	}
+
 	meta := metadata.NewPortalLiquidateCustodianResponse(
 		liqCustodian.UniqueRedeemID,
 		liqCustodian.LiquidatedCollateralAmount,
