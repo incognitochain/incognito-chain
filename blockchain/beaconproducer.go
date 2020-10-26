@@ -148,9 +148,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	}
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
-	if len(beaconBlock.Body.Instructions) != 0 {
-		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
-	}
 	if len(bridgeInstructions) > 0 {
 		BLogger.log.Infof("Producer instructions: %+v", tempInstruction)
 	}
@@ -167,7 +164,9 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	tempInstruction = append(tempInstruction, incurredInstructions...)
 	beaconBlock.Body.Instructions = tempInstruction
-
+	if len(beaconBlock.Body.Instructions) != 0 {
+		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+	}
 	//============Build Header Hash=============
 	// calculate hash
 	// Shard state hash
@@ -759,24 +758,25 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 	allCommitteeValidatorCandidate []string,
 	shardID byte,
 	validUnstakePublicKeys map[string]bool) *shardInstruction {
-	unstakingPublicKeys := []string{}
+	unstakePublicKeys := []string{}
 	unstakeInstructions := []*instruction.UnstakeInstruction{}
 
 	for _, unstakeInstruction := range shardInstructions.unstakeInstructions {
 		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
-			if validUnstakePublicKeys[tempUnstakePublicKey] {
-				Logger.log.Infof("SHARD %v | UNSTAKE duplicated unstake instruction | ", shardID)
+			// TODO: @hung check why only one transaction but it saied duplciate unstake instruction
+			if _, ok := validUnstakePublicKeys[tempUnstakePublicKey]; ok {
+				Logger.log.Errorf("SHARD %v | UNSTAKE duplicated unstake instruction %+v ", shardID, tempUnstakePublicKey)
 				continue
 			}
 			if common.IndexOfStr(tempUnstakePublicKey, allCommitteeValidatorCandidate) > -1 {
-				unstakingPublicKeys = append(unstakingPublicKeys, tempUnstakePublicKey)
+				unstakePublicKeys = append(unstakePublicKeys, tempUnstakePublicKey)
 			}
 			validUnstakePublicKeys[tempUnstakePublicKey] = true
 		}
 	}
-	if len(unstakingPublicKeys) > 0 {
-		tempUnstakeInstruction := instruction.NewUnstakeInstructionWithValue(unstakingPublicKeys)
-		tempUnstakeInstruction.SetCommitteePublicKeys(unstakingPublicKeys)
+	if len(unstakePublicKeys) > 0 {
+		tempUnstakeInstruction := instruction.NewUnstakeInstructionWithValue(unstakePublicKeys)
+		tempUnstakeInstruction.SetCommitteePublicKeys(unstakePublicKeys)
 		unstakeInstructions = append(unstakeInstructions, tempUnstakeInstruction)
 	}
 
