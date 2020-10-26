@@ -269,6 +269,7 @@ func (sim *SimulationEngine) Pause() {
 	fmt.Print("Simulation pause! Press Enter to continue ...")
 	var input string
 	fmt.Scanln(&input)
+	fmt.Print("\n")
 }
 
 //Auto generate block
