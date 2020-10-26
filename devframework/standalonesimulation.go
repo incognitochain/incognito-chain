@@ -43,6 +43,7 @@ type Hook struct {
 type SimulationEngine struct {
 	config      Config
 	simName     string
+	timer       *TimeEngine
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
 	cs          *mock.Consensus
@@ -58,9 +59,11 @@ type SimulationEngine struct {
 }
 
 func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
+	os.RemoveAll(name)
 	sim := &SimulationEngine{
 		config:  config,
 		simName: name,
+		timer:   NewTimeEngine(),
 	}
 	sim.init()
 	time.Sleep(1 * time.Second)
@@ -84,9 +87,17 @@ func (sim *SimulationEngine) init() {
 	privacyLogger.SetLevel(common.LevelTrace)
 	mempoolLogger.SetLevel(common.LevelTrace)
 
-	activeNetParams := &blockchain.ChainTest2Param
-	activeNetParams.ActiveShards = sim.config.ShardNumber
+	//read and setup key
+	blockchain.ReadKey()
+	blockchain.SetupParam()
+
+	//init blockchain
 	bc := blockchain.BlockChain{}
+
+	activeNetParams := &blockchain.ChainTest2Param
+	sim.timer.init(activeNetParams.GenesisBeaconBlock.Header.Timestamp + 10)
+	activeNetParams.ActiveShards = sim.config.ShardNumber
+
 	cs := mock.Consensus{}
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
@@ -263,13 +274,18 @@ func (sim *SimulationEngine) Pause() {
 //Auto generate block
 func (sim *SimulationEngine) AutoGenerateBlock(chainID int, numBlk int) {
 	for i := 0; i < numBlk; i++ {
-		sim.GenerateBlock(chainID, nil)
+		sim.GenerateBlock(-1, nil, false)
+		for j := 0; j < sim.config.ShardNumber; j++ {
+			sim.GenerateBlock(chainID, nil, false)
+		}
+		sim.ForwardToFuture()
 	}
 }
 
 //life cycle of a block generation process:
 //PreCreate -> PreValidation -> PreInsert ->
-func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
+func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook, forwardTime bool) (res map[int]interface{}) {
+	res = make(map[int]interface{})
 	//beacon
 	chain := sim.bc
 	var block common.BlockInterface = nil
@@ -279,7 +295,7 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 	if h != nil && h.Create != nil {
 		h.Create(chain, func(time time.Time) (blk common.BlockInterface, err error) {
 			if chainID == -1 {
-				block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, time.Unix())
+				block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, sim.timer.Now())
 				if err != nil {
 					block = nil
 					return nil, err
@@ -287,7 +303,7 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 				block.(mock.BlockValidation).AddValidationField("test")
 				return block, nil
 			} else {
-				block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, time.Unix())
+				block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, sim.timer.Now())
 				if err != nil {
 					return nil, err
 				}
@@ -297,14 +313,14 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 		})
 	} else {
 		if chainID == -1 {
-			block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, time.Now().Unix())
+			block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, sim.timer.Now())
 			if err != nil {
 				block = nil
 				fmt.Println("NewBlockError", err)
 			}
 			block.(mock.BlockValidation).AddValidationField("test")
 		} else {
-			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, time.Now().Unix())
+			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, sim.timer.Now())
 			if err != nil {
 				block = nil
 				fmt.Println("NewBlockError", err)
@@ -362,12 +378,16 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 				err = chain.InsertBeaconBlock(blk.(*blockchain.BeaconBlock), true)
 				if err != nil {
 					return err
+				} else {
+					res[chainID] = block
 				}
 				return
 			} else {
 				err = chain.InsertShardBlock(blk.(*blockchain.ShardBlock), true)
 				if err != nil {
 					return err
+				} else {
+					res[chainID] = block
 				}
 				return
 			}
@@ -380,22 +400,32 @@ func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook) {
 				err = chain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
 				if err != nil {
 					fmt.Println("InsertBlkErr", err)
+				} else {
+					res[chainID] = block
 				}
 			} else {
 				err = chain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
 				if err != nil {
 					fmt.Println("InsertBlkErr", err)
+				} else {
+					res[chainID] = block
 				}
+
 			}
 		}
 	}
-	sim.ForwardToFuture()
+
+	if forwardTime {
+		sim.ForwardToFuture()
+	}
+
+	return res
 }
 
 //number of second we want simulation to forward
 //default = round interval
-func (sim *SimulationEngine) ForwardToFuture(args ...interface{}) {
-
+func (sim *SimulationEngine) ForwardToFuture() {
+	sim.timer.Forward(10)
 }
 
 func (sim *SimulationEngine) GenerateTxs(createTxs []GenerateTxParam) error {

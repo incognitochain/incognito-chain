@@ -148,9 +148,10 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
-	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
-	newBlock, err := chain.Blockchain.NewBlockShard(chain.GetBestState(), version, proposer, round, time.Unix(startTime, 0))
-	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
+	Logger.log.Infof("Begin Start New Block Shard %+v", time.Unix(startTime, 0))
+	time1 := time.Now()
+	newBlock, err := chain.Blockchain.NewBlockShard(chain.GetBestState(), version, proposer, round, startTime)
+	Logger.log.Infof("Finish New Block Shard %+v", time.Since(time1).Seconds())
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err

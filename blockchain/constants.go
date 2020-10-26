@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -26,7 +24,7 @@ const (
 	NumberOfFixedBlockValidators  = 4
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
-	SpareTime                     = 1000 // in mili-second
+	SpareTime                     = 1000             // in mili-second
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
@@ -199,10 +197,8 @@ var TestnetReplaceCommitteeEpoch = []uint64{}
 var IsTestNet = true
 var IsTestNet2 = false
 
-func init() {
-	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
-		return
-	}
+func ReadKey() {
+
 	var keyData []byte
 	var keyDataV2 []byte
 	var err error

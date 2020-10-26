@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/common"
 	F "github.com/incognitochain/incognito-chain/devframework"
+	"time"
 )
 
 func main() {
@@ -14,9 +13,14 @@ func main() {
 	})
 
 	sim.Pause()
-	sim.GenerateBlock(0, nil)
-	time.Sleep(9 * time.Second)
 	sim.GenerateBlock(0, &F.Hook{
+		Insert: func(chain interface{}, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
+			doInsert(block)
+			fmt.Println(block.GetProduceTime())
+		},
+	}, true)
+
+	_ = sim.GenerateBlock(0, &F.Hook{
 		Create: func(chain interface{}, doCreate func(time time.Time) (common.BlockInterface, error)) {
 			fmt.Println("PreCreate block", 0)
 			createTxs := []F.GenerateTxParam{}
@@ -50,32 +54,29 @@ func main() {
 			fmt.Println(bl2)
 			bl3, err := sim.GetBalance("112t8rnY3WLfkE9MsKyW9s3Z5qGnPgCkeutTXJzcT5KJgAMS3vgTL9YbaJ7wyc52CzMnrj8QtwHuCpDzo47PV1qCnrui2dfJzKpuYJ3H6fa9")
 			fmt.Println(bl3)
+			fmt.Println("xxxxxx", block.GetProduceTime())
 		},
-	})
+	}, true)
+
+	//fmt.Printf("%+v", cBlk[0])
 	sim.Pause()
-	time.Sleep(9 * time.Second)
-	sim.GenerateBlock(0, nil)
-	time.Sleep(9 * time.Second)
-	sim.GenerateBlock(0, nil)
-	fmt.Println(sim.GetBlockchain().ShardChain[0].GetBestViewHeight(), sim.GetBlockchain().ShardChain[0].GetFinalViewHeight())
-	time.Sleep(10 * time.Second)
-	sim.GenerateBlock(-1, nil)
-	time.Sleep(10 * time.Second)
-	sim.GenerateBlock(-1, nil)
-	time.Sleep(10 * time.Second)
-	sim.GenerateBlock(-1, nil)
-	fmt.Println(sim.GetBlockchain().BeaconChain.GetBestViewHeight(), sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
-	time.Sleep(10 * time.Second)
-	sim.GenerateBlock(1, nil)
-	time.Sleep(10 * time.Second)
-	sim.GenerateBlock(1, &F.Hook{
-		Insert: func(chain interface{}, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
-			fmt.Println("PreInsert block", 1)
-			err := doInsert(block)
-			fmt.Println("PostInsert block", 1, err)
-			bl3, err := sim.GetBalance("112t8rnY3WLfkE9MsKyW9s3Z5qGnPgCkeutTXJzcT5KJgAMS3vgTL9YbaJ7wyc52CzMnrj8QtwHuCpDzo47PV1qCnrui2dfJzKpuYJ3H6fa9")
-			fmt.Println(bl3)
-		},
-	})
+	//
+	//sim.GenerateBlock(0, nil, true)
+	//sim.GenerateBlock(0, nil, true)
+	//fmt.Println(sim.GetBlockchain().ShardChain[0].GetBestViewHeight(), sim.GetBlockchain().ShardChain[0].GetFinalViewHeight())
+	//sim.GenerateBlock(-1, nil, true)
+	//sim.GenerateBlock(-1, nil, true)
+	//sim.GenerateBlock(-1, nil, true)
+	//fmt.Println(sim.GetBlockchain().BeaconChain.GetBestViewHeight(), sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
+	//sim.GenerateBlock(1, nil, true)
+	//sim.GenerateBlock(1, &F.Hook{
+	//	Insert: func(chain interface{}, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
+	//		fmt.Println("PreInsert block", 1)
+	//		err := doInsert(block)
+	//		fmt.Println("PostInsert block", 1, err)
+	//		bl3, err := sim.GetBalance("112t8rnY3WLfkE9MsKyW9s3Z5qGnPgCkeutTXJzcT5KJgAMS3vgTL9YbaJ7wyc52CzMnrj8QtwHuCpDzo47PV1qCnrui2dfJzKpuYJ3H6fa9")
+	//		fmt.Println(bl3)
+	//	},
+	//}, true)
 	sim.Pause()
 }
