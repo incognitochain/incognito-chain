@@ -187,6 +187,7 @@ func HasBridgeInstructions(instructions [][]string) bool {
 var portalMetas = []string{
 	strconv.Itoa(PortalCustodianWithdrawConfirmMetaV3),
 	strconv.Itoa(PortalRedeemFromLiquidationPoolConfirmMetaV3),
+	strconv.Itoa(PortalLiquidateRunAwayCustodianConfirmMetaV3),
 }
 
 func HasPortalInstructions(instructions [][]string) bool {

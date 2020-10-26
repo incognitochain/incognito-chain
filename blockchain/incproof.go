@@ -21,7 +21,7 @@ type IncProof struct {
 
 func NewIncProof(metaType int) IncProofInterface {
 	switch metaType {
-	case metadata.PortalCustodianWithdrawConfirmMetaV3, metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3:
+	case metadata.PortalCustodianWithdrawConfirmMetaV3, metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3, metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3:
 		return PortalWithdrawCollateralProof{
 			&IncProof{
 				metaType: metaType,

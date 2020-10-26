@@ -94,6 +94,7 @@ const (
 	// Incognito => Ethereum's SC for portal
 	PortalCustodianWithdrawConfirmMetaV3         = 170
 	PortalRedeemFromLiquidationPoolConfirmMetaV3 = 171
+	PortalLiquidateRunAwayCustodianConfirmMetaV3 = 172
 
 	//Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = 199

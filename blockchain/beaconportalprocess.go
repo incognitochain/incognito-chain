@@ -121,7 +121,8 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		// ============ Portal smart contract ============
 		// todo: add more metadata need to unlock token from sc
 		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
-			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3):
+			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
+			strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
 			err = blockchain.processPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 

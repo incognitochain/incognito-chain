@@ -249,7 +249,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						liquidatedBigIntAmounts[tokenLiquidateId] = new(big.Int).SetUint64(tokenAmount)
 					}
 					confirmInst = buildConfirmWithdrawCollateralInstV3(
-						metadata.PortalCustodianWithdrawConfirmMetaV3,
+						metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3,
 						shardID,
 						redeemReq.GetRedeemerAddress(),
 						redeemReq.GetRedeemAddressForLiquidating(),
