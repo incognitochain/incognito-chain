@@ -1148,6 +1148,9 @@ func updateCurrentPortalStateAfterLiquidationByRatesV3(
 	liquidationPoolRates := liquidationPool.Rates()
 	for portalTokenID, lInfo := range liquidationInfo {
 		liquidatedTokenCollateralTmp := liquidationPoolRates[portalTokenID].TokensCollateralAmount
+		if liquidatedTokenCollateralTmp == nil {
+			liquidatedTokenCollateralTmp = map[string]uint64{}
+		}
 		for extTokenID, amount := range lInfo.LiquidatedTokenCollateralsAmount {
 			liquidatedTokenCollateralTmp[extTokenID] += amount
 		}
