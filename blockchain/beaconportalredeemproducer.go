@@ -73,17 +73,19 @@ func buildRedeemRequestInst(
 	shardID byte,
 	txReqID common.Hash,
 	status string,
+	redeemerAddressForLiquidating string,
 ) []string {
 	redeemRequestContent := metadata.PortalRedeemRequestContent{
-		UniqueRedeemID:          uniqueRedeemID,
-		TokenID:                 tokenID,
-		RedeemAmount:            redeemAmount,
-		RedeemerIncAddressStr:   incAddressStr,
-		RemoteAddress:           remoteAddress,
-		MatchingCustodianDetail: matchingCustodianDetail,
-		RedeemFee:               redeemFee,
-		TxReqID:                 txReqID,
-		ShardID:                 shardID,
+		UniqueRedeemID:                uniqueRedeemID,
+		TokenID:                       tokenID,
+		RedeemAmount:                  redeemAmount,
+		RedeemerIncAddressStr:         incAddressStr,
+		RemoteAddress:                 remoteAddress,
+		MatchingCustodianDetail:       matchingCustodianDetail,
+		RedeemFee:                     redeemFee,
+		TxReqID:                       txReqID,
+		ShardID:                       shardID,
+		RedeemerAddressForLiquidating: redeemerAddressForLiquidating,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
 	return []string{
@@ -129,6 +131,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.ShardID,
 		actionData.TxReqID,
 		common.PortalRedeemRequestRejectedChainStatus,
+		meta.RedeemerAddressForLiquidating,
 	)
 
 	if currentPortalState == nil {
@@ -201,6 +204,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.TxReqID,
 		actionData.ShardID,
 		actionData.ShardHeight,
+		meta.RedeemerAddressForLiquidating,
 	)
 	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 
@@ -217,6 +221,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.ShardID,
 		actionData.TxReqID,
 		common.PortalRedeemRequestAcceptedChainStatus,
+		meta.RedeemerAddressForLiquidating,
 	)
 	return [][]string{inst}, nil
 }
@@ -378,7 +383,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 	sort.Strings(waitingRedeemKeys)
 	for _, waitingRedeemKey := range waitingRedeemKeys {
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
-		if (beaconHeight+1)-waitingRedeem.GetBeaconHeight() < blockchain.convertDurationTimeToBeaconBlocks(blockchain.GetPortalParams(beaconHeight).TimeOutWaitingRedeemRequest) {
+		if !blockchain.checkBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), blockchain.ShardChain[waitingRedeem.ShardID()].multiView.GetBestView().GetHeight(), waitingRedeem.ShardHeight(), blockchain.GetPortalParams(beaconHeight)) {
 			continue
 		}
 
@@ -438,6 +443,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 				shardID,
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				waitingRedeem.GetRedeemAddressForLiquidating(),
 			)
 			insts = append(insts, inst2)
 			continue

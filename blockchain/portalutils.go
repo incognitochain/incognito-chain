@@ -944,8 +944,9 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 	if len(liquidatedAmounts) > 0 || len(remainUnlockAmounts) > 0 {
 		lockedCollaterals := custodianState.GetLockedTokenCollaterals()
 		freeCollaterals := custodianState.GetFreeTokenCollaterals()
+		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
 		for tokenCollateralId, tokenValue := range lockedCollaterals[tokenID] {
-			if custodianState.GetTotalTokenCollaterals()[tokenCollateralId] < liquidatedAmounts[tokenCollateralId] {
+			if totalTokenCollaterals[tokenCollateralId] < liquidatedAmounts[tokenCollateralId] {
 				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than liquidated amount")
 				return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than liquidated amount")
 			}
@@ -953,7 +954,8 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] locked amount less than total unlock amount")
 				return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] locked amount less than total unlock amount")
 			}
-			lockedCollaterals[tokenID][tokenCollateralId] = tokenValue - lockedCollaterals[tokenID][tokenCollateralId] - remainUnlockAmounts[tokenCollateralId]
+			lockedCollaterals[tokenID][tokenCollateralId] = tokenValue - liquidatedAmounts[tokenCollateralId] - remainUnlockAmounts[tokenCollateralId]
+			totalTokenCollaterals[tokenCollateralId] = totalTokenCollaterals[tokenCollateralId] - liquidatedAmounts[tokenCollateralId]
 		}
 
 		for tokenCollateralId, _ := range freeCollaterals {
@@ -962,6 +964,7 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 
 		custodianState.SetFreeTokenCollaterals(freeCollaterals)
 		custodianState.SetLockedTokenCollaterals(lockedCollaterals)
+		custodianState.SetTotalTokenCollaterals(totalTokenCollaterals)
 	}
 
 	return nil
@@ -3961,6 +3964,7 @@ func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[strin
 			req.GetTxReqID(),
 			req.ShardID(),
 			req.ShardHeight(),
+			req.GetRedeemAddressForLiquidating(),
 		)
 	}
 	return newReqs
@@ -4341,11 +4345,11 @@ func calUnlockedCollateralRedeemFromLiquidationPoolV3(
 
 	// calculate total liquidated collaterals in usdt
 	liquidatedPRVCollateralInUSDT, err := exchangeTool.ConvertToUSDT(common.PRVIDStr, lInfo.CollateralAmount)
-	if err != nil{
+	if err != nil {
 		return 0, nil, err
 	}
 	liquidatedTokenCollateralsInUSDT, err := exchangeTool.ConvertMapTokensToUSDT(lInfo.TokensCollateralAmount)
-	if err != nil{
+	if err != nil {
 		return 0, nil, err
 	}
 	liquidatedCollateralAmountInUSDT := liquidatedPRVCollateralInUSDT + liquidatedTokenCollateralsInUSDT
@@ -4393,7 +4397,7 @@ func UpdateCustodianAfterTopup(
 	freeCollateralAmount uint64,
 	collateralTokenID string) (uint64, error) {
 
-	topUpAmt  := depositAmount + freeCollateralAmount
+	topUpAmt := depositAmount + freeCollateralAmount
 	if collateralTokenID == common.PRVIDStr {
 		// v2: topup PRV collateral
 		custodian.SetTotalCollateral(custodian.GetTotalCollateral() + depositAmount)

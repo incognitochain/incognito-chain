@@ -252,7 +252,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						metadata.PortalCustodianWithdrawConfirmMetaV3,
 						shardID,
 						redeemReq.GetRedeemerAddress(),
-						redeemReq.GetRedeemerRemoteAddress(),
+						redeemReq.GetRedeemAddressForLiquidating(),
 						liquidatedBigIntAmounts,
 						redeemReq.GetTxReqID(),
 						beaconHeight+1,
@@ -450,6 +450,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 				shardID,
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				redeemReq.GetRedeemAddressForLiquidating(),
 			)
 			insts = append(insts, inst)
 			break
@@ -501,6 +502,7 @@ func buildInstRejectRedeemRequestByLiquidationExchangeRate(
 		shardID,
 		common.Hash{},
 		common.PortalRedeemReqCancelledByLiquidationChainStatus,
+		redeemReq.GetRedeemAddressForLiquidating(),
 	)
 
 	return inst, nil
