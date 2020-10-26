@@ -1516,7 +1516,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:     shardID,
-				ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
+				ReceivedAmounts: map[common.Hash]jsonresult.ReceivedInfo{},
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
@@ -1562,7 +1562,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
+									item.ReceivedAmounts[common.PRVCoinID] = info
 								}
 							}
 						}
@@ -1607,7 +1607,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
+									item.ReceivedAmounts[common.PRVCoinID] = info
 								}
 							}
 						}
@@ -1640,7 +1640,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID], info)
+									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
 								}
 							}
 						}
@@ -1676,10 +1676,10 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 func (txService TxService) buildTxDetails(
 	txInfos []TxInfo,
 	keySet incognitokey.KeySet,
-) []jsonresult.ReceivedTransaction {
-	txDetails := []jsonresult.ReceivedTransaction{}
+) []jsonresult.ReceivedTransactionV2 {
+	txDetails := []jsonresult.ReceivedTransactionV2{}
 	for _, txInfo := range txInfos {
-		item := jsonresult.ReceivedTransaction{
+		item := jsonresult.ReceivedTransactionV2{
 			ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
 			InputSerialNumbers: map[common.Hash][]string{},
 		}
@@ -1702,6 +1702,12 @@ func (txService TxService) buildTxDetails(
 					item.Version = normalTx.Version
 					item.IsPrivacy = normalTx.IsPrivacy()
 					item.Fee = normalTx.Fee
+
+					// marshal metadata
+					if txDetail.GetMetadata() != nil {
+						metaData, _ := json.MarshalIndent(txDetail.GetMetadata(), "", "\t")
+						item.Metadata = string(metaData)
+					}
 
 					proof := normalTx.GetProof()
 					if proof != nil {
@@ -1756,6 +1762,12 @@ func (txService TxService) buildTxDetails(
 					item.PrivacyCustomTokenID = privacyTokenTx.TxPrivacyTokenData.PropertyID.String()
 					item.PrivacyCustomTokenName = privacyTokenTx.TxPrivacyTokenData.PropertyName
 					item.PrivacyCustomTokenSymbol = privacyTokenTx.TxPrivacyTokenData.PropertySymbol
+
+					// marshal metadata
+					if txDetail.GetMetadata() != nil {
+						metaData, _ := json.MarshalIndent(txDetail.GetMetadata(), "", "\t")
+						item.Metadata = string(metaData)
+					}
 
 					// prv proof
 					proof := privacyTokenTx.GetProof()
@@ -1920,9 +1932,9 @@ func (txService TxService) GetTransactionByReceiverV2(
 	keySet incognitokey.KeySet,
 	skip, limit uint,
 	tokenIDHash common.Hash,
-) (*jsonresult.ListReceivedTransaction, uint, *RPCError) {
-	result := &jsonresult.ListReceivedTransaction{
-		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
+) (*jsonresult.ListReceivedTransactionV2, uint, *RPCError) {
+	result := &jsonresult.ListReceivedTransactionV2{
+		ReceivedTransactions: []jsonresult.ReceivedTransactionV2{},
 	}
 	if len(keySet.PaymentAddress.Pk) == 0 {
 		return nil, 0, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))

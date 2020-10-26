@@ -239,7 +239,7 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		Total uint
 		Skip uint
 		Limit uint
-		ReceivedTransactions []jsonresult.ReceivedTransaction
+		ReceivedTransactions []jsonresult.ReceivedTransactionV2
 	}{
 		total,
 		uint(skip),
