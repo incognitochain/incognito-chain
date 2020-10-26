@@ -450,6 +450,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 				shardID,
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				redeemReq.ShardHeight(),
 				redeemReq.GetRedeemAddressForLiquidating(),
 			)
 			insts = append(insts, inst)
@@ -502,6 +503,7 @@ func buildInstRejectRedeemRequestByLiquidationExchangeRate(
 		shardID,
 		common.Hash{},
 		common.PortalRedeemReqCancelledByLiquidationChainStatus,
+		redeemReq.ShardHeight(),
 		redeemReq.GetRedeemAddressForLiquidating(),
 	)
 
