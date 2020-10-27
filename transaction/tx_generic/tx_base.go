@@ -64,7 +64,11 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxPrivacyInitParams {
+	// make sure info is not nil ; zero value for it is []byte{}
 
+	if info==nil{
+		info = []byte{}
+	}
 	params := &TxPrivacyInitParams{
 		StateDB:     stateDB,
 		TokenID:     tokenID,
