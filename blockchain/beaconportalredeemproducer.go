@@ -74,20 +74,20 @@ func buildRedeemRequestInst(
 	txReqID common.Hash,
 	status string,
 	shardHeight uint64,
-	redeemerAddressForLiquidating string,
+	redeemerExternalAddress string,
 ) []string {
 	redeemRequestContent := metadata.PortalRedeemRequestContent{
-		UniqueRedeemID:                uniqueRedeemID,
-		TokenID:                       tokenID,
-		RedeemAmount:                  redeemAmount,
-		RedeemerIncAddressStr:         incAddressStr,
-		RemoteAddress:                 remoteAddress,
-		MatchingCustodianDetail:       matchingCustodianDetail,
-		RedeemFee:                     redeemFee,
-		TxReqID:                       txReqID,
-		ShardID:                       shardID,
-		ShardHeight:                   shardHeight,
-		RedeemerAddressForLiquidating: redeemerAddressForLiquidating,
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		RedeemerIncAddressStr:   incAddressStr,
+		RemoteAddress:           remoteAddress,
+		MatchingCustodianDetail: matchingCustodianDetail,
+		RedeemFee:               redeemFee,
+		TxReqID:                 txReqID,
+		ShardID:                 shardID,
+		ShardHeight:             shardHeight,
+		RedeemerExternalAddress: redeemerExternalAddress,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
 	return []string{
@@ -134,7 +134,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.TxReqID,
 		common.PortalRedeemRequestRejectedChainStatus,
 		actionData.ShardHeight,
-		meta.RedeemerAddressForLiquidating,
+		meta.RedeemerExternalAddress,
 	)
 
 	if currentPortalState == nil {
@@ -207,7 +207,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.TxReqID,
 		actionData.ShardID,
 		actionData.ShardHeight,
-		meta.RedeemerAddressForLiquidating,
+		meta.RedeemerExternalAddress,
 	)
 	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 
@@ -225,7 +225,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.TxReqID,
 		common.PortalRedeemRequestAcceptedChainStatus,
 		actionData.ShardHeight,
-		meta.RedeemerAddressForLiquidating,
+		meta.RedeemerExternalAddress,
 	)
 	return [][]string{inst}, nil
 }
@@ -448,7 +448,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
 				waitingRedeem.ShardHeight(),
-				waitingRedeem.GetRedeemAddressForLiquidating(),
+				waitingRedeem.GetRedeemerExternalAddress(),
 			)
 			insts = append(insts, inst2)
 			continue

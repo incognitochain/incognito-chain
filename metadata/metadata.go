@@ -56,6 +56,7 @@ type MempoolRetriever interface {
 
 type ChainRetriever interface {
 	GetETHRemoveBridgeSigEpoch() uint64
+	GetRedeemPortalV3Epoch() uint64
 	GetStakingAmountShard() uint64
 	GetCentralizedWebsitePaymentAddress(uint64) string
 	GetBeaconHeightBreakPointBurnAddr() uint64
@@ -292,4 +293,3 @@ func IsSupportedTokenCollateralV3(bcr ChainRetriever, beaconHeight uint64, exter
 func IsPortalExchangeRateToken(tokenIDStr string, bcr ChainRetriever, beaconHeight uint64) bool {
 	return IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || IsSupportedTokenCollateralV3(bcr, beaconHeight, tokenIDStr)
 }
-

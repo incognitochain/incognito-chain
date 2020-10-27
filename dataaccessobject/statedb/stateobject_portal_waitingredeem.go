@@ -18,9 +18,9 @@ type RedeemRequest struct {
 	beaconHeight          uint64
 	txReqID               common.Hash
 
-	redeemerAddressForLiquidating string
-	shardHeight                   uint64
-	shardID                       byte
+	redeemerExternalAddress string
+	shardHeight             uint64
+	shardID                 byte
 }
 
 type MatchingRedeemCustodianDetail struct {
@@ -117,41 +117,41 @@ func (rq *RedeemRequest) SetShardID(shardID byte) {
 	rq.shardID = shardID
 }
 
-func (rq *RedeemRequest) GetRedeemAddressForLiquidating() string {
-	return rq.redeemerAddressForLiquidating
+func (rq *RedeemRequest) GetRedeemerExternalAddress() string {
+	return rq.redeemerExternalAddress
 }
 
-func (rq *RedeemRequest) SetRedeemAddressForLiquidating(redeemerAddress string) {
-	rq.redeemerAddressForLiquidating = redeemerAddress
+func (rq *RedeemRequest) SetRedeemerExternalAddress(redeemerAddress string) {
+	rq.redeemerExternalAddress = redeemerAddress
 }
 
 func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		UniqueRedeemID                string
-		TokenID                       string
-		RedeemerAddress               string
-		RedeemerRemoteAddress         string
-		RedeemAmount                  uint64
-		Custodians                    []*MatchingRedeemCustodianDetail
-		RedeemFee                     uint64
-		BeaconHeight                  uint64
-		TxReqID                       common.Hash
-		ShardID                       byte
-		ShardHeight                   uint64
-		RedeemerAddressForLiquidating string
+		UniqueRedeemID          string
+		TokenID                 string
+		RedeemerAddress         string
+		RedeemerRemoteAddress   string
+		RedeemAmount            uint64
+		Custodians              []*MatchingRedeemCustodianDetail
+		RedeemFee               uint64
+		BeaconHeight            uint64
+		TxReqID                 common.Hash
+		ShardID                 byte
+		ShardHeight             uint64
+		RedeemerExternalAddress string
 	}{
-		UniqueRedeemID:                rq.uniqueRedeemID,
-		TokenID:                       rq.tokenID,
-		RedeemerAddress:               rq.redeemerAddress,
-		RedeemerRemoteAddress:         rq.redeemerRemoteAddress,
-		RedeemAmount:                  rq.redeemAmount,
-		Custodians:                    rq.custodians,
-		RedeemFee:                     rq.redeemFee,
-		BeaconHeight:                  rq.beaconHeight,
-		TxReqID:                       rq.txReqID,
-		ShardID:                       rq.shardID,
-		ShardHeight:                   rq.shardHeight,
-		RedeemerAddressForLiquidating: rq.redeemerAddressForLiquidating,
+		UniqueRedeemID:          rq.uniqueRedeemID,
+		TokenID:                 rq.tokenID,
+		RedeemerAddress:         rq.redeemerAddress,
+		RedeemerRemoteAddress:   rq.redeemerRemoteAddress,
+		RedeemAmount:            rq.redeemAmount,
+		Custodians:              rq.custodians,
+		RedeemFee:               rq.redeemFee,
+		BeaconHeight:            rq.beaconHeight,
+		TxReqID:                 rq.txReqID,
+		ShardID:                 rq.shardID,
+		ShardHeight:             rq.shardHeight,
+		RedeemerExternalAddress: rq.redeemerExternalAddress,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -161,18 +161,18 @@ func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
 
 func (rq *RedeemRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		UniqueRedeemID                string
-		TokenID                       string
-		RedeemerAddress               string
-		RedeemerRemoteAddress         string
-		RedeemAmount                  uint64
-		Custodians                    []*MatchingRedeemCustodianDetail
-		RedeemFee                     uint64
-		BeaconHeight                  uint64
-		TxReqID                       common.Hash
-		ShardHeight                   uint64
-		ShardID                       byte
-		RedeemerAddressForLiquidating string
+		UniqueRedeemID          string
+		TokenID                 string
+		RedeemerAddress         string
+		RedeemerRemoteAddress   string
+		RedeemAmount            uint64
+		Custodians              []*MatchingRedeemCustodianDetail
+		RedeemFee               uint64
+		BeaconHeight            uint64
+		TxReqID                 common.Hash
+		ShardHeight             uint64
+		ShardID                 byte
+		RedeemerExternalAddress string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -189,7 +189,7 @@ func (rq *RedeemRequest) UnmarshalJSON(data []byte) error {
 	rq.txReqID = temp.TxReqID
 	rq.shardHeight = temp.ShardHeight
 	rq.shardID = temp.ShardID
-	rq.redeemerAddressForLiquidating = temp.RedeemerAddressForLiquidating
+	rq.redeemerExternalAddress = temp.RedeemerExternalAddress
 	return nil
 }
 
@@ -277,21 +277,21 @@ func NewRedeemRequestWithValue(
 	txReqID common.Hash,
 	sharID byte,
 	shardHeight uint64,
-	redeemerAddressForLiquidating string) *RedeemRequest {
+	redeemerExternalAddress string) *RedeemRequest {
 
 	return &RedeemRequest{
-		uniqueRedeemID:                uniqueRedeemID,
-		tokenID:                       tokenID,
-		redeemerAddress:               redeemerAddress,
-		redeemerRemoteAddress:         redeemerRemoteAddress,
-		redeemAmount:                  redeemAmount,
-		custodians:                    custodians,
-		redeemFee:                     redeemFee,
-		beaconHeight:                  beaconHeight,
-		txReqID:                       txReqID,
-		shardID:                       sharID,
-		shardHeight:                   shardHeight,
-		redeemerAddressForLiquidating: redeemerAddressForLiquidating,
+		uniqueRedeemID:          uniqueRedeemID,
+		tokenID:                 tokenID,
+		redeemerAddress:         redeemerAddress,
+		redeemerRemoteAddress:   redeemerRemoteAddress,
+		redeemAmount:            redeemAmount,
+		custodians:              custodians,
+		redeemFee:               redeemFee,
+		beaconHeight:            beaconHeight,
+		txReqID:                 txReqID,
+		shardID:                 sharID,
+		shardHeight:             shardHeight,
+		redeemerExternalAddress: redeemerExternalAddress,
 	}
 }
 

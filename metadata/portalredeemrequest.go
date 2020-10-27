@@ -18,13 +18,13 @@ import (
 // metadata - redeem request - create normal tx with this metadata
 type PortalRedeemRequest struct {
 	MetadataBase
-	UniqueRedeemID                string
-	TokenID                       string // pTokenID in incognito chain
-	RedeemAmount                  uint64
-	RedeemerIncAddressStr         string
-	RemoteAddress                 string // btc/bnb/etc address
-	RedeemFee                     uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	RedeemerAddressForLiquidating string
+	UniqueRedeemID          string
+	TokenID                 string // pTokenID in incognito chain
+	RedeemAmount            uint64
+	RedeemerIncAddressStr   string
+	RemoteAddress           string // btc/bnb/etc address
+	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
+	RedeemerExternalAddress string
 }
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
@@ -39,33 +39,33 @@ type PortalRedeemRequestAction struct {
 // It will be appended to beaconBlock
 // both accepted and rejected status
 type PortalRedeemRequestContent struct {
-	UniqueRedeemID                string
-	TokenID                       string // pTokenID in incognito chain
-	RedeemAmount                  uint64
-	RedeemerIncAddressStr         string
-	RemoteAddress                 string                                   // btc/bnb/etc address
-	RedeemFee                     uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail       []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
-	TxReqID                       common.Hash
-	ShardID                       byte
-	ShardHeight                   uint64
-	RedeemerAddressForLiquidating string
+	UniqueRedeemID          string
+	TokenID                 string // pTokenID in incognito chain
+	RedeemAmount            uint64
+	RedeemerIncAddressStr   string
+	RemoteAddress           string                                   // btc/bnb/etc address
+	RedeemFee               uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
+	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
+	TxReqID                 common.Hash
+	ShardID                 byte
+	ShardHeight             uint64
+	RedeemerExternalAddress string
 }
 
 // PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
 type PortalRedeemRequestStatus struct {
-	Status                        byte
-	UniqueRedeemID                string
-	TokenID                       string // pTokenID in incognito chain
-	RedeemAmount                  uint64
-	RedeemerIncAddressStr         string
-	RemoteAddress                 string                                   // btc/bnb/etc address
-	RedeemFee                     uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail       []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
-	TxReqID                       common.Hash
-	ShardID                       byte
-	ShardHeight                   uint64
-	RedeemerAddressForLiquidating string
+	Status                  byte
+	UniqueRedeemID          string
+	TokenID                 string // pTokenID in incognito chain
+	RedeemAmount            uint64
+	RedeemerIncAddressStr   string
+	RemoteAddress           string                                   // btc/bnb/etc address
+	RedeemFee               uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
+	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
+	TxReqID                 common.Hash
+	ShardID                 byte
+	ShardHeight             uint64
+	RedeemerExternalAddress string
 }
 
 func NewPortalRedeemRequest(
@@ -76,19 +76,19 @@ func NewPortalRedeemRequest(
 	incAddressStr string,
 	remoteAddr string,
 	redeemFee uint64,
-	redeemerAddressForLiquidating string,
+	redeemerExternalAddress string,
 ) (*PortalRedeemRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	requestPTokenMeta := &PortalRedeemRequest{
-		UniqueRedeemID:                uniqueRedeemID,
-		TokenID:                       tokenID,
-		RedeemAmount:                  redeemAmount,
-		RedeemerIncAddressStr:         incAddressStr,
-		RemoteAddress:                 remoteAddr,
-		RedeemFee:                     redeemFee,
-		RedeemerAddressForLiquidating: redeemerAddressForLiquidating,
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		RedeemerIncAddressStr:   incAddressStr,
+		RemoteAddress:           remoteAddr,
+		RedeemFee:               redeemFee,
+		RedeemerExternalAddress: redeemerExternalAddress,
 	}
 	requestPTokenMeta.MetadataBase = metadataBase
 	return requestPTokenMeta, nil
@@ -171,12 +171,15 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 	if !IsValidRemoteAddress(chainRetriever, redeemReq.RemoteAddress, redeemReq.TokenID, chainID) {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", redeemReq.RemoteAddress, redeemReq.TokenID)
 	}
-	//validate RedeemerAddressForLiquidating
-	if len(redeemReq.RedeemerAddressForLiquidating) == 0 {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Redeemer address for liquidating is invalid"))
-	}
-	if isValid, err := ValidateRemoteAddress(common.ETHChainName, "", redeemReq.RedeemerAddressForLiquidating); !isValid || err != nil {
-		return false, false, fmt.Errorf("RedeemerAddressForLiquidating %v is not a valid address of ethereum network", redeemReq.RedeemerAddressForLiquidating)
+
+	//validate RedeemerExternalAddress
+	if shardViewRetriever.GetEpoch() >= chainRetriever.GetRedeemPortalV3Epoch() {
+		if len(redeemReq.RedeemerExternalAddress) == 0 {
+			return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Redeemer address for liquidating is invalid"))
+		}
+		if isValid, err := ValidateRemoteAddress(common.ETHChainName, "", redeemReq.RedeemerExternalAddress); !isValid || err != nil {
+			return false, false, fmt.Errorf("RedeemerExternalAddress %v is not a valid address of ethereum network", redeemReq.RedeemerExternalAddress)
+		}
 	}
 
 	return true, true, nil
@@ -194,7 +197,7 @@ func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
 	record += strconv.FormatUint(redeemReq.RedeemFee, 10)
 	record += redeemReq.RedeemerIncAddressStr
 	record += redeemReq.RemoteAddress
-	record += redeemReq.RedeemerAddressForLiquidating
+	record += redeemReq.RedeemerExternalAddress
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

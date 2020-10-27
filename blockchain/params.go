@@ -82,6 +82,7 @@ type Params struct {
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
+	RedeemPortalV3Epoch              uint64
 }
 
 type GenesisParams struct {
@@ -190,7 +191,7 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -208,9 +209,9 @@ func init() {
 		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       15 * time.Hour,
-				TimeOutWaitingPortingRequest:         15 * time.Hour,
-				TimeOutWaitingRedeemRequest:          10 * time.Minute,
+				TimeOutCustodianReturnPubToken:       5 * time.Minute,
+				TimeOutWaitingPortingRequest:         5 * time.Minute,
+				TimeOutWaitingRedeemRequest:          5 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
@@ -231,6 +232,7 @@ func init() {
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
 		PortalETHContractAddressStr: "0x8c13AFB7815f10A8333955854E6ec7503eD841B7", // todo: update sc address
+		RedeemPortalV3Epoch:         40,
 	}
 	// END TESTNET
 
@@ -276,7 +278,7 @@ func init() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -294,9 +296,9 @@ func init() {
 		PortalFeederAddress:            Testnet2PortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
-				TimeOutWaitingRedeemRequest:          10 * time.Minute,
+				TimeOutCustodianReturnPubToken:       5 * time.Minute,
+				TimeOutWaitingPortingRequest:         5 * time.Minute,
+				TimeOutWaitingRedeemRequest:          5 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
@@ -317,6 +319,7 @@ func init() {
 		BCHeightBreakPointNewZKP:    260000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
 		PortalETHContractAddressStr: "", // todo: update sc address
+		RedeemPortalV3Epoch:         40,
 	}
 	// END TESTNET-2
 
@@ -360,7 +363,7 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -401,6 +404,7 @@ func init() {
 		BCHeightBreakPointNewZKP:    737450,
 		ETHRemoveBridgeSigEpoch:     1e18,
 		PortalETHContractAddressStr: "", // todo: update sc address
+		RedeemPortalV3Epoch:         40,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

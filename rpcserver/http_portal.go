@@ -227,16 +227,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
 	}
 
-	redeemerAddressForLiquidating, ok := tokenParamsRaw["RedeemerAddressForLiquidating"].(string)
+	redeemerExternalAddress, ok := tokenParamsRaw["RedeemerExternalAddress"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemerAddressForLiquidating is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemerExternalAddress is invalid"))
 	}
-	if len(redeemerAddressForLiquidating) >= 2 && redeemerAddressForLiquidating[0] == '0' && (redeemerAddressForLiquidating[1] == 'x' || redeemerAddressForLiquidating[1] == 'X') {
-		redeemerAddressForLiquidating = redeemerAddressForLiquidating[2:]
+	if len(redeemerExternalAddress) >= 2 && redeemerExternalAddress[0] == '0' && (redeemerExternalAddress[1] == 'x' || redeemerExternalAddress[1] == 'X') {
+		redeemerExternalAddress = redeemerExternalAddress[2:]
 	}
 
 	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
-		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee, redeemerAddressForLiquidating)
+		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee, redeemerExternalAddress)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
 	if rpcErr != nil {

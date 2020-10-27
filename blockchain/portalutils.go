@@ -3964,7 +3964,7 @@ func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[strin
 			req.GetTxReqID(),
 			req.ShardID(),
 			req.ShardHeight(),
-			req.GetRedeemAddressForLiquidating(),
+			req.GetRedeemerExternalAddress(),
 		)
 	}
 	return newReqs
