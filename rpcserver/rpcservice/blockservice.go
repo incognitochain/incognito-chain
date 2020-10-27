@@ -1142,8 +1142,7 @@ func (blockService BlockService) GetCustodianTopupWaitingPortingStatusV3(txID st
 	return &status, nil
 }
 
-func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string, collateralTokenID string, beaconHeight uint64) (map[string]uint64, error) {
-	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string, collateralTokenID string, beaconHeight uint64, stateDB *statedb.StateDB) (map[string]uint64, error) {
 	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
 	if err != nil {
 		return nil, err
@@ -1201,6 +1200,7 @@ func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatusV3(t
 
 	return nil, nil
 }
+
 //============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()

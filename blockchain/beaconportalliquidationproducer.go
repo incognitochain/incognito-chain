@@ -898,6 +898,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 	portalParams PortalParams,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
+	Logger.log.Errorf("===================== Starting producer redeem from liquidation pool v3 ....")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -997,6 +998,9 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 		actionData.TxReqID,
 		beaconHeight+1,
 	)
+
+	Logger.log.Errorf("===================== Build instructions for producer redeem from liquidation pool v3 successfully....")
+	Logger.log.Errorf("inst, confirmInst: %+v, %+v", inst, confirmInst)
 	return [][]string{inst, confirmInst}, nil
 }
 

@@ -61,7 +61,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalTopUpWaitingPortingRequestMeta,
 			metadata.PortalCustodianDepositMetaV3,
 			metadata.PortalCustodianWithdrawRequestMetaV3,
-			metadata.PortalRedeemFromLiquidationPoolMetaV3:
+			metadata.PortalRedeemFromLiquidationPoolMetaV3,
+			metadata.PortalCustodianTopupMetaV3,
+			metadata.PortalTopUpWaitingPortingRequestMetaV3:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -197,14 +199,18 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pm.portalInstructions[metadata.PortalRequestUnlockCollateralMeta].putAction(action, shardID)
 			case metadata.PortalRequestWithdrawRewardMeta:
 				pm.portalInstructions[metadata.PortalRequestWithdrawRewardMeta].putAction(action, shardID)
-			case metadata.PortalRedeemFromLiquidationPoolMeta:
-				pm.portalInstructions[metadata.PortalRedeemFromLiquidationPoolMeta].putAction(action, shardID)
+			case metadata.PortalRedeemFromLiquidationPoolMetaV3:
+				pm.portalInstructions[metadata.PortalRedeemFromLiquidationPoolMetaV3].putAction(action, shardID)
 			case metadata.PortalCustodianTopupMetaV2:
 				pm.portalInstructions[metadata.PortalCustodianTopupMetaV2].putAction(action, shardID)
 			case metadata.PortalReqMatchingRedeemMeta:
 				pm.portalInstructions[metadata.PortalReqMatchingRedeemMeta].putAction(action, shardID)
 			case metadata.PortalTopUpWaitingPortingRequestMeta:
 				pm.portalInstructions[metadata.PortalTopUpWaitingPortingRequestMeta].putAction(action, shardID)
+			case metadata.PortalCustodianTopupMetaV3:
+				pm.portalInstructions[metadata.PortalCustodianTopupMetaV3].putAction(action, shardID)
+			case metadata.PortalTopUpWaitingPortingRequestMetaV3:
+				pm.portalInstructions[metadata.PortalTopUpWaitingPortingRequestMetaV3].putAction(action, shardID)
 
 			case metadata.PortalCustodianDepositMetaV3:
 				pm.portalInstructions[metadata.PortalCustodianDepositMetaV3].putAction(action, shardID)
