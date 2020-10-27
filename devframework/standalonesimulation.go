@@ -38,10 +38,12 @@ type Config struct {
 	RoundInterval int
 }
 
+type HookCreate func(chain interface{}, doCreate func(time time.Time) (blk common.BlockInterface, err error))
+
 type Hook struct {
-	Create     func(chain interface{}, doCreate func(time time.Time) (blk common.BlockInterface, err error))
-	Validation func(chain interface{}, block common.BlockInterface, doValidation func(blk common.BlockInterface) error)
-	Insert     func(chain interface{}, block common.BlockInterface, doInsert func(blk common.BlockInterface) error)
+	Create     func(chainID int, doCreate func(time time.Time) (blk common.BlockInterface, err error))
+	Validation func(chainID int, block common.BlockInterface, doValidation func(blk common.BlockInterface) error)
+	Insert     func(chainID int, block common.BlockInterface, doInsert func(blk common.BlockInterface) error)
 }
 type SimulationEngine struct {
 	config  Config
@@ -89,6 +91,13 @@ func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
 	return *newAccountFromShard(sid, lastID)
 }
 
+func (sim *SimulationEngine) NewAccount() Account {
+	lastID := sim.accountGenHistory[0]
+	lastID++
+	sim.accountGenHistory[0] = lastID
+	return *newAccountFromShard(0, lastID)
+}
+
 func (sim *SimulationEngine) init() {
 	simName := sim.simName
 	path, err := os.Getwd()
@@ -107,7 +116,6 @@ func (sim *SimulationEngine) init() {
 	mempoolLogger.SetLevel(common.LevelTrace)
 
 	//setup param
-
 	blockchain.SetupParam()
 	activeNetParams := &blockchain.ChainTest2Param
 	activeNetParams.ActiveShards = sim.config.ShardNumber
@@ -126,11 +134,9 @@ func (sim *SimulationEngine) init() {
 			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
 		}
 	}
-	sim.IcoAccount = sim.committeeAccount[0][0]
+	sim.IcoAccount = sim.NewAccount()
 	initTxs := createICOtx([]string{sim.IcoAccount.PrivateKey})
 	activeNetParams.GenesisParams.InitialIncognito = initTxs
-	fmt.Println(initTxs)
-
 	activeNetParams.CreateGenesisBlocks()
 
 	//init blockchain
@@ -312,185 +318,199 @@ func (sim *SimulationEngine) Pause() {
 	fmt.Print("\n")
 }
 
-//Auto generate block
-func (sim *SimulationEngine) AutoGenerateBlock(chainID int, numBlk int) {
-	for i := 0; i < numBlk; i++ {
-		sim.GenerateBlock(-1, nil, false)
-		for j := 0; j < sim.config.ShardNumber; j++ {
-			sim.GenerateBlock(chainID, nil, false)
-		}
-		sim.ForwardToFuture()
-	}
-	return
+func (sim *SimulationEngine) PrintBlockChainInfo() {
+	fmt.Println("Beacon Chain:")
+
+	fmt.Println("Shard Chain:")
 }
 
 //life cycle of a block generation process:
 //PreCreate -> PreValidation -> PreInsert ->
-func (sim *SimulationEngine) GenerateBlock(chainID int, h *Hook, forwardTime bool) (res map[int]interface{}) {
-	res = make(map[int]interface{})
+func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngine {
+	var chainArray = []int{-1}
+	for i := 0; i < sim.config.ShardNumber; i++ {
+		chainArray = append(chainArray, i)
+	}
+	var h *Hook
+
+	for _, arg := range args {
+		switch arg.(type) {
+		case Hook:
+			hook := arg.(Hook)
+			h = &hook
+		case *Execute:
+			exec := arg.(*Execute)
+			chainArray = exec.appliedChain
+		}
+	}
+
 	//beacon
 	chain := sim.bc
 	var block common.BlockInterface = nil
 	var err error
 
-	//Create
-	if h != nil && h.Create != nil {
-		h.Create(chain, func(time time.Time) (blk common.BlockInterface, err error) {
+	//Create blocks for apply chain
+	for _, chainID := range chainArray {
+		if h != nil && h.Create != nil {
+			h.Create(chainID, func(time time.Time) (blk common.BlockInterface, err error) {
+				if chainID == -1 {
+					block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, sim.timer.Now())
+					if err != nil {
+						block = nil
+						return nil, err
+					}
+					block.(mock.BlockValidation).AddValidationField("test")
+					return block, nil
+				} else {
+					block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, sim.timer.Now())
+					if err != nil {
+						return nil, err
+					}
+					block.(mock.BlockValidation).AddValidationField("test")
+					return block, nil
+				}
+			})
+		} else {
 			if chainID == -1 {
 				block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, sim.timer.Now())
 				if err != nil {
 					block = nil
-					return nil, err
+					fmt.Println("NewBlockError", err)
 				}
 				block.(mock.BlockValidation).AddValidationField("test")
-				return block, nil
 			} else {
 				block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, sim.timer.Now())
 				if err != nil {
-					return nil, err
+					block = nil
+					fmt.Println("NewBlockError", err)
 				}
 				block.(mock.BlockValidation).AddValidationField("test")
-				return block, nil
-			}
-		})
-	} else {
-		if chainID == -1 {
-			block, err = chain.BeaconChain.CreateNewBlock(2, "", 1, sim.timer.Now())
-			if err != nil {
-				block = nil
-				fmt.Println("NewBlockError", err)
-			}
-			block.(mock.BlockValidation).AddValidationField("test")
-		} else {
-			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(2, "", 1, sim.timer.Now())
-			if err != nil {
-				block = nil
-				fmt.Println("NewBlockError", err)
-			}
-			block.(mock.BlockValidation).AddValidationField("test")
-		}
-	}
-
-	//Validation
-	if h != nil && h.Validation != nil {
-		h.Validation(chain, block, func(blk common.BlockInterface) (err error) {
-			if blk == nil {
-				return errors.New("No block for validation")
-			}
-			if chainID == -1 {
-				err = chain.VerifyPreSignBeaconBlock(blk.(*blockchain.BeaconBlock), true)
-				if err != nil {
-					return err
-				}
-				return nil
-			} else {
-				err = chain.VerifyPreSignShardBlock(block.(*blockchain.ShardBlock), byte(chainID))
-				if err != nil {
-					return err
-				}
-				return nil
-			}
-		})
-	} else {
-		if block == nil {
-			fmt.Println("VerifyBlockErr no block")
-		} else {
-			if chainID == -1 {
-				err = chain.VerifyPreSignBeaconBlock(block.(*blockchain.BeaconBlock), true)
-				if err != nil {
-					fmt.Println("VerifyBlockErr", err)
-				}
-			} else {
-				err = chain.VerifyPreSignShardBlock(block.(*blockchain.ShardBlock), byte(chainID))
-				if err != nil {
-					fmt.Println("VerifyBlockErr", err)
-				}
 			}
 		}
 
-	}
-
-	//Insert
-	if h != nil && h.Insert != nil {
-		h.Insert(chain, block, func(blk common.BlockInterface) (err error) {
-			if blk == nil {
-				return errors.New("No block for insert")
-			}
-			if chainID == -1 {
-				err = chain.InsertBeaconBlock(blk.(*blockchain.BeaconBlock), true)
-				if err != nil {
-					return err
-				} else {
-					res[chainID] = block
+		//Validation
+		if h != nil && h.Validation != nil {
+			h.Validation(chainID, block, func(blk common.BlockInterface) (err error) {
+				if blk == nil {
+					return errors.New("No block for validation")
 				}
-				return
-			} else {
-				err = chain.InsertShardBlock(blk.(*blockchain.ShardBlock), true)
-				if err != nil {
-					return err
+				if chainID == -1 {
+					err = chain.VerifyPreSignBeaconBlock(blk.(*blockchain.BeaconBlock), true)
+					if err != nil {
+						return err
+					}
+					return nil
 				} else {
-					res[chainID] = block
+					err = chain.VerifyPreSignShardBlock(block.(*blockchain.ShardBlock), byte(chainID))
+					if err != nil {
+						return err
+					}
+					return nil
 				}
-				return
-			}
-		})
-	} else {
-		if block == nil {
-			fmt.Println("InsertBlkErr no block")
+			})
 		} else {
-			if chainID == -1 {
-				err = chain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
-				if err != nil {
-					fmt.Println("InsertBlkErr", err)
-				} else {
-					res[chainID] = block
-				}
+			if block == nil {
+				fmt.Println("VerifyBlockErr no block")
 			} else {
-				err = chain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
-				if err != nil {
-					fmt.Println("InsertBlkErr", err)
+				if chainID == -1 {
+					err = chain.VerifyPreSignBeaconBlock(block.(*blockchain.BeaconBlock), true)
+					if err != nil {
+						fmt.Println("VerifyBlockErr", err)
+					}
 				} else {
-					res[chainID] = block
+					err = chain.VerifyPreSignShardBlock(block.(*blockchain.ShardBlock), byte(chainID))
+					if err != nil {
+						fmt.Println("VerifyBlockErr", err)
+					}
 				}
+			}
 
+		}
+
+		//Insert
+		if h != nil && h.Insert != nil {
+			h.Insert(chainID, block, func(blk common.BlockInterface) (err error) {
+				if blk == nil {
+					return errors.New("No block for insert")
+				}
+				if chainID == -1 {
+					err = chain.InsertBeaconBlock(blk.(*blockchain.BeaconBlock), true)
+					if err != nil {
+						return err
+					}
+					return
+				} else {
+					err = chain.InsertShardBlock(blk.(*blockchain.ShardBlock), true)
+					if err != nil {
+						return err
+					}
+					return
+				}
+			})
+		} else {
+			if block == nil {
+				fmt.Println("InsertBlkErr no block")
+			} else {
+				if chainID == -1 {
+					err = chain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
+					if err != nil {
+						fmt.Println("InsertBlkErr", err)
+					}
+				} else {
+					err = chain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
+					if err != nil {
+						fmt.Println("InsertBlkErr", err)
+					}
+
+				}
 			}
 		}
 	}
 
-	if forwardTime {
-		sim.ForwardToFuture()
-	}
-
-	return res
+	return sim
 }
 
 //number of second we want simulation to forward
 //default = round interval
-func (sim *SimulationEngine) ForwardToFuture() {
+func (sim *SimulationEngine) NextRound() {
 	sim.timer.Forward(10)
 }
 
-func (sim *SimulationEngine) GenerateTxs(createTxs []GenerateTxParam) error {
-	txsInject := []string{}
-	for _, createTxMeta := range createTxs {
-		tx, err := sim.CreateTx(createTxMeta.SenderPrK, createTxMeta.Receivers)
-		if err != nil {
-			return err
+func (sim *SimulationEngine) CreateTransaction(args ...interface{}) (string, error) {
+	var sender string
+	var receivers = make(map[string]int)
+	for i, arg := range args {
+		if i == 0 {
+			sender = arg.(Account).PrivateKey
+		} else {
+			switch arg.(type) {
+			default:
+				if i%2 == 1 {
+					amount, ok := args[i+1].(int)
+					if !ok {
+						amountF64 := args[i+1].(float64)
+						amount = int(amountF64)
+					}
+					receivers[arg.(Account).PaymentAddress] = amount
+				}
+			}
 		}
-		txsInject = append(txsInject, tx.Base58CheckData)
 	}
-	err := sim.InjectTxs(txsInject)
+
+	res, err := sim.SendCreatetransaction(sender, receivers, 1, 1)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	sim.InjectTx(res.Base58CheckData)
+
+	return res.TxID, nil
 }
 
-func (sim *SimulationEngine) CreateTx(senderPrk string, receivers map[string]int) (*jsonresult.CreateTransactionResult, error) {
+func (sim *SimulationEngine) SendCreatetransaction(senderPrk string, receivers map[string]int, fee int, privacy int) (*jsonresult.CreateTransactionResult, error) {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createtransaction",
-		"params":  []interface{}{senderPrk, receivers, 1, 1},
+		"params":  []interface{}{senderPrk, receivers, fee, privacy},
 		"id":      1,
 	})
 	if err != nil {
@@ -510,28 +530,27 @@ func (sim *SimulationEngine) CreateTx(senderPrk string, receivers map[string]int
 	return &txResp.Result, nil
 }
 
-func (sim *SimulationEngine) InjectTxs(txsBase58 []string) error {
-	for _, txB58Check := range txsBase58 {
-		rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
-		if err != nil {
-			return err
-		}
-		var tx transaction.Tx
-		err = json.Unmarshal(rawTxBytes, &tx)
-		if err != nil {
-			return err
-		}
-		sim.cPendingTxs <- &tx
+func (sim *SimulationEngine) InjectTx(txBase58 string) error {
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58)
+	if err != nil {
+		return err
 	}
+	var tx transaction.Tx
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return err
+	}
+	sim.cPendingTxs <- &tx
+
 	return nil
 }
 
-func (sim *SimulationEngine) GetBalance(privateKey string) (map[string]uint64, error) {
+func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
 	tokenList := make(map[string]uint64)
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getbalancebyprivatekey",
-		"params":  []interface{}{privateKey},
+		"params":  []interface{}{acc.PrivateKey},
 		"id":      1,
 	})
 	if err != nil {
@@ -553,7 +572,7 @@ func (sim *SimulationEngine) GetBalance(privateKey string) (map[string]uint64, e
 	requestBody2, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getlistprivacycustomtokenbalance",
-		"params":  []interface{}{privateKey},
+		"params":  []interface{}{acc.PrivateKey},
 		"id":      1,
 	})
 	if err != nil {
@@ -604,7 +623,7 @@ func createICOtx(privateKeys []string) []string {
 	}
 	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
 	for _, privateKey := range privateKeys {
-		txs := initSalryTx("1000000000", privateKey, stateDB)
+		txs := initSalryTx("1000000000000000", privateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
 	return transactions

@@ -1,6 +1,18 @@
 package devframework
 
-type GenerateTxParam struct {
-	SenderPrK string
-	Receivers map[string]int
+type Execute struct {
+	sim          *SimulationEngine
+	appliedChain []int
+}
+
+func (exec *Execute) GenerateBlock(args ...interface{}) {
+	args = append(args, exec)
+	exec.sim.GenerateBlock(args...)
+}
+
+func (sim *SimulationEngine) ApplyChain(chain_array ...int) *Execute {
+	return &Execute{
+		sim,
+		chain_array,
+	}
 }
