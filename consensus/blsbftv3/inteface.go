@@ -59,7 +59,8 @@ type ChainInterface interface {
 
 //CommitteeChainHandler :
 type CommitteeChainHandler interface {
-	CommitteesByShardID(byte) []incognitokey.CommitteePublicKey
-	GetProposerByTimeSlot(byte, int64, int) incognitokey.CommitteePublicKey
+	CommitteesByShardIDForProposer(byte) []incognitokey.CommitteePublicKey
+	CommitteesByShardIDForValidators(common.BlockInterface, byte) ([]incognitokey.CommitteePublicKey, error)
+	ProposerByTimeSlot(byte, int64, int) incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 }

@@ -87,6 +87,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	var beaconFinalView *BeaconBestState
 	committeeFromBlockHash := common.Hash{}
+
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommittees = shardBestState.GetShardCommittee()
 		currentCommitteePubKeys, err = incognitokey.CommitteeKeyListToString(currentCommittees)
@@ -119,25 +120,28 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, errors.New("Waiting For Beacon Produce Block")
 	}
 
-	if committeeFromBlockHash.String() != shardBestState.CommitteeFromBlock().String() {
-		emptyHash := common.Hash{}
-		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
-			oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-			if err != nil {
-				return nil, err
-			}
-			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
-			if err != nil {
-				return nil, err
-			}
-			if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-				return nil, NewBlockChainError(WrongBlockHeightError,
-					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-						newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+		if shardBestState.GetHeight() != 1 {
+			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePubKeys)
+			if len(temp) != 0 {
+				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+				if err != nil {
+					return nil, err
+				}
+				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
+				if err != nil {
+					return nil, err
+				}
+				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+					return nil, NewBlockChainError(WrongBlockHeightError,
+						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+				}
+			} else {
+				committeeFromBlockHash = shardBestState.CommitteeFromBlock()
 			}
 		}
-	} else {
-		committeeFromBlockHash = shardBestState.CommitteeFromBlock()
 	}
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)

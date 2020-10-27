@@ -180,7 +180,7 @@ func (e *BLSBFT_V3) Start() error {
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
 				if e.ChainID != -1 {
-					proposerPk = e.CommitteeChain.GetProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, 2)
+					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, 2)
 				} else {
 					proposerPk = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				}
@@ -316,7 +316,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 
 	committees := []incognitokey.CommitteePublicKey{}
 	if e.ChainID != -1 {
-		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+		committees = e.CommitteeChain.CommitteesByShardIDForProposer(byte(e.ChainID))
 	} else {
 		committees = view.GetCommittee()
 	}
@@ -416,7 +416,12 @@ func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {
 
 	committees := []incognitokey.CommitteePublicKey{}
 	if e.ChainID != -1 {
-		committees = e.CommitteeChain.CommitteesByShardID(byte(e.ChainID))
+		var err error
+		committees, err = e.CommitteeChain.CommitteesByShardIDForValidators(v.block, byte(e.ChainID))
+		if err != nil {
+			e.Logger.Error(err)
+			return err
+		}
 	} else {
 		committees = e.Chain.GetBestView().GetCommittee()
 	}

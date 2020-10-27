@@ -36,6 +36,13 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 
+	// Logger.Info("[staking-v2] chain.GetBestViewHeight():", chain.GetBestViewHeight())
+	// Logger.Info("[staking-v2] len(sameCommitteeBlock) 0:", len(sameCommitteeBlock))
+	// for _, blk := range sameCommitteeBlock {
+	// 	Logger.Info("[staking-v2] blk.GetHeight() 0:", blk.GetHeight())
+	// 	Logger.Info("[staking-v2] blk.CommitteeFromBlock() 0:", blk.CommitteeFromBlock())
+	// }
+
 	for i, blk := range sameCommitteeBlock {
 		if i == len(sameCommitteeBlock)-1 {
 			break
@@ -46,17 +53,29 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 
-	epochCommittee := []incognitokey.CommitteePublicKey{}
+	// Logger.Info("[staking-v2] len(sameCommitteeBlock) 1:", len(sameCommitteeBlock))
+	// for _, blk := range sameCommitteeBlock {
+	// 	Logger.Info("[staking-v2] blk.GetHeight() 1:", blk.GetHeight())
+	// 	Logger.Info("[staking-v2] blk.CommitteeFromBlock() 1:", blk.CommitteeFromBlock())
+	// }
+
+	committees := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
-		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
 	}
 
+	// Logger.Info("[staking-v2] len(sameCommitteeBlock) 2:", len(sameCommitteeBlock))
+	// for _, blk := range sameCommitteeBlock {
+	// 	Logger.Info("[staking-v2] blk.GetHeight() 2:", blk.GetHeight())
+	// 	Logger.Info("[staking-v2] blk.CommitteeFromBlock() 2:", blk.CommitteeFromBlock())
+	// }
+
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], committees); err != nil {
 			sameCommitteeBlock = sameCommitteeBlock[:i]
 		} else {
 			break
@@ -72,7 +91,7 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 				err = chain.InsertBlk(v, false)
 			}
 			if err != nil {
-				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)
+				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
 				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), v.Hash(), err, committeeStr)
 				return 0, err
 			}
