@@ -379,6 +379,7 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	for _, portingReqKey := range sortedWaitingPortingReqKeys {
 		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
 		if blockchain.checkBlockTimeIsReached(beaconHeight, portingReq.BeaconHeight(), blockchain.ShardChain[portingReq.ShardID()].multiView.GetBestView().GetHeight(), portingReq.ShardHeight(), portalParams) {
+			Logger.log.Errorf("Expire waiting porting : %v", portingReq.UniquePortingID())
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
@@ -891,6 +892,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 	portalParams PortalParams,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
+	Logger.log.Errorf("===================== Starting producer redeem from liquidation pool v3 ....")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -990,6 +992,9 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 		actionData.TxReqID,
 		beaconHeight+1,
 	)
+
+	Logger.log.Errorf("===================== Build instructions for producer redeem from liquidation pool v3 successfully....")
+	Logger.log.Errorf("inst, confirmInst: %+v, %+v", inst, confirmInst)
 	return [][]string{inst, confirmInst}, nil
 }
 

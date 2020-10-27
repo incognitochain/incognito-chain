@@ -709,10 +709,10 @@ func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params inter
 
 	portalTokenID, ok := data["PortalTokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortalTokenID is invalid"))
 	}
 	if !metadata.IsPortalToken(portalTokenID) {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortalTokenID is not support"))
 	}
 
 	collateralTokenID := common.PRVIDStr
@@ -764,6 +764,12 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 		beaconHeight = beaconHeightParam
 	}
 
+	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), beaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
+
 	// default collateralTokenID is PRV
 	collateralTokenID := common.PRVIDStr
 	collateralTokenIDParam, ok := data["CollateralTokenID"].(string)
@@ -774,7 +780,7 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))
 	}
 
-	result, err := httpServer.blockService.GetAmountTopUpWaitingPorting(custodianAddr, collateralTokenID, beaconHeight)
+	result, err := httpServer.blockService.GetAmountTopUpWaitingPorting(custodianAddr, collateralTokenID, beaconHeight, beaconFeatureStateDB)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetAmountTopUpWaitingPortingError, err)
 	}

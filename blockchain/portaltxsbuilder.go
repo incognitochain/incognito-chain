@@ -412,15 +412,19 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV
 		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, redeemReqContent.ShardID)
 		return nil, nil
 	}
+	// skip instructions with MintedPRVCollateral = 0
+	if redeemReqContent.MintedPRVCollateral == 0 {
+		return nil, nil
+	}
 
-	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponseV3(
+	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
 		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.MintedPRVCollateral,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
+		metadata.PortalRedeemFromLiquidationPoolResponseMetaV3,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -838,7 +842,7 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTxV3
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponseV3(
+	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
 		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,

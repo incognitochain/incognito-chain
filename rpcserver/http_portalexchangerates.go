@@ -173,9 +173,10 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata Amount is invalid %v", err))
 	}
 
-	tokenIDFrom, ok := data["TokenIDFrom"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenIDFrom is invalid"))
+	tokenIDFrom := ""
+	tokenIDFromParam, ok := data["TokenIDFrom"].(string)
+	if ok {
+		tokenIDFrom = tokenIDFromParam
 	}
 
 	// default convert to USDT

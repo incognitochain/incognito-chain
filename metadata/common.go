@@ -147,6 +147,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianWithdrawRequestV3{}
 	case PortalRedeemFromLiquidationPoolMetaV3:
 		md = &PortalRedeemFromLiquidationPoolV3{}
+	case PortalRedeemFromLiquidationPoolResponseMetaV3:
+		md = &PortalRedeemFromLiquidationPoolResponseV3{}
 	case PortalCustodianTopupMetaV3:
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:

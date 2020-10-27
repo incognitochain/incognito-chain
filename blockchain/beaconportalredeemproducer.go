@@ -376,6 +376,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState) ([][]string, error) {
 	insts := [][]string{}
+	Logger.log.Errorf("=========== Check and pick more custodian for waiting redeem request ===========")
 	waitingRedeemKeys := []string{}
 	for key := range currentPortalState.WaitingRedeemRequests {
 		waitingRedeemKeys = append(waitingRedeemKeys, key)
@@ -383,9 +384,11 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 	sort.Strings(waitingRedeemKeys)
 	for _, waitingRedeemKey := range waitingRedeemKeys {
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
+		Logger.log.Errorf("=========== Check and pick more custodian for waiting redeem request %+v", waitingRedeem)
 		if !blockchain.checkBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), blockchain.ShardChain[waitingRedeem.ShardID()].multiView.GetBestView().GetHeight(), waitingRedeem.ShardHeight(), blockchain.GetPortalParams(beaconHeight)) {
 			continue
 		}
+		Logger.log.Errorf("=========== Check and pick more custodian for waiting redeem request =========== %v", waitingRedeem.GetUniqueRedeemID())
 
 		// calculate amount need to be matched
 		totalMatchedAmount := uint64(0)
@@ -445,6 +448,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
 				waitingRedeem.GetRedeemAddressForLiquidating(),
 			)
+			Logger.log.Errorf("Instruction reject waiting redeem request because of not enough custodians %+v", inst2)
 			insts = append(insts, inst2)
 			continue
 		}

@@ -106,16 +106,15 @@ func (s *PortalService) ConvertExchangeRates(
 	result := uint64(0)
 	var err error
 	exchangeTool := blockchain.NewPortalExchangeRateTool(finalExchangeRates, portalParams.SupportedCollateralTokens)
-	if tokenIDTo != "" {
+	if tokenIDTo != "" && tokenIDFrom != "" {
 		result, err = exchangeTool.Convert(tokenIDFrom, tokenIDTo, amount)
-	} else {
+	} else if tokenIDTo == "" {
 		result, err = exchangeTool.ConvertToUSDT(tokenIDFrom, amount)
-	}
-	if err != nil {
-		return 0, err
+	} else if tokenIDFrom == "" {
+		result, err = exchangeTool.ConvertFromUSDT(tokenIDTo, amount)
 	}
 
-	return result, nil
+	return result, err
 }
 
 func (s *PortalService) GetPortingFees(finalExchangeRates *statedb.FinalExchangeRatesState, tokenID string, valuePToken uint64, portalParam blockchain.PortalParams) (uint64, error) {
