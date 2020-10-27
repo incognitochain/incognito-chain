@@ -407,6 +407,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
 		// portal unlock collateral v2 and v3
+		//todo: fix typo
 		if instructions[0] == strconv.Itoa(metadata.PortalRedeemRequestMeta) {
 			err = updateCustodianStateAfterReqUnlockCollateral(
 				currentPortalState.CustodianPoolState[custodianStateKeyStr],

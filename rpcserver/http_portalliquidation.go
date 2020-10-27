@@ -14,6 +14,9 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
+/*
+====== Portal liquidation pool
+*/
 func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -62,6 +65,9 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 	return result, nil
 }
 
+/*
+====== Redeem request from liquidation pool v3
+*/
 func (httpServer *HttpServer) createRawTxRedeemFromLiquidationPoolV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -149,6 +155,49 @@ func (httpServer *HttpServer) handleCreateAndSendTxRedeemFromLiquidationPoolV3(p
 	return sendResult, nil
 }
 
+func (httpServer *HttpServer) handleGetReqRedeemFromLiquidationPoolByTxIDStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetRedeemReqFromLiquidationPoolByTxIDStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemFromLiquidationPoolStatusError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetReqRedeemFromLiquidationPoolByTxIDStatusV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetRedeemReqFromLiquidationPoolByTxIDStatusV3(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemFromLiquidationPoolStatusError, err)
+	}
+	return status, nil
+}
+
+/*
+====== Topup collateral (PRV)
+*/
 func (httpServer *HttpServer) createCustodianTopup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
@@ -379,7 +428,9 @@ func (httpServer *HttpServer) handleGetPortalCustodianTopupWaitingPortingStatus(
 	return status, nil
 }
 
-// todo:
+/*
+====== Topup collateral v3 (ETH/ERC20)
+*/
 func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
@@ -787,27 +838,8 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetReqRedeemFromLiquidationPoolByTxIDStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
-	}
-	data, ok := arrayParams[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
-	}
-	reqTxID, ok := data["ReqTxID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
-	}
-	status, err := httpServer.blockService.GetRedeemReqFromLiquidationPoolByTxIDStatus(reqTxID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemFromLiquidationPoolStatusError, err)
-	}
-	return status, nil
-}
 
-func (httpServer *HttpServer) handleGetReqRedeemFromLiquidationPoolByTxIDStatusV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetCustodianLiquidationStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
@@ -816,13 +848,18 @@ func (httpServer *HttpServer) handleGetReqRedeemFromLiquidationPoolByTxIDStatusV
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	reqTxID, ok := data["ReqTxID"].(string)
+	redeemID, ok := data["RedeemID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param RedeemID is invalid"))
 	}
-	status, err := httpServer.blockService.GetRedeemReqFromLiquidationPoolByTxIDStatusV3(reqTxID)
+
+	custodianAddress, ok := data["CustodianIncAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param CustodianIncAddress is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalLiquidationCustodianStatus(redeemID, custodianAddress)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemFromLiquidationPoolStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
 	}
 	return status, nil
 }

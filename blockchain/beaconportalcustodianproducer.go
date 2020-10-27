@@ -505,7 +505,7 @@ func buildConfirmWithdrawCollateralInstV3(
 	extCollateralBytes := []byte{}
 	for tokenID, amount := range extCollaterals {
 		tokenIDBytes, _ := common.DecodeETHAddr(tokenID)
-		amountBytes := common.AddPaddingBigInt(amount, 32)
+		amountBytes := common.AddPaddingBigInt(amount, common.BigIntSize)
 		extCollateralBytes = append(extCollateralBytes, tokenIDBytes...)
 		extCollateralBytes = append(extCollateralBytes, amountBytes...)
 	}
