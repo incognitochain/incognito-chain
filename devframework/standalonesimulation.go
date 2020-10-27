@@ -72,6 +72,7 @@ func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
 		simName:           name,
 		timer:             NewTimeEngine(),
 		accountGenHistory: make(map[int]int),
+		committeeAccount:  make(map[int][]Account),
 	}
 	sim.init()
 	time.Sleep(1 * time.Second)
@@ -81,6 +82,7 @@ func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
 func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
 	lastID := sim.accountGenHistory[sid]
 	lastID++
+	sim.accountGenHistory[sid] = lastID
 	return *newAccountFromShard(sid, lastID)
 }
 
@@ -102,15 +104,27 @@ func (sim *SimulationEngine) init() {
 	mempoolLogger.SetLevel(common.LevelTrace)
 
 	//setup param
+
 	blockchain.SetupParam()
 	activeNetParams := &blockchain.ChainTest2Param
 	activeNetParams.ActiveShards = sim.config.ShardNumber
 
-	//TODO: @lam update this using sim.NewAccountFromShard
-	activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = []string{}
-	activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = []string{}
-	activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = []string{}
-	activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = []string{}
+	for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
+		acc := sim.NewAccountFromShard(-1)
+		sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
+		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey, acc.CommitteePubkey)
+		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
+	}
+	for i := 0; i < activeNetParams.ActiveShards; i++ {
+		for a := 0; a < activeNetParams.MinShardCommitteeSize; a++ {
+			acc := sim.NewAccountFromShard(i)
+			sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
+			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey, acc.CommitteePubkey)
+			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
+		}
+	}
+
+	activeNetParams.CreateGenesisBlocks()
 
 	//init blockchain
 	bc := blockchain.BlockChain{}
@@ -300,6 +314,7 @@ func (sim *SimulationEngine) AutoGenerateBlock(chainID int, numBlk int) {
 		}
 		sim.ForwardToFuture()
 	}
+	return
 }
 
 //life cycle of a block generation process:

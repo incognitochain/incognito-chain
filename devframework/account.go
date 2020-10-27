@@ -2,16 +2,19 @@ package devframework
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Account struct {
-	PublicKey      string
-	PrivateKey     string
-	MiningKey      string
-	PaymentAddress string
+	PublicKey       string
+	PrivateKey      string
+	MiningKey       string
+	PaymentAddress  string
+	CommitteePubkey string
 }
 
 func newAccountFromShard(sid int, keyID int) *Account {
@@ -35,6 +38,9 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 			acc.PaymentAddress = paymentAddress
 			validatorKeyBytes := common.HashB(common.HashB(child.KeySet.PrivateKey))
 			acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
+			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
+			res, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKey})
+			acc.CommitteePubkey = res[0]
 			if k == keyID {
 				break
 			}
