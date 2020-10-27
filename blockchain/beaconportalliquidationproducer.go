@@ -124,7 +124,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	sort.Strings(sortedMatchedRedeemReqKeys)
 	for _, redeemReqKey := range sortedMatchedRedeemReqKeys {
 		redeemReq := currentPortalState.MatchedRedeemRequests[redeemReqKey]
-		if blockchain.checkBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), blockchain.ShardChain[redeemReq.ShardID()].multiView.GetBestView().GetHeight(), redeemReq.ShardHeight(), portalParams) {
+		if blockchain.checkBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), blockchain.ShardChain[redeemReq.ShardID()].multiView.GetBestView().GetHeight(), redeemReq.ShardHeight(), portalParams.TimeOutCustodianReturnPubToken) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -359,10 +359,15 @@ func (blockchain *BlockChain) convertDurationTimeToBeaconBlocks(duration time.Du
 	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds())
 }
 
+// convertDurationTimeToShardBlocks returns number of shard blocks corresponding to duration time
+func (blockchain *BlockChain) convertDurationTimeToShardBlocks(duration time.Duration) uint64 {
+	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinShardBlockInterval.Seconds())
+}
+
 // convertDurationTimeToBeaconBlocks returns number of beacon blocks corresponding to duration time
-func (blockchain *BlockChain) checkBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, portalParams PortalParams) bool {
-	return (recentBeaconHeight+1)-beaconHeight >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest) &&
-		(recentShardHeight+1)-shardHeight >= blockchain.convertDurationTimeToBeaconBlocks(portalParams.TimeOutWaitingPortingRequest)
+func (blockchain *BlockChain) checkBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool {
+	return (recentBeaconHeight+1)-beaconHeight >= blockchain.convertDurationTimeToBeaconBlocks(duration) &&
+		(recentShardHeight+1)-shardHeight >= blockchain.convertDurationTimeToShardBlocks(duration)
 }
 
 func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
@@ -378,7 +383,7 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	sort.Strings(sortedWaitingPortingReqKeys)
 	for _, portingReqKey := range sortedWaitingPortingReqKeys {
 		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
-		if blockchain.checkBlockTimeIsReached(beaconHeight, portingReq.BeaconHeight(), blockchain.ShardChain[portingReq.ShardID()].multiView.GetBestView().GetHeight(), portingReq.ShardHeight(), portalParams) {
+		if blockchain.checkBlockTimeIsReached(beaconHeight, portingReq.BeaconHeight(), blockchain.ShardChain[portingReq.ShardID()].multiView.GetBestView().GetHeight(), portingReq.ShardHeight(), portalParams.TimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
