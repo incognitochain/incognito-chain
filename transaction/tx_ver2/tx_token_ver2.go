@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sort"
 	"bytes"
+	"math"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -64,11 +65,16 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 		copy(clonedInfo, txPRV.Info)
 	}
 	var clonedProof privacy.Proof = nil
+	// feed the type to parse proof 
+	proofType := txPRV.Type
+	if proofType==common.TxTokenConversionType{
+		proofType = common.TxConversionType
+	}
 	if proof!=nil{
-		clonedProof, err = utils.ParseProof(proof, txPRV.Version, txPRV.Type)
+		clonedProof, err = utils.ParseProof(proof, txPRV.Version, proofType)
 		if err!=nil{
 			jsb, _ := json.Marshal(proof)
-			utils.Logger.Log.Errorf("What kind of proof is this ? %s, %v, %v", string(jsb), txPRV.Version, txPRV.Type)
+			utils.Logger.Log.Errorf("Cannot parse proof %s using version %v - type %v", string(jsb), txPRV.Version, txPRV.Type)
 			return nil
 		}
 	}
@@ -82,6 +88,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 		clonedPk = make([]byte, len(pubkey))
 		copy(clonedPk, pubkey)
 	}
+	result.Info = clonedInfo
 	result.Proof = clonedProof
 	result.Sig = clonedSig
 	result.SigPubKey = clonedPk
@@ -156,7 +163,7 @@ func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
 	tx.TokenData.SigPubKey = temp.SigPubKey
 	tx.TokenData.Sig = temp.Sig
 	tx.TokenData.Proof = temp.Proof
-	tx.cachedTxNormal = makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
+	tx.cachedTxNormal = temp
 	return nil
 }
 
@@ -282,8 +289,6 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
 			txToken.SetTxNormal(temp)
-			jsb, _ := json.Marshal(txToken.GetTxNormal())
-			utils.Logger.Log.Warnf("TX token-init creation finished : %s\n", string(jsb))
 			return nil
 		}
 	case utils.CustomTokenTransfer:
@@ -410,7 +415,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 
 	// check tx size
 	limitFee := uint64(0)
-	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(len(params.InputCoin), len(params.PaymentInfo),
+	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(2, len(params.InputCoin), len(params.PaymentInfo),
 		params.HasPrivacyCoin, nil, params.TokenParams, limitFee)
 	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
 		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
@@ -455,7 +460,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	}
 	// check tx size
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
-	if txSize := tx_generic.EstimateTxSizeOfInitTokenSalary(publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
+	if txSize := tx_generic.EstimateTxSizeOfInitTokenSalary(2, publicKeyBytes, otaCoin.GetValue(), coinName, coinID); txSize > common.MaxTxSize {
 		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
@@ -598,7 +603,8 @@ func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateD
 func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, []privacy.Proof, error) {
 	var err error
 	jsb, _ := json.Marshal(txToken)
-	utils.Logger.Log.Infof("Begin verifying token TX %s\n", string(jsb))
+	utils.Logger.Log.Infof("Begin verifying token TX %s", string(jsb))
+	txn := txToken.GetTxNormal()
 	if tokenID, err = tx_generic.ParseTokenID(tokenID); err != nil {
 		return false, nil, err
 	}
@@ -623,11 +629,11 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 			}
 		case utils.CustomTokenTransfer:
 			if txToken.GetType() == common.TxTokenConversionType {
-				valid, err := validateConversionVer1ToVer2(txToken.GetTxNormal(), transactionStateDB, shardID, &tokenID)
+				valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenID)
 				return valid, nil, err
 			} else {
 				// for CA, bulletproof batching is not supported
-				resTxTokenData, _, err :=  txToken.GetTxNormal().ValidateTransaction(true, transactionStateDB, bridgeStateDB, shardID, &tokenID, false, isNewTransaction)
+				resTxTokenData, _, err :=  txn.ValidateTransaction(true, transactionStateDB, bridgeStateDB, shardID, &tokenID, false, isNewTransaction)
 				if err!= nil{
 					return resTxTokenData, nil, err
 				}
@@ -680,13 +686,12 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 	return true, nil
 }
 
-// TODO : update this
 func (txToken TxToken) GetTxActualSize() uint64 {
 	jsb, err := json.Marshal(txToken)
 	if err!=nil{
 		return 0
 	}
-	return uint64(len(jsb)) / 1024
+	return uint64(math.Ceil(float64(len(jsb)) / 1024))
 }
 
 //-- OVERRIDE--

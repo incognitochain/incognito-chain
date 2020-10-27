@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 	"encoding/json"
+	"math"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -188,12 +189,6 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	if check, err := tx.IsNonPrivacyNonInput(params); check {
 		return err
 	}
-	// if params.HasPrivacy{
-	// 	if err := tx.proveCA(params); err != nil {
-	// 		return err
-	// 	}
-	// }else{
-	// }
 	if err := tx.prove(params); err != nil {
 		return err
 	}
@@ -729,6 +724,6 @@ func (tx Tx) GetTxActualSize() uint64 {
 	if err!=nil{
 		return 0
 	}
-	return uint64(len(jsb)) / 1024
+	return uint64(math.Ceil(float64(len(jsb)) / 1024))
 }
 
