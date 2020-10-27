@@ -73,6 +73,7 @@ func buildRedeemRequestInst(
 	shardID byte,
 	txReqID common.Hash,
 	status string,
+	shardHeight uint64,
 	redeemerAddressForLiquidating string,
 ) []string {
 	redeemRequestContent := metadata.PortalRedeemRequestContent{
@@ -85,6 +86,7 @@ func buildRedeemRequestInst(
 		RedeemFee:                     redeemFee,
 		TxReqID:                       txReqID,
 		ShardID:                       shardID,
+		ShardHeight:                   shardHeight,
 		RedeemerAddressForLiquidating: redeemerAddressForLiquidating,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
@@ -131,6 +133,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.ShardID,
 		actionData.TxReqID,
 		common.PortalRedeemRequestRejectedChainStatus,
+		actionData.ShardHeight,
 		meta.RedeemerAddressForLiquidating,
 	)
 
@@ -221,6 +224,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		actionData.ShardID,
 		actionData.TxReqID,
 		common.PortalRedeemRequestAcceptedChainStatus,
+		actionData.ShardHeight,
 		meta.RedeemerAddressForLiquidating,
 	)
 	return [][]string{inst}, nil
@@ -446,6 +450,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 				shardID,
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				waitingRedeem.ShardHeight(),
 				waitingRedeem.GetRedeemAddressForLiquidating(),
 			)
 			Logger.log.Errorf("Instruction reject waiting redeem request because of not enough custodians %+v", inst2)

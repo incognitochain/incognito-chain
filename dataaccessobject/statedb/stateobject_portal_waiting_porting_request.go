@@ -27,7 +27,7 @@ type WaitingPortingRequest struct {
 	txReqID         common.Hash
 
 	shardHeight uint64
-	shardID byte
+	shardID     byte
 }
 
 func (w WaitingPortingRequest) BeaconHeight() uint64 {
@@ -127,14 +127,15 @@ func NewWaitingPortingRequestWithValue(
 	shardID byte) *WaitingPortingRequest {
 	return &WaitingPortingRequest{
 		uniquePortingID: uniquePortingID,
-		txReqID: txReqID, tokenID: tokenID,
-		porterAddress: porterAddress,
-		amount: amount,
-		custodians: custodians,
-		portingFee: portingFee,
-		beaconHeight: beaconHeight,
-		shardHeight: shardHeight,
-		shardID: shardID,
+		txReqID:         txReqID,
+		tokenID:         tokenID,
+		porterAddress:   porterAddress,
+		amount:          amount,
+		custodians:      custodians,
+		portingFee:      portingFee,
+		beaconHeight:    beaconHeight,
+		shardHeight:     shardHeight,
+		shardID:         shardID,
 	}
 }
 
@@ -154,6 +155,8 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		Custodians      []*MatchingPortingCustodianDetail
 		PortingFee      uint64
 		BeaconHeight    uint64
+		ShardID         byte
+		ShardHeight     uint64
 	}{
 		UniquePortingID: w.uniquePortingID,
 		TxReqID:         w.txReqID,
@@ -163,6 +166,8 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		Custodians:      w.custodians,
 		PortingFee:      w.portingFee,
 		BeaconHeight:    w.beaconHeight,
+		ShardID:         w.shardID,
+		ShardHeight:     w.shardHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -180,6 +185,8 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 		Custodians      []*MatchingPortingCustodianDetail
 		PortingFee      uint64
 		BeaconHeight    uint64
+		ShardID         byte
+		ShardHeight     uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -194,6 +201,8 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 	w.custodians = temp.Custodians
 	w.portingFee = temp.PortingFee
 	w.beaconHeight = temp.BeaconHeight
+	w.shardID = temp.ShardID
+	w.shardHeight = temp.ShardHeight
 
 	return nil
 }

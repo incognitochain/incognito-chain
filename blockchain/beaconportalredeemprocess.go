@@ -266,6 +266,8 @@ func (blockchain *BlockChain) processPortalReqMatchingRedeem(
 			RedeemFee:                     updatedRedeemRequest.GetRedeemFee(),
 			MatchingCustodianDetail:       updatedRedeemRequest.GetCustodians(),
 			TxReqID:                       updatedRedeemRequest.GetTxReqID(),
+			ShardID:                       updatedRedeemRequest.ShardID(),
+			ShardHeight:                   updatedRedeemRequest.ShardHeight(),
 			RedeemerAddressForLiquidating: updatedRedeemRequest.GetRedeemAddressForLiquidating(),
 		}
 		newRedeemRequest, err := json.Marshal(redeemRequest)
@@ -364,6 +366,8 @@ func (blockchain *BlockChain) processPortalPickMoreCustodiansForTimeOutWaitingRe
 			RedeemFee:                     updatedRedeemRequest.GetRedeemFee(),
 			MatchingCustodianDetail:       updatedRedeemRequest.GetCustodians(),
 			TxReqID:                       updatedRedeemRequest.GetTxReqID(),
+			ShardID:                       updatedRedeemRequest.ShardID(),
+			ShardHeight:                   updatedRedeemRequest.ShardHeight(),
 			RedeemerAddressForLiquidating: updatedRedeemRequest.GetRedeemAddressForLiquidating(),
 		}
 		newRedeemRequest, err := json.Marshal(redeemRequest)
