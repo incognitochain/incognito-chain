@@ -315,13 +315,18 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 }
 
 //CommitteesByShardID ...
-func (chain *BeaconChain) CommitteesByShardID(shardID byte) []incognitokey.CommitteePublicKey {
+func (chain *BeaconChain) CommitteesByShardIDForProposer(shardID byte) []incognitokey.CommitteePublicKey {
 	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
 	return finalView.GetShardCommittee()[shardID]
 }
 
+//CommitteesByShardID ...
+func (chain *BeaconChain) CommitteesByShardIDForValidators(block common.BlockInterface, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
+	return chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), shardID)
+}
+
 //GetProposerByTimeSlot ...
-func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version int) incognitokey.CommitteePublicKey {
+func (chain *BeaconChain) ProposerByTimeSlot(shardID byte, ts int64, version int) incognitokey.CommitteePublicKey {
 	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
 
 	//TODO: add recalculate proposer index here when swap committees

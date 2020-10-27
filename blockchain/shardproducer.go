@@ -3,12 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -73,7 +74,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		shardID                           = curView.ShardID
 		currentCommitteePublicKeys        = []string{}
 		currentCommitteePublicKeysStructs = []incognitokey.CommitteePublicKey{}
-		beaconFinalBlockHash              = common.Hash{}
+		committeeFromBlockHash            = common.Hash{}
 		beaconFinalView                   *BeaconBestState
 		err                               error
 	)
@@ -94,7 +95,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconFinalView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	} else {
 		beaconFinalView = committeeFinalView.(*BeaconBestState)
-		beaconFinalBlockHash = *beaconFinalView.GetHash()
+		// committeeFromBlockHash = *beaconFinalView.GetHash()
+		committeeFromBlockHash = *beaconFinalView.GetBlock().Hash()
 		currentCommitteePublicKeysStructs = beaconFinalView.GetShardCommittee()[shardBestState.ShardID]
 		currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
 		if err != nil {
@@ -115,25 +117,28 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, errors.New("Waiting For Beacon Produce Block")
 	}
 
-	if beaconFinalBlockHash.String() != shardBestState.CommitteeFromBlock().String() {
-		emptyHash := common.Hash{}
-		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
-			oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-			if err != nil {
-				return nil, err
-			}
-			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconFinalBlockHash)
-			if err != nil {
-				return nil, err
-			}
-			if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-				return nil, NewBlockChainError(WrongBlockHeightError,
-					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-						newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+		if shardBestState.GetHeight() != 1 {
+			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
+			if len(temp) != 0 {
+				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+				if err != nil {
+					return nil, err
+				}
+				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
+				if err != nil {
+					return nil, err
+				}
+				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+					return nil, NewBlockChainError(WrongBlockHeightError,
+						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+				}
+			} else {
+				committeeFromBlockHash = shardBestState.CommitteeFromBlock()
 			}
 		}
-	} else {
-		beaconFinalBlockHash = shardBestState.CommitteeFromBlock()
 	}
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
@@ -255,7 +260,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		BeaconHash:         *beaconHash,
 		TotalTxsFee:        totalTxsFee,
 		ConsensusType:      shardBestState.ConsensusAlgorithm,
-		CommitteeFromBlock: beaconFinalBlockHash,
+		CommitteeFromBlock: committeeFromBlockHash,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()

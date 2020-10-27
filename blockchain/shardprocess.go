@@ -668,21 +668,25 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 		return err
 	}
 
-	if shardBlock.CommitteeFromBlock().String() != shardBestState.CommitteeFromBlock().String() {
-		emptyHash := common.Hash{}
-		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
-			oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-			if err != nil {
-				return err
-			}
-			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.CommitteeFromBlock())
-			if err != nil {
-				return err
-			}
-			if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-				return NewBlockChainError(WrongBlockHeightError,
-					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-						newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+		if shardBestState.GetHeight() != 1 {
+			newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(committees)
+			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+			temp := common.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
+			if len(temp) != 0 {
+				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+				if err != nil {
+					return err
+				}
+				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.CommitteeFromBlock)
+				if err != nil {
+					return err
+				}
+				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+					return NewBlockChainError(WrongBlockHeightError,
+						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+				}
 			}
 		}
 	}
