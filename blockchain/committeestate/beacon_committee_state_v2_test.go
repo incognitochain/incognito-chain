@@ -1975,8 +1975,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	initPublicKey()
 	initLog()
 
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
-	assert.Nil(t, err)
 	rewardReceiverkey := incKey.GetIncKeyBase58()
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 
@@ -2066,7 +2064,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{
 					unassignedCommonPool: []string{key2},
-					ConsensusStateDB:     sDB,
+					ConsensusStateDB:     validSDB,
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),

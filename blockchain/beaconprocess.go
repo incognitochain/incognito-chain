@@ -205,7 +205,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
-	err2 = newBestState.updateDBFromCommitteeStateForPrevState(committeeChange)
+	err2 = newBestState.storeCommitteeStateWithPreviousState(committeeChange)
 	if err2 != nil {
 		// Logger.log.Info("[swap-v2] err2:", err2)
 		// panic(100)
@@ -782,7 +782,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	err = newBestState.updateDBFromCommitteeStateForCurState(committeeChange)
+	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
 	if err != nil {
 		return err
 	}
@@ -1043,7 +1043,8 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	return beacon, shard
 }
 
-func (beaconBestState *BeaconBestState) updateDBFromCommitteeStateForCurState(committeeChange *committeestate.CommitteeChange) error {
+func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
+	committeeChange *committeestate.CommitteeChange) error {
 	stakerKeys := committeeChange.StakerKeys()
 	if len(stakerKeys) != 0 {
 		err := statedb.StoreStakerInfoV1(
@@ -1057,14 +1058,8 @@ func (beaconBestState *BeaconBestState) updateDBFromCommitteeStateForCurState(co
 			return err
 		}
 	}
-	return nil
-}
 
-func (beaconBestState *BeaconBestState) updateDBFromCommitteeStateForPrevState(committeeChange *committeestate.CommitteeChange) error {
-
-	removedStakerKeys := committeeChange.UnstakeKeys()
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
-
 	if len(stopAutoStakerKeys) != 0 {
 		err := statedb.StoreStakerInfoV1(
 			beaconBestState.consensusStateDB,
@@ -1078,6 +1073,13 @@ func (beaconBestState *BeaconBestState) updateDBFromCommitteeStateForPrevState(c
 		}
 	}
 
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) storeCommitteeStateWithPreviousState(
+	committeeChange *committeestate.CommitteeChange) error {
+
+	removedStakerKeys := committeeChange.UnstakeKeys()
 	if len(removedStakerKeys) != 0 {
 		err := statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
 		if err != nil {

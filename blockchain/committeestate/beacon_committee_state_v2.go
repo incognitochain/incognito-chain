@@ -445,6 +445,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		shardID := byte(key)
 		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
+
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
@@ -523,11 +524,6 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 			if err != nil {
 				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
 			}
-			for _, returnStakingInstruction := range returnStakingInstructions {
-				if !returnStakingInstruction.IsEmpty() {
-					incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
-				}
-			}
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
@@ -538,12 +534,17 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 			if err != nil {
 				return incurredInstructions, err
 			}
-			for _, returnStakingInstruction := range returnStakingInstructions {
-				if !returnStakingInstruction.IsEmpty() {
-					incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
-				}
-			}
 		}
+	}
+
+	keys := []int{}
+	for k, _ := range returnStakingInstructions {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, key := range keys {
+		shardID := byte(key)
+		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
 
 	return incurredInstructions, nil
@@ -611,8 +612,7 @@ func (b *BeaconCommitteeStateV2) processStopAutoStakeInstruction(
 		} else {
 			// if found in committee list then turn off auto staking
 			if _, ok := b.autoStake[committeePublicKey]; ok {
-				b.autoStake[committeePublicKey] = false
-				committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, committeePublicKey)
+				committeeChange = b.stopAutoStake(committeePublicKey, committeeChange)
 			}
 		}
 	}
@@ -759,7 +759,6 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 		}
 		indexNextEpochShardCandidate[key] = i
 	}
-
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.unassignedCommonPool) == -1 {
 			if common.IndexOfStr(publicKey, env.allSubstituteCommittees) != -1 {
