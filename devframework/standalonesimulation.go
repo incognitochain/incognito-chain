@@ -11,12 +11,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
@@ -28,6 +30,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Config struct {
@@ -48,7 +51,7 @@ type SimulationEngine struct {
 	//for account manager
 	accountGenHistory map[int]int
 	committeeAccount  map[int][]Account
-	icoAccount        Account
+	IcoAccount        Account
 
 	//blockchain dependency object
 	param       *blockchain.Params
@@ -123,6 +126,10 @@ func (sim *SimulationEngine) init() {
 			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
 		}
 	}
+	sim.IcoAccount = sim.committeeAccount[0][0]
+	initTxs := createICOtx([]string{sim.IcoAccount.PrivateKey})
+	activeNetParams.GenesisParams.InitialIncognito = initTxs
+	fmt.Println(initTxs)
 
 	activeNetParams.CreateGenesisBlocks()
 
@@ -585,4 +592,42 @@ func sendRequest(requestBody []byte) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func createICOtx(privateKeys []string) []string {
+	transactions := []string{}
+	db, err := incdb.Open("leveldb", "/tmp")
+	if err != nil {
+		fmt.Print("could not open connection to leveldb")
+		fmt.Print(err)
+		panic(err)
+	}
+	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
+	for _, privateKey := range privateKeys {
+		txs := initSalryTx("1000000000", privateKey, stateDB)
+		transactions = append(transactions, txs[0])
+	}
+	return transactions
+}
+
+func initSalryTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
+	var initTxs []string
+	var initAmount, _ = strconv.Atoi(amount) // amount init
+	testUserkeyList := []string{
+		privateKey,
+	}
+	for _, val := range testUserkeyList {
+
+		testUserKey, _ := wallet.Base58CheckDeserialize(val)
+		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+
+		testSalaryTX := transaction.Tx{}
+		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
+			stateDB,
+			nil,
+		)
+		initTx, _ := json.Marshal(testSalaryTX)
+		initTxs = append(initTxs, string(initTx))
+	}
+	return initTxs
 }
