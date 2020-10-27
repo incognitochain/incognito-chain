@@ -41,9 +41,16 @@ type Hook struct {
 	Insert     func(chain interface{}, block common.BlockInterface, doInsert func(blk common.BlockInterface) error)
 }
 type SimulationEngine struct {
-	config      Config
-	simName     string
-	timer       *TimeEngine
+	config  Config
+	simName string
+	timer   *TimeEngine
+
+	//for account manager
+	accountGenHistory map[int]int
+	committeeAccount  map[int][]Account
+	icoAccount        Account
+
+	//blockchain dependency object
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
 	cs          *mock.Consensus
@@ -61,13 +68,20 @@ type SimulationEngine struct {
 func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
 	os.RemoveAll(name)
 	sim := &SimulationEngine{
-		config:  config,
-		simName: name,
-		timer:   NewTimeEngine(),
+		config:            config,
+		simName:           name,
+		timer:             NewTimeEngine(),
+		accountGenHistory: make(map[int]int),
 	}
 	sim.init()
 	time.Sleep(1 * time.Second)
 	return sim
+}
+
+func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
+	lastID := sim.accountGenHistory[sid]
+	lastID++
+	return *newAccountFromShard(sid, lastID)
 }
 
 func (sim *SimulationEngine) init() {
@@ -76,7 +90,7 @@ func (sim *SimulationEngine) init() {
 	if err != nil {
 		log.Println(err)
 	}
-	initLogRotator(filepath.Join(path, "sim.log"))
+	initLogRotator(filepath.Join(path, simName+".log"))
 	dbLogger.SetLevel(common.LevelTrace)
 	blockchainLogger.SetLevel(common.LevelTrace)
 	bridgeLogger.SetLevel(common.LevelTrace)
@@ -87,16 +101,21 @@ func (sim *SimulationEngine) init() {
 	privacyLogger.SetLevel(common.LevelTrace)
 	mempoolLogger.SetLevel(common.LevelTrace)
 
-	//read and setup key
-	blockchain.ReadKey()
+	//setup param
 	blockchain.SetupParam()
+	activeNetParams := &blockchain.ChainTest2Param
+	activeNetParams.ActiveShards = sim.config.ShardNumber
+
+	//TODO: @lam update this using sim.NewAccountFromShard
+	activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = []string{}
+	activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = []string{}
+	activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = []string{}
+	activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = []string{}
 
 	//init blockchain
 	bc := blockchain.BlockChain{}
 
-	activeNetParams := &blockchain.ChainTest2Param
 	sim.timer.init(activeNetParams.GenesisBeaconBlock.Header.Timestamp + 10)
-	activeNetParams.ActiveShards = sim.config.ShardNumber
 
 	cs := mock.Consensus{}
 	txpool := mempool.TxPool{}
