@@ -71,6 +71,7 @@ type ChainRetriever interface {
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
+	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 }
 
 type BeaconViewRetriever interface {
