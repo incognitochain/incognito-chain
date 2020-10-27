@@ -625,6 +625,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 	env.IsSplitRewardForCustodian = isSplitRewardForCustodian
 	env.ActiveShards = activeShards
 	env.ShardID = shardID
+	env.BeaconHeight = beaconBestState.BeaconHeight
 	return env
 }
 

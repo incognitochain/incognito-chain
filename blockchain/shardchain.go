@@ -214,7 +214,6 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 		Logger.log.Info("[staking-v2] bestViewCommitteess:", bestViewCommittees)
 		Logger.log.Info("[staking-v2] err:", err)
 		Logger.log.Info("[staking-v2] block.CommitteeFromBlock():", block.CommitteeFromBlock())
-		panic(100)
 		return err
 	}
 	return nil
