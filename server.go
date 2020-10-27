@@ -2279,13 +2279,13 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	return "", -2
 }
 
-func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *syncker.NextCrossShardInfo {
+func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *blockchain.NextCrossShardInfo {
 	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase[common.BeaconChainDataBaseID], byte(fromSID), byte(toSID), uint64(currentHeight))
 	if err != nil {
 		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
 		return nil
 	}
-	var res = new(syncker.NextCrossShardInfo)
+	var res = new(blockchain.NextCrossShardInfo)
 	err = json.Unmarshal(b, res)
 	if err != nil {
 		return nil

@@ -114,13 +114,6 @@ func (s *BeaconSyncProcess) getBeaconPeerStates() map[string]BeaconPeerState {
 	return <-res
 }
 
-type NextCrossShardInfo struct {
-	NextCrossShardHeight uint64
-	NextCrossShardHash   string
-	ConfirmBeaconHeight  uint64
-	ConfirmBeaconHash    string
-}
-
 type LastCrossShardBeaconProcess struct {
 	BeaconHeight        uint64
 	LastCrossShardState map[byte]map[byte]uint64
@@ -128,7 +121,7 @@ type LastCrossShardBeaconProcess struct {
 
 //watching confirm beacon block and update cross shard info (which beacon confirm crossshard block N of shard X)
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
-	state := rawdbv2.GetLastBeaconStateConfirmCrossShard(s.server.GetBeaconChainDatabase())
+	state := rawdbv2.GetLastBeaconStateConfirmCrossShard(s.chain.GetDatabase())
 	lastBeaconStateConfirmCrossX := new(LastCrossShardBeaconProcess)
 	_ = json.Unmarshal(state, &lastBeaconStateConfirmCrossX)
 	lastBeaconHeightConfirmCrossX := uint64(1)
@@ -138,6 +131,10 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	}
 	fmt.Println("lastBeaconHeightConfirmCrossX", lastBeaconHeightConfirmCrossX)
 	for {
+		if s.status != RUNNING_SYNC {
+			time.Sleep(time.Second)
+			continue
+		}
 		if lastBeaconHeightConfirmCrossX > s.chain.GetFinalViewHeight() {
 			//fmt.Println("DEBUG:larger than final view", s.chain.GetFinalViewHeight())
 			time.Sleep(time.Second * 5)
@@ -154,7 +151,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 			lastBeaconHeightConfirmCrossX++
 			if lastBeaconHeightConfirmCrossX%1000 == 0 {
 				fmt.Println("store lastBeaconHeightConfirmCrossX", lastBeaconHeightConfirmCrossX)
-				rawdbv2.StoreLastBeaconStateConfirmCrossShard(s.server.GetBeaconChainDatabase(), LastCrossShardBeaconProcess{lastBeaconHeightConfirmCrossX, s.lastCrossShardState})
+				rawdbv2.StoreLastBeaconStateConfirmCrossShard(s.chain.GetDatabase(), LastCrossShardBeaconProcess{lastBeaconHeightConfirmCrossX, s.lastCrossShardState})
 			}
 		} else {
 			fmt.Println(err)
@@ -179,7 +176,7 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 					waitHeight := shardBlock.Height
 
-					info := NextCrossShardInfo{
+					info := blockchain.NextCrossShardInfo{
 						waitHeight,
 						shardBlock.Hash.String(),
 						beaconBlock.GetHeight(),

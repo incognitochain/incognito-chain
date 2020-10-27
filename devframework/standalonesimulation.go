@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"io/ioutil"
 	"log"
 	"net"
@@ -149,8 +150,7 @@ func (sim *SimulationEngine) init() {
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
 	sync := mock.Syncker{
-		Bc:                  &bc,
-		LastCrossShardState: make(map[byte]map[byte]uint64),
+		Syncker: syncker.NewSynckerManager(),
 	}
 	server := mock.Server{}
 	ps := mock.Pubsub{}
@@ -274,10 +274,9 @@ func (sim *SimulationEngine) init() {
 			}
 		}
 	}()
-	go sync.UpdateConfirmCrossShard()
 	go blockgen.Start(cQuit)
 	go rpcServer.Start()
-
+	sync.Syncker.Init(&syncker.SynckerManagerConfig{Blockchain: &bc})
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -443,6 +442,13 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 					err = chain.InsertShardBlock(blk.(*blockchain.ShardBlock), true)
 					if err != nil {
 						return err
+					} else {
+						crossX := block.(*blockchain.ShardBlock).CreateAllCrossShardBlock(sim.config.ShardNumber)
+						for sid, blk := range crossX {
+							fmt.Println("add cross shard block into system")
+							sim.Pause()
+							sim.sync.Syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+						}
 					}
 					return
 				}
@@ -460,6 +466,14 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 					err = chain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
 					if err != nil {
 						fmt.Println("InsertBlkErr", err)
+					} else {
+						crossX := block.(*blockchain.ShardBlock).CreateAllCrossShardBlock(sim.config.ShardNumber)
+						for sid, blk := range crossX {
+							fmt.Println("add cross shard block into system")
+							sim.Pause()
+							sim.sync.Syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+						}
+
 					}
 
 				}

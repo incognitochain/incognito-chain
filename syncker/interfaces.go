@@ -26,7 +26,7 @@ type Server interface {
 	//database
 	FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error)
 	GetBeaconChainDatabase() incdb.Database
-	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *NextCrossShardInfo
+	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *blockchain.NextCrossShardInfo
 	//StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
 	//FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)
 }
@@ -43,6 +43,7 @@ type ShardChainInterface interface {
 }
 
 type Chain interface {
+	GetDatabase() incdb.Database
 	GetAllViewHash() []common.Hash
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64

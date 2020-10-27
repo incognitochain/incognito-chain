@@ -69,6 +69,10 @@ func (s *CrossShardSyncProcess) stop() {
 	s.status = STOP_SYNC
 }
 
+func (s *CrossShardSyncProcess) InsertCrossShardBlock(blk interface{}) {
+	s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
+}
+
 //check beacon state and retrieve needed crossshard block, then add to request pool
 func (s *CrossShardSyncProcess) syncCrossShard() {
 	for {

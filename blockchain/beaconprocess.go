@@ -1557,6 +1557,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
+
+	finalizedBlocks := []*BeaconBlock{}
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
@@ -1565,6 +1567,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if storeBlock.GetHeight() == 1 {
 			break
 		}
+
+		finalizedBlocks = append(finalizedBlocks, storeBlock.(*BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
 		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
 		if newFinalView == nil {
@@ -1575,6 +1579,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		} else {
 			storeBlock = newFinalView.GetBlock()
 		}
+	}
+
+	for i := len(finalizedBlocks) - 1; i >= 0; i-- {
+		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
+		processBeaconForConfirmmingCrossShard(batch, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
 	err = blockchain.BackupBeaconViews(batch)
@@ -1607,6 +1616,52 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	}
 
+	return nil
+}
+
+type NextCrossShardInfo struct {
+	NextCrossShardHeight uint64
+	NextCrossShardHash   string
+	ConfirmBeaconHeight  uint64
+	ConfirmBeaconHash    string
+}
+
+func processBeaconForConfirmmingCrossShard(database incdb.KeyValueWriter, beaconBlock *BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
+		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
+			for _, shardBlock := range shardBlocks {
+				for _, toShard := range shardBlock.CrossShard {
+
+					if fromShard == toShard {
+						continue
+					}
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
+					waitHeight := shardBlock.Height
+
+					info := NextCrossShardInfo{
+						waitHeight,
+						shardBlock.Hash.String(),
+						beaconBlock.GetHeight(),
+						beaconBlock.Hash().String(),
+					}
+					fmt.Println("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
+					b, _ := json.Marshal(info)
+					fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
+					err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
+					if err != nil {
+						return err
+					}
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
+				}
+			}
+		}
+	}
 	return nil
 }
 

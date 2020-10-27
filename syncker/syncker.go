@@ -83,6 +83,10 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	go func() {
 		t := time.NewTicker(time.Second * 3)
 		for _ = range t.C {
+			if !synckerManager.isEnabled {
+				time.Sleep(time.Second)
+				continue
+			}
 			synckerManager.config.Node.PublishNodeState()
 			// _, chainID := synckerManager.config.Node.GetUserMiningState()
 			// if chainID == -1 {
@@ -231,10 +235,11 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte, limit map[byte][]uint64) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
-	beaconDB := synckerManager.config.Node.GetBeaconChainDatabase()
-	lastRequestCrossShard := synckerManager.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
+
+	lastRequestCrossShard := synckerManager.config.Blockchain.ShardChain[int(toShard)].GetCrossShardState()
 	bc := synckerManager.config.Blockchain
-	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
+	beaconDB := bc.GetBeaconChainDatabase()
+	for i := 0; i < synckerManager.config.Blockchain.GetActiveShardNumber(); i++ {
 		for {
 			if i == int(toShard) {
 				break
@@ -246,7 +251,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			}
 
 			requestHeight := lastRequestCrossShard[byte(i)]
-			nextCrossShardInfo := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
+			nextCrossShardInfo := synckerManager.config.Blockchain.FetchNextCrossShard(i, int(toShard), requestHeight)
 			if nextCrossShardInfo == nil {
 				break
 			}

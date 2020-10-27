@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"os"
 	"path/filepath"
 
@@ -31,8 +32,8 @@ var (
 	transactionLogger      = backendLog.Logger("Transaction log", false)
 	privacyLogger          = backendLog.Logger("Privacy log", false)
 	mempoolLogger          = backendLog.Logger("Mempool log", false)
-
-	disableStdoutLog = false
+	synckerLogger          = backendLog.Logger("Syncker log", false)
+	disableStdoutLog       = false
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -57,6 +58,7 @@ func init() {
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)
 	mempool.Logger.Init(mempoolLogger)
+	syncker.Logger.Init(synckerLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
