@@ -3,6 +3,7 @@ package tx_generic
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -155,7 +156,17 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 
 	// check sanity of Proof
 	if tx.GetProof() != nil {
-		ok, err := tx.GetProof().ValidateSanity()
+		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		additionalData := make(map[string]interface{})
+		additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
+		sigPubKey, err :=  new(operation.Point).FromBytesS(tx.GetSigPubKey())
+		if err != nil {
+			return false, errors.New("SigPubKey is invalid")
+		}
+		additionalData["sigPubKey"] = sigPubKey
+		additionalData["shardID"] = shardID
+
+		ok, err := tx.GetProof().ValidateSanity(additionalData)
 		if !ok || err != nil {
 			s := ""
 			if !ok {

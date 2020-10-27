@@ -297,7 +297,7 @@ func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error){
 	return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Error : TX contains both confidential asset & non-CA coins"))
 }
 
-func (proof PaymentProofV2) ValidateSanity() (bool, error) {
+func (proof PaymentProofV2) ValidateSanity(additionalData interface{}) (bool, error) {
 	if len(proof.GetInputCoins()) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
 	}

@@ -272,7 +272,7 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 	return proof, nil
 }
 
-func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
+func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{}) (bool, error) {
 	if proof.Version != ConversionProofVersion {
 		return false, errors.New("Proof version of ConversionProof is not right")
 	}

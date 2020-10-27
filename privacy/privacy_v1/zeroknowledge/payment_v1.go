@@ -24,6 +24,13 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 )
 
+const FixedRandomnessString = "fixedrandomness"
+
+// FixedRandomnessShardID is fixed randomness for shardID commitment from param.BCHeightBreakPointFixRandShardCM
+// is result from HashToScalar([]byte(privacy.FixedRandomnessString))
+var FixedRandomnessShardID = new(operation.Scalar).FromBytesS([]byte{0x60, 0xa2, 0xab, 0x35, 0x26, 0x9, 0x97, 0x7c, 0x6b, 0xe1, 0xba, 0xec, 0xbf, 0x64, 0x27, 0x2, 0x6a, 0x9c, 0xe8, 0x10, 0x9e, 0x93, 0x4a, 0x0, 0x47, 0x83, 0x15, 0x48, 0x63, 0xeb, 0xda, 0x6})
+
+
 // PaymentProof contains all of PoK for spending coin
 type PaymentProof struct {
 	// for input coins
@@ -844,7 +851,7 @@ func isBadPoint(point *operation.Point) bool {
 	return false
 }
 
-func (proof PaymentProof) ValidateSanity() (bool, error) {
+func (proof PaymentProof) ValidateSanity(additionalData interface{}) (bool, error) {
 	if len(proof.inputCoins) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.inputCoins)))
 	}
@@ -866,6 +873,21 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 
 	isPrivacy := proof.IsPrivacy()
 
+	param, ok := additionalData.(map[string]interface{})
+	if !ok{
+		return false, errors.New("cannot cast additional data")
+	}
+
+	_, ok = param["sigPubKey"]
+	if !ok{
+		return false, errors.New("sigPubkey not found")
+	}
+	sigPubKeyPoint, ok := param["sigPubkey"].(*operation.Point)
+	if !ok{
+		return false, errors.New("cannot cast sigPubkey param")
+	}
+
+
 	if isPrivacy {
 		if !proof.aggregatedRangeProof.ValidateSanity() {
 			return false, errors.New("validate sanity Aggregated range proof failed")
@@ -884,6 +906,8 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 			}
 		}
 
+		cmInputSK := proof.GetCommitmentInputSecretKey()
+
 		for i := 0; i < len(proof.GetOneOfManyProof()); i++ {
 			if !proof.GetOneOfManyProof()[i].ValidateSanity() {
 				return false, errors.New("validate sanity One out of many proof failed")
@@ -891,9 +915,13 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 		}
 		for i := 0; i < len(proof.GetSerialNumberProof()); i++ {
 			// check cmSK of input coin is equal to comSK in serial number proof
-			if !operation.IsPointEqual(proof.GetCommitmentInputSecretKey(), proof.GetSerialNumberProof()[i].GetComSK()){
+			if !operation.IsPointEqual(cmInputSK, proof.GetSerialNumberProof()[i].GetComSK()){
 				Logger.Log.Errorf("ComSK in SNproof is not equal to commitment of private key")
 				return false, errors.New("comSK of SNProof is not comSK of input coins")
+			}
+			if !operation.IsPointEqual(proof.GetCommitmentInputSND()[i], proof.GetSerialNumberProof()[i].GetComInput()) {
+				Logger.Log.Errorf("cmSND in SNproof is not equal to commitment of input's SND")
+				return false, errors.New("cmSND in SNproof is not equal to commitment of input's SND")
 			}
 			if !proof.GetSerialNumberProof()[i].ValidateSanity() {
 				return false, errors.New("validate sanity Serial number proof failed")
@@ -918,10 +946,17 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 				return false, errors.New("validate sanity SNDerivator of output coin failed")
 			}
 		}
+
 		// check ComInputSK
-		if isBadPoint(proof.GetCommitmentInputSecretKey()) {
+		if isBadPoint(cmInputSK) {
 			return false, errors.New("validate sanity ComInputSK of proof failed")
 		}
+
+		//Check sigPubkey
+		if !operation.IsPointEqual(cmInputSK, sigPubKeyPoint){
+			return false, errors.New("SigPubKey is not equal to commitment of private key")
+		}
+
 		// check ComInputValue
 		for i := 0; i < len(proof.GetCommitmentInputValue()); i++ {
 			if isBadPoint(proof.GetCommitmentInputValue()[i]) {
@@ -938,6 +973,37 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 		if isBadPoint(proof.GetCommitmentInputShardID()) {
 			return false, errors.New("validate sanity ComInputShardID of proof failed")
 		}
+
+		isNewZKP := false
+		_, ok = param["isNewZKP"]
+		if !ok{
+			 isNewZKP = true
+		}
+		isNewZKP, ok = param["isNewZKP"].(bool)
+		if !ok {
+			return false, errors.New("cannot cast isNewZKP param")
+		}
+
+		_, ok = param["shardID"]
+		if !ok{
+			return false, errors.New("shardID not found")
+		}
+		shardID, ok := param["shardID"].(byte)
+		if !ok {
+			return false, errors.New("cannot cast shardID param")
+		}
+
+		if isNewZKP {
+			fixedRand := FixedRandomnessShardID
+			expectedCMShardID := operation.PedCom.CommitAtIndex(
+				new(operation.Scalar).FromUint64(uint64(shardID)),
+				fixedRand, operation.PedersenShardIDIndex)
+
+			if !operation.IsPointEqual(expectedCMShardID, proof.GetCommitmentInputShardID()) {
+				return false, errors.New("ComInputShardID must be committed with the fixed randomness")
+			}
+		}
+
 
 		// check ComOutputShardID
 		for i := 0; i < len(proof.GetCommitmentOutputShardID()); i++ {
@@ -964,11 +1030,23 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 	}
 
 	if !isPrivacy {
+		inputCoins := proof.GetInputCoins()
+		for i:=0; i< len(inputCoins); i++{
+			if !operation.IsPointEqual(inputCoins[i].GetPublicKey(), sigPubKeyPoint){
+				return false, errors.New("SigPubKey is not equal to public key of input coins")
+			}
+		}
+
 		for i := 0; i < len(proof.GetSerialNumberNoPrivacyProof()); i++ {
 			// check PK of input coin is equal to vKey in serial number proof
-			if !operation.IsPointEqual(proof.GetInputCoins()[i].GetPublicKey(), proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()){
+			if !operation.IsPointEqual(inputCoins[i].GetPublicKey(), proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()){
 				Logger.Log.Errorf("VKey in SNProof is not equal public key of sender")
 				return false, errors.New("VKey of SNProof is not public key of sender")
+			}
+
+			if !operation.IsScalarEqual(inputCoins[i].GetSNDerivator(), proof.GetSerialNumberNoPrivacyProof()[i].GetInput()) {
+				Logger.Log.Errorf("SND in SNProof is not equal to input's SND")
+				return false, errors.New("SND in SNProof is not equal to input's SND")
 			}
 
 			if !proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
@@ -976,36 +1054,38 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 			}
 		}
 		// check input coins without privacy
-		for i := 0; i < len(proof.inputCoins); i++ {
-			if isBadPoint(proof.inputCoins[i].GetCommitment()) {
+		for i := 0; i < len(inputCoins); i++ {
+			if isBadPoint(inputCoins[i].GetCommitment()) {
 				return false, errors.New("validate sanity CoinCommitment of input coin failed")
 			}
-			if isBadPoint(proof.inputCoins[i].GetPublicKey()) {
+			if isBadPoint(inputCoins[i].GetPublicKey()) {
 				return false, errors.New("validate sanity PublicKey of input coin failed")
 			}
-			if isBadPoint(proof.inputCoins[i].GetKeyImage()) {
+			if isBadPoint(inputCoins[i].GetKeyImage()) {
 				return false, errors.New("validate sanity Serial number of input coin failed")
 			}
-			if isBadScalar(proof.inputCoins[i].GetRandomness()) {
+			if isBadScalar(inputCoins[i].GetRandomness()) {
 				return false, errors.New("validate sanity Randomness of input coin failed")
 			}
-			if isBadScalar(proof.inputCoins[i].GetSNDerivator()) {
+			if isBadScalar(inputCoins[i].GetSNDerivator()) {
 				return false, errors.New("validate sanity SNDerivator of input coin failed")
 			}
 		}
 
+		outputCoins := proof.outputCoins
+
 		// check output coins without privacy
-		for i := 0; i < len(proof.outputCoins); i++ {
-			if isBadPoint(proof.outputCoins[i].CoinDetails.GetCommitment()) {
+		for i := 0; i < len(outputCoins); i++ {
+			if isBadPoint(outputCoins[i].CoinDetails.GetCommitment()) {
 				return false, errors.New("validate sanity CoinCommitment of output coin failed")
 			}
-			if isBadPoint(proof.outputCoins[i].CoinDetails.GetPublicKey()) {
+			if isBadPoint(outputCoins[i].CoinDetails.GetPublicKey()) {
 				return false, errors.New("validate sanity PublicKey of output coin failed")
 			}
-			if isBadScalar(proof.outputCoins[i].CoinDetails.GetRandomness()) {
+			if isBadScalar(outputCoins[i].CoinDetails.GetRandomness()) {
 				return false, errors.New("validate sanity Randomness of output coin failed")
 			}
-			if isBadScalar(proof.outputCoins[i].CoinDetails.GetSNDerivator()) {
+			if isBadScalar(outputCoins[i].CoinDetails.GetSNDerivator()) {
 				return false, errors.New("validate sanity SNDerivator of output coin failed")
 			}
 		}

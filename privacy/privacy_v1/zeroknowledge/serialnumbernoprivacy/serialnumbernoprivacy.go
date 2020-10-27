@@ -38,6 +38,10 @@ func (proof SNNoPrivacyProof) GetOutput() *operation.Point{
 	return proof.stmt.output
 }
 
+func (proof SNNoPrivacyProof) GetInput() *operation.Scalar{
+	return proof.stmt.input
+}
+
 
 func (proof SNNoPrivacyProof) ValidateSanity() bool {
 	if !proof.stmt.output.PointValid() {
