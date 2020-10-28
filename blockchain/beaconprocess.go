@@ -596,7 +596,12 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
 	}
 	if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
-		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
+		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf(
+			"Expect %+v but get %+v \n Committees %+v",
+			beaconBlock.Header.ShardCommitteeAndValidatorRoot,
+			hashes.ShardCommitteeAndValidatorHash,
+			beaconBestState.GetShardCommittee(),
+		))
 	}
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))

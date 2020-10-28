@@ -349,7 +349,7 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version in
 	return shardBestState.shardCommitteeEngine.GetShardCommittee()[id]
 }
 
-func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
+func (shardBestState *ShardBestState) GetBlock() types.BlockInterface {
 	return shardBestState.BestBlock
 }
 

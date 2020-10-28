@@ -28,7 +28,7 @@ type swapProof struct {
 }
 
 type ConsensusEngine interface {
-	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
+	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
 }
 
 // handleGetLatestBeaconSwapProof returns the latest proof of a change in bridge's committee
@@ -139,7 +139,7 @@ func getShardAndBeaconBlocks(
 }
 
 type block interface {
-	common.BlockInterface // to be able to get ValidationData from ConsensusEngine
+	types.BlockInterface // to be able to get ValidationData from ConsensusEngine
 
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte

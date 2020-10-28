@@ -3,7 +3,6 @@ package committeestate
 import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -559,12 +558,6 @@ func Test_assignShardCandidateV2(t *testing.T) {
 				if !ok {
 					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
 				}
-				sort.Slice(gotV, func(i, j int) bool {
-					return gotV[i] < gotV[j]
-				})
-				sort.Slice(wantV, func(i, j int) bool {
-					return wantV[i] < wantV[j]
-				})
 				if !reflect.DeepEqual(gotV, wantV) {
 					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
 				}
