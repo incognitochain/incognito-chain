@@ -36,12 +36,15 @@ var (
 	// num of private keys
 	maxPrivateKeys = 10
 	minPrivateKeys = 1
-
 	maxInputs = 10
 	minInputs = 1
-
 	maxTries = 100
 	numOfLoops = 1
+
+	allowModifiedTXsToPass = false
+	hasPrivacyForPRV   bool = true
+	hasPrivacyForToken bool = true
+	shardID            byte = byte(0)
 
 	positiveTestsFileName = "./testdata/accepted.txt"
 	negativeTestsFileName = "./testdata/rejected.txt"
@@ -90,7 +93,7 @@ var _ = func() (_ struct{}) {
 
 	inactiveLogger = common.NewBackend(nil).Logger("test", true)
 	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
-	activeLogger = inactiveLogger
+	// activeLogger = inactiveLogger
 	activeLogger.SetLevel(common.LevelDebug)
 	privacy.LoggerV1.Init(inactiveLogger)
 	privacy.LoggerV2.Init(activeLogger)
@@ -253,20 +256,7 @@ func TestTxV2Salary(t *testing.T){
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isValid)
 
-		testTxV2JsonMarshaler(tx, 50, dummyDB, t)
-		// someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, t)
-		// for _,theInvalidTx := range someInvalidTxs{
-		// 	txSpecific, ok := theInvalidTx.(*Tx)
-		// 	assert.Equal(t, true, ok)
-		// 	// look for potential panics by calling verify
-		// 	isSane, _ := txSpecific.ValidateSanityData(nil,nil,nil,0)
-		// 	// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		// 	if !isSane{
-		// 		continue
-		// 	}
-		// 	txSpecific.ValidateTxByItself(hasPrivacyForPRV, dummyDB, nil, nil, byte(0), true, nil, nil)
-		// }
-
+		testTxV2JsonMarshaler(tx, 10, dummyDB, t)
 		malTx := &Tx{}
 		// this other coin is already in db so it must be rejected
 		err = malTx.InitTxSalary(theCoins[1], dummyPrivateKeys[0], dummyDB, nil)
@@ -274,7 +264,7 @@ func TestTxV2Salary(t *testing.T){
 	}
 }
 
-func TestTxV2ProveWithPrivacy(t *testing.T){
+func TestPrivacyV2TxPRV(t *testing.T){
 	numOfPrivateKeys := RandInt() % (maxPrivateKeys - minPrivateKeys + 1) + minPrivateKeys
 	numOfInputs := RandInt() % (maxInputs - minInputs + 1) + minInputs
 	// dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
@@ -346,15 +336,11 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// 	nil,
 		// 	[]byte{},
 		// )
-		// jsb, _ := json.Marshal(initializingParamsAgain)
-		// fmt.Printf("param : %s\n", string(jsb))
 
 		// var inputCoinsAgain [][]byte
 		// for _, c := range initializingParams.InputCoins{
 		// 	inputCoinsAgain = append(inputCoinsAgain, c.Bytes())
 		// }
-		// jsb, _ = json.Marshal(inputCoinsAgain)
-		// fmt.Printf("dumped inputs : %s\n", string(jsb))
 
 		// var dumpedPastCoins [][]byte
 		// var dumpedIndexes []uint64
@@ -364,11 +350,6 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		// 	assert.Equal(t, nil, err)
 		// 	dumpedIndexes = append(dumpedIndexes, ind.Uint64())
 		// }
-		// jsb, _ = json.Marshal(dumpedPastCoins)
-		// fmt.Printf("dumped coins in db : %s\n", string(jsb))
-		// jsb, _ = json.Marshal(dumpedIndexes)
-		// fmt.Printf("dumped indexes: %s\n", string(jsb))
-
 
 		// creating the TX object
 		tx := &Tx{}
@@ -402,13 +383,13 @@ func TestTxV2ProveWithPrivacy(t *testing.T){
 		dumpTransaction(tx, positiveTestsFileName)
 
 		// first, test the json marshaller
-		testTxV2JsonMarshaler(tx, 2, dummyDB, t)
+		testTxV2JsonMarshaler(tx, 10, dummyDB, t)
 
-		// testTxV2DeletedProof(tx, t)
+		testTxV2DeletedProof(tx, t)
 		testTxV2DuplicateInput(dummyDB, inputCoins, paymentInfoOut, t)
 		testTxV2InvalidFee(dummyDB, inputCoins, paymentInfoOut, t)
-		// testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
-		// testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
+		testTxV2OneFakeInput(tx, dummyDB, initializingParams, pastCoins, t)
+		testTxV2OneFakeOutput(tx, dummyDB, initializingParams, paymentInfoOut, t)
 		testTxV2OneDoubleSpentInput(dummyDB, inputCoins, paymentInfoOut, pastCoins, t)
 		_,_ = isValid,err
 	}
@@ -440,7 +421,7 @@ func TestPremadeTransactions(t *testing.T){
         jsonBytes, _, err := b58.Decode(b58EncodedTx)
         assert.Equal(t, nil, err)
     	tx := &Tx{}
-    	err = json.Unmarshal(jsonBytes, tx)    	
+    	err = json.Unmarshal(jsonBytes, tx)
     	assert.Equal(t, nil, err)
     	isValid,err := tx.ValidateSanityData(nil,nil,nil,0)
 		assert.Equal(t,nil,err)
@@ -557,26 +538,19 @@ func testTxV2OneFakeInput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxPr
 	saved := inputCoins[changed]
 	inputCoins[changed],_ = pastCoins[len(dummyPrivateKeys)*(numOfInputs+1)].Decrypt(keySets[0])
 	theProof.SetInputCoins(inputCoins)
-	// malInputParams := NewTxPrivacyInitParams(dummyPrivateKeys[0],
-	// 	paymentInfoOut,inputCoins,
-	// 	1,true,
-	// 	db,
-	// 	nil,
-	// 	nil,
-	// 	[]byte{},
-	// )
-	err = resignUnprovenTx(keySets, txv2, params, nil)
+
+	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	assert.Equal(t,nil,err)
 	isValid,err := txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
 	isValid,err = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	// should fail at signature since mlsag needs commitments from inputs
-	// fmt.Printf("One fake valid input -> %v\n",err)
+	activeLogger.Debugf("TEST RESULT : One faked valid input -> %v",err)
 	assert.Equal(t,false,isValid)
 	inputCoins[changed] = saved
 	theProof.SetInputCoins(inputCoins)
-	err = resignUnprovenTx(keySets, txv2, params, nil)
+	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	isValid,err = txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
 	assert.Equal(t,true,isValid)
@@ -607,7 +581,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	prvOutput.SetValue(6996)
 	prvOutput.SetSharedRandom(operation.RandomScalar())
 	prvOutput.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
-	err = resignUnprovenTx(keySets, txv2, params, nil)
+	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	assert.Equal(t,nil,err)
 	isValid,err := txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
@@ -621,7 +595,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	prvOutput.SetBytes(savedCoinBytes)
 	outs[0] = prvOutput
 	txv2.GetProof().SetOutputCoins(outs)
-	err = resignUnprovenTx(keySets, txv2, params, nil)
+	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	assert.Equal(t,nil,err)
 	isValid,_ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,true,isValid)
@@ -643,7 +617,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	cmsv[0] = newCoin.GetCommitment()
 	outs[0] = newCoin
 	txv2.GetProof().SetOutputCoins(outs)
-	err = resignUnprovenTx(keySets, txv2, params, nil)
+	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	assert.Equal(t,nil,err)
 	isValid,err = txv2.ValidateSanityData(nil,nil,nil,0)
 	assert.Equal(t,nil,err)
@@ -658,7 +632,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	outs[0] = prvOutput
 	cmsv[0] = prvOutput.GetCommitment()
 	txv2.GetProof().SetOutputCoins(outs)
-	err = resignUnprovenTx(keySets, txv2, params, nil)
+	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	assert.Equal(t,nil,err)
 	isValid,_ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
 	assert.Equal(t,true,isValid)
@@ -696,46 +670,64 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 }
 
 func testTxV2JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T){
-	someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
-	for _,theInvalidTx := range someInvalidTxs{
-		txSpecific, ok := theInvalidTx.(*Tx)
-		if !ok{
-			fmt.Println("Skipping a transaction from wrong version")
-			continue
+	for i:=0;i<count;i++{
+		someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
+		for _,theInvalidTx := range someInvalidTxs{
+			txSpecific, ok := theInvalidTx.(*Tx)
+			if !ok{
+				continue
+			}
+			// look for potential panics by calling verify
+			isValid, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+			if !isValid{
+				continue
+			}
+			isValid, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+			if !isValid{
+				continue
+			}
+			errAlreadyInChain := txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
+			if !allowModifiedTXsToPass && errAlreadyInChain==nil{
+				// make sure it's different
+				s1 := formatTx(tx)
+				s2 := formatTx(txSpecific)
+				if bytes.Equal([]byte(s1), []byte(s2)){
+					continue
+				}
+				// the forged TX somehow is valid after all 3 checks, we caught a bug
+				fmt.Printf("Original TX : %s\nChanged TX (still valid) : %s\n", s1, s2)
+				panic("END TEST : a mal-TX was accepted")
+			}
 		}
-		// look for potential panics by calling verify
-		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
-		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		if !isSane{
-			continue
-		}
-		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		if !isSane{
-			continue
-		}
-		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 
 func testTxTokenV2JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *testing.T){
-	someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
-	for _,theInvalidTx := range someInvalidTxs{
-		txSpecific, ok := theInvalidTx.(*TxToken)
-		if !ok{
-			fmt.Println("Skipping a transaction from wrong version")
-			continue
+	for i:=0;i<count;i++{
+		someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
+		for _,theInvalidTx := range someInvalidTxs{
+			txSpecific, ok := theInvalidTx.(*TxToken)
+			if !ok{
+				continue
+			}
+			// look for potential panics by calling verify
+			isValid, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+			if !isValid{
+				continue
+			}
+			isValid, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+			if !isValid{
+				continue
+			}
+			errAlreadyInChain := txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
+			if !allowModifiedTXsToPass && errAlreadyInChain==nil{
+				// the forged TX somehow is valid after all 3 checks, we caught a bug
+				fmt.Printf("Original TX : %s\nChanged TX (still valid) : %s\n", formatTx(tx), formatTx(txSpecific))
+				panic("END TEST : a mal-TXTOKEN was accepted")
+			}
 		}
-		// look for potential panics by calling verify
-		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
-		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		if !isSane{
-			continue
-		}
-		isSane, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		if !isSane{
-			continue
-		}
-		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 
@@ -767,15 +759,15 @@ func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) [
 	// json bytes are readable strings
 	// we try to malleify a letter / digit
 	// if that char is part of a key then it's equivalent to deleting that attribute
+	s := string(jsonBytesAgain)
+	theRunes := []rune(s)
 	for i:=0; i<maxJsonChanges; i++{
 		// let the changes stack up many times to exhaust more cases
-		s := string(jsonBytesAgain)
-		theRunes := []rune(s)
 		corruptedIndex := RandInt() % len(theRunes)
 		for j:=maxTries;j>0;j--{
 			if j==0{
-				fmt.Printf("Strange letterless TX with json form : %s\n",s)
-				panic("End")
+				activeLogger.Warnf("Max changes exceeded with : %s\n",s)
+				return result
 			}
 			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]){
 				break
@@ -784,22 +776,25 @@ func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) [
 			corruptedIndex = RandInt() % len(theRunes)
 		}
 		// replace this letter with a random one
+		var newRune rune
 		if unicode.IsLetter(theRunes[corruptedIndex]){
-			theRunes[corruptedIndex] = getRandomLetter()
+			newRune = getRandomLetter()
 		}else{
-			theRunes[corruptedIndex] = getRandomDigit()
+			newRune = getRandomDigit()
 		}
-
-
+		if theRunes[corruptedIndex]==newRune{
+			// remove that char
+			theRunes = append(theRunes[:corruptedIndex], theRunes[corruptedIndex+1:]...)
+		}else{
+			theRunes[corruptedIndex] = newRune
+		}
 		temp := &Tx{}
 		err := json.Unmarshal([]byte(string(theRunes)), temp)
 		if err != nil{
-			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
 		}
 		result = append(result,temp)
 	}
-	// fmt.Printf("Made %d dummy faulty txs\n",len(result))
 	return result
 }
 
@@ -813,14 +808,14 @@ func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *tes
 	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
 	var result []tx_generic.TransactionToken
 
-	for i:=0; i<maxJsonChanges; i++{
-		s := string(jsonBytesAgain)
+	s := string(jsonBytesAgain)
 		theRunes := []rune(s)
+	for i:=0; i<maxJsonChanges; i++{
 		corruptedIndex := RandInt() % len(theRunes)
 		for j:=maxTries;j>0;j--{
 			if j==0{
-				fmt.Printf("Strange letterless TX with json form : %s\n",s)
-				panic("End")
+				activeLogger.Warnf("Max changes exceeded with : %s\n",s)
+				return result
 			}
 			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]){
 				break
@@ -829,18 +824,21 @@ func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *tes
 			corruptedIndex = RandInt() % len(theRunes)
 		}
 		// replace this letter with a random one
+		var newRune rune
 		if unicode.IsLetter(theRunes[corruptedIndex]){
-			theRunes[corruptedIndex] = getRandomLetter()
+			newRune = getRandomLetter()
 		}else{
-			theRunes[corruptedIndex] = getRandomDigit()
+			newRune = getRandomDigit()
 		}
-
-
-		// reconstructedTx, err = NewTransactionTokenFromJsonBytes([]byte(string(theRunes)))
+		if theRunes[corruptedIndex]==newRune{
+			// remove that char
+			theRunes = append(theRunes[:corruptedIndex], theRunes[corruptedIndex+1:]...)
+		}else{
+			theRunes[corruptedIndex] = newRune
+		}
 		temp := &TxToken{}
 		err := json.Unmarshal([]byte(string(theRunes)), temp)
 		if err != nil{
-			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
 		}
 		result = append(result,temp)
@@ -851,3 +849,9 @@ func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *tes
 func RandInt() int {
 	return rand.Int()
 }
+
+func formatTx(tx metadata.Transaction) string{
+	jsb, _ := json.Marshal(tx)
+	return string(jsb)
+}
+
