@@ -978,30 +978,36 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 		actionData.TxReqID,
 		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 	)
+	insts := [][]string{inst}
 
-	unlockedTokens := map[string]*big.Int{}
-	for tokenID, amount := range unlockedTokenCollaterals {
-		amountBN := big.NewInt(0).SetUint64(amount)
-		// Convert amount to big.Int to get bytes later
-		if bytes.Equal(common.FromHex(tokenID), common.FromHex(common.EthAddrStr)) {
-			// Convert Gwei to Wei for Ether
-			amountBN = amountBN.Mul(amountBN, big.NewInt(1000000000))
+	if len(unlockedTokenCollaterals) > 0 {
+		unlockedTokens := map[string]*big.Int{}
+		for tokenID, amount := range unlockedTokenCollaterals {
+			amountBN := big.NewInt(0).SetUint64(amount)
+			// Convert amount to big.Int to get bytes later
+			if bytes.Equal(common.FromHex(tokenID), common.FromHex(common.EthAddrStr)) {
+				// Convert Gwei to Wei for Ether
+				amountBN = amountBN.Mul(amountBN, big.NewInt(1000000000))
+			}
+			unlockedTokens[tokenID] = amountBN
 		}
+
+		confirmInst := buildConfirmWithdrawCollateralInstV3(
+			metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3,
+			shardID,
+			meta.RedeemerIncAddressStr,
+			meta.RedeemerExtAddressStr,
+			unlockedTokens,
+			actionData.TxReqID,
+			beaconHeight+1,
+		)
+		insts = append(insts, confirmInst)
 	}
 
-	confirmInst := buildConfirmWithdrawCollateralInstV3(
-		metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3,
-		shardID,
-		meta.RedeemerIncAddressStr,
-		meta.RedeemerExtAddressStr,
-		unlockedTokens,
-		actionData.TxReqID,
-		beaconHeight+1,
-	)
 
 	Logger.log.Errorf("===================== Build instructions for producer redeem from liquidation pool v3 successfully....")
-	Logger.log.Errorf("inst, confirmInst: %+v, %+v", inst, confirmInst)
-	return [][]string{inst, confirmInst}, nil
+	Logger.log.Errorf("insts: %+v, %+v", insts)
+	return insts, nil
 }
 
 /* =======

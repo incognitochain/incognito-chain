@@ -209,8 +209,8 @@ func init() {
 		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       5 * time.Minute,
-				TimeOutWaitingPortingRequest:         5 * time.Minute,
+				TimeOutCustodianReturnPubToken:       10 * time.Minute,
+				TimeOutWaitingPortingRequest:         10 * time.Minute,
 				TimeOutWaitingRedeemRequest:          5 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
