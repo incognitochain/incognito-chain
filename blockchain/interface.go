@@ -40,9 +40,9 @@ type FeeEstimator interface {
 
 type ConsensusEngine interface {
 	GetCurrentConsensusVersion() int
-	ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
-	ValidateProducerSig(block common.BlockInterface, consensusType string) error
-	ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
+	ValidateProducerSig(block types.BlockInterface, consensusType string) error
+	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
 	GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetUserLayer() (string, int)
@@ -64,7 +64,7 @@ type Server interface {
 	PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 	PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
-	PushBlockToAll(block common.BlockInterface, isBeacon bool) error
+	PushBlockToAll(block types.BlockInterface, isBeacon bool) error
 }
 
 type Highway interface {

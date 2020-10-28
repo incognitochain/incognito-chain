@@ -115,8 +115,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-		emptyHash := common.Hash{}
-		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
+		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
 			if len(temp) != 0 {

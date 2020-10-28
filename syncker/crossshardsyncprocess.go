@@ -129,7 +129,7 @@ func (s *CrossShardSyncProcess) streamMissingCrossShardBlock(fromSID int, hashes
 	for blk := range ch {
 		if !isNil(blk) {
 			fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
-			s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
+			s.crossShardPool.AddBlock(blk.(types.BlockPoolInterface))
 		} else {
 			return
 		}

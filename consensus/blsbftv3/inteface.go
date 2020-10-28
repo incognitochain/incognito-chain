@@ -1,6 +1,7 @@
 package blsbftv3
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -35,28 +36,29 @@ type ChainInterface interface {
 	GetActiveShardNumber() int
 	CurrentHeight() uint64
 	GetCommitteeSize() int
+	IsBeaconChain() bool
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
-	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
+	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
 	CreateNewBlock(
 		version int,
 		proposer string,
 		round int,
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
-		hash common.Hash) (common.BlockInterface, error)
+		hash common.Hash) (types.BlockInterface, error)
 	CreateNewBlockFromOldBlock(
-		oldBlock common.BlockInterface,
+		oldBlock types.BlockInterface,
 		proposer string,
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
-		hash common.Hash) (common.BlockInterface, error)
-	InsertAndBroadcastBlock(block common.BlockInterface) error
+		hash common.Hash) (types.BlockInterface, error)
+	InsertAndBroadcastBlock(block types.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error
-	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker
@@ -64,9 +66,7 @@ type ChainInterface interface {
 	GetFinalViewHeight() uint64
 	GetBestViewHash() string
 	GetFinalViewHash() string
-
 	GetViewByHash(hash common.Hash) multiview.View
-	// CommitteeStateVersion() uint
 }
 
 //CommitteeChainHandler :
