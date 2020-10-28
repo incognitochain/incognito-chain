@@ -39,12 +39,23 @@ type ChainInterface interface {
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(version int, proposer string, round int, startTime int64, view multiview.View) (common.BlockInterface, error)
-	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64, view multiview.View) (common.BlockInterface, error)
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (common.BlockInterface, error)
+	CreateNewBlockFromOldBlock(
+		oldBlock common.BlockInterface,
+		proposer string,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (common.BlockInterface, error)
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+	ValidatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -152,9 +151,16 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 	return chain.GetBestState().ShardProposerIdx
 }
 
-func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlock(
+	version int, proposer string,
+	round int, startTime int64,
+	committees []incognitokey.CommitteePublicKey,
+	committeeViewHash common.Hash) (common.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
-	newBlock, err := chain.Blockchain.NewBlockShard(chain.GetBestState(), version, proposer, round, time.Unix(startTime, 0), committeeView)
+	newBlock, err := chain.Blockchain.NewBlockShard(
+		chain.GetBestState(),
+		version, proposer, round,
+		time.Unix(startTime, 0), committees, committeeViewHash)
 	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		Logger.log.Error(err)
@@ -169,17 +175,16 @@ func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int,
 	return newBlock, nil
 }
 
-func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface,
-	proposer string, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlockFromOldBlock(
+	oldBlock common.BlockInterface,
+	proposer string, startTime int64,
+	committees []incognitokey.CommitteePublicKey,
+	committeeViewHash common.Hash) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-
-	if newBlock.CommitteeFromBlock().String() != committeeView.GetHash().String() {
-		return nil, errors.New("Committee From Block Hash Is Not Similar")
-	}
 
 	return newBlock, nil
 }
@@ -269,8 +274,8 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 	return &shardBlk, nil
 }
 
-func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), byte(block.(*types.ShardBlock).GetShardID()))
+func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), committees, byte(block.(*types.ShardBlock).GetShardID()))
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {
@@ -298,4 +303,9 @@ func (chain *ShardChain) GetCommitteeV2(block common.BlockInterface) ([]incognit
 
 func (chain *ShardChain) CommitteeStateVersion() uint {
 	return chain.GetBestState().shardCommitteeEngine.Version()
+}
+
+//BestViewCommitteeFromBlock ...
+func (chain *ShardChain) BestViewCommitteeFromBlock() common.Hash {
+	return chain.GetBestState().CommitteeFromBlock()
 }
