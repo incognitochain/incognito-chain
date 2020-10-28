@@ -10,7 +10,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -161,7 +160,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
-			if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
+			if err := s.Chain.InsertBlk(blk.(types.BlockInterface), true); err != nil {
 				Logger.Error("Insert shard block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
 			}
@@ -201,7 +200,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		return
 	}
 
-	blockBuffer := []common.BlockInterface{}
+	blockBuffer := []types.BlockInterface{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer func() {
 		if requestCnt == 0 {
@@ -266,7 +265,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				}
 
 				insertTime = time.Now()
-				blockBuffer = []common.BlockInterface{}
+				blockBuffer = []types.BlockInterface{}
 			}
 
 			if isNil(blk) && len(blockBuffer) == 0 {

@@ -342,7 +342,7 @@ func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version 
 	return committee[id]
 }
 
-func (beaconBestState *BeaconBestState) GetBlock() common.BlockInterface {
+func (beaconBestState *BeaconBestState) GetBlock() types.BlockInterface {
 	return &beaconBestState.BestBlock
 }
 

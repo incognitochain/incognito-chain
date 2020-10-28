@@ -162,7 +162,7 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 	round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
-) (common.BlockInterface, error) {
+) (types.BlockInterface, error) {
 	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
@@ -177,11 +177,11 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 
 //this function for version 2
 func (chain *BeaconChain) CreateNewBlockFromOldBlock(
-	oldBlock common.BlockInterface, proposer string,
+	oldBlock types.BlockInterface, proposer string,
 	startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
-) (common.BlockInterface, error) {
+) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.BeaconBlock)
 	json.Unmarshal(b, &newBlock)
@@ -190,7 +190,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate bool) error {
+func (chain *BeaconChain) InsertBlk(block types.BlockInterface, shouldValidate bool) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Info(err)
 		return err
@@ -198,13 +198,13 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate 
 	return nil
 }
 
-func (chain *BeaconChain) CheckExistedBlk(block common.BlockInterface) bool {
+func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
 	return err == nil
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
@@ -222,7 +222,7 @@ func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
 }
 
-func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 }
 
@@ -242,7 +242,7 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface, comm
 // 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 // }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
@@ -260,6 +260,10 @@ func (chain *BeaconChain) GetConsensusType() string {
 
 func (chain *BeaconChain) GetShardID() int {
 	return -1
+}
+
+func (chain *BeaconChain) IsBeaconChain() bool {
+	return true
 }
 
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
@@ -308,7 +312,7 @@ func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicK
 	return result
 }
 
-func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (types.BlockInterface, error) {
 	var beaconBlk types.BeaconBlock
 	err := json.Unmarshal(blockString, &beaconBlk)
 	if err != nil {
@@ -344,7 +348,7 @@ func (chain *BeaconChain) ProposerByTimeSlot(
 	return committees[id]
 }
 
-func (chain *BeaconChain) GetCommitteeV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
 }
 
