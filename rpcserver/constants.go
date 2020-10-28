@@ -101,6 +101,7 @@ const (
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
 	unlockMempool           = "unlockmempool"
 	getAutoStakingByHeight  = "getautostakingbyheight"
+	getCommitteeState       = "getcommitteestate"
 	getRewardAmountByEpoch  = "getrewardamountbyepoch"
 	//==================================================
 
