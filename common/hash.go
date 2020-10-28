@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/crypto"
