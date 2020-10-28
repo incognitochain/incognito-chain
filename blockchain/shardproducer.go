@@ -92,10 +92,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
 	} else {
-		// currentCommitteePublicKeysStructs = make([]incognitokey.CommitteePublicKey, len(committees))
-		// copy(currentCommitteePublicKeysStructs, committees)
 		currentCommitteePublicKeysStructs = committees
-
 		if beaconHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
 				beaconHeight, shardBestState.BeaconHeight)

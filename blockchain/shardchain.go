@@ -214,12 +214,6 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		Logger.log.Info("[staking-v2] chain.GetBestState().GetHeight():", chain.GetBestState().GetHeight())
-		bestViewCommittees, _ := incognitokey.CommitteeKeyListToString(chain.GetBestState().GetCommittee())
-		Logger.log.Info("[staking-v2] bestViewCommitteess:", bestViewCommittees)
-		Logger.log.Info("[staking-v2] err:", err)
-		Logger.log.Info("[staking-v2] block.CommitteeFromBlock():", block.CommitteeFromBlock())
-		panic(100)
 		return err
 	}
 	return nil
