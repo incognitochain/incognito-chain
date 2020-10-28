@@ -2,9 +2,10 @@ package multiview
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type View interface {

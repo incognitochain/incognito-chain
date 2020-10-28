@@ -36,13 +36,6 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 
-	// Logger.Info("[staking-v2] chain.GetBestViewHeight():", chain.GetBestViewHeight())
-	// Logger.Info("[staking-v2] len(sameCommitteeBlock) 0:", len(sameCommitteeBlock))
-	// for _, blk := range sameCommitteeBlock {
-	// 	Logger.Info("[staking-v2] blk.GetHeight() 0:", blk.GetHeight())
-	// 	Logger.Info("[staking-v2] blk.CommitteeFromBlock() 0:", blk.CommitteeFromBlock())
-	// }
-
 	for i, blk := range sameCommitteeBlock {
 		if i == len(sameCommitteeBlock)-1 {
 			break
@@ -53,12 +46,6 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 
-	// Logger.Info("[staking-v2] len(sameCommitteeBlock) 1:", len(sameCommitteeBlock))
-	// for _, blk := range sameCommitteeBlock {
-	// 	Logger.Info("[staking-v2] blk.GetHeight() 1:", blk.GetHeight())
-	// 	Logger.Info("[staking-v2] blk.CommitteeFromBlock() 1:", blk.CommitteeFromBlock())
-	// }
-
 	committees := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
@@ -67,12 +54,6 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 			return 0, err
 		}
 	}
-
-	// Logger.Info("[staking-v2] len(sameCommitteeBlock) 2:", len(sameCommitteeBlock))
-	// for _, blk := range sameCommitteeBlock {
-	// 	Logger.Info("[staking-v2] blk.GetHeight() 2:", blk.GetHeight())
-	// 	Logger.Info("[staking-v2] blk.CommitteeFromBlock() 2:", blk.CommitteeFromBlock())
-	// }
 
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], committees); err != nil {

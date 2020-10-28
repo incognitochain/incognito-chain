@@ -26,7 +26,11 @@ import (
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
 // Used for PBFT consensus
 // this block doesn't have full information (incomplete block)
-func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlock, shardID byte) error {
+func (blockchain *BlockChain) VerifyPreSignShardBlock(
+	shardBlock *types.ShardBlock,
+	committees []incognitokey.CommitteePublicKey,
+	shardID byte,
+) error {
 	//get view that block link to
 	preHash := shardBlock.Header.PreviousBlockHash
 	view := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
@@ -84,11 +88,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *types.ShardBlo
 	}
 
 	//========Get Committes For Processing Block
-	committees := []incognitokey.CommitteePublicKey{}
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		committees = shardBestState.GetShardCommittee()
-	} else {
-		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 	}
 	//
 
@@ -669,7 +670,8 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-		if shardBestState.GetHeight() != 1 {
+		emptyHash := common.Hash{}
+		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
 			newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(committees)
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 			temp := common.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)

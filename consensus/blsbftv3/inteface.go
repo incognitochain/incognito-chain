@@ -21,6 +21,7 @@ type NodeInterface interface {
 }
 
 type ChainInterface interface {
+	BestViewCommitteeFromBlock() common.Hash
 	GetFinalView() multiview.View
 	GetBestView() multiview.View
 	GetEpoch() uint64
@@ -39,12 +40,23 @@ type ChainInterface interface {
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(version int, proposer string, round int, startTime int64, view multiview.View) (common.BlockInterface, error)
-	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64, view multiview.View) (common.BlockInterface, error)
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (common.BlockInterface, error)
+	CreateNewBlockFromOldBlock(
+		oldBlock common.BlockInterface,
+		proposer string,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (common.BlockInterface, error)
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+	ValidatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker
@@ -59,8 +71,7 @@ type ChainInterface interface {
 
 //CommitteeChainHandler :
 type CommitteeChainHandler interface {
-	CommitteesByShardIDForProposer(byte) []incognitokey.CommitteePublicKey
-	CommitteesByShardIDForValidators(common.BlockInterface, byte) ([]incognitokey.CommitteePublicKey, error)
-	ProposerByTimeSlot(byte, int64, int) incognitokey.CommitteePublicKey
+	CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
+	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 }

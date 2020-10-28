@@ -173,16 +173,23 @@ func (e *BLSBFT_V3) Start() error {
 				newTimeSlot := false
 				if e.currentTimeSlot != common.CalculateTimeSlot(e.currentTime) {
 					newTimeSlot = true
-
 				}
 
 				proposerPk := incognitokey.CommitteePublicKey{}
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
+				committeeViewHash := common.Hash{}
+				committees := []incognitokey.CommitteePublicKey{}
 				if e.ChainID != -1 {
-					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, 2)
+					committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
+					committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID))
+					if err != nil {
+						e.Logger.Error(err)
+					}
+					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
 				} else {
 					proposerPk = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+					committees = e.Chain.GetBestView().GetCommittee()
 				}
 
 				/*
@@ -218,7 +225,7 @@ func (e *BLSBFT_V3) Start() error {
 							}
 						}
 
-						if createdBlk, err := e.proposeBlock(proposerPk, proposeBlock); err != nil {
+						if createdBlk, err := e.proposeBlock(proposerPk, proposeBlock, committees, committeeViewHash); err != nil {
 							e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
 							e.Logger.Critical(err)
 						} else {
@@ -231,6 +238,7 @@ func (e *BLSBFT_V3) Start() error {
 					Check for valid block to vote
 				*/
 				validProposeBlock := []*ProposeBlockInfo{}
+				blocksCommittees := make(map[string][]incognitokey.CommitteePublicKey)
 				//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
 				for h, proposeBlockInfo := range e.receiveBlockByHash {
 					if proposeBlockInfo.block == nil {
@@ -256,24 +264,22 @@ func (e *BLSBFT_V3) Start() error {
 
 					if lastVotedBlk, ok := e.voteHistory[bestViewHeight+1]; ok {
 						if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
-							e.validateAndVote(v)
+							e.validateAndVote(v, blocksCommittees)
 						} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
-							e.validateAndVote(v)
+							e.validateAndVote(v, blocksCommittees)
 						} else if v.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
-							e.validateAndVote(v)
+							e.validateAndVote(v, blocksCommittees)
 						} // if not swap committees => do nothing
 					} else { //there is no vote for this height yet
-						e.validateAndVote(v)
+						e.validateAndVote(v, blocksCommittees)
 					}
 				}
-
 				/*
 					Check for 2/3 vote to commit
 				*/
 				for k, v := range e.receiveBlockByHash {
-					e.processIfBlockGetEnoughVote(k, v)
+					e.processIfBlockGetEnoughVote(k, v, blocksCommittees[k])
 				}
-
 			}
 		}
 	}()
@@ -291,7 +297,10 @@ func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, cha
 	return newInstance
 }
 
-func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBlockInfo) {
+func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
+	blockHash string, v *ProposeBlockInfo,
+	committees []incognitokey.CommitteePublicKey,
+) {
 	//no vote
 	if v.hasNewVote == false {
 		return
@@ -314,11 +323,8 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		return
 	}
 
-	committees := []incognitokey.CommitteePublicKey{}
-	if e.ChainID != -1 {
-		committees = e.CommitteeChain.CommitteesByShardIDForProposer(byte(e.ChainID))
-	} else {
-		committees = view.GetCommittee()
+	if len(committees) == 0 {
+		return
 	}
 
 	validVote := 0
@@ -390,7 +396,10 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 	}
 }
 
-func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {
+func (e *BLSBFT_V3) validateAndVote(
+	v *ProposeBlockInfo,
+	blocksCommittees map[string][]incognitokey.CommitteePublicKey,
+) error {
 	//not connected
 	e.Logger.Info("validateAndVote")
 	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
@@ -403,7 +412,22 @@ func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block); err != nil {
+	committees := []incognitokey.CommitteePublicKey{}
+	emptyHash := common.Hash{}
+	if e.ChainID != -1 && e.Chain.BestViewCommitteeFromBlock().String() != emptyHash.String() {
+		var err error
+		committees, err = e.CommitteeChain.
+			CommitteesFromViewHashForShard(v.block.CommitteeFromBlock(), byte(e.ChainID))
+		if err != nil {
+			e.Logger.Error(err)
+			return err
+		}
+	} else {
+		committees = e.Chain.GetBestView().GetCommittee()
+	}
+
+	blocksCommittees[v.block.Hash().String()] = committees
+	if err := e.Chain.ValidatePreSignBlock(v.block, committees); err != nil {
 		e.Logger.Error(err)
 		return err
 	}
@@ -413,19 +437,6 @@ func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {
 	bytelist := []blsmultisig.PublicKey{}
 	selfIdx := 0
 	userBLSPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-
-	committees := []incognitokey.CommitteePublicKey{}
-	if e.ChainID != -1 {
-		var err error
-		committees, err = e.CommitteeChain.CommitteesByShardIDForValidators(v.block, byte(e.ChainID))
-		if err != nil {
-			e.Logger.Error(err)
-			return err
-		}
-	} else {
-		committees = e.Chain.GetBestView().GetCommittee()
-	}
-
 	for i, v := range committees {
 		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
 			selfIdx = i
@@ -473,24 +484,28 @@ func (e *BLSBFT_V3) validateAndVote(v *ProposeBlockInfo) error {
 	return nil
 }
 
-func (e *BLSBFT_V3) proposeBlock(proposerPk incognitokey.CommitteePublicKey, block common.BlockInterface) (common.BlockInterface, error) {
+func (e *BLSBFT_V3) proposeBlock(
+	proposerPk incognitokey.CommitteePublicKey,
+	block common.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
+	committeeViewHash common.Hash,
+) (common.BlockInterface, error) {
 	time1 := time.Now()
 	b58Str, _ := proposerPk.ToBase58()
 	var err error
-	committeeFinalView := e.CommitteeChain.FinalView()
 
 	if block == nil {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, common.TIMESLOT/2)
 		defer cancel()
 		e.Logger.Info("debug CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committeeFinalView)
+		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
 		e.Logger.Info("debug CreateNewBlockFromOldBlock")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeFinalView)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -36,10 +35,16 @@ type ChainInterface interface {
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
 
 	InsertAndBroadcastBlock(block common.BlockInterface) error
-	CreateNewBlock(version int, proposer string, round int, startTime int64, view multiview.View) (common.BlockInterface, error)
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (common.BlockInterface, error)
 	// ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+	ValidatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker
