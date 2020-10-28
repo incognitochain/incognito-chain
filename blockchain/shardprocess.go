@@ -232,7 +232,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
 		"Found 🔎 %+v transactions, "+
-		"%+v cross shard transactions,"+
+		"%+v cross shard transactions, "+
 		"%+v instruction",
 		shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash,
 		len(shardBlock.Body.Transactions), len(shardBlock.Body.CrossTransactions), len(shardBlock.Body.Instructions))
