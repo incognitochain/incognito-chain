@@ -2,6 +2,7 @@ package multiview
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,7 +15,7 @@ type View interface {
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey
-	GetBlock() common.BlockInterface
+	GetBlock() types.BlockInterface
 }
 
 type MultiView struct {

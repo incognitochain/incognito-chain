@@ -30,7 +30,7 @@ const (
 	GetValidBlock                      = 20
 	TestRandom                         = true
 	NumberOfFixedBeaconBlockValidators = 4
-	NumberOfFixedShardBlockValidators  = 4
+	NumberOfFixedShardBlockValidators  = 0
 	BEACON_ID                          = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize               = 30
@@ -116,7 +116,7 @@ const (
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 6
+	TestNetShardCommitteeSize     = 4
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4

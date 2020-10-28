@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"time"
 
@@ -37,9 +38,9 @@ type BLSBFT_V2 struct {
 	ProposeMessageCh chan BFTPropose
 	VoteMessageCh    chan BFTVote
 
-	receiveBlockByHeight map[uint64][]*ProposeBlockInfo   //blockHeight -> blockInfo
-	receiveBlockByHash   map[string]*ProposeBlockInfo     //blockHash -> blockInfo
-	voteHistory          map[uint64]common.BlockInterface // bestview height (previsous height )-> block
+	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //blockHeight -> blockInfo
+	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
+	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 }
 
 func (e BLSBFT_V2) GetChainKey() string {
@@ -59,7 +60,7 @@ func (e BLSBFT_V2) IsStarted() bool {
 }
 
 type ProposeBlockInfo struct {
-	block      common.BlockInterface
+	block      types.BlockInterface
 	votes      map[string]BFTVote //pk->BFTVote
 	isValid    bool
 	hasNewVote bool
@@ -94,7 +95,7 @@ func (e *BLSBFT_V2) Start() error {
 	e.VoteMessageCh = make(chan BFTVote)
 	e.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
 	e.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
-	e.voteHistory = make(map[uint64]common.BlockInterface)
+	e.voteHistory = make(map[uint64]types.BlockInterface)
 	var err error
 	e.proposeHistory, err = lru.New(1000)
 	if err != nil {
@@ -118,7 +119,7 @@ func (e *BLSBFT_V2) Start() error {
 					e.Logger.Info(err)
 					continue
 				}
-				block := blockIntf.(common.BlockInterface)
+				block := blockIntf.(types.BlockInterface)
 				blkHash := block.Hash().String()
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
@@ -205,7 +206,7 @@ func (e *BLSBFT_V2) Start() error {
 							return e.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < e.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
 						})
 
-						var proposeBlock common.BlockInterface = nil
+						var proposeBlock types.BlockInterface = nil
 						for _, v := range e.receiveBlockByHeight[bestView.GetHeight()+1] {
 							if v.isValid {
 								proposeBlock = v.block
@@ -444,7 +445,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	return nil
 }
 
-func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, block common.BlockInterface) (common.BlockInterface, error) {
+func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, block types.BlockInterface) (types.BlockInterface, error) {
 	time1 := time.Now()
 	b58Str, _ := proposerPk.ToBase58()
 	var err error
@@ -466,7 +467,7 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	}
 
 	if block != nil {
-		e.Logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(common.BlockInterface).GetProposeTime(), block.(common.BlockInterface).GetProduceTime())
+		e.Logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
 	} else {
 		e.Logger.Infof("create block fail, time: %v", time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
@@ -542,7 +543,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	return err
 }
 
-func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+func ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return nil, nil, NewConsensusError(UnExpectedError, err)

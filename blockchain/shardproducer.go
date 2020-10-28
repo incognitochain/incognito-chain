@@ -112,11 +112,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-		emptyHash := common.Hash{}
-		if shardBestState.CommitteeFromBlock().String() != emptyHash.String() {
+		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
 			if len(temp) != 0 {
+				committeeFromBlockHash = committeeFinalViewHash
 				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
 				if err != nil {
 					return nil, err
@@ -130,7 +130,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
 							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
 				}
-				committeeFromBlockHash = committeeFinalViewHash
 			} else {
 				committeeFromBlockHash = shardBestState.CommitteeFromBlock()
 			}
