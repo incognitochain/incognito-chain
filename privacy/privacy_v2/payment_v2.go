@@ -536,7 +536,18 @@ func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 	// return true, nil
 }
 
-func (proof PaymentProofV2) Verify(hasConfidentialAsset bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof PaymentProofV2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
+	hasConfidentialAsset, ok := boolParams["hasConfidentialAsset"]
+	if !ok {
+		hasConfidentialAsset = true
+	}
+
+	isBatch, ok := boolParams["isBatch"]
+	if !ok {
+		isBatch = false
+	}
+
+
 	inputCoins := proof.GetInputCoins()
 	dupMap := make(map[string]bool)
 	for _,coin := range inputCoins{

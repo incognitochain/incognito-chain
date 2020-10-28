@@ -326,12 +326,17 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{
 	return true, nil
 }
 
-func (proof ConversionProofVer1ToVer2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
 	//Step to verify ConversionProofVer1ToVer2
 	//	- verify sumInput = sumOutput + fee
 	//	- verify if serial number of each input coin has been derived correctly
 	//	- verify input coins' randomness
 	//	- verify if output coins' commitment has been calculated correctly
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+
 	if hasPrivacy {
 		return false, errors.New("ConversionProof does not have privacy, something is wrong")
 	}

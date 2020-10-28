@@ -505,7 +505,11 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
+		boolParams := make(map[string]bool)
+		boolParams["isBatch"] = false
+		boolParams["hasPrivacy"] = tx.IsPrivacy()
+		boolParams["isNewTransaction"] = isNewTransaction
+		validated, errValidateTxByItself := tx.ValidateTxByItself(boolParams, shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
 		}

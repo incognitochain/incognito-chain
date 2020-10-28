@@ -581,21 +581,26 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 	return mlsag.Verify(mlsagSignature, ring, message[:])
 }
 
-func (txToken TxToken) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (txToken TxToken) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
 	// isBatch = false
-	valid, _, err := txToken.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
+	hasPrivacyCoin, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacyCoin = false
+	}
+	valid, _, err := txToken.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil)
 	if !valid {
 		return false, err
 	}
-	valid, err = tx_generic.MdValidate(&txToken, hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+
+	valid, err = tx_generic.MdValidate(&txToken, hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID)
 	if !valid {
 		return false, err
 	}
 	return true, nil
 }
 
-func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, []privacy.Proof, error) {
+func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
 	var err error
 	jsb, _ := json.Marshal(txToken)
 	utils.Logger.Log.Infof("Begin verifying token TX %s\n", string(jsb))
@@ -626,8 +631,15 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 				valid, err := validateConversionVer1ToVer2(txToken.GetTxNormal(), transactionStateDB, shardID, &tokenID)
 				return valid, nil, err
 			} else {
+				isBatch, ok := boolParams["isBatch"]
+				if !ok{
+					isBatch = false
+				}
+
 				// for CA, bulletproof batching is not supported
-				resTxTokenData, _, err :=  txToken.GetTxNormal().ValidateTransaction(true, transactionStateDB, bridgeStateDB, shardID, &tokenID, false, isNewTransaction)
+				boolParams["isBatch"] = false
+				boolParams["hasPrivacy"] = true
+				resTxTokenData, _, err :=  txToken.GetTxNormal().ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenID)
 				if err!= nil{
 					return resTxTokenData, nil, err
 				}
@@ -635,10 +647,11 @@ func (txToken TxToken) ValidateTransaction(hasPrivacyCoin bool, transactionState
 				if txFeeProof == nil {
 					return false, nil, errors.New("Missing proof for PRV")
 				}
-				
-				bulletProofIsCA := false
+
+				boolParams["isBatch"] = isBatch
+				boolParams["hasConfidentialAsset"] = false
 				// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
-				bpValid, err := txFeeProof.Verify(bulletProofIsCA, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, isBatch, nil)
+				bpValid, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
 				resultProofs := []privacy.Proof{}
 				if isBatch{
 					resultProofs = append(resultProofs, txFeeProof)
@@ -739,7 +752,7 @@ func (tx TxToken) GetCachedHash() *common.Hash{
 	return nil
 }
 func (tx *TxToken) SetCachedHash(h *common.Hash){}
-func (tx *TxToken) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx *TxToken) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	return false, nil
 }
 

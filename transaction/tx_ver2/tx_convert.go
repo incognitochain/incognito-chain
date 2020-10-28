@@ -226,8 +226,13 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		return false, errors.New("TxConversion found duplicate one-time-address error")
 	}
 
+
+	boolParams := make(map[string]bool)
+	boolParams["hasPrivacy"] = false
+	boolParams["isBatch"] = false
+
 	//Verify the conversion proof
-	valid, err := proofConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
+	valid, err := proofConversion.Verify(boolParams, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, nil)
 	if !valid {
 		if err != nil {
 			utils.Logger.Log.Error(err)

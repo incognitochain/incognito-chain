@@ -28,6 +28,6 @@ type Proof interface {
 	IsPrivacy() bool
 	ValidateSanity(interface{}) (bool, error)
 
-	Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error)
+	Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error)
 }
 

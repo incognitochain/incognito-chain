@@ -652,7 +652,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	return nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, boolParams map[string]bool) (bool, error) {
 	var sumInputValue, sumOutputValue uint64
 	sumInputValue = 0
 	sumOutputValue = 0
@@ -745,10 +745,15 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shar
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, boolParams map[string]bool, additionalData interface{}) (bool, error) {
 	// verify for input coins
 	commitmentsPtr := additionalData.(*[][privacy_util.CommitmentRingSize]*operation.Point)
 	commitments := *commitmentsPtr
+
+	isBatch, ok := boolParams["isBatch"]
+	if !ok {
+		isBatch = false
+	}
 
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		Logger.Log.Debugf("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
@@ -784,7 +789,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
-	if isBatch == false {
+	if !isBatch {
 		valid, err := proof.aggregatedRangeProof.Verify()
 		if !valid {
 			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
@@ -820,13 +825,18 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
-	// has no privacy
-	if !hasPrivacy {
-		return proof.verifyNoPrivacy(pubKey, fee, shardID, tokenID)
+func (proof PaymentProof) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
 	}
 
-	return proof.verifyHasPrivacy(pubKey, fee, shardID, tokenID, isBatch, additionalData)
+	// has no privacy
+	if !hasPrivacy {
+		return proof.verifyNoPrivacy(pubKey, fee, shardID, tokenID, boolParams)
+	}
+
+	return proof.verifyHasPrivacy(pubKey, fee, shardID, tokenID, boolParams, additionalData)
 }
 
 func (proof *PaymentProof) IsPrivacy() bool {

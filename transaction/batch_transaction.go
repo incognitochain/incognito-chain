@@ -41,8 +41,12 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		hasPrivacy := tx.IsPrivacy()
-		ok, batchableProofs, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, true, false)
+		boolParams := make(map[string]bool)
+		boolParams["hasPrivacy"] = tx.IsPrivacy()
+		boolParams["isBatch"] = true
+		boolParams["isNewTransaction"] = false
+
+		ok, batchableProofs, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 		if !ok {
 			return false, err, i
 		}

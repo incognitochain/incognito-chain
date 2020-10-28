@@ -98,7 +98,7 @@ func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 	return nil
 }
 
-func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, isNewTransaction bool) (bool, error) {
+func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
 		if hasPrivacy && tx.GetVersion() == 1{

@@ -456,7 +456,7 @@ func (tx *Tx) verifySig() (bool, error) {
 	return res, nil
 }
 
-func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	var err error
 	if valid, err := tx.verifySig(); !valid {
 		if err != nil {
@@ -465,6 +465,19 @@ func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridg
 		}
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String())
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
+	}
+
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+	isNewTransaction, ok := boolParams["isNewTransaction"]
+	if !ok {
+		isNewTransaction = false
+	}
+	isBatch, ok := boolParams["isBatch"]
+	if !ok {
+		isBatch = false
 	}
 
 	if tx.Proof == nil {
@@ -527,7 +540,7 @@ func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridg
 		return false, err
 	}
 
-	if valid, err := tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments); !valid {
+	if valid, err := tx.Proof.Verify(boolParams, tx.SigPubKey, tx.Fee, shardID, tokenID, commitments); !valid {
 		if err != nil {
 			utils.Logger.Log.Error(err)
 		}
@@ -690,7 +703,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 	return tx.TxBase.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, []privacy.Proof, error) {
+func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
 	switch tx.GetType() {
 	case common.TxRewardType:
 		valid, err := tx.ValidateTxSalary(transactionStateDB)
@@ -698,8 +711,16 @@ func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.St
 	case common.TxReturnStakingType:
 		return tx.ValidateTxReturnStaking(transactionStateDB), nil, nil
 	default:
-		valid, err := tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+		valid, err := tx.Verify(boolParams, transactionStateDB, bridgeStateDB, shardID, tokenID)
 		resultProofs := []privacy.Proof{}
+		hasPrivacy, ok := boolParams["hasPrivacy"]
+		if !ok {
+			hasPrivacy = false
+		}
+		isBatch, ok := boolParams["isBatch"]
+		if !ok {
+			isBatch = false
+		}
 		if isBatch && hasPrivacy{
 			if tx.GetProof()!=nil{
 				resultProofs = append(resultProofs, tx.GetProof())
@@ -709,17 +730,21 @@ func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.St
 	}
 }
 
-func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	valid, _, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
+	valid, _, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 	if !valid {
 		return false, err
 	}
-	valid, err = tx_generic.MdValidate(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+	valid, err = tx_generic.MdValidate(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID)
 	if !valid {
 		return false, err
 	}
