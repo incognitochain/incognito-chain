@@ -18,7 +18,4 @@ APP_NAME="incognito"
 echo "go build -o $APP_NAME"
 GO111MODULE=on go build -o $APP_NAME
 
-echo "cp ./$APP_NAME $GOPATH/bin/$APP_NAME"
-mv ./$APP_NAME $GOPATH/bin/$APP_NAME
-
 echo "Build Incognito success!"
