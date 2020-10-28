@@ -179,7 +179,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
 				if beaconConsensusStateDB == nil {
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight())
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
 					}
