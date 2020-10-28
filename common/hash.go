@@ -306,6 +306,6 @@ func GenerateHashFromMapStringBool(maps1 map[string]bool) (Hash, error) {
 
 func (h Hash) IsZeroValue() bool {
 	emptyHash := Hash{}
-	return h.IsEqual(&emptyHash) || reflect.ValueOf(h).IsNil()
+	return h.IsEqual(&emptyHash)
 
 }
