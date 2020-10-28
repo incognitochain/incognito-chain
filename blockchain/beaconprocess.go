@@ -98,22 +98,10 @@ CONTINUE_VERIFY:
 // var bcAllTime time.Duration
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
-	blockHash := beaconBlock.Hash()
+	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
-	// if beaconBlock.GetHeight() == 2 {
-	// 	bcTmp = 0
-	// 	bcStart = time.Now()
-	// 	bcAllTime = time.Since(bcStart)
-	// }
-	// defer func(h uint64) {
-	// 	bcAllTime = time.Since(bcStart)
-	// 	if h%1000 == 0 {
-	// 		bcTmp = bcAllTime - bcTmp
-	// 		Logger.log.Infof("[BenchmarkBeacon] Time for insert from 2->%v: %v, Avg: %v", h, bcAllTime, bcAllTime.Seconds()/float64(h-2+1))
-	// 		Logger.log.Infof("[BenchmarkBeacon] Time for insert 1000 blks [%v-%v]: %v; Avg: %v", h-1000+1, h, bcTmp, bcTmp.Seconds()/1000)
-	// 	}
-	// }(beaconBlock.GetHeight())
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
@@ -126,7 +114,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	//get view that block link to
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
-		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
+		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view %v", beaconBlock.GetHeight(), preHash))
 	}
 	curView := preView.(*BeaconBestState)
 
