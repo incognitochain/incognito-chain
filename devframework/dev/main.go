@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	F "github.com/incognitochain/incognito-chain/devframework"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 func main() {
@@ -13,7 +15,8 @@ func main() {
 	})
 	sim.GenerateBlock().NextRound()
 	acc1 := sim.NewAccountFromShard(1)
-	_, err := sim.CreateTransaction(sim.IcoAccount, acc1, 1000)
+	acc2 := sim.NewAccountFromShard(0)
+	_, err := sim.CreateTransaction(sim.IcoAccount, acc1, 1000, acc2, 3000)
 	if err != nil {
 		panic(err)
 	}
@@ -22,11 +25,39 @@ func main() {
 		//
 		//	doCreate(time.Now())
 		//},
-		//Validation: func(chainID int, block common.BlockInterface, doValidation func(common.BlockInterface) error) {
-		//	fmt.Println("PreValidation block", 0)
-		//	err := doValidation(block)
-		//	fmt.Println("PostValidation block", 0, err)
-		//},
+		Validation: func(chainID int, block common.BlockInterface, doValidation func(common.BlockInterface) error) {
+			fmt.Println("PreValidation block", 0)
+			if chainID == 0 && block.GetHeight() == 3 {
+				newShardBlock := block.(*blockchain.ShardBlock)
+				newShardBlock.Body.Transactions = append(newShardBlock.Body.Transactions, newShardBlock.Body.Transactions[0])
+				totalTxsFee := make(map[common.Hash]uint64)
+				for _, tx := range newShardBlock.Body.Transactions {
+					totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+					txType := tx.GetType()
+					if txType == common.TxCustomTokenPrivacyType {
+						txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+						totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+					}
+				}
+				newShardBlock.Header.TotalTxsFee = totalTxsFee
+				merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
+				merkleRoot := &common.Hash{}
+				if len(merkleRoots) > 0 {
+					merkleRoot = merkleRoots[len(merkleRoots)-1]
+				}
+				crossTransactionRoot, err := blockchain.CreateMerkleCrossTransaction(newShardBlock.Body.CrossTransactions)
+				if err != nil {
+					fmt.Println(err)
+				}
+				_, shardTxMerkleData := blockchain.CreateShardTxRoot(newShardBlock.Body.Transactions)
+				newShardBlock.Header.TxRoot = *merkleRoot
+				newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
+				newShardBlock.Header.CrossTransactionRoot = *crossTransactionRoot
+			}
+
+			err = doValidation(block)
+			fmt.Println("PostValidation block", 0, err)
+		},
 		Insert: func(chainID int, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
 			doInsert(block)
 			if chainID == 0 {
@@ -34,6 +65,8 @@ func main() {
 				fmt.Println(bl1)
 				bl2, _ := sim.GetBalance(acc1)
 				fmt.Println(bl2)
+				bl3, _ := sim.GetBalance(acc2)
+				fmt.Println(bl3)
 				fmt.Printf("%+v", block.(*blockchain.ShardBlock).Body)
 				sim.Pause()
 			}
