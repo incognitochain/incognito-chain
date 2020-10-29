@@ -4075,7 +4075,10 @@ func addCustodianToPool(
 	return newCustodian
 }
 
-func UpdateCustodianStateAfterWithdrawCollateral(custodian *statedb.CustodianState, collateralTokenID string, amount uint64) *statedb.CustodianState {
+func UpdateCustodianStateAfterWithdrawCollateral(
+	custodian *statedb.CustodianState,
+	collateralTokenID string,
+	amount uint64) *statedb.CustodianState {
 	if collateralTokenID == common.PRVIDStr {
 		custodian.SetTotalCollateral(custodian.GetTotalCollateral() - amount)
 		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - amount)

@@ -168,8 +168,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 	if len(redeemReq.RemoteAddress) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
 	}
-	chainID := GetChainIDByTokenID(redeemReq.TokenID, chainRetriever)
-	if !IsValidRemoteAddress(chainRetriever, redeemReq.RemoteAddress, redeemReq.TokenID, chainID) {
+	if !IsValidPortalRemoteAddress(chainRetriever, redeemReq.RemoteAddress, redeemReq.TokenID) {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", redeemReq.RemoteAddress, redeemReq.TokenID)
 	}
 
@@ -178,7 +177,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 		if len(redeemReq.RedeemerExternalAddress) == 0 {
 			return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Redeemer address for liquidating is invalid"))
 		}
-		if isValid, err := ValidateRemoteAddress(common.ETHChainName, "", redeemReq.RedeemerExternalAddress); !isValid || err != nil {
+		if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, "", redeemReq.RedeemerExternalAddress); !isValid || err != nil {
 			return false, false, fmt.Errorf("RedeemerExternalAddress %v is not a valid address of ethereum network", redeemReq.RedeemerExternalAddress)
 		}
 	}

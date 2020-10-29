@@ -221,18 +221,18 @@ func (p *portalRequestWithdrawCollateralProcessor) buildNewInsts(
 	custodianKey := statedb.GenerateCustodianStateObjectKey(actionData.Meta.PaymentAddress)
 	custodianKeyStr := custodianKey.String()
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
-	if !ok {
+	if !ok || custodian == nil {
 		Logger.log.Errorf("Custodian not found")
 		return [][]string{rejectInst}, nil
 	}
 
 	if actionData.Meta.Amount > custodian.GetFreeCollateral() {
-		Logger.log.Errorf("Free Collateral is not enough PRV")
+		Logger.log.Errorf("Withdraw amount is greater than free collateral amount")
 		return [][]string{rejectInst}, nil
 	}
-	//withdraw
-	remainFreeCollateral := custodian.GetFreeCollateral() - actionData.Meta.Amount
-	totalFreeCollateral := custodian.GetTotalCollateral() - actionData.Meta.Amount
+
+	updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, common.PRVIDStr, actionData.Meta.Amount)
+	currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
 
 	inst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
@@ -240,14 +240,10 @@ func (p *portalRequestWithdrawCollateralProcessor) buildNewInsts(
 		common.PortalCustodianWithdrawRequestAcceptedChainStatus,
 		actionData.Meta.PaymentAddress,
 		actionData.Meta.Amount,
-		remainFreeCollateral,
+		updatedCustodian.GetFreeCollateral(),
 		actionData.TxReqID,
 	)
 
-	//update free collateral custodian
-	custodian.SetFreeCollateral(remainFreeCollateral)
-	custodian.SetTotalCollateral(totalFreeCollateral)
-	currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
 	return [][]string{inst}, nil
 }
 
@@ -428,7 +424,7 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 	)
 
 	// check externalTokenID should be one of supported collateral tokenIDs
-	if ok, err := common.SliceExists(bc.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenIDStr); !ok || err != nil {
+	if !metadata.IsSupportedTokenCollateralV3(bc, beaconHeight, externalTokenIDStr) {
 		Logger.log.Errorf("Custodian deposit v3: external collateral tokenID is not supported on portal %v", externalTokenIDStr)
 		return [][]string{rejectedInst2}, nil
 	}

@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -31,11 +30,6 @@ type PortalCustodianDepositActionV3 struct {
 	Meta    PortalCustodianDepositV3
 	TxReqID common.Hash
 	ShardID byte
-
-	//IncAddressStr    string
-	//DepositAmount    uint64
-	//ExternalTokenID  string // collateral TokenID
-	//UniqExternalTxID []byte
 }
 
 // PortalCustodianDepositContentV3 - Beacon builds a new instruction with this content after receiving a instruction from shard
@@ -124,7 +118,11 @@ func NewPortalCustodianDepositV3FromMap(
 	}
 	proofStrs := []string{}
 	for _, item := range proofsRaw {
-		proofStrs = append(proofStrs, item.(string))
+		pItem, ok := item.(string)
+		if !ok {
+			return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata ProofStrs should be an array of string"))
+		}
+		proofStrs = append(proofStrs, pItem)
 	}
 
 	meta, _ := NewPortalCustodianDepositV3(
@@ -159,21 +157,9 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	}
 
 	// validate remote addresses
-	if len(custodianDeposit.RemoteAddresses) == 0 {
-		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("remote addresses should be at least one"))
-	}
-	for tokenID, remoteAddr := range custodianDeposit.RemoteAddresses {
-		if !IsPortalToken(tokenID) {
-			return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("TokenID in remote address is invalid"))
-		}
-		if len(remoteAddr) == 0 {
-			return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("Remote address is invalid"))
-		}
-		chainID := GetChainIDByTokenID(tokenID, chainRetriever)
-		if !IsValidRemoteAddress(chainRetriever, remoteAddr, tokenID, chainID) {
-			return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError,
-				fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID))
-		}
+	isValid, err := ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, chainRetriever)
+	if !isValid || err != nil {
+		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
 	}
 
 	// validate deposit proof and receipt
@@ -237,7 +223,6 @@ func (custodianDeposit *PortalCustodianDepositV3) CalculateSize() uint64 {
 // Custodian address string
 // external TokenIDStr
 // amount: for eth: unit is nanoETH
-// todo: need to be updated to smart contract
 func ParseInfoFromLogMap(logMap map[string]interface{}) (string, string, uint64, error) {
 	// the token might be ETH/ERC20
 	ethereumAddr, ok := logMap["token"].(eCommon.Address)

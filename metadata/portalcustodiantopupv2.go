@@ -105,6 +105,10 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
+	if custodianDeposit.DepositedAmount == 0 && custodianDeposit.FreeCollateralAmount == 0 {
+		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
+	}
+
 	if !IsPortalToken(custodianDeposit.PTokenId) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}

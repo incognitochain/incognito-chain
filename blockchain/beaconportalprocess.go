@@ -1,21 +1,19 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"math/big"
 	"sort"
 	"strconv"
 )
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
-	//TODO: uncomment before push code
-	//if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
-	//	return nil
-	//}
+	// Note: should comment this code if you need to create local chain.
+	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
+		return nil
+	}
 	beaconHeight := block.Header.Height - 1
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
 	if err != nil {
@@ -164,79 +162,6 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	err = storePortalStateToDB(portalStateDB, currentPortalState)
 	if err != nil {
 		Logger.log.Error(err)
-	}
-
-	return nil
-}
-
-func (blockchain *BlockChain) processPortalCustodianDeposit(
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
-	instructions []string,
-	currentPortalState *CurrentPortalState,
-	portalParams PortalParams) error {
-	if currentPortalState == nil {
-		Logger.log.Errorf("current portal state is nil")
-		return nil
-	}
-	if len(instructions) != 4 {
-		return nil // skip the instruction
-	}
-
-	// unmarshal instructions content
-	var actionData metadata.PortalCustodianDepositContent
-	err := json.Unmarshal([]byte(instructions[3]), &actionData)
-	if err != nil {
-		return err
-	}
-
-	depositStatus := instructions[2]
-	if depositStatus == common.PortalCustodianDepositAcceptedChainStatus {
-		// add custodian to custodian pool
-		newCustodian := addCustodianToPool(
-			currentPortalState.CustodianPoolState,
-			actionData.IncogAddressStr,
-			actionData.DepositedAmount,
-			common.PRVIDStr,
-			actionData.RemoteAddresses)
-		keyCustodianStateStr := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr).String()
-		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
-
-		// store custodian deposit status into DB
-		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
-			Status:          common.PortalCustodianDepositAcceptedStatus,
-			IncogAddressStr: actionData.IncogAddressStr,
-			DepositedAmount: actionData.DepositedAmount,
-			RemoteAddresses: actionData.RemoteAddresses,
-		}
-		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		err = statedb.StoreCustodianDepositStatus(
-			stateDB,
-			actionData.TxReqID.String(),
-			custodianDepositDataBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
-			return nil
-		}
-	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
-		// store custodian deposit status into DB
-		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
-			Status:          common.PortalCustodianDepositRefundStatus,
-			IncogAddressStr: actionData.IncogAddressStr,
-			DepositedAmount: actionData.DepositedAmount,
-			RemoteAddresses: actionData.RemoteAddresses,
-		}
-		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		err = statedb.StoreCustodianDepositStatus(
-			stateDB,
-			actionData.TxReqID.String(),
-			custodianDepositDataBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
-			return nil
-		}
 	}
 
 	return nil
@@ -661,100 +586,6 @@ func calcMedian(ratesList []uint64) uint64 {
 	return ratesList[mNumber]
 }
 
-func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(
-	portalStateDB *statedb.StateDB,
-	beaconHeight uint64,
-	instructions []string,
-	currentPortalState *CurrentPortalState,
-	portalParams PortalParams) error {
-	if currentPortalState == nil {
-		Logger.log.Errorf("current portal state is nil")
-		return nil
-	}
-
-	if len(instructions) != 4 {
-		return nil // skip the instruction
-	}
-	// parse instruction
-	var custodianWithdrawRequestContent = metadata.PortalCustodianWithdrawRequestContent{}
-	err := json.Unmarshal([]byte(instructions[3]), &custodianWithdrawRequestContent)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of custodian withdraw request instruction: %+v", err)
-		return nil
-	}
-
-	reqStatus := instructions[2]
-	paymentAddress := custodianWithdrawRequestContent.PaymentAddress
-	amount := custodianWithdrawRequestContent.Amount
-	freeCollateral := custodianWithdrawRequestContent.RemainFreeCollateral
-	txHash := custodianWithdrawRequestContent.TxReqID.String()
-
-	switch reqStatus {
-	case common.PortalCustodianWithdrawRequestAcceptedChainStatus:
-		//save transaction
-		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
-			paymentAddress,
-			amount,
-			common.PortalCustodianWithdrawReqAcceptedStatus,
-			freeCollateral,
-		)
-
-		custodianKey := statedb.GenerateCustodianStateObjectKey(paymentAddress)
-		custodianKeyStr := custodianKey.String()
-		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
-
-		if !ok {
-			Logger.log.Errorf("ERROR: Custodian not found ")
-			return nil
-		}
-
-		//check free collateral
-		if amount > custodian.GetFreeCollateral() {
-			Logger.log.Errorf("ERROR: Free collateral is not enough to refund")
-			return nil
-		}
-
-		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-		err = statedb.StorePortalCustodianWithdrawCollateralStatus(
-			portalStateDB,
-			txHash,
-			contentStatusBytes,
-		)
-
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
-			return nil
-		}
-
-		//update custodian
-		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - amount)
-		custodian.SetTotalCollateral(custodian.GetTotalCollateral() - amount)
-
-		currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
-
-	case common.PortalCustodianWithdrawRequestRejectedChainStatus:
-		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
-			paymentAddress,
-			amount,
-			common.PortalCustodianWithdrawReqRejectStatus,
-			freeCollateral,
-		)
-
-		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-		err = statedb.StorePortalCustodianWithdrawCollateralStatus(
-			portalStateDB,
-			txHash,
-			contentStatusBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
-			return nil
-		}
-	}
-
-	return nil
-}
-
 func (blockchain *BlockChain) processPortalCustodianDepositV3(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
@@ -834,82 +665,6 @@ func (blockchain *BlockChain) processPortalCustodianDepositV3(
 			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
 			return nil
 		}
-	}
-
-	return nil
-}
-
-func (blockchain *BlockChain) processPortalCustodianWithdrawV3(
-	portalStateDB *statedb.StateDB,
-	beaconHeight uint64,
-	instructions []string,
-	currentPortalState *CurrentPortalState,
-	portalParams PortalParams) error {
-	if currentPortalState == nil {
-		Logger.log.Errorf("current portal state is nil")
-		return nil
-	}
-
-	if len(instructions) != 4 {
-		return nil // skip the instruction
-	}
-	// parse instruction
-	var instContent = metadata.PortalCustodianWithdrawRequestContentV3{}
-	err := json.Unmarshal([]byte(instructions[3]), &instContent)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of custodian withdraw request instruction: %+v", err)
-		return nil
-	}
-	custodianIncAddress := instContent.CustodianIncAddress
-	custodianExtAddress := instContent.CustodianExternalAddress
-	externalTokenID := instContent.ExternalTokenID
-	txId := instContent.TxReqID
-	amountBN := instContent.Amount
-
-	status := instructions[2]
-	statusInt := common.PortalCustodianWithdrawReqV3RejectStatus
-	if status == common.PortalCustodianWithdrawRequestV3AcceptedChainStatus {
-		statusInt = common.PortalCustodianWithdrawReqV3AcceptedStatus
-
-		custodianKeyStr := statedb.GenerateCustodianStateObjectKey(custodianIncAddress).String()
-		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
-		if !ok {
-			Logger.log.Errorf("ERROR: Custodian not found")
-			return nil
-		}
-
-		// check free collateral
-		if bytes.Equal(common.FromHex(externalTokenID), common.FromHex(common.EthAddrStr)) {
-			// Convert Wei to Gwei for Ether
-			amountBN = amountBN.Div(amountBN, big.NewInt(1000000000))
-		}
-		amount := amountBN.Uint64()
-		if amount > custodian.GetFreeTokenCollaterals()[externalTokenID] {
-			Logger.log.Errorf("ERROR: Free collateral is not enough to withdraw")
-			return nil
-		}
-
-		updatedCustodian := UpdateCustodianStateAfterWithdrawCollateral(custodian, externalTokenID, amount)
-		currentPortalState.CustodianPoolState[custodianKeyStr] = updatedCustodian
-	}
-
-	// store status of requesting withdraw collateral
-	statusData := metadata.NewCustodianWithdrawRequestStatusV3(
-		custodianIncAddress,
-		custodianExtAddress,
-		externalTokenID,
-		amountBN,
-		txId,
-		statusInt)
-	contentStatusBytes, _ := json.Marshal(statusData)
-	err = statedb.StorePortalCustodianWithdrawCollateralStatusV3(
-		portalStateDB,
-		statusData.TxReqID.String(),
-		contentStatusBytes,
-	)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
-		return nil
 	}
 
 	return nil

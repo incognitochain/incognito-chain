@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
@@ -203,11 +204,31 @@ func HasPortalInstructions(instructions [][]string) bool {
 	return false
 }
 
-// todo: thachtb
-func ValidateRemoteAddress(chainName string, tokenID string, address string) (bool, error) {
+// Validate portal external addresses for collateral tokens (ETH/ERC20)
+func ValidatePortalExternalAddress(chainName string, tokenID string, address string) (bool, error) {
 	switch chainName {
 	case common.ETHChainName:
 		return ec.IsHexAddress(address), nil
 	}
+	return true, nil
+}
+
+// Validate portal remote addresses for portal tokens (BTC, BNB)
+func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever ChainRetriever) (bool, error){
+	if len(remoteAddresses) == 0 {
+		return false, errors.New("remote addresses should be at least one address")
+	}
+	for tokenID, remoteAddr := range remoteAddresses {
+		if !IsPortalToken(tokenID) {
+			return false, errors.New("TokenID in remote address is invalid")
+		}
+		if len(remoteAddr) == 0 {
+			return false, errors.New("Remote address is invalid")
+		}
+		if !IsValidPortalRemoteAddress(chainRetriever, remoteAddr, tokenID) {
+			return false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
+		}
+	}
+
 	return true, nil
 }

@@ -123,15 +123,15 @@ func (req PortalCustodianWithdrawRequestV3) ValidateSanityData(chainRetriever Ch
 		return false, false, errors.New("custodian request withdraw v3: external tokenID shouldn't have 0x prefix")
 	}
 	// check externalTokenID should be one of supported collateral tokenIDs
-	if ok, err := common.SliceExists(chainRetriever.GetSupportedCollateralTokenIDs(beaconHeight), req.ExternalTokenID); !ok || err != nil {
-		return false, false, errors.New("custodian request withdraw v3: external tokenID is not supported")
+	if !IsSupportedTokenCollateralV3(chainRetriever, beaconHeight, req.ExternalTokenID) {
+		return false, false, errors.New("custodian request withdraw v3: ExternalTokenID is not portal collateral")
 	}
 
 	// validate remote address
 	if common.Has0xPrefix(req.CustodianExternalAddress) {
 			return false, false, errors.New("custodian request withdraw v3: external tokenID shouldn't have 0x prefix")
 	}
-	if isValid, err := ValidateRemoteAddress(common.ETHChainName, req.ExternalTokenID, req.CustodianExternalAddress); !isValid || err != nil {
+	if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, req.ExternalTokenID, req.CustodianExternalAddress); !isValid || err != nil {
 		return false, false, errors.New("custodian request withdraw v3: custodian external address is invalid")
 	}
 

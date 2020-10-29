@@ -40,9 +40,9 @@ type PortalLiquidationCustodianDepositContentV3 struct {
 	CollateralTokenID         string
 	DepositAmount             uint64
 	FreeTokenCollateralAmount uint64 // topup from free token collaterals
-	UniqExternalTxID []byte
-	TxReqID              common.Hash
-	ShardID              byte
+	UniqExternalTxID          []byte
+	TxReqID                   common.Hash
+	ShardID                   byte
 }
 
 type LiquidationCustodianDepositStatusV3 struct {
@@ -51,9 +51,9 @@ type LiquidationCustodianDepositStatusV3 struct {
 	CollateralTokenID         string
 	DepositAmount             uint64
 	FreeTokenCollateralAmount uint64 // topup from free token collaterals
-	UniqExternalTxID []byte
-	TxReqID              common.Hash
-	Status               byte
+	UniqExternalTxID          []byte
+	TxReqID                   common.Hash
+	Status                    byte
 }
 
 func NewLiquidationCustodianDepositStatus3(
@@ -87,9 +87,9 @@ func NewPortalLiquidationCustodianDepositV3(
 	blockHash eCommon.Hash,
 	txIndex uint,
 	proofStrs []string,
-	) (*PortalLiquidationCustodianDepositV3, error) {
+) (*PortalLiquidationCustodianDepositV3, error) {
 	custodianDepositMeta := &PortalLiquidationCustodianDepositV3{
-		MetadataBase:              MetadataBase{
+		MetadataBase: MetadataBase{
 			Type: metaType,
 		},
 		IncogAddressStr:           incognitoAddrStr,
@@ -154,6 +154,8 @@ func (req PortalLiquidationCustodianDepositV3) ValidateSanityData(chainRetriever
 		if len(req.ProofStrs) == 0 {
 			return false, false, errors.New("ProofStrs should be not empty")
 		}
+	} else if req.FreeTokenCollateralAmount == 0 {
+		return false, false, errors.New("FreeTokenCollateralAmount and DepositAmount are zero")
 	}
 
 	return true, true, nil

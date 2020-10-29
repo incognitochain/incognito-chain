@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"errors"
 )
 
 type PortalTokenProcessor interface {
 	ParseAndVerifyProofForPorting(proof string, portingReq *statedb.WaitingPortingRequest, bc *BlockChain) (bool, error)
 	ParseAndVerifyProofForRedeem(proof string, redeemReq *statedb.RedeemRequest, bc *BlockChain, matchedCustodian *statedb.MatchingRedeemCustodianDetail) (bool, error)
 	IsValidRemoteAddress(address string) (bool, error)
+	GetChainID() (string)
 }
 
 type PortalToken struct {
@@ -175,12 +176,15 @@ func (p *PortalBTCTokenProcessor) IsValidRemoteAddress(address string) (bool, er
 	return true, nil
 }
 
+func (p *PortalBTCTokenProcessor) GetChainID() string {
+	return p.ChainID
+}
+
 type PortalBNBTokenProcessor struct {
 	*PortalToken
 }
 
 func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, portingReq *statedb.WaitingPortingRequest, bc *BlockChain) (bool, error) {
-	return true, nil
 	// parse PortingProof in meta
 	txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(proof)
 	if err != nil {
@@ -288,7 +292,6 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, po
 }
 
 func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForRedeem(proof string, redeemReq *statedb.RedeemRequest, bc *BlockChain, matchedCustodian *statedb.MatchingRedeemCustodianDetail) (bool, error){
-	return true, nil
 	// parse RedeemProof in meta
 	txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(proof)
 	if err != nil {
@@ -397,7 +400,10 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForRedeem(proof string, red
 	return true, nil
 }
 
-//todo:
 func (p *PortalBNBTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
 	return bnb.IsValidBNBAddress(address, p.ChainID), nil
+}
+
+func (p *PortalBNBTokenProcessor) GetChainID() string {
+	return p.ChainID
 }

@@ -144,7 +144,6 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 func getSupportedPortalCollaterals() []PortalCollateral {
 	return []PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9},
-		{"USDT", 6},
 	}
 }
 
@@ -209,13 +208,13 @@ func init() {
 		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       10 * time.Minute,
-				TimeOutWaitingPortingRequest:         10 * time.Minute,
-				TimeOutWaitingRedeemRequest:          5 * time.Minute,
+				TimeOutCustodianReturnPubToken:       1 * time.Hour,
+				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       5000 * 1e9, // 5000 prv
+				MinLockCollateralAmountInEpoch:       10000 * 1e6, // 10000 usd
 				MinPercentLockedCollateral:           150,
 				TP120:                                120,
 				TP130:                                130,

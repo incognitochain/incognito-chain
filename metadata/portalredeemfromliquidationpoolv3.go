@@ -127,7 +127,7 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetri
 	if common.Has0xPrefix(redeemReq.RedeemerExtAddressStr) {
 		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr shouldn't have 0x prefix")
 	}
-	if isValid, err := ValidateRemoteAddress(common.ETHChainName, common.Remove0xPrefix(common.EthAddrStr), redeemReq.RedeemerExtAddressStr); !isValid || err != nil {
+	if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, common.Remove0xPrefix(common.EthAddrStr), redeemReq.RedeemerExtAddressStr); !isValid || err != nil {
 		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr is invalid")
 	}
 	return true, true, nil

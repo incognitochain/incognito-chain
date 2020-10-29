@@ -86,11 +86,6 @@ func (meta PortalRequestUnlockCollateral) ValidateTxWithBlockChain(
 }
 
 func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	//	return true, true, nil
-	//}
-
 	// validate CustodianAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(meta.CustodianAddressStr)
 	if err != nil {

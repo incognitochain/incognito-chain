@@ -69,7 +69,6 @@ type ChainRetriever interface {
 	GetPortalFeederAddress() string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
-	//GetSupportedCollateralInfo(beaconHeight uint64) []blockchain.PortalCollateral
 	GetPortalETHContractAddrStr() string
 }
 
@@ -253,14 +252,13 @@ func ConvertPrivacyTokenToNativeToken(
 	)
 }
 
-func IsValidRemoteAddress(
+func IsValidPortalRemoteAddress(
 	bcr ChainRetriever,
 	remoteAddress string,
 	tokenID string,
-	chainID string,
 ) bool {
 	if tokenID == common.PortalBNBIDStr {
-		return bnb.IsValidBNBAddress(remoteAddress, chainID)
+		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID())
 	} else if tokenID == common.PortalBTCIDStr {
 		btcHeaderChain := bcr.GetBTCHeaderChain()
 		if btcHeaderChain == nil {
@@ -269,15 +267,6 @@ func IsValidRemoteAddress(
 		return btcHeaderChain.IsBTCAddressValid(remoteAddress)
 	}
 	return false
-}
-
-func GetChainIDByTokenID(tokenID string, chainRetriever ChainRetriever) string {
-	if tokenID == common.PortalBNBIDStr {
-		return chainRetriever.GetBNBChainID()
-	} else if tokenID == common.PortalBTCIDStr {
-		return chainRetriever.GetBTCChainID()
-	}
-	return ""
 }
 
 func IsPortalToken(tokenIDStr string) bool {

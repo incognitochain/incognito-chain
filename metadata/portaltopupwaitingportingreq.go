@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -106,11 +105,6 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 	beaconHeight uint64,
 	txr Transaction,
 ) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
-
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(p.IncogAddressStr)
 	if err != nil {
@@ -137,6 +131,9 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 	// validate amount deposit
 	if p.DepositedAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("deposit amount should be equal to the tx value")
+	}
+	if p.DepositedAmount == 0 && p.FreeCollateralAmount == 0 {
+		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
 	}
 
 	if !IsPortalToken(p.PTokenID) {

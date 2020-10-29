@@ -161,6 +161,8 @@ func (req PortalTopUpWaitingPortingRequestV3) ValidateSanityData(chainRetriever 
 		if len(req.ProofStrs) == 0 {
 			return false, false, errors.New("ProofStrs should be not empty")
 		}
+	} else if req.FreeTokenCollateralAmount == 0 {
+		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
 	}
 
 	// check portingID != nil
