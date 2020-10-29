@@ -22,8 +22,8 @@ type API struct {
 const APITEMPLATE = `func (sim *SimulationEngine) rpc_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["%API_NAME%"]
-	resI, err := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
-	if err != nil {
+	resI, rpcERR := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
+	if rpcERR != nil {
 		%API_ERR%
 	}
 	%API_RETURN%
@@ -40,6 +40,7 @@ func main() {
 	apiF.WriteString(`package devframework
 
 import (
+	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )`)
@@ -69,13 +70,13 @@ import (
 		//fmt.Println(apiResultType)
 
 		//build return
-		retstr := "_ = resI \n return err"
+		retstr := "_ = resI \n return nil"
 		resstr := "error"
-		errstr := "return err"
+		errstr := "return errors.New(rpcERR.Error())"
 		if apiResultType != "" {
-			retstr = "return resI.(" + apiResultType + "),err"
-			resstr = apiResultType + ",error"
-			errstr = "return nil,err"
+			retstr = "return resI.(" + apiResultType + "),nil"
+			resstr = "res " + apiResultType + ",err error"
+			errstr = "return res,errors.New(rpcERR.Error())"
 		}
 		//build function
 		fgen := strings.Replace(APITEMPLATE, "%API_NAME%", apiName, -1)

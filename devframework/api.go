@@ -1,5 +1,7 @@
 package devframework
 
+import "fmt"
+
 func (sim *SimulationEngine) API_CreateTransaction(args ...interface{}) (string, error) {
 	var sender string
 	var receivers = make(map[string]interface{})
@@ -23,7 +25,8 @@ func (sim *SimulationEngine) API_CreateTransaction(args ...interface{}) (string,
 
 	res, err := sim.rpc_createtransaction(sender, receivers, 1, 1)
 	if err != nil {
-		return "", err
+		fmt.Println(err)
+		sim.Pause()
 	}
 	sim.InjectTx(res.Base58CheckData)
 	return res.TxID, nil
