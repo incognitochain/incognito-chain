@@ -76,7 +76,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		currentCommitteePublicKeys        = []string{}
 		currentCommitteePublicKeysStructs = []incognitokey.CommitteePublicKey{}
 		committeeFromBlockHash            = common.Hash{}
-		beaconFinalView                   *BeaconBestState
+		beaconProcessView                 *BeaconBestState
 		err                               error
 	)
 
@@ -86,15 +86,15 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, err
 	}
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
-	beaconFinalView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
-	beaconHeight := beaconFinalView.GetHeight()
+	beaconProcessView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+	beaconProcessHeight := beaconProcessView.GetHeight()
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
 	} else {
-		if beaconHeight <= shardBestState.BeaconHeight {
-			Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v shardBestState.BeaconHeight %+v",
-				beaconHeight, shardBestState.BeaconHeight)
+		if beaconProcessHeight <= shardBestState.BeaconHeight {
+			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
+				beaconProcessHeight, shardBestState.BeaconHeight)
 			return nil, errors.New("Waiting For Beacon Produce Block")
 		}
 		currentCommitteePublicKeysStructs = committees
@@ -107,8 +107,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	// Fetch Beacon Blocks
 	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
-	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
@@ -138,9 +138,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 	}
 
-	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconHeight)
+	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
 	if err != nil {
-		Logger.log.Errorf("Beacon block %+v not found", beaconHeight)
+		Logger.log.Errorf("Beacon block %+v not found", beaconProcessHeight)
 		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
 
@@ -156,24 +156,24 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	epoch := beaconBlock.Header.Epoch
-	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
+	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconProcessHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, shardBestState.BeaconHeight+1, beaconProcessHeight)
 	if err != nil {
 		return nil, err
 	}
-	if beaconHeight == shardBestState.BeaconHeight {
+	if beaconProcessHeight == shardBestState.BeaconHeight {
 		isOldBeaconHeight = true
 	}
 
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight)
+	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconProcessHeight)
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
 	blockCreationLeftOver := shardBestState.BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(shardBestState, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconHeight)
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(shardBestState, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconProcessHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	shardInstructions, _, _, err = blockchain.generateInstruction(shardBestState, shardID,
-		beaconHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
+		beaconProcessHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
 		shardPendingValidatorStr, currentCommitteePublicKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
@@ -253,7 +253,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		Round:              round,
 		Epoch:              epoch,
 		CrossShardBitMap:   createCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
-		BeaconHeight:       beaconHeight,
+		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconHash,
 		TotalTxsFee:        totalTxsFee,
 		ConsensusType:      shardBestState.ConsensusAlgorithm,
