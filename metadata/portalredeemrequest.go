@@ -65,6 +65,7 @@ type PortalRedeemRequestStatus struct {
 	TxReqID                 common.Hash
 	ShardID                 byte
 	ShardHeight             uint64
+	BeaconHeight            uint64
 	RedeemerExternalAddress string
 }
 

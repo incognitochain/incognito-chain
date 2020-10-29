@@ -65,6 +65,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			TxReqID:                 actionData.TxReqID,
 			ShardID:                 actionData.ShardID,
 			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            beaconHeight + 1,
 			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
@@ -90,6 +91,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			TxReqID:                 actionData.TxReqID,
 			ShardID:                 actionData.ShardID,
 			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            beaconHeight + 1,
 			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
@@ -134,6 +136,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			TxReqID:                 actionData.TxReqID,
 			ShardID:                 actionData.ShardID,
 			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            beaconHeight + 1,
 			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
@@ -178,6 +181,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			TxReqID:                 redeemReq.GetTxReqID(),
 			ShardID:                 actionData.ShardID,
 			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            redeemReq.GetBeaconHeight(),
 			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
@@ -268,6 +272,7 @@ func (blockchain *BlockChain) processPortalReqMatchingRedeem(
 			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
 			ShardID:                 updatedRedeemRequest.ShardID(),
 			ShardHeight:             updatedRedeemRequest.ShardHeight(),
+			BeaconHeight:            updatedRedeemRequest.GetBeaconHeight(),
 			RedeemerExternalAddress: updatedRedeemRequest.GetRedeemerExternalAddress(),
 		}
 		newRedeemRequest, err := json.Marshal(redeemRequest)
@@ -368,6 +373,7 @@ func (blockchain *BlockChain) processPortalPickMoreCustodiansForTimeOutWaitingRe
 			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
 			ShardID:                 updatedRedeemRequest.ShardID(),
 			ShardHeight:             updatedRedeemRequest.ShardHeight(),
+			BeaconHeight:            updatedRedeemRequest.GetBeaconHeight(),
 			RedeemerExternalAddress: updatedRedeemRequest.GetRedeemerExternalAddress(),
 		}
 		newRedeemRequest, err := json.Marshal(redeemRequest)

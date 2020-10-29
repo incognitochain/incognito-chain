@@ -709,6 +709,9 @@ func CalUnlockCollateralAmountV3(
 
 	lockedAmountCollateral := uint64(0)
 	listLockedTokens := custodianState.GetLockedTokenCollaterals()[tokenID]
+	if listLockedTokens == nil {
+		listLockedTokens = map[string]uint64{}
+	}
 	listLockedTokens[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[tokenID]
 	for tokenCollateralID, token := range listLockedTokens {
 		if token < tokenAmountList[tokenCollateralID] {
@@ -3869,6 +3872,9 @@ func UpdateLockedCollateralForRewardsV3(currentPortalState *CurrentPortalState, 
 
 	totalLockedCollateralAmount := currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards()
 	lockedCollateralDetails := currentPortalState.LockedCollateralForRewards.GetLockedCollateralDetail()
+	if lockedCollateralDetails == nil {
+		lockedCollateralDetails = map[string]uint64{}
+	}
 	portalTokenIDs := common.PortalSupportedIncTokenIDs
 	for _, custodianState := range currentPortalState.CustodianPoolState {
 		for _, tokenID := range portalTokenIDs {
