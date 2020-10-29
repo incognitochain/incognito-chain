@@ -262,8 +262,8 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *inco
 			fmt.Println("PublicKey = ", c.GetPublicKey())
 			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
 			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
-			// fmt.Println("Is belong to key = ", coin.IsCoinBelongToViewKey(c, keyset.ReadonlyKey))
-			if pass, sharedSecret := c.IsCoinBelongToViewKey(keyset.ReadonlyKey); pass {
+			// fmt.Println("Is belong to key = ", coin.IsCoinBelongToKeySet(c, keyset.ReadonlyKey))
+			if pass, sharedSecret := c.IsCoinBelongToKeySet(keyset); pass {
 				cv2, ok := c.(*privacy.CoinV2)
 				if !ok{
 					Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
@@ -374,7 +374,7 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 			Logger.log.Errorf("Cannot create coin from byte %v", err)
 			return nil, err
 		}
-		if pass, sharedSecret := outCoin.IsCoinBelongToViewKey(keyset.ReadonlyKey); pass {
+		if pass, sharedSecret := outCoin.IsCoinBelongToKeySet(keyset); pass {
 			cv2, ok := outCoin.(*privacy.CoinV2)
 			var pass bool = false
 			if ok{
