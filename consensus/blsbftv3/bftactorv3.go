@@ -61,13 +61,6 @@ func (e BLSBFT_V3) IsStarted() bool {
 	return e.isStarted
 }
 
-type ProposeBlockInfo struct {
-	block      types.BlockInterface
-	votes      map[string]BFTVote //pk->BFTVote
-	isValid    bool
-	hasNewVote bool
-}
-
 func (e *BLSBFT_V3) GetConsensusName() string {
 	return common.BlsConsensus
 }
@@ -124,16 +117,19 @@ func (e *BLSBFT_V3) Start() error {
 				block := blockIntf.(types.BlockInterface)
 				blkHash := block.Hash().String()
 
+				committees, err := e.getCommitteeForBlock(block)
+				if err != nil {
+					e.Logger.Debug(err)
+					continue
+				}
+
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
-					e.receiveBlockByHash[blkHash] = &ProposeBlockInfo{
-						block:      block,
-						votes:      make(map[string]BFTVote),
-						hasNewVote: false,
-					}
+					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]BFTVote), false, false)
+					e.receiveBlockByHash[blkHash] = proposeBlockInfo
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
-					e.receiveBlockByHash[blkHash].block = block
+					e.receiveBlockByHash[blkHash].addBlockInfo(block, committees)
 				}
 
 				if block.GetHeight() <= e.Chain.GetBestViewHeight() {
@@ -156,10 +152,7 @@ func (e *BLSBFT_V3) Start() error {
 						b.hasNewVote = true
 					}
 				} else {
-					e.receiveBlockByHash[voteMsg.BlockHash] = &ProposeBlockInfo{
-						votes:      make(map[string]BFTVote),
-						hasNewVote: true,
-					}
+					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 					if _, ok := e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator]; !ok {
 						e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = voteMsg
 						e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
@@ -241,7 +234,6 @@ func (e *BLSBFT_V3) Start() error {
 					Check for valid block to vote
 				*/
 				validProposeBlock := []*ProposeBlockInfo{}
-				blocksCommittees := make(map[string][]incognitokey.CommitteePublicKey)
 				//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
 				for h, proposeBlockInfo := range e.receiveBlockByHash {
 					if proposeBlockInfo.block == nil {
@@ -267,21 +259,21 @@ func (e *BLSBFT_V3) Start() error {
 
 					if lastVotedBlk, ok := e.voteHistory[bestViewHeight+1]; ok {
 						if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
-							e.validateAndVote(v, blocksCommittees)
+							e.validateAndVote(v)
 						} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
-							e.validateAndVote(v, blocksCommittees)
+							e.validateAndVote(v)
 						} else if v.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
-							e.validateAndVote(v, blocksCommittees)
+							e.validateAndVote(v)
 						} // if not swap committees => do nothing
 					} else { //there is no vote for this height yet
-						e.validateAndVote(v, blocksCommittees)
+						e.validateAndVote(v)
 					}
 				}
 				/*
 					Check for 2/3 vote to commit
 				*/
 				for k, v := range e.receiveBlockByHash {
-					e.processIfBlockGetEnoughVote(k, v, blocksCommittees[k])
+					e.processIfBlockGetEnoughVote(k, v)
 				}
 			}
 		}
@@ -302,7 +294,6 @@ func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, cha
 
 func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	blockHash string, v *ProposeBlockInfo,
-	committees []incognitokey.CommitteePublicKey,
 ) {
 	//no vote
 	if v.hasNewVote == false {
@@ -326,23 +317,12 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		return
 	}
 
-	if len(committees) == 0 {
-		return
-	} else {
-		var err error
-		committees, err = e.getCommitteeForBlock(v.block)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-	}
-
 	validVote := 0
 	errVote := 0
 	for _, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.isValid == 0 {
-			for _, c := range committees {
+			for _, c := range v.committees {
 				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
@@ -370,9 +350,9 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			delete(v.votes, key)
 		}
 	}
-	if validVote > 2*len(committees)/3 {
+	if validVote > 2*len(v.committees)/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(v.committees, common.BlsConsensus)
 		//fmt.Println(committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
@@ -408,7 +388,6 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 
 func (e *BLSBFT_V3) validateAndVote(
 	v *ProposeBlockInfo,
-	blocksCommittees map[string][]incognitokey.CommitteePublicKey,
 ) error {
 	//not connected
 	e.Logger.Info("validateAndVote")
@@ -428,8 +407,7 @@ func (e *BLSBFT_V3) validateAndVote(
 		return err
 	}
 
-	blocksCommittees[v.block.Hash().String()] = committees
-	if err := e.Chain.ValidatePreSignBlock(v.block, committees); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees); err != nil {
 		e.Logger.Error(err)
 		return err
 	}
