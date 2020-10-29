@@ -86,16 +86,14 @@ func (engine *ShardCommitteeEngineV2) Clone() ShardCommitteeEngine {
 //clone ShardCommitteeStateV2 to new instance
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.reset()
-	newCommitteeState.shardCommittee = make([]incognitokey.CommitteePublicKey, len(s.shardCommittee))
-	for i, v := range s.shardCommittee {
-		newCommitteeState.shardCommittee[i] = v
-	}
+	newCommitteeState.shardCommittee = incognitokey.DeepCopy(s.shardCommittee)
 	newCommitteeState.committeeFromBlock = s.committeeFromBlock
 }
 
 //reset : reset ShardCommitteeStateV2 to default value
 func (s *ShardCommitteeStateV2) reset() {
 	s.shardCommittee = make([]incognitokey.CommitteePublicKey, 0)
+	s.committeeFromBlock = common.Hash{}
 }
 
 //Version ...
@@ -218,6 +216,11 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
+	res, _ := incognitokey.CommitteeKeyListToString(env.CommitteesFromBeaconView())
+	Logger.log.Infof(">>>>>>>> \n "+
+		"Height %+v, Committee From Block %+v \n"+
+		"Committees %+v", env.ShardHeight(), env.CommitteesFromBlock(), res)
+
 	return hashes, committeeChange, nil
 }
 
@@ -259,7 +262,8 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 
 	newCommitteeChange := committeeChange
-	s.shardCommittee = env.CommitteesFromBeaconView()
+
+	s.shardCommittee = incognitokey.DeepCopy(env.CommitteesFromBeaconView())
 	s.committeeFromBlock = env.CommitteesFromBlock()
 	return newCommitteeChange, nil
 }
