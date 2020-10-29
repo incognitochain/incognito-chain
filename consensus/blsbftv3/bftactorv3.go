@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
@@ -327,6 +328,13 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 
 	if len(committees) == 0 {
 		return
+	} else {
+		var err error
+		committees, err = e.getCommitteeForBlock(v.block)
+		if err != nil {
+			e.Logger.Error(err)
+			return
+		}
 	}
 
 	validVote := 0
