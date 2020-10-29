@@ -3,8 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type BeaconBlock struct {
@@ -207,6 +208,111 @@ func (beaconBlock *BeaconHeader) Hash() common.Hash {
 }
 
 //this function used to update several field that need recalculated in block header (in case there is change of body content)
-func (block *BeaconBlock) UpdateHeaderOnBodyChange() {
+func (block *BeaconBlock) UpdateHeaderOnBodyChange() error {
 	//TODO: @lam
+	//============Build Header Hash=============
+	// calculate hash
+	// BeaconValidator root: beacon committee + beacon pending committee
+	//-----------------
+	//REVIEW: @dung.v
+	// beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(newBeaconBeststate.BeaconCommittee)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
+	// validatorArr := append([]string{}, beaconCommitteeStr...)
+
+	// beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(newBeaconBeststate.BeaconPendingValidator)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
+	// validatorArr = append(validatorArr, beaconPendingValidatorStr...)
+	// tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(validatorArr)
+	// if err != nil {
+	// 	return NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
+	// }
+	// // BeaconCandidate root: beacon current candidate + beacon next candidate
+	// beaconCandidateArr := append(newBeaconBeststate.CandidateBeaconWaitingForCurrentRandom, newBeaconBeststate.CandidateBeaconWaitingForNextRandom...)
+
+	// beaconCandidateArrStr, err := incognitokey.CommitteeKeyListToString(beaconCandidateArr)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
+	// tempBeaconCandidateRoot, err := generateHashFromStringArray(beaconCandidateArrStr)
+	// if err != nil {
+	// 	return NewBlockChainError(GenerateBeaconCandidateRootError, err)
+	// }
+	// // Shard candidate root: shard current candidate + shard next candidate
+	// shardCandidateArr := append(newBeaconBeststate.CandidateShardWaitingForCurrentRandom, newBeaconBeststate.CandidateShardWaitingForNextRandom...)
+
+	// shardCandidateArrStr, err := incognitokey.CommitteeKeyListToString(shardCandidateArr)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
+	// tempShardCandidateRoot, err := generateHashFromStringArray(shardCandidateArrStr)
+	// if err != nil {
+	// 	return NewBlockChainError(GenerateShardCandidateRootError, err)
+	// }
+	// // Shard Validator root
+	// shardPendingValidator := make(map[byte][]string)
+	// for shardID, keys := range newBeaconBeststate.ShardPendingValidator {
+	// 	keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+	// 	if err != nil {
+	// 		return NewBlockChainError(UnExpectedError, err)
+	// 	}
+	// 	shardPendingValidator[shardID] = keysStr
+	// }
+	// shardCommittee := make(map[byte][]string)
+	// for shardID, keys := range newBeaconBeststate.ShardCommittee {
+	// 	keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+	// 	if err != nil {
+	// 		return NewBlockChainError(UnExpectedError, err)
+	// 	}
+	// 	shardCommittee[shardID] = keysStr
+	// }
+	// tempShardCommitteeAndValidatorRoot, err := generateHashFromMapByteString(shardPendingValidator, shardCommittee)
+	// if err != nil {
+	// 	return NewBlockChainError(GenerateShardCommitteeAndValidatorRootError, err)
+	// }
+
+	// tempAutoStakingRoot, err := newBeaconBeststate.AutoStaking.GenerateHash()
+	// if err != nil {
+	// 	return NewBlockChainError(AutoStakingRootHashError, err)
+	// }
+	//-----------------
+
+	// Shard state hash
+	tempShardStateHash, err := generateHashFromShardState(block.Body.ShardState)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewBlockChainError(GenerateShardStateError, err)
+	}
+	// Instruction Hash
+	tempInstructionArr := []string{}
+	for _, strs := range block.Body.Instructions {
+		tempInstructionArr = append(tempInstructionArr, strs...)
+	}
+	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewBlockChainError(GenerateInstructionHashError, err)
+	}
+	// Instruction merkle root
+	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(FlattenAndConvertStringInstError, err)
+	}
+	// add hash to header
+	//-----------------
+	//REVIEW: @dung.v these field are belong to beststate
+	// block.Header.BeaconCommitteeAndValidatorRoot = tempBeaconCommitteeAndValidatorRoot
+	// block.Header.BeaconCandidateRoot = tempBeaconCandidateRoot
+	// block.Header.ShardCandidateRoot = tempShardCandidateRoot
+	// block.Header.ShardCommitteeAndValidatorRoot = tempShardCommitteeAndValidatorRoot
+	// block.Header.AutoStakingRoot = tempAutoStakingRoot
+	//-----------------
+
+	block.Header.ShardStateHash = tempShardStateHash
+	block.Header.InstructionHash = tempInstructionHash
+	copy(block.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
+	return nil
 }
