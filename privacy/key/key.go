@@ -52,20 +52,20 @@ func (viewKey ViewingKey) GetPrivateView() *operation.Scalar {
 
 // OTAKey is a pair of keys used to recover coin's one-time-address
 type OTAKey struct{
-	Pk        PublicKey //32 bytes: used to
-	OTASecret PrivateOTAKey
+	pk        PublicKey //32 bytes: used to
+	otaSecret PrivateOTAKey
 }
 
 func (otaKey OTAKey) GetPublicSpend() *operation.Point {
-	pubSpend, _ := new(operation.Point).FromBytesS(otaKey.Pk)
+	pubSpend, _ := new(operation.Point).FromBytesS(otaKey.pk)
 	return pubSpend
 }
 
 func (otaKey OTAKey) GetOTASecretKey() *operation.Scalar {
-	return new(operation.Scalar).FromBytesS(otaKey.OTASecret)
+	return new(operation.Scalar).FromBytesS(otaKey.otaSecret)
 }
 
-// PaymentAddress is an address of a payee
+// PaymentAddress is an address of the payee
 type PaymentAddress struct {
 	Pk PublicKey       // 32 bytes, use to receive coin (CoinV1)
 	Tk TransmissionKey // 32 bytes, use to encrypt pointByte
@@ -150,8 +150,8 @@ func GeneratePublicOTAKey(privateOTAKey PrivateOTAKey) PublicOTAKey {
 
 func GenerateOTAKey(privateKey []byte) OTAKey{
 	var otaKey OTAKey
-	otaKey.Pk = GeneratePublicKey(privateKey)
-	otaKey.OTASecret = GeneratePrivateOTAKey(privateKey)
+	otaKey.pk = GeneratePublicKey(privateKey)
+	otaKey.otaSecret = GeneratePrivateOTAKey(privateKey)
 	return otaKey
 }
 
