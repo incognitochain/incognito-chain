@@ -41,7 +41,7 @@ func (b *BeaconCommitteeEngineV2) SplitReward(
 		} else {
 			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
 		}
-		// TODO: @tin bug here
+		rewardForBeacon[key] += totalReward - (rewardForShard[key] + totalRewardForDAOAndCustodians)
 	}
 
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
