@@ -103,7 +103,7 @@ func (engine *ShardCommitteeEngineV2) Version() uint {
 
 //GetShardCommittee get shard committees
 func (engine *ShardCommitteeEngineV2) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return engine.shardCommitteeStateV2.shardCommittee
+	return incognitokey.DeepCopy(engine.shardCommitteeStateV2.shardCommittee)
 }
 
 //GetShardSubstitute get shard pending validators

@@ -121,6 +121,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		result.Round = shardBlock.Header.Round
 		result.CrossShardBitMap = []int{}
 		result.Instruction = shardBlock.Body.Instructions
+		result.CommitteeFromBlock = shardBlock.Header.CommitteeFromBlock
 		if len(shardBlock.Header.CrossShardBitMap) > 0 {
 			for _, shardID := range shardBlock.Header.CrossShardBitMap {
 				result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
@@ -175,6 +176,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			}
 		}
 		result.Epoch = shardBlock.Header.Epoch
+		result.CommitteeFromBlock = shardBlock.Header.CommitteeFromBlock
 		result.Txs = make([]jsonresult.GetBlockTxResult, 0)
 		for _, tx := range shardBlock.Body.Transactions {
 			transactionResult := jsonresult.GetBlockTxResult{}

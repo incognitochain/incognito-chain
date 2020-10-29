@@ -124,12 +124,12 @@ func (e *BLSBFT_V3) Start() error {
 				}
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
-					proposeBlockInfo := newProposeBlockInfoValue(block, committees, make(map[string]BFTVote), false, false)
+					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]BFTVote), false, false)
 					e.receiveBlockByHash[blkHash] = proposeBlockInfo
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
-					e.receiveBlockByHash[blkHash].newBlockInfo(block, committees)
+					e.receiveBlockByHash[blkHash].addBlockInfo(block, committees)
 				}
 
 				if block.GetHeight() <= e.Chain.GetBestViewHeight() {
@@ -152,10 +152,7 @@ func (e *BLSBFT_V3) Start() error {
 						b.hasNewVote = true
 					}
 				} else {
-					e.receiveBlockByHash[voteMsg.BlockHash] = &ProposeBlockInfo{
-						votes:      make(map[string]BFTVote),
-						hasNewVote: true,
-					}
+					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 					if _, ok := e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator]; !ok {
 						e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = voteMsg
 						e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)

@@ -14,7 +14,7 @@ type ProposeBlockInfo struct {
 }
 
 //NewProposeBlockInfoValue : new propose block info
-func newProposeBlockInfoValue(
+func newProposeBlockForProposeMsg(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
 	votes map[string]BFTVote,
@@ -22,16 +22,23 @@ func newProposeBlockInfoValue(
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
 		block:      block,
-		committees: committees,
+		committees: incognitokey.DeepCopy(committees),
 		votes:      votes,
 		isValid:    isValid,
 		hasNewVote: hasNewVote,
 	}
 }
 
-func (proposeBlockInfo *ProposeBlockInfo) newBlockInfo(
+func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey) {
 	proposeBlockInfo.block = block
-	proposeBlockInfo.committees = committees
+	proposeBlockInfo.committees = incognitokey.DeepCopy(committees)
+}
+
+func newBlockInfoForVoteMsg() *ProposeBlockInfo {
+	return &ProposeBlockInfo{
+		votes:      make(map[string]BFTVote),
+		hasNewVote: true,
+	}
 }

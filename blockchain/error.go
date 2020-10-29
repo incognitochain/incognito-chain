@@ -163,6 +163,7 @@ const (
 	ProcessPDEInstructionError
 	ProcessPortalInstructionError
 	InitBeaconStateError
+	InitShardStateError
 	GetListOutputCoinsByKeysetError
 	ProcessSalaryInstructionsError
 	GetShardIDFromTxError
@@ -334,6 +335,7 @@ var ErrCodeMessage = map[int]struct {
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
 	ProcessPortalInstructionError:                     {-1143, "Process Portal instruction Error"},
 	InitBeaconStateError:                              {-1144, "Init Beacon State Error"},
+	InitShardStateError:                               {-1144, "Init Shard State Error"},
 	ProcessSalaryInstructionsError:                    {-1145, "Proccess Salary Instruction Error"},
 	GetShardIDFromTxError:                             {-1146, "Get ShardID From Tx Error"},
 	GetValueFromTxError:                               {-1147, "Get Value From Tx Error"},
