@@ -662,13 +662,32 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shar
 	cmShardIDSender := new(operation.Point)
 	cmShardIDSender.ScalarMult(operation.PedCom.G[operation.PedersenShardIDIndex], new(operation.Scalar).FromBytes([operation.Ed25519KeySize]byte{senderShardID}))
 
+	isNewZKP, ok := boolParams["isNewZKP"]
+	if !ok {
+		isNewZKP = true
+	}
+
 	for i := 0; i < len(proof.inputCoins); i++ {
-		// Check input coins' Serial number is created from input coins' input and sender's spending key
-		valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
-		if !valid {
-			Logger.Log.Errorf("Verify serial number no privacy proof failed")
-			return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, err)
+		if isNewZKP{
+			// Check input coins' Serial number is created from input coins' input and sender's spending key
+			valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
+			if !valid {
+				Logger.Log.Errorf("Verify serial number no privacy proof failed")
+				return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, err)
+			}
+		}else{
+			// Check input coins' Serial number is created from input coins' input and sender's spending key
+			valid, err := proof.serialNumberNoPrivacyProof[i].VerifyOld(nil)
+			if !valid {
+				valid, err = proof.serialNumberNoPrivacyProof[i].Verify(nil)
+				if !valid{
+					Logger.Log.Errorf("Verify serial number no privacy proof failed")
+					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, err)
+				}
+			}
+
 		}
+
 
 		// Check input coins' cm is calculated correctly
 		cmSK := proof.inputCoins[i].GetPublicKey()
@@ -754,6 +773,10 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 	if !ok {
 		isBatch = false
 	}
+	isNewZKP, ok := boolParams["isNewZKP"]
+	if !ok{
+		isNewZKP = true
+	}
 
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		Logger.Log.Debugf("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
@@ -763,17 +786,38 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 
 		proof.oneOfManyProof[i].Statement.Commitments = commitments[i][:]
 
-		valid, err := proof.oneOfManyProof[i].Verify()
-		if !valid {
-			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-			return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+		if isNewZKP{
+			valid, err := proof.oneOfManyProof[i].Verify()
+			if !valid {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+			}
+			// Verify for the Proof that input coins' serial number is derived from the committed derivator
+			valid, err = proof.serialNumberProof[i].Verify(nil)
+			if !valid {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
+				return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, err)
+			}
+		}else{
+			valid, err := proof.oneOfManyProof[i].VerifyOld()
+			if !valid {
+				valid, err = proof.oneOfManyProof[i].Verify()
+				if !valid{
+					Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+					return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+				}
+			}
+			// Verify for the Proof that input coins' serial number is derived from the committed derivator
+			valid, err = proof.serialNumberProof[i].VerifyOld(nil)
+			if !valid {
+				valid, err = proof.serialNumberProof[i].Verify(nil)
+				if !valid{
+					Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
+					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, err)
+				}
+			}
 		}
-		// Verify for the Proof that input coins' serial number is derived from the committed derivator
-		valid, err = proof.serialNumberProof[i].Verify(nil)
-		if !valid {
-			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-			return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, err)
-		}
+
 	}
 
 	// Check output coins' cm is calculated correctly

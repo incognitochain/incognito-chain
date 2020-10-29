@@ -35,6 +35,16 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 			return false, nil
 		}
 	}
+
+	//if type is reward and not have metadata
+	if tx.GetType() == common.TxRewardType && meta == nil  {
+		return false, nil
+	}
+	//if type is return staking and not have metadata
+	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
+		return false, nil
+	}
+
 	if meta != nil {
 		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, tx, bcr, accumulatedValues, retriever, viewRetriever)
 		if err != nil {

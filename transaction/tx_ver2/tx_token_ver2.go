@@ -667,9 +667,15 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 }
 
 func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	if txToken.GetType() != common.TxCustomTokenPrivacyType{
+		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
+	}
 	txn, ok := txToken.GetTxNormal().(*Tx)
 	if !ok || txn==nil{
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("TX token must have token component"))
+	}
+	if txn.GetType() != common.TxNormalType{
+		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
 	if txToken.GetTxBase().GetProof() == nil && txn.GetProof() == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have a proof")
