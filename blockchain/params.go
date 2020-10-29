@@ -157,7 +157,7 @@ func init() {
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Epoch:               1,
-		BeaconHeightBreakPointBurnAddr: 2,
+		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
 		BTCDataFolderName:              TestnetBTCDataFolderName,
