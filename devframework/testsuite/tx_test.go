@@ -17,7 +17,7 @@ func Test_SendTX(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 	acc1 := sim.NewAccountFromShard(1)
 	acc2 := sim.NewAccountFromShard(0)
-	_, err := sim.CreateTransaction(sim.IcoAccount, acc1, 1000, acc2, 3000)
+	_, err := sim.API_CreateTransaction(sim.IcoAccount, acc1, 1000, acc2, 3000)
 	if err != nil {
 		panic(err)
 	}

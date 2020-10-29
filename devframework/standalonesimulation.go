@@ -491,60 +491,6 @@ func (sim *SimulationEngine) NextRound() {
 	sim.timer.Forward(10)
 }
 
-func (sim *SimulationEngine) CreateTransaction(args ...interface{}) (string, error) {
-	var sender string
-	var receivers = make(map[string]int)
-	for i, arg := range args {
-		if i == 0 {
-			sender = arg.(Account).PrivateKey
-		} else {
-			switch arg.(type) {
-			default:
-				if i%2 == 1 {
-					amount, ok := args[i+1].(int)
-					if !ok {
-						amountF64 := args[i+1].(float64)
-						amount = int(amountF64)
-					}
-					receivers[arg.(Account).PaymentAddress] = amount
-				}
-			}
-		}
-	}
-
-	res, err := sim.SendCreatetransaction(sender, receivers, 1, 1)
-	if err != nil {
-		return "", err
-	}
-	sim.InjectTx(res.Base58CheckData)
-
-	return res.TxID, nil
-}
-
-func (sim *SimulationEngine) SendCreatetransaction(senderPrk string, receivers map[string]int, fee int, privacy int) (*jsonresult.CreateTransactionResult, error) {
-	requestBody, err := json.Marshal(map[string]interface{}{
-		"jsonrpc": "1.0",
-		"method":  "createtransaction",
-		"params":  []interface{}{senderPrk, receivers, fee, privacy},
-		"id":      1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	body, err := sendRequest(requestBody)
-	if err != nil {
-		return nil, err
-	}
-	txResp := struct {
-		Result jsonresult.CreateTransactionResult
-	}{}
-	err = json.Unmarshal(body, &txResp)
-	if err != nil {
-		return nil, err
-	}
-	return &txResp.Result, nil
-}
-
 func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58)
 	if err != nil {
