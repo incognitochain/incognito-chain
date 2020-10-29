@@ -341,6 +341,8 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 				vote.isValid = 1
 				validVote++
 			}
+		} else {
+			validVote++
 		}
 	}
 	//e.Logger.Debug(validVote, committees), errVote)
