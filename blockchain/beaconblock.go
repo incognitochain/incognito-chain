@@ -205,3 +205,8 @@ func (beaconBlock *BeaconHeader) Hash() common.Hash {
 	combined := append(blkMetaHash[:], blkInstHash[:]...)
 	return common.Keccak256(combined)
 }
+
+//this function used to update several field that need recalculated in block header (in case there is change of body content)
+func (block *BeaconBlock) UpdateHeaderOnBodyChange() {
+	//TODO: @lam
+}

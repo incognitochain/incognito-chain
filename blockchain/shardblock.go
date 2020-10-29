@@ -589,3 +589,32 @@ func (block ShardBlock) GetConsensusType() string {
 func (block CrossShardBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
 }
+
+//this function used to update several field that need recalculated in block header (in case there is change of body content)
+func (block *ShardBlock) UpdateHeaderOnBodyChange() {
+	//TODO: @lam add more (crossshard bitmap, and any field that need recalculated when body change)
+	block.Body.Transactions = append(block.Body.Transactions, block.Body.Transactions[0])
+	totalTxsFee := make(map[common.Hash]uint64)
+	for _, tx := range block.Body.Transactions {
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		txType := tx.GetType()
+		if txType == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		}
+	}
+	block.Header.TotalTxsFee = totalTxsFee
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
+	merkleRoot := &common.Hash{}
+	if len(merkleRoots) > 0 {
+		merkleRoot = merkleRoots[len(merkleRoots)-1]
+	}
+	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
+	block.Header.TxRoot = *merkleRoot
+	block.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
+	block.Header.CrossTransactionRoot = *crossTransactionRoot
+}
