@@ -246,7 +246,12 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 				if metaType == metadata.PortalLiquidateCustodianMetaV3 {
 					liquidatedBigIntAmounts := make(map[string]*big.Int)
 					for tokenLiquidateId, tokenAmount := range liquidatedAmounts {
-						liquidatedBigIntAmounts[tokenLiquidateId] = new(big.Int).SetUint64(tokenAmount)
+						amountBN := big.NewInt(0).SetUint64(tokenAmount)
+						if bytes.Equal(common.FromHex(tokenLiquidateId), common.FromHex(common.EthAddrStr)) {
+							// Convert Gwei to Wei for Ether
+							amountBN = amountBN.Mul(amountBN, big.NewInt(1000000000))
+						}
+						liquidatedBigIntAmounts[tokenLiquidateId] = amountBN
 					}
 					confirmInst = buildConfirmWithdrawCollateralInstV3(
 						metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3,
