@@ -201,9 +201,6 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
-	if !params.HasPrivacy {
-		ringSize = 1
-	}
 
 	// Generate Ring
 	piBig,piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))

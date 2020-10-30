@@ -723,8 +723,14 @@ func testTxTokenV2JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *
 			}
 			errAlreadyInChain := txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 			if !allowModifiedTXsToPass && errAlreadyInChain==nil{
+				// make sure it's different
+				s1 := formatTx(tx)
+				s2 := formatTx(txSpecific)
+				if bytes.Equal([]byte(s1), []byte(s2)){
+					continue
+				}
 				// the forged TX somehow is valid after all 3 checks, we caught a bug
-				fmt.Printf("Original TX : %s\nChanged TX (still valid) : %s\n", formatTx(tx), formatTx(txSpecific))
+				fmt.Printf("Original TX : %s\nChanged TX (still valid) : %s\n", s1, s2)
 				panic("END TEST : a mal-TXTOKEN was accepted")
 			}
 		}
@@ -809,7 +815,7 @@ func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *tes
 	var result []tx_generic.TransactionToken
 
 	s := string(jsonBytesAgain)
-		theRunes := []rune(s)
+	theRunes := []rune(s)
 	for i:=0; i<maxJsonChanges; i++{
 		corruptedIndex := RandInt() % len(theRunes)
 		for j:=maxTries;j>0;j--{
