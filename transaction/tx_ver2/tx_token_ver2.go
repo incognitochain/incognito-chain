@@ -38,12 +38,12 @@ func (td *TxTokenDataVersion2) Hash() (*common.Hash, error){
 	td.Sig = []byte{}
 	td.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(td)
+	td.Sig = tempSig
+	td.SigPubKey = tempPk
 	if err!=nil{
 		return nil, err
 	}
 	hash := common.HashH(inBytes)
-	td.Sig = tempSig
-	td.SigPubKey = tempPk
 	return &hash, nil
 }
 
