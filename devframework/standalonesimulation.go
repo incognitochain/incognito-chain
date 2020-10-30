@@ -30,7 +30,6 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -170,13 +169,13 @@ func (sim *SimulationEngine) init() {
 		panic(err)
 	}
 
-	listenFunc := net.Listen
-	listener, err := listenFunc("tcp", "0.0.0.0:8000")
-	if err != nil {
-		panic(err)
-	}
+	//listenFunc := net.Listen
+	//listener, err := listenFunc("tcp", "0.0.0.0:8000")
+	//if err != nil {
+	//	panic(err)
+	//}
 	rpcConfig := rpcserver.RpcServerConfig{
-		HttpListenters: []net.Listener{listener},
+		HttpListenters: []net.Listener{nil},
 		RPCMaxClients:  1,
 		DisableAuth:    true,
 		ChainParams:    activeNetParams,
@@ -276,7 +275,7 @@ func (sim *SimulationEngine) init() {
 		}
 	}()
 	go blockgen.Start(cQuit)
-	go rpcServer.Start()
+	//go rpcServer.Start()
 	sync.Syncker.Init(&syncker.SynckerManagerConfig{Blockchain: &bc})
 }
 
@@ -508,51 +507,34 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 
 func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
 	tokenList := make(map[string]uint64)
-	requestBody, err := json.Marshal(map[string]interface{}{
-		"jsonrpc": "1.0",
-		"method":  "getbalancebyprivatekey",
-		"params":  []interface{}{acc.PrivateKey},
-		"id":      1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	body, err := sendRequest(requestBody)
-	if err != nil {
-		return nil, err
-	}
-	txResp := struct {
-		Result uint64
-	}{}
-	err = json.Unmarshal(body, &txResp)
-	if err != nil {
-		return nil, err
-	}
-	tokenList["PRV"] = txResp.Result
+	prv, _ := sim.rpc_getbalancebyprivatekey(acc.PrivateKey)
+	tokenList["PRV"] = prv
 
-	requestBody2, err := json.Marshal(map[string]interface{}{
-		"jsonrpc": "1.0",
-		"method":  "getlistprivacycustomtokenbalance",
-		"params":  []interface{}{acc.PrivateKey},
-		"id":      1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	body2, err := sendRequest(requestBody2)
-	if err != nil {
-		return nil, err
-	}
-	txResp2 := struct {
-		Result jsonresult.ListCustomTokenBalance
-	}{}
-	err = json.Unmarshal(body2, &txResp2)
-	if err != nil {
-		return nil, err
-	}
-	for _, token := range txResp2.Result.ListCustomTokenBalance {
-		tokenList[token.Name] = token.Amount
-	}
+	//requestBody2, err := json.Marshal(map[string]interface{}{
+	//	"jsonrpc": "1.0",
+	//	"method":  "getlistprivacycustomtokenbalance",
+	//	"params":  []interface{}{acc.PrivateKey},
+	//	"id":      1,
+	//})
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//body2, err := sendRequest(requestBody2)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//txResp2 := struct {
+	//	Result jsonresult.ListCustomTokenBalance
+	//}{}
+	//err = json.Unmarshal(body2, &txResp2)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//for _, token := range txResp2.Result.ListCustomTokenBalance {
+	//	tokenList[token.Name] = token.Amount
+	//}
 	return tokenList, nil
 }
 

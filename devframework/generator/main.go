@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -21,7 +22,7 @@ type API struct {
 
 const APITEMPLATE = `func (sim *SimulationEngine) rpc_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
 	httpServer := sim.rpcServer.HttpServer
-	c := rpcserver.HttpHandler["%API_NAME%"]
+	c := rpcserver.%HANDLER%["%API_NAME%"]
 	resI, rpcERR := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
 	if rpcERR != nil {
 		%API_ERR%
@@ -65,10 +66,14 @@ import (
 			apiResultType = strings.Trim(res[0][3], " ")
 		}
 
-		//fmt.Println(apiName)
-		//fmt.Println(strings.Join(apiParams, ","))
-		//fmt.Println(apiResultType)
-
+		rpchandler := "HttpHandler"
+		if _, ok := rpcserver.HttpHandler[apiName]; !ok {
+			if _, ok := rpcserver.LimitedHttpHandler[apiName]; !ok {
+				panic("no method name in rpc request")
+			} else {
+				rpchandler = "LimitedHttpHandler"
+			}
+		}
 		//build return
 		retstr := "_ = resI \n return nil"
 		resstr := "error"
@@ -85,6 +90,8 @@ import (
 		fgen = strings.Replace(fgen, "%API_PARAM_REQ%", strings.Join(apiParams, ","), -1)
 		fgen = strings.Replace(fgen, "%API_ERR%", errstr, -1)
 		fgen = strings.Replace(fgen, "%API_RETURN%", retstr, -1)
+		fgen = strings.Replace(fgen, "%HANDLER%", rpchandler, -1)
+
 		apiF.WriteString("\n" + fgen)
 
 	}
