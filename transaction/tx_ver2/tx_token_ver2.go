@@ -255,12 +255,8 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
 
-			temp.Sig, _, err = tx_generic.SignNoPrivacy(params.SenderKey, temp.Hash()[:])
-			if err != nil {
-				utils.Logger.Log.Error(errors.New("can't signOnMessage this tx"))
-				return utils.NewTransactionErr(utils.SignTxError, err)
-			}
-			temp.SigPubKey = params.TokenParams.Receiver[0].PaymentAddress.Pk
+			temp.Sig = []byte{}
+			temp.SigPubKey = []byte{}
 
 			var plainTokenID *common.Hash
 			if params.TokenParams.Mintable {
@@ -480,20 +476,6 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 		utils.Logger.Log.Errorf("Init customPrivacyToken cannot set outputCoins")
 		return err
 	}
-	temp := new(Tx)
-	// temp.Version = utils.TxVersion2Number
-	// temp.Type = common.TxNormalType
-	temp.Proof = proof
-	// temp.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes)-1]
-	// signOnMessage Tx
-	//temp.sigPrivKey = *privKey
-	// if temp.Sig, temp.SigPubKey, err = tx_generic.SignNoPrivacy(privKey, temp.Hash()[:]); err != nil {
-	// 	utils.Logger.Log.Error(errors.New("can't signOnMessage this tx"))
-	// 	return utils.NewTransactionErr(utils.SignTxError, err)
-	// }
-	temp.Sig = []byte{}
-	temp.SigPubKey = otaCoin.GetPublicKey().ToBytesS()
-	txToken.SetTxNormal(temp)
 
 	// Init tx fee params
 	tx := new(Tx)
@@ -502,6 +484,8 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	}
 	tx.SetType(common.TxCustomTokenPrivacyType)
 	tx.SetPrivateKey(*txPrivacyParams.SenderSK)
+	temp := makeTxToken(tx, []byte{}, []byte{}, proof)
+	txToken.SetTxNormal(temp)
 
 	hashedTokenMessage, err := txToken.TokenData.Hash()
 	if err!=nil{

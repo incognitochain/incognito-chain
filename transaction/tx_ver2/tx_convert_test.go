@@ -657,7 +657,7 @@ func TestInitializeTxTokenConversion(t *testing.T) {
 		assert.Equal(t, true, statedb.PrivacyTokenIDExisted(testDB, *tokenID))
 
 		fmt.Printf("Test #%d: Convert token %d\n", i, randomTokenIndex)
-		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 100), common.RandIntInterval(1, 10), common.RandIntInterval(1, 3)
+		numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(1, 80), common.RandIntInterval(1, 10), common.RandIntInterval(1, 3)
 		mySupposedlyPersonalKey, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
 		assert.Equal(t, nil, err, "createTokenConversionParams returns an error: %v", err)
 
