@@ -303,17 +303,6 @@ func ValidateTxParams(params *TxPrivacyInitParams) error {
 	if len(params.PaymentInfo) > 254 {
 		return utils.NewTransactionErr(utils.PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.PaymentInfo)))
 	}
-	limitFee := uint64(0)
-	ver, err := GetTxVersionFromCoins(params.InputCoins)
-	if err!=nil{
-		return err
-	}
-	estimateTxSizeParam := NewEstimateTxSizeParam(int(ver), len(params.InputCoins), len(params.PaymentInfo),
-		params.HasPrivacy, nil, nil, limitFee)
-	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
-	}
-
 	if params.TokenID == nil {
 		// using default PRV
 		params.TokenID = &common.Hash{}

@@ -192,6 +192,10 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	if err := tx.prove(params); err != nil {
 		return err
 	}
+	txSize := tx.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 
 	return nil
 }

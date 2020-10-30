@@ -268,7 +268,6 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.ShardID))
-				utils.Logger.Log.Debug("New Privacy Token %+v ", newHashInitToken)
 				existed := statedb.PrivacyTokenIDExisted(params.TransactionStateDB, newHashInitToken)
 				if existed {
 					utils.Logger.Log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
@@ -442,7 +441,15 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	err = txToken.SetTxBase(tx)
 	jsb, _ = json.Marshal(txToken)
 	utils.Logger.Log.Warnf("INITTX complete ! The resulting transaction is : %s", string(jsb))
-	return err
+	if err!=nil{
+		return err
+	}
+	// check tx size
+	txSize := txToken.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
+	return nil
 }
 
 func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata, coinID *common.Hash, coinName string) error {
