@@ -16,6 +16,6 @@ cp ../keylist-mainnet-v2.json ./keylist-v2.json
 cp ../sample-config.conf .
 
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
-docker buildx build -f Dockerfile-mainnet --platform linux/arm64,linux/amd64 --build-arg commit=$commit --push -t incognitochain/incognito-mainnet-arm:${tag} .
+docker buildx build -f Dockerfile-mainnet --platform linux/arm64,linux/amd64,linux/arm/v7 --build-arg commit=$commit --push -t incognitochain/incognito-mainnet-arm:${tag} .
 #docker push incognitochain/incognito-mainnet-arm:${tag} && echo "Commit: $commit"
 #docker rmi -f $(docker images --filter "dangling=true" -q)
