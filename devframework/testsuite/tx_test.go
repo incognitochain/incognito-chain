@@ -66,7 +66,7 @@ func Test_SendTX(t *testing.T) {
 				fmt.Println(bl1)
 				bl2, _ := sim.GetBalance(acc1)
 				fmt.Println(bl2)
-				bl3, _ := sim.GetBalance(acc2)
+				bl3, _ := sim.GetBalance(staker2)
 				fmt.Println(bl3)
 				fmt.Printf("%+v", block.(*blockchain.ShardBlock).Body)
 
@@ -97,6 +97,141 @@ func Test_SendTX(t *testing.T) {
 
 }
 
-func Test_StakeTx(t *testing.T) {
+func Test_StakeFlow1(t *testing.T) {
+	F.DisableLog(true)
+	sim := F.NewStandaloneSimulation("sim2", F.Config{
+		ShardNumber: 2,
+	})
+	sim.GenerateBlock().NextRound()
+	staker1 := sim.NewAccountFromShard(1)
+	staker2 := sim.NewAccountFromShard(0)
 
+	stake1 := F.StakingTxParam{
+		SenderPrk:   sim.IcoAccount.PrivateKey,
+		MinerPrk:    staker1.PrivateKey,
+		RewardAddr:  staker1.PaymentAddress,
+		StakeShard:  true,
+		AutoRestake: true,
+	}
+	stake2 := F.StakingTxParam{
+		SenderPrk:   sim.IcoAccount.PrivateKey,
+		MinerPrk:    staker2.PrivateKey,
+		RewardAddr:  staker2.PaymentAddress,
+		StakeShard:  true,
+		AutoRestake: true,
+	}
+	_, err := sim.CreateTxStaking(stake1)
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 120; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+	_, err = sim.CreateTxStaking(stake2)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("----------------------------------")
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).CandidateShardWaitingForCurrentRandom)
+	// fmt.Println()
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).CandidateShardWaitingForNextRandom)
+	// fmt.Println()
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardPendingValidator)
+	// fmt.Println()
+	fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+	fmt.Println()
+	fmt.Println(len(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardCommittee[0]))
+	fmt.Println()
+	fmt.Println(len(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardCommittee[1]))
+	fmt.Println("----------------------------------")
+
+	acc3 := sim.NewAccountFromShard(1)
+	acc4 := sim.NewAccountFromShard(0)
+	_, err = sim.CreateTransaction(sim.IcoAccount, acc3, 1000000, acc4, 3000000, staker1, 10000)
+	if err != nil {
+		panic(err)
+	}
+	sim.GenerateBlock().NextRound()
+	sim.GenerateBlock().NextRound()
+
+	bl1, _ := sim.GetBalance(staker1)
+	fmt.Println("staker1 bl:", bl1)
+	_, err = sim.CreateTransaction(acc4, acc3, 100000, sim.IcoAccount, 100000)
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 100; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	if result, err := sim.GetRewardAmount(staker1.PaymentAddress); err != nil {
+		panic(err)
+	} else {
+		fmt.Println("staker1", result)
+	}
+
+	unstake1 := F.StopStakingParam{
+		SenderPrk: sim.IcoAccount.PrivateKey,
+		MinerPrk:  staker1.PrivateKey,
+	}
+
+	if result, err := sim.CreateTxStopAutoStake(unstake1); err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result)
+	}
+	for i := 0; i < 100; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+	_, err = sim.WithdrawReward(staker1.PrivateKey, staker1.PaymentAddress)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("----------------------------------")
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).CandidateShardWaitingForCurrentRandom)
+	// fmt.Println()
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).CandidateShardWaitingForNextRandom)
+	// fmt.Println()
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardPendingValidator)
+	// fmt.Println()
+	fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+	fmt.Println()
+	fmt.Println(len(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardCommittee[0]))
+	fmt.Println()
+	fmt.Println(len(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardCommittee[1]))
+
+	fmt.Println("----------------------------------")
+	for i := 0; i < 100; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	if result, err := sim.GetRewardAmount(staker1.PaymentAddress); err != nil {
+		panic(err)
+	} else {
+		fmt.Println("staker1", result)
+	}
+	if result, err := sim.GetRewardAmount(staker2.PaymentAddress); err != nil {
+		panic(err)
+	} else {
+		fmt.Println("staker2", result)
+	}
+
+	bl1, _ = sim.GetBalance(staker1)
+	fmt.Println("staker1 bl:", bl1)
+
+	fmt.Println("----------------------------------")
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).CandidateShardWaitingForCurrentRandom)
+	// fmt.Println()
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).CandidateShardWaitingForNextRandom)
+	// fmt.Println()
+	// fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardPendingValidator)
+	// fmt.Println()
+	fmt.Println(sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+	fmt.Println()
+	fmt.Println(len(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardCommittee[0]))
+	fmt.Println()
+	fmt.Println(len(sim.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).ShardCommittee[1]))
+	fmt.Println("----------------------------------")
+
+	return
 }

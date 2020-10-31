@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -43,7 +44,7 @@ func (sim *SimulationEngine) CreateTxStaking(stakeMeta StakingTxParam) (*jsonres
 		if err != nil {
 			return nil, err
 		}
-		stakeMeta.RewardAddr = base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.ZeroByte)
+		stakeMeta.RewardAddr = wl.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
 
 	if stakeMeta.MinerPrk == "" {
@@ -55,12 +56,19 @@ func (sim *SimulationEngine) CreateTxStaking(stakeMeta StakingTxParam) (*jsonres
 	}
 	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-	minerPayment := base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.ZeroByte)
+	minerPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	candidateWallet, err := wallet.Base58CheckDeserialize(minerPayment)
+	if err != nil || candidateWallet == nil {
+		fmt.Println(stakeMeta.MinerPrk, wl.KeySet.PaymentAddress, minerPayment)
+		fmt.Println(err, candidateWallet)
+		panic(0)
+	}
 
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendstakingtransaction",
-		"params": []interface{}{stakeMeta.SenderPrk, map[string]int{"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": stakeAmount}, -1, 0, map[string]interface{}{
+		"params": []interface{}{stakeMeta.SenderPrk, map[string]int{"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": stakeAmount}, 1, 0, map[string]interface{}{
 			"StakingType":                  stakingType,
 			"CandidatePaymentAddress":      minerPayment,
 			"PrivateSeed":                  privateSeed,
@@ -86,7 +94,7 @@ func (sim *SimulationEngine) CreateTxStaking(stakeMeta StakingTxParam) (*jsonres
 	return &txResp.Result, nil
 }
 
-func (sim *SimulationEngine) CreateTxUnstake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
+func (sim *SimulationEngine) CreateTxStopAutoStake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
 
 	if stopStakeMeta.MinerPrk == "" {
 		stopStakeMeta.MinerPrk = stopStakeMeta.SenderPrk
@@ -97,12 +105,12 @@ func (sim *SimulationEngine) CreateTxUnstake(stopStakeMeta StopStakingParam) (*j
 	}
 	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-	minerPayment := base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.ZeroByte)
+	minerPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendstopautostakingtransaction",
-		"params": []interface{}{stopStakeMeta.SenderPrk, map[string]int{"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 0}, -1, 0, map[string]interface{}{
+		"params": []interface{}{stopStakeMeta.SenderPrk, map[string]int{"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 0}, 1, 0, map[string]interface{}{
 			"StopAutoStakingType":     127,
 			"CandidatePaymentAddress": minerPayment,
 			"PrivateSeed":             privateSeed,
@@ -126,11 +134,11 @@ func (sim *SimulationEngine) CreateTxUnstake(stopStakeMeta StopStakingParam) (*j
 	return &txResp.Result, nil
 }
 
-func (sim *SimulationEngine) GetValidatorReward(paymentAdrr string) (map[string]int, error) {
+func (sim *SimulationEngine) GetRewardAmount(paymentAddress string) (map[string]int, error) {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getrewardamount",
-		"params":  []interface{}{paymentAdrr},
+		"params":  []interface{}{paymentAddress},
 		"id":      1,
 	})
 	if err != nil {
@@ -147,38 +155,35 @@ func (sim *SimulationEngine) GetValidatorReward(paymentAdrr string) (map[string]
 	if err != nil {
 		return nil, err
 	}
-	reward := make(map[string]int)
+	result := make(map[string]int)
 	for token, amount := range txResp.Result {
-		reward[token] = int(amount.(float64))
+		result[token] = int(amount.(float64))
 	}
-	return reward, nil
+	return result, nil
 }
 
-func (sim *SimulationEngine) WithdrawReward(privateKey string, paymentAdrr string) error {
+func (sim *SimulationEngine) WithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "withdrawreward",
 		"params": []interface{}{privateKey, 0, 0, 0, map[string]interface{}{
-			"PaymentAddress": paymentAdrr,
-			"TokenID":        "0000000000000000000000000000000000000000000000000000000000000004",
-			"Version":        0,
+			"PaymentAddress": paymentAddress, "TokenID": "0000000000000000000000000000000000000000000000000000000000000004", "Version": 0,
 		}},
 		"id": 1,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	body, err := sendRequest(requestBody)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	txResp := struct {
-		Result map[string]interface{}
+		Result jsonresult.CreateTransactionResult
 	}{}
 	err = json.Unmarshal(body, &txResp)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return nil
+	return &txResp.Result, nil
 }

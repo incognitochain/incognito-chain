@@ -120,7 +120,7 @@ func (sim *SimulationEngine) init() {
 	blockchain.SetupParam()
 	activeNetParams := &blockchain.ChainTest2Param
 	activeNetParams.ActiveShards = sim.config.ShardNumber
-
+	activeNetParams.MaxShardCommitteeSize = 5
 	for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
 		acc := sim.NewAccountFromShard(-1)
 		sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
@@ -182,6 +182,7 @@ func (sim *SimulationEngine) init() {
 		BlockChain:     &bc,
 		Blockgen:       blockgen,
 		TxMemPool:      &txpool,
+		Server:         &server,
 	}
 	rpcServer := &rpcserver.RpcServer{}
 
@@ -566,7 +567,7 @@ func createICOtx(privateKeys []string) []string {
 	}
 	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
 	for _, privateKey := range privateKeys {
-		txs := initSalryTx("1000000000000000", privateKey, stateDB)
+		txs := initSalryTx("10000000000000000000", privateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
 	return transactions
@@ -592,4 +593,8 @@ func initSalryTx(amount string, privateKey string, stateDB *statedb.StateDB) []s
 		initTxs = append(initTxs, string(initTx))
 	}
 	return initTxs
+}
+
+func DisableLog(disable bool) {
+	disableStdoutLog = disable
 }
