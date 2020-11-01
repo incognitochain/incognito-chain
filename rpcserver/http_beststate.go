@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -205,5 +208,14 @@ func (httpServer *HttpServer) handleGetShardBestStateDetail(params interface{}, 
 	}
 
 	result := jsonresult.NewGetShardBestStateDetail(shardBestState)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetTotalStaker(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	total, err := httpServer.config.BlockChain.GetTotalStaker()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetTotalStakerError, err)
+	}
+	result := jsonresult.NewGetTotalStaker(total)
 	return result, nil
 }

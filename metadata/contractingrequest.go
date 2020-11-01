@@ -92,6 +92,7 @@ func (cReq ContractingRequest) Hash() *common.Hash {
 	record := cReq.MetadataBase.Hash().String()
 	record += cReq.BurnerAddress.String()
 	record += cReq.TokenID.String()
+	// TODO: @hung change to record += fmt.Sprint(cReq.BurnedAmount)
 	record += string(cReq.BurnedAmount)
 
 	// final hash

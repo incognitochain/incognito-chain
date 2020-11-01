@@ -114,7 +114,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	//get view that block link to
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
-		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view %v", beaconBlock.GetHeight(), preHash))
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
+		defer cancel()
+		blockchain.config.Syncker.SyncMissingBeaconBlock(ctx, "", preHash)
+		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
 	}
 	curView := preView.(*BeaconBestState)
 
@@ -395,12 +398,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 
 	keys := []int{}
-	for shardID, shardBlocks := range allShardBlocks {
-		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
-		for _, shardBlock := range shardBlocks {
-			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
-		}
-		Logger.log.Info(strs)
+	for shardID, _ := range allShardBlocks {
 		keys = append(keys, int(shardID))
 	}
 
@@ -446,6 +444,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		} else {
 			return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Expect to get more than %+v Shard Block but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
 		}
+
 	}
 	// build stateful instructions
 	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
@@ -874,6 +873,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
+	}
+	// Save result of BurningConfirm instruction to get proof later
+	metas := []string{ // Burning v2: sig on beacon only
+		strconv.Itoa(metadata.BurningConfirmMetaV2),
+		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
+	}
+	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
+		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
 
 	// execute, store Portal Instruction

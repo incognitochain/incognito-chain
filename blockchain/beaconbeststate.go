@@ -754,7 +754,16 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	return beaconCommitteeEngine
 }
 
-//GetStakerInfo : Return staker info from statedb
-func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
-	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
+func (bc *BlockChain) GetTotalStaker() (int, error) {
+	// var beaconConsensusRootHash common.Hash
+	bcBestState := bc.GetBeaconBestState()
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bcBestState, bcBestState.GetHeight())
+	if err != nil {
+		return 0, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", bcBestState.GetHeight(), err)
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, fmt.Errorf("init beacon consensus statedb return error", err)
+	}
+	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }

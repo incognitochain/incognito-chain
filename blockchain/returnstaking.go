@@ -84,7 +84,7 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	mReturnStakingInfoGot := map[common.Hash]returnStakingInfo{}
 	returnStakingTxs := map[common.Hash]struct{}{}
 	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.ReturnStakingMeta {
+		if tx.GetType() == common.TxReturnStakingType {
 			txHash := tx.Hash()
 			returnMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
 			if !ok {

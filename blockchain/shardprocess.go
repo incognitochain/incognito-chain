@@ -142,6 +142,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	//get view that block link to
 	preView := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
 	if preView == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
+		defer cancel()
+		blockchain.config.Syncker.SyncMissingShardBlock(ctx, "", shardID, preHash)
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
 	curView := preView.(*ShardBestState)
@@ -1023,7 +1026,11 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later
-	err := blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock)
+	metas := []string{ // Burning v1: sig on both beacon and bridge
+		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
+	}
+	err := blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock.Body.Instructions, shardBlock.Header.Height, metas)
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}

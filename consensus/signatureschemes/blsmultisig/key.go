@@ -34,8 +34,6 @@ func PKGen(sk *big.Int) *bn256.G2 {
 	return pk
 }
 
-var memCache *memoryCache
-
 // AKGen take a seed and return BLS secret key
 func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 	// cal akByte
@@ -47,31 +45,13 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 	// cal akBInt
 	akBInt := B2I(akByte)
 
-	// cache pkPn
-	if memCache == nil {
-		memCache = New()
-	}
-	cachedResult, err := memCache.get(akByte)
-	if err == nil {
-		return &cachedResult, akBInt
-	} else {
-		var pkPn *bn256.G2
-		cachedPkPn, err := memCache.get(idxPKByte)
-		if err == nil {
-			pkPn = &cachedPkPn
-		} else {
-			// cal pkPn
-			pkPn, _ = DecmprG2(idxPKByte)
-			memCache.put(idxPKByte, *pkPn)
-		}
+	var pkPn *bn256.G2
+	pkPn, _ = DecmprG2(idxPKByte)
 
-		result := new(bn256.G2)
-		result.ScalarMult(pkPn, akBInt)
+	result := new(bn256.G2)
+	result.ScalarMult(pkPn, akBInt)
 
-		// cal result
-		memCache.put(akByte, *result)
-		return result, akBInt
-	}
+	return result, akBInt
 }
 
 // ListAKGen take a seed and return BLS secret key

@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
@@ -358,7 +359,7 @@ func buildProofResult(
 	beaconHeight string,
 	bridgeHeight string,
 ) jsonresult.GetInstructionProof {
-	return jsonresult.GetInstructionProof{
+	r := jsonresult.GetInstructionProof{
 		Instruction:  decodedInst,
 		BeaconHeight: beaconHeight,
 		BridgeHeight: bridgeHeight,
@@ -369,12 +370,14 @@ func buildProofResult(
 		BeaconBlkData:        beaconInstProof.blkData,
 		BeaconSigs:           beaconInstProof.signerSigs,
 		BeaconSigIdxs:        beaconInstProof.sigIdxs,
-
-		BridgeInstPath:       bridgeInstProof.instPath,
-		BridgeInstPathIsLeft: bridgeInstProof.instPathIsLeft,
-		BridgeInstRoot:       bridgeInstProof.instRoot,
-		BridgeBlkData:        bridgeInstProof.blkData,
-		BridgeSigs:           bridgeInstProof.signerSigs,
-		BridgeSigIdxs:        bridgeInstProof.sigIdxs,
 	}
+	if bridgeInstProof != nil {
+		r.BridgeInstPath = bridgeInstProof.instPath
+		r.BridgeInstPathIsLeft = bridgeInstProof.instPathIsLeft
+		r.BridgeInstRoot = bridgeInstProof.instRoot
+		r.BridgeBlkData = bridgeInstProof.blkData
+		r.BridgeSigs = bridgeInstProof.signerSigs
+		r.BridgeSigIdxs = bridgeInstProof.sigIdxs
+	}
+	return r
 }

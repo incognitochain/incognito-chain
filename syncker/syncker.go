@@ -8,14 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -555,7 +552,7 @@ func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []type
 			if syncProcess.shardPool != nil {
 				res := []types.BlockPoolInterface{}
 				for fromSID, blksPool := range synckerManager.crossShardPool {
-					for _, blk := range blksPool.blkPoolByHash {
+					for _, blk := range blksPool.GetBlockList() {
 						res = append(res, &TmpBlock{
 							Height:  blk.GetHeight(),
 							BlkHash: blk.Hash(),

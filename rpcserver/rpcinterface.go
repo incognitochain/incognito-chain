@@ -69,7 +69,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
+	gettransactionhashbyreceiverv2:            (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
+	gettransactionbyreceiverv2:                (*HttpServer).handleGetTransactionByReceiverV2,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
@@ -244,6 +246,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
+
+	getTotalStaker: (*HttpServer).handleGetTotalStaker,
 }
 
 // Commands that are available to a limited user

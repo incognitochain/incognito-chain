@@ -319,31 +319,3 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransa
 	}
 	return newHash.IsEqual(res)
 }
-
-//updateCommiteesWithAddedAndRemovedListValidator :
-func updateCommiteesWithAddedAndRemovedListValidator(
-	source,
-	addedCommittees,
-	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
-	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
-	m := make(map[string]bool)
-	for _, v := range removedCommittees {
-		str, err := v.ToBase58()
-		if err != nil {
-			return nil, err
-		}
-		m[str] = true
-	}
-	for _, v := range source {
-		str, err := v.ToBase58()
-		if err != nil {
-			return nil, err
-		}
-		if m[str] == false {
-			newShardPendingValidator = append(newShardPendingValidator, v)
-		}
-	}
-	newShardPendingValidator = append(newShardPendingValidator, addedCommittees...)
-
-	return newShardPendingValidator, nil
-}

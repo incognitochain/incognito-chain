@@ -12,9 +12,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
-	"github.com/incognitochain/incognito-chain/multiview"
-
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -22,12 +19,12 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
-
 	"github.com/pkg/errors"
 )
 
@@ -686,9 +683,17 @@ func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight ui
 	if beaconHeight == 0 {
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
-	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointFixRandShardCM {
+	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP {
 		return privacy.FixedRandomnessShardID
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+
+	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
 }

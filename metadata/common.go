@@ -45,6 +45,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &BeaconBlockSalaryRes{}
 	case BurningRequestMeta:
 		md = &BurningRequest{}
+	case BurningRequestMetaV2:
+		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
@@ -129,6 +131,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositResponse{}
 	case BurningForDepositToSCRequestMeta:
 		md = &BurningRequest{}
+	case BurningForDepositToSCRequestMetaV2:
+		md = &BurningRequest{}
 	case PortalPortingResponseMeta:
 		md = &PortalFeeRefundResponse{}
 	case PortalReqMatchingRedeemMeta:
@@ -154,6 +158,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BridgeSwapConfirmMeta),
 	strconv.Itoa(BurningConfirmMeta),
 	strconv.Itoa(BurningConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningConfirmMetaV2),
+	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {

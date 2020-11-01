@@ -126,6 +126,31 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	return result, nil
 }
 
+// GetTransactionHashByReceiverV2 - return list tx id which a receiver receives from any senders in paging fashion
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
+	keySet *incognitokey.KeySet,
+	skip, limit uint,
+) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		var err error
+		var resultTemp map[byte][]common.Hash
+		resultTemp, skip, limit, err = rawdbv2.GetTxByPublicKeyV2(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk, skip, limit)
+		if err == nil {
+			if resultTemp == nil || len(resultTemp) == 0 {
+				continue
+			}
+			result[shardID] = resultTemp[shardID]
+		}
+		if limit == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *types.ShardBlock, shardView *ShardBestState) error {
 	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
 	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {

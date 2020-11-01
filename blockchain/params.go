@@ -67,17 +67,18 @@ type Params struct {
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
 	BTCDataFolderName                string
-	BNBFullNodeProtocol              string
-	BNBFullNodeHost                  string
-	BNBFullNodePort                  string
-	PortalParams                     map[uint64]PortalParams
-	PortalFeederAddress              string
-	EpochBreakPointSwapNewKey        []uint64
-	IsBackup                         bool
-	PreloadAddress                   string
-	ReplaceStakingTxHeight           uint64
+	BNBFullNodeProtocol       string
+	BNBFullNodeHost           string
+	BNBFullNodePort           string
+	PortalParams              map[uint64]PortalParams
+	PortalFeederAddress       string
+	EpochBreakPointSwapNewKey []uint64
+	IsBackup                  bool
+	PreloadAddress            string
+	ReplaceStakingTxHeight    uint64
+	ETHRemoveBridgeSigEpoch   uint64
+	BCHeightBreakPointNewZKP  uint64
 	UpgradeCommitteeEngineV2Height   uint64
-	BCHeightBreakPointFixRandShardCM uint64
 }
 
 type GenesisParams struct {
@@ -181,12 +182,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:   21920,
 		UpgradeCommitteeEngineV2Height:   1,
-		BCHeightBreakPointFixRandShardCM: 2070000,
 	}
 	// END TESTNET
 
@@ -265,11 +267,12 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 120000,
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:   2085,
 	}
 	// END TESTNET-2
 
@@ -346,12 +349,14 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           559380,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
+
+		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  737450,
+		ETHRemoveBridgeSigEpoch:   1973,
 		UpgradeCommitteeEngineV2Height:   1,
-		BCHeightBreakPointFixRandShardCM: 644000,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

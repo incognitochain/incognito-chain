@@ -93,7 +93,8 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 				}
 
 				lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
-				if _, ok := s.crossShardPool.blkPoolByHash[nextCrossShardInfo.NextCrossShardHash]; ok {
+				h, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.NextCrossShardHash)
+				if s.crossShardPool.GetBlock(*h) != nil {
 					continue
 				}
 				reqCnt++

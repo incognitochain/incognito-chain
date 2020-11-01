@@ -13,28 +13,24 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                            = 1
-	RANDOM_NUMBER                      = 3
-	DefaultMaxBlkReqPerPeer            = 900
-	DefaultMaxBlkReqPerTime            = 900
-	MinCommitteeSize                   = 3                // min size to run bft
-	DefaultBroadcastStateTime          = 6 * time.Second  // in second
-	DefaultStateUpdateTime             = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
-	DefaultCacheCleanupTime            = 40 * time.Second // in second
-	WorkerNumber                       = 5
-	MAX_S2B_BLOCK                      = 5
-	MAX_BEACON_BLOCK                   = 5
-	LowerBoundPercentForIncDAO         = 3
-	UpperBoundPercentForIncDAO         = 10
-	GetValidBlock                      = 20
-	TestRandom                         = true
+	VERSION                       = 1
+	RANDOM_NUMBER                 = 3
+	SHARD_BLOCK_VERSION           = 1
+	DefaultMaxBlkReqPerPeer       = 900
+	MinCommitteeSize              = 3 // min size to run bft
+	WorkerNumber                  = 5
+	MAX_S2B_BLOCK                 = 30
+	MAX_BEACON_BLOCK              = 5
+	LowerBoundPercentForIncDAO    = 3
+	UpperBoundPercentForIncDAO    = 10
+	TestRandom                    = true
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
 	BEACON_ID                          = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize               = 30
 	SpareTime                          = 1000 // in mili-second
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
 // burning addresses
@@ -73,7 +69,9 @@ const (
 	MainnetBasicReward = 1386666000 //1.386666 PRV
 	//MainETHContractAddressStr = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7" // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
 	//MainETHContractAddressStr               = "0x3c8ec94213f09A1575f773470830124dfb40042e"                                                              // v3-main - mainnet
-	MainETHContractAddressStr               = "0x6CC3873C3ca91cf5500DaD8B1A2c620B4f20507c"                                                              // v4-main - mainnet
+	//MainETHContractAddressStr               = "0x6CC3873C3ca91cf5500DaD8B1A2c620B4f20507c"                                                              // v4-main - mainnet
+	//MainETHContractAddressStr               = "0xED5309daac912a52d985c317576a1b3f5020FDc9"                                                              // v5-main - mainnet
+	MainETHContractAddressStr               = "0x97875355eF55Ae35613029df8B1C8Cf8f89c9066"                                                              // v6-main - mainnet
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
@@ -130,14 +128,14 @@ const (
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetETHContractAddressStr            = "0x98cD12B85Df38c621d37cD6222E262835a7E87B9"
+	TestnetETHContractAddressStr            = "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
 	TestnetBNBChainID        = "Binance-Chain-Ganges"
 	TestnetBTCChainID        = "Bitcoin-Testnet"
-	TestnetBTCDataFolderName = "btcrelayingv8"
+	TestnetBTCDataFolderName = "btcrelayingv13"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
@@ -172,14 +170,14 @@ const (
 
 	//board and proposal parameters
 	Testnet2BasicReward                      = 400000000 //40 mili PRV
-	Testnet2ETHContractAddressStr            = "0x4A4cC6451D8B8645bDeE96e6a0967b471eC286DD"
+	Testnet2ETHContractAddressStr            = "0x7c7e371D1e25771f2242833C1A354dCE846f3ec8"
 	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
 	Testnet2BNBChainID        = "Binance-Chain-Ganges"
 	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
-	Testnet2BTCDataFolderName = "btcrelayingv9"
+	Testnet2BTCDataFolderName = "btcrelayingv11"
 
 	// BNB fullnode
 	Testnet2BNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
@@ -330,6 +328,5 @@ var (
 )
 
 const (
-	RewardBase = 1666
-	Duration   = 1000000
+	Duration = 1000000
 )
