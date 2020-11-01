@@ -188,7 +188,7 @@ func init() {
 		PreloadAddress:                 "",
 		BCHeightBreakPointNewZKP:       2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:        21920,
-		UpgradeCommitteeEngineV2Height: 1,
+		UpgradeCommitteeEngineV2Height: 1e10,
 	}
 	// END TESTNET
 
@@ -203,8 +203,8 @@ func init() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		InitialIncognito: IntegrationTestInitPRV,
-		//InitialIncognito:   TestnetInitPRV,
+		//InitialIncognito: IntegrationTestInitPRV,
+		InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTest2Param = Params{
@@ -267,12 +267,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
-		ETHRemoveBridgeSigEpoch:   2085,
+		EpochBreakPointSwapNewKey:      TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:         1,
+		IsBackup:                       false,
+		PreloadAddress:                 "",
+		BCHeightBreakPointNewZKP:       260000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:        2085,
+		UpgradeCommitteeEngineV2Height: 1e10,
 	}
 	// END TESTNET-2
 
@@ -356,7 +357,7 @@ func init() {
 		PreloadAddress:                 "",
 		BCHeightBreakPointNewZKP:       737450,
 		ETHRemoveBridgeSigEpoch:        1973,
-		UpgradeCommitteeEngineV2Height: 1,
+		UpgradeCommitteeEngineV2Height: 1e10,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
