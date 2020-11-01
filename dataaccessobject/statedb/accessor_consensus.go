@@ -594,3 +594,20 @@ func GetOneShardCommitteeEnterTime(
 func GetAllStaker(stateDB *StateDB, shardIDs []int) int {
 	return stateDB.getAllStaker(shardIDs)
 }
+
+//DeleteStakerInfo :
+func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	return deleteStakerInfo(stateDB, stakers)
+}
+
+func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	for _, staker := range stakers {
+		keyBytes, err := staker.RawBytes()
+		if err != nil {
+			return err
+		}
+		key := GetStakerInfoKey(keyBytes)
+		stateDB.MarkDeleteStateObject(StakerObjectType, key)
+	}
+	return nil
+}
