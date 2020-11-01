@@ -67,17 +67,17 @@ type Params struct {
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
 	BTCDataFolderName                string
-	BNBFullNodeProtocol       string
-	BNBFullNodeHost           string
-	BNBFullNodePort           string
-	PortalParams              map[uint64]PortalParams
-	PortalFeederAddress       string
-	EpochBreakPointSwapNewKey []uint64
-	IsBackup                  bool
-	PreloadAddress            string
-	ReplaceStakingTxHeight    uint64
-	ETHRemoveBridgeSigEpoch   uint64
-	BCHeightBreakPointNewZKP  uint64
+	BNBFullNodeProtocol              string
+	BNBFullNodeHost                  string
+	BNBFullNodePort                  string
+	PortalParams                     map[uint64]PortalParams
+	PortalFeederAddress              string
+	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
 	UpgradeCommitteeEngineV2Height   uint64
 }
 
@@ -156,9 +156,9 @@ func init() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               1,
+		ConsensusV2Epoch:               16930,
 		BeaconHeightBreakPointBurnAddr: 250000,
+		ConsensusV3Epoch:               1e10,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
 		BTCDataFolderName:              TestnetBTCDataFolderName,
@@ -182,13 +182,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
-		ETHRemoveBridgeSigEpoch:   21920,
-		UpgradeCommitteeEngineV2Height:   1,
+		EpochBreakPointSwapNewKey:      TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:         1,
+		IsBackup:                       false,
+		PreloadAddress:                 "",
+		BCHeightBreakPointNewZKP:       2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:        21920,
+		UpgradeCommitteeEngineV2Height: 1,
 	}
 	// END TESTNET
 
@@ -242,7 +242,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               1,
+		ConsensusV3Epoch:               1e10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -350,13 +350,13 @@ func init() {
 			},
 		},
 
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    559380,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  737450,
-		ETHRemoveBridgeSigEpoch:   1973,
-		UpgradeCommitteeEngineV2Height:   1,
+		EpochBreakPointSwapNewKey:      MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:         559380,
+		IsBackup:                       false,
+		PreloadAddress:                 "",
+		BCHeightBreakPointNewZKP:       737450,
+		ETHRemoveBridgeSigEpoch:        1973,
+		UpgradeCommitteeEngineV2Height: 1,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
