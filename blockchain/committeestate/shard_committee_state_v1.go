@@ -204,10 +204,10 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 	addedCommittees = append(addedCommittees, newShardCandidateStructs[int(env.ShardID())*
 		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
 
-	_, err := committeeState.processShardBlockInstruction(env, committeeChange)
-	if err != nil {
-		panic(err)
-	}
+	//_, err := committeeState.processShardBlockInstruction(env, committeeChange)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	engine.shardCommitteeStateV1.shardCommittee = append(engine.shardCommitteeStateV1.shardCommittee,
 		addedCommittees...)
