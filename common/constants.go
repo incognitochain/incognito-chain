@@ -80,7 +80,7 @@ const (
 	SyncingRole    = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole    = "waiting"
 	UnstakeRole    = "unstake" // for unstake node
-	MaxShardNumber = 2
+	MaxShardNumber = 8
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
