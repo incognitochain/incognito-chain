@@ -90,7 +90,7 @@ func GetBeaconSwapInstructionKeyListV2(genesisParams *GenesisParams, epoch uint6
 	oldCommittees := genesisParams.PreSelectBeaconNodeSerializedPubkey
 	// TODO
 
-	beaconSwapInstructionKeyListV2 := []string{SwapAction, strings.Join(newCommittees, ","), strings.Join(oldCommittees, ","), "beacon", "", "", strings.Join(newRewardReceivers, ",")}
+	beaconSwapInstructionKeyListV2 := []string{instruction.SWAP_ACTION, strings.Join(newCommittees, ","), strings.Join(oldCommittees, ","), "beacon", "", "", strings.Join(newRewardReceivers, ",")}
 	return beaconSwapInstructionKeyListV2, newCommittees
 }
 

@@ -377,7 +377,7 @@ func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
 	return generateHashFromStringArray(res)
 }
 
-func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
+func generateHashFromShardState(allShardState map[byte][]types.ShardState) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
 	for k := range allShardState {
