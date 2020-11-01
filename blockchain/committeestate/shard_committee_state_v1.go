@@ -169,7 +169,7 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 	defer engine.shardCommitteeStateV1.mu.Unlock()
 
 	committeeState := engine.shardCommitteeStateV1
-	committeeChange := NewCommitteeChange()
+	//committeeChange := NewCommitteeChange()
 
 	shardPendingValidator := []string{}
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
