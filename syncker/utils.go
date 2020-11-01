@@ -74,7 +74,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
-				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), v.Hash(), err, committeeStr)
+				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
 				return 0, err
 			}
 		}
