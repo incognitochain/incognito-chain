@@ -397,6 +397,8 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValuePad := roundUpPowTwo(numValue)
 	maxExp := privacy_util.MaxExp
 	N := numValuePad * maxExp
+	twoNumber := new(operation.Scalar).FromUint64(2)
+	twoVectorN := powerVector(twoNumber, maxExp)
 	aggParam := setAggregateParams(N)
 
 	cmsValue := proof.cmsValue
@@ -408,6 +410,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	zSquare := new(operation.Scalar).Mul(z, z)
+	zNeg := new(operation.Scalar).Sub(new(operation.Scalar).FromUint64(0), z)
 
 	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
 	xSquare := new(operation.Scalar).Mul(x, x)
@@ -433,11 +436,38 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
+
+
+
+	// verify eq (66)
+	vectorSum := make([]*operation.Scalar, N)
+	zTmp := new(operation.Scalar).Set(z)
+	for j := 0; j < numValuePad; j++ {
+		zTmp.Mul(zTmp, z)
+		for i := 0; i < maxExp; i++ {
+			vectorSum[j*maxExp+i] = new(operation.Scalar).Mul(twoVectorN[i], zTmp)
+			vectorSum[j*maxExp+i].Add(vectorSum[j*maxExp+i], new(operation.Scalar).Mul(z, yVector[j*maxExp+i]))
+		}
+	}
+	tmpHPrime := new(operation.Point).MultiScalarMult(vectorSum, HPrime)
+	tmpG := new(operation.Point).Set(aggParam.g[0])
+	for i:= 1; i < N; i++ {
+		tmpG.Add(tmpG, aggParam.g[i])
+	}
+	tmpP := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
+	tmpP.Add(tmpP, proof.a)
+	tmpP.Add(tmpP, new(operation.Point).ScalarMult(proof.s, x))
+	if !operation.IsPointEqual(tmpP, proof.innerProductProof.p) {
+		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
+		return false, errors.New("verify aggregated range proof statement 2-1 failed")
+	}
+
+	// verify eq (68)
 	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
 	innerProductArgValid := proof.innerProductProof.Verify(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if !innerProductArgValid {
 		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
-		return false, errors.New("verify aggregated range proof statement 2 failed")
+		return false, erprors.New("verify aggregated range proof statement 2 failed")
 	}
 
 	return true, nil
