@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -317,4 +318,32 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransa
 		return false
 	}
 	return newHash.IsEqual(res)
+}
+
+//updateCommiteesWithAddedAndRemovedListValidator :
+func updateCommiteesWithAddedAndRemovedListValidator(
+	source,
+	addedCommittees,
+	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
+	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
+	m := make(map[string]bool)
+	for _, v := range removedCommittees {
+		str, err := v.ToBase58()
+		if err != nil {
+			return nil, err
+		}
+		m[str] = true
+	}
+	for _, v := range source {
+		str, err := v.ToBase58()
+		if err != nil {
+			return nil, err
+		}
+		if m[str] == false {
+			newShardPendingValidator = append(newShardPendingValidator, v)
+		}
+	}
+	newShardPendingValidator = append(newShardPendingValidator, addedCommittees...)
+
+	return newShardPendingValidator, nil
 }

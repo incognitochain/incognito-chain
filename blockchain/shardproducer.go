@@ -582,7 +582,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
 		epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-		if shardID == bridgeID && committeeChanged(swapInstruction) && epoch < blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch { // Disable SwapConfirm inst after this epoch
+		if shardID == bridgeID && committeeChanged(swapOrConfirmShardSwapInstruction) && epoch < blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch { // Disable SwapConfirm inst after this epoch
 			blockHeight := view.ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
