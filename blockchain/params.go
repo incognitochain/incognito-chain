@@ -141,9 +141,32 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 }
 
 // external tokenID there is no 0x prefix
-func getSupportedPortalCollaterals() []PortalCollateral {
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsMainnet() []PortalCollateral {
+	return []PortalCollateral{
+		{"0000000000000000000000000000000000000000", 9},		// eth
+		{"dac17f958d2ee523a2206206994597c13d831ec7", 6},		// usdt
+		{"a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6},		// usdc
+	}
+}
+
+// external tokenID there is no 0x prefix
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsTestnet() []PortalCollateral {
+	return []PortalCollateral{
+		{"0000000000000000000000000000000000000000", 9},		// eth
+		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6},		// usdt, kovan testnet
+		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6},		// usdc, kovan testnet
+	}
+}
+
+// external tokenID there is no 0x prefix
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
 	return []PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9},
+		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6},		// usdt
+		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6},		// usdc
 	}
 }
 
@@ -220,7 +243,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),
 			},
 		},
 		PortalTokens:                initPortalTokensForTestNet(),
@@ -307,7 +330,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(),
 			},
 		},
 		PortalTokens:                initPortalTokensForTestNet(),
@@ -392,7 +415,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollaterals(),
+				SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(),
 			},
 		},
 		PortalTokens:                initPortalTokensForMainNet(),
