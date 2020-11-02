@@ -251,22 +251,30 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			beaconBlock := new(types.BeaconBlock)
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
 
+			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
 						//validate crossShardBlock before add to result
 						blkXShard := synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash)
-						beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), beaconBlock.GetHeight()-1)
-						if err != nil {
-							Logger.Error("Cannot get beacon consensus root hash from block ", beaconBlock.GetHeight()-1)
-							return nil
-						}
-						beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
-						committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
-						err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee)
-						if err != nil {
-							Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
-							return nil
+
+						// TODO: @committees
+						//For releasing beacon nodes and re verify cross shard blocks from beacon
+						//Use committeeFromBlock field for getting committees
+						if beaconFinalView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+							beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), beaconBlock.GetHeight()-1)
+							if err != nil {
+								Logger.Error("Cannot get beacon consensus root hash from block ", beaconBlock.GetHeight()-1)
+								return nil
+							}
+							beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+							committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
+							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee)
+							if err != nil {
+								Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
+								return nil
+							}
 						}
 						//add to result list
 						res[byte(i)] = append(res[byte(i)], blkXShard)

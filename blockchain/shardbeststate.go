@@ -440,3 +440,8 @@ func InitShardCommitteeEngineV2(
 func (shardBestState *ShardBestState) ShardCommitteeEngine() committeestate.ShardCommitteeEngine {
 	return shardBestState.shardCommitteeEngine
 }
+
+//CommitteeEngineVersion ...
+func (shardBestState *ShardBestState) CommitteeEngineVersion() uint {
+	return shardBestState.shardCommitteeEngine.Version()
+}

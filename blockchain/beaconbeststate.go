@@ -388,10 +388,10 @@ func (beaconBestState *BeaconBestState) HasSwappedCommittee(shardID byte, chainP
 	return beaconBestState.beaconCommitteeEngine.HasSwappedCommittees(env)
 }
 
-// //CommitteeStateVersion ...
-// func (beaconBestState *BeaconBestState) CommitteeStateVersion() uint {
-// 	return beaconBestState.beaconCommitteeEngine.Version()
-// }
+//CommitteeEngineVersion ...
+func (beaconBestState *BeaconBestState) CommitteeEngineVersion() uint {
+	return beaconBestState.beaconCommitteeEngine.Version()
+}
 
 func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
