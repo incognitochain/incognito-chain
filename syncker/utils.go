@@ -70,7 +70,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			if i == len(sameCommitteeBlock)-1 {
 				err = chain.InsertBlk(v, true)
 			} else {
-				err = chain.InsertBlk(v, false)
+				err = chain.InsertBlk(v, true)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)

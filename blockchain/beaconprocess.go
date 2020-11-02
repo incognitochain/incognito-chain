@@ -539,10 +539,12 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		} else {
 			if len(shardStates) > 0 {
 				if bestShardHeight > shardStates[0].Height {
-					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state greater than to %+v but get %+v", shardID, bestShardHeight, shardStates[0].Height))
+					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError,
+						fmt.Errorf("Expect Shard %+v has state greater than to %+v but get %+v", shardID, bestShardHeight, shardStates[0].Height))
 				}
 				if bestShardHeight < shardStates[0].Height && bestShardHeight+1 != shardStates[0].Height {
-					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state %+v but get %+v", shardID, bestShardHeight+1, shardStates[0].Height))
+					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError,
+						fmt.Errorf("Expect Shard %+v has state %+v but get %+v", shardID, bestShardHeight+1, shardStates[0].Height))
 				}
 			}
 		}
@@ -589,12 +591,14 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		for k, v := range beaconBestState.GetShardCommittee() {
 			res[k], _ = incognitokey.CommitteeKeyListToString(v)
 		}
-		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf(
+		err := fmt.Errorf(
 			"Expect %+v but get %+v \n Committees %+v",
 			beaconBlock.Header.ShardCommitteeAndValidatorRoot,
 			hashes.ShardCommitteeAndValidatorHash,
 			res,
-		))
+		)
+		panic(err)
+		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, err)
 	}
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
@@ -722,7 +726,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
-		beaconBestState.BestShardHeight[shardID] = 0
+		beaconBestState.BestShardHeight[shardID] = 1
 	}
 	// Update new best new block hash
 	for shardID, shardStates := range genesisBeaconBlock.Body.ShardState {

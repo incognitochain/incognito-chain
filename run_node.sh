@@ -93,7 +93,7 @@ if [ "$1" == "beacon-new-3" ]; then
 fi
 # FullNode testnet
 if [ "$1" == "fullnode-testnet1" ]; then
-./incognito --testnet true --nodemode "relay" --relayshards "all" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../testnet/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330" --norpcauth --rpclisten "0.0.0.0:8334" --rpcwslisten "127.0.0.1:18338" > ../testnet/log.txt 2> ../testnet/error_log.txt &
+./incognito --testnet true --nodemode "relay" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../testnet/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330" --norpcauth --rpclisten "0.0.0.0:8334" --rpcwslisten "127.0.0.1:18338" > ../testnet/log.txt 2> ../testnet/error_log.txt &
 fi
 if [ "$1" == "fullnode-testnet2" ]; then
 ./incognito --testnet true --nodemode "relay" --relayshards "all" --externaladdress "127.0.0.1:9432" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../testnet2/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330" --norpcauth --rpclisten "0.0.0.0:7334" --rpcwslisten "127.0.0.1:17338" > ../testnet2/log.txt 2> ../testnet2/error_log.txt &
