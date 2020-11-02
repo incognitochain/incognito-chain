@@ -65,6 +65,18 @@ func (otaKey OTAKey) GetOTASecretKey() *operation.Scalar {
 	return new(operation.Scalar).FromBytesS(otaKey.otaSecret)
 }
 
+func (otaKey *OTAKey) SetOTASecretKey(otaSecretKey []byte){
+	if len(otaKey.otaSecret) == 0{
+		otaKey.otaSecret = append([]byte{}, otaSecretKey...)
+	}
+}
+
+func (otaKey *OTAKey) SetPublicSpend(publicSpend []byte){
+	if len(otaKey.pk) == 0{
+		otaKey.pk = append([]byte{}, publicSpend...)
+	}
+}
+
 // PaymentAddress is an address of the payee
 type PaymentAddress struct {
 	Pk PublicKey       // 32 bytes, use to receive coin (CoinV1)
