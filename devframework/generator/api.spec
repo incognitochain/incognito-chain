@@ -1,7 +1,7 @@
 CreateTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (jsonresult.CreateTransactionResult,error)
 GetBalanceByPrivateKey(privateKey string) (uint64,error)
 GetRewardAmount(paymentAddress string) (map[string]uint64,error)
-WithdrawReward(privateKey string,paymentAddress string, amount float64, privacy float64) (jsonresult.CreateTransactionResult,error)
+WithdrawReward(privateKey string, amount float64, privacy float64,info map[string]interface{}) (jsonresult.CreateTransactionResult,error)
 CreateAndSendStakingTransaction(privateKey string,receivers map[string]interface{},fee float64, privacy float64, stakeInfo map[string]interface{}) (jsonresult.CreateTransactionResult,error)
 CreateAndSendStopAutoStakingTransaction(privateKey string,receivers map[string]interface{},fee float64, privacy float64, stopStakeInfo map[string]interface{}) (jsonresult.CreateTransactionResult,error)
 GetCommitteeList(empty string) (jsonresult.CommitteeListsResult,error)

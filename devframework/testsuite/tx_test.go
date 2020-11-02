@@ -66,7 +66,7 @@ func Test_SendTX(t *testing.T) {
 				fmt.Println(bl1)
 				bl2, _ := sim.GetBalance(acc1)
 				fmt.Println(bl2)
-				bl3, _ := sim.GetBalance(staker2)
+				bl3, _ := sim.GetBalance(acc2)
 				fmt.Println(bl3)
 				fmt.Printf("%+v", block.(*blockchain.ShardBlock).Body)
 
@@ -120,14 +120,14 @@ func Test_StakeFlow1(t *testing.T) {
 		StakeShard:  true,
 		AutoRestake: true,
 	}
-	_, err := sim.CreateTxStaking(stake1)
+	_, err := sim.API_CreateTxStaking(stake1)
 	if err != nil {
 		panic(err)
 	}
 	for i := 0; i < 120; i++ {
 		sim.GenerateBlock().NextRound()
 	}
-	_, err = sim.CreateTxStaking(stake2)
+	_, err = sim.API_CreateTxStaking(stake2)
 	if err != nil {
 		panic(err)
 	}
@@ -147,7 +147,7 @@ func Test_StakeFlow1(t *testing.T) {
 
 	acc3 := sim.NewAccountFromShard(1)
 	acc4 := sim.NewAccountFromShard(0)
-	_, err = sim.CreateTransaction(sim.IcoAccount, acc3, 1000000, acc4, 3000000, staker1, 10000)
+	_, err = sim.API_CreateTransaction(sim.IcoAccount, acc4, 30000, staker1, 10000)
 	if err != nil {
 		panic(err)
 	}
@@ -156,7 +156,7 @@ func Test_StakeFlow1(t *testing.T) {
 
 	bl1, _ := sim.GetBalance(staker1)
 	fmt.Println("staker1 bl:", bl1)
-	_, err = sim.CreateTransaction(acc4, acc3, 100000, sim.IcoAccount, 100000)
+	_, err = sim.API_CreateTransaction(acc4, acc3, 100000, sim.IcoAccount, 100000)
 	if err != nil {
 		panic(err)
 	}
