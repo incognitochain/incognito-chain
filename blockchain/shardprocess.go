@@ -311,10 +311,13 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		}
 	}
 
-	if beaconHeight <= curView.BeaconHeight {
-		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
-			beaconHeight, curView.BeaconHeight)
-		return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
+	if curView.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+		committees = curView.GetShardCommittee()
+		if beaconHeight <= curView.BeaconHeight {
+			Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
+				beaconHeight, curView.BeaconHeight)
+			return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
+		}
 	}
 
 	if shardBlock.Header.Height > curView.ShardHeight+1 {
