@@ -6,15 +6,18 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Account struct {
-	PublicKey       string
-	PrivateKey      string
-	MiningKey       string
-	PaymentAddress  string
-	CommitteePubkey string
+	PublicKey           string
+	PrivateKey          string
+	MiningKey           string
+	PaymentAddress      string
+	keyset              *incognitokey.KeySet
+	SelfCommitteePubkey string
+	// CommitteePubkeyStruct *incognitokey.CommitteePublicKey
 }
 
 func newAccountFromShard(sid int, keyID int) *Account {
@@ -38,9 +41,11 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 			acc.PaymentAddress = paymentAddress
 			validatorKeyBytes := common.HashB(common.HashB(child.KeySet.PrivateKey))
 			acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
+			acc.keyset = &child.KeySet
 			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
-			res, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKey})
-			acc.CommitteePubkey = res[0]
+			// res, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKey})
+			acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
+			// acc.CommitteePubkeyStruct = &committeeKey
 			if k == keyID {
 				break
 			}
@@ -49,4 +54,19 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 		i++
 	}
 	return acc, nil
+}
+
+func (acc *Account) BuildCommitteePubkey(rewardAddr string) (*incognitokey.CommitteePublicKey, error) {
+	pma := privacy.PublicKey{}
+	if rewardAddr == "" {
+		pma = acc.keyset.PaymentAddress.Pk
+	} else {
+		k, err := wallet.Base58CheckDeserialize(rewardAddr)
+		if err != nil {
+			return nil, err
+		}
+		pma = k.KeySet.PaymentAddress.Pk
+	}
+	committeeKey, err := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(acc.keyset.PrivateKey)), pma)
+	return &committeeKey, err
 }

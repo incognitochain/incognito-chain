@@ -32,10 +32,10 @@ func (sim *SimulationEngine) rpc_getrewardamount(paymentAddress string) (res map
 	}
 	return resI.(map[string]uint64),nil
 }
-func (sim *SimulationEngine) rpc_withdrawreward(privateKey string, amount float64, privacy float64,info map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *SimulationEngine) rpc_withdrawreward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64,info map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["withdrawreward"]
-	resI, rpcERR := c(httpServer, []interface{}{privateKey,amount,privacy,info}, nil)
+	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,amount,privacy,info}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -124,14 +125,14 @@ func (sim *SimulationEngine) init() {
 	for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
 		acc := sim.NewAccountFromShard(-1)
 		sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
-		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey, acc.CommitteePubkey)
+		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
 		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
 	}
 	for i := 0; i < activeNetParams.ActiveShards; i++ {
 		for a := 0; a < activeNetParams.MinShardCommitteeSize; a++ {
 			acc := sim.NewAccountFromShard(i)
 			sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
-			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey, acc.CommitteePubkey)
+			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
 			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
 		}
 	}
@@ -506,10 +507,10 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 	return nil
 }
 
-func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
-	tokenList := make(map[string]uint64)
+func (sim *SimulationEngine) GetBalance(acc Account) (map[string]float64, error) {
+	tokenList := make(map[string]float64)
 	prv, _ := sim.rpc_getbalancebyprivatekey(acc.PrivateKey)
-	tokenList["PRV"] = prv
+	tokenList["PRV"] = float64(prv) / 1e9
 
 	//requestBody2, err := json.Marshal(map[string]interface{}{
 	//	"jsonrpc": "1.0",
@@ -567,7 +568,7 @@ func createICOtx(privateKeys []string) []string {
 	}
 	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
 	for _, privateKey := range privateKeys {
-		txs := initSalryTx("10000000000000000000", privateKey, stateDB)
+		txs := initSalryTx("1000000000000000000000000000000", privateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
 	return transactions
@@ -597,4 +598,62 @@ func initSalryTx(amount string, privateKey string, stateDB *statedb.StateDB) []s
 
 func DisableLog(disable bool) {
 	disableStdoutLog = disable
+}
+
+func (sim *SimulationEngine) GetPubkeyState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
+
+	//For Beacon, check in beacon state, if user is in committee
+	for _, v := range sim.bc.BeaconChain.GetCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.CommitteeRole, -1
+		}
+	}
+	for _, v := range sim.bc.BeaconChain.GetPendingCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.PendingRole, -1
+		}
+	}
+
+	//For Shard
+	shardPendingCommiteeFromBeaconView := sim.bc.GetBeaconBestState().GetShardPendingValidator()
+	shardCommiteeFromBeaconView := sim.bc.GetBeaconBestState().GetShardCommittee()
+	shardCandidateFromBeaconView := sim.bc.GetBeaconBestState().GetShardCandidate()
+	//check if in committee of any shard
+	for _, chain := range sim.bc.ShardChain {
+		for _, v := range chain.GetCommittee() {
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+				return common.CommitteeRole, chain.GetShardID()
+			}
+		}
+
+		for _, v := range chain.GetPendingCommittee() {
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+				return common.PendingRole, chain.GetShardID()
+			}
+		}
+	}
+
+	//check if in committee or pending committee in beacon
+	for _, chain := range sim.bc.ShardChain {
+		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+				return common.PendingRole, chain.GetShardID()
+			}
+		}
+
+		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+				return common.SyncingRole, chain.GetShardID()
+			}
+		}
+	}
+
+	//if is waiting for assigning
+	for _, v := range shardCandidateFromBeaconView {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.WaitingRole, -2
+		}
+	}
+
+	return "", -2
 }

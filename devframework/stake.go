@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -15,11 +16,13 @@ const (
 )
 
 type StakingTxParam struct {
-	SenderPrk   string
-	MinerPrk    string
-	RewardAddr  string
-	StakeShard  bool
-	AutoRestake bool
+	CommitteeKey *incognitokey.CommitteePublicKey
+	SenderPrk    string
+	MinerPrk     string
+	RewardAddr   string
+	StakeShard   bool
+	AutoRestake  bool
+	Name         string
 }
 
 type StopStakingParam struct {
@@ -102,17 +105,21 @@ func (sim *SimulationEngine) CreateTxStopAutoStake(stopStakeMeta StopStakingPara
 	return &txResp, nil
 }
 
-func (sim *SimulationEngine) GetRewardAmount(paymentAddress string) (map[string]uint64, error) {
-	result, err := sim.rpc_getrewardamount(paymentAddress)
+func (sim *SimulationEngine) GetRewardAmount(paymentAddress string) (map[string]float64, error) {
+	result := make(map[string]float64)
+	rs, err := sim.rpc_getrewardamount(paymentAddress)
 	if err != nil {
 		return nil, err
+	}
+	for token, amount := range rs {
+		result[token] = float64(amount) / 1e9
 	}
 	return result, nil
 }
 
 func (sim *SimulationEngine) WithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
 
-	txResp, err := sim.rpc_withdrawreward(privateKey, 0, 0, map[string]interface{}{
+	txResp, err := sim.rpc_withdrawreward(privateKey, nil, 0, 0, map[string]interface{}{
 		"PaymentAddress": paymentAddress, "TokenID": "0000000000000000000000000000000000000000000000000000000000000004", "Version": 0,
 	})
 	if err != nil {
