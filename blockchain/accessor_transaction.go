@@ -239,6 +239,13 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *inco
 }
 
 func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
+	if keyset.OTAKey.GetOTASecretKey() == nil || keyset.OTAKey.GetPublicSpend() == nil {
+		return nil, errors.New("OTA secretKey is needed when retrieving coinV2")
+	}
+	if keyset.PaymentAddress.GetOTAPublicKey() == nil {
+		return nil, errors.New("OTA publicKey is needed when retrieving coinV2")
+	}
+
 	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
 	currentHeight := blockchain.GetBestStateShard(shardID).ShardHeight
 
@@ -256,22 +263,30 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *inco
 				Logger.log.Error("Get outcoins ver 2 bytes by keyset Parse Coin From Bytes", err)
 				return nil, err
 			}
+
 			fmt.Println("Found a coin")
 			fmt.Println("Version = ", c.GetVersion())
 			fmt.Println("Commitment = ", c.GetCommitment())
 			fmt.Println("PublicKey = ", c.GetPublicKey())
 			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
 			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
+			fmt.Println("Keyset OTAsecretKey = ", keyset.OTAKey.GetOTASecretKey().ToBytesS())
 			// fmt.Println("Is belong to key = ", coin.IsCoinBelongToKeySet(c, keyset.ReadonlyKey))
-			if pass, sharedSecret := c.IsCoinBelongToKeySet(keyset); pass {
-				cv2, ok := c.(*privacy.CoinV2)
-				if !ok{
-					Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
-					return nil, errors.New("Cannot cast a coin to version 2")
-				}
-				pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
-				if pass{
-					outCoinsBytes = append(outCoinsBytes, c.Bytes())
+
+			cv2, ok := c.(*privacy.CoinV2)
+			if !ok{
+				Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
+				return nil, errors.New("Cannot cast a coin to version 2")
+			}
+			fmt.Println("concealRandom", cv2.GetSharedConcealRandom())
+			if pass, sharedSecret := cv2.IsCoinBelongToKeySet(keyset); pass {
+				if sharedSecret != nil{
+					pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
+					if pass{
+						outCoinsBytes = append(outCoinsBytes, cv2.Bytes())
+					}
+				}else{
+					outCoinsBytes = append(outCoinsBytes, cv2.Bytes())
 				}
 			}
 		}
@@ -284,10 +299,14 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("BUGLOG2 outCoinByBytesVer1", outCoinByBytesVer1)
+
 	outCoinByBytesVer2, err := blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, shardHeight)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("BUGLOG2 outCoinByBytesVer2", outCoinByBytesVer2)
 
 	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
 }
@@ -366,6 +385,8 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 		return nil, err
 	}
 
+	fmt.Println("BUGLOG2 outCoinsInBytes", outCoinsInBytes)
+
 	// loop on all outputcoin to decrypt data
 	results := make([]coin.PlainCoin, 0)
 	for _, item := range outCoinsInBytes {
@@ -391,6 +412,8 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 			}
 		}
 	}
+
+	fmt.Println("BUGLOG2 finished")
 	return results, nil
 }
 
