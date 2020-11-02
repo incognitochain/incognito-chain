@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"strconv"
@@ -584,15 +585,19 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
 	}
 	if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
+		res := make(map[byte][]string)
+		for k, v := range beaconBestState.GetShardCommittee() {
+			res[k], _ = incognitokey.CommitteeKeyListToString(v)
+		}
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf(
 			"Expect %+v but get %+v \n Committees %+v",
 			beaconBlock.Header.ShardCommitteeAndValidatorRoot,
 			hashes.ShardCommitteeAndValidatorHash,
-			beaconBestState.GetShardCommittee(),
+			res,
 		))
 	}
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
-		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
+		return NewBlockChainError(AutoStakingRootHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
 	}
 	if !TestRandom {
 		//COMMENT FOR TESTING
