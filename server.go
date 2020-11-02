@@ -35,7 +35,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus"
+	consensus "github.com/incognitochain/incognito-chain/consensus_multi"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -396,6 +396,7 @@ func (serverObj *Server) NewServer(
 	}
 
 	serverObj.memPool.Init(&mempool.Config{
+		ConsensusEngine:   serverObj.consensusEngine,
 		BlockChain:        serverObj.blockChain,
 		DataBase:          serverObj.dataBase,
 		ChainParams:       chainParams,
@@ -432,15 +433,17 @@ func (serverObj *Server) NewServer(
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}
 	serverObj.netSync.Init(&netsync.NetSyncConfig{
-		Syncker:          serverObj.syncker,
-		BlockChain:       serverObj.blockChain,
-		ChainParam:       chainParams,
-		TxMemPool:        serverObj.memPool,
-		Server:           serverObj,
-		Consensus:        serverObj.consensusEngine, // for onBFTMsg
-		PubSubManager:    serverObj.pusubManager,
-		RelayShard:       relayShards,
-		RoleInCommittees: -1,
+		Syncker:    serverObj.syncker,
+		BlockChain: serverObj.blockChain,
+		ChainParam: chainParams,
+		TxMemPool:  serverObj.memPool,
+		Server:     serverObj,
+		Consensus:  serverObj.consensusEngine, // for onBFTMsg
+		// ShardToBeaconPool: serverObj.shardToBeaconPool,
+		// CrossShardPool:    serverObj.crossShardPool,
+		PubSubManager: serverObj.pusubManager,
+		RelayShard:    relayShards,
+		// RoleInCommittees: -1,
 	})
 	// Create a connection manager.
 	var listenPeer *peer.Peer
@@ -479,8 +482,8 @@ func (serverObj *Server) NewServer(
 	})
 
 	serverObj.connManager = connManager
-	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
-	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
+	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, ValidatorsLimit: cfg.ValidatorLimit, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
+	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain, Consensus: serverObj.consensusEngine})
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -1605,25 +1608,15 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 
 }
 
-func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
-
-	return nil
-}
-
-func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
+func (serverObj *Server) PublishNodeState() error {
 	Logger.log.Debugf("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
-	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
-	// 	return errors.New("Not in committee, don't need to publish node state!")
-	// }
-
-	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	if userKey == "" {
+	chainValidator := serverObj.consensusEngine.GetOneValidatorForEachConsensusProcess()
+	if len(chainValidator) == 0 {
 		return nil
 	}
 
-	monitor.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
@@ -1636,28 +1629,28 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		bBestState.Hash(),
 	}
 
-	if userLayer != common.BeaconRole {
-		sBestState := serverObj.blockChain.GetBestStateShard(byte(shardID))
-		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = wire.ChainState{
-			sBestState.BestBlock.Header.Timestamp,
-			sBestState.ShardHeight,
-			sBestState.BestBlockHash,
-			sBestState.Hash(),
+	for chainID, validator := range chainValidator {
+		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
+		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
+		if chainID != -1 {
+			sBestState := serverObj.blockChain.GetBestStateShard(byte(chainID))
+			msg.(*wire.MessagePeerState).Shards[byte(chainID)] = wire.ChainState{
+				sBestState.BestBlock.Header.Timestamp,
+				sBestState.ShardHeight,
+				sBestState.BestBlockHash,
+				sBestState.Hash(),
+			}
+		}
+
+		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+		if validator.State.ChainID == -1 {
+			serverObj.PushMessageToBeacon(msg, nil)
+		} else {
+			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID), nil)
 		}
 	}
 
-	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()
-	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
-	if err != nil {
-		return err
-	}
-	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-	Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
-	if err != nil {
-		return err
-	}
-	Logger.log.Debugf("Publish peerstate")
-	serverObj.PushMessageToAll(msg)
 	return nil
 }
 
@@ -2162,8 +2155,69 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 	return blockCh, nil
 }
 
+func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
+
+	if s.blockChain == nil || userPk == nil {
+		return "", -2
+	}
+
+	//For Beacon, check in beacon state, if user is in committee
+	for _, v := range s.blockChain.BeaconChain.GetCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.CommitteeRole, -1
+		}
+	}
+	for _, v := range s.blockChain.BeaconChain.GetPendingCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.PendingRole, -1
+		}
+	}
+
+	//For Shard
+	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
+	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
+	shardCandidateFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCandidate()
+	//check if in committee of any shard
+	for _, chain := range s.blockChain.ShardChain {
+		for _, v := range chain.GetCommittee() {
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+				return common.CommitteeRole, chain.GetShardID()
+			}
+		}
+
+		for _, v := range chain.GetPendingCommittee() {
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+				return common.PendingRole, chain.GetShardID()
+			}
+		}
+	}
+
+	//check if in committee or pending committee in beacon
+	for _, chain := range s.blockChain.ShardChain {
+		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+				return common.PendingRole, chain.GetShardID()
+			}
+		}
+
+		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+				return common.SyncingRole, chain.GetShardID()
+			}
+		}
+	}
+
+	//if is waiting for assigning
+	for _, v := range shardCandidateFromBeaconView {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return common.WaitingRole, -2
+		}
+	}
+
+	return "", -2
+}
+
 func (s *Server) GetUserMiningState() (role string, chainID int) {
-	//TODO: check synker is in FewBlockBehind
 	userPk := s.consensusEngine.GetMiningPublicKeys()
 	if s.blockChain == nil || userPk == nil {
 		return "", -2

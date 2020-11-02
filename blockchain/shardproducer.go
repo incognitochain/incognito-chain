@@ -666,7 +666,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
-	sourceTxns := blockGenerator.GetPendingTxsV2()
+	sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 	var elasped int64
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()

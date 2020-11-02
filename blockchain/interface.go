@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common/consensus"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -38,19 +40,19 @@ type FeeEstimator interface {
 }
 
 type ConsensusEngine interface {
-	GetCurrentConsensusVersion() int
 	ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
 	ValidateProducerSig(block common.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
+	GetCurrentValidators() []*consensus.Validator
+	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 	GetMiningPublicKeyByConsensus(consensusName string) (string, error)
-	GetUserLayer() (string, int)
 	GetUserRole() (string, string, int)
 	// CommitteeChange(chainName string)
 }
 
 type Server interface {
-	PublishNodeState(userLayer string, shardID int) error
+	PublishNodeState() error
 
 	PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error
 	PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
@@ -61,7 +63,6 @@ type Server interface {
 	PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error
 
 	PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-	PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	PushBlockToAll(block common.BlockInterface, isBeacon bool) error
 }

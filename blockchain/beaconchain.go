@@ -212,7 +212,11 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+	err := chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+	if err != nil {
+		Logger.log.Error("ValidatePreSignBlock Beacon", err)
+	}
+	return err
 }
 
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {

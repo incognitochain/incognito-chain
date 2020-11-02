@@ -28,7 +28,7 @@ func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan 
 handleGetPendingTxsInBlockgen - RPC returns all transaction ids in blockgen
 */
 func (httpServer *HttpServer) handleGetPendingTxsInBlockgen(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2())
+	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2(255))
 	return result, nil
 }
 

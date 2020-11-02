@@ -261,6 +261,11 @@ const (
 	getRewardFeature = "getrewardfeature"
 
 	getTotalStaker = "gettotalstaker"
+
+	//multi-validators
+	getMultiValKeyState = "getmultivalkeystate"
+	addMultiValKey      = "addmultivakey"
+	setMultiValKeyLimit = "setmultivalkeylimit"
 )
 
 const (
