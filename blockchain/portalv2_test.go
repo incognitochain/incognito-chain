@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/stretchr/testify/suite"
 	"github.com/tendermint/tendermint/types"
@@ -19,6 +20,7 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -101,6 +103,18 @@ func (s *PortalTestSuite) SetupTest() {
 				},
 			},
 		},
+		ShardChain: []*ShardChain{&ShardChain{
+			shardID:     0,
+			multiView:   &multiview.MultiView{
+
+			},
+			BlockGen:    nil,
+			Blockchain:  nil,
+			hashHistory: nil,
+			ChainName:   "",
+			Ready:       false,
+			insertLock:  sync.Mutex{},
+		}},
 	}
 }
 
@@ -231,6 +245,8 @@ func cloneWPortingRequests(wPortingReqs map[string]*statedb.WaitingPortingReques
 			cloneMatchingPortingCustodians(req.Custodians()),
 			req.PortingFee(),
 			req.BeaconHeight(),
+			req.ShardHeight(),
+			req.ShardID(),
 		)
 	}
 	return newReqs
@@ -938,6 +954,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1001)
 	shardID := byte(0)
+	shardHeight := uint64(1001)
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 
 	s.SetupTestPortingRequest()
@@ -1013,7 +1030,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 40000000000,
 			},
-		}, 2000000, beaconHeight)
+		}, 2000000, beaconHeight, shardHeight, shardID)
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
@@ -1026,7 +1043,7 @@ func (s *PortalTestSuite) TestPortingRequest() {
 				Amount:                 0.1 * 1e9,
 				LockedAmountCollateral: 2000000000000,
 			},
-		}, 100000001, beaconHeight)
+		}, 100000001, beaconHeight, shardHeight, shardID)
 
 	s.Equal(2, len(s.currentPortalStateForProducer.WaitingPortingRequests))
 	s.Equal(wPortingRequest1, s.currentPortalStateForProducer.WaitingPortingRequests[wPortingReqKey1])
@@ -1151,7 +1168,7 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 40000000000,
 			},
-		}, 2000000, 1000)
+		}, 2000000, 1000, 1000, 0)
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
@@ -1164,7 +1181,7 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 				Amount:                 0.1 * 1e9,
 				LockedAmountCollateral: 2000000000000,
 			},
-		}, 100000001, 1000)
+		}, 100000001, 1000, 1000, 0)
 
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
@@ -1177,7 +1194,7 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 				Amount:                 5 * 1e9,
 				LockedAmountCollateral: 200000000000,
 			},
-		}, 2000000, 1000)
+		}, 2000000, 1000, 1000, 0)
 
 	wPortingReqKey4 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-4").String()
 	wPortingRequest4 := statedb.NewWaitingPortingRequestWithValue(
@@ -1190,7 +1207,7 @@ func (s *PortalTestSuite) SetupTestRequestPtokens() {
 				Amount:                 0.25 * 1e9,
 				LockedAmountCollateral: 5000000000000,
 			},
-		}, 250000000, 1020)
+		}, 250000000, 1020, 1020, 0)
 	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
 		wPortingReqKey1: wPortingRequest1,
 		wPortingReqKey2: wPortingRequest2,
@@ -1325,7 +1342,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidation() {
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress1", "bnbAddress1", 2*1e9),
 			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress2", "bnbAddress2", 0.3*1e9),
-		}, 4600000, 1000, common.Hash{})
+		}, 4600000, 1000, common.Hash{}, 0, 1000, "")
 
 	redeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-btc-2").String()
 	redeemRequest2 := statedb.NewRedeemRequestWithValue(
@@ -1333,7 +1350,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidation() {
 		USER2_INC_ADDRESS, "userBTCAddress2", 0.03*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress3", "btcAddress3", 0.03*1e9),
-		}, 30000000, 1500, common.Hash{})
+		}, 30000000, 1500, common.Hash{}, 0, 1000, "")
 
 	matchedRedeemRequest := map[string]*statedb.RedeemRequest{
 		redeemReqKey1: redeemRequest1,
@@ -1346,7 +1363,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidation() {
 		USER1_INC_ADDRESS, "userBNBAddress1", 0.1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress2", "bnbAddress2", 0.1*1e9),
-		}, 4600000, 1500, common.Hash{})
+		}, 4600000, 1500, common.Hash{}, 0, 1000,  "")
 
 	wRedeemRequests := map[string]*statedb.RedeemRequest{
 		wRedeemReqKey3: wRedeemRequest3,
@@ -1363,7 +1380,7 @@ func (s *PortalTestSuite) SetupTestAutoLiquidation() {
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 40000000000,
 			},
-		}, 2000000, 1500)
+		}, 2000000, 1500, 1500, 0)
 
 	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
 		wPortingReqKey1: wPortingRequest1,
@@ -1773,7 +1790,7 @@ func (s *PortalTestSuite) TestTopupCustodian() {
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 110000000000,
 			},
-		}, 2000000, 1500)
+		}, 2000000, 1500, 1500, 0)
 
 	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
 		wPortingReqKey1: wPortingRequest1,
@@ -1931,7 +1948,7 @@ func (s *PortalTestSuite) SetupTestCustodianRewards() {
 				Amount:                 0.7 * 1e9,
 				LockedAmountCollateral: 28000000000,
 			},
-		}, 2000000, 1000)
+		}, 2000000, 1000, 1000, 0)
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
@@ -1944,7 +1961,7 @@ func (s *PortalTestSuite) SetupTestCustodianRewards() {
 				Amount:                 0.1 * 1e9,
 				LockedAmountCollateral: 2000000000000,
 			},
-		}, 100000001, 1000)
+		}, 100000001, 1000, 1000, 0)
 
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
@@ -1957,7 +1974,7 @@ func (s *PortalTestSuite) SetupTestCustodianRewards() {
 				Amount:                 5 * 1e9,
 				LockedAmountCollateral: 200000000000,
 			},
-		}, 2000000, 900)
+		}, 2000000, 900, 900, 0)
 
 	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
 		wPortingReqKey1: wPortingRequest1,
@@ -1973,7 +1990,7 @@ func (s *PortalTestSuite) SetupTestCustodianRewards() {
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress1", "bnbAddress1", 2*1e9),
 			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress2", "bnbAddress2", 0.3*1e9),
-		}, 4600000, 990, common.Hash{})
+		}, 4600000, 990, common.Hash{}, 0, 990, "")
 
 	matchedRedeemRequest := map[string]*statedb.RedeemRequest{
 		redeemReqKey1: redeemRequest1,
