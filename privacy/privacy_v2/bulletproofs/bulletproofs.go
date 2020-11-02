@@ -267,8 +267,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	} else {
 		alpha = operation.RandomScalar()
 		rho = operation.RandomScalar()
-		A.Add(A, new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], alpha))
-		S.Add(S, new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], rho))
+		A.Add(A, new(operation.Point).ScalarMult(operation.HBase, alpha))
+		S.Add(S, new(operation.Point).ScalarMult(operation.HBase, rho))
 		proof.a = A
 		proof.s = S
 	}
@@ -397,8 +397,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValuePad := roundUpPowTwo(numValue)
 	maxExp := privacy_util.MaxExp
 	N := numValuePad * maxExp
-	twoNumber := new(operation.Scalar).FromUint64(2)
-	twoVectorN := powerVector(twoNumber, maxExp)
+	//twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
 	aggParam := setAggregateParams(N)
 
 	cmsValue := proof.cmsValue
@@ -437,9 +436,9 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
-
-
 	// verify eq (66)
+	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
+
 	vectorSum := make([]*operation.Scalar, N)
 	zTmp := new(operation.Scalar).Set(z)
 	for j := 0; j < numValuePad; j++ {
@@ -454,20 +453,22 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	for i:= 1; i < N; i++ {
 		tmpG.Add(tmpG, aggParam.g[i])
 	}
-	tmpP := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
-	tmpP.Add(tmpP, proof.a)
-	tmpP.Add(tmpP, new(operation.Point).ScalarMult(proof.s, x))
-	if !operation.IsPointEqual(tmpP, proof.innerProductProof.p) {
+	ASx := new(operation.Point).Add(proof.a, new(operation.Point).ScalarMult(proof.s, x))
+	P := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
+	P.Add(P, ASx)
+	P.Add(P, new(operation.Point).ScalarMult(uPrime, proof.tHat))
+	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu) )
+
+	if !operation.IsPointEqual(P, PPrime) {
 		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
 		return false, errors.New("verify aggregated range proof statement 2-1 failed")
 	}
 
 	// verify eq (68)
-	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
 	innerProductArgValid := proof.innerProductProof.Verify(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if !innerProductArgValid {
 		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
-		return false, erprors.New("verify aggregated range proof statement 2 failed")
+		return false, errors.New("verify aggregated range proof statement 2 failed")
 	}
 
 	return true, nil
@@ -482,6 +483,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	maxExp := privacy_util.MaxExp
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
+	//twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
 
 	cmsValue := proof.cmsValue
 	for i := numValue; i < numValuePad; i++ {
@@ -492,6 +494,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	zSquare := new(operation.Scalar).Mul(z, z)
+	zNeg := new(operation.Scalar).Sub(new(operation.Scalar).FromUint64(0), z)
 
 	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
 	xSquare := new(operation.Scalar).Mul(x, x)
@@ -502,8 +505,12 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// HPrime = H^(y^(1-i)
+	HPrime := computeHPrime(y, N, aggParam.h)
+	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
 
-	// Verify the first argument
+
+	// Verify eq (65)
 	LHS := operation.PedCom.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
 	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
 	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, operation.PedCom.G[operation.PedersenValueIndex], x, proof.t1))
@@ -514,7 +521,33 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
-	// Verify the second argument
+	// Verify eq (66)
+	vectorSum := make([]*operation.Scalar, N)
+	zTmp := new(operation.Scalar).Set(z)
+	for j := 0; j < numValuePad; j++ {
+		zTmp.Mul(zTmp, z)
+		for i := 0; i < maxExp; i++ {
+			vectorSum[j*maxExp+i] = new(operation.Scalar).Mul(twoVectorN[i], zTmp)
+			vectorSum[j*maxExp+i].Add(vectorSum[j*maxExp+i], new(operation.Scalar).Mul(z, yVector[j*maxExp+i]))
+		}
+	}
+	tmpHPrime := new(operation.Point).MultiScalarMult(vectorSum, HPrime)
+	tmpG := new(operation.Point).Set(aggParam.g[0])
+	for i:= 1; i < N; i++ {
+		tmpG.Add(tmpG, aggParam.g[i])
+	}
+	ASx := new(operation.Point).Add(proof.a, new(operation.Point).ScalarMult(proof.s, x))
+	P := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
+	P.Add(P, ASx)
+	P.Add(P, new(operation.Point).ScalarMult(uPrime, proof.tHat))
+	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu) )
+
+	if !operation.IsPointEqual(P, PPrime) {
+		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
+		return false, errors.New("verify aggregated range proof statement 2-1 failed")
+	}
+
+	// Verify eq (68)
 	hashCache := x.ToBytesS()
 	L := proof.innerProductProof.l
 	R := proof.innerProductProof.r
@@ -546,9 +579,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 			}
 		}
 	}
-	// HPrime = H^(y^(1-i)
-	HPrime := computeHPrime(y, N, aggParam.h)
-	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
+
 	c := new(operation.Scalar).Mul(proof.innerProductProof.a, proof.innerProductProof.b)
 	tmp1 := new(operation.Point).MultiScalarMult(s, aggParam.g)
 	tmp2 := new(operation.Point).MultiScalarMult(sInverse, HPrime)
