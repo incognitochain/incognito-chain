@@ -534,7 +534,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 				if bestShardHeight > shardStates[0].Height {
 					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state greater than to %+v but get %+v", shardID, bestShardHeight, shardStates[0].Height))
 				}
-				if bestShardHeight < shardStates[0].Height && bestShardHeight+1 != shardStates[0].Height {
+				if bestShardHeight > 1 && bestShardHeight < shardStates[0].Height && bestShardHeight+1 != shardStates[0].Height {
 					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state %+v but get %+v", shardID, bestShardHeight+1, shardStates[0].Height))
 				}
 			}
