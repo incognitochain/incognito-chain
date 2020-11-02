@@ -23,8 +23,8 @@ const (
 	LowerBoundPercentForIncDAO    = 3
 	UpperBoundPercentForIncDAO    = 10
 	GetValidBlock                 = 20
-	TestRandom                    = false
-	NumberOfFixedBlockValidators  = 22
+	TestRandom                    = true
+	NumberOfFixedBlockValidators  = 4
 	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
@@ -198,8 +198,8 @@ var SelectShardNodeTestnetSerializedPubkeyV2 = make(map[uint64][]string)
 var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
-var IsTestNet = false
-var IsTestNet2 = false
+var IsTestNet = true
+var IsTestNet2 = true
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
