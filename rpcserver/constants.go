@@ -264,6 +264,9 @@ const (
 	getMultiValKeyState = "getmultivalkeystate"
 	addMultiValKey      = "addmultivakey"
 	setMultiValKeyLimit = "setmultivalkeylimit"
+
+	//
+	getCommitteeByBeaconHeight = "getcommitteebybeaconheight"
 )
 
 const (

@@ -247,6 +247,8 @@ var HttpHandler = map[string]httpHandler{
 	getMultiValKeyState: (*HttpServer).handleGetMultiValKeyState,
 	addMultiValKey:      (*HttpServer).handleAddMultiValKey,
 	setMultiValKeyLimit: (*HttpServer).handleSetMultiValKeyLimit,
+
+	getCommitteeByBeaconHeight: (*HttpServer).handleGetCommitteeByBeaconHeight,
 }
 
 // Commands that are available to a limited user
