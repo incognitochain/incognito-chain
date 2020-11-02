@@ -243,7 +243,7 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),
+				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),  // todo: need to be updated before deploying
 			},
 		},
 		PortalTokens:                initPortalTokensForTestNet(),
@@ -253,8 +253,8 @@ func init() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
-		PortalETHContractAddressStr: "0x8c13AFB7815f10A8333955854E6ec7503eD841B7", // todo: update sc address
-		RedeemPortalV3Epoch:         40,
+		PortalETHContractAddressStr: "0x1CA061444aCFb93C0236205095234DbD12dB9B9D", // todo: update sc address
+		RedeemPortalV3Epoch:         1,
 	}
 	// END TESTNET
 
