@@ -630,7 +630,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 }
 
 func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
-	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
+	Logger.log.Infof("Init Committee Engine V1, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
