@@ -61,7 +61,10 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 	//Get staking type
 	unStakingType, ok := data["UnStakingType"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid UnStaking Type For Staking Transaction %+v", data["UnStakingType"]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid UnStaking Type For UnStaking Transaction %+v", data["UnStakingType"]))
+	}
+	if unStakingType != metadata.UnStakingMeta {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid UnStaking Type got %+v, want %+v", unStakingType, metadata.UnStakingMeta))
 	}
 
 	//Get Candidate Payment Address
@@ -96,7 +99,7 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	unStakingMetadata, err := metadata.NewUnStakingMetadata(int(unStakingType), base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
+	unStakingMetadata, err := metadata.NewUnStakingMetadata(base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
