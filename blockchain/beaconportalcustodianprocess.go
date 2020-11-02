@@ -242,3 +242,87 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawV3(
 
 	return nil
 }
+
+func (blockchain *BlockChain) processPortalCustodianDepositV3(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams PortalParams) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData metadata.PortalCustodianDepositContentV3
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		return err
+	}
+
+	depositStatus := instructions[2]
+	if depositStatus == common.PortalCustodianDepositV3AcceptedChainStatus {
+		// add custodian to custodian pool
+		newCustodian := addCustodianToPool(
+			currentPortalState.CustodianPoolState,
+			actionData.IncAddressStr,
+			actionData.DepositAmount,
+			actionData.ExternalTokenID,
+			actionData.RemoteAddresses)
+		keyCustodianStateStr := statedb.GenerateCustodianStateObjectKey(actionData.IncAddressStr).String()
+		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
+
+		// store custodian deposit status into DB
+		custodianDepositTrackData := metadata.PortalCustodianDepositStatusV3{
+			Status:           common.PortalCustodianDepositV3AcceptedStatus,
+			IncAddressStr:    actionData.IncAddressStr,
+			RemoteAddresses:  actionData.RemoteAddresses,
+			DepositAmount:    actionData.DepositAmount,
+			ExternalTokenID:  actionData.ExternalTokenID,
+			UniqExternalTxID: actionData.UniqExternalTxID,
+		}
+		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
+		err = statedb.StoreCustodianDepositStatusV3(
+			stateDB,
+			actionData.TxReqID.String(),
+			custodianDepositDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			return nil
+		}
+
+		// store uniq external tx
+		err := statedb.InsertPortalExternalTxHashSubmitted(stateDB, actionData.UniqExternalTxID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
+			return nil
+		}
+	} else if depositStatus == common.PortalCustodianDepositV3RejectedChainStatus {
+		// store custodian deposit status into DB
+		custodianDepositTrackData := metadata.PortalCustodianDepositStatusV3{
+			Status:           common.PortalCustodianDepositV3RejectedStatus,
+			IncAddressStr:    actionData.IncAddressStr,
+			RemoteAddresses:  actionData.RemoteAddresses,
+			DepositAmount:    actionData.DepositAmount,
+			ExternalTokenID:  actionData.ExternalTokenID,
+			UniqExternalTxID: actionData.UniqExternalTxID,
+		}
+		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
+		err = statedb.StoreCustodianDepositStatusV3(
+			stateDB,
+			actionData.TxReqID.String(),
+			custodianDepositDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			return nil
+		}
+	}
+
+	return nil
+}
