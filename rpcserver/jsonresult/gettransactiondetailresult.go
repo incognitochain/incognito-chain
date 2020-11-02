@@ -273,9 +273,9 @@ func (c *CoinRPCV2) SetOutputCoin(outputCoin coin.Coin) CoinRPC {
 	c.TxRandom = EncodeBase58Check(coinv2.GetTxRandom().Bytes())
 	c.Value = strconv.FormatUint(coinv2.GetValue(), 10)
 	c.Randomness = OperationScalarPtrToBase58(coinv2.GetRandomness())
-	txRandomPoint, index, _ := coinv2.GetTxRandomDetail()
-	c.TxRandom = OperationPointPtrToBase58(txRandomPoint)
-	c.Index = index
+	//txRandomPoint, index, _ := coinv2.GetTxRandomDetail()
+	//c.TxRandom = OperationPointPtrToBase58(txRandomPoint)
+	//c.Index = index
 
 	return c
 }
