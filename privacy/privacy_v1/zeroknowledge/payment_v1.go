@@ -936,7 +936,7 @@ func (proof PaymentProof) ValidateSanity(additionalData interface{}) (bool, erro
 	if !ok{
 		return false, errors.New("sigPubkey not found")
 	}
-	sigPubKeyPoint, ok := param["sigPubkey"].(*operation.Point)
+	sigPubKeyPoint, ok := param["sigPubKey"].(*operation.Point)
 	if !ok{
 		return false, errors.New("cannot cast sigPubkey param")
 	}
