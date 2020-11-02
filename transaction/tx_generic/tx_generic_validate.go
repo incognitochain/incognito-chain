@@ -168,12 +168,18 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 	if tx.GetProof() != nil {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		additionalData := make(map[string]interface{})
-		additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
-		sigPubKey, err :=  new(operation.Point).FromBytesS(tx.GetSigPubKey())
-		if err != nil {
-			return false, errors.New("SigPubKey is invalid")
+
+		if tx.GetVersion() == 1{
+			if chainRetriever != nil {
+				additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
+			}
+			sigPubKey, err :=  new(operation.Point).FromBytesS(tx.GetSigPubKey())
+			if err != nil {
+				return false, errors.New("SigPubKey is invalid")
+			}
+			additionalData["sigPubKey"] = sigPubKey
 		}
-		additionalData["sigPubKey"] = sigPubKey
+
 		additionalData["shardID"] = shardID
 
 		ok, err := tx.GetProof().ValidateSanity(additionalData)

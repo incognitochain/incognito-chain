@@ -281,7 +281,10 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
-			txToken.SetTxNormal(temp)
+			err = txToken.SetTxNormal(temp)
+			if err != nil {
+				return err
+			}
 			jsb, _ := json.Marshal(txToken.GetTxNormal())
 			utils.Logger.Log.Warnf("TX token-init creation finished : %s\n", string(jsb))
 			return nil
@@ -667,15 +670,12 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 }
 
 func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if txToken.GetType() != common.TxCustomTokenPrivacyType{
+	if txToken.GetType() != common.TxCustomTokenPrivacyType && txToken.GetType() != common.TxTokenConversionType{
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
 	}
 	txn, ok := txToken.GetTxNormal().(*Tx)
 	if !ok || txn==nil{
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("TX token must have token component"))
-	}
-	if txn.GetType() != common.TxNormalType{
-		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
 	if txToken.GetTxBase().GetProof() == nil && txn.GetProof() == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have a proof")
