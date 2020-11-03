@@ -533,13 +533,11 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 }
 
 // Check whether the utxo is from this keyset
-func (c *CoinV2) IsCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point) {
-	txConcealRandomPoint, txOTARandomPoint, index, err1 :=  c.GetTxRandomDetail()
+func (c *CoinV2) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point) {
+	_, txOTARandomPoint, index, err1 :=  c.GetTxRandomDetail()
 	if err1 != nil {
 		return false, nil
 	}
-
-	fmt.Println("dasdasdasdaslkdjaskldjaskldjaskldjaskldjaslkdajkl")
 
 	//Check if the utxo belong to this one-time-address
 	rK := new(operation.Point).ScalarMult(txOTARandomPoint, keySet.OTAKey.GetOTASecretKey())
@@ -547,14 +545,15 @@ func (c *CoinV2) IsCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *opera
 	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), common.Uint32ToBytes(index)...),
 	)
+
 	HnG := new(operation.Point).ScalarMultBase(hashed)
 	KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
 
-	//Retrieve the sharedConcealRandomPoint for generating the blinded assetTag
-	var rSharedConcealPoint *operation.Point
-	if keySet.ReadonlyKey.GetPrivateView() != nil {
-		rSharedConcealPoint = new(operation.Point).ScalarMult(txConcealRandomPoint, keySet.ReadonlyKey.GetPrivateView())
-	}
+	////Retrieve the sharedConcealRandomPoint for generating the blinded assetTag
+	//var rSharedConcealPoint *operation.Point
+	//if keySet.ReadonlyKey.GetPrivateView() != nil {
+	//	rSharedConcealPoint = new(operation.Point).ScalarMult(txConcealRandomPoint, keySet.ReadonlyKey.GetPrivateView())
+	//}
 
-	return operation.IsPointEqual(KCheck, keySet.PaymentAddress.GetOTAPublicKey()), rSharedConcealPoint
+	return operation.IsPointEqual(KCheck, keySet.OTAKey.GetPublicSpend()), rK
 }

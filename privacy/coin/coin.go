@@ -31,7 +31,7 @@ type Coin interface {
 	SetBytes([]byte) error
 
 	CheckCoinValid(key.PaymentAddress, []byte, uint64) bool
-	IsCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point)
+	DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point)
 }
 
 type PlainCoin interface {
