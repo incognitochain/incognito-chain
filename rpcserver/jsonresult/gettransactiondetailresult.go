@@ -131,10 +131,23 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				PrivacyCustomTokenID:     txTokenData.PropertyID.String(),
 				PrivacyCustomTokenFee:    txTokenData.TxNormal.GetTxFee(),
 			}
-			inputCoins := result.Proof.GetInputCoins()
-			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
+			if tx.GetProof() == nil{
+				txToken, ok := tx.(*transaction.TxTokenVersion2)
+				if !ok {
+					return nil, errors.New("cannot detect transaction type")
+				}else{
+					result.Proof = txToken.GetTxBase().GetProof()
+				}
+
 			}
+			if result.Proof != nil {
+				inputCoins := result.Proof.GetInputCoins()
+				if len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
+					result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
+				}
+			}
+
+
 			tokenData, _ := json.MarshalIndent(txTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
 			if tx.GetMetadata() != nil {

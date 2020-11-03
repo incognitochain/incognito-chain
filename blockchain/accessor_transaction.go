@@ -271,15 +271,14 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *inco
 			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
 			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
 			fmt.Println("Keyset OTAsecretKey = ", keyset.OTAKey.GetOTASecretKey().ToBytesS())
-			// fmt.Println("Is belong to key = ", coin.IsCoinBelongToKeySet(c, keyset.ReadonlyKey))
+			// fmt.Println("Is belong to key = ", coin.DoesCoinBelongToKeySet(c, keyset.ReadonlyKey))
 
 			cv2, ok := c.(*privacy.CoinV2)
 			if !ok{
 				Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
 				return nil, errors.New("Cannot cast a coin to version 2")
 			}
-			fmt.Println("concealRandom", cv2.GetSharedConcealRandom())
-			if pass, sharedSecret := cv2.IsCoinBelongToKeySet(keyset); pass {
+			if pass, sharedSecret := cv2.DoesCoinBelongToKeySet(keyset); pass {
 				if sharedSecret != nil{
 					pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
 					if pass{
@@ -300,13 +299,10 @@ func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognit
 		return nil, err
 	}
 
-	fmt.Println("BUGLOG2 outCoinByBytesVer1", outCoinByBytesVer1)
-
 	outCoinByBytesVer2, err := blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, shardHeight)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("BUGLOG2 outCoinByBytesVer2", outCoinByBytesVer2)
 
 	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
 }
@@ -385,8 +381,6 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 		return nil, err
 	}
 
-	fmt.Println("BUGLOG2 outCoinsInBytes", outCoinsInBytes)
-
 	// loop on all outputcoin to decrypt data
 	results := make([]coin.PlainCoin, 0)
 	for _, item := range outCoinsInBytes {
@@ -395,7 +389,7 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 			Logger.log.Errorf("Cannot create coin from byte %v", err)
 			return nil, err
 		}
-		if pass, sharedSecret := outCoin.IsCoinBelongToKeySet(keyset); pass {
+		if pass, sharedSecret := outCoin.DoesCoinBelongToKeySet(keyset); pass {
 			cv2, ok := outCoin.(*privacy.CoinV2)
 			var pass bool = false
 			if ok{
@@ -405,9 +399,13 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 				pass = true
 			}
 			if pass{
-				decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-				if decryptedOut != nil {
-					results = append(results, decryptedOut)
+				if keyset.ReadonlyKey.GetPrivateView() != nil && keyset.ReadonlyKey.GetPublicSpend() != nil {
+					decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+					if decryptedOut != nil {
+						results = append(results, decryptedOut)
+					}
+				}else if cv2 != nil {
+						results = append(results, cv2)
 				}
 			}
 		}
