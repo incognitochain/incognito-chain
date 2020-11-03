@@ -397,7 +397,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValuePad := roundUpPowTwo(numValue)
 	maxExp := privacy_util.MaxExp
 	N := numValuePad * maxExp
-	//twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
+	twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
 	aggParam := setAggregateParams(N)
 
 	cmsValue := proof.cmsValue
@@ -483,7 +483,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	maxExp := privacy_util.MaxExp
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
-	//twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
+	twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
 
 	cmsValue := proof.cmsValue
 	for i := numValue; i < numValuePad; i++ {
