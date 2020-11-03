@@ -25,6 +25,23 @@ func newAccountFromShard(sid int, keyID int) *Account {
 	return acc
 }
 
+func newAccountFromPrivatekey(privateKey string) (*Account, error) {
+	acc := &Account{}
+	wl, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	acc.PrivateKey = privateKey
+	acc.PublicKey = wl.KeySet.GetPublicKeyInBase58CheckEncode()
+	acc.PaymentAddress = wl.Base58CheckSerialize(wallet.PaymentAddressType)
+	validatorKeyBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
+	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
+	acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
+	acc.keyset = &wl.KeySet
+	return acc, nil
+}
+
 func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 	acc := &Account{}
 	key, _ := wallet.NewMasterKey([]byte(fmt.Sprintf("masterkey-%v", shardID)))
@@ -43,9 +60,7 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 			acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
 			acc.keyset = &child.KeySet
 			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
-			// res, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKey})
 			acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
-			// acc.CommitteePubkeyStruct = &committeeKey
 			if k == keyID {
 				break
 			}
@@ -67,6 +82,7 @@ func (acc *Account) BuildCommitteePubkey(rewardAddr string) (*incognitokey.Commi
 		}
 		pma = k.KeySet.PaymentAddress.Pk
 	}
+
 	committeeKey, err := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(acc.keyset.PrivateKey)), pma)
 	return &committeeKey, err
 }

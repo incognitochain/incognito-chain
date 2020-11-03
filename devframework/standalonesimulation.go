@@ -583,8 +583,6 @@ func initSalryTx(amount string, privateKey string, stateDB *statedb.StateDB) []s
 	for _, val := range testUserkeyList {
 
 		testUserKey, _ := wallet.Base58CheckDeserialize(val)
-		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
-
 		testSalaryTX := transaction.Tx{}
 		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
 			stateDB,
