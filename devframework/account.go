@@ -17,6 +17,7 @@ type Account struct {
 	PaymentAddress      string
 	keyset              *incognitokey.KeySet
 	SelfCommitteePubkey string
+	shardID             byte
 	// CommitteePubkeyStruct *incognitokey.CommitteePublicKey
 }
 
@@ -39,6 +40,7 @@ func newAccountFromPrivatekey(privateKey string) (*Account, error) {
 	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
 	acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
 	acc.keyset = &wl.KeySet
+	acc.shardID = wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1] % 8
 	return acc, nil
 }
 
@@ -61,6 +63,7 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 			acc.keyset = &child.KeySet
 			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
 			acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
+			acc.shardID = byte(shardID)
 			if k == keyID {
 				break
 			}
