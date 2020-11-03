@@ -121,6 +121,7 @@ func (sim *SimulationEngine) init() {
 	blockchain.SetupParam()
 	activeNetParams := &blockchain.ChainTest2Param
 	activeNetParams.ActiveShards = sim.config.ShardNumber
+	common.MaxShardNumber = sim.config.ShardNumber
 	activeNetParams.MaxShardCommitteeSize = 5
 	for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
 		acc := sim.NewAccountFromShard(-1)

@@ -317,7 +317,7 @@ func Test_StakeFlow1(t *testing.T) {
 func Test_PDEFlow(t *testing.T) {
 	F.DisableLog(true)
 	sim := F.NewStandaloneSimulation("sim3", F.Config{
-		ShardNumber: 3,
+		ShardNumber: 1,
 	})
 	acc1 := sim.NewAccountFromShard(0)
 	_, err := sim.API_CreateTransaction(sim.IcoAccount, acc1, 100000000)
