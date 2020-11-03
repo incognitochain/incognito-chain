@@ -14,11 +14,10 @@ type Account struct {
 	PublicKey           string
 	PrivateKey          string
 	MiningKey           string
+	MiningPubkey        string
 	PaymentAddress      string
 	keyset              *incognitokey.KeySet
 	SelfCommitteePubkey string
-	//shardID             byte
-	// CommitteePubkeyStruct *incognitokey.CommitteePublicKey
 }
 
 func newAccountFromShard(sid int, keyID int) *Account {
@@ -57,8 +56,20 @@ func (acc *Account) ShardID(_numShard ...interface{}) int {
 	return int(sid[len(sid)-1]) % numShard
 }
 
-func NewAccountFromPrivatekey(privateKey string) (*Account, error) {
+func NewAccountFromCommitteePublicKey(committeePK string) (*Account, error) {
+	cpk := incognitokey.CommitteePublicKey{}
+	err := cpk.FromBase58(committeePK)
+	if err != nil {
+		return nil, err
+	}
+	acc := &Account{
+		PublicKey:    cpk.GetIncKeyBase58(),
+		MiningPubkey: cpk.GetMiningKeyBase58("bls"),
+	}
+	return acc, nil
+}
 
+func NewAccountFromPrivatekey(privateKey string) (*Account, error) {
 	acc := &Account{}
 	wl, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
@@ -70,9 +81,9 @@ func NewAccountFromPrivatekey(privateKey string) (*Account, error) {
 	validatorKeyBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
 	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
+	acc.MiningPubkey = committeeKey.GetMiningKeyBase58("bls")
 	acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
 	acc.keyset = &wl.KeySet
-	//acc.shardID = wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1] % 8
 	return acc, nil
 }
 
@@ -95,7 +106,6 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 			acc.keyset = &child.KeySet
 			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
 			acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
-			//acc.shardID = byte(shardID)
 			if k == keyID {
 				break
 			}
