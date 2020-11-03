@@ -194,6 +194,17 @@ func cloneMap(m map[string]uint64) map[string]uint64 {
 	return newMap
 }
 
+func cloneMapOfMap(m map[string]map[string]uint64) map[string]map[string]uint64 {
+	if m == nil {
+		return nil
+	}
+	newMap := make(map[string]map[string]uint64, len(m))
+	for k, v := range m {
+		newMap[k] = cloneMap(v)
+	}
+	return newMap
+}
+
 func cloneCustodians(custodians map[string]*statedb.CustodianState) map[string]*statedb.CustodianState {
 	newCustodians := make(map[string]*statedb.CustodianState, len(custodians))
 	for key, cus := range custodians {
@@ -207,7 +218,7 @@ func cloneCustodians(custodians map[string]*statedb.CustodianState) map[string]*
 			cloneMap(cus.GetRewardAmount()),
 			cloneMap(cus.GetTotalTokenCollaterals()),
 			cloneMap(cus.GetFreeTokenCollaterals()),
-			cus.GetLockedTokenCollaterals(),
+			cloneMapOfMap(cus.GetLockedTokenCollaterals()),
 		)
 	}
 	return newCustodians
@@ -1320,10 +1331,9 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		map[string]uint64{
 			USDT_ID: 1960 * 1e6,
 		})
-	//todo: debug
 	custodian2.SetLockedTokenCollaterals(map[string]map[string]uint64{
 		common.PortalBNBIDStr: {
-			USDT_ID: 80 * 1e6,
+			USDT_ID: 40 * 1e6,
 		},
 	})
 
