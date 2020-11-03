@@ -59,14 +59,23 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 	}
 	//TODO: add go routine
-	ok, err, i := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
-	if err != nil {
-		return false, NewTransactionErr(TxProofVerifyFailError, err), -1
-	}
+	isNewZKP, ok := boolParams["isNewZKP"]
 	if !ok {
-		Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", i)
-		return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", i)), -1
+		isNewZKP = true
 	}
-	return true, nil, -1
+
+	if isNewZKP {
+		ok, err, index := aggregaterange.VerifyBatch(bulletProofList)
+		if err != nil {
+			return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+		}
+		if !ok {
+			Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)), index
+		}
+		return true, nil, -1
+	} else {
+		return false, errors.New("old bulletproofs should not use batch verification"), -1
+	}
 }
 

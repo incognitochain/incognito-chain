@@ -850,10 +850,23 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if !isBatch {
-		valid, err := proof.aggregatedRangeProof.Verify()
-		if !valid {
-			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+		if isNewZKP {
+			valid, err := proof.aggregatedRangeProof.Verify()
+			if !valid {
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
+				return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+			}
+		} else {
+			validOld, err := proof.aggregatedRangeProof.VerifyOld()
+			if !validOld {
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range old failed. Error %v", err)
+				valid, err := proof.aggregatedRangeProof.Verify()
+				if !valid {
+					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range old and new failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+				}
+			}
+
 		}
 	}
 
