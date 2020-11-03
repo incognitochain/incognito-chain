@@ -86,3 +86,12 @@ func (acc *Account) BuildCommitteePubkey(rewardAddr string) (*incognitokey.Commi
 	committeeKey, err := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(acc.keyset.PrivateKey)), pma)
 	return &committeeKey, err
 }
+
+func (acc *Account) ParseCommitteePubkey(committeeKey string) (*incognitokey.CommitteePublicKey, error) {
+	cm := &incognitokey.CommitteePublicKey{}
+	err := cm.FromBase58(committeeKey)
+	if err != nil {
+		return nil, err
+	}
+	return cm, nil
+}
