@@ -84,7 +84,7 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // tokenID of the conversion coin
 	metaData metadata.Metadata,
 	info []byte) *TxTokenConvertVer1ToVer2InitParams {
-	return NewTxTokenConvertVer1ToVer2InitParams(senderSK, feeInputs, feePayments, tokenInputs,	tokenPayments, fee,	stateDB, bridgeStateDB,	tokenID, metaData, info)
+	return tx_ver2.NewTxTokenConvertVer1ToVer2InitParams(senderSK, feeInputs, feePayments, tokenInputs,	tokenPayments, fee,	stateDB, bridgeStateDB,	tokenID, metaData, info)
 }
 
 func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
