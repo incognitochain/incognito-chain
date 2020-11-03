@@ -140,3 +140,8 @@ func (acc *Account) ParseCommitteePubkey(committeeKey string) (*incognitokey.Com
 	}
 	return cm, nil
 }
+
+func IncPubkeyFromPaymentAddr(paymentAddr string) string {
+	wl, _ := wallet.Base58CheckDeserialize(paymentAddr)
+	return base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.ZeroByte)
+}

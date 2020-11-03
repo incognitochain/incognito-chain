@@ -170,11 +170,18 @@ func (sim *SimulationEngine) init() {
 		panic(err)
 	}
 
+	db, err := incdb.OpenMultipleDB("leveldb", filepath.Join("./"+simName, "database"))
+	// Create db and use it.
+	if err != nil {
+		panic(err)
+	}
+
 	//listenFunc := net.Listen
 	//listener, err := listenFunc("tcp", "0.0.0.0:8000")
 	//if err != nil {
 	//	panic(err)
 	//}
+
 	rpcConfig := rpcserver.RpcServerConfig{
 		HttpListenters: []net.Listener{nil},
 		RPCMaxClients:  1,
@@ -184,14 +191,9 @@ func (sim *SimulationEngine) init() {
 		Blockgen:       blockgen,
 		TxMemPool:      &txpool,
 		Server:         &server,
+		Database:       db,
 	}
 	rpcServer := &rpcserver.RpcServer{}
-
-	db, err := incdb.OpenMultipleDB("leveldb", filepath.Join("./"+simName, "database"))
-	// Create db and use it.
-	if err != nil {
-		panic(err)
-	}
 
 	btcChain, err := getBTCRelayingChain(activeNetParams.BTCRelayingHeaderChainID, "btcchain", simName)
 	if err != nil {
@@ -507,36 +509,16 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 	return nil
 }
 
-func (sim *SimulationEngine) GetBalance(acc Account) (map[string]float64, error) {
-	tokenList := make(map[string]float64)
+func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
+	tokenList := make(map[string]uint64)
 	prv, _ := sim.rpc_getbalancebyprivatekey(acc.PrivateKey)
-	tokenList["PRV"] = float64(prv) / 1e9
+	tokenList["PRV"] = prv
 
-	//requestBody2, err := json.Marshal(map[string]interface{}{
-	//	"jsonrpc": "1.0",
-	//	"method":  "getlistprivacycustomtokenbalance",
-	//	"params":  []interface{}{acc.PrivateKey},
-	//	"id":      1,
-	//})
-	//
-	//if err != nil {
-	//	return nil, err
-	//}
-	//body2, err := sendRequest(requestBody2)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//txResp2 := struct {
-	//	Result jsonresult.ListCustomTokenBalance
-	//}{}
-	//err = json.Unmarshal(body2, &txResp2)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//for _, token := range txResp2.Result.ListCustomTokenBalance {
-	//	tokenList[token.Name] = token.Amount
-	//}
+	tokenBL, _ := sim.rpc_getlistprivacycustomtokenbalance(acc.PrivateKey)
+	for _, token := range tokenBL.ListCustomTokenBalance {
+		tokenList[token.TokenID] = token.Amount
+
+	}
 	return tokenList, nil
 }
 
@@ -568,13 +550,13 @@ func createICOtx(privateKeys []string) []string {
 	}
 	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
 	for _, privateKey := range privateKeys {
-		txs := initSalryTx("1000000000000000000000000000000", privateKey, stateDB)
+		txs := initSalaryTx("1000000000000000000000000000000", privateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
 	return transactions
 }
 
-func initSalryTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
+func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	testUserkeyList := []string{

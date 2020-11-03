@@ -1,6 +1,7 @@
 package testsuite
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -287,7 +288,7 @@ func Test_StakeFlow1(t *testing.T) {
 			isChange = false
 		}
 	}
-
+	viewPool()
 	// fmt.Println("\n----------------------------------")
 	// fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
 	// fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
@@ -311,4 +312,141 @@ func Test_StakeFlow1(t *testing.T) {
 	// fmt.Println("----------------------------------")
 	fmt.Println()
 	return
+}
+
+func Test_PDEFlow(t *testing.T) {
+	F.DisableLog(true)
+	sim := F.NewStandaloneSimulation("sim3", F.Config{
+		ShardNumber: 3,
+	})
+	acc1 := sim.NewAccountFromShard(0)
+	_, err := sim.API_CreateTransaction(sim.IcoAccount, acc1, 100000000)
+	if err != nil {
+		panic(err)
+	}
+	sim.GenerateBlock().NextRound()
+
+	//Create custom token
+	result1, err := sim.API_CreateAndSendPrivacyCustomTokenTransaction(sim.IcoAccount.PrivateKey, nil, 5, 1, map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     "",
+		"TokenName":   "pLAM",
+		"TokenSymbol": "LAM",
+		"TokenFee":    float64(0),
+		"TokenTxType": float64(0),
+		"TokenAmount": float64(30000000000),
+		"TokenReceivers": map[string]interface{}{
+			sim.IcoAccount.PaymentAddress: float64(30000000000),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(result1.TokenID)
+	for i := 0; i < 50; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	burnAddr := sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
+	fmt.Println(burnAddr)
+	result2, err := sim.API_CreateAndSendTxWithPTokenContributionV2(sim.IcoAccount.PrivateKey, nil, -1, 0, map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     result1.TokenID,
+		"TokenTxType": float64(1),
+		"TokenName":   "",
+		"TokenSymbol": "",
+		"TokenAmount": "300000000",
+		"TokenReceivers": map[string]interface{}{
+			burnAddr: "300000000",
+		},
+		"TokenFee":              "0",
+		"PDEContributionPairID": "testPAIR",
+		"ContributorAddressStr": sim.IcoAccount.PaymentAddress,
+		"ContributedAmount":     "300000000",
+		"TokenIDStr":            result1.TokenID,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	r2Bytes, _ := json.Marshal(result2)
+	fmt.Println(string(r2Bytes))
+
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	_, err = sim.API_CreateAndSendTxWithPRVContributionV2(sim.IcoAccount.PrivateKey, map[string]interface{}{burnAddr: "100000000000"}, -1, 0, map[string]interface{}{
+		"PDEContributionPairID": "testPAIR",
+		"ContributorAddressStr": sim.IcoAccount.PaymentAddress,
+		"ContributedAmount":     "100000000000",
+		"TokenIDStr":            "0000000000000000000000000000000000000000000000000000000000000004",
+	})
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	r, err := sim.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
+	if err != nil {
+		panic(err)
+	}
+	rBytes, _ := json.Marshal(r)
+	fmt.Println(string(rBytes))
+
+	_, err = sim.API_CreateAndSendTxWithPRVCrossPoolTradeReq(acc1.PrivateKey, map[string]interface{}{burnAddr: "1000000"}, -1, -1, map[string]interface{}{
+		"TokenIDToBuyStr":     result1.TokenID,
+		"TokenIDToSellStr":    "0000000000000000000000000000000000000000000000000000000000000004",
+		"SellAmount":          "1000000",
+		"MinAcceptableAmount": "1",
+		"TradingFee":          "0",
+		"TraderAddressStr":    acc1.PaymentAddress,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	_, err = sim.API_CreateAndSendTxWithPTokenCrossPoolTradeReq(sim.IcoAccount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     result1.TokenID,
+		"TokenTxType": float64(1),
+		"TokenName":   "",
+		"TokenSymbol": "",
+		"TokenAmount": "1000000000",
+		"TokenReceivers": map[string]interface{}{
+			burnAddr: "1000000000",
+		},
+		"TokenFee":            "0",
+		"TokenIDToBuyStr":     "0000000000000000000000000000000000000000000000000000000000000004",
+		"TokenIDToSellStr":    result1.TokenID,
+		"SellAmount":          "1000000000",
+		"MinAcceptableAmount": "1",
+		"TradingFee":          "1",
+		"TraderAddressStr":    sim.IcoAccount.PaymentAddress,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+	fmt.Println("------------------------------------------------------------")
+	bl, _ := sim.GetBalance(sim.IcoAccount)
+	fmt.Println("ICO", bl)
+	fmt.Println("------------------------------------------------------------")
+	bl1, _ := sim.GetBalance(acc1)
+	fmt.Println("ACC1", bl1)
+
+	fmt.Println("------------------------------------------------------------")
+	r2, err := sim.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
+	if err != nil {
+		panic(err)
+	}
+	rBytes2, _ := json.Marshal(r2)
+	fmt.Println(string(rBytes2))
 }

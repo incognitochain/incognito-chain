@@ -23,6 +23,15 @@ func (sim *SimulationEngine) rpc_getbalancebyprivatekey(privateKey string) (res 
 	}
 	return resI.(uint64),nil
 }
+func (sim *SimulationEngine) rpc_getlistprivacycustomtokenbalance(privateKey string) (res jsonresult.ListCustomTokenBalance,err error) {
+	httpServer := sim.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getlistprivacycustomtokenbalance"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey}, nil)
+	if rpcERR != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.ListCustomTokenBalance),nil
+}
 func (sim *SimulationEngine) rpc_getrewardamount(paymentAddress string) (res map[string]uint64,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["getrewardamount"]
@@ -68,14 +77,14 @@ func (sim *SimulationEngine) rpc_getcommitteelist(empty string) (res jsonresult.
 	}
 	return resI.(jsonresult.CommitteeListsResult),nil
 }
-func (sim *SimulationEngine) rpc_createandsendprivacycustomtokentransaction(privateKey string,receivers map[string]interface{},fee float64, privacy float64, tokenInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *SimulationEngine) rpc_createandsendprivacycustomtokentransaction(privateKey string,receivers map[string]interface{},fee float64, privacy float64, tokenInfo map[string]interface{}) (res jsonresult.CreateTransactionTokenResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendprivacycustomtokentransaction"]
 	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,tokenInfo}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
-	return resI.(jsonresult.CreateTransactionResult),nil
+	return resI.(jsonresult.CreateTransactionTokenResult),nil
 }
 func (sim *SimulationEngine) rpc_createandsendtxwithwithdrawalreqv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
@@ -95,23 +104,23 @@ func (sim *SimulationEngine) rpc_createandsendtxwithpdefeewithdrawalreq(privateK
 	}
 	return resI.(jsonresult.CreateTransactionResult),nil
 }
-func (sim *SimulationEngine) rpc_createandsendtxwithptokentradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *SimulationEngine) rpc_createandsendtxwithptokentradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendtxwithptokentradereq"]
-	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,reqInfo}, nil)
+	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,reqInfo,p1,pPrivacy}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
-	return resI.(jsonresult.CreateTransactionResult),nil
+	return resI.(jsonresult.CreateTransactionTokenResult),nil
 }
-func (sim *SimulationEngine) rpc_createandsendtxwithptokencrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *SimulationEngine) rpc_createandsendtxwithptokencrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendtxwithptokencrosspooltradereq"]
-	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,reqInfo}, nil)
+	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,reqInfo,p1,pPrivacy}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
-	return resI.(jsonresult.CreateTransactionResult),nil
+	return resI.(jsonresult.CreateTransactionTokenResult),nil
 }
 func (sim *SimulationEngine) rpc_createandsendtxwithprvtradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
@@ -131,14 +140,14 @@ func (sim *SimulationEngine) rpc_createandsendtxwithprvcrosspooltradereq(private
 	}
 	return resI.(jsonresult.CreateTransactionResult),nil
 }
-func (sim *SimulationEngine) rpc_createandsendtxwithptokencontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *SimulationEngine) rpc_createandsendtxwithptokencontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendtxwithptokencontributionv2"]
-	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,reqInfo}, nil)
+	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,reqInfo,p1,pPrivacy}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
-	return resI.(jsonresult.CreateTransactionResult),nil
+	return resI.(jsonresult.CreateTransactionTokenResult),nil
 }
 func (sim *SimulationEngine) rpc_createandsendtxwithprvcontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
@@ -149,7 +158,7 @@ func (sim *SimulationEngine) rpc_createandsendtxwithprvcontributionv2(privateKey
 	}
 	return resI.(jsonresult.CreateTransactionResult),nil
 }
-func (sim *SimulationEngine) rpc_getpdestate(data map[string]uint64) (res interface{},err error) {
+func (sim *SimulationEngine) rpc_getpdestate(data map[string]interface{}) (res interface{},err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["getpdestate"]
 	resI, rpcERR := c(httpServer, []interface{}{data}, nil)
