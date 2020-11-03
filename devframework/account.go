@@ -17,7 +17,7 @@ type Account struct {
 	PaymentAddress      string
 	keyset              *incognitokey.KeySet
 	SelfCommitteePubkey string
-	shardID             byte
+	//shardID             byte
 	// CommitteePubkeyStruct *incognitokey.CommitteePublicKey
 }
 
@@ -26,7 +26,39 @@ func newAccountFromShard(sid int, keyID int) *Account {
 	return acc
 }
 
-func newAccountFromPrivatekey(privateKey string) (*Account, error) {
+func GetShardIDFromPubkey(pk string, args ...interface{}) (int, error) {
+	numShard := 256
+	for _, arg := range args {
+		switch arg.(type) {
+		case int:
+			numShard = arg.(int)
+		}
+	}
+
+	sid, _, err := base58.Base58Check{}.Decode(pk)
+	if err != nil {
+		return -1, err
+	}
+	return int(sid[len(sid)-1]) % numShard, nil
+}
+
+func (acc *Account) ShardID(_numShard ...interface{}) int {
+	numShard := 256
+	for _, arg := range _numShard {
+		switch arg.(type) {
+		case int:
+			numShard = arg.(int)
+		}
+	}
+	sid, _, err := base58.Base58Check{}.Decode(acc.PublicKey)
+	if err != nil {
+		return -1
+	}
+	return int(sid[len(sid)-1]) % numShard
+}
+
+func NewAccountFromPrivatekey(privateKey string) (*Account, error) {
+
 	acc := &Account{}
 	wl, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
@@ -40,7 +72,7 @@ func newAccountFromPrivatekey(privateKey string) (*Account, error) {
 	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
 	acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
 	acc.keyset = &wl.KeySet
-	acc.shardID = wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1] % 8
+	//acc.shardID = wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1] % 8
 	return acc, nil
 }
 
@@ -63,7 +95,7 @@ func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
 			acc.keyset = &child.KeySet
 			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
 			acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
-			acc.shardID = byte(shardID)
+			//acc.shardID = byte(shardID)
 			if k == keyID {
 				break
 			}
