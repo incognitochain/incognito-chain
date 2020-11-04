@@ -111,10 +111,11 @@ func GenerateAccountByShard(shardID int, keyID int, seed string) (*Account, erro
 	return acc, nil
 }
 
-func (acc *Account) BuildCommitteePubkey(stakerAddr string) (*incognitokey.CommitteePublicKey, error) {
+func BuildCommitteePubkey(minerPrivateKey string, stakerAddr string) (*incognitokey.CommitteePublicKey, error) {
+	wl, err := wallet.Base58CheckDeserialize(minerPrivateKey)
 	pma := privacy.PublicKey{}
 	if stakerAddr == "" {
-		pma = acc.keyset.PaymentAddress.Pk
+		pma = wl.KeySet.PaymentAddress.Pk
 	} else {
 		k, err := wallet.Base58CheckDeserialize(stakerAddr)
 		if err != nil {
@@ -123,7 +124,7 @@ func (acc *Account) BuildCommitteePubkey(stakerAddr string) (*incognitokey.Commi
 		pma = k.KeySet.PaymentAddress.Pk
 	}
 
-	committeeKey, err := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(acc.keyset.PrivateKey)), pma)
+	committeeKey, err := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), pma)
 	return &committeeKey, err
 }
 
