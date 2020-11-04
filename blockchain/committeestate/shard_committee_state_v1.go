@@ -237,7 +237,6 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	Logger.log.Info(">>>>>>>>> ", env.BeaconHeight(), env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey())
 	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 {
 		committeeChange, err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
 	} else {
@@ -245,7 +244,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 	}
 
 	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, err
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -485,7 +484,8 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 			remainedShardCommittees := committeeState.shardCommittee[removedCommitteeSize:]
 			tempShardSwappedCommittees := committeeState.shardCommittee[:env.MinShardCommitteeSize()]
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
-				return nil, fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs)
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
+					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
 			}
 			shardCommitteesStruct := append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
 			committeeState.shardCommittee = shardCommitteesStruct
