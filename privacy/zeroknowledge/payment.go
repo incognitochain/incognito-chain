@@ -853,17 +853,19 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		if isNewZKP {
 			valid, err := proof.aggregatedRangeProof.Verify()
 			if !valid {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-				return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range NEW failed. Error %v", err)
+				errMsg := errors.New(fmt.Sprintf("Cannot verify aggregatedRangeProof with VERIFY NEW . Error %v", err))
+				return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofNewFailedErr, errMsg)
 			}
 		} else {
 			validOld, err := proof.aggregatedRangeProof.VerifyOld()
 			if !validOld {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range old failed. Error %v", err)
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range OLD failed. Error %v", err)
 				valid, err := proof.aggregatedRangeProof.Verify()
 				if !valid {
-					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range old and new failed")
-					return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+					errMsg := errors.New(fmt.Sprintf("Cannot verify aggregatedRangeProof with both VERIFY New & OLD. Error %v", err))
+					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range OLD and new failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofNewFailedErr, errMsg)
 				}
 			}
 

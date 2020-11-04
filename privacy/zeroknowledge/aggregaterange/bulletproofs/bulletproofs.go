@@ -431,7 +431,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	RHS.Add(RHS, new(privacy.Point).MultiScalarMult(expVector, cmsValue))
 
 	if !privacy.IsPointEqual(LHS, RHS) {
-		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
@@ -459,14 +459,14 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	PPrime := new(privacy.Point).Add(proof.innerProductProof.p, new(privacy.Point).ScalarMult(privacy.HBase, proof.mu) )
 
 	if !privacy.IsPointEqual(P, PPrime) {
-		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
 		return false, errors.New("verify aggregated range proof statement 2-1 failed")
 	}
 
 	// verify eq (68)
 	innerProductArgValid := proof.innerProductProof.Verify(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if !innerProductArgValid {
-		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
 		return false, errors.New("verify aggregated range proof statement 2 failed")
 	}
 
@@ -516,7 +516,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	RHS.Add(RHS, new(privacy.Point).MultiScalarMult(expVector, cmsValue))
 	if !privacy.IsPointEqual(LHS, RHS) {
-		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
@@ -542,7 +542,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	PPrime := new(privacy.Point).Add(proof.innerProductProof.p, new(privacy.Point).ScalarMult(privacy.HBase, proof.mu) )
 
 	if !privacy.IsPointEqual(P, PPrime) {
-		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
 		return false, errors.New("verify aggregated range proof statement 2-1 failed")
 	}
 
@@ -592,7 +592,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 
 	res := privacy.IsPointEqual(rightHS, leftHS)
 	if !res {
-		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
 		return false, errors.New("verify aggregated range proof statement 2 failed")
 	}
 
@@ -777,7 +777,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	//fmt.Println("Batch Verification ", RHSPrime)
 
 	if !privacy.IsPointEqual(LHSPrime, RHSPrime) {
-		Logger.Log.Errorf("batch verify aggregated range proof failed")
+		privacy.Logger.Log.Errorf("batch verify aggregated range proof failed")
 		return false, errors.New("batch verify aggregated range proof failed"), -1
 	}
 	return true, nil, -1

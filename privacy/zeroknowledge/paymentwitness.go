@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
@@ -337,6 +338,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	// Update to bulletproof ver 2
 	proof.aggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
 	if err != nil {
+		fmt.Println("Error: ", err)
 		return nil, privacy.NewPrivacyErr(privacy.ProveAggregatedRangeErr, err)
 	}
 

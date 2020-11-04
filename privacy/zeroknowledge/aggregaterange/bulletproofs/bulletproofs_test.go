@@ -2,18 +2,15 @@ package bulletproofs
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"testing"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/stretchr/testify/assert"
 )
 
 var _ = func() (_ struct{}) {
@@ -38,13 +35,13 @@ func TestPad(t *testing.T) {
 	}
 
 	for _, item := range data {
-		num := aggregaterange.roundUpPowTwo(item.number)
+		num := roundUpPowTwo(item.number)
 		assert.Equal(t, item.paddedNumber, num)
 	}
 }
 
 func TestPowerVector(t *testing.T) {
-	twoVector := aggregaterange.powerVector(new(privacy.Scalar).FromUint64(2), 5)
+	twoVector := powerVector(new(privacy.Scalar).FromUint64(2), 5)
 	assert.Equal(t, 5, len(twoVector))
 }
 
@@ -64,14 +61,14 @@ func TestInnerProduct(t *testing.T) {
 			uintc += uinta[i] * uintb[i]
 		}
 
-		c, _ := aggregaterange.innerProduct(a, b)
+		c, _ := innerProduct(a, b)
 		assert.Equal(t, new(privacy.Scalar).FromUint64(uintc), c)
 	}
 }
 
 func TestEncodeVectors(t *testing.T) {
 	for i := 0; i < 5; i++ {
-		var AggParam = aggregaterange.newBulletproofParams(1)
+		var AggParam = newBulletproofParams(1)
 		n := privacy_util.MaxExp
 		a := make([]*privacy.Scalar, n)
 		b := make([]*privacy.Scalar, n)
@@ -85,7 +82,7 @@ func TestEncodeVectors(t *testing.T) {
 			H[i] = new(privacy.Point).Set(AggParam.h[i])
 		}
 
-		actualRes, err := aggregaterange.encodeVectors(a, b, G, H)
+		actualRes, err := encodeVectors(a, b, G, H)
 		if err != nil {
 			fmt.Printf("Err: %v\n", err)
 		}
@@ -103,14 +100,14 @@ func TestEncodeVectors(t *testing.T) {
 func TestInnerProductProveVerify(t *testing.T) {
 	for k := 0; k < 4; k++ {
 		numValue := rand.Intn(privacy_util.MaxOutputCoin)
-		numValuePad := aggregaterange.roundUpPowTwo(numValue)
+		numValuePad := roundUpPowTwo(numValue)
 		aggParam := new(bulletproofParams)
 		aggParam.g = AggParam.g[0 : numValuePad*privacy_util.MaxExp]
 		aggParam.h = AggParam.h[0 : numValuePad*privacy_util.MaxExp]
 		aggParam.u = AggParam.u
 		aggParam.cs = AggParam.cs
 
-		wit := new(aggregaterange.InnerProductWitness)
+		wit := new(InnerProductWitness)
 		n := privacy_util.MaxExp * numValuePad
 		wit.a = make([]*privacy.Scalar, n)
 		wit.b = make([]*privacy.Scalar, n)
@@ -122,7 +119,7 @@ func TestInnerProductProveVerify(t *testing.T) {
 			wit.b[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(100000)))
 		}
 
-		c, _ := aggregaterange.innerProduct(wit.a, wit.b)
+		c, _ := innerProduct(wit.a, wit.b)
 		wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
 
 		for i := range wit.a {
@@ -153,7 +150,7 @@ func TestInnerProductProveVerify(t *testing.T) {
 func TestAggregatedRangeProveVerify(t *testing.T) {
 	for i := 0; i < 1; i++ {
 		//prepare witness for Aggregated range protocol
-		wit := new(aggregaterange.AggregatedRangeWitness)
+		wit := new(AggregatedRangeWitness)
 		numValue := rand.Intn(privacy_util.MaxOutputCoin)
 		values := make([]uint64, numValue)
 		rands := make([]*privacy.Scalar, numValue)
@@ -178,7 +175,7 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		assert.Equal(t, int(expectProofSize), len(bytes))
 
 		// new aggregatedRangeProof from bytes array
-		proof2 := new(aggregaterange.AggregatedRangeProof)
+		proof2 := new(AggregatedRangeProof)
 		proof2.SetBytes(bytes)
 
 		// verify the proof
@@ -197,7 +194,7 @@ func TestAggregatedRangeProveVerifyTampered(t *testing.T) {
 	count := 10
 	for i := 0; i < count; i++ {
 		//prepare witness for Aggregated range protocol
-		wit := new(aggregaterange.AggregatedRangeWitness)
+		wit := new(AggregatedRangeWitness)
 		numValue := rand.Intn(privacy_util.MaxOutputCoin)
 		values := make([]uint64, numValue)
 		rands := make([]*privacy.Scalar, numValue)
@@ -216,7 +213,7 @@ func TestAggregatedRangeProveVerifyTampered(t *testing.T) {
 	}
 }
 
-func testAggregatedRangeProofTampered(proof *aggregaterange.AggregatedRangeProof, t *testing.T){
+func testAggregatedRangeProofTampered(proof *AggregatedRangeProof, t *testing.T){
 	saved := proof.a
 	// tamper with one field
 	proof.a = privacy.RandomPoint()
@@ -334,11 +331,11 @@ func testAggregatedRangeProofTampered(proof *aggregaterange.AggregatedRangeProof
 
 func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 	count := 10
-	proofs := make([]*aggregaterange.AggregatedRangeProof, 0)
+	proofs := make([]*AggregatedRangeProof, 0)
 
 	for i := 0; i < count; i++ {
 		//prepare witness for Aggregated range protocol
-		wit := new(aggregaterange.AggregatedRangeWitness)
+		wit := new(AggregatedRangeWitness)
 		numValue := rand.Intn(privacy_util.MaxOutputCoin)
 		values := make([]uint64, numValue)
 		rands := make([]*privacy.Scalar, numValue)
@@ -372,12 +369,12 @@ func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	for k := 1; k < 20; k += 1 {
 		count := k
-		proofs := make([]*aggregaterange.AggregatedRangeProof, 0)
+		proofs := make([]*AggregatedRangeProof, 0)
 		start := time.Now()
 		t1 := time.Now().Sub(start)
 		for i := 0; i < count; i++ {
 			//prepare witness for Aggregated range protocol
-			wit := new(aggregaterange.AggregatedRangeWitness)
+			wit := new(AggregatedRangeWitness)
 			//numValue := rand.Intn(MaxOutputNumber)
 			numValue := 8
 			values := make([]uint64, numValue)
@@ -409,7 +406,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 }
 
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
-	wit := new(aggregaterange.AggregatedRangeWitness)
+	wit := new(AggregatedRangeWitness)
 	values := make([]uint64, numberofOutput)
 	rands := make([]*privacy.Scalar, numberofOutput)
 
@@ -427,7 +424,7 @@ func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 }
 
 func benchmarkAggRangeProof_Verify(numberofOutput int, b *testing.B) {
-	wit := new(aggregaterange.AggregatedRangeWitness)
+	wit := new(AggregatedRangeWitness)
 	values := make([]uint64, numberofOutput)
 	rands := make([]*privacy.Scalar, numberofOutput)
 
@@ -446,7 +443,7 @@ func benchmarkAggRangeProof_Verify(numberofOutput int, b *testing.B) {
 }
 
 func benchmarkAggRangeProof_VerifyFaster(numberofOutput int, b *testing.B) {
-	wit := new(aggregaterange.AggregatedRangeWitness)
+	wit := new(AggregatedRangeWitness)
 	values := make([]uint64, numberofOutput)
 	rands := make([]*privacy.Scalar, numberofOutput)
 
