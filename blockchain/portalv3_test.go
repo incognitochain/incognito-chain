@@ -39,6 +39,7 @@ const USER1_INC_ADDRESS = "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQ
 const USER2_INC_ADDRESS = "12S1a8VnkwhDTQWZ5PhdpySwiFZj7p8sKdG7oAQFZ3dLsWaV6fhDWk5aSFHpt1jcPBjY4sYgwqAqRzx3oTYDZCvCei1LSCdJARXWiyK"
 
 const USDT_ID = "64fbdbc6bf5b228814b58706d91ed03777f0edf6"
+const ETH_ID = "0000000000000000000000000000000000000000"
 
 func (s *PortalTestSuiteV3) SetupTest() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "portal_test_statedb_")
@@ -57,7 +58,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 			common.PRVIDStr:       {Amount: 1000000},
 			common.PortalBNBIDStr: {Amount: 20000000},
 			common.PortalBTCIDStr: {Amount: 10000000000},
-			"0000000000000000000000000000000000000000":     {Amount: 400000000},
+			ETH_ID:                {Amount: 400000000},
 			USDT_ID:               {Amount: 1000000},
 		})
 	s.currentPortalStateForProducer = CurrentPortalState{
@@ -104,7 +105,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						TP130:                                130,
 						MinPercentPortingFee:                 0.01,
 						MinPercentRedeemFee:                  0.01,
-						SupportedCollateralTokens: getSupportedPortalCollateralsTestnet(),
+						SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),
 					},
 				},
 			},
@@ -141,7 +142,7 @@ func getUnlockAmount(totalLockedAmount uint64, totalPTokenAmount uint64, pTokenA
 }
 
 func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
-	portingAmount := uint64(1 * 1e9)
+	portingAmount := uint64(100 * 1e9)
 	tokenID := common.PortalBNBIDStr
 	collateralTokenID := USDT_ID
 
@@ -151,7 +152,7 @@ func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
 }
 
 func (s *PortalTestSuiteV3) TestGetMinFee() {
-	amount := uint64(1 * 1e9)
+	amount := uint64(150 * 1e9)
 	tokenID := common.PortalBNBIDStr
 	percent := s.blockChain.GetPortalParams(0).MinPercentPortingFee
 
@@ -169,17 +170,19 @@ func (s *PortalTestSuiteV3) TestGetUnlockAmount() {
 }
 
 func (s *PortalTestSuiteV3) TestExchangeRate() {
-	s.currentPortalStateForProducer.FinalExchangeRatesState = statedb.NewFinalExchangeRatesStateWithValue(
-		map[string]statedb.FinalExchangeRatesDetail{
-			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 40000000},
-			common.PortalBTCIDStr: {Amount: 10000000000},
-		})
-	amount := uint64(0.7 * 1e9)
+	//s.currentPortalStateForProducer.FinalExchangeRatesState = statedb.NewFinalExchangeRatesStateWithValue(
+	//	map[string]statedb.FinalExchangeRatesDetail{
+	//		common.PRVIDStr:       {Amount: 1000000},
+	//		common.PortalBNBIDStr: {Amount: 40000000},
+	//		common.PortalBTCIDStr: {Amount: 10000000000},
+	//	})
+	//
+	//s.currentPortalStateForProducer.FinalExchangeRatesState = s.
+	amount := uint64(12500000000 * 2)
 	tokenIDFrom := common.PortalBNBIDStr
-	tokenIDTo := common.PRVIDStr
+	tokenIDTo := USDT_ID
 	convertAmount := exchangeRates(amount, tokenIDFrom, tokenIDTo, s.currentPortalStateForProducer.FinalExchangeRatesState)
-	convertAmount = convertAmount * 120 / 100
+	//convertAmount = convertAmount * 120 / 100
 	fmt.Println("Result from TestExchangeRate: ", convertAmount)
 }
 
@@ -190,6 +193,17 @@ func cloneMap(m map[string]uint64) map[string]uint64 {
 	newMap := make(map[string]uint64, len(m))
 	for k, v := range m {
 		newMap[k] = v
+	}
+	return newMap
+}
+
+func cloneMapOfMap(m map[string]map[string]uint64) map[string]map[string]uint64 {
+	if m == nil {
+		return nil
+	}
+	newMap := make(map[string]map[string]uint64, len(m))
+	for k, v := range m {
+		newMap[k] = cloneMap(v)
 	}
 	return newMap
 }
@@ -207,7 +221,7 @@ func cloneCustodians(custodians map[string]*statedb.CustodianState) map[string]*
 			cloneMap(cus.GetRewardAmount()),
 			cloneMap(cus.GetTotalTokenCollaterals()),
 			cloneMap(cus.GetFreeTokenCollaterals()),
-			cus.GetLockedTokenCollaterals(),
+			cloneMapOfMap(cus.GetLockedTokenCollaterals()),
 		)
 	}
 	return newCustodians
@@ -221,6 +235,7 @@ func cloneMatchingPortingCustodians(custodians []*statedb.MatchingPortingCustodi
 			RemoteAddress:          cus.RemoteAddress,
 			Amount:                 cus.Amount,
 			LockedAmountCollateral: cus.LockedAmountCollateral,
+			LockedTokenCollaterals: cus.LockedTokenCollaterals,
 		}
 	}
 	return newMatchingCustodians
@@ -657,9 +672,9 @@ func buildPortalUserRegisterAction(
 	}
 
 	actionContent := metadata.PortalUserRegisterAction{
-		Meta:    data,
-		TxReqID: common.Hash{},
-		ShardID: shardID,
+		Meta:        data,
+		TxReqID:     common.Hash{},
+		ShardID:     shardID,
 		ShardHeight: shardHeight,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
@@ -997,7 +1012,7 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 				common.PortalBTCIDStr: "btcAddress1",
 			},
 			depositAmount:     10 * 1e9,
-			collateralTokenID: "0000000000000000000000000000000000000000",
+			collateralTokenID: ETH_ID,
 			blockHash:         eCommon.Hash{},
 			txIndex:           0,
 			proofStrs:         nil,
@@ -1025,7 +1040,7 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 				common.PortalBTCIDStr: "btcAddress2",
 			},
 			depositAmount:     2 * 1e9,
-			collateralTokenID: "0000000000000000000000000000000000000000",
+			collateralTokenID: ETH_ID,
 			blockHash:         eCommon.Hash{},
 			txIndex:           0,
 			proofStrs:         nil,
@@ -1069,12 +1084,12 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		})
 	custodian1.SetTotalTokenCollaterals(
 		map[string]uint64{
-			"0000000000000000000000000000000000000000": 10 * 1e9,
+			ETH_ID:  10 * 1e9,
 			USDT_ID: 500 * 1e6,
 		})
 	custodian1.SetFreeTokenCollaterals(
 		map[string]uint64{
-			"0000000000000000000000000000000000000000": 10 * 1e9,
+			ETH_ID:  10 * 1e9,
 			USDT_ID: 500 * 1e6,
 		})
 
@@ -1184,12 +1199,12 @@ func (s *PortalTestSuiteV3) SetupTestPortingRequest() {
 	custodian1.SetFreeCollateral(1000 * 1e9)
 	custodian1.SetTotalTokenCollaterals(
 		map[string]uint64{
-			"0000000000000000000000000000000000000000": 10 * 1e9,
+			ETH_ID:  10 * 1e9,
 			USDT_ID: 500 * 1e6,
 		})
 	custodian1.SetFreeTokenCollaterals(
 		map[string]uint64{
-			"0000000000000000000000000000000000000000": 10 * 1e9,
+			ETH_ID:  10 * 1e9,
 			USDT_ID: 500 * 1e6,
 		})
 
@@ -1209,7 +1224,7 @@ func (s *PortalTestSuiteV3) SetupTestPortingRequest() {
 		})
 
 	custodian3 := statedb.NewCustodianState()
-	custodian3.SetIncognitoAddress("custodianIncAddress2")
+	custodian3.SetIncognitoAddress("custodianIncAddress3")
 	custodian3.SetRemoteAddresses(
 		map[string]string{
 			common.PortalBTCIDStr: "btcAddress2",
@@ -1242,42 +1257,42 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 			portingFee:    2000000,
 			isExisted:     false,
 		},
-		//// valid porting request: match to many custodians
-		//{
-		//	portingID:     "porting-bnb-2",
-		//	incAddressStr: "userIncAddress1",
-		//	pTokenID:      common.PortalBNBIDStr,
-		//	portingAmount: 100 * 1e9,
-		//	portingFee:    2000000,
-		//	isExisted:     false,
-		//},
-		//// invalid porting request with duplicate porting ID
-		//{
-		//	portingID:     "porting-bnb-1",
-		//	incAddressStr: "userIncAddress2",
-		//	pTokenID:      common.PortalBNBIDStr,
-		//	portingAmount: 1 * 1e9,
-		//	portingFee:    2000000,
-		//	isExisted:     true,
-		//},
-		//// invalid porting request with invalid porting fee
-		//{
-		//	portingID:     "porting-bnb-3",
-		//	incAddressStr: "userIncAddress2",
-		//	pTokenID:      common.PortalBNBIDStr,
-		//	portingAmount: 1 * 1e9,
-		//	portingFee:    999000000,
-		//	isExisted:     false,
-		//},
-		//// invalid porting request: total collaterals of the custodians are not enough for the porting amount
-		//{
-		//	portingID:     "porting-btc-4",
-		//	incAddressStr: "userIncAddress3",
-		//	pTokenID:      common.PortalBTCIDStr,
-		//	portingAmount: 10 * 1e9,
-		//	portingFee:    1000000000,
-		//	isExisted:     false,
-		//},
+		// valid porting request: match to many custodians
+		{
+			portingID:     "porting-bnb-2",
+			incAddressStr: "userIncAddress2",
+			pTokenID:      common.PortalBNBIDStr,
+			portingAmount: 150 * 1e9,
+			portingFee:    300000000,
+			isExisted:     false,
+		},
+		// invalid porting request with duplicate porting ID
+		{
+			portingID:     "porting-bnb-1",
+			incAddressStr: "userIncAddress1",
+			pTokenID:      common.PortalBNBIDStr,
+			portingAmount: 1 * 1e9,
+			portingFee:    2000000,
+			isExisted:     true,
+		},
+		// invalid porting request with invalid porting fee
+		{
+			portingID:     "porting-bnb-3",
+			incAddressStr: "userIncAddress3",
+			pTokenID:      common.PortalBNBIDStr,
+			portingAmount: 1 * 1e9,
+			portingFee:    99900,
+			isExisted:     false,
+		},
+		// invalid porting request: total collaterals of the custodians are not enough for the porting amount
+		{
+			portingID:     "porting-btc-4",
+			incAddressStr: "userIncAddress3",
+			pTokenID:      common.PortalBTCIDStr,
+			portingAmount: 10 * 1e9,
+			portingFee:    1000000000,
+			isExisted:     false,
+		},
 	}
 
 	// build expected results
@@ -1294,16 +1309,27 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 			common.PortalBTCIDStr: "btcAddress1",
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
-	custodian1.SetFreeCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(0)
 	custodian1.SetTotalTokenCollaterals(
 		map[string]uint64{
-			"0000000000000000000000000000000000000000": 10 * 1e9,
+			ETH_ID:  10 * 1e9,
 			USDT_ID: 500 * 1e6,
 		})
 	custodian1.SetFreeTokenCollaterals(
 		map[string]uint64{
-			"0000000000000000000000000000000000000000": 10 * 1e9,
-			USDT_ID: 500 * 1e6,
+			ETH_ID:  0,
+			USDT_ID: 0,
+		})
+	custodian1.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 1000 * 1e9,
+		})
+	custodian1.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID:  10 * 1e9,
+				USDT_ID: 500 * 1e6,
+			},
 		})
 
 	custodian2 := statedb.NewCustodianState()
@@ -1318,17 +1344,16 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		})
 	custodian2.SetFreeTokenCollaterals(
 		map[string]uint64{
-			USDT_ID: 1960 * 1e6,
+			USDT_ID: 1460 * 1e6,
 		})
-	//todo: debug
 	custodian2.SetLockedTokenCollaterals(map[string]map[string]uint64{
 		common.PortalBNBIDStr: {
-			USDT_ID: 80 * 1e6,
+			USDT_ID: 540 * 1e6,
 		},
 	})
 
 	custodian3 := statedb.NewCustodianState()
-	custodian3.SetIncognitoAddress("custodianIncAddress2")
+	custodian3.SetIncognitoAddress("custodianIncAddress3")
 	custodian3.SetRemoteAddresses(
 		map[string]string{
 			common.PortalBTCIDStr: "btcAddress2",
@@ -1353,18 +1378,31 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 			},
 		}, 2000000, beaconHeight, shardHeight, shardID)
 
-	//wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
-	//wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-	//	"porting-btc-2", common.Hash{}, common.PortalBTCIDStr,
-	//	"userIncAddress2", 0.1*1e9,
-	//	[]*statedb.MatchingPortingCustodianDetail{
-	//		{
-	//			IncAddress:             "custodianIncAddress3",
-	//			RemoteAddress:          "btcAddress3",
-	//			Amount:                 0.1 * 1e9,
-	//			LockedAmountCollateral: 2000000000000,
-	//		},
-	//	}, 100000001, beaconHeight, shardHeight, shardID)
+	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
+	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
+		"porting-bnb-2", common.Hash{}, common.PortalBNBIDStr,
+		"userIncAddress2", 150*1e9,
+		[]*statedb.MatchingPortingCustodianDetail{
+			{
+				IncAddress:             custodian1.GetIncognitoAddress(),
+				RemoteAddress:          custodian1.GetRemoteAddresses()[common.PortalBNBIDStr],
+				Amount:                 137500000000,
+				LockedAmountCollateral: 1000000000000,
+				LockedTokenCollaterals: map[string]uint64{
+					ETH_ID:  10000000000,
+					USDT_ID: 500000000,
+				},
+			},
+			{
+				IncAddress:             custodian2.GetIncognitoAddress(),
+				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				Amount:                 12500000000,
+				LockedAmountCollateral: 0,
+				LockedTokenCollaterals: map[string]uint64{
+					USDT_ID: 500000000,
+				},
+			},
+		}, 300000000, beaconHeight, shardHeight, shardID)
 
 	expectedRes := &ExpectedResultPortingRequest{
 		custodianPool: map[string]*statedb.CustodianState{
@@ -1374,9 +1412,9 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		},
 		waitingPortingRes: map[string]*statedb.WaitingPortingRequest{
 			wPortingReqKey1: wPortingRequest1,
-			//wPortingReqKey2: wPortingRequest2,
+			wPortingReqKey2: wPortingRequest2,
 		},
-		numBeaconInsts: 1,
+		numBeaconInsts: 5,
 	}
 
 	return testcases, expectedRes
@@ -1418,7 +1456,6 @@ func (s *PortalTestSuiteV3) TestPortingRequest() {
 	newInsts, err := producerPortalInstructions(
 		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
 	s.Equal(nil, err)
-	fmt.Printf("newInsts: %+v", newInsts)
 
 	// process new instructions
 	err = processPortalInstructions(
