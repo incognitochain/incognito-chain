@@ -789,7 +789,7 @@ func (shardInstruction *shardInstruction) compose() {
 	stakeInstruction := &instruction.StakeInstruction{}
 	unstakeInstruction := &instruction.UnstakeInstruction{}
 	stopAutoStakeInstruction := &instruction.StopAutoStakeInstruction{}
-	// unstakeKeys := map[string]bool{}
+	unstakeKeys := map[string]bool{}
 
 	for _, v := range shardInstruction.stakeInstructions {
 		if v.IsEmpty() {
@@ -809,17 +809,24 @@ func (shardInstruction *shardInstruction) compose() {
 		if v.IsEmpty() {
 			continue
 		}
+		for _, key := range v.CommitteePublicKeys {
+			unstakeKeys[key] = true
+		}
 		unstakeInstruction.CommitteePublicKeys = append(unstakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
 		unstakeInstruction.CommitteePublicKeysStruct = append(unstakeInstruction.CommitteePublicKeysStruct, v.CommitteePublicKeysStruct...)
-		// key,
-		// unstakeKeys[]
 	}
 
 	for _, v := range shardInstruction.stopAutoStakeInstructions {
 		if v.IsEmpty() {
 			continue
 		}
-		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
+		committeePublicKeys := []string{}
+		for _, key := range v.CommitteePublicKeys {
+			if !unstakeKeys[key] {
+				committeePublicKeys = append(committeePublicKeys, key)
+			}
+		}
+		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 	}
 
 	if !stakeInstruction.IsEmpty() {
