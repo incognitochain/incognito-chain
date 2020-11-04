@@ -129,7 +129,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	shardID := shardBlock.Header.ShardID
 	preHash := shardBlock.Header.PreviousBlockHash
 	shouldValidate = true
-	
+
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
@@ -193,6 +193,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
 	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committees)
+	if err != nil {
+		return err
+	}
 	var err2 error
 	defer func() {
 		if err2 != nil {
@@ -916,7 +919,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 //	- pending validator root
 func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock *types.ShardBlock, shardID byte,
 	hashes *committeestate.ShardCommitteeStateHash) error {
-
 	if !hashes.ShardCommitteeHash.IsEqual(&shardBlock.Header.CommitteeRoot) {
 		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect %+v but get %+v", shardBlock.Header.CommitteeRoot, hashes.ShardCommitteeHash))
 	}
