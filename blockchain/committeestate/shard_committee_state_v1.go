@@ -474,6 +474,10 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 			if err != nil {
 				return nil, err
 			}
+			Logger.log.Infof("Out Public Key %+v", swapInstruction.OutPublicKeys)
+			Logger.log.Infof("Out Public Key Struct %+v", swapInstruction.OutPublicKeyStructs)
+			Logger.log.Infof("In Public Key %+v", swapInstruction.InPublicKeys)
+			Logger.log.Infof("In Public Key Struct %+v", swapInstruction.InPublicKeyStructs)
 			removedCommitteeSize := len(swapInstruction.InPublicKeys)
 			remainedShardCommittees := committeeState.shardCommittee[removedCommitteeSize:]
 			tempShardSwappedCommittees := committeeState.shardCommittee[:env.MinShardCommitteeSize()]
