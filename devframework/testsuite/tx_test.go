@@ -104,12 +104,12 @@ func Test_StakeFlow1(t *testing.T) {
 		ShardNumber: 1,
 	})
 	sim.GenerateBlock().NextRound()
-	staker1 := sim.NewAccountFromShard(0)
-	stakerCm1, _ := staker1.BuildCommitteePubkey(staker1.PaymentAddress)
+	miner1 := sim.NewAccountFromShard(0)
+	minerCm1, _ := miner1.BuildCommitteePubkey(sim.IcoAccount.PaymentAddress)
 	stake1 := F.StakingTxParam{
 		Name:         "staker1",
-		CommitteeKey: stakerCm1,
-		SenderPrk:    sim.IcoAccount.PrivateKey,
+		CommitteeKey: minerCm1,
+		StakerPrk:    sim.IcoAccount.PrivateKey,
 		MinerPrk:     staker1.PrivateKey,
 		RewardAddr:   staker1.PaymentAddress,
 		StakeShard:   true,
@@ -210,20 +210,6 @@ func Test_StakeFlow1(t *testing.T) {
 			isChange = false
 		}
 	}
-
-	// fmt.Println("\n----------------------------------")
-	// fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
-	// fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
-	// sim.GetBlockchain().BeaconChain.GetAllCommittees()
-	// viewPool()
-	// if result, err := sim.GetRewardAmount(staker1.PaymentAddress); err != nil {
-	// 	panic(err)
-	// } else {
-	// 	fmt.Println("REWARD staker1", result)
-	// 	bl1, _ := sim.GetBalance(staker1)
-	// 	fmt.Println("BALANCE staker1:", bl1)
-	// }
-	// fmt.Println("----------------------------------")
 
 	unstake1 := F.StopStakingParam{
 		SenderPrk: sim.IcoAccount.PrivateKey,

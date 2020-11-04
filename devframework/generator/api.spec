@@ -1,4 +1,5 @@
-CreateTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (jsonresult.CreateTransactionResult,error)
+CreateAndSendTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (jsonresult.CreateTransactionResult,error)
+CreateRawPrivacyCustomTokenTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult,error)
 GetBalanceByPrivateKey(privateKey string) (uint64,error)
 GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance,error)
 GetRewardAmount(paymentAddress string) (map[string]uint64,error)

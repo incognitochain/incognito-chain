@@ -5,14 +5,23 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
-func (sim *SimulationEngine) rpc_createtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *SimulationEngine) rpc_createandsendtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult,err error) {
 	httpServer := sim.rpcServer.HttpServer
-	c := rpcserver.HttpHandler["createtransaction"]
+	c := rpcserver.HttpHandler["createandsendtransaction"]
 	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
 	return resI.(jsonresult.CreateTransactionResult),nil
+}
+func (sim *SimulationEngine) rpc_createrawprivacycustomtokentransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
+	httpServer := sim.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createrawprivacycustomtokentransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey,receivers,fee,privacy,tokenInfo,p1,pPrivacy}, nil)
+	if rpcERR != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionTokenResult),nil
 }
 func (sim *SimulationEngine) rpc_getbalancebyprivatekey(privateKey string) (res uint64,err error) {
 	httpServer := sim.rpcServer.HttpServer
