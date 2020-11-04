@@ -200,10 +200,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		}
 	}()
 
-	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	// update number of blocks produced by producers to shard best state
-	newBestState.updateNumOfBlocksByProducers(shardBlock)
-
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 		Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
