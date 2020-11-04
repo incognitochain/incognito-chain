@@ -244,7 +244,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 	}
 
 	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, err
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -480,7 +480,8 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 			remainedShardCommittees := committeeState.shardCommittee[removedCommitteeSize:]
 			tempShardSwappedCommittees := committeeState.shardCommittee[:env.MinShardCommitteeSize()]
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
-				return nil, fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs)
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
+					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
 			}
 			shardCommitteesStruct := append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
 			committeeState.shardCommittee = shardCommitteesStruct
