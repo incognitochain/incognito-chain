@@ -188,16 +188,15 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
 	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committees)
+	if err != nil {
+		return err
+	}
 	var err2 error
 	defer func() {
 		if err2 != nil {
 			newBestState.shardCommitteeEngine.AbortUncommittedShardState()
 		}
 	}()
-
-	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	// update number of blocks produced by producers to shard best state
-	newBestState.updateNumOfBlocksByProducers(shardBlock)
 
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
@@ -798,7 +797,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
-		BuildChainParamEpoch(shardBestState.Epoch).
+		BuildChainParamEpoch(blockchain.config.ChainParams.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
@@ -912,7 +911,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 //	- pending validator root
 func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock *types.ShardBlock, shardID byte,
 	hashes *committeestate.ShardCommitteeStateHash) error {
-
 	if !hashes.ShardCommitteeHash.IsEqual(&shardBlock.Header.CommitteeRoot) {
 		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect %+v but get %+v", shardBlock.Header.CommitteeRoot, hashes.ShardCommitteeHash))
 	}

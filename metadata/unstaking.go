@@ -17,11 +17,8 @@ type UnStakingMetadata struct {
 }
 
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
-func NewUnStakingMetadata(unStakingType int, committeePublicKey string) (*UnStakingMetadata, error) {
-	// if unStakingType != UnStakingMeta {
-	// 	return nil, errors.New("invalid unstaking type")
-	// }
-	metadataBase := NewMetadataBase(unStakingType)
+func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
+	metadataBase := NewMetadataBase(UnStakingMeta)
 	return &UnStakingMetadata{
 		MetadataBase:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
