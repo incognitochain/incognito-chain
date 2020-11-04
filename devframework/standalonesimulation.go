@@ -53,6 +53,7 @@ type SimulationEngine struct {
 	timer   *TimeEngine
 
 	//for account manager
+	accountSeed       string
 	accountGenHistory map[int]int
 	committeeAccount  map[int][]Account
 	IcoAccount        Account
@@ -78,6 +79,7 @@ func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
 		config:            config,
 		simName:           name,
 		timer:             NewTimeEngine(),
+		accountSeed:       "master_account",
 		accountGenHistory: make(map[int]int),
 		committeeAccount:  make(map[int][]Account),
 	}
@@ -90,14 +92,16 @@ func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
 	lastID := sim.accountGenHistory[sid]
 	lastID++
 	sim.accountGenHistory[sid] = lastID
-	return *newAccountFromShard(sid, lastID)
+	acc, _ := GenerateAccountByShard(sid, lastID, sim.accountSeed)
+	return *acc
 }
 
 func (sim *SimulationEngine) NewAccount() Account {
 	lastID := sim.accountGenHistory[0]
 	lastID++
 	sim.accountGenHistory[0] = lastID
-	return *newAccountFromShard(0, lastID)
+	acc, _ := GenerateAccountByShard(0, lastID, sim.accountSeed)
+	return *acc
 }
 
 func (sim *SimulationEngine) init() {

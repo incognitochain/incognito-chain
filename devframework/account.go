@@ -20,11 +20,6 @@ type Account struct {
 	SelfCommitteePubkey string
 }
 
-func newAccountFromShard(sid int, keyID int) *Account {
-	acc, _ := GenerateAddressByShard(sid, keyID)
-	return acc
-}
-
 func GetShardIDFromPubkey(pk string, args ...interface{}) (int, error) {
 	numShard := 256
 	for _, arg := range args {
@@ -87,9 +82,9 @@ func NewAccountFromPrivatekey(privateKey string) (*Account, error) {
 	return acc, nil
 }
 
-func GenerateAddressByShard(shardID int, keyID int) (*Account, error) {
+func GenerateAccountByShard(shardID int, keyID int, seed string) (*Account, error) {
 	acc := &Account{}
-	key, _ := wallet.NewMasterKey([]byte(fmt.Sprintf("masterkey-%v", shardID)))
+	key, _ := wallet.NewMasterKey([]byte(fmt.Sprintf("%v-%v", seed, shardID)))
 	var i int
 	var k = 0
 	for {
