@@ -1,7 +1,6 @@
 package aggregaterange
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange/bulletproofs"
@@ -449,30 +448,21 @@ func (wit AggregatedRangeWitness) ProveOld() (*AggregatedRangeProof, error) {
 }
 
 func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
-	var wit2 bulletproofs.AggregatedRangeWitness
-	if witBytes, err := json.Marshal(wit); err != nil {
-		return nil, errors.New(fmt.Sprintf("cannot marshal witness to ver 2. Error %v", err))
-	} else {
-		err := json.Unmarshal(witBytes, &wit2)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("cannot unmarshal witness to ver 2. Error %v", err))
-		}
-	}
+	wit2 := new(bulletproofs.AggregatedRangeWitness)
+	wit2.Set(wit.values, wit.rands)
 
-	if proof2, err := wit2.Prove(); err != nil {
+	proof2, err := wit2.Prove()
+	if err != nil {
 		return nil, errors.New(fmt.Sprintf("cannot prove bulletproof v2. Error %v", err))
-	} else {
-		var proof AggregatedRangeProof
-		if proof2Bytes, err := json.Marshal(proof2); err != nil {
-			return nil, errors.New(fmt.Sprintf("cannot marshal proof ver 2. Error %v", err))
-		} else {
-			err := json.Unmarshal(proof2Bytes, &proof)
-			if err != nil {
-				return nil, errors.New(fmt.Sprintf("cannot unmarshal proof ver 2. Error %v", err))
-			}
-			return &proof, nil
-		}
 	}
+	proof2Bytes := proof2.Bytes()
+	proof := new(AggregatedRangeProof)
+	err = proof.SetBytes(proof2Bytes)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, errors.New(fmt.Sprintf("cannot convert proof ver 2  to ver 1. Error %v", err))
+	}
+	return proof, nil
 }
 
 func (proof AggregatedRangeProof) VerifyOld() (bool, error) {
@@ -578,13 +568,10 @@ func (proof AggregatedRangeProof) VerifyOld() (bool, error) {
 }
 
 func (proof AggregatedRangeProof) Verify() (bool, error) {
-	var proof2 bulletproofs.AggregatedRangeProof
-	if proofBytes, err := json.Marshal(proof); err != nil {
-		return false, errors.New(fmt.Sprintf("cannot marshal proof. Error %v", err))
-	} else {
-		if err := json.Unmarshal(proofBytes, &proof2); err != nil {
-			return false, errors.New(fmt.Sprintf("cannot unmarshal proof. Error %v", err))
-		}
+	proof2 := new(bulletproofs.AggregatedRangeProof)
+	err := proof2.SetBytes(proof.Bytes())
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("cannot convert proof from v1 to v2. Error %v", err))
 	}
 	return proof2.VerifyFaster()
 }
@@ -701,12 +688,10 @@ func VerifyBatchOld(proofs []*AggregatedRangeProof) (bool, error, int) {
 func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	proofs2 := make([]*bulletproofs.AggregatedRangeProof, len(proofs))
 	for i, proof := range proofs {
-		if proofBytes, err := json.Marshal(proof); err != nil {
-			return false, errors.New(fmt.Sprintf("cannot marshal proof. Error %v", err)), i
-		} else {
-			if err := json.Unmarshal(proofBytes, proofs2[i]); err != nil {
-				return false, errors.New(fmt.Sprintf("cannot unmarshal proof. Error %v", err)), i
-			}
+		proofs2[i] = new(bulletproofs.AggregatedRangeProof)
+		err := proofs2[i].SetBytes(proof.Bytes())
+		if err != nil {
+			return false, errors.New(fmt.Sprintf("cannot convert proof from v1 to v2. Error %v", err)), i
 		}
 	}
 	return bulletproofs.VerifyBatch(proofs2)

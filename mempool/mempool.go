@@ -1114,6 +1114,7 @@ func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return m
 }
 
+func (tp TxPool) GetSND() map[]
 func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 	//tp.mtx.RLock()
 	//defer tp.mtx.RUnlock()

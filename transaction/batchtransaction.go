@@ -70,12 +70,20 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			return false, NewTransactionErr(TxProofVerifyFailError, err), -1
 		}
 		if !ok {
-			Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)
+			Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %d", index)
 			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)), index
 		}
 		return true, nil, -1
 	} else {
-		return false, errors.New("old bulletproofs should not use batch verification"), -1
+		ok, err, index := aggregaterange.VerifyBatchOld(bulletProofList)
+		if err != nil {
+			return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+		}
+		if !ok {
+			Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", index)
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)), index
+		}
+		return true, nil, -1
 	}
 }
 
