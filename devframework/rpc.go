@@ -167,12 +167,12 @@ func (sim *SimulationEngine) rpc_createandsendtxwithprvcontributionv2(privateKey
 	}
 	return resI.(jsonresult.CreateTransactionResult),nil
 }
-func (sim *SimulationEngine) rpc_getpdestate(data map[string]interface{}) (res interface{},err error) {
+func (sim *SimulationEngine) rpc_getpdestate(data map[string]interface{}) (res jsonresult.CurrentPDEState,err error) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["getpdestate"]
 	resI, rpcERR := c(httpServer, []interface{}{data}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
-	return resI.(interface{}),nil
+	return resI.(jsonresult.CurrentPDEState),nil
 }

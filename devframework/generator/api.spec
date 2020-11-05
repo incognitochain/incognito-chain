@@ -16,4 +16,4 @@ CreateAndSendTxWithPRVTradeReq(privateKey string, receivers map[string]interface
 CreateAndSendTxWithPRVCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (jsonresult.CreateTransactionResult,error)        
 CreateAndSendTxWithPTokenContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult,error)
 CreateAndSendTxWithPRVContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64,reqInfo map[string]interface{}) (jsonresult.CreateTransactionResult,error)
-GetPDEState(data map[string]interface{}) (interface{},error)
+GetPDEState(data map[string]interface{}) (jsonresult.CurrentPDEState,error)
