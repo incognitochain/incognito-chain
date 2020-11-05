@@ -38,7 +38,7 @@ func main() {
 	apiF, _ := os.OpenFile("../localRPCClient.go", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0666)
 	apiF.Truncate(0)
 	apiF.WriteString(`package devframework
-
+//This file is auto generated. Please do not change if you dont know what you are doing
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver"

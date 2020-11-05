@@ -45,6 +45,7 @@ func main() {
 	apiF, _ := os.OpenFile("../remoteRPCClient.go", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0666)
 	apiF.Truncate(0)
 	apiF.WriteString(`package devframework
+//This file is auto generated. Please do not change if you dont know what you are doing
 import (
 	"encoding/json"
 	"errors"
