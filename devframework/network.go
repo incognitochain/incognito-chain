@@ -1,6 +1,7 @@
 package devframework
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
@@ -35,6 +36,16 @@ type MessageListeners interface {
 	//PBFT
 	onBFTMsg(p *peer.PeerConn, msg wire.Message)
 	onPeerState(p *peer.PeerConn, msg *wire.MessagePeerState)
+}
+
+type NetworkInterface interface {
+	On(msgType int, f func(msg interface{}))
+	GetBeaconBlock(from, to int) []*blockchain.BeaconBlock
+	GetShardBlock(sid, from, to int) *blockchain.ShardBlock
+	GetCrossShardBlock(fromsid, tosid, from, to int) *blockchain.CrossShardBlock
+	SyncChain([]int)
+	StopSync([]int)
+	IsSyncChain(chainID int) bool
 }
 
 type HighwayConnection struct {
@@ -97,7 +108,7 @@ func (s *HighwayConnection) Connect() {
 
 }
 
-//register function on message event
+//framework register function on message event
 func (s *HighwayConnection) On(msgType int, f func(msg interface{})) {
 	s.listennerRegister[msgType] = append(s.listennerRegister[msgType], f)
 }
@@ -156,5 +167,32 @@ func (s *HighwayConnection) onBFTMsg(p *peer.PeerConn, msg wire.Message) {
 }
 
 func (s *HighwayConnection) onPeerState(p *peer.PeerConn, msg *wire.MessagePeerState) {
+	panic("implement me")
+}
+
+/*
+	Framework Network interface
+*/
+func (s *HighwayConnection) GetBeaconBlock(from, to int) []*blockchain.BeaconBlock {
+	panic("implement me")
+}
+
+func (s *HighwayConnection) GetShardBlock(sid, from, to int) *blockchain.ShardBlock {
+	panic("implement me")
+}
+
+func (s *HighwayConnection) GetCrossShardBlock(fromsid, tosid, from, to int) *blockchain.CrossShardBlock {
+	panic("implement me")
+}
+
+func (s *HighwayConnection) SyncChain(ints []int) {
+	panic("implement me")
+}
+
+func (s *HighwayConnection) StopSync(ints []int) {
+	panic("implement me")
+}
+
+func (s *HighwayConnection) IsSyncChain(chainID int) bool {
 	panic("implement me")
 }
