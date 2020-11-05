@@ -109,7 +109,7 @@ func (committeeState *ShardCommitteeStateV1) reset() {
 
 //GetShardCommittee get shard committees
 func (engine *ShardCommitteeEngineV1) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return engine.shardCommitteeStateV1.shardCommittee
+	return incognitokey.DeepCopy(engine.shardCommitteeStateV1.shardCommittee)
 }
 
 //GetShardSubstitute get shard pending validators
@@ -481,16 +481,18 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 			Logger.log.Infof("In Public Key %+v", swapInstruction.InPublicKeys)
 			Logger.log.Infof("In Public Key Struct %+v", swapInstruction.InPublicKeyStructs)
 			removedCommitteeSize := len(swapInstruction.InPublicKeys)
-			remainedShardCommittees := committeeState.shardCommittee[removedCommitteeSize:]
-			tempShardSwappedCommittees := committeeState.shardCommittee[:env.MinShardCommitteeSize()]
+			remainedShardCommittees := incognitokey.DeepCopy(committeeState.shardCommittee[removedCommitteeSize:])
+			tempShardSwappedCommittees := incognitokey.DeepCopy(committeeState.shardCommittee[:env.MinShardCommitteeSize()])
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
 					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
 			}
 			shardCommitteesStruct := append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
-			committeeState.shardCommittee = shardCommitteesStruct
-			newCommitteeChange.ShardCommitteeAdded[shardID] = swapInstruction.InPublicKeyStructs
-			newCommitteeChange.ShardCommitteeRemoved[shardID] = swapInstruction.OutPublicKeyStructs
+			committeeState.shardCommittee = incognitokey.DeepCopy(shardCommitteesStruct)
+			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
+			committeeReplace[common.REPLACE_IN] = incognitokey.DeepCopy(swapInstruction.InPublicKeyStructs)
+			committeeReplace[common.REPLACE_OUT] = incognitokey.DeepCopy(swapInstruction.OutPublicKeyStructs)
+			committeeChange.ShardCommitteeReplaced[shardID] = committeeReplace
 		}
 	}
 	return newCommitteeChange, nil
