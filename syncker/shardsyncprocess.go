@@ -74,6 +74,10 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 			case f := <-s.actionCh:
 				f()
 			case shardPeerState := <-s.shardPeerStateCh:
+				//TODO: @tin
+				// receive peer state here
+				// process peer state
+
 				for sid, peerShardState := range shardPeerState.Shards {
 					if int(sid) == s.shardID {
 						s.shardPeerState[shardPeerState.SenderID] = ShardPeerState{
@@ -213,13 +217,11 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		return
 	}
 	toHeight := pState.BestViewHeight
-	Logger.Info("[staking-v2] toHeight:", toHeight)
 
 	//fullnode delay 1 block (make sure insert final block)
 	if os.Getenv("FULLNODE") != "" {
 		toHeight = pState.BestViewHeight - 1
 	}
-	Logger.Info("[staking-v2] s.Chain.GetBestViewHeight():", s.Chain.GetBestViewHeight())
 
 	if toHeight <= s.Chain.GetBestViewHeight() {
 		return
