@@ -41,20 +41,20 @@ func ComputeAssetTagBlinder(sharedSecret *operation.Point) (*operation.Scalar,er
 }
 
 // this should be an input coin
-func (coin *CoinV2) RecomputeSharedConcealSecret(privateKey []byte) (*operation.Point,error){
+func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point,error){
 	// sk := new(operation.Scalar).FromBytesS(privateKey)
-	var privViewKey []byte = key.GenerateReceivingKey(privateKey)[:]
-	sk := new(operation.Scalar).FromBytesS(privViewKey)
+	var privOTA []byte = key.GeneratePrivateOTAKey(privateKey)[:]
+	sk := new(operation.Scalar).FromBytesS(privOTA)
 	// this is g^SharedRandom, previously created by sender of the coin
-	sharedConcealRandomPoint, err := coin.GetTxRandom().GetTxConcealRandomPoint()
+	sharedOTARandomPoint, err := coin.GetTxRandom().GetTxOTARandomPoint()
 	if err != nil {
 		return nil, errors.New("Cannot retrieve tx random detail")
 	}
-	sharedSecret := new(operation.Point).ScalarMult(sharedConcealRandomPoint, sk)
+	sharedSecret := new(operation.Point).ScalarMult(sharedOTARandomPoint, sk)
 	return sharedSecret, nil
 }
 
-func (coin *CoinV2) ValidateAssetTag(sharedConcealSecret *operation.Point, tokenID *common.Hash) (bool, error){
+func (coin *CoinV2) ValidateAssetTag(sharedSecret *operation.Point, tokenID *common.Hash) (bool, error){
 	if coin.GetAssetTag()==nil{
 		if tokenID==nil || *tokenID==common.PRVCoinID{
 			// a valid PRV coin
@@ -71,7 +71,7 @@ func (coin *CoinV2) ValidateAssetTag(sharedConcealSecret *operation.Point, token
 		return true, nil
 	}
 
-	blinder, err := ComputeAssetTagBlinder(sharedConcealSecret)
+	blinder, err := ComputeAssetTagBlinder(sharedSecret)
 	if err != nil {
 		return false, err
 	}
@@ -130,7 +130,7 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 	index := uint32(0)
 	publicOTA := info.PaymentAddress.GetOTAPublicKey() //For generating one-time-address
 	publicSpend := info.PaymentAddress.GetPublicSpend() //General public key
-	publicView := info.PaymentAddress.GetPublicView() //For generating asset tag and concealing output coin
+	//publicView := info.PaymentAddress.GetPublicView() //For generating asset tag and concealing output coin
 
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
 	for i:=MAX_TRIES_OTA;i>0;i--{
@@ -151,7 +151,7 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 			concealSharedRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedConcealRandom())
 			c.SetTxRandomDetail(concealSharedRandomPoint, otaSharedRandomPoint, index)
 
-			rAsset := new(operation.Point).ScalarMult(publicView, c.GetSharedConcealRandom())
+			rAsset := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
 			blinder,_ := ComputeAssetTagBlinder(rAsset)
 			if tokenID == nil {
 				return nil, nil, errors.New("Cannot create coin without tokenID")

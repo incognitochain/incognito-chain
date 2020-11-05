@@ -39,6 +39,11 @@ func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxConvertVer1ToVer2InitParams {
+	// make sure info is not nil ; zero value for it is []byte{}
+
+	if info==nil{
+		info = []byte{}
+	}
 
 	return  &TxConvertVer1ToVer2InitParams{
 		stateDB:     stateDB,
@@ -275,6 +280,11 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // tokenID of the conversion coin
 	metaData metadata.Metadata,
 	info []byte) *TxTokenConvertVer1ToVer2InitParams {
+
+	if info == nil{
+		info = []byte{}
+	}
+
 
 	tokenParams := &CustomTokenConversionParams{
 		tokenID:       tokenID,

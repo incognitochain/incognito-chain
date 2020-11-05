@@ -171,7 +171,8 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 		return errors.New("params of tx Init is not TxPrivacyInitParam")
 	}
 
-	utils.Logger.Log.Debugf("CREATING TX........\n")
+	jsb, _ := json.Marshal(params)
+	utils.Logger.Log.Infof("Create TX v2 with params %s", string(jsb))
 	if err := tx_generic.ValidateTxParams(params); err != nil {
 		return err
 	}
@@ -196,6 +197,12 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	// }
 	if err := tx.prove(params); err != nil {
 		return err
+	}
+	jsb, _ = json.Marshal(tx)
+	utils.Logger.Log.Infof("TX Creation complete ! The resulting transaction is : %s", string(jsb))
+	txSize := tx.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
 	return nil
@@ -633,28 +640,30 @@ func (tx Tx) StringWithoutMetadataSig() string {
 	return record
 }
 
-func (tx *Tx) Hash() *common.Hash {
+func (tx Tx) Hash() *common.Hash {
 	// leave out signature & its public key when hashing tx
-	tempSig := tx.Sig
-	tempPk := tx.SigPubKey
-	tx.Sig = nil
-	tx.SigPubKey = nil
+	tx.Sig = []byte{}
+	tx.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(tx)
 	if err!=nil{
 		return nil
 	}
 	hash := common.HashH(inBytes)
-
-	// put those info back
-	tx.Sig = tempSig
-	tx.SigPubKey = tempPk
+	// after this returns, tx is restored since the receiver is not a pointer
 	return &hash
 }
 
 func (tx *Tx) HashWithoutMetadataSig() *common.Hash {
+	md := tx.GetMetadata()
+	mdHash := md.HashWithoutSig()
+	tx.SetMetadata(nil)
+	txHash := tx.Hash()
+	if mdHash==nil || txHash==nil{
+		return nil
+	}
+	// tx.SetMetadata(md)
 	inBytes := []byte(tx.StringWithoutMetadataSig())
 	hash := common.HashH(inBytes)
-	//tx.cachedHash = &hash
 	return &hash
 }
 

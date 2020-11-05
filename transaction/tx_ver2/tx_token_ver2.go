@@ -31,18 +31,16 @@ type TxTokenDataVersion2 struct {
 	Mintable 		bool
 }
 
-func (td *TxTokenDataVersion2) Hash() (*common.Hash, error){
-	tempSig := td.Sig
-	tempPk := td.SigPubKey
+func (td TxTokenDataVersion2) Hash() (*common.Hash, error){
+	// leave out signature & its public key when hashing tx
 	td.Sig = []byte{}
 	td.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(td)
 	if err!=nil{
 		return nil, err
 	}
+	// after this returns, tx is restored since the receiver is not a pointer
 	hash := common.HashH(inBytes)
-	td.Sig = tempSig
-	td.SigPubKey = tempPk
 	return &hash, nil
 }
 
@@ -64,11 +62,17 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 		copy(clonedInfo, txPRV.Info)
 	}
 	var clonedProof privacy.Proof = nil
+	// feed the type to parse proof
+	proofType := txPRV.Type
+	if proofType == common.TxTokenConversionType{
+		proofType = common.TxConversionType
+	}
+
 	if proof!=nil{
-		clonedProof, err = utils.ParseProof(proof, txPRV.Version, txPRV.Type)
+		clonedProof, err = utils.ParseProof(proof, txPRV.Version, proofType)
 		if err!=nil{
 			jsb, _ := json.Marshal(proof)
-			utils.Logger.Log.Errorf("What kind of proof is this ? %s, %v, %v", string(jsb), txPRV.Version, txPRV.Type)
+			utils.Logger.Log.Errorf("Cannot parse proof %s using version %v - type %v", string(jsb), txPRV.Version, txPRV.Type)
 			return nil
 		}
 	}
@@ -85,6 +89,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 	result.Proof = clonedProof
 	result.Sig = clonedSig
 	result.SigPubKey = clonedPk
+	result.Info = clonedInfo
 
 	return result
 }
@@ -156,7 +161,7 @@ func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
 	tx.TokenData.SigPubKey = temp.SigPubKey
 	tx.TokenData.Sig = temp.Sig
 	tx.TokenData.Proof = temp.Proof
-	tx.cachedTxNormal = makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
+	tx.cachedTxNormal = temp
 	return nil
 }
 
@@ -393,7 +398,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		params.Info,
 	)
 	jsb, _ := json.Marshal(params.TokenParams)
-	utils.Logger.Log.Infof("INITTX with token params %s", string(jsb))
+	utils.Logger.Log.Infof("Create TX token v2 with token params %s", string(jsb))
 	if err := tx_generic.ValidateTxParams(txPrivacyParams); err != nil {
 		return err
 	}
@@ -443,7 +448,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	
 	err = txToken.SetTxBase(tx)
 	jsb, _ = json.Marshal(txToken)
-	utils.Logger.Log.Warnf("INITTX complete ! The resulting transaction is : %s", string(jsb))
+	utils.Logger.Log.Warnf("Create TX token v2 complete ! The resulting token transaction is : %s", string(jsb))
 	return err
 }
 
@@ -1077,6 +1082,7 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	default:
 		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof type"))
 	}
+
 	err = json.Unmarshal(holder.TxTokenPrivacyData, &txToken.TokenData)
 	if err != nil {
 		utils.Logger.Log.Error(err)
