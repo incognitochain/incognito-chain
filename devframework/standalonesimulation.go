@@ -291,7 +291,7 @@ func (sim *SimulationEngine) init() {
 	sync.Syncker.Init(&syncker.SynckerManagerConfig{Blockchain: &bc})
 }
 
-func (sim *SimulationEngine) ConnectHighway() {
+func (sim *SimulationEngine) ConnectNetwork() {
 	config := HighwayConnectionConfig{
 		"127.0.0.1",
 		19876,
@@ -301,7 +301,7 @@ func (sim *SimulationEngine) ConnectHighway() {
 		sim.consensus,
 	}
 	sim.Network = NewHighwayConnection(config)
-	sim.Network.ConnectHighway()
+	sim.Network.Connect()
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {

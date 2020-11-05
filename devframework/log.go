@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"os"
 	"path/filepath"
@@ -33,6 +34,7 @@ var (
 	privacyLogger          = backendLog.Logger("Privacy log", false)
 	mempoolLogger          = backendLog.Logger("Mempool log", false)
 	synckerLogger          = backendLog.Logger("Syncker log", false)
+	highwayLogger          = backendLog.Logger("Highway", false)
 	disableStdoutLog       = false
 )
 
@@ -59,6 +61,7 @@ func init() {
 	privacy.Logger.Init(privacyLogger)
 	mempool.Logger.Init(mempoolLogger)
 	syncker.Logger.Init(synckerLogger)
+	peerv2.Logger.Init(highwayLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

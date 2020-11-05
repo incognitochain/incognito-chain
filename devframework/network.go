@@ -19,22 +19,22 @@ const (
 )
 
 type MessageListeners interface {
-	OnTx(p *peer.PeerConn, msg *wire.MessageTx)
-	OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
-	OnBlockShard(p *peer.PeerConn, msg *wire.MessageBlockShard)
-	OnBlockBeacon(p *peer.PeerConn, msg *wire.MessageBlockBeacon)
-	OnCrossShard(p *peer.PeerConn, msg *wire.MessageCrossShard)
-	OnGetBlockBeacon(p *peer.PeerConn, msg *wire.MessageGetBlockBeacon)
-	OnGetBlockShard(p *peer.PeerConn, msg *wire.MessageGetBlockShard)
-	OnGetCrossShard(p *peer.PeerConn, msg *wire.MessageGetCrossShard)
-	OnVersion(p *peer.PeerConn, msg *wire.MessageVersion)
-	OnVerAck(p *peer.PeerConn, msg *wire.MessageVerAck)
-	OnGetAddr(p *peer.PeerConn, msg *wire.MessageGetAddr)
-	OnAddr(p *peer.PeerConn, msg *wire.MessageAddr)
+	onTx(p *peer.PeerConn, msg *wire.MessageTx)
+	onTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
+	onBlockShard(p *peer.PeerConn, msg *wire.MessageBlockShard)
+	onBlockBeacon(p *peer.PeerConn, msg *wire.MessageBlockBeacon)
+	onCrossShard(p *peer.PeerConn, msg *wire.MessageCrossShard)
+	onGetBlockBeacon(p *peer.PeerConn, msg *wire.MessageGetBlockBeacon)
+	onGetBlockShard(p *peer.PeerConn, msg *wire.MessageGetBlockShard)
+	onGetCrossShard(p *peer.PeerConn, msg *wire.MessageGetCrossShard)
+	onVersion(p *peer.PeerConn, msg *wire.MessageVersion)
+	onVerAck(p *peer.PeerConn, msg *wire.MessageVerAck)
+	onGetAddr(p *peer.PeerConn, msg *wire.MessageGetAddr)
+	onAddr(p *peer.PeerConn, msg *wire.MessageAddr)
 
 	//PBFT
-	OnBFTMsg(p *peer.PeerConn, msg wire.Message)
-	OnPeerState(p *peer.PeerConn, msg *wire.MessagePeerState)
+	onBFTMsg(p *peer.PeerConn, msg wire.Message)
+	onPeerState(p *peer.PeerConn, msg *wire.MessagePeerState)
 }
 
 type HighwayConnection struct {
@@ -59,26 +59,26 @@ func NewHighwayConnection(cfg HighwayConnectionConfig) *HighwayConnection {
 	}
 }
 
-func (s *HighwayConnection) ConnectHighway() {
+func (s *HighwayConnection) Connect() {
 	host := peerv2.NewHost(s.config.Version, s.config.LocalIP, s.config.LocalPort, s.config.PrivateKey)
 	dispatcher := &peerv2.Dispatcher{
 		MessageListeners: &peerv2.MessageListeners{
-			OnBlockShard:     s.OnBlockShard,
-			OnBlockBeacon:    s.OnBlockBeacon,
-			OnCrossShard:     s.OnCrossShard,
-			OnTx:             s.OnTx,
-			OnTxPrivacyToken: s.OnTxPrivacyToken,
-			OnVersion:        s.OnVersion,
-			OnGetBlockBeacon: s.OnGetBlockBeacon,
-			OnGetBlockShard:  s.OnGetBlockShard,
-			OnGetCrossShard:  s.OnGetCrossShard,
-			OnVerAck:         s.OnVerAck,
-			OnGetAddr:        s.OnGetAddr,
-			OnAddr:           s.OnAddr,
+			OnBlockShard:     s.onBlockShard,
+			OnBlockBeacon:    s.onBlockBeacon,
+			OnCrossShard:     s.onCrossShard,
+			OnTx:             s.onTx,
+			OnTxPrivacyToken: s.onTxPrivacyToken,
+			OnVersion:        s.onVersion,
+			OnGetBlockBeacon: s.onGetBlockBeacon,
+			OnGetBlockShard:  s.onGetBlockShard,
+			OnGetCrossShard:  s.onGetCrossShard,
+			OnVerAck:         s.onVerAck,
+			OnGetAddr:        s.onGetAddr,
+			OnAddr:           s.onAddr,
 
 			//mubft
-			OnBFTMsg:    s.OnBFTMsg,
-			OnPeerState: s.OnPeerState,
+			OnBFTMsg:    s.onBFTMsg,
+			OnPeerState: s.onPeerState,
 		},
 		BC: nil,
 	}
@@ -103,58 +103,58 @@ func (s *HighwayConnection) On(msgType int, f func(msg interface{})) {
 }
 
 //implement dispatch to listenner
-func (s *HighwayConnection) OnTx(p *peer.PeerConn, msg *wire.MessageTx) {
+func (s *HighwayConnection) onTx(p *peer.PeerConn, msg *wire.MessageTx) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
+func (s *HighwayConnection) onTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnBlockShard(p *peer.PeerConn, msg *wire.MessageBlockShard) {
+func (s *HighwayConnection) onBlockShard(p *peer.PeerConn, msg *wire.MessageBlockShard) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnBlockBeacon(p *peer.PeerConn, msg *wire.MessageBlockBeacon) {
+func (s *HighwayConnection) onBlockBeacon(p *peer.PeerConn, msg *wire.MessageBlockBeacon) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnCrossShard(p *peer.PeerConn, msg *wire.MessageCrossShard) {
+func (s *HighwayConnection) onCrossShard(p *peer.PeerConn, msg *wire.MessageCrossShard) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnGetBlockBeacon(p *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
+func (s *HighwayConnection) onGetBlockBeacon(p *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnGetBlockShard(p *peer.PeerConn, msg *wire.MessageGetBlockShard) {
+func (s *HighwayConnection) onGetBlockShard(p *peer.PeerConn, msg *wire.MessageGetBlockShard) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnGetCrossShard(p *peer.PeerConn, msg *wire.MessageGetCrossShard) {
+func (s *HighwayConnection) onGetCrossShard(p *peer.PeerConn, msg *wire.MessageGetCrossShard) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnVersion(p *peer.PeerConn, msg *wire.MessageVersion) {
+func (s *HighwayConnection) onVersion(p *peer.PeerConn, msg *wire.MessageVersion) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnVerAck(p *peer.PeerConn, msg *wire.MessageVerAck) {
+func (s *HighwayConnection) onVerAck(p *peer.PeerConn, msg *wire.MessageVerAck) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnGetAddr(p *peer.PeerConn, msg *wire.MessageGetAddr) {
+func (s *HighwayConnection) onGetAddr(p *peer.PeerConn, msg *wire.MessageGetAddr) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnAddr(p *peer.PeerConn, msg *wire.MessageAddr) {
+func (s *HighwayConnection) onAddr(p *peer.PeerConn, msg *wire.MessageAddr) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
+func (s *HighwayConnection) onBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	panic("implement me")
 }
 
-func (s *HighwayConnection) OnPeerState(p *peer.PeerConn, msg *wire.MessagePeerState) {
+func (s *HighwayConnection) onPeerState(p *peer.PeerConn, msg *wire.MessagePeerState) {
 	panic("implement me")
 }
