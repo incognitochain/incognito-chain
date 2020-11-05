@@ -214,7 +214,7 @@ func GetTxActualSizeInBytes(tx metadata.Transaction) uint64{
 		return uint64(0)
 	}
 	var sizeTx = uint64(0)
-	txTokenBase, ok := tx.(TxTokenBase)
+	txTokenBase, ok := tx.(*TxTokenBase)
 	if ok { //TxTokenBase
 		sizeTx += GetTxActualSizeInBytes(txTokenBase.Tx)
 

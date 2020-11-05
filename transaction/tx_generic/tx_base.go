@@ -64,6 +64,11 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxPrivacyInitParams {
+	// make sure info is not nil ; zero value for it is []byte{}
+
+	if info==nil{
+		info = []byte{}
+	}
 
 	params := &TxPrivacyInitParams{
 		StateDB:     stateDB,
@@ -206,10 +211,15 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 		tx.SetMetadata(meta)
 	}
 
+	proofType := tx.Type
+	if proofType == common.TxTokenConversionType{
+		proofType = common.TxNormalType
+	}
+
 	if temp.Proof == nil {
 		tx.SetProof(nil)
 	} else {
-		proof, proofErr := utils.ParseProof(temp.Proof, tx.Version, tx.Type)
+		proof, proofErr := utils.ParseProof(temp.Proof, tx.Version, proofType)
 		if proofErr != nil {
 			utils.Logger.Log.Error(proofErr)
 			return proofErr
@@ -329,7 +339,6 @@ func (tx TxBase) GetTxActualSize() uint64 {
 		metaSize := meta.CalculateSize()
 		sizeTx += metaSize
 	}
-	fmt.Println("BUGLOG2 txNormalSize in txbase", sizeTx)
 	result := uint64(math.Ceil(float64(sizeTx) / 1024))
 	tx.cachedActualSize = &result
 	return *tx.cachedActualSize
@@ -406,7 +415,7 @@ func (tx TxBase) String() string {
 	return record
 }
 
-func (tx TxBase) Hash() *common.Hash {
+func (tx *TxBase) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}
