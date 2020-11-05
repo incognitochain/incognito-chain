@@ -23,6 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
+	"github.com/incognitochain/incognito-chain/devframework/rpcwrapper"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -36,7 +37,9 @@ import (
 )
 
 type RemoteRPCClient struct{}
-type LocalRPCClient struct{}
+type LocalRPCClient struct {
+	rpcServer *rpcserver.RpcServer
+}
 type Config struct {
 	ShardNumber   int
 	RoundInterval int
@@ -73,6 +76,8 @@ type SimulationEngine struct {
 	cRemovedTxs chan metadata.Transaction
 	rpcServer   *rpcserver.RpcServer
 	cQuit       chan struct{}
+
+	RPC *rpcwrapper.RPCWRAPPER
 }
 
 func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
@@ -202,6 +207,8 @@ func (sim *SimulationEngine) init() {
 	}
 	rpcServer := &rpcserver.RpcServer{}
 
+	rpclocal := &LocalRPCClient{rpcServer}
+
 	btcChain, err := getBTCRelayingChain(activeNetParams.BTCRelayingHeaderChainID, "btcchain", simName)
 	if err != nil {
 		panic(err)
@@ -273,6 +280,7 @@ func (sim *SimulationEngine) init() {
 	sim.cPendingTxs = cPendingTxs
 	sim.cRemovedTxs = cRemovedTxs
 	sim.rpcServer = rpcServer
+	sim.RPC = rpcwrapper.NewRPCClient(rpclocal)
 	sim.cQuit = cQuit
 
 	rpcServer.Init(&rpcConfig)
@@ -516,18 +524,18 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 	return nil
 }
 
-func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
-	tokenList := make(map[string]uint64)
-	prv, _ := sim.rpc_getbalancebyprivatekey(acc.PrivateKey)
-	tokenList["PRV"] = prv
+// func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
+// 	tokenList := make(map[string]uint64)
+// 	prv, _ := sim.rpc_getbalancebyprivatekey(acc.PrivateKey)
+// 	tokenList["PRV"] = prv
 
-	tokenBL, _ := sim.rpc_getlistprivacycustomtokenbalance(acc.PrivateKey)
-	for _, token := range tokenBL.ListCustomTokenBalance {
-		tokenList[token.TokenID] = token.Amount
+// 	tokenBL, _ := sim.rpc_getlistprivacycustomtokenbalance(acc.PrivateKey)
+// 	for _, token := range tokenBL.ListCustomTokenBalance {
+// 		tokenList[token.TokenID] = token.Amount
 
-	}
-	return tokenList, nil
-}
+// 	}
+// 	return tokenList, nil
+// }
 
 func (sim *SimulationEngine) GetBlockchain() *blockchain.BlockChain {
 	return sim.bc

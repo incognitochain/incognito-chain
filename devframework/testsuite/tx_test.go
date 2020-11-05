@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	F "github.com/incognitochain/incognito-chain/devframework"
+	"github.com/incognitochain/incognito-chain/devframework/rpcwrapper"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -18,10 +19,15 @@ func Test_SendTX(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 	acc1 := sim.NewAccountFromShard(1)
 	acc2 := sim.NewAccountFromShard(0)
-	_, err := sim.API_CreateTransaction(sim.IcoAccount, acc1, 1000, acc2, 3000)
+
+	_, err := sim.RPC.API_CreateAndSendTransaction(sim.IcoAccount.PrivateKey, map[string]interface{}{
+		acc1.PaymentAddress: float64(1000),
+		acc2.PaymentAddress: float64(3000),
+	}, -1, 0)
 	if err != nil {
 		panic(err)
 	}
+
 	sim.GenerateBlock(F.Hook{
 		//Create: func(chainID int, doCreate func(time time.Time) (common.BlockInterface, error)) {
 		//
@@ -63,11 +69,11 @@ func Test_SendTX(t *testing.T) {
 		Insert: func(chainID int, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
 			doInsert(block)
 			if chainID == 0 {
-				bl1, _ := sim.GetBalance(sim.IcoAccount)
+				bl1, _ := sim.RPC.API_GetBalance(sim.IcoAccount.PrivateKey)
 				fmt.Println(bl1)
-				bl2, _ := sim.GetBalance(acc1)
+				bl2, _ := sim.RPC.API_GetBalance(acc1.PrivateKey)
 				fmt.Println(bl2)
-				bl3, _ := sim.GetBalance(acc2)
+				bl3, _ := sim.RPC.API_GetBalance(acc2.PrivateKey)
 				fmt.Println(bl3)
 				fmt.Printf("%+v", block.(*blockchain.ShardBlock).Body)
 
@@ -93,7 +99,7 @@ func Test_SendTX(t *testing.T) {
 		}).NextRound()
 	}
 
-	balance, _ := sim.GetBalance(acc1)
+	balance, _ := sim.RPC.API_GetBalance(acc1.PrivateKey)
 	fmt.Printf("%+v", balance)
 
 }
@@ -105,31 +111,20 @@ func Test_StakeFlow1(t *testing.T) {
 	})
 	sim.GenerateBlock().NextRound()
 	miner1 := sim.NewAccountFromShard(0)
-	minerCm1, _ := miner1.BuildCommitteePubkey(sim.IcoAccount.PaymentAddress)
-	stake1 := F.StakingTxParam{
-		Name:         "staker1",
+	minerCm1, _ := F.BuildCommitteePubkey(miner1.PrivateKey, sim.IcoAccount.PaymentAddress)
+	stake1 := rpcwrapper.StakingTxParam{
+		Name:         "miner1",
 		CommitteeKey: minerCm1,
+		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
 		StakerPrk:    sim.IcoAccount.PrivateKey,
-		MinerPrk:     staker1.PrivateKey,
-		RewardAddr:   staker1.PaymentAddress,
+		MinerPrk:     miner1.PrivateKey,
+		RewardAddr:   miner1.PaymentAddress,
 		StakeShard:   true,
 		AutoRestake:  true,
 	}
 
-	staker2 := sim.NewAccountFromShard(0)
-	stakerCm2, _ := staker2.BuildCommitteePubkey(staker2.PaymentAddress)
-	stake2 := F.StakingTxParam{
-		Name:         "staker2",
-		CommitteeKey: stakerCm2,
-		SenderPrk:    sim.IcoAccount.PrivateKey,
-		MinerPrk:     staker2.PrivateKey,
-		RewardAddr:   staker2.PaymentAddress,
-		StakeShard:   true,
-		AutoRestake:  true,
-	}
-
-	stakeList := []F.StakingTxParam{stake1, stake2}
-	_, err := sim.API_CreateTxStaking(stake1)
+	stakeList := []rpcwrapper.StakingTxParam{stake1}
+	_, err := sim.RPC.API_CreateAndSendStakingTransaction(stake1)
 	if err != nil {
 		panic(err)
 	}
@@ -211,18 +206,33 @@ func Test_StakeFlow1(t *testing.T) {
 		}
 	}
 
-	unstake1 := F.StopStakingParam{
+	unstake1 := rpcwrapper.StopStakingParam{
+		BurnAddr:  sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
 		SenderPrk: sim.IcoAccount.PrivateKey,
-		MinerPrk:  staker1.PrivateKey,
+		MinerPrk:  miner1.PrivateKey,
 	}
-	if _, err := sim.CreateTxStopAutoStake(unstake1); err != nil {
+	if _, err := sim.RPC.API_CreateTxStopAutoStake(unstake1); err != nil {
 		panic(err)
 	}
 	fmt.Println("Stopstake staker1 at epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
 
 	sim.GenerateBlock().NextRound()
 
-	_, err = sim.API_CreateTxStaking(stake2)
+	miner2 := sim.NewAccountFromShard(0)
+	minerCm2, _ := F.BuildCommitteePubkey(miner2.PrivateKey, sim.IcoAccount.PaymentAddress)
+	stake2 := rpcwrapper.StakingTxParam{
+		Name:         "miner2",
+		CommitteeKey: minerCm2,
+		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
+		StakerPrk:    sim.IcoAccount.PrivateKey,
+		MinerPrk:     miner2.PrivateKey,
+		RewardAddr:   miner2.PaymentAddress,
+		StakeShard:   true,
+		AutoRestake:  true,
+	}
+
+	stakeList = append(stakeList, stake2)
+	_, err = sim.RPC.API_CreateAndSendStakingTransaction(stake2)
 	if err != nil {
 		panic(err)
 	}
@@ -242,7 +252,7 @@ func Test_StakeFlow1(t *testing.T) {
 		}
 	}
 
-	_, err = sim.WithdrawReward(staker1.PrivateKey, staker1.PaymentAddress)
+	_, err = sim.RPC.API_WithdrawReward(miner1.PrivateKey, miner1.PaymentAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -297,7 +307,6 @@ func Test_StakeFlow1(t *testing.T) {
 	// }
 	// fmt.Println("----------------------------------")
 	fmt.Println()
-	return
 }
 
 func Test_PDEFlow(t *testing.T) {
@@ -306,14 +315,17 @@ func Test_PDEFlow(t *testing.T) {
 		ShardNumber: 1,
 	})
 	acc1 := sim.NewAccountFromShard(0)
-	_, err := sim.API_CreateTransaction(sim.IcoAccount, acc1, 100000000)
+	_, err := sim.RPC.API_CreateAndSendTransaction(sim.IcoAccount.PrivateKey, map[string]interface{}{
+		acc1.PaymentAddress: float64(100000000),
+	}, -1, -1)
 	if err != nil {
 		panic(err)
 	}
 	sim.GenerateBlock().NextRound()
+	sim.GenerateBlock().NextRound()
 
 	//Create custom token
-	result1, err := sim.API_CreateAndSendPrivacyCustomTokenTransaction(sim.IcoAccount.PrivateKey, nil, 5, 1, map[string]interface{}{
+	result1, err := sim.RPC.API_CreateAndSendPrivacyCustomTokenTransaction(sim.IcoAccount.PrivateKey, nil, 5, 1, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     "",
 		"TokenName":   "pLAM",
@@ -324,18 +336,21 @@ func Test_PDEFlow(t *testing.T) {
 		"TokenReceivers": map[string]interface{}{
 			sim.IcoAccount.PaymentAddress: float64(30000000000),
 		},
-	})
+	}, "", -1)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(result1.TokenID)
+	fmt.Println(result1.TokenName, result1.TokenID)
 	for i := 0; i < 50; i++ {
 		sim.GenerateBlock().NextRound()
 	}
 
+	bl0, _ := sim.RPC.API_GetBalance(sim.IcoAccount.PrivateKey)
+	fmt.Println(bl0)
+
 	burnAddr := sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
-	fmt.Println(burnAddr)
-	result2, err := sim.API_CreateAndSendTxWithPTokenContributionV2(sim.IcoAccount.PrivateKey, nil, -1, 0, map[string]interface{}{
+	// fmt.Println(burnAddr)
+	result2, err := sim.RPC.API_CreateAndSendTxWithPTokenContributionV2(sim.IcoAccount.PrivateKey, nil, -1, 0, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     result1.TokenID,
 		"TokenTxType": float64(1),
@@ -362,7 +377,7 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 
-	_, err = sim.API_CreateAndSendTxWithPRVContributionV2(sim.IcoAccount.PrivateKey, map[string]interface{}{burnAddr: "100000000000"}, -1, 0, map[string]interface{}{
+	_, err = sim.RPC.API_CreateAndSendTxWithPRVContributionV2(sim.IcoAccount.PrivateKey, map[string]interface{}{burnAddr: "100000000000"}, -1, 0, map[string]interface{}{
 		"PDEContributionPairID": "testPAIR",
 		"ContributorAddressStr": sim.IcoAccount.PaymentAddress,
 		"ContributedAmount":     "100000000000",
@@ -375,14 +390,14 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 
-	r, err := sim.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
+	r, err := sim.RPC.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
 	if err != nil {
 		panic(err)
 	}
 	rBytes, _ := json.Marshal(r)
 	fmt.Println(string(rBytes))
 
-	_, err = sim.API_CreateAndSendTxWithPRVCrossPoolTradeReq(acc1.PrivateKey, map[string]interface{}{burnAddr: "1000000"}, -1, -1, map[string]interface{}{
+	_, err = sim.RPC.API_CreateAndSendTxWithPRVCrossPoolTradeReq(acc1.PrivateKey, map[string]interface{}{burnAddr: "1000000"}, -1, -1, map[string]interface{}{
 		"TokenIDToBuyStr":     result1.TokenID,
 		"TokenIDToSellStr":    "0000000000000000000000000000000000000000000000000000000000000004",
 		"SellAmount":          "1000000",
@@ -397,7 +412,7 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 
-	_, err = sim.API_CreateAndSendTxWithPTokenCrossPoolTradeReq(sim.IcoAccount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, map[string]interface{}{
+	_, err = sim.RPC.API_CreateAndSendTxWithPTokenCrossPoolTradeReq(sim.IcoAccount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     result1.TokenID,
 		"TokenTxType": float64(1),
@@ -422,14 +437,14 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 	fmt.Println("------------------------------------------------------------")
-	bl, _ := sim.GetBalance(sim.IcoAccount)
+	bl, _ := sim.RPC.API_GetBalance(sim.IcoAccount.PrivateKey)
 	fmt.Println("ICO", bl)
 	fmt.Println("------------------------------------------------------------")
-	bl1, _ := sim.GetBalance(acc1)
+	bl1, _ := sim.RPC.API_GetBalance(acc1.PrivateKey)
 	fmt.Println("ACC1", bl1)
 
 	fmt.Println("------------------------------------------------------------")
-	r2, err := sim.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
+	r2, err := sim.RPC.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
 	if err != nil {
 		panic(err)
 	}

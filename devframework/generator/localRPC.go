@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 type Param struct {
@@ -19,7 +20,7 @@ type API struct {
 	Result string  `json:"result"`
 }
 
-const APITEMPLATE = `func (sim *LocalRPCClient) rpc_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
+const APITEMPLATE = `func (sim *LocalRPCClient) RPC_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.%HANDLER%["%API_NAME%"]
 	resI, rpcERR := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
@@ -63,8 +64,8 @@ import (
 			apiParams = append(apiParams, paramStruct[0][1])
 		}
 		apiResultType := ""
-		if len(res[0]) == 5 {
-			apiResultType = strings.Trim(res[0][3], " ")
+		if len(strings.Split(res[0][3], ",")) > 1 {
+			apiResultType = strings.Split(res[0][3], ",")[0]
 		}
 
 		rpchandler := "HttpHandler"

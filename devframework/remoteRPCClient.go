@@ -1,11 +1,11 @@
-package devframework
+package devframework //This file is auto generated. Please do not change if you dont know what you are doing
 import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
-func (sim *RemoteRPCClient) rpc_getbalancebyprivatekey(privateKey string) (res uint64,err error) {
+func (sim *RemoteRPCClient) RPC_getbalancebyprivatekey(privateKey string) (res uint64,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getbalancebyprivatekey",
@@ -30,7 +30,7 @@ func (sim *RemoteRPCClient) rpc_getbalancebyprivatekey(privateKey string) (res u
 }
 
 
-func (sim *RemoteRPCClient) rpc_getlistprivacycustomtokenbalance(privateKey string) (res jsonresult.ListCustomTokenBalance,err error) {
+func (sim *RemoteRPCClient) RPC_getlistprivacycustomtokenbalance(privateKey string) (res jsonresult.ListCustomTokenBalance,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getlistprivacycustomtokenbalance",
@@ -55,7 +55,7 @@ func (sim *RemoteRPCClient) rpc_getlistprivacycustomtokenbalance(privateKey stri
 }
 
 
-func (sim *RemoteRPCClient) rpc_getcommitteelist(empty string) (res jsonresult.CommitteeListsResult,err error) {
+func (sim *RemoteRPCClient) RPC_getcommitteelist(empty string) (res jsonresult.CommitteeListsResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getcommitteelist",
@@ -80,7 +80,7 @@ func (sim *RemoteRPCClient) rpc_getcommitteelist(empty string) (res jsonresult.C
 }
 
 
-func (sim *RemoteRPCClient) rpc_getrewardamount(paymentAddress string) (res map[string]uint64,err error) {
+func (sim *RemoteRPCClient) RPC_getrewardamount(paymentAddress string) (res map[string]uint64,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getrewardamount",
@@ -105,7 +105,7 @@ func (sim *RemoteRPCClient) rpc_getrewardamount(paymentAddress string) (res map[
 }
 
 
-func (sim *RemoteRPCClient) rpc_withdrawreward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_withdrawreward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "withdrawreward",
@@ -130,7 +130,7 @@ func (sim *RemoteRPCClient) rpc_withdrawreward(privateKey string, receivers map[
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendstakingtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendstakingtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendstakingtransaction",
@@ -155,7 +155,7 @@ func (sim *RemoteRPCClient) rpc_createandsendstakingtransaction(privateKey strin
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendstopautostakingtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stopStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendstopautostakingtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stopStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendstopautostakingtransaction",
@@ -180,10 +180,10 @@ func (sim *RemoteRPCClient) rpc_createandsendstopautostakingtransaction(privateK
 }
 
 
-func (sim *RemoteRPCClient) rpc_createtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
-		"method":  "createtransaction",
+		"method":  "createandsendtransaction",
 		"params":   []interface{}{privateKey,receivers,fee,privacy},
 		"id":      1,
 	})
@@ -205,11 +205,11 @@ func (sim *RemoteRPCClient) rpc_createtransaction(privateKey string, receivers m
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendprivacycustomtokentransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}) (res jsonresult.CreateTransactionTokenResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendprivacycustomtokentransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendprivacycustomtokentransaction",
-		"params":   []interface{}{privateKey,receivers,fee,privacy,tokenInfo},
+		"params":   []interface{}{privateKey,receivers,fee,privacy,tokenInfo,p1,pPrivacy},
 		"id":      1,
 	})
 	if err != nil {
@@ -230,7 +230,7 @@ func (sim *RemoteRPCClient) rpc_createandsendprivacycustomtokentransaction(priva
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithwithdrawalreqv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithwithdrawalreqv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithwithdrawalreqv2",
@@ -255,7 +255,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithwithdrawalreqv2(privateKey st
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithpdefeewithdrawalreq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithpdefeewithdrawalreq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithpdefeewithdrawalreq",
@@ -280,7 +280,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithpdefeewithdrawalreq(privateKe
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithptokentradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithptokentradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithptokentradereq",
@@ -305,7 +305,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithptokentradereq(privateKey str
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithptokencrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithptokencrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithptokencrosspooltradereq",
@@ -330,7 +330,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithptokencrosspooltradereq(priva
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithprvtradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithprvtradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithprvtradereq",
@@ -355,7 +355,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithprvtradereq(privateKey string
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithprvcrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithprvcrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithprvcrosspooltradereq",
@@ -380,7 +380,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithprvcrosspooltradereq(privateK
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithptokencontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithptokencontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (res jsonresult.CreateTransactionTokenResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithptokencontributionv2",
@@ -405,7 +405,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithptokencontributionv2(privateK
 }
 
 
-func (sim *RemoteRPCClient) rpc_createandsendtxwithprvcontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
+func (sim *RemoteRPCClient) RPC_createandsendtxwithprvcontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "createandsendtxwithprvcontributionv2",
@@ -430,7 +430,7 @@ func (sim *RemoteRPCClient) rpc_createandsendtxwithprvcontributionv2(privateKey 
 }
 
 
-func (sim *RemoteRPCClient) rpc_getpdestate(data map[string]interface{}) (res interface{},err error) {
+func (sim *RemoteRPCClient) RPC_getpdestate(data map[string]interface{}) (res jsonresult.CurrentPDEState,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getpdestate",
@@ -445,7 +445,7 @@ func (sim *RemoteRPCClient) rpc_getpdestate(data map[string]interface{}) (res in
 		return res,errors.New(rpcERR.Error())
 	}
 	resp := struct {
-		Result  interface{}
+		Result  jsonresult.CurrentPDEState
 	}{}
 	err = json.Unmarshal(body, &resp)
 	if err != nil {

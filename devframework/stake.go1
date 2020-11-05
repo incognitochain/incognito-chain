@@ -17,7 +17,7 @@ const (
 
 type StakingTxParam struct {
 	CommitteeKey *incognitokey.CommitteePublicKey
-	SenderPrk    string
+	StakerPrk    string
 	MinerPrk     string
 	RewardAddr   string
 	StakeShard   bool
@@ -42,7 +42,7 @@ func (sim *SimulationEngine) API_CreateTxStaking(stakeMeta StakingTxParam) (*jso
 	}
 
 	if stakeMeta.RewardAddr == "" {
-		wl, err := wallet.Base58CheckDeserialize(stakeMeta.SenderPrk)
+		wl, err := wallet.Base58CheckDeserialize(stakeMeta.StakerPrk)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +50,7 @@ func (sim *SimulationEngine) API_CreateTxStaking(stakeMeta StakingTxParam) (*jso
 	}
 
 	if stakeMeta.MinerPrk == "" {
-		stakeMeta.MinerPrk = stakeMeta.SenderPrk
+		stakeMeta.MinerPrk = stakeMeta.StakerPrk
 	}
 	wl, err := wallet.Base58CheckDeserialize(stakeMeta.MinerPrk)
 	if err != nil {
@@ -67,7 +67,7 @@ func (sim *SimulationEngine) API_CreateTxStaking(stakeMeta StakingTxParam) (*jso
 		panic(0)
 	}
 	burnAddr := sim.bc.GetBurningAddress(sim.bc.BeaconChain.GetFinalViewHeight())
-	txResp, err := sim.rpc_createandsendstakingtransaction(stakeMeta.SenderPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
+	txResp, err := sim.rpc_createandsendstakingtransaction(stakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
 		"StakingType":                  float64(stakingType),
 		"CandidatePaymentAddress":      minerPayment,
 		"PrivateSeed":                  privateSeed,
