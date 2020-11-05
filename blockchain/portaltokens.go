@@ -242,8 +242,8 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, po
 	}
 
 	if portingMemo.PortingID != portingReq.UniquePortingID() {
-		Logger.log.Errorf("PortingId in memoTx is not matched with portingID in metadata")
-		return false, errors.New("PortingId in memoTx is not matched with portingID in metadata")
+		Logger.log.Errorf("PortingId in memoTx %v is not matched with portingID in metadata %v", portingMemo.PortingID, portingReq.UniquePortingID())
+		return false, fmt.Errorf("PortingId in memoTx %v is not matched with portingID in metadata %v", portingMemo.PortingID, portingReq.UniquePortingID())
 	}
 
 	// check whether amount transfer in txBNB is equal porting amount or not

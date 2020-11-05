@@ -34,8 +34,8 @@ package blockchain
 //	blockChain                    *BlockChain
 //}
 //
-//const USER1_INC_ADDRESS = "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC"
-//const USER2_INC_ADDRESS = "12S1a8VnkwhDTQWZ5PhdpySwiFZj7p8sKdG7oAQFZ3dLsWaV6fhDWk5aSFHpt1jcPBjY4sYgwqAqRzx3oTYDZCvCei1LSCdJARXWiyK"
+//const USER_INC_ADDRESS_1 = "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC"
+//const USER_INC_ADDRESS_2 = "12S1a8VnkwhDTQWZ5PhdpySwiFZj7p8sKdG7oAQFZ3dLsWaV6fhDWk5aSFHpt1jcPBjY4sYgwqAqRzx3oTYDZCvCei1LSCdJARXWiyK"
 //
 //func (s *PortalTestSuite) SetupTest() {
 //	dbPath, err := ioutil.TempDir(os.TempDir(), "portal_test_statedb_")
@@ -1148,7 +1148,7 @@ package blockchain
 //	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 //	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
-//		USER1_INC_ADDRESS, 1*1e9,
+//		USER_INC_ADDRESS_1, 1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress1",
@@ -1161,7 +1161,7 @@ package blockchain
 //	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
 //	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-btc-2", common.Hash{}, common.PortalBTCIDStr,
-//		USER2_INC_ADDRESS, 0.1*1e9,
+//		USER_INC_ADDRESS_2, 0.1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress3",
@@ -1174,7 +1174,7 @@ package blockchain
 //	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 //	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
-//		USER2_INC_ADDRESS, 5*1e9,
+//		USER_INC_ADDRESS_2, 5*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress1",
@@ -1187,7 +1187,7 @@ package blockchain
 //	wPortingReqKey4 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-4").String()
 //	wPortingRequest4 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-btc-4", common.Hash{}, common.PortalBTCIDStr,
-//		USER1_INC_ADDRESS, 0.25*1e9,
+//		USER_INC_ADDRESS_1, 0.25*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress3",
@@ -1225,7 +1225,7 @@ package blockchain
 //		// valid request ptokens
 //		{
 //			portingID:     "porting-bnb-1",
-//			incAddressStr: USER1_INC_ADDRESS,
+//			incAddressStr: USER_INC_ADDRESS_1,
 //			pTokenID:      common.PortalBNBIDStr,
 //			portingAmount: 1 * 1e9,
 //			blockHeight:   1000,
@@ -1326,7 +1326,7 @@ package blockchain
 //	redeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 //	redeemRequest1 := statedb.NewRedeemRequestWithValue(
 //		"redeem-bnb-1", common.PortalBNBIDStr,
-//		USER1_INC_ADDRESS, "userBNBAddress1", 2.3*1e9,
+//		USER_INC_ADDRESS_1, "userBNBAddress1", 2.3*1e9,
 //		[]*statedb.MatchingRedeemCustodianDetail{
 //			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress1", "bnbAddress1", 2*1e9),
 //			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress2", "bnbAddress2", 0.3*1e9),
@@ -1335,7 +1335,7 @@ package blockchain
 //	redeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-btc-2").String()
 //	redeemRequest2 := statedb.NewRedeemRequestWithValue(
 //		"redeem-btc-2", common.PortalBTCIDStr,
-//		USER2_INC_ADDRESS, "userBTCAddress2", 0.03*1e9,
+//		USER_INC_ADDRESS_2, "userBTCAddress2", 0.03*1e9,
 //		[]*statedb.MatchingRedeemCustodianDetail{
 //			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress3", "btcAddress3", 0.03*1e9),
 //		}, 30000000, 1500, common.Hash{}, 0, 1000, "")
@@ -1348,7 +1348,7 @@ package blockchain
 //	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 //	wRedeemRequest3 := statedb.NewRedeemRequestWithValue(
 //		"redeem-bnb-3", common.PortalBNBIDStr,
-//		USER1_INC_ADDRESS, "userBNBAddress1", 0.1*1e9,
+//		USER_INC_ADDRESS_1, "userBNBAddress1", 0.1*1e9,
 //		[]*statedb.MatchingRedeemCustodianDetail{
 //			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress2", "bnbAddress2", 0.1*1e9),
 //		}, 4600000, 1500, common.Hash{}, 0, 1000,  "")
@@ -1922,7 +1922,7 @@ package blockchain
 //	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 //	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
-//		USER1_INC_ADDRESS, 1*1e9,
+//		USER_INC_ADDRESS_1, 1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress1",
@@ -1941,7 +1941,7 @@ package blockchain
 //	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
 //	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-btc-2", common.Hash{}, common.PortalBTCIDStr,
-//		USER2_INC_ADDRESS, 0.1*1e9,
+//		USER_INC_ADDRESS_2, 0.1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress3",
@@ -1954,7 +1954,7 @@ package blockchain
 //	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 //	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
 //		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
-//		USER2_INC_ADDRESS, 5*1e9,
+//		USER_INC_ADDRESS_2, 5*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
 //				IncAddress:             "custodianIncAddress1",
@@ -1974,7 +1974,7 @@ package blockchain
 //	redeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 //	redeemRequest1 := statedb.NewRedeemRequestWithValue(
 //		"redeem-bnb-1", common.PortalBNBIDStr,
-//		USER1_INC_ADDRESS, "userBNBAddress1", 2.3*1e9,
+//		USER_INC_ADDRESS_1, "userBNBAddress1", 2.3*1e9,
 //		[]*statedb.MatchingRedeemCustodianDetail{
 //			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress1", "bnbAddress1", 2*1e9),
 //			statedb.NewMatchingRedeemCustodianDetailWithValue("custodianIncAddress2", "bnbAddress2", 0.3*1e9),
