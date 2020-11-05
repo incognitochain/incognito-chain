@@ -1,30 +1,32 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 )
 
-const RPC_TEMPLATE = `func (sim *SimulationEngine) rpc_%APINAME%(%APIPARAMS%) (%APIRESULT%) {
+const RPC_TEMPLATE = `
+func (sim *RemoteRPCClient) rpc_%APINAME%(%APIPARAMS%) (%APIRESULT%) {
 	%API_REQUEST%
 	%API_REQUEST_RESPONSE%
 	%API_RETURN%
-}`
+}
+`
 
-const RPC_REQUEST_TEMPLATE = `requestBody, err := json.Marshal(map[string]interface{}{
+const RPC_REQUEST_TEMPLATE = `requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "%API_REQ_NAME%",
 		"params":   []interface{}{%API_REQ_PARAMS%},
 		"id":      1,
 	})
 	if err != nil {
-		return %API_RET_ERR%
+		%API_RET_ERR%
 	}
 	body, err := sendRequest(requestBody)
 	if err != nil {
-		return %API_RET_ERR%
+		%API_RET_ERR%
 	}`
 
 const RPC_RESPONSE_TEMPLATE = `resp := struct {
@@ -32,69 +34,81 @@ const RPC_RESPONSE_TEMPLATE = `resp := struct {
 	}{}
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
-		return %API_RET_ERR%
+		%API_RET_ERR%
 	}`
 
-func client() {
-	fd, _ := os.Open("api.json")
+func main() {
+	fd, _ := os.Open("apispec.go")
 	b, _ := ioutil.ReadAll(fd)
+	apis := strings.Split(string(b), "\n")
 
-	var apis []API
-	json.Unmarshal(b, &apis)
-
-	apiF, _ := os.OpenFile("../rpc.go", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0666)
+	apiF, _ := os.OpenFile("../remoteRPCClient.go", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0666)
 	apiF.Truncate(0)
 	apiF.WriteString(`package devframework
 import (
 	"encoding/json"
+	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )`)
 
 	for _, api := range apis {
-		apiname := api.Name
-		apiparams := []string{}
-		for _, param := range api.Params {
-			apiparams = append(apiparams, param.Name+" "+param.Type)
+		regex := regexp.MustCompile(`([^ ]+)\((.+)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
+
+		res := regex.FindAllStringSubmatch(api, -1)
+		if strings.Trim(api, " ") == "" {
+			continue
+		}
+		if len(res) <= 0 {
+			continue
 		}
 
-		apierrreturn := "err"
-		apiresult := "error"
-		if api.Result != "" {
-			apiresult = api.Result + ",error"
-			apierrreturn = "nil,err"
+		apiName := strings.Trim(strings.ToLower(res[0][1]), "\t ")
+		apiParams := []string{}
+
+		for _, param := range strings.Split(res[0][2], ",") {
+			trimParam := strings.Trim(param, " ")
+			regex := regexp.MustCompile(`(.+) (.+)`)
+			paramStruct := regex.FindAllStringSubmatch(trimParam, -1)
+			apiParams = append(apiParams, paramStruct[0][1])
 		}
 
-		reqparams := []string{}
-		for _, param := range api.Params {
-			reqparams = append(reqparams, param.Name)
+		errstr := "return errors.New(rpcERR.Error())"
+		hasResType := false
+		resType := ""
+		if len(strings.Split(res[0][3], ",")) > 1 {
+			errstr = "return res,errors.New(rpcERR.Error())"
+			hasResType = true
+			resType = strings.Split(res[0][3], ",")[0]
 		}
 
 		//build request body
-		reqstr := strings.Replace(RPC_REQUEST_TEMPLATE, "%API_REQ_NAME%", strings.ToLower(apiname), -1)
-		reqstr = strings.Replace(reqstr, "%API_REQ_PARAMS%", strings.Join(reqparams, ","), -1)
-		reqstr = strings.Replace(reqstr, "%API_RET_ERR%", apierrreturn, -1)
+		reqstr := strings.Replace(RPC_REQUEST_TEMPLATE, "%API_REQ_NAME%", strings.ToLower(apiName), -1)
+		reqstr = strings.Replace(reqstr, "%API_REQ_PARAMS%", strings.Join(apiParams, ","), -1)
+		reqstr = strings.Replace(reqstr, "%API_RET_ERR%", errstr, -1)
 
 		//build request response
 		resstr := "_=body"
-		if api.Result != "" {
-			resstr = strings.Replace(RPC_RESPONSE_TEMPLATE, "%API_RES_TYPE%", api.Result, -1)
-			resstr = strings.Replace(resstr, "%API_RET_ERR%", apierrreturn, -1)
+		if hasResType {
+			resstr = strings.Replace(RPC_RESPONSE_TEMPLATE, "%API_RES_TYPE%", resType, -1)
+			resstr = strings.Replace(resstr, "%API_RET_ERR%", errstr, -1)
 		}
 
 		//build return
+		apiresult := "err error"
 		retstr := "return err"
-		if api.Result != "" {
+		if hasResType {
 			retstr = "return resp.Result,err"
+			apiresult = "res " + res[0][4] + ",err error"
 		}
-		//build function
-		fgen := strings.Replace(RPC_TEMPLATE, "%APINAME%", apiname, -1)
-		fgen = strings.Replace(fgen, "%APIPARAMS%", strings.Join(apiparams, ","), -1)
-		fgen = strings.Replace(fgen, "%APIRESULT%", apiresult, -1)
-		fgen = strings.Replace(fgen, "%RPC_REQUEST%", reqstr, -1)
-		fgen = strings.Replace(fgen, "%RPC_REQUEST_RESPONSE%", resstr, -1)
-		fgen = strings.Replace(fgen, "%RPC_RETURN%", retstr, -1)
-		apiF.WriteString("\n" + fgen)
 
+		//build function
+		fgen := strings.Replace(RPC_TEMPLATE, "%APINAME%", apiName, -1)
+		fgen = strings.Replace(fgen, "%APIPARAMS%", res[0][2], -1)
+		fgen = strings.Replace(fgen, "%APIRESULT%", apiresult, -1)
+		fgen = strings.Replace(fgen, "%API_REQUEST%", reqstr, -1)
+		fgen = strings.Replace(fgen, "%API_REQUEST_RESPONSE%", resstr, -1)
+		fgen = strings.Replace(fgen, "%API_RETURN%", retstr, -1)
+		apiF.WriteString("\n" + fgen)
 	}
 	apiF.Close()
 	fd.Close()

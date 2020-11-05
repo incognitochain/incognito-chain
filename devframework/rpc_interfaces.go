@@ -1,4 +1,4 @@
-package main
+package devframework
 
 import "github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 
