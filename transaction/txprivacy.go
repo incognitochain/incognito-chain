@@ -173,7 +173,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = params.fee
 		tx.sigPrivKey = *params.senderSK
-		tx.PubKeyLastByteSender = pkLastByteSender
+		tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 		err := tx.signTx()
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
@@ -374,7 +374,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 
 	// sign tx
-	tx.PubKeyLastByteSender = pkLastByteSender
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 	err = tx.signTx()
 	if err != nil {
 		Logger.log.Error(err)
@@ -1414,7 +1414,7 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 	}
 	tx.Proof.SetOutputCoins(tempOutputCoin)
 	// get last byte
-	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(receiverAddr.Pk[len(receiverAddr.Pk)-1])
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privateKey
@@ -1608,7 +1608,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 		//Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = params.txParam.fee
 		tx.sigPrivKey = *params.txParam.senderSK
-		tx.PubKeyLastByteSender = pkLastByteSender
+		tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 		err := tx.signTx()
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
@@ -1772,7 +1772,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 	}
 
 	// sign tx
-	tx.PubKeyLastByteSender = pkLastByteSender
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 	err = tx.signTx()
 	if err != nil {
 		Logger.log.Error(err)
