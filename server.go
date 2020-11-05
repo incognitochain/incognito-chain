@@ -1638,6 +1638,17 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		bBestState.Hash(),
 	}
 
+	msg.(*wire.MessagePeerState).Shards = map[byte]wire.ChainState{}
+	for i, v := range serverObj.blockChain.ShardChain {
+		bestState := v.GetBestState()
+		msg.(*wire.MessagePeerState).Shards[byte(i)] = wire.ChainState{
+			Timestamp:     bestState.BestBlock.Header.Timestamp,
+			Height:        bestState.ShardHeight,
+			BlockHash:     bestState.BestBlockHash,
+			BestStateHash: bestState.Hash(),
+		}
+	}
+
 	if userLayer != common.BeaconRole {
 		sBestState := serverObj.blockChain.GetBestStateShard(byte(shardID))
 		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = wire.ChainState{
