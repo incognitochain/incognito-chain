@@ -133,15 +133,18 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	shardBlockMap := make(map[common.Hash]*types.ShardBlock)
 	blkhash, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
+		Logger.log.Info("[staking-v2] err: ", err)
 		return nil, err
 	}
 	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
 	if err != nil {
+		Logger.log.Info("[staking-v2] err: ", err)
 		return nil, err
 	}
 	shardBlock := types.NewShardBlock()
 	err = json.Unmarshal(data, shardBlock)
 	if err != nil {
+		Logger.log.Info("[staking-v2] err:", err)
 		return nil, err
 	}
 	shardBlockMap[*shardBlock.Hash()] = shardBlock
@@ -151,6 +154,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*types.ShardBlock, error) {
 	shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
+		Logger.log.Info("[staking-v2] err:", err)
 		return nil, err
 	}
 	if len(shardBlocks) == 0 {
@@ -160,6 +164,7 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 	if err == nil {
 		for _, blk := range nShardBlocks {
 			if sBlk, ok := shardBlocks[blk.GetPrevHash()]; ok {
+				Logger.log.Info("[staking-v2] err:", err)
 				return sBlk, nil
 			}
 		}
@@ -243,7 +248,6 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 		for _, height := range requiredShardBlockHeight {
 			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
 			if err != nil {
-				Logger.log.Info("[staking-v2] err:", err)
 				return nil, err
 			}
 			//only get shard block within epoch
@@ -251,7 +255,6 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 				lastEpoch = shardBlock.GetCurrentEpoch() //update epoch of first block
 			} else {
 				if lastEpoch != shardBlock.GetCurrentEpoch() { //if next block have different epoch than break
-					Logger.log.Info("[staking-v2] Contain block in different epoch")
 					return nil, fmt.Errorf("Contain block in different epoch")
 				}
 			}
