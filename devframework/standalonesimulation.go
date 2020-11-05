@@ -64,9 +64,10 @@ type SimulationEngine struct {
 	IcoAccount        Account
 
 	//blockchain dependency object
+	Network     *HighwayConnection
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
-	cs          *mock.Consensus
+	consensus   *mock.Consensus
 	txpool      *mempool.TxPool
 	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
@@ -271,7 +272,7 @@ func (sim *SimulationEngine) init() {
 
 	sim.param = activeNetParams
 	sim.bc = &bc
-	sim.cs = &cs
+	sim.consensus = &cs
 	sim.txpool = &txpool
 	sim.temppool = &temppool
 	sim.btcrd = &btcrd
@@ -296,6 +297,19 @@ func (sim *SimulationEngine) init() {
 	go blockgen.Start(cQuit)
 	//go rpcServer.Start()
 	sync.Syncker.Init(&syncker.SynckerManagerConfig{Blockchain: &bc})
+}
+
+func (sim *SimulationEngine) ConnectNetwork() {
+	config := HighwayConnectionConfig{
+		"127.0.0.1",
+		19876,
+		"2.0.0",
+		"45.56.115.6:9330",
+		"",
+		sim.consensus,
+	}
+	sim.Network = NewHighwayConnection(config)
+	sim.Network.Connect()
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
