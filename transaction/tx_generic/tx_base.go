@@ -410,7 +410,7 @@ func (tx TxBase) String() string {
 	return record
 }
 
-func (tx TxBase) Hash() *common.Hash {
+func (tx *TxBase) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}

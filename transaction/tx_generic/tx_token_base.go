@@ -185,7 +185,7 @@ func (txToken TxTokenBase) JSONString() string {
 // =================== FUNCTIONS THAT GET STUFF ===================
 
 // Hash returns the hash of all fields of the transaction
-func (txToken TxTokenBase) Hash() *common.Hash {
+func (txToken *TxTokenBase) Hash() *common.Hash {
 	if txToken.cachedHash != nil {
 		return txToken.cachedHash
 	}
