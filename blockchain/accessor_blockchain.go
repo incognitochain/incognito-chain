@@ -243,6 +243,7 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 		for _, height := range requiredShardBlockHeight {
 			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
 			if err != nil {
+				Logger.log.Info("[staking-v2] err:", err)
 				return nil, err
 			}
 			//only get shard block within epoch
@@ -250,6 +251,7 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 				lastEpoch = shardBlock.GetCurrentEpoch() //update epoch of first block
 			} else {
 				if lastEpoch != shardBlock.GetCurrentEpoch() { //if next block have different epoch than break
+					Logger.log.Info("[staking-v2] Contain block in different epoch")
 					return nil, fmt.Errorf("Contain block in different epoch")
 				}
 			}
