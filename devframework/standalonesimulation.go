@@ -35,6 +35,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+type RemoteRPCClient struct{}
+type LocalRPCClient struct{}
 type Config struct {
 	ShardNumber   int
 	RoundInterval int
