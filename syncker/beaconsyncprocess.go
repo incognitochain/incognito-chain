@@ -293,6 +293,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	}()
 
 	toHeight := pState.BestViewHeight
+	Logger.Info("[staking-v2] toHeight:", toHeight)
 	//process param
 
 	//fullnode delay 1 block (make sure insert final block)
@@ -300,6 +301,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 		toHeight = toHeight - 1
 	}
 
+	Logger.Info("[staking-v2] s.chain.GetBestViewHeight():", s.chain.GetBestViewHeight())
 	if toHeight <= s.chain.GetBestViewHeight() {
 		return
 	}

@@ -135,10 +135,6 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 		GetShardBlockHashByHeight(blockchain.ShardChain[shardID].
 			GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
-		Logger.log.Info("[staking-v2] finalview.height :", blockchain.ShardChain[shardID].GetFinalView().GetHeight())
-		Logger.log.Info("[staking-v2] bestview.height :", blockchain.ShardChain[shardID].GetBestView().GetHeight())
-		Logger.log.Info("[staking-v2] height:", height)
-		Logger.log.Info("[staking-v2] err: ", err)
 		return nil, err
 	}
 	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
