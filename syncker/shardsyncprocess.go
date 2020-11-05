@@ -74,6 +74,10 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 			case f := <-s.actionCh:
 				f()
 			case shardPeerState := <-s.shardPeerStateCh:
+				//TODO: @tin
+				// receive peer state here
+				// process peer state
+
 				for sid, peerShardState := range shardPeerState.Shards {
 					if int(sid) == s.shardID {
 						s.shardPeerState[shardPeerState.SenderID] = ShardPeerState{
