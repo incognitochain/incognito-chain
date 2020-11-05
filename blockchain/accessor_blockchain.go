@@ -131,20 +131,23 @@ func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView mult
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*types.ShardBlock, error) {
 	shardBlockMap := make(map[common.Hash]*types.ShardBlock)
-	blkhash, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
+	blkhash, err := blockchain.
+		GetShardBlockHashByHeight(blockchain.ShardChain[shardID].
+			GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
+		Logger.log.Info("[staking-v2] finalview.height :", blockchain.ShardChain[shardID].GetFinalView().GetHeight())
+		Logger.log.Info("[staking-v2] bestview.height :", blockchain.ShardChain[shardID].GetBestView().GetHeight())
+		Logger.log.Info("[staking-v2] height:", height)
 		Logger.log.Info("[staking-v2] err: ", err)
 		return nil, err
 	}
 	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
 	if err != nil {
-		Logger.log.Info("[staking-v2] err: ", err)
 		return nil, err
 	}
 	shardBlock := types.NewShardBlock()
 	err = json.Unmarshal(data, shardBlock)
 	if err != nil {
-		Logger.log.Info("[staking-v2] err:", err)
 		return nil, err
 	}
 	shardBlockMap[*shardBlock.Hash()] = shardBlock
@@ -154,7 +157,6 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*types.ShardBlock, error) {
 	shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
-		Logger.log.Info("[staking-v2] err:", err)
 		return nil, err
 	}
 	if len(shardBlocks) == 0 {
@@ -164,7 +166,6 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 	if err == nil {
 		for _, blk := range nShardBlocks {
 			if sBlk, ok := shardBlocks[blk.GetPrevHash()]; ok {
-				Logger.log.Info("[staking-v2] err:", err)
 				return sBlk, nil
 			}
 		}
