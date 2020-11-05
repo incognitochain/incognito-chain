@@ -837,7 +837,8 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 				panic(err)
 			}
 			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", c.committeePublicKey))
+				res, _ := c.committeePublicKey.ToBase58()
+				panic(errors.Errorf("Can not found staker info for this committee %v", res))
 			}
 			tempStakerInfos = append(tempStakerInfos, s)
 		}
