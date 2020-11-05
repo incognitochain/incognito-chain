@@ -3,6 +3,7 @@ package mock
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -13,6 +14,14 @@ type BlockValidation interface {
 
 type Consensus struct {
 	Blockchain *blockchain.BlockChain
+}
+
+func (c *Consensus) GetOneValidator() *consensus.Validator {
+	return nil
+}
+
+func (c *Consensus) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
+	return nil
 }
 
 func (c *Consensus) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
