@@ -56,6 +56,9 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 	if err != nil {
 		return nil, err
 	}
+	if string(proofInBytes)=="null"{
+		return nil, nil
+	}
 
 	var res privacy.Proof
 	switch txType {

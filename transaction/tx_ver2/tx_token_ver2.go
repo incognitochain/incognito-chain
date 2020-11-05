@@ -32,17 +32,16 @@ type TxTokenDataVersion2 struct {
 	Mintable 		bool
 }
 
-func (td *TxTokenDataVersion2) Hash() (*common.Hash, error){
-	tempSig := td.Sig
-	tempPk := td.SigPubKey
+func (td TxTokenDataVersion2) Hash() (*common.Hash, error){
+	// leave out signature & its public key when hashing tx
 	td.Sig = []byte{}
 	td.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(td)
-	td.Sig = tempSig
-	td.SigPubKey = tempPk
+
 	if err!=nil{
 		return nil, err
 	}
+	// after this returns, tx is restored since the receiver is not a pointer
 	hash := common.HashH(inBytes)
 	return &hash, nil
 }
@@ -390,7 +389,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		params.Info,
 	)
 	jsb, _ := json.Marshal(params.TokenParams)
-	utils.Logger.Log.Infof("INITTX with token params %s", string(jsb))
+	utils.Logger.Log.Infof("Create TX token v2 with token params %s", string(jsb))
 	if err := tx_generic.ValidateTxParams(txPrivacyParams); err != nil {
 		return err
 	}
@@ -440,7 +439,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	
 	err = txToken.SetTxBase(tx)
 	jsb, _ = json.Marshal(txToken)
-	utils.Logger.Log.Warnf("INITTX complete ! The resulting transaction is : %s", string(jsb))
+	utils.Logger.Log.Warnf("TX Creation complete ! The resulting token transaction is : %s", string(jsb))
 	if err!=nil{
 		return err
 	}
