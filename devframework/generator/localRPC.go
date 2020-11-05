@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
 	"os"
@@ -20,7 +19,7 @@ type API struct {
 	Result string  `json:"result"`
 }
 
-const APITEMPLATE = `func (sim *SimulationEngine) rpc_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
+const APITEMPLATE = `func (sim *LocalRPCClient) rpc_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
 	httpServer := sim.rpcServer.HttpServer
 	c := rpcserver.%HANDLER%["%API_NAME%"]
 	resI, rpcERR := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
@@ -31,15 +30,15 @@ const APITEMPLATE = `func (sim *SimulationEngine) rpc_%API_NAME%(%API_PARAMS%) (
 }`
 
 func main() {
-	fd, _ := os.Open("api.spec")
+	fd, _ := os.Open("apispec.go")
 	b, _ := ioutil.ReadAll(fd)
 
 	apis := strings.Split(string(b), "\n")
 
-	apiF, _ := os.OpenFile("../rpc.go", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0666)
+	apiF, _ := os.OpenFile("../localRPCClient.go", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0666)
 	apiF.Truncate(0)
 	apiF.WriteString(`package devframework
-
+//This file is auto generated. Please do not change if you dont know what you are doing
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver"
@@ -47,13 +46,15 @@ import (
 )`)
 	//
 	for _, api := range apis {
-		regex := regexp.MustCompile(`(.+)\((.+)\)[ ]*\([ ]*([^, ]*)(error|,error)\)`)
+		regex := regexp.MustCompile(`([^ ]+)\((.+)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
 		res := regex.FindAllStringSubmatch(api, -1)
 		if strings.Trim(api, " ") == "" {
 			continue
 		}
-		fmt.Println(res[0])
-		apiName := strings.ToLower(res[0][1])
+		if len(res) <= 0 {
+			continue
+		}
+		apiName := strings.Trim(strings.ToLower(res[0][1]), "\t ")
 		apiParams := []string{}
 		for _, param := range strings.Split(res[0][2], ",") {
 			trimParam := strings.Trim(param, " ")
@@ -69,7 +70,7 @@ import (
 		rpchandler := "HttpHandler"
 		if _, ok := rpcserver.HttpHandler[apiName]; !ok {
 			if _, ok := rpcserver.LimitedHttpHandler[apiName]; !ok {
-				panic("no method name in rpc request")
+				panic("no method name in rpc request" + apiName)
 			} else {
 				rpchandler = "LimitedHttpHandler"
 			}
