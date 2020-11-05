@@ -256,7 +256,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
-			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			lastByteSender := params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(lastByteSender)
 
 			// sign Tx
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
@@ -955,7 +956,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
-			temp.PubKeyLastByteSender = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			lastByteSender := params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(lastByteSender)
 
 			// sign Tx
 			temp.SigPubKey = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk
