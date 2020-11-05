@@ -50,7 +50,9 @@ const CUS_BNB_ADDRESS_3 = "tbnb1n5lrzass9l28djvv7drst53dcw7y9yj4pyvksf"
 const CUS_BTC_ADDRESS_1 = "btc-address-1"
 const CUS_BTC_ADDRESS_2 = "btc-address-2"
 const CUS_BTC_ADDRESS_3 = "btc-address-3"
-
+const CUS_ETH_ADDRESS_1 = "eth-address-1"
+const CUS_ETH_ADDRESS_2 = "eth-address-2"
+const CUS_ETH_ADDRESS_3 = "eth-address-3"
 
 const USDT_ID = "64fbdbc6bf5b228814b58706d91ed03777f0edf6"
 const ETH_ID = "0000000000000000000000000000000000000000"
@@ -132,9 +134,9 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),
 					},
 				},
-				BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
-				BNBFullNodeHost:                TestnetBNBFullNodeHost,
-				BNBFullNodePort:                TestnetBNBFullNodePort,
+				BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
+				BNBFullNodeHost:          TestnetBNBFullNodeHost,
+				BNBFullNodePort:          TestnetBNBFullNodePort,
 				BNBRelayingHeaderChainID: TestnetBNBChainID,
 			},
 		},
@@ -679,6 +681,33 @@ func buildPortalCustodianDepositActionV3(
 	return []string{strconv.Itoa(metadata.PortalCustodianDepositMetaV3), actionContentBase64Str}
 }
 
+func buildPortalCustodianWithdrawActionV3(
+	custodianIncAddress string,
+	custodianExternalAddress string,
+	externalTokenID string,
+	amount uint64,
+	shardID byte,
+) []string {
+	data := metadata.PortalCustodianWithdrawRequestV3{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalCustodianWithdrawRequestMetaV3,
+		},
+		CustodianIncAddress:      custodianIncAddress,
+		CustodianExternalAddress: custodianExternalAddress,
+		ExternalTokenID:          externalTokenID,
+		Amount:                   amount,
+	}
+
+	actionContent := metadata.PortalCustodianWithdrawRequestActionV3{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3), actionContentBase64Str}
+}
+
 func buildPortalUserRegisterAction(
 	portingID string,
 	incAddressStr string,
@@ -931,27 +960,33 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
 	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
 
-	custodian1 := statedb.NewCustodianStateWithValue(
-		CUS_INC_ADDRESS_1, 7000*1e9, 7000*1e9,
-		map[string]uint64{}, map[string]uint64{},
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
 		map[string]string{
 			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
 			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
-		}, map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
+		})
+	custodian1.SetTotalCollateral(7000 * 1e9)
+	custodian1.SetFreeCollateral(7000 * 1e9)
 
-	custodian2 := statedb.NewCustodianStateWithValue(
-		CUS_INC_ADDRESS_2, 1000*1e9, 1000*1e9,
-		map[string]uint64{}, map[string]uint64{},
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
 		map[string]string{
 			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
-		}, map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
+		})
+	custodian2.SetTotalCollateral(1000 * 1e9)
+	custodian2.SetFreeCollateral(1000 * 1e9)
 
-	custodian3 := statedb.NewCustodianStateWithValue(
-		CUS_INC_ADDRESS_3, 10000*1e9, 10000*1e9,
-		map[string]uint64{}, map[string]uint64{},
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
 		map[string]string{
 			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
-		}, map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
+		})
+	custodian3.SetTotalCollateral(10000 * 1e9)
+	custodian3.SetFreeCollateral(10000 * 1e9)
 
 	expectedRes := &ExpectedResultCustodianDeposit{
 		custodianPool: map[string]*statedb.CustodianState{
@@ -1030,7 +1065,7 @@ type ExpectedResultCustodianDepositV3 struct {
 
 func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepositV3, *ExpectedResultCustodianDepositV3) {
 	// build test cases
-	//todo: build sample eth proof
+	//todo: build the eth proof
 	testcases := []TestCaseCustodianDepositV3{
 		// valid
 		{
@@ -1064,10 +1099,10 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+				common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+				common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 			},
-			depositAmount:     2 * 1e9,
+			depositAmount:     10 * 1e9,
 			collateralTokenID: ETH_ID,
 			blockHash:         eCommon.Hash{},
 			txIndex:           0,
@@ -1176,6 +1211,223 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
 
 	// build actions from testcases
 	instsForProducer := buildCustodianDepositActionsV3FromTcs(testcases, shardID)
+
+	// producer instructions
+	newInsts, err := producerPortalInstructions(
+		bc, beaconHeight, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+
+	// process new instructions
+	err = processPortalInstructions(
+		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+
+	// check results
+	s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)))
+	s.Equal(nil, err)
+	s.Equal(expectedRes.custodianPool, s.currentPortalStateForProducer.CustodianPoolState)
+
+	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
+}
+
+/*
+	Feature 2: Custodians withdraw free collaterals (ETH/ERC20)
+*/
+
+type TestCaseCustodianWithdrawV3 struct {
+	custodianIncAddress      string
+	custodianExternalAddress string
+	externalTokenID          string
+	amount                   uint64
+}
+
+type ExpectedResultCustodianWithdrawV3 struct {
+	custodianPool  map[string]*statedb.CustodianState
+	numBeaconInsts uint
+}
+
+func (s *PortalTestSuiteV3) SetupTestCustodianWithdrawV3() {
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		})
+	custodian1.SetTotalCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(1000 * 1e9)
+	custodian1.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  10 * 1e9,
+			USDT_ID: 500 * 1e6,
+		})
+	custodian1.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  10 * 1e9,
+			USDT_ID: 500 * 1e6,
+		})
+
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		})
+	custodian2.SetTotalTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 2000 * 1e6,
+		})
+	custodian2.SetFreeTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 2000 * 1e6,
+		})
+
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+		})
+	custodian3.SetTotalCollateral(1000 * 1e9)
+	custodian3.SetFreeCollateral(1000 * 1e9)
+
+	custodianPool := map[string]*statedb.CustodianState{
+		custodianKey1: custodian1,
+		custodianKey2: custodian2,
+		custodianKey3: custodian3,
+	}
+
+	s.currentPortalStateForProducer.CustodianPoolState = custodianPool
+	s.currentPortalStateForProcess.CustodianPoolState = cloneCustodians(custodianPool)
+}
+
+func buildTestCaseAndExpectedResultCustodianWithdrawV3() ([]TestCaseCustodianWithdrawV3, *ExpectedResultCustodianWithdrawV3) {
+	// build test cases
+	//todo: build the eth proof
+	testcases := []TestCaseCustodianWithdrawV3{
+		// valid: withdrawal amount less than free collateral amount (ETH)
+		{
+			custodianIncAddress:      CUS_INC_ADDRESS_1,
+			custodianExternalAddress: CUS_ETH_ADDRESS_1,
+			externalTokenID:          ETH_ID,
+			amount:                   1 * 1e9,
+		},
+		// valid: withdrawal amount equal to free collateral amount (ERC20)
+		{
+			custodianIncAddress:      CUS_INC_ADDRESS_1,
+			custodianExternalAddress: CUS_ETH_ADDRESS_1,
+			externalTokenID:          USDT_ID,
+			amount:                   500 * 1e6,
+		},
+		// invalid: withdrawal amount greater than free collateral amount
+		{
+			custodianIncAddress:      CUS_INC_ADDRESS_2,
+			custodianExternalAddress: CUS_ETH_ADDRESS_2,
+			externalTokenID:          USDT_ID,
+			amount:                   3000 * 1e6,
+		},
+		// invalid: invalid collateral tokenID
+		{
+			custodianIncAddress:      CUS_INC_ADDRESS_2,
+			custodianExternalAddress: CUS_ETH_ADDRESS_2,
+			externalTokenID:          ETH_ID,
+			amount:                   1 * 1e9,
+		},
+	}
+
+	// build expected results
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		})
+	custodian1.SetTotalCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(1000 * 1e9)
+	custodian1.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  9 * 1e9,
+			USDT_ID: 0 * 1e6,
+		})
+	custodian1.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  9 * 1e9,
+			USDT_ID: 0 * 1e6,
+		})
+
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		})
+	custodian2.SetTotalTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 2000 * 1e6,
+		})
+	custodian2.SetFreeTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 2000 * 1e6,
+		})
+
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+		})
+	custodian3.SetTotalCollateral(1000 * 1e9)
+	custodian3.SetFreeCollateral(1000 * 1e9)
+
+	expectedRes := &ExpectedResultCustodianWithdrawV3{
+		custodianPool: map[string]*statedb.CustodianState{
+			custodianKey1: custodian1,
+			custodianKey2: custodian2,
+			custodianKey3: custodian3,
+		},
+		numBeaconInsts: 6,
+	}
+	// todo: check confirm withdraw instructions
+
+	return testcases, expectedRes
+}
+
+func buildCustodianWithdrawActionsV3FromTcs(tcs []TestCaseCustodianWithdrawV3, shardID byte) []instructionForProducer {
+	insts := []instructionForProducer{}
+
+	for _, tc := range tcs {
+		inst := buildPortalCustodianWithdrawActionV3(tc.custodianIncAddress, tc.custodianExternalAddress, tc.externalTokenID, tc.amount, shardID)
+		insts = append(insts, instructionForProducer{
+			inst:         inst,
+			optionalData: nil,
+		})
+	}
+
+	return insts
+}
+
+func (s *PortalTestSuiteV3) TestCustodianWithdrawCollateralV3() {
+	fmt.Println("Running TestCustodianWithdrawCollateralV3 - beacon height 1000 ...")
+	bc := s.blockChain
+	pm := NewPortalManager()
+	beaconHeight := uint64(1000)
+	shardID := byte(0)
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+
+	s.SetupTestCustodianWithdrawV3()
+
+	// build test cases and expected results
+	testcases, expectedRes := buildTestCaseAndExpectedResultCustodianWithdrawV3()
+
+	// build actions from testcases
+	instsForProducer := buildCustodianWithdrawActionsV3FromTcs(testcases, shardID)
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
@@ -1507,7 +1759,7 @@ type TestCaseRequestPtokens struct {
 	pTokenID      string
 	portingAmount uint64
 
-	txID string
+	txID         string
 	portingProof string
 }
 
@@ -1515,7 +1767,7 @@ type ExpectedResultRequestPTokens struct {
 	waitingPortingRes map[string]*statedb.WaitingPortingRequest
 	custodianPool     map[string]*statedb.CustodianState
 	numBeaconInsts    uint
-	statusInsts []string
+	statusInsts       []string
 }
 
 func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
@@ -1657,8 +1909,8 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 			incAddressStr: USER_INC_ADDRESS_1,
 			pTokenID:      common.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
-			txID : "A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6",
-			portingProof: "",
+			txID:          "A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6",
+			portingProof:  "",
 		},
 		// valid request ptokens: porting request matching many custodians
 		{
@@ -1666,8 +1918,8 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 			incAddressStr: USER_INC_ADDRESS_2,
 			pTokenID:      common.PortalBNBIDStr,
 			portingAmount: 150 * 1e9,
-			txID : "37B26ADEFB57534C9F38C07D948B8241099E02A0D3CAFA60B4400BD200197B52",
-			portingProof: "",
+			txID:          "37B26ADEFB57534C9F38C07D948B8241099E02A0D3CAFA60B4400BD200197B52",
+			portingProof:  "",
 		},
 		// invalid request ptokens: resubmit porting proof
 		{
@@ -1675,8 +1927,8 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 			incAddressStr: USER_INC_ADDRESS_1,
 			pTokenID:      common.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
-			txID : "A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6",
-			portingProof: "",
+			txID:          "A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6",
+			portingProof:  "",
 		},
 		// invalid request ptokens: invalid porting proof
 		{
@@ -1684,8 +1936,8 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 			incAddressStr: USER_INC_ADDRESS_1,
 			pTokenID:      common.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
-			txID : "B186FDFBB781D118E25FB37E85BEB83865C3C575485DC43C28220DD7F91BD70A",
-			portingProof: "",
+			txID:          "B186FDFBB781D118E25FB37E85BEB83865C3C575485DC43C28220DD7F91BD70A",
+			portingProof:  "",
 		},
 	}
 
@@ -1759,7 +2011,7 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		map[string]map[string]uint64{
 			common.PortalBNBIDStr: {
 				USDT_ID: 540 * 1e6,
-		}})
+			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
 			common.PortalBNBIDStr: 13500000000,
@@ -1781,7 +2033,7 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 			custodianKey3: custodian3,
 		},
 		waitingPortingRes: map[string]*statedb.WaitingPortingRequest{},
-		numBeaconInsts: 4,
+		numBeaconInsts:    4,
 		statusInsts: []string{
 			common.PortalReqPTokensAcceptedChainStatus,
 			common.PortalReqPTokensAcceptedChainStatus,
