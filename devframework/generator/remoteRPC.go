@@ -52,8 +52,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"io/ioutil"
-	"net/http"
 )
 
 type RemoteRPCClient struct {
