@@ -92,6 +92,10 @@ func (synckerManager *SynckerManager) Stop() {
 	}
 }
 
+func (s *SynckerManager) InsertCrossShardBlock(blk *blockchain.CrossShardBlock) {
+	s.CrossShardSyncProcess[int(blk.ToShardID)].InsertCrossShardBlock(blk)
+}
+
 // periodically check user commmittee status, enable shard sync process if needed (beacon always start)
 func (synckerManager *SynckerManager) manageSyncProcess() {
 	defer time.AfterFunc(time.Second*5, synckerManager.manageSyncProcess)

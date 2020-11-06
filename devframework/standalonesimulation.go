@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -65,7 +64,7 @@ type SimulationEngine struct {
 	txpool      *mempool.TxPool
 	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
-	syncker     *syncker.SynckerManager
+	syncker     Syncker
 	server      *mock.Server
 	cPendingTxs chan metadata.Transaction
 	cRemovedTxs chan metadata.Transaction
@@ -273,6 +272,8 @@ func (sim *SimulationEngine) init() {
 	go blockgen.Start(cQuit)
 	//go rpcServer.Start()
 
+	//init syncker
+	sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
 }
 
 func (sim *SimulationEngine) ConnectNetwork() {
@@ -287,8 +288,6 @@ func (sim *SimulationEngine) ConnectNetwork() {
 	}
 	sim.Network = NewHighwayConnection(config)
 	sim.Network.Connect()
-
-	//init syncker
 	sim.syncker.Init(&syncker.SynckerManagerConfig{Network: sim.Network.conn, Blockchain: sim.bc})
 }
 
@@ -457,10 +456,10 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 						return err
 					} else {
 						crossX := block.(*blockchain.ShardBlock).CreateAllCrossShardBlock(sim.config.ShardNumber)
-						for sid, blk := range crossX {
+						for _, blk := range crossX {
 							fmt.Println("add cross shard block into system")
 							sim.Pause()
-							sim.syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+							sim.syncker.InsertCrossShardBlock(blk)
 						}
 					}
 					return
@@ -481,10 +480,10 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 						fmt.Println("InsertBlkErr", err)
 					} else {
 						crossX := block.(*blockchain.ShardBlock).CreateAllCrossShardBlock(sim.config.ShardNumber)
-						for sid, blk := range crossX {
+						for _, blk := range crossX {
 							fmt.Println("add cross shard block into system")
 							sim.Pause()
-							sim.syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+							sim.syncker.InsertCrossShardBlock(blk)
 						}
 
 					}

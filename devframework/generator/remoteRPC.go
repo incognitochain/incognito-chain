@@ -46,9 +46,12 @@ func main() {
 	apiF.Truncate(0)
 	apiF.WriteString(`package devframework //This file is auto generated. Please do not change if you dont know what you are doing
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"io/ioutil"
+	"net/http"
 )
 
 type RemoteRPCClient struct {
