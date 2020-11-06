@@ -568,7 +568,7 @@ func (sim *SimulationEngine) GetBlockchain() *blockchain.BlockChain {
 
 func createICOtx(privateKeys []string) []string {
 	transactions := []string{}
-	db, err := incdb.Open("leveldb", "/tmp")
+	db, err := incdb.Open("leveldb", "/tmp/"+time.Now().UTC().String())
 	if err != nil {
 		fmt.Print("could not open connection to leveldb")
 		fmt.Print(err)
