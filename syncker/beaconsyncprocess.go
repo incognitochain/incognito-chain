@@ -28,14 +28,15 @@ type BeaconSyncProcess struct {
 	isCatchUp           bool
 	beaconPeerStates    map[string]BeaconPeerState //sender -> state
 	beaconPeerStateCh   chan *wire.MessagePeerState
-	server              Server
+	blockchain          *blockchain.BlockChain
+	network             Network
 	chain               Chain
 	beaconPool          *BlkPool
 	actionCh            chan func()
 	lastCrossShardState map[byte]map[byte]uint64
 }
 
-func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
+func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface) *BeaconSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*blockchain.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -46,7 +47,8 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 
 	s := &BeaconSyncProcess{
 		status:              STOP_SYNC,
-		server:              server,
+		blockchain:          bc,
+		network:             network,
 		chain:               chain,
 		beaconPool:          NewBlkPool("BeaconPool", isOutdatedBlock),
 		beaconPeerStates:    make(map[string]BeaconPeerState),
@@ -140,13 +142,13 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 			time.Sleep(time.Second * 5)
 			continue
 		}
-		beaconBlock, err := s.server.FetchConfirmBeaconBlockByHeight(lastBeaconHeightConfirmCrossX)
+		beaconBlock, err := s.blockchain.FetchConfirmBeaconBlockByHeight(lastBeaconHeightConfirmCrossX)
 		if err != nil || beaconBlock == nil {
 			//fmt.Println("DEBUG: cannot find beacon block", lastBeaconHeightConfirmCrossX)
 			time.Sleep(time.Second * 5)
 			continue
 		}
-		err = processBeaconForConfirmmingCrossShard(s.server.GetBeaconChainDatabase(), beaconBlock, s.lastCrossShardState)
+		err = processBeaconForConfirmmingCrossShard(s.chain.GetDatabase(), beaconBlock, s.lastCrossShardState)
 		if err == nil {
 			lastBeaconHeightConfirmCrossX++
 			if lastBeaconHeightConfirmCrossX%1000 == 0 {
@@ -302,7 +304,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	}
 
 	//stream
-	ch, err := s.server.RequestBeaconBlocksViaStream(ctx, "", s.chain.GetFinalViewHeight()+1, toHeight)
+	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, "", s.chain.GetFinalViewHeight()+1, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
 		return

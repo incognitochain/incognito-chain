@@ -50,6 +50,7 @@ type NetworkInterface interface {
 
 type HighwayConnection struct {
 	config            HighwayConnectionConfig
+	syncker           blockchain.Syncker
 	conn              *peerv2.ConnManager
 	listennerRegister map[int][]func(msg interface{})
 }
@@ -61,6 +62,7 @@ type HighwayConnectionConfig struct {
 	HighwayEndpoint string
 	PrivateKey      string
 	ConsensusEngine peerv2.ConsensusData
+	syncker         blockchain.Syncker
 }
 
 func NewHighwayConnection(cfg HighwayConnectionConfig) *HighwayConnection {
@@ -100,7 +102,7 @@ func (s *HighwayConnection) Connect() {
 		&incognitokey.CommitteePublicKey{},
 		s.config.ConsensusEngine,
 		dispatcher,
-		"relays",
+		"relay",
 		[]byte{},
 	)
 

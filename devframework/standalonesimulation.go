@@ -1,14 +1,11 @@
 package devframework
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,7 +21,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
-	"github.com/incognitochain/incognito-chain/devframework/rpcwrapper"
+	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -37,12 +34,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type RemoteRPCClient struct {
-	RemoteAddr string
-}
-type LocalRPCClient struct {
-	rpcServer *rpcserver.RpcServer
-}
 type Config struct {
 	ShardNumber   int
 	RoundInterval int
@@ -74,53 +65,14 @@ type SimulationEngine struct {
 	txpool      *mempool.TxPool
 	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
-	sync        *mock.Syncker
+	syncker     *syncker.SynckerManager
 	server      *mock.Server
 	cPendingTxs chan metadata.Transaction
 	cRemovedTxs chan metadata.Transaction
 	rpcServer   *rpcserver.RpcServer
 	cQuit       chan struct{}
 
-	RPC *rpcwrapper.RPCWRAPPER
-}
-
-func NewRemoteRPCClient(remoteAddr string) *RemoteRPCClient {
-	if strings.TrimSpace(remoteAddr) == "" {
-		panic("Remote address can not be empty")
-	}
-	rm := &RemoteRPCClient{
-		RemoteAddr: remoteAddr,
-	}
-	return rm
-}
-
-func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
-	resp, err := http.Post("http://"+r.RemoteAddr, "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
-
-func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
-	os.RemoveAll(name)
-	sim := &SimulationEngine{
-		config:            config,
-		simName:           name,
-		timer:             NewTimeEngine(),
-		accountSeed:       "master_account",
-		accountGenHistory: make(map[int]int),
-		committeeAccount:  make(map[int][]Account),
-	}
-	sim.init()
-	time.Sleep(1 * time.Second)
-	return sim
+	RPC *rpcclient.RPCClient
 }
 
 func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
@@ -190,9 +142,7 @@ func (sim *SimulationEngine) init() {
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
-	sync := mock.Syncker{
-		Syncker: syncker.NewSynckerManager(),
-	}
+	sync := syncker.NewSynckerManager()
 	server := mock.Server{}
 	ps := mock.Pubsub{}
 	fees := make(map[byte]*mempool.FeeEstimator)
@@ -205,7 +155,7 @@ func (sim *SimulationEngine) init() {
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cQuit := make(chan struct{})
-	blockgen, err := blockchain.NewBlockGenerator(&txpool, &bc, &sync, cPendingTxs, cRemovedTxs)
+	blockgen, err := blockchain.NewBlockGenerator(&txpool, &bc, sync, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		panic(err)
 	}
@@ -234,7 +184,6 @@ func (sim *SimulationEngine) init() {
 		Database:       db,
 	}
 	rpcServer := &rpcserver.RpcServer{}
-
 	rpclocal := &LocalRPCClient{rpcServer}
 
 	btcChain, err := getBTCRelayingChain(activeNetParams.BTCRelayingHeaderChainID, "btcchain", simName)
@@ -285,7 +234,7 @@ func (sim *SimulationEngine) init() {
 		TxPool:          &txpool,
 		TempTxPool:      &temppool,
 		Server:          &server,
-		Syncker:         &sync,
+		Syncker:         sync,
 		PubSubManager:   &ps,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
 		RandomClient:    &btcrd,
@@ -303,12 +252,12 @@ func (sim *SimulationEngine) init() {
 	sim.txpool = &txpool
 	sim.temppool = &temppool
 	sim.btcrd = &btcrd
-	sim.sync = &sync
+	sim.syncker = sync
 	sim.server = &server
 	sim.cPendingTxs = cPendingTxs
 	sim.cRemovedTxs = cRemovedTxs
 	sim.rpcServer = rpcServer
-	sim.RPC = rpcwrapper.NewRPCClient(rpclocal)
+	sim.RPC = rpcclient.NewRPCClient(rpclocal)
 	sim.cQuit = cQuit
 
 	rpcServer.Init(&rpcConfig)
@@ -323,7 +272,7 @@ func (sim *SimulationEngine) init() {
 	}()
 	go blockgen.Start(cQuit)
 	//go rpcServer.Start()
-	sync.Syncker.Init(&syncker.SynckerManagerConfig{Blockchain: &bc})
+
 }
 
 func (sim *SimulationEngine) ConnectNetwork() {
@@ -334,9 +283,13 @@ func (sim *SimulationEngine) ConnectNetwork() {
 		"45.56.115.6:9330",
 		"",
 		sim.consensus,
+		sim.syncker,
 	}
 	sim.Network = NewHighwayConnection(config)
 	sim.Network.Connect()
+
+	//init syncker
+	sim.syncker.Init(&syncker.SynckerManagerConfig{Network: sim.Network.conn, Blockchain: sim.bc})
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -507,7 +460,7 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 						for sid, blk := range crossX {
 							fmt.Println("add cross shard block into system")
 							sim.Pause()
-							sim.sync.Syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+							sim.syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
 						}
 					}
 					return
@@ -531,7 +484,7 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 						for sid, blk := range crossX {
 							fmt.Println("add cross shard block into system")
 							sim.Pause()
-							sim.sync.Syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+							sim.syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
 						}
 
 					}

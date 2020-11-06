@@ -5,6 +5,9 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
+type LocalRPCClient struct {
+	rpcServer *rpcserver.RpcServer
+}
 func (r *LocalRPCClient) RPC_getbalancebyprivatekey(privateKey string) (res uint64,err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.LimitedHttpHandler["getbalancebyprivatekey"]

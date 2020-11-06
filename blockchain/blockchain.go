@@ -731,3 +731,19 @@ func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint6
 	}
 	return res
 }
+
+func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
+	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlock, nil
+}
+
+func (s *BlockChain) GetChainParams() *Params {
+	return s.config.ChainParams
+}

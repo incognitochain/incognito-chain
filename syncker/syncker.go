@@ -22,7 +22,7 @@ const MAX_S2B_BLOCK = 90
 const MAX_CROSSX_BLOCK = 10
 
 type SynckerManagerConfig struct {
-	Node       Server
+	Network    Network
 	Blockchain *blockchain.BlockChain
 	Consensus  *consensus_multi.Engine
 }
@@ -63,13 +63,13 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	}
 
 	//init beacon sync process
-	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain)
+	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
 
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
 		sid := chain.GetShardID()
-		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain, chain)
+		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain, chain)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
@@ -78,25 +78,6 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 
 	//watch commitee change
 	go synckerManager.manageSyncProcess()
-
-	//Publish node state to other peer
-	go func() {
-		t := time.NewTicker(time.Second * 3)
-		for _ = range t.C {
-			if !synckerManager.isEnabled {
-				time.Sleep(time.Second)
-				continue
-			}
-			synckerManager.config.Node.PublishNodeState()
-			// _, chainID := synckerManager.config.Node.GetUserMiningState()
-			// if chainID == -1 {
-			// 	_ = synckerManager.config.Node.PublishNodeState("beacon", chainID)
-			// }
-			// if chainID >= 0 {
-			// 	_ = synckerManager.config.Node.PublishNodeState("shard", chainID)
-			// }
-		}
-	}()
 }
 
 func (synckerManager *SynckerManager) Start() {
@@ -342,7 +323,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.Context, toShard byte, missingBlock map[byte][]uint64) {
 	for fromShard, missingHeight := range missingBlock {
 		//fmt.Println("debug stream missing crossshard block", int(fromShard), int(toShard), missingHeight)
-		ch, err := synckerManager.config.Node.RequestCrossShardBlocksViaStream(ctx, "", int(fromShard), int(toShard), missingHeight)
+		ch, err := synckerManager.config.Network.RequestCrossShardBlocksViaStream(ctx, "", int(fromShard), int(toShard), missingHeight)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")
 			return
@@ -421,7 +402,7 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash) {
 	requestHash := fromHash
 	for {
-		ch, err := synckerManager.config.Node.RequestBeaconBlocksByHashViaStream(ctx, peerID, [][]byte{requestHash.Bytes()})
+		ch, err := synckerManager.config.Network.RequestBeaconBlocksByHashViaStream(ctx, peerID, [][]byte{requestHash.Bytes()})
 		if err != nil {
 			fmt.Println("[Monitor] Syncker: create channel fail")
 			return
@@ -446,7 +427,7 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash) {
 	requestHash := fromHash
 	for {
-		ch, err := synckerManager.config.Node.RequestShardBlocksByHashViaStream(ctx, peerID, int(sid), [][]byte{requestHash.Bytes()})
+		ch, err := synckerManager.config.Network.RequestShardBlocksByHashViaStream(ctx, peerID, int(sid), [][]byte{requestHash.Bytes()})
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")
 			return
