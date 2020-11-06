@@ -64,7 +64,7 @@ type SimulationEngine struct {
 	txpool      *mempool.TxPool
 	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
-	sync        *mock.Syncker
+	syncker     *syncker.SynckerManager
 	server      *mock.Server
 	cPendingTxs chan metadata.Transaction
 	cRemovedTxs chan metadata.Transaction
@@ -141,9 +141,7 @@ func (sim *SimulationEngine) init() {
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
-	sync := mock.Syncker{
-		Syncker: syncker.NewSynckerManager(),
-	}
+	sync := syncker.NewSynckerManager()
 	server := mock.Server{}
 	ps := mock.Pubsub{}
 	fees := make(map[byte]*mempool.FeeEstimator)
@@ -156,7 +154,7 @@ func (sim *SimulationEngine) init() {
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cQuit := make(chan struct{})
-	blockgen, err := blockchain.NewBlockGenerator(&txpool, &bc, &sync, cPendingTxs, cRemovedTxs)
+	blockgen, err := blockchain.NewBlockGenerator(&txpool, &bc, sync, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		panic(err)
 	}
@@ -185,7 +183,6 @@ func (sim *SimulationEngine) init() {
 		Database:       db,
 	}
 	rpcServer := &rpcserver.RpcServer{}
-
 	rpclocal := &LocalRPCClient{rpcServer}
 
 	btcChain, err := getBTCRelayingChain(activeNetParams.BTCRelayingHeaderChainID, "btcchain", simName)
@@ -236,7 +233,7 @@ func (sim *SimulationEngine) init() {
 		TxPool:          &txpool,
 		TempTxPool:      &temppool,
 		Server:          &server,
-		Syncker:         &sync,
+		Syncker:         sync,
 		PubSubManager:   &ps,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
 		RandomClient:    &btcrd,
@@ -254,7 +251,7 @@ func (sim *SimulationEngine) init() {
 	sim.txpool = &txpool
 	sim.temppool = &temppool
 	sim.btcrd = &btcrd
-	sim.sync = &sync
+	sim.syncker = sync
 	sim.server = &server
 	sim.cPendingTxs = cPendingTxs
 	sim.cRemovedTxs = cRemovedTxs
@@ -274,7 +271,7 @@ func (sim *SimulationEngine) init() {
 	}()
 	go blockgen.Start(cQuit)
 	//go rpcServer.Start()
-	sync.Syncker.Init(&syncker.SynckerManagerConfig{Blockchain: &bc})
+
 }
 
 func (sim *SimulationEngine) ConnectNetwork() {
@@ -285,9 +282,13 @@ func (sim *SimulationEngine) ConnectNetwork() {
 		"45.56.115.6:9330",
 		"",
 		sim.consensus,
+		sim.syncker,
 	}
 	sim.Network = NewHighwayConnection(config)
 	sim.Network.Connect()
+
+	//init syncker
+	sim.syncker.Init(&syncker.SynckerManagerConfig{Network: sim.Network.conn, Blockchain: sim.bc})
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -458,7 +459,7 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 						for sid, blk := range crossX {
 							fmt.Println("add cross shard block into system")
 							sim.Pause()
-							sim.sync.Syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+							sim.syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
 						}
 					}
 					return
@@ -482,7 +483,7 @@ func (sim *SimulationEngine) GenerateBlock(args ...interface{}) *SimulationEngin
 						for sid, blk := range crossX {
 							fmt.Println("add cross shard block into system")
 							sim.Pause()
-							sim.sync.Syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
+							sim.syncker.CrossShardSyncProcess[int(sid)].InsertCrossShardBlock(blk)
 						}
 
 					}
