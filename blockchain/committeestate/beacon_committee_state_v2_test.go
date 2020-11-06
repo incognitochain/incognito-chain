@@ -152,8 +152,6 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 			got, err := b.processStakeInstruction(
 				tt.args.stakeInstruction,
 				tt.args.committeeChange,
-				tt.args.env,
-				tt.args.oldState,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction() error = %v, wantErr %v", err, tt.wantErr)
@@ -1432,8 +1430,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 							key0,
 						},
 					},
-					unassignedCommonPool: []string{key0},
-					ConsensusStateDB:     sDB,
+					newUnassignedCommonPool: []string{key0},
+					ConsensusStateDB:        sDB,
 				},
 			},
 			want:  &BeaconCommitteeStateHash{},
@@ -2114,8 +2112,8 @@ func TestBeaconCommitteeEngineV2_BuildIncurredInstructions(t *testing.T) {
 							key2,
 						},
 					},
-					ConsensusStateDB:     sDB,
-					unassignedCommonPool: []string{key2},
+					ConsensusStateDB:        sDB,
+					newUnassignedCommonPool: []string{key2},
 				},
 			},
 			want:    [][]string{},
@@ -2148,8 +2146,8 @@ func TestBeaconCommitteeEngineV2_BuildIncurredInstructions(t *testing.T) {
 							key,
 						},
 					},
-					ConsensusStateDB:     sDB,
-					unassignedCommonPool: []string{key},
+					ConsensusStateDB:        sDB,
+					newUnassignedCommonPool: []string{key},
 				},
 			},
 			want: [][]string{
@@ -2251,7 +2249,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{"123"},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					unassignedCommonPool: []string{"123"},
+					newUnassignedCommonPool: []string{"123"},
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
@@ -2284,8 +2282,8 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey2},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					unassignedCommonPool: []string{key2},
-					ConsensusStateDB:     validSDB,
+					newUnassignedCommonPool: []string{key2},
+					ConsensusStateDB:        validSDB,
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
@@ -2327,8 +2325,8 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					unassignedCommonPool: []string{key},
-					ConsensusStateDB:     validSDB,
+					newUnassignedCommonPool: []string{key},
+					ConsensusStateDB:        validSDB,
 				},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
 				oldState: &BeaconCommitteeStateV2{
@@ -2372,7 +2370,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					allSubstituteCommittees: []string{key},
+					newAllSubstituteCommittees: []string{key},
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
@@ -2463,7 +2461,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					allCandidateSubstituteCommittee: []string{key2},
+					newAllCandidateSubstituteCommittee: []string{key2},
 				},
 				committeeChange: &CommitteeChange{},
 				oldState:        &BeaconCommitteeStateV2{},
@@ -2487,7 +2485,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					allCandidateSubstituteCommittee: []string{key},
+					newAllCandidateSubstituteCommittee: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
 				oldState: &BeaconCommitteeStateV2{

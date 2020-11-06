@@ -688,11 +688,9 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
 		// Before get random from bitcoin
-	} else if beaconBestState.BeaconHeight%chainParamEpoch >= randomTime {
-		if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
-			beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
-			isBeginRandom = true
-		}
+	} else if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
+		beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
+		isBeginRandom = true
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,

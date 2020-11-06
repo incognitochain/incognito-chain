@@ -361,7 +361,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	newState := engine.uncommittedBeaconCommitteeStateV2
 	newState.mu.Lock()
 	committeeChange := NewCommitteeChange()
-	committeeState := oldState
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		newState.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
@@ -371,19 +370,18 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			env.NumberOfFixedShardBlockValidators,
 			env.MinShardCommitteeSize,
 		)
-		committeeState = newState
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newState.numberOfAssignedCandidates)
 	}
 
-	env.unassignedCommonPool, err = committeeState.unassignedCommonPool()
+	env.newUnassignedCommonPool, err = newState.unassignedCommonPool()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	env.allSubstituteCommittees, err = committeeState.getAllSubstituteCommittees()
+	env.newAllSubstituteCommittees, err = newState.getAllSubstituteCommittees()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	env.allCandidateSubstituteCommittee = append(env.unassignedCommonPool, env.allSubstituteCommittees...)
+	env.newAllCandidateSubstituteCommittee = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -395,7 +393,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange, env, oldState)
+			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -418,8 +416,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstructions, err =
-				newState.processUnstakeInstruction(unstakeInstruction, env, committeeChange, returnStakingInstructions, oldState)
+			committeeChange, returnStakingInstructions, err = newState.processUnstakeInstruction(
+				unstakeInstruction, env, committeeChange, returnStakingInstructions, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -428,8 +426,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstructions, err = newState.
-				processSwapShardInstruction(swapShardInstruction, env, committeeChange, returnStakingInstructions, oldState)
+			committeeChange, returnStakingInstructions, err = newState.processSwapShardInstruction(
+				swapShardInstruction, env, committeeChange, returnStakingInstructions, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -514,11 +512,11 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 	}
 	var err error
 	returnStakingInstructions := make(map[byte]*instruction.ReturnStakeInstruction)
-	env.unassignedCommonPool, err = newState.unassignedCommonPool()
+	env.newUnassignedCommonPool, err = newState.unassignedCommonPool()
 	if err != nil {
 		return incurredInstructions, err
 	}
-	env.allSubstituteCommittees, err = newState.getAllSubstituteCommittees()
+	env.newAllSubstituteCommittees, err = newState.getAllSubstituteCommittees()
 	if err != nil {
 		return incurredInstructions, err
 	}
@@ -596,11 +594,7 @@ func SnapshotShardCommonPoolV2(
 func (b *BeaconCommitteeStateV2) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
 	committeeChange *CommitteeChange,
-	env *BeaconCommitteeStateEnvironment,
-	oldState *BeaconCommitteeStateV2,
 ) (*CommitteeChange, error) {
-	// b == newstate -> only write
-	// oldstate -> only read
 	var err error
 	// var key string
 	for index, candidate := range stakeInstruction.PublicKeyStructs {
@@ -625,7 +619,7 @@ func (b *BeaconCommitteeStateV2) processStopAutoStakeInstruction(
 
 	//careful with this variable
 	// validators := oldState.getAllCandidateSubstituteCommittee()
-	validators := env.allCandidateSubstituteCommittee
+	validators := env.newAllCandidateSubstituteCommittee
 
 	for _, committeePublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(committeePublicKey, validators) == -1 {
@@ -644,7 +638,9 @@ func (b *BeaconCommitteeStateV2) processStopAutoStakeInstruction(
 }
 
 func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
-	rand int64, activeShards int, committeeChange *CommitteeChange,
+	rand int64,
+	activeShards int,
+	committeeChange *CommitteeChange,
 	oldState *BeaconCommitteeStateV2,
 ) *CommitteeChange {
 	// b == newstate -> only write
@@ -796,11 +792,11 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 		}
 		indexNextEpochShardCandidate[key] = i
 	}
-	//careful with 2 variables: env.unassignedCommonPool, env.allSubstituteCommittees
+	//careful with 2 variables: env.newUnassignedCommonPool, env.newAllSubstituteCommittees
 	//may be they will be change value when sync data
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
-		if common.IndexOfStr(publicKey, env.unassignedCommonPool) == -1 {
-			if common.IndexOfStr(publicKey, env.allSubstituteCommittees) != -1 {
+		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
+			if common.IndexOfStr(publicKey, env.newAllSubstituteCommittees) != -1 {
 				// if found in committee list then turn off auto staking
 				if _, ok := oldState.autoStake[publicKey]; ok {
 					newCommitteeChange = b.stopAutoStake(publicKey, newCommitteeChange)
