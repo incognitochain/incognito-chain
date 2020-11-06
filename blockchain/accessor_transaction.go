@@ -3,12 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"fmt"
-	"sort"
-	"strconv"
-	"strings"
-
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -18,8 +12,12 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -136,19 +134,13 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
 	return result, nil
 }
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock, shardView *ShardBestState) error {
-	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
-	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
-		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
-		if len(shardBlock.Body.Transactions) != len(txsSpamRemoved) {
-			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBlock.Body.Transactions)-len(txsSpamRemoved))
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
 	// filter double withdraw request
 	withdrawReqTable := make(map[string]privacy.PaymentAddress)
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			metaRequest := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), metaRequest.TokenID.String())
+			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress .Pk, common.Base58Version), metaRequest.TokenID.String())
 			if _, ok := withdrawReqTable[mapKey]; !ok {
 				withdrawReqTable[mapKey] = metaRequest.PaymentAddress
 			}
