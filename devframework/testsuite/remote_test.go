@@ -8,6 +8,6 @@ import (
 )
 
 func Test_Remote(t *testing.T) {
-	rm := devframework.NewRemoteRPCClient("23.234.324.2:8000")
+	rm := devframework.NewRPCClient("23.234.324.2:8000")
 	fmt.Println(rm)
 }

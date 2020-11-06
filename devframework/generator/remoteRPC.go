@@ -46,8 +46,11 @@ func main() {
 	apiF.Truncate(0)
 	apiF.WriteString(`package devframework //This file is auto generated. Please do not change if you dont know what you are doing
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -55,8 +58,8 @@ type RemoteRPCClient struct {
 	endpoint string
 }
 
-func (s *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
-	resp, err := http.Post(s.endpoint, "application/json", bytes.NewBuffer(requestBody))
+func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post(r.endpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}
