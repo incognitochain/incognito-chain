@@ -49,6 +49,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"io/ioutil"
 	"net/http"
@@ -58,8 +60,8 @@ type RemoteRPCClient struct {
 	endpoint string
 }
 
-func (s *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
-	resp, err := http.Post(s.endpoint, "application/json", bytes.NewBuffer(requestBody))
+func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post(r.endpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}
