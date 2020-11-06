@@ -643,30 +643,30 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect AutoStakingRoot to be %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hash))
 	}
 
-	if !TestRandom {
-		//COMMENT FOR TESTING
-		instructions := beaconBlock.Body.Instructions
-		for _, l := range instructions {
-			if l[0] == "random" {
-				startTime := time.Now()
-				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-				nonce, err := strconv.Atoi(l[1])
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				ok, err = randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
-				Logger.log.Infof("Verify Random number %+v", ok)
-				if err != nil {
-					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				if !ok {
-					return NewBlockChainError(RandomError, errors.New("Error verify random number"))
-				}
-			}
-		}
-	}
+	//if !TestRandom {
+	//	//COMMENT FOR TESTING
+	//	instructions := beaconBlock.Body.Instructions
+	//	for _, l := range instructions {
+	//		if l[0] == "random" {
+	//			startTime := time.Now()
+	//			// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
+	//			nonce, err := strconv.Atoi(l[1])
+	//			if err != nil {
+	//				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+	//				return NewBlockChainError(UnExpectedError, err)
+	//			}
+	//			ok, err = randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
+	//			Logger.log.Infof("Verify Random number %+v", ok)
+	//			if err != nil {
+	//				Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+	//				return NewBlockChainError(UnExpectedError, err)
+	//			}
+	//			if !ok {
+	//				return NewBlockChainError(RandomError, errors.New("Error verify random number"))
+	//			}
+	//		}
+	//	}
+	//}
 	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
 	return nil
 }
