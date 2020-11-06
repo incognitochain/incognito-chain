@@ -7,28 +7,6 @@ import (
 )
 
 func main() {
-
-	//package main
-	//
-	//type rpc interface{
-	//	rpc()
-	//}
-	//
-	//
-	//func API(r rpc,i int) {
-	//
-	//}
-	//
-	//type bar struct{}
-	//func(s *bar) rpc(){
-	//	API(s,1)
-	//}
-	//
-	//func main(){
-	//	b := &bar{}
-	//	b.
-	//}
-	//
 	keyID := 0
 	account1, _ := devframework.GenerateAccountByShard(0, keyID, "")
 	keyID++
@@ -65,4 +43,8 @@ func main() {
 	fmt.Printf("%+v", string(json7))
 	fmt.Printf("%+v", string(json8))
 
+	client := devframework.NewRPCClient("http://51.83.237.20:9338")
+	res, err := client.API_GetPDEState(700000)
+	fmt.Println(err)
+	fmt.Println(res)
 }

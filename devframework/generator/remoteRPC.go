@@ -24,7 +24,7 @@ const RPC_REQUEST_TEMPLATE = `requestBody, rpcERR := json.Marshal(map[string]int
 	if err != nil {
 		%API_RET_ERR%
 	}
-	body, err := sendRequest(requestBody)
+	body, err := sim.sendRequest(requestBody)
 	if err != nil {
 		%API_RET_ERR%
 	}`
@@ -49,7 +49,26 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-)`)
+)
+
+type RemoteRPCClient struct {
+	endpoint string
+}
+
+func (s *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post(s.endpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+`)
 
 	for _, api := range apis {
 		regex := regexp.MustCompile(`([^ ]+)\((.+)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)

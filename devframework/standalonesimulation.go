@@ -1,14 +1,11 @@
 package devframework
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,7 +20,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
-	"github.com/incognitochain/incognito-chain/devframework/rpcwrapper"
+	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -36,10 +33,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type RemoteRPCClient struct{}
-type LocalRPCClient struct {
-	rpcServer *rpcserver.RpcServer
-}
 type Config struct {
 	ShardNumber   int
 	RoundInterval int
@@ -78,22 +71,7 @@ type SimulationEngine struct {
 	rpcServer   *rpcserver.RpcServer
 	cQuit       chan struct{}
 
-	RPC *rpcwrapper.RPCWRAPPER
-}
-
-func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
-	os.RemoveAll(name)
-	sim := &SimulationEngine{
-		config:            config,
-		simName:           name,
-		timer:             NewTimeEngine(),
-		accountSeed:       "master_account",
-		accountGenHistory: make(map[int]int),
-		committeeAccount:  make(map[int][]Account),
-	}
-	sim.init()
-	time.Sleep(1 * time.Second)
-	return sim
+	RPC *rpcclient.RPCClient
 }
 
 func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
@@ -281,7 +259,7 @@ func (sim *SimulationEngine) init() {
 	sim.cPendingTxs = cPendingTxs
 	sim.cRemovedTxs = cRemovedTxs
 	sim.rpcServer = rpcServer
-	sim.RPC = rpcwrapper.NewRPCClient(rpclocal)
+	sim.RPC = rpcclient.NewRPCClient(rpclocal)
 	sim.cQuit = cQuit
 
 	rpcServer.Init(&rpcConfig)
@@ -553,20 +531,6 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 
 func (sim *SimulationEngine) GetBlockchain() *blockchain.BlockChain {
 	return sim.bc
-}
-
-func sendRequest(requestBody []byte) ([]byte, error) {
-	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
 }
 
 func createICOtx(privateKeys []string) []string {

@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	F "github.com/incognitochain/incognito-chain/devframework"
-	"github.com/incognitochain/incognito-chain/devframework/rpcwrapper"
+	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -112,7 +112,7 @@ func Test_StakeFlow1(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 	miner1 := sim.NewAccountFromShard(0)
 	minerCm1, _ := F.BuildCommitteePubkey(miner1.PrivateKey, sim.IcoAccount.PaymentAddress)
-	stake1 := rpcwrapper.StakingTxParam{
+	stake1 := rpcclient.StakingTxParam{
 		Name:         "miner1",
 		CommitteeKey: minerCm1,
 		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
@@ -123,7 +123,7 @@ func Test_StakeFlow1(t *testing.T) {
 		AutoRestake:  true,
 	}
 
-	stakeList := []rpcwrapper.StakingTxParam{stake1}
+	stakeList := []rpcclient.StakingTxParam{stake1}
 	_, err := sim.RPC.API_CreateAndSendStakingTransaction(stake1)
 	if err != nil {
 		panic(err)
@@ -206,7 +206,7 @@ func Test_StakeFlow1(t *testing.T) {
 		}
 	}
 
-	unstake1 := rpcwrapper.StopStakingParam{
+	unstake1 := rpcclient.StopStakingParam{
 		BurnAddr:  sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
 		SenderPrk: sim.IcoAccount.PrivateKey,
 		MinerPrk:  miner1.PrivateKey,
@@ -220,7 +220,7 @@ func Test_StakeFlow1(t *testing.T) {
 
 	miner2 := sim.NewAccountFromShard(0)
 	minerCm2, _ := F.BuildCommitteePubkey(miner2.PrivateKey, sim.IcoAccount.PaymentAddress)
-	stake2 := rpcwrapper.StakingTxParam{
+	stake2 := rpcclient.StakingTxParam{
 		Name:         "miner2",
 		CommitteeKey: minerCm2,
 		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),

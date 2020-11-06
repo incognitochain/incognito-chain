@@ -44,7 +44,10 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-)`)
+)
+type LocalRPCClient struct {
+	rpcServer *rpcserver.RpcServer
+}`)
 	//
 	for _, api := range apis {
 		regex := regexp.MustCompile(`([^ ]+)\((.+)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
