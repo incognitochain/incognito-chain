@@ -276,8 +276,16 @@ func (sim *SimulationEngine) init() {
 	}()
 	go blockgen.Start(cQuit)
 
+	sim.startPubSub()
+
+	//init syncker
+	sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
+}
+
+func (sim *SimulationEngine) startPubSub() {
+	go sim.ps.Start()
 	go func() {
-		_, subChan, err := sim.ps.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+		_, subChan, err := sim.ps.RegisterNewSubscriber(pubsub.BeaconBeststateTopic)
 		if err != nil {
 			panic("something wrong with subscriber")
 		}
@@ -290,7 +298,7 @@ func (sim *SimulationEngine) init() {
 	}()
 
 	go func() {
-		_, subChan, err := sim.ps.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+		_, subChan, err := sim.ps.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
 		if err != nil {
 			panic("something wrong with subscriber")
 		}
@@ -301,9 +309,6 @@ func (sim *SimulationEngine) init() {
 			}
 		}
 	}()
-
-	//init syncker
-	//sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
 }
 
 func (sim *SimulationEngine) ConnectNetwork(highwayAddr string) {
