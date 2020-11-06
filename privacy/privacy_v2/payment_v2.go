@@ -462,11 +462,11 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 	}
 
 	for _, inputCoin := range proof.GetInputCoins(){
-		coin, ok := inputCoin.(*coin.CoinV2)
+		c, ok := inputCoin.(*coin.CoinV2)
 		if !ok {
-			return nil, errors.New("Input coin of PaymentProofV2 must be CoinV2")
+			return nil, errors.New("Input c of PaymentProofV2 must be CoinV2")
 		}
-		coin.ConcealInputCoin()
+		c.ConcealInputCoin()
 	}
 
 	return proof, nil

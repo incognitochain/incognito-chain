@@ -42,7 +42,6 @@ func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("BUGLOG2 ConversionProofBytes", temp)
 	errSetBytes := proof.SetBytes(temp)
 	if errSetBytes != nil {
 		return errSetBytes
