@@ -12,6 +12,15 @@ type BlockValidation interface {
 	AddValidationField(validationData string) error
 }
 
+type ConsensusInterface interface {
+	GetOneValidator() *consensus.Validator
+	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
+	ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
+	ValidateProducerSig(block common.BlockInterface, consensusType string) error
+	ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	IsCommitteeInShard(byte) bool
+}
+
 type Consensus struct {
 	Blockchain *blockchain.BlockChain
 }

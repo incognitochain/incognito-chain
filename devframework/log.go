@@ -2,10 +2,12 @@ package devframework
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/peerv2"
-	"github.com/incognitochain/incognito-chain/syncker"
 	"os"
 	"path/filepath"
+
+	consensus "github.com/incognitochain/incognito-chain/consensus_multi"
+	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -35,6 +37,7 @@ var (
 	mempoolLogger          = backendLog.Logger("Mempool log", false)
 	synckerLogger          = backendLog.Logger("Syncker log", false)
 	highwayLogger          = backendLog.Logger("Highway", false)
+	consensusLogger        = backendLog.Logger("Consensus log", false)
 	disableStdoutLog       = false
 )
 
@@ -62,6 +65,7 @@ func init() {
 	mempool.Logger.Init(mempoolLogger)
 	syncker.Logger.Init(synckerLogger)
 	peerv2.Logger.Init(highwayLogger)
+	consensus.Logger.Init(consensusLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -75,6 +79,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"TRAN":              transactionLogger,
 	"PRIV":              privacyLogger,
 	"MEMP":              mempoolLogger,
+	"CONS":              consensusLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

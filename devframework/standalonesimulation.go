@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -62,7 +63,7 @@ type SimulationEngine struct {
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
 	ps          *pubsub.PubSubManager
-	consensus   *mock.Consensus
+	consensus   mock.ConsensusInterface
 	txpool      *mempool.TxPool
 	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
@@ -305,12 +306,12 @@ func (sim *SimulationEngine) init() {
 	//sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
 }
 
-func (sim *SimulationEngine) ConnectNetwork() {
+func (sim *SimulationEngine) ConnectNetwork(highwayAddr string) {
 	config := HighwayConnectionConfig{
 		"127.0.0.1",
 		19876,
 		"2.0.0",
-		"45.56.115.6:9330",
+		highwayAddr,
 		"",
 		sim.consensus,
 		sim.syncker,
