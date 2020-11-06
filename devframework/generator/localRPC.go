@@ -20,8 +20,8 @@ type API struct {
 	Result string  `json:"result"`
 }
 
-const APITEMPLATE = `func (sim *LocalRPCClient) RPC_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
-	httpServer := sim.rpcServer.HttpServer
+const APITEMPLATE = `func (r *LocalRPCClient) RPC_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
+	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.%HANDLER%["%API_NAME%"]
 	resI, rpcERR := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
 	if rpcERR != nil {

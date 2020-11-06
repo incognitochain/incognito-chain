@@ -13,6 +13,7 @@ import (
 )
 
 func Test_SendTX(t *testing.T) {
+	F.DisableLog(true)
 	sim := F.NewStandaloneSimulation("sim1", F.Config{
 		ShardNumber: 2,
 	})
@@ -29,10 +30,6 @@ func Test_SendTX(t *testing.T) {
 	}
 
 	sim.GenerateBlock(F.Hook{
-		//Create: func(chainID int, doCreate func(time time.Time) (common.BlockInterface, error)) {
-		//
-		//	doCreate(time.Now())
-		//},
 		Validation: func(chainID int, block common.BlockInterface, doValidation func(common.BlockInterface) error) {
 			fmt.Println("PreValidation block", 0)
 			if chainID == 0 && block.GetHeight() == 3 {
@@ -257,20 +254,6 @@ func Test_StakeFlow1(t *testing.T) {
 		panic(err)
 	}
 
-	// fmt.Println("\n----------------------------------")
-	// fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
-	// fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
-	// sim.GetBlockchain().BeaconChain.GetAllCommittees()
-	// viewPool()
-	// if result, err := sim.GetRewardAmount(staker1.PaymentAddress); err != nil {
-	// 	panic(err)
-	// } else {
-	// 	fmt.Println("REWARD staker1", result)
-	// 	bl1, _ := sim.GetBalance(staker1)
-	// 	fmt.Println("BALANCE staker1:", bl1)
-	// }
-	// fmt.Println("----------------------------------")
-
 	for i := 0; i < 300; i++ {
 		sim.GenerateBlock().NextRound()
 		isChange, l1, l2, l3 = monitorPool(l1, l2, l3)
@@ -285,27 +268,6 @@ func Test_StakeFlow1(t *testing.T) {
 		}
 	}
 	viewPool()
-	// fmt.Println("\n----------------------------------")
-	// fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
-	// fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
-	// sim.GetBlockchain().BeaconChain.GetAllCommittees()
-	// viewPool()
-	// if result, err := sim.GetRewardAmount(staker1.PaymentAddress); err != nil {
-	// 	panic(err)
-	// } else {
-	// 	fmt.Println("REWARD staker1", result)
-	// 	bl1, _ := sim.GetBalance(staker1)
-	// 	fmt.Println("BALANCE staker1:", bl1)
-	// }
-
-	// if result, err := sim.GetRewardAmount(staker2.PaymentAddress); err != nil {
-	// 	panic(err)
-	// } else {
-	// 	fmt.Println("REWARD staker2", result)
-	// 	bl1, _ := sim.GetBalance(staker2)
-	// 	fmt.Println("BALANCE staker2:", bl1)
-	// }
-	// fmt.Println("----------------------------------")
 	fmt.Println()
 }
 

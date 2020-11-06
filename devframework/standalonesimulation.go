@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -36,7 +37,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type RemoteRPCClient struct{}
+type RemoteRPCClient struct {
+	RemoteAddr string
+}
 type LocalRPCClient struct {
 	rpcServer *rpcserver.RpcServer
 }
@@ -79,6 +82,30 @@ type SimulationEngine struct {
 	cQuit       chan struct{}
 
 	RPC *rpcwrapper.RPCWRAPPER
+}
+
+func NewRemoteRPCClient(remoteAddr string) *RemoteRPCClient {
+	if strings.TrimSpace(remoteAddr) == "" {
+		panic("Remote address can not be empty")
+	}
+	rm := &RemoteRPCClient{
+		RemoteAddr: remoteAddr,
+	}
+	return rm
+}
+
+func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post("http://"+r.RemoteAddr, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
 
 func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
@@ -553,20 +580,6 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 
 func (sim *SimulationEngine) GetBlockchain() *blockchain.BlockChain {
 	return sim.bc
-}
-
-func sendRequest(requestBody []byte) ([]byte, error) {
-	resp, err := http.Post("http://0.0.0.0:8000", "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
 }
 
 func createICOtx(privateKeys []string) []string {

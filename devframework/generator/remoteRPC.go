@@ -8,7 +8,7 @@ import (
 )
 
 const RPC_TEMPLATE = `
-func (sim *RemoteRPCClient) RPC_%APINAME%(%APIPARAMS%) (%APIRESULT%) {
+func (r *RemoteRPCClient) RPC_%APINAME%(%APIPARAMS%) (%APIRESULT%) {
 	%API_REQUEST%
 	%API_REQUEST_RESPONSE%
 	%API_RETURN%
@@ -24,7 +24,7 @@ const RPC_REQUEST_TEMPLATE = `requestBody, rpcERR := json.Marshal(map[string]int
 	if err != nil {
 		%API_RET_ERR%
 	}
-	body, err := sendRequest(requestBody)
+	body, err := r.sendRequest(requestBody)
 	if err != nil {
 		%API_RET_ERR%
 	}`

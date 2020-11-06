@@ -2,7 +2,7 @@ package main
 
 import "github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 
-type Interface interface {
+type ClientInterface interface {
 	GetBalanceByPrivateKey(privateKey string) (uint64, error)
 	GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, error)
 	GetCommitteeList(empty string) (jsonresult.CommitteeListsResult, error)
