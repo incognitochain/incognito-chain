@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus_multi"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -24,7 +24,7 @@ const MAX_CROSSX_BLOCK = 10
 type SynckerManagerConfig struct {
 	Network    Network
 	Blockchain *blockchain.BlockChain
-	Consensus  *consensus_multi.Engine
+	Consensus  peerv2.ConsensusData
 }
 
 type SynckerManager struct {

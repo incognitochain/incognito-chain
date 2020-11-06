@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"log"
 	"net"
 	"os"
@@ -60,18 +61,20 @@ type SimulationEngine struct {
 	Network     *HighwayConnection
 	param       *blockchain.Params
 	bc          *blockchain.BlockChain
+	ps          *pubsub.PubSubManager
 	consensus   *mock.Consensus
 	txpool      *mempool.TxPool
 	temppool    *mempool.TxPool
 	btcrd       *mock.BTCRandom
-	syncker     Syncker
+	syncker     *syncker.SynckerManager
 	server      *mock.Server
 	cPendingTxs chan metadata.Transaction
 	cRemovedTxs chan metadata.Transaction
 	rpcServer   *rpcserver.RpcServer
 	cQuit       chan struct{}
 
-	RPC *rpcclient.RPCClient
+	RPC               *rpcclient.RPCClient
+	listennerRegister map[int][]func(msg interface{})
 }
 
 func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
@@ -143,7 +146,7 @@ func (sim *SimulationEngine) init() {
 	btcrd := mock.BTCRandom{} // use mock for now
 	sync := syncker.NewSynckerManager()
 	server := mock.Server{}
-	ps := mock.Pubsub{}
+	ps := pubsub.NewPubSubManager()
 	fees := make(map[byte]*mempool.FeeEstimator)
 	for i := byte(0); i < byte(activeNetParams.ActiveShards); i++ {
 		fees[i] = mempool.NewFeeEstimator(
@@ -206,7 +209,7 @@ func (sim *SimulationEngine) init() {
 		IsLoadFromMempool: false,
 		PersistMempool:    false,
 		RelayShards:       nil,
-		PubSubManager:     &ps,
+		PubSubManager:     ps,
 	})
 	// serverObj.blockChain.AddTxPool(serverObj.memPool)
 	txpool.InitChannelMempool(cPendingTxs, cRemovedTxs)
@@ -217,7 +220,7 @@ func (sim *SimulationEngine) init() {
 		ChainParams:   activeNetParams,
 		FeeEstimator:  fees,
 		MaxTx:         1000,
-		PubSubManager: &ps,
+		PubSubManager: ps,
 	})
 	txpool.IsBlockGenStarted = true
 	go temppool.Start(cQuit)
@@ -234,7 +237,7 @@ func (sim *SimulationEngine) init() {
 		TempTxPool:      &temppool,
 		Server:          &server,
 		Syncker:         sync,
-		PubSubManager:   &ps,
+		PubSubManager:   ps,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
 		RandomClient:    &btcrd,
 		ConsensusEngine: &cs,
@@ -258,7 +261,8 @@ func (sim *SimulationEngine) init() {
 	sim.rpcServer = rpcServer
 	sim.RPC = rpcclient.NewRPCClient(rpclocal)
 	sim.cQuit = cQuit
-
+	sim.listennerRegister = make(map[int][]func(msg interface{}))
+	sim.ps = ps
 	rpcServer.Init(&rpcConfig)
 	go func() {
 		for {
@@ -270,10 +274,35 @@ func (sim *SimulationEngine) init() {
 		}
 	}()
 	go blockgen.Start(cQuit)
-	//go rpcServer.Start()
+
+	go func() {
+		_, subChan, err := sim.ps.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+		if err != nil {
+			panic("something wrong with subscriber")
+		}
+		for {
+			event := <-subChan
+			for _, f := range sim.listennerRegister[BLK_BEACON] {
+				f(event.Value)
+			}
+		}
+	}()
+
+	go func() {
+		_, subChan, err := sim.ps.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+		if err != nil {
+			panic("something wrong with subscriber")
+		}
+		for {
+			event := <-subChan
+			for _, f := range sim.listennerRegister[BLK_SHARD] {
+				f(event.Value)
+			}
+		}
+	}()
 
 	//init syncker
-	sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
+	//sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
 }
 
 func (sim *SimulationEngine) ConnectNetwork() {
@@ -288,7 +317,10 @@ func (sim *SimulationEngine) ConnectNetwork() {
 	}
 	sim.Network = NewHighwayConnection(config)
 	sim.Network.Connect()
-	sim.syncker.Init(&syncker.SynckerManagerConfig{Network: sim.Network.conn, Blockchain: sim.bc})
+
+	sim.syncker.Init(&syncker.SynckerManagerConfig{Network: sim.Network.conn, Blockchain: sim.bc, Consensus: sim.consensus})
+	sim.syncker.Start()
+
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -630,4 +662,13 @@ func (sim *SimulationEngine) GetPubkeyState(userPk *incognitokey.CommitteePublic
 	}
 
 	return "", -2
+}
+
+func (s *SimulationEngine) OnReceive(msgType int, f func(msg interface{})) {
+	s.Network.listennerRegister[msgType] = append(s.Network.listennerRegister[msgType], f)
+}
+
+//note: this function is async, meaning that f function does not lock insert process
+func (s *SimulationEngine) OnInserted(blkType int, f func(msg interface{})) {
+	s.listennerRegister[blkType] = append(s.listennerRegister[blkType], f)
 }

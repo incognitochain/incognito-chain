@@ -32,3 +32,21 @@ type Syncker interface {
 	Init(*syncker.SynckerManagerConfig)
 	InsertCrossShardBlock(block *blockchain.CrossShardBlock)
 }
+
+const (
+	MSG_TX = iota
+	MSG_TX_PRIVACYTOKEN
+
+	MSG_BLOCK_SHARD
+	MSG_BLOCK_BEACON
+	MSG_BLOCK_XSHARD
+
+	MSG_PEER_STATE
+
+	MSG_BFT
+)
+
+const (
+	BLK_BEACON = iota
+	BLK_SHARD
+)
