@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,10 +17,11 @@ import (
 type BeaconChain struct {
 	multiView *multiview.MultiView
 
-	BlockGen   *BlockGenerator
-	Blockchain *BlockChain
-	ChainName  string
-	Ready      bool //when has peerstate
+	BlockGen    *BlockGenerator
+	Blockchain  *BlockChain
+	hashHistory *lru.Cache
+	ChainName   string
+	Ready       bool //when has peerstate
 
 	insertLock sync.Mutex
 }
@@ -121,6 +125,16 @@ func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
 }
 
+func (chain *BeaconChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
+	bcStateRootHash := chain.GetBestView().(*BeaconBestState).ConsensusStateDBRootHash
+	bcDB := chain.Blockchain.GetBeaconChainDatabase()
+	bcStateDB, err := statedb.NewWithPrefixTrie(bcStateRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+	if err != nil {
+		return nil, err
+	}
+	return statedb.GetBeaconCommittee(bcStateDB), nil
+}
+
 func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	return chain.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()
 }
@@ -173,9 +187,15 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface, shouldValidate 
 	return nil
 }
 
+func (chain *BeaconChain) CheckExistedBlk(block common.BlockInterface) bool {
+	blkHash := block.Hash()
+	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
+	return err == nil
+}
+
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), false); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
@@ -218,7 +238,7 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		return nil
+		return err
 	}
 	return nil
 }

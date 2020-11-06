@@ -27,7 +27,7 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognit
 	return coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardID, prvCoinID, shardHeight)
 }
 
-func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
+func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}, tokenID *common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}

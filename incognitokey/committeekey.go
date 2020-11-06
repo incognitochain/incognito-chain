@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"reflect"
+	"sort"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
@@ -74,9 +75,14 @@ func (pubKey *CommitteePublicKey) FromBytes(keyBytes []byte) error {
 }
 
 func (pubKey *CommitteePublicKey) RawBytes() ([]byte, error) {
+	keys := make([]string, 0, len(pubKey.MiningPubKey))
+	for k := range pubKey.MiningPubKey {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	res := pubKey.IncPubKey
-	for _, v := range pubKey.MiningPubKey {
-		res = append(res, v...)
+	for _, k := range keys {
+		res = append(res, pubKey.MiningPubKey[k]...)
 	}
 	return res, nil
 }

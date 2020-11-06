@@ -163,7 +163,7 @@ func HybridEncryptionASM(dataB64Encode string) (string, error) {
 
 	publicKeyBytes := data[0:privacy.Ed25519KeySize]
 	publicKeyPoint, err := new(privacy.Point).FromBytesS(publicKeyBytes)
-	if err != nil{
+	if err != nil {
 		return "", errors.New("Invalid public key encryption")
 	}
 
@@ -199,4 +199,3 @@ func HybridDecryptionASM(dataB64Encode string) (string, error) {
 	res := base64.StdEncoding.EncodeToString(plaintextBytes)
 	return res, nil
 }
-

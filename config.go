@@ -119,7 +119,8 @@ type config struct {
 	// Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
 
 	// Net config
-	TestNet string `long:"testnet" description:"Use the test network"`
+	TestNet        string `long:"testnet" description:"Use the test network"`
+	TestNetVersion string `long:"testnetversion" description:"Use the test network"`
 
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
@@ -151,10 +152,15 @@ type config struct {
 
 	// Highway
 	Libp2pPrivateKey string `long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
+
+	//backup
+	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
+	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
 }
 
 func (cfg config) IsTestnet() bool {
-	return cfg.TestNet == "" || cfg.TestNet == "true" || cfg.TestNet == "T" || cfg.TestNet == "t" || cfg.TestNet == "1"
+	testnet := cfg.TestNet == "" || cfg.TestNet == "true" || cfg.TestNet == "T" || cfg.TestNet == "t" || cfg.TestNet == "1"
+	return testnet
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -433,7 +439,11 @@ func loadConfig() (*config, []string, error) {
 	// while we're at it
 	if cfg.IsTestnet() {
 		numNets++
-		activeNetParams = &testNetParams
+		if cfg.TestNetVersion == "2" {
+			activeNetParams = &testNet2Params
+		} else {
+			activeNetParams = &testNetParams
+		}
 	}
 
 	if numNets > 1 {

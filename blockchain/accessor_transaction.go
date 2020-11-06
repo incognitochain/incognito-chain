@@ -63,7 +63,7 @@ func storePRV(transactionStateRoot *statedb.StateDB) error {
 	return nil
 }
 
-func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
+func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, uint64, int, metadata.Transaction, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
@@ -75,9 +75,9 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 		if err != nil {
 			continue
 		}
-		return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
+		return shardBlock.Header.ShardID, blockHash, shardBlock.GetHeight(), index, shardBlock.Body.Transactions[index], nil
 	}
-	return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
+	return byte(255), common.Hash{}, 0, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
 }
 
 func (blockchain *BlockChain) GetTransactionByHashWithShardID(txHash common.Hash, shardID byte) (common.Hash, int, metadata.Transaction, error) {
@@ -100,17 +100,48 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		var err error
-		result, err = rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk)
+		resultTemp, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk)
 		if err == nil {
-			if result == nil || len(result) == 0 {
+			if resultTemp == nil || len(resultTemp) == 0 {
 				continue
 			}
-			return result, nil
+			result[shardID] = resultTemp[shardID]
 		}
 	}
 	return result, nil
 }
 
+// GetTransactionHashByReceiverV2 - return list tx id which a receiver receives from any senders in paging fashion
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
+	keySet *incognitokey.KeySet,
+	skip, limit uint,
+) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		var err error
+		var resultTemp map[byte][]common.Hash
+		resultTemp, skip, limit, err = rawdbv2.GetTxByPublicKeyV2(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk, skip, limit)
+		if err == nil {
+			if resultTemp == nil || len(resultTemp) == 0 {
+				continue
+			}
+			result[shardID] = resultTemp[shardID]
+		}
+		if limit == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock, shardView *ShardBestState) error {
+	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
+	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
+		if len(shardBlock.Body.Transactions) != len(txsSpamRemoved) {
+			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBlock.Body.Transactions)-len(txsSpamRemoved))
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
 	// filter double withdraw request
 	withdrawReqTable := make(map[string]privacy.PaymentAddress)
@@ -158,6 +189,24 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
+	curView *ShardBestState,
+	shardBlock *ShardBlock,
+	beaconBlocks []*BeaconBlock,
+	shardID byte,
+) error {
+	//mainnet have two block return double when height < REPLACE_STAKINGTX
+	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < blockchain.config.ChainParams.ReplaceStakingTxHeight {
+		return nil
+	}
+	return blockchain.ValidateReturnStakingTxFromBeaconInstructions(
+		curView,
+		beaconBlocks,
+		shardBlock,
+		shardID,
+	)
 }
 
 func (blockchain *BlockChain) InitTxSalaryByCoinID(

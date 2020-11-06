@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -61,16 +62,18 @@ type MempoolRetriever interface {
 }
 
 type ChainRetriever interface {
+	GetETHRemoveBridgeSigEpoch() uint64
 	GetStakingAmountShard() uint64
 	GetCentralizedWebsitePaymentAddress(uint64) string
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
-	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
+	GetTransactionByHash(common.Hash) (byte, common.Hash, uint64, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
+	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 }
 
 type BeaconViewRetriever interface {
@@ -84,6 +87,7 @@ type BeaconViewRetriever interface {
 }
 
 type ShardViewRetriever interface {
+	GetEpoch() uint64
 	GetBeaconHeight() uint64
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
@@ -147,7 +151,7 @@ type Transaction interface {
 	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)
 	ValidateTxWithBlockChain(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
-	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, bool, ShardViewRetriever, BeaconViewRetriever) (bool, error)
+	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	ValidateType() bool
 	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, []privacy.Proof, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock(*MintData, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)

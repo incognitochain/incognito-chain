@@ -8,8 +8,8 @@ import (
 var (
 	lastShardBlockKey                  = []byte("LastShardBlock" + string(splitter))
 	lastBeaconBlockKey                 = []byte("LastBeaconBlock")
-	beaconBestStatePrefix              = []byte("BeaconBestState")
-	shardBestStatePrefix               = []byte("ShardBestState" + string(splitter))
+	beaconViewsPrefix                  = []byte("BeaconViews")
+	shardBestStatePrefix               = []byte("ShardViews" + string(splitter))
 	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
 	viewPrefix                         = []byte("V" + string(splitter))
 	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
@@ -23,6 +23,8 @@ var (
 	feeEstimatorPrefix                 = []byte("fee-est" + string(splitter))
 	txByPublicKeyPrefix                = []byte("tx-pb")
 	rootHashPrefix                     = []byte("R-H-")
+	shardRootHashPrefix                = []byte("S-R-H-")
+	beaconRootHashPrefix               = []byte("B-R-H-")
 	beaconConsensusRootHashPrefix      = []byte("b-co" + string(splitter))
 	beaconRewardRequestRootHashPrefix  = []byte("b-re" + string(splitter))
 	beaconFeatureRootHashPrefix        = []byte("b-fe" + string(splitter))
@@ -117,16 +119,7 @@ func GetBeaconHashToBlockKey(hash common.Hash) []byte {
 	return append(temp, hash[:]...)
 }
 
-func GetBeaconIndexToBlockHashKey(index uint64, hash common.Hash) []byte {
-	buf := common.Uint64ToBytes(index)
-	temp := make([]byte, 0, len(beaconIndexToBlockHashPrefix))
-	temp = append(temp, beaconIndexToBlockHashPrefix...)
-	key := append(temp, buf...)
-	key = append(key, splitter...)
-	return append(key, hash[:]...)
-}
-
-func GetBeaconIndexToBlockHashPrefix(index uint64) []byte {
+func GetBeaconIndexToBlockHashKey(index uint64) []byte {
 	buf := common.Uint64ToBytes(index)
 	temp := make([]byte, 0, len(beaconIndexToBlockHashPrefix))
 	temp = append(temp, beaconIndexToBlockHashPrefix...)
@@ -140,9 +133,9 @@ func GetBeaconBlockHashToIndexKey(hash common.Hash) []byte {
 	return append(temp, hash[:]...)
 }
 
-func GetBeaconBestStateKey() []byte {
-	temp := make([]byte, 0, len(beaconBestStatePrefix))
-	temp = append(temp, beaconBestStatePrefix...)
+func GetBeaconViewsKey() []byte {
+	temp := make([]byte, 0, len(beaconViewsPrefix))
+	temp = append(temp, beaconViewsPrefix...)
 	return temp
 }
 
@@ -244,6 +237,23 @@ func GetShardCommitteeRewardRootHashKey(shardID byte, height uint64) []byte {
 	return key
 }
 
+func GetShardRootsHashKey(shardID byte, hash common.Hash) []byte {
+	temp := make([]byte, 0, len(shardRootHashPrefix))
+	temp = append(temp, shardRootHashPrefix...)
+	key := append(temp, shardID)
+	key = append(key, splitter...)
+	key = append(key, hash.Bytes()...)
+	return key
+}
+
+func GetBeaconRootsHashKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len(beaconRootHashPrefix))
+	temp = append(temp, beaconRootHashPrefix...)
+	key := append(temp, splitter...)
+	key = append(key, hash.Bytes()...)
+	return key
+}
+
 func GetShardConsensusRootHashKey(shardID byte, height uint64) []byte {
 	buf := common.Uint64ToBytes(height)
 	rootHashPrefix := GetRootHashPrefix()
@@ -302,4 +312,24 @@ func GetLastBeaconHeightConfirmCrossShardKey() []byte {
 	temp := make([]byte, 0, len(lastBeaconHeightConfirmCrossShard))
 	temp = append(temp, lastBeaconHeightConfirmCrossShard...)
 	return temp
+}
+
+//getBeaconPreCommitteeInfoKey ...
+func getBeaconPreCommitteeInfoKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}
+
+//getShardPreCommitteeInfoKey ...
+func getShardPreCommitteeInfoKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}
+
+//getShardPreCommitteeInfoForShardKey...
+func getShardPreCommitteeInfoForShardKey(hash common.Hash) []byte {
+	return hash.Bytes()
+}
+
+//getShardPendingValidatorsKey ...
+func getShardPendingValidatorsKey(hash common.Hash) []byte {
+	return hash.Bytes()
 }

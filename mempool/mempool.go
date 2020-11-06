@@ -229,6 +229,18 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
+	if tx.GetType() == common.TxReturnStakingType{
+		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
+	}
+	if tx.GetType() == common.TxCustomTokenPrivacyType{
+		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		if !ok {
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
+		}
+		if tempTx.TxPrivacyTokenData.Mintable{
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
+		}
+	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight)
 	//==========
 	if err != nil {
@@ -251,8 +263,14 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, beaconHeight)
+	bHeight := shardView.BestBlock.Header.BeaconHeight
+	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, int64(bHeight))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -260,17 +278,38 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tempTxDesc := &txDesc.Desc
 	return tempTxDesc, err
 }
+
 func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, beaconHeight)
+	bHeight := shardView.BestBlock.Header.BeaconHeight
+	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, int64(bHeight))
 	return txDesc, err
 }
 
 func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
+	batch := transaction.NewBatchTransaction(txs)
+
+	boolParams := make(map[string]bool)
+	boolParams["isNewTransaction"] = false
+	boolParams["isBatch"] = true
+	boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+
+	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), boolParams)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		return nil, nil, fmt.Errorf("Verify Batch Transaction failed %+v", txs)
+	}
 	for _, tx := range txs {
 		// validate tx
 		err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, true, false)
@@ -505,7 +544,14 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
+		isNewZKP := tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+
+		boolParams := make(map[string]bool)
+		boolParams["hasPrivacy"] = tx.IsPrivacy()
+		boolParams["isNewTransaction"] = isNewTransaction
+		boolParams["isNewZKP"] = isNewZKP
+
+		validated, errValidateTxByItself := tx.ValidateTxByItself(boolParams, shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
 		}
@@ -1016,8 +1062,17 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 }
 
 func (tp *TxPool) EmptyPool() bool {
+	tp.mtx.Lock()
 	tp.candidateMtx.Lock()
-	defer tp.candidateMtx.Unlock()
+	tp.requestStopStakingMtx.Lock()
+	tp.roleMtx.Lock()
+	defer func() {
+		tp.candidateMtx.Unlock()
+		tp.mtx.Unlock()
+		tp.requestStopStakingMtx.Unlock()
+		tp.roleMtx.Unlock()
+	}()
+
 	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 {
 		return true
 	}
