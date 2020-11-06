@@ -667,7 +667,7 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *Tx, params *tx_
 		cv2 := &coin.CoinV2{}
 		cv2.SetBytes(c.Bytes())
 		cv2.Decrypt(dk)
-		sharedSecret, err := cv2.RecomputeSharedConcealSecret(mySkBytes)
+		sharedSecret, err := cv2.RecomputeSharedSecret(mySkBytes)
 		if err!=nil{
 			activeLogger.Errorf("TEST : Cannot compute shared secret for coin %v", cv2.Bytes())
 			return err
