@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 )
 
 //Network fixed params
@@ -197,7 +198,7 @@ var TestnetReplaceCommitteeEpoch = []uint64{}
 var IsTestNet = true
 var IsTestNet2 = false
 
-func ReadKey() {
+func ReadKey(v1, v2 []byte) {
 
 	var keyData []byte
 	var keyDataV2 []byte

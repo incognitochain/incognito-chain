@@ -20,15 +20,42 @@ import (
 	"github.com/incognitochain/incognito-chain/syncker"
 )
 
+const (
+	MODE_MAINNET = iota
+	MODE_TESTNET
+	MODE_TESTNET2
+	MODE_CUSTOM
+)
+
 type IncognitoNodeInterface interface {
 	OnReceive(msgType int, f func(msg interface{}))
 	OnInserted(blkType int, f func(msg interface{}))
 }
 
-func NewIncognitoNode(name string, chainParam *blockchain.Params, highwayAddr string, enableRPC bool) IncognitoNodeInterface {
-	os.RemoveAll(name)
+func NewIncognitoNode(name string, mode int, chainCustomParam *blockchain.Params, highwayAddr string, enableRPC bool) IncognitoNodeInterface {
+	// os.RemoveAll(name)
 	sim := &SimulationEngine{
 		simName: name,
+	}
+	chainParam := &blockchain.Params{}
+	switch mode {
+	case MODE_MAINNET:
+		blockchain.IsTestNet = false
+		blockchain.ReadKey(blockchain.MainnetKeylist, blockchain.Mainnetv2Keylist)
+		blockchain.SetupParam()
+		chainParam = &blockchain.ChainMainParam
+	case MODE_TESTNET:
+		blockchain.ReadKey(blockchain.TestnetKeylist, blockchain.Testnetv2Keylist)
+		blockchain.SetupParam()
+		chainParam = &blockchain.ChainTestParam
+	case MODE_TESTNET2:
+		blockchain.IsTestNet2 = true
+		blockchain.ReadKey(blockchain.Testnet2Keylist, blockchain.Testnet2v2Keylist)
+		blockchain.SetupParam()
+		chainParam = &blockchain.ChainTest2Param
+	case MODE_CUSTOM:
+		blockchain.IsTestNet = false
+		blockchain.IsTestNet2 = false
 	}
 	sim.initNode(chainParam, enableRPC)
 	sim.ConnectNetwork(highwayAddr)
