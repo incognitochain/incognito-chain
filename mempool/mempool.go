@@ -233,15 +233,15 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
-	if tx.GetType() == common.TxReturnStakingType{
+	if tx.GetType() == common.TxReturnStakingType {
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType{
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
 		if !ok {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
 		}
-		if tempTx.TxPrivacyTokenData.Mintable{
+		if tempTx.TxPrivacyTokenData.Mintable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
@@ -269,10 +269,14 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
+	beaconView := tp.config.BlockChain.GetBeaconBestState()
+	var err error
+	if tx.GetMetadataType() == metadata.StopAutoStakingMeta || tx.GetMetadataType() == metadata.ReturnStakingMeta || tx.GetMetadataType() == metadata.ShardStakingMeta {
+		beaconView, err = tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
 	}
 	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, int64(bHeight))
 	if err != nil {
@@ -288,7 +292,18 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	beaconView := tp.config.BlockChain.GetBeaconBestState()
+	var err error
+	for _, tx := range txs {
+		if tx.GetMetadataType() == metadata.StopAutoStakingMeta || tx.GetMetadataType() == metadata.ReturnStakingMeta || tx.GetMetadataType() == metadata.ShardStakingMeta {
+			beaconView, err = tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+			if err != nil {
+				Logger.log.Error(err)
+				return nil, err
+			}
+			break
+		}
+	}
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
