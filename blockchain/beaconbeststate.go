@@ -782,12 +782,7 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconHeight--
 	}
 
-	err := curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardStates)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardStates)
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
