@@ -175,6 +175,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	// Verify Transaction
 	// get beacon height from shard block
 	beaconHeight := shardBlock.Header.BeaconHeight
+	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, block height %+v with hash %+v", len(shardBlock.Body.Transactions), shardID, blockHeight, blockHash)
 	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
