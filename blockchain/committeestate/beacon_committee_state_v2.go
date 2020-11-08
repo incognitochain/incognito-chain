@@ -395,6 +395,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange, env, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -611,6 +612,7 @@ func (b *BeaconCommitteeStateV2) processStakeInstruction(
 	}
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 	b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeyStructs...)
+
 	return committeeChange, err
 }
 
@@ -653,7 +655,7 @@ func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 	candidates, _ := incognitokey.CommitteeKeyListToString(oldState.shardCommonPool[:b.numberOfAssignedCandidates])
 	newCommitteeChange = b.assign(candidates, rand, activeShards, newCommitteeChange, oldState)
 	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, oldState.shardCommonPool[:b.numberOfAssignedCandidates]...)
-	b.shardCommonPool = oldState.shardCommonPool[b.numberOfAssignedCandidates:]
+	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
 
 	return newCommitteeChange
@@ -664,7 +666,6 @@ func (b *BeaconCommitteeStateV2) assign(
 	oldState *BeaconCommitteeStateV2,
 ) *CommitteeChange {
 	numberOfValidator := make([]int, activeShards)
-
 	for i := 0; i < activeShards; i++ {
 		numberOfValidator[byte(i)] += len(oldState.shardSubstitute[byte(i)])
 		numberOfValidator[byte(i)] += len(oldState.shardCommittee[byte(i)])
