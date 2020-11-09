@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -157,7 +158,7 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 			}
 		}else{
 			createdCACoin, _, err := createUniqueOTACoinCA(paymentInfos[i], tokenID, db)
-			if err!=nil {
+			if err!=nil{
 				utils.Logger.Log.Errorf("TxConversion cannot create new CA coin - %v", err)
 				return nil, err
 			}
@@ -373,7 +374,7 @@ func (txToken *TxToken) initTokenConversion(txNormal *Tx, params *TxTokenConvert
 		nil,
 		params.info,
 	)
-
+	
 	if err := validateTxConvertVer1ToVer2Params(txConvertParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
@@ -405,7 +406,7 @@ func (txToken *TxToken) initPRVFeeConversion(feeTx *Tx, params *tx_generic.TxPri
 	}
 	// override TxCustomTokenPrivacyType type
 	
-	txToken.SetTxBase(feeTx)
+	// txToken.SetTxBase(feeTx)
 	return inps, outs, nil
 }
 
@@ -439,7 +440,6 @@ func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitP
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
-
 	tdh, err := txToken.TokenData.Hash()
 	if err!=nil{
 		return err

@@ -127,7 +127,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 type EstimateTxSizeParam struct {
-	version                  int
+	version 				 int
 	numInputCoins            int
 	numPayments              int
 	hasPrivacy               bool
@@ -141,7 +141,7 @@ func NewEstimateTxSizeParam(version, numInputCoins, numPayments int,
 	privacyCustomTokenParams *TokenParam,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
-		version:                  version,
+		version: 				  version,
 		numInputCoins:            numInputCoins,
 		numPayments:              numPayments,
 		hasPrivacy:               hasPrivacy,
@@ -152,26 +152,26 @@ func NewEstimateTxSizeParam(version, numInputCoins, numPayments int,
 	return estimateTxSizeParam
 }
 
-func toB64Len(numOfBytes uint64) uint64 {
-	l := (numOfBytes*4 + 2) / 3
+func toB64Len(numOfBytes uint64) uint64{
+	l := (numOfBytes * 4 + 2) / 3
 	l = ((l + 3) / 4) * 4
 	return l
 }
 
 
-func EstimateProofSizeV2(numIn, numOut uint64) uint64 {
-	coinSizeBound := uint64(257) + (privacy.Ed25519KeySize+1)*7 + privacy.TxRandomGroupSize + 1
+func EstimateProofSizeV2(numIn, numOut uint64) uint64{
+	coinSizeBound := uint64(257) + (privacy.Ed25519KeySize + 1) * 7 + privacy.TxRandomGroupSize + 1
 	ipProofLRLen := uint64(math.Log2(float64(numOut))) + 1
-	aggProofSizeBound := uint64(4) + 1 + privacy.Ed25519KeySize*uint64(7+numOut) + 1 + uint64(2*ipProofLRLen+3)*privacy.Ed25519KeySize
+	aggProofSizeBound := uint64(4) + 1 + privacy.Ed25519KeySize * uint64(7 + numOut) + 1 + uint64(2 * ipProofLRLen + 3) * privacy.Ed25519KeySize
 	// add 10 for rounding
-	result := uint64(1) + (coinSizeBound+1)*uint64(numIn+numOut) + 2 + aggProofSizeBound + 10
+	result := uint64(1) + (coinSizeBound + 1) * uint64(numIn + numOut) + 2 + aggProofSizeBound + 10
 	return toB64Len(result)
 }
 
-func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
-	jsonKeysSizeBound := uint64(20*10 + 2)
-	sizeVersion := uint64(1)      // int8
-	sizeType := uint64(5)         // string, max : 5
+func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64{
+	jsonKeysSizeBound := uint64(20 * 10 + 2)
+	sizeVersion := uint64(1)  // int8
+	sizeType := uint64(5)     // string, max : 5
 	sizeLockTime := uint64(8) * 3 // int64
 	sizeFee := uint64(8) * 3      // uint64
 	sizeInfo := toB64Len(uint64(512))
@@ -179,10 +179,10 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	numIn := uint64(estimateTxSizeParam.numInputCoins)
 	numOut := uint64(estimateTxSizeParam.numPayments)
 
-	sizeSigPubKey := uint64(numIn)*privacy.RingSize*9 + 2
+	sizeSigPubKey := uint64(numIn) * privacy.RingSize * 9 + 2
 	sizeSigPubKey = toB64Len(sizeSigPubKey)
-	sizeSig := uint64(1) + numIn + (numIn+2)*privacy.RingSize
-	sizeSig = sizeSig*33 + 3
+	sizeSig := uint64(1) + numIn + (numIn + 2) * privacy.RingSize 
+	sizeSig = sizeSig * 33 + 3
 
 	sizeProof := EstimateProofSizeV2(numIn, numOut)
 
@@ -194,7 +194,7 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 
 	sizeTx := jsonKeysSizeBound + sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 	if estimateTxSizeParam.privacyCustomTokenParams != nil {
-		tokenKeysSizeBound := uint64(20*8 + 2)
+		tokenKeysSizeBound := uint64(20 * 8 + 2)
 		tokenSize := toB64Len(uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertyID)))
 		tokenSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertySymbol))
 		tokenSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertyName))
@@ -203,10 +203,10 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 		numOut = uint64(len(estimateTxSizeParam.privacyCustomTokenParams.Receiver))
 
 		// shadow variable names
-		sizeSigPubKey := uint64(numIn)*privacy.RingSize*9 + 2
+		sizeSigPubKey := uint64(numIn) * privacy.RingSize * 9 + 2
 		sizeSigPubKey = toB64Len(sizeSigPubKey)
-		sizeSig := uint64(1) + numIn + (numIn+2)*privacy.RingSize
-		sizeSig = sizeSig*33 + 3
+		sizeSig := uint64(1) + numIn + (numIn + 2) * privacy.RingSize 
+		sizeSig = sizeSig * 33 + 3
 
 		sizeProof := EstimateProofSizeV2(numIn, numOut)
 		tokenSize += tokenKeysSizeBound + sizeSigPubKey + sizeSig + sizeProof

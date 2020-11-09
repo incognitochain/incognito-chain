@@ -318,7 +318,7 @@ func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, 
 	}
 	beaconHeight := beaconState.BeaconHeight
 	paymentInfos := coin.CreatePaymentInfosFromPlainCoinsAndAddress(plainCoins, keySet.PaymentAddress, []byte{})
-	realFee, _, _, err := txService.EstimateFee(1, unitFeeNativeToken, false, plainCoins,
+	realFee, _, _, err := txService.EstimateFee(2, unitFeeNativeToken, false, plainCoins,
 		paymentInfos, shardIDSender, numBlock, false,
 		metadataParam,
 		nil, int64(beaconHeight))
@@ -1653,7 +1653,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	if err!=nil{
 		return nil, NewRPCError(GetOutputCoinError ,err)
 	}
-	realFee, _, _, _ := txService.EstimateFee(int(ver),
+	realFee, _, _, _ := txService.EstimateFee(int(ver), 
 		estimateFeeCoinPerKb, isGetPTokenFee, plainCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, int64(beaconHeight))
 	if len(plainCoins) == 0 {
 		realFee = 0

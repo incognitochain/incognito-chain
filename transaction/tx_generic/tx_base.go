@@ -69,7 +69,6 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	if info==nil{
 		info = []byte{}
 	}
-
 	params := &TxPrivacyInitParams{
 		StateDB:     stateDB,
 		TokenID:     tokenID,

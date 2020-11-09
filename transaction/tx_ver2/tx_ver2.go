@@ -1,7 +1,6 @@
 package tx_ver2
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"math"
@@ -9,6 +8,7 @@ import (
 	"strconv"
 	"time"
 	"encoding/json"
+	"math"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -135,8 +135,9 @@ func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 
 	signature := new(privacy.SchnSignature)
 	if err := signature.SetBytes(metaSig); err != nil {
-		utils.Logger.Log.Error(err)
-		return false, utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
+		newErr := utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
+		utils.Logger.Log.Errorf("Metadata Signature Invalid - ", newErr)
+		return false, newErr
 	}
 	fmt.Println("[CheckAuthorizedSender] Metadata Signature - Validate OK")
 	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
@@ -208,9 +209,6 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
-	if !params.HasPrivacy {
-		ringSize = 1
-	}
 
 	// Generate Ring
 	piBig,piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
@@ -275,7 +273,7 @@ func (tx *Tx) signMetadata(privateKey *privacy.PrivateKey) error {
 	sigKey.Set(sk, r)
 
 	// signing
-	signature, err := sigKey.Sign(tx.Hash()[:])
+	signature, err := sigKey.Sign(tx.HashWithoutMetadataSig()[:])
 	if err != nil {
 		return err
 	}
@@ -620,20 +618,20 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	return true, nil
 }
 
-func (tx Tx) StringWithoutMetadataSig() string {
-	record := strconv.Itoa(int(tx.Version))
-	record += strconv.FormatInt(tx.LockTime, 10)
-	record += strconv.FormatUint(tx.Fee, 10)
-	if tx.Proof != nil {
-		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
-	}
-	if tx.Metadata != nil {
-		metadataHash := tx.Metadata.HashWithoutSig()
-		record += metadataHash.String()
-	}
-	record += string(tx.Info)
-	return record
-}
+// func (tx Tx) StringWithoutMetadataSig() string {
+// 	record := strconv.Itoa(int(tx.Version))
+// 	record += strconv.FormatInt(tx.LockTime, 10)
+// 	record += strconv.FormatUint(tx.Fee, 10)
+// 	if tx.Proof != nil {
+// 		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
+// 	}
+// 	if tx.Metadata != nil {
+// 		metadataHash := tx.Metadata.HashWithoutSig()
+// 		record += metadataHash.String()
+// 	}
+// 	record += string(tx.Info)
+// 	return record
+// }
 
 func (tx Tx) Hash() *common.Hash {
 	// leave out signature & its public key when hashing tx
@@ -648,7 +646,7 @@ func (tx Tx) Hash() *common.Hash {
 	return &hash
 }
 
-func (tx *Tx) HashWithoutMetadataSig() *common.Hash {
+func (tx Tx) HashWithoutMetadataSig() *common.Hash {
 	md := tx.GetMetadata()
 	mdHash := md.HashWithoutSig()
 	tx.SetMetadata(nil)
@@ -657,7 +655,7 @@ func (tx *Tx) HashWithoutMetadataSig() *common.Hash {
 		return nil
 	}
 	// tx.SetMetadata(md)
-	inBytes := []byte(tx.StringWithoutMetadataSig())
+	inBytes := append(mdHash[:], txHash[:]...)
 	hash := common.HashH(inBytes)
 	return &hash
 }

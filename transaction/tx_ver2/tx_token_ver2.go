@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sort"
 	"bytes"
+	"math"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -37,6 +38,7 @@ func (td TxTokenDataVersion2) Hash() (*common.Hash, error){
 	td.Sig = []byte{}
 	td.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(td)
+
 	if err!=nil{
 		return nil, err
 	}
@@ -63,12 +65,11 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 		copy(clonedInfo, txPRV.Info)
 	}
 	var clonedProof privacy.Proof = nil
-	// feed the type to parse proof
+	// feed the type to parse proof 
 	proofType := txPRV.Type
-	if proofType == common.TxTokenConversionType{
+	if proofType==common.TxTokenConversionType{
 		proofType = common.TxConversionType
 	}
-
 	if proof!=nil{
 		clonedProof, err = utils.ParseProof(proof, txPRV.Version, proofType)
 		if err!=nil{
@@ -87,6 +88,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 		clonedPk = make([]byte, len(pubkey))
 		copy(clonedPk, pubkey)
 	}
+	result.Info = clonedInfo
 	result.Proof = clonedProof
 	result.Sig = clonedSig
 	result.SigPubKey = clonedPk
@@ -282,12 +284,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
-			err = txToken.SetTxNormal(temp)
-			if err != nil {
-				return err
-			}
-			jsb, _ := json.Marshal(txToken.GetTxNormal())
-			utils.Logger.Log.Warnf("TX token-init creation finished : %s\n", string(jsb))
+			txToken.SetTxNormal(temp)
 			return nil
 		}
 	case utils.CustomTokenTransfer:
@@ -444,8 +441,8 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	
 	err = txToken.SetTxBase(tx)
 	jsb, _ = json.Marshal(txToken)
-	utils.Logger.Log.Warnf("Create TX token v2 complete ! The resulting token transaction is : %s", string(jsb))
-	if err != nil{
+	utils.Logger.Log.Warnf("TX Creation complete ! The resulting token transaction is : %s", string(jsb))
+	if err!=nil{
 		return err
 	}
 	// check tx size
