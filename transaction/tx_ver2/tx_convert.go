@@ -65,12 +65,6 @@ func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) e
 	if len(params.paymentInfo) > 254 {
 		return utils.NewTransactionErr(utils.PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
-	limitFee := uint64(0)
-	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(2, len(params.inputCoins), len(params.paymentInfo),
-		false, nil, nil, limitFee)
-	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
-	}
 
 	sumInput, sumOutput := uint64(0), uint64(0)
 	for _, c := range params.inputCoins {
@@ -142,6 +136,10 @@ func InitConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
 	}
 	jsb, _ := json.Marshal(tx)
 	utils.Logger.Log.Infof("Init conversion complete ! -> %s", string(jsb))
+	txSize := tx.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 	return nil
 }
 
@@ -332,13 +330,6 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 		return errors.New("tokenInputs length = " + strconv.Itoa(len(params.tokenParams.tokenInputs)))
 	}
 
-	limitFee := uint64(0)
-	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(2, len(params.feeInputs), len(params.feePayments),
-		false, nil, nil, limitFee)
-	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
-	}
-
 	for _, c := range params.feeInputs {
 		if c.GetVersion() != utils.TxVersion2Number {
 			return errors.New("TxConversion should only have fee input coins version 2")
@@ -458,5 +449,13 @@ func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitP
 	if err!=nil{
 		return err
 	}
-	return txToken.SetTxBase(tx)
+	err = txToken.SetTxBase(tx)
+	if err!=nil{
+		return err
+	}
+	txSize := txToken.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
+	return nil
 }
