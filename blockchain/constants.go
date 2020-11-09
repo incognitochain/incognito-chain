@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics"
@@ -203,6 +204,20 @@ func ReadKey(v1, v2 []byte) {
 	var keyData []byte = v1
 	var keyDataV2 []byte = v2
 	var err error
+
+	if len(v1) == 0 {
+		keyData, err = ioutil.ReadFile("keylist.json")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if len(v2) == 0 {
+		keyDataV2, err = ioutil.ReadFile("keylist-v2.json")
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	type AccountKey struct {
 		PrivateKey     string
