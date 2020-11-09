@@ -284,7 +284,7 @@ func (txToken TxTokenBase) GetTxFee() uint64 {
 
 // ================== NORMAL INIT FUNCTIONS ===================
 
-func EstimateTxSizeOfInitTokenSalary(publicKey []byte, amount uint64, coinName string, coinID *common.Hash) uint64 {
+func EstimateTxSizeOfInitTokenSalary(version int, publicKey []byte, amount uint64, coinName string, coinID *common.Hash) uint64 {
 	receiver := &privacy.PaymentInfo{
 		Amount: amount,
 		PaymentAddress: privacy.PaymentAddress{
@@ -303,7 +303,7 @@ func EstimateTxSizeOfInitTokenSalary(publicKey []byte, amount uint64, coinName s
 		TokenInput:     []privacy.PlainCoin{},
 		Mintable:       true,
 	}
-	estimateTxSizeParam := NewEstimateTxSizeParam(0, 0, false, nil, tokenParams, uint64(0))
+	estimateTxSizeParam := NewEstimateTxSizeParam(version, 0, 0, false, nil, tokenParams, uint64(0))
 	return EstimateTxSize(estimateTxSizeParam)
 }
 

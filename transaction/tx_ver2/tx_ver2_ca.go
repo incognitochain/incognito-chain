@@ -274,9 +274,9 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputShare
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
-	if !params.HasPrivacy {
-		ringSize = 1
-	}
+	//if !params.HasPrivacy {
+	//	ringSize = 1
+	//}
 
 	// Generate Ring
 	piBig,piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
