@@ -2617,7 +2617,7 @@ func TestBeaconCommitteeStateV2_clone(t *testing.T) {
 
 func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
-
+	tempHash, _ := common.Hash{}.NewHashFromStr("456")
 	initPublicKey()
 	initStateDB()
 	initLog()
@@ -2627,6 +2627,9 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	paymentAddress0, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
 	assert.Nil(t, err)
 	rewardReceiverkey0 := incKey0.GetIncKeyBase58()
+	rewardReceiverKey := incKey.GetIncKeyBase58()
+	paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
+	assert.Nil(t, err)
 
 	committeeChangeStakeAndAssginResult := NewCommitteeChange()
 	committeeChangeStakeAndAssginResult.NextEpochShardCandidateAdded = []incognitokey.CommitteePublicKey{
@@ -2666,12 +2669,57 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		key0,
 	}
 	committeeChangeUnstakeAssign2.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{
-		*incKey6, *incKey0,
+		*incKey0,
+		*incKey6,
 	}
 
-	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
-	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
-	committeeChangeProcessUnstakeInstruction.Unstake = []string{key0}
+	committeeChangeUnstakeAssign3 := NewCommitteeChange()
+	committeeChangeUnstakeAssign3.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
+		0: []incognitokey.CommitteePublicKey{
+			*incKey6,
+		},
+		1: []incognitokey.CommitteePublicKey{},
+	}
+	committeeChangeUnstakeAssign3.Unstake = []string{
+		key0,
+	}
+	committeeChangeUnstakeAssign3.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{
+		*incKey6,
+		*incKey0,
+	}
+
+	committeeChangeUnstakeSwap := NewCommitteeChange()
+	committeeChangeUnstakeSwap.ShardCommitteeRemoved = map[byte][]incognitokey.CommitteePublicKey{
+		0: []incognitokey.CommitteePublicKey{
+			*incKey,
+		},
+		1: []incognitokey.CommitteePublicKey{},
+	}
+
+	committeeChangeUnstakeSwap.ShardCommitteeAdded = map[byte][]incognitokey.CommitteePublicKey{
+		0: []incognitokey.CommitteePublicKey{
+			*incKey0,
+		},
+		1: []incognitokey.CommitteePublicKey{},
+	}
+
+	committeeChangeUnstakeSwap.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
+		0: []incognitokey.CommitteePublicKey{
+			*incKey,
+		},
+		1: []incognitokey.CommitteePublicKey{},
+	}
+
+	committeeChangeUnstakeSwap.ShardSubstituteRemoved = map[byte][]incognitokey.CommitteePublicKey{
+		0: []incognitokey.CommitteePublicKey{
+			*incKey0,
+		},
+		1: []incognitokey.CommitteePublicKey{},
+	}
+
+	committeeChangeUnstakeSwap.StopAutoStake = []string{
+		key0,
+	}
 
 	statedb.StoreStakerInfoV1(
 		sDB,
@@ -2684,6 +2732,20 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		},
 		map[string]common.Hash{
 			key0: *hash,
+		},
+	)
+
+	statedb.StoreStakerInfoV1(
+		sDB,
+		[]incognitokey.CommitteePublicKey{*incKey},
+		map[string]privacy.PaymentAddress{
+			rewardReceiverKey: paymentAddress.KeySet.PaymentAddress,
+		},
+		map[string]bool{
+			key: true,
+		},
+		map[string]common.Hash{
+			key: *tempHash,
 		},
 	)
 
@@ -3058,7 +3120,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			want2:   [][]string{},
 			wantErr: false,
 		},
-
 		{
 			name: "Unstake And Assign 3",
 			fields: fields{
@@ -3076,18 +3137,18 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						0: []incognitokey.CommitteePublicKey{},
 					},
 					shardCommonPool: []incognitokey.CommitteePublicKey{
-						*incKey5,
 						*incKey6,
+						*incKey0,
 					},
 					mu: finalMu,
 					autoStake: map[string]bool{
-						key5: true,
+						key0: true,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
-						key5: paymentAddress0.KeySet.PaymentAddress,
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
-						key5: *hash,
+						key0: *hash,
 					},
 					numberOfAssignedCandidates: 1,
 				},
@@ -3105,22 +3166,14 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					},
 					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{
-							*incKey5,
+							*incKey6,
 						},
 					},
-					shardCommonPool: []incognitokey.CommitteePublicKey{
-						*incKey6,
-					},
-					mu: unCommitteedMu,
-					autoStake: map[string]bool{
-						key5: false,
-					},
-					rewardReceiver: map[string]privacy.PaymentAddress{
-						key5: paymentAddress0.KeySet.PaymentAddress,
-					},
-					stakingTx: map[string]common.Hash{
-						key5: *hash,
-					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              unCommitteedMu,
+					autoStake:       map[string]bool{},
+					rewardReceiver:  map[string]privacy.PaymentAddress{},
+					stakingTx:       map[string]common.Hash{},
 				},
 			},
 			args: args{
@@ -3135,19 +3188,26 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						},
 						[]string{
 							instruction.UNSTAKE_ACTION,
-							key5,
+							key0,
 						},
 					},
 					ConsensusStateDB: sDB,
 					ActiveShards:     1,
 				},
 			},
-			want:    &BeaconCommitteeStateHash{},
-			want1:   committeeChangeUnstakeAssign,
-			want2:   [][]string{},
+			want:  &BeaconCommitteeStateHash{},
+			want1: committeeChangeUnstakeAssign3,
+			want2: [][]string{
+				[]string{
+					instruction.RETURN_ACTION,
+					key0,
+					"0",
+					hash.String(),
+					"100",
+				},
+			},
 			wantErr: false,
 		},
-
 		{
 			name: "Unstake And Assign 4",
 			fields: fields{
@@ -3173,7 +3233,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: true,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
-						key0: paymentAddress0.KeySet.PaymentAddress,
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
 						key0: *hash,
@@ -3223,8 +3283,196 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					ActiveShards:     1,
 				},
 			},
+			want:  &BeaconCommitteeStateHash{},
+			want1: committeeChangeUnstakeAssign2,
+			want2: [][]string{
+				[]string{
+					instruction.RETURN_ACTION,
+					key0,
+					"0",
+					hash.String(),
+					"100",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Unstake And Swap 1",
+			fields: fields{
+				beaconHash:   *hash,
+				version:      SLASHING_VERSION,
+				beaconHeight: 10,
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey0,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              finalMu,
+					autoStake: map[string]bool{
+						key0: true,
+						key:  true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+						key:  *tempHash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					mu: unCommitteedMu,
+				},
+			},
+			fieldsAfterProcess: fields{
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey2, *incKey3, *incKey4, *incKey0,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              unCommitteedMu,
+					autoStake: map[string]bool{
+						key0: false,
+						key:  true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+						key:  *tempHash,
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.UNSTAKE_ACTION,
+							key0,
+						},
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key0,
+							key,
+							"0",
+							"0",
+						},
+					},
+					ConsensusStateDB: sDB,
+					ActiveShards:     1,
+				},
+			},
 			want:    &BeaconCommitteeStateHash{},
-			want1:   committeeChangeUnstakeAssign2,
+			want1:   committeeChangeUnstakeSwap,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Unstake And Swap 2",
+			fields: fields{
+				beaconHash:   *hash,
+				version:      SLASHING_VERSION,
+				beaconHeight: 10,
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey0,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              finalMu,
+					autoStake: map[string]bool{
+						key0: true,
+						key:  true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+						key:  *tempHash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					mu: unCommitteedMu,
+				},
+			},
+			fieldsAfterProcess: fields{
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey2, *incKey3, *incKey4, *incKey0,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              unCommitteedMu,
+					autoStake: map[string]bool{
+						key0: false,
+						key:  true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+						key:  *tempHash,
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key0,
+							key,
+							"0",
+							"0",
+						},
+						[]string{
+							instruction.UNSTAKE_ACTION,
+							key0,
+						},
+					},
+					ConsensusStateDB: sDB,
+					ActiveShards:     1,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeUnstakeSwap,
 			want2:   [][]string{},
 			wantErr: false,
 		},

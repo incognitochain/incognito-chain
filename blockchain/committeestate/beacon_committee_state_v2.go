@@ -790,15 +790,13 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	// oldstate -> only read
 	newCommitteeChange := committeeChange
 	indexNextEpochShardCandidate := make(map[string]int)
-	for i, v := range oldState.shardCommonPool {
+	for i, v := range b.shardCommonPool {
 		key, err := v.ToBase58()
 		if err != nil {
 			return newCommitteeChange, returnStakingInstructions, err
 		}
 		indexNextEpochShardCandidate[key] = i
 	}
-	//careful with 2 variables: env.unassignedCommonPool, env.allSubstituteCommittees
-	//may be they will be change value when sync data
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.unassignedCommonPool) == -1 {
 			if common.IndexOfStr(publicKey, env.allSubstituteCommittees) != -1 {
