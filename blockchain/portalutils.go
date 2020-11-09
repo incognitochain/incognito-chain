@@ -4063,12 +4063,12 @@ func addCustodianToPool(
 			newCustodian.SetTotalCollateral(existCustodian.GetTotalCollateral())
 			newCustodian.SetFreeCollateral(existCustodian.GetFreeCollateral())
 
-			tmpTotalTokenCollaterals := existCustodian.GetTotalTokenCollaterals()
+			tmpTotalTokenCollaterals := cloneMap(existCustodian.GetTotalTokenCollaterals())
 			tmpTotalTokenCollaterals[collateralTokenID] += depositAmount
-			tmpFreeTokenCollaterals := existCustodian.GetFreeTokenCollaterals()
+			tmpFreeTokenCollaterals := cloneMap(existCustodian.GetFreeTokenCollaterals())
 			tmpFreeTokenCollaterals[collateralTokenID] += depositAmount
 			newCustodian.SetTotalTokenCollaterals(tmpTotalTokenCollaterals)
-			newCustodian.SetFreeTokenCollaterals(existCustodian.GetFreeTokenCollaterals())
+			newCustodian.SetFreeTokenCollaterals(tmpFreeTokenCollaterals)
 		}
 	}
 
@@ -4490,4 +4490,79 @@ func UpdateCustodianAfterTopupWaitingPorting(
 		break
 	}
 	return nil
+}
+
+
+func cloneMap(m map[string]uint64) map[string]uint64 {
+	if m == nil {
+		return nil
+	}
+	newMap := make(map[string]uint64, len(m))
+	for k, v := range m {
+		newMap[k] = v
+	}
+	return newMap
+}
+
+func cloneMapOfMap(m map[string]map[string]uint64) map[string]map[string]uint64 {
+	if m == nil {
+		return nil
+	}
+	newMap := make(map[string]map[string]uint64, len(m))
+	for k, v := range m {
+		newMap[k] = cloneMap(v)
+	}
+	return newMap
+}
+
+func cloneCustodians(custodians map[string]*statedb.CustodianState) map[string]*statedb.CustodianState {
+	newCustodians := make(map[string]*statedb.CustodianState, len(custodians))
+	for key, cus := range custodians {
+		newCustodians[key] = statedb.NewCustodianStateWithValue(
+			cus.GetIncognitoAddress(),
+			cus.GetTotalCollateral(),
+			cus.GetFreeCollateral(),
+			cloneMap(cus.GetHoldingPublicTokens()),
+			cloneMap(cus.GetLockedAmountCollateral()),
+			cus.GetRemoteAddresses(),
+			cloneMap(cus.GetRewardAmount()),
+			cloneMap(cus.GetTotalTokenCollaterals()),
+			cloneMap(cus.GetFreeTokenCollaterals()),
+			cloneMapOfMap(cus.GetLockedTokenCollaterals()),
+		)
+	}
+	return newCustodians
+}
+
+func cloneMatchingPortingCustodians(custodians []*statedb.MatchingPortingCustodianDetail) []*statedb.MatchingPortingCustodianDetail {
+	newMatchingCustodians := make([]*statedb.MatchingPortingCustodianDetail, len(custodians))
+	for i, cus := range custodians {
+		newMatchingCustodians[i] = &statedb.MatchingPortingCustodianDetail{
+			IncAddress:             cus.IncAddress,
+			RemoteAddress:          cus.RemoteAddress,
+			Amount:                 cus.Amount,
+			LockedAmountCollateral: cus.LockedAmountCollateral,
+			LockedTokenCollaterals: cus.LockedTokenCollaterals,
+		}
+	}
+	return newMatchingCustodians
+}
+
+func cloneWPortingRequests(wPortingReqs map[string]*statedb.WaitingPortingRequest) map[string]*statedb.WaitingPortingRequest {
+	newReqs := make(map[string]*statedb.WaitingPortingRequest, len(wPortingReqs))
+	for key, req := range wPortingReqs {
+		newReqs[key] = statedb.NewWaitingPortingRequestWithValue(
+			req.UniquePortingID(),
+			req.TxReqID(),
+			req.TokenID(),
+			req.PorterAddress(),
+			req.Amount(),
+			cloneMatchingPortingCustodians(req.Custodians()),
+			req.PortingFee(),
+			req.BeaconHeight(),
+			req.ShardHeight(),
+			req.ShardID(),
+		)
+	}
+	return newReqs
 }

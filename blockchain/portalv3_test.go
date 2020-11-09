@@ -66,7 +66,7 @@ var supportedCollaterals = []PortalCollateral{
 	{"0000000000000000000000000000000000000000", 9}, // eth
 	{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6}, // usdt, kovan testnet
 	{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6}, // usdc, kovan testnet
-	{"4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", 6}, // dai, kovan testnet
+	{"4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", 18}, // dai, kovan testnet
 }
 
 func (s *PortalTestSuiteV3) SetupTest() {
@@ -227,98 +227,6 @@ func (s *PortalTestSuiteV3) TestExchangeRate() {
 	//convertAmount = convertAmount * 120 / 100
 	fmt.Println("Result from TestExchangeRate: ", convertAmount)
 }
-
-func cloneMap(m map[string]uint64) map[string]uint64 {
-	if m == nil {
-		return nil
-	}
-	newMap := make(map[string]uint64, len(m))
-	for k, v := range m {
-		newMap[k] = v
-	}
-	return newMap
-}
-
-func cloneMapOfMap(m map[string]map[string]uint64) map[string]map[string]uint64 {
-	if m == nil {
-		return nil
-	}
-	newMap := make(map[string]map[string]uint64, len(m))
-	for k, v := range m {
-		newMap[k] = cloneMap(v)
-	}
-	return newMap
-}
-
-func cloneCustodians(custodians map[string]*statedb.CustodianState) map[string]*statedb.CustodianState {
-	newCustodians := make(map[string]*statedb.CustodianState, len(custodians))
-	for key, cus := range custodians {
-		newCustodians[key] = statedb.NewCustodianStateWithValue(
-			cus.GetIncognitoAddress(),
-			cus.GetTotalCollateral(),
-			cus.GetFreeCollateral(),
-			cloneMap(cus.GetHoldingPublicTokens()),
-			cloneMap(cus.GetLockedAmountCollateral()),
-			cus.GetRemoteAddresses(),
-			cloneMap(cus.GetRewardAmount()),
-			cloneMap(cus.GetTotalTokenCollaterals()),
-			cloneMap(cus.GetFreeTokenCollaterals()),
-			cloneMapOfMap(cus.GetLockedTokenCollaterals()),
-		)
-	}
-	return newCustodians
-}
-
-func cloneMatchingPortingCustodians(custodians []*statedb.MatchingPortingCustodianDetail) []*statedb.MatchingPortingCustodianDetail {
-	newMatchingCustodians := make([]*statedb.MatchingPortingCustodianDetail, len(custodians))
-	for i, cus := range custodians {
-		newMatchingCustodians[i] = &statedb.MatchingPortingCustodianDetail{
-			IncAddress:             cus.IncAddress,
-			RemoteAddress:          cus.RemoteAddress,
-			Amount:                 cus.Amount,
-			LockedAmountCollateral: cus.LockedAmountCollateral,
-			LockedTokenCollaterals: cus.LockedTokenCollaterals,
-		}
-	}
-	return newMatchingCustodians
-}
-
-func cloneWPortingRequests(wPortingReqs map[string]*statedb.WaitingPortingRequest) map[string]*statedb.WaitingPortingRequest {
-	newReqs := make(map[string]*statedb.WaitingPortingRequest, len(wPortingReqs))
-	for key, req := range wPortingReqs {
-		newReqs[key] = statedb.NewWaitingPortingRequestWithValue(
-			req.UniquePortingID(),
-			req.TxReqID(),
-			req.TokenID(),
-			req.PorterAddress(),
-			req.Amount(),
-			cloneMatchingPortingCustodians(req.Custodians()),
-			req.PortingFee(),
-			req.BeaconHeight(),
-			req.ShardHeight(),
-			req.ShardID(),
-		)
-	}
-	return newReqs
-}
-
-//func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[string]*statedb.RedeemRequest {
-//	newReqs := make(map[string]*statedb.RedeemRequest, len(redeemReqs))
-//	for key, req := range redeemReqs {
-//		newReqs[key] = statedb.NewRedeemRequestWithValue(
-//			req.GetUniqueRedeemID(),
-//			req.GetTokenID(),
-//			req.GetRedeemerAddress(),
-//			req.GetRedeemerRemoteAddress(),
-//			req.GetRedeemAmount(),
-//			req.GetCustodians(),
-//			req.GetRedeemFee(),
-//			req.GetBeaconHeight(),
-//			req.GetTxReqID(),
-//		)
-//	}
-//	return newReqs
-//}
 
 // buildBNBProofFromTxs build a bnb proof for unit tests
 func buildBNBProofFromTxs(blockHeight int64, txs *types.Txs, indexTx int) *bnb.BNBProof {
@@ -1134,6 +1042,7 @@ type TestCaseCustodianDepositV3 struct {
 type ExpectedResultCustodianDepositV3 struct {
 	custodianPool  map[string]*statedb.CustodianState
 	numBeaconInsts uint
+	statusInsts []string
 }
 
 func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepositV3, *ExpectedResultCustodianDepositV3) {
@@ -1261,6 +1170,13 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 			custodianKey2: custodian2,
 		},
 		numBeaconInsts: 5,
+		statusInsts : []string{
+			common.PortalCustodianDepositV3AcceptedChainStatus,
+			common.PortalCustodianDepositV3AcceptedChainStatus,
+			common.PortalCustodianDepositV3RejectedChainStatus,
+			common.PortalCustodianDepositV3AcceptedChainStatus,
+			common.PortalCustodianDepositV3RejectedChainStatus,
+		},
 	}
 
 	return testcases, expectedRes
@@ -1284,9 +1200,8 @@ func buildCustodianDepositActionsV3FromTcs(tcs []TestCaseCustodianDepositV3, sha
 	return insts
 }
 
-//todo:
 func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
-	fmt.Println("Running TestCustodianDepositCollateral - beacon height 1000 ...")
+	fmt.Println("Running TestCustodianDepositCollateralV3 - beacon height 1000 ...")
 	bc := s.blockChain
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
@@ -1306,6 +1221,10 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
 	// process new instructions
 	err = processPortalInstructions(
 		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+
+	for i, inst := range newInsts {
+		s.Equal(expectedRes.statusInsts[i], inst[2])
+	}
 
 	// check results
 	s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)))
