@@ -73,11 +73,9 @@ func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainS
 // notified with the server once it is setup so it can gracefully stop it when
 // requested from the service control manager.
 func mainMaster(serverChan chan<- *Server) error {
-	//init key & param
-	blockchain.ReadKey()
-	blockchain.SetupParam()
 
 	tempConfig, _, err := loadConfig()
+
 	if err != nil {
 		log.Println("Load config error")
 		log.Println(err)

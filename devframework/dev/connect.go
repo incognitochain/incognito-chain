@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	_ = devframework.NewIncognitoNode("devnode", 0, nil, "51.91.72.45:9330", true)
+	_ = devframework.NewIncognitoNode("devnode", devframework.MODE_MAINNET, nil, "51.91.72.45:9330", true)
 
 	// sim.OnReceive(F.MSG_BLOCK_BEACON, func(msg interface{}) {
 	// 	//process 1st listenner

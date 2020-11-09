@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics"
@@ -22,12 +21,13 @@ const (
 	LowerBoundPercentForIncDAO    = 3
 	UpperBoundPercentForIncDAO    = 10
 	TestRandom                    = true
-	NumberOfFixedBlockValidators  = 4
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
 	SpareTime                     = 1000             // in mili-second
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
+
+var NumberOfFixedBlockValidators = 4
 
 // burning addresses
 const (
@@ -200,19 +200,9 @@ var IsTestNet2 = false
 
 func ReadKey(v1, v2 []byte) {
 
-	var keyData []byte
-	var keyDataV2 []byte
+	var keyData []byte = v1
+	var keyDataV2 []byte = v2
 	var err error
-
-	keyData, err = ioutil.ReadFile("keylist.json")
-	if err != nil {
-		panic(err)
-	}
-
-	keyDataV2, err = ioutil.ReadFile("keylist-v2.json")
-	if err != nil {
-		panic(err)
-	}
 
 	type AccountKey struct {
 		PrivateKey     string

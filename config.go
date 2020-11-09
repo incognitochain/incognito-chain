@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"io"
 	"math/rand"
 	"net"
@@ -448,10 +449,16 @@ func loadConfig() (*config, []string, error) {
 		numNets++
 		if cfg.TestNetVersion == "2" {
 			activeNetParams = &testNet2Params
+			blockchain.ReadKey(blockchain.Testnet2Keylist, blockchain.Testnet2v2Keylist)
 		} else {
 			activeNetParams = &testNetParams
+			blockchain.ReadKey(blockchain.TestnetKeylist, blockchain.Testnetv2Keylist)
 		}
+	} else {
+		blockchain.ReadKey(blockchain.MainnetKeylist, blockchain.Mainnetv2Keylist)
 	}
+	//init key & param
+	blockchain.SetupParam()
 
 	if numNets > 1 {
 		Logger.log.Error("The testnet, regtest, segnet, and simnet component can't be used together -- choose one of the four")
