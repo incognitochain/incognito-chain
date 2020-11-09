@@ -196,8 +196,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	err2 = newBestState.storeCommitteeStateWithPreviousState(committeeChange)
 	if err2 != nil {
-		// Logger.log.Info("[swap-v2] err2:", err2)
-		// panic(100)
 		return err2
 	}
 
@@ -483,10 +481,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		tempInstruction = append(tempInstruction, incurredInstructions...)
 	}
 
-	tempInstructionArr := []string{}
-	for _, strs := range tempInstruction {
-		tempInstructionArr = append(tempInstructionArr, strs...)
-	}
+	tempInstructionArr := curView.filterCommitteeInstructions(tempInstruction)
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionHashError, fmt.Errorf("Fail to generate hash for instruction %+v", tempInstructionArr))

@@ -133,6 +133,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	}
 
 	shardInstruction.compose()
+
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstruction,
@@ -175,11 +176,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		Logger.log.Error(err)
 		return nil, NewBlockChainError(GenerateShardStateError, err)
 	}
-	// Instruction Hash
-	tempInstructionArr := []string{}
-	for _, strs := range tempInstruction {
-		tempInstructionArr = append(tempInstructionArr, strs...)
-	}
+
+	tempInstructionArr := beaconBestState.filterCommitteeInstructions(tempInstruction)
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		Logger.log.Error(err)
