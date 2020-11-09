@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -760,35 +761,45 @@ func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*sta
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
 }
 
+// TODO: @tin remove beaconBestState Receiver and add to composeInstruction flow, filter after get duplicateStaking list, avoid iterate all instruction
 func (beaconBestState *BeaconBestState) filterCommitteeInstructions(instructions [][]string) []string {
 	res := []string{}
-	returnStakingInstructions := map[byte][]instruction.ReturnStakeInstruction{}
+	allReturnStakingInstructions := map[byte][]instruction.ReturnStakeInstruction{}
 
 	// Instruction Hash
 	for _, str := range instructions {
 		returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(str)
 		if err == nil {
-			returnStakingInstructions[returnStakingIns.ShardID] = append(returnStakingInstructions[returnStakingIns.ShardID], *returnStakingIns)
+			allReturnStakingInstructions[returnStakingIns.ShardID] = append(allReturnStakingInstructions[returnStakingIns.ShardID], *returnStakingIns)
 		} else {
 			res = append(res, str...)
 		}
 	}
 
-	for i, v := range returnStakingInstructions {
-		if len(v) != 1 {
+	var keys []int
+	for shardID, _ := range allReturnStakingInstructions {
+		keys = append(keys, int(shardID))
+	}
+	sort.Ints(keys)
+
+	for _, i := range keys {
+		shardID := byte(i)
+		returnStakeInstructions := allReturnStakingInstructions[shardID]
+		if len(returnStakeInstructions) > 1 {
 			publicKeys := []string{}
 			stakingTxs := []string{}
 			percentReturns := []uint{}
-			for _, value := range v {
-				publicKeys = append(publicKeys, value.PublicKeys...)
-				stakingTxs = append(stakingTxs, value.StakingTXIDs...)
-				percentReturns = append(percentReturns, value.PercentReturns...)
+			for _, returnStakeInstruction := range returnStakeInstructions {
+				publicKeys = append(publicKeys, returnStakeInstruction.PublicKeys...)
+				stakingTxs = append(stakingTxs, returnStakeInstruction.StakingTXIDs...)
+				percentReturns = append(percentReturns, returnStakeInstruction.PercentReturns...)
 			}
-			returnStakingInstruction := instruction.NewReturnStakeInsWithValue(publicKeys, i, stakingTxs)
+			returnStakingInstruction := instruction.NewReturnStakeInsWithValue(publicKeys, shardID, stakingTxs)
 			res = append(res, returnStakingInstruction.ToString()...)
 		} else {
-			res = append(res, v[0].ToString()...)
+			res = append(res, returnStakeInstructions[0].ToString()...)
 		}
 	}
+
 	return res
 }

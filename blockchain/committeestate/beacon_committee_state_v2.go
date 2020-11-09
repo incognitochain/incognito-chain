@@ -362,6 +362,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	newState.mu.Lock()
 	committeeChange := NewCommitteeChange()
 	// snapshot shard common pool in beacon random time
+	// TODO: @tin add testcase at random time (env.IsBeaconRandomTime == true) with Unstake, Stopautostake
+	// TODO: @tin Unstake + Swap Key In
 	if env.IsBeaconRandomTime {
 		newState.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
 			oldState.shardCommonPool,
@@ -393,7 +395,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange, env, oldState)
+			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -404,7 +406,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			}
 			committeeChange = newState.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldState)
-			Logger.log.Infof("Block %+v, Committee Change %+v", env.BeaconHeight, committeeChange.ShardSubstituteAdded)
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {

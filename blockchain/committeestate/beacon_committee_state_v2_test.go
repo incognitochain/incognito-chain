@@ -2771,7 +2771,93 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		wantErr            bool
 	}{
 		{
-			name: "Stake And Assign 1",
+			name: "Stake Then Assign",
+			fields: fields{
+				beaconHash:   *hash,
+				version:      SLASHING_VERSION,
+				beaconHeight: 10,
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{
+						*incKey5,
+					},
+					autoStake:                  map[string]bool{},
+					rewardReceiver:             map[string]privacy.PaymentAddress{},
+					stakingTx:                  map[string]common.Hash{},
+					mu:                         finalMu,
+					numberOfAssignedCandidates: 1,
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					mu: unCommitteedMu,
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconHash:                  *hash,
+				version:                     SLASHING_VERSION,
+				beaconHeight:                10,
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey5,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{
+						*incKey0,
+					},
+					autoStake: map[string]bool{
+						key0: false,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+					},
+					mu: unCommitteedMu,
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.STAKE_ACTION,
+							key0,
+							instruction.SHARD_INST,
+							hash.String(),
+							paymentAddreessKey0,
+							"false",
+						},
+						[]string{
+							instruction.RANDOM_ACTION,
+							"3157440766",
+							"637918",
+							"3157440766",
+							"3157440766",
+						},
+					},
+					ConsensusStateDB: sDB,
+					ActiveShards:     1,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeStakeAndAssginResult,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Assign Then Stake",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
@@ -2832,92 +2918,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 				env: &BeaconCommitteeStateEnvironment{
 					BeaconInstructions: [][]string{
 						[]string{
-							instruction.STAKE_ACTION,
-							key0,
-							instruction.SHARD_INST,
-							hash.String(),
-							paymentAddreessKey0,
-							"true",
-						},
-						[]string{
-							instruction.RANDOM_ACTION,
-							"3157440766",
-							"637918",
-							"3157440766",
-							"3157440766",
-						},
-					},
-					ConsensusStateDB: sDB,
-					ActiveShards:     1,
-				},
-			},
-			want:    &BeaconCommitteeStateHash{},
-			want1:   committeeChangeStakeAndAssginResult,
-			want2:   [][]string{},
-			wantErr: false,
-		},
-		{
-			name: "Stake And Assign 2",
-			fields: fields{
-				beaconHash:   *hash,
-				version:      SLASHING_VERSION,
-				beaconHeight: 10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey, *incKey2, *incKey3, *incKey4,
-						},
-					},
-					shardCommonPool: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-					autoStake:                  map[string]bool{},
-					rewardReceiver:             map[string]privacy.PaymentAddress{},
-					stakingTx:                  map[string]common.Hash{},
-					mu:                         finalMu,
-					numberOfAssignedCandidates: 1,
-				},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					mu: unCommitteedMu,
-				},
-			},
-			fieldsAfterProcess: fields{
-				beaconHash:                  *hash,
-				version:                     SLASHING_VERSION,
-				beaconHeight:                10,
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
-				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
-					beaconCommittee: []incognitokey.CommitteePublicKey{},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey, *incKey2, *incKey3, *incKey4,
-						},
-					},
-					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey5,
-						},
-					},
-					shardCommonPool: []incognitokey.CommitteePublicKey{
-						*incKey0,
-					},
-					autoStake: map[string]bool{
-						key0: true,
-					},
-					rewardReceiver: map[string]privacy.PaymentAddress{
-						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-					},
-					stakingTx: map[string]common.Hash{
-						key0: *hash,
-					},
-					mu: unCommitteedMu,
-				},
-			},
-			args: args{
-				env: &BeaconCommitteeStateEnvironment{
-					BeaconInstructions: [][]string{
-						[]string{
 							instruction.RANDOM_ACTION,
 							"3157440766",
 							"637918",
@@ -2943,7 +2943,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			wantErr: false,
 		},
 		{
-			name: "Unstake And Assign 1",
+			name: "Unstake And Assign 1, Fail to Unstake because Key in Current Epoch Candidate, only turn off auto stake flag",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
@@ -2965,12 +2965,15 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					mu: finalMu,
 					autoStake: map[string]bool{
 						key5: true,
+						key6: true,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						key5: paymentAddress0.KeySet.PaymentAddress,
+						key6: paymentAddress0.KeySet.PaymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
 						key5: *hash,
+						key6: *hash,
 					},
 					numberOfAssignedCandidates: 1,
 				},
@@ -2997,12 +3000,15 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					mu: unCommitteedMu,
 					autoStake: map[string]bool{
 						key5: false,
+						key6: true,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						key5: paymentAddress0.KeySet.PaymentAddress,
+						key6: paymentAddress0.KeySet.PaymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
 						key5: *hash,
+						key6: *hash,
 					},
 				},
 			},
@@ -3031,7 +3037,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			wantErr: false,
 		},
 		{
-			name: "Unstake And Assign 2",
+			name: "Assign Then Unstake 2, Fail to Unstake because Key in Current Epoch Candidate, only turn off auto stake flag",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
@@ -3053,12 +3059,15 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					mu: finalMu,
 					autoStake: map[string]bool{
 						key5: true,
+						key6: true,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						key5: paymentAddress0.KeySet.PaymentAddress,
+						key6: paymentAddress0.KeySet.PaymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
 						key5: *hash,
+						key6: *hash,
 					},
 					numberOfAssignedCandidates: 1,
 				},
@@ -3085,12 +3094,15 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					mu: unCommitteedMu,
 					autoStake: map[string]bool{
 						key5: false,
+						key6: true,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						key5: paymentAddress0.KeySet.PaymentAddress,
+						key6: paymentAddress0.KeySet.PaymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
 						key5: *hash,
+						key6: *hash,
 					},
 				},
 			},
@@ -3119,7 +3131,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			wantErr: false,
 		},
 		{
-			name: "Unstake And Assign 3",
+			name: "Unstake And Assign 3, Success to Unstake because Key in Next Epoch Candidate",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
@@ -3207,7 +3219,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			wantErr: false,
 		},
 		{
-			name: "Unstake And Assign 4",
+			name: "Unstake And Assign 4, Success to Unstake because Key in Next Epoch Candidate",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
@@ -3295,7 +3307,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			wantErr: false,
 		},
 		{
-			name: "Unstake And Swap 1",
+			name: "Unstake Then Swap 1, Failed to Unstake Swap Out key, Only turn off auto stake",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
@@ -3316,7 +3328,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					mu:              finalMu,
 					autoStake: map[string]bool{
 						key0: true,
-						key:  true,
+						key:  false,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
@@ -3348,7 +3360,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					mu:              unCommitteedMu,
 					autoStake: map[string]bool{
 						key0: false,
-						key:  true,
+						key:  false,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
@@ -3385,7 +3397,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			wantErr: false,
 		},
 		{
-			name: "Unstake And Swap 2",
+			name: "Swap Then Unstake 2, Failed to Unstake Swap Out key, Only turn off auto stake",
 			fields: fields{
 				beaconHash:   *hash,
 				version:      SLASHING_VERSION,
