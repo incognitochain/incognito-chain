@@ -3,6 +3,7 @@ package testsuite
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/devframework/account"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -66,11 +67,11 @@ func Test_SendTX(t *testing.T) {
 		Insert: func(chainID int, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
 			doInsert(block)
 			if chainID == 0 {
-				bl1, _ := sim.RPC.API_GetBalance(sim.IcoAccount.PrivateKey)
+				bl1, _ := sim.RPC.API_GetBalance(sim.IcoAccount)
 				fmt.Println(bl1)
-				bl2, _ := sim.RPC.API_GetBalance(acc1.PrivateKey)
+				bl2, _ := sim.RPC.API_GetBalance(acc1)
 				fmt.Println(bl2)
-				bl3, _ := sim.RPC.API_GetBalance(acc2.PrivateKey)
+				bl3, _ := sim.RPC.API_GetBalance(acc2)
 				fmt.Println(bl3)
 				fmt.Printf("%+v", block.(*blockchain.ShardBlock).Body)
 
@@ -96,7 +97,7 @@ func Test_SendTX(t *testing.T) {
 		}).NextRound()
 	}
 
-	balance, _ := sim.RPC.API_GetBalance(acc1.PrivateKey)
+	balance, _ := sim.RPC.API_GetBalance(acc1)
 	fmt.Printf("%+v", balance)
 
 }
@@ -108,16 +109,15 @@ func Test_StakeFlow1(t *testing.T) {
 	})
 	sim.GenerateBlock().NextRound()
 	miner1 := sim.NewAccountFromShard(0)
-	minerCm1, _ := F.BuildCommitteePubkey(miner1.PrivateKey, sim.IcoAccount.PaymentAddress)
+	//minerCm1, _ := account.BuildCommitteePubkey(miner1.PrivateKey, sim.IcoAccount.PaymentAddress)
 	stake1 := rpcclient.StakingTxParam{
-		Name:         "miner1",
-		CommitteeKey: minerCm1,
-		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
-		StakerPrk:    sim.IcoAccount.PrivateKey,
-		MinerPrk:     miner1.PrivateKey,
-		RewardAddr:   miner1.PaymentAddress,
-		StakeShard:   true,
-		AutoRestake:  true,
+		Name:        "miner1",
+		BurnAddr:    sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
+		StakerPrk:   sim.IcoAccount.PrivateKey,
+		MinerPrk:    miner1.PrivateKey,
+		RewardAddr:  miner1.PaymentAddress,
+		StakeShard:  true,
+		AutoRestake: true,
 	}
 
 	stakeList := []rpcclient.StakingTxParam{stake1}
@@ -216,7 +216,7 @@ func Test_StakeFlow1(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 
 	miner2 := sim.NewAccountFromShard(0)
-	minerCm2, _ := F.BuildCommitteePubkey(miner2.PrivateKey, sim.IcoAccount.PaymentAddress)
+	minerCm2, _ := account.BuildCommitteePubkey(miner2.PrivateKey, sim.IcoAccount.PaymentAddress)
 	stake2 := rpcclient.StakingTxParam{
 		Name:         "miner2",
 		CommitteeKey: minerCm2,
@@ -307,7 +307,7 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 
-	bl0, _ := sim.RPC.API_GetBalance(sim.IcoAccount.PrivateKey)
+	bl0, _ := sim.RPC.API_GetBalance(sim.IcoAccount)
 	fmt.Println(bl0)
 
 	burnAddr := sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
@@ -399,10 +399,10 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 	fmt.Println("------------------------------------------------------------")
-	bl, _ := sim.RPC.API_GetBalance(sim.IcoAccount.PrivateKey)
+	bl, _ := sim.RPC.API_GetBalance(sim.IcoAccount)
 	fmt.Println("ICO", bl)
 	fmt.Println("------------------------------------------------------------")
-	bl1, _ := sim.RPC.API_GetBalance(acc1.PrivateKey)
+	bl1, _ := sim.RPC.API_GetBalance(acc1)
 	fmt.Println("ACC1", bl1)
 
 	fmt.Println("------------------------------------------------------------")

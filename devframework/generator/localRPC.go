@@ -20,9 +20,9 @@ type API struct {
 	Result string  `json:"result"`
 }
 
-const APITEMPLATE = `func (r *LocalRPCClient) RPC_%API_NAME%(%API_PARAMS%) (%API_RESULT%) {
+const APITEMPLATE = `func (r *LocalRPCClient) %API_NAME%(%API_PARAMS%) (%API_RESULT%) {
 	httpServer := r.rpcServer.HttpServer
-	c := rpcserver.%HANDLER%["%API_NAME%"]
+	c := rpcserver.%HANDLER%["%API_NAME_LOWERCASE%"]
 	resI, rpcERR := c(httpServer, []interface{}{%API_PARAM_REQ%}, nil)
 	if rpcERR != nil {
 		%API_ERR%
@@ -50,7 +50,7 @@ type LocalRPCClient struct {
 }`)
 	//
 	for _, api := range apis {
-		regex := regexp.MustCompile(`([^ ]+)\((.+)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
+		regex := regexp.MustCompile(`([^ ]+)\((.*)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
 		res := regex.FindAllStringSubmatch(api, -1)
 		if strings.Trim(api, " ") == "" {
 			continue
@@ -58,10 +58,14 @@ type LocalRPCClient struct {
 		if len(res) <= 0 {
 			continue
 		}
-		apiName := strings.Trim(strings.ToLower(res[0][1]), "\t ")
+		apiName := strings.Trim(res[0][1], "\t ")
 		apiParams := []string{}
+
 		for _, param := range strings.Split(res[0][2], ",") {
 			trimParam := strings.Trim(param, " ")
+			if trimParam == "" {
+				continue
+			}
 			regex := regexp.MustCompile(`(.+) (.+)`)
 			paramStruct := regex.FindAllStringSubmatch(trimParam, -1)
 			apiParams = append(apiParams, paramStruct[0][1])
@@ -72,8 +76,8 @@ type LocalRPCClient struct {
 		}
 
 		rpchandler := "HttpHandler"
-		if _, ok := rpcserver.HttpHandler[apiName]; !ok {
-			if _, ok := rpcserver.LimitedHttpHandler[apiName]; !ok {
+		if _, ok := rpcserver.HttpHandler[strings.ToLower(apiName)]; !ok {
+			if _, ok := rpcserver.LimitedHttpHandler[strings.ToLower(apiName)]; !ok {
 				panic("no method name in rpc request" + apiName)
 			} else {
 				rpchandler = "LimitedHttpHandler"
@@ -90,6 +94,7 @@ type LocalRPCClient struct {
 		}
 		//build function
 		fgen := strings.Replace(APITEMPLATE, "%API_NAME%", apiName, -1)
+		fgen = strings.Replace(fgen, "%API_NAME_LOWERCASE%", strings.ToLower(apiName), -1)
 		fgen = strings.Replace(fgen, "%API_PARAMS%", res[0][2], -1)
 		fgen = strings.Replace(fgen, "%API_RESULT%", resstr, -1)
 		fgen = strings.Replace(fgen, "%API_PARAM_REQ%", strings.Join(apiParams, ","), -1)

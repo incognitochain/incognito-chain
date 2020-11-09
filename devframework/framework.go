@@ -1,6 +1,7 @@
 package devframework
 
 import (
+	"github.com/incognitochain/incognito-chain/devframework/account"
 	"os"
 	"time"
 
@@ -19,7 +20,7 @@ func NewStandaloneSimulation(name string, config Config) *SimulationEngine {
 		timer:             NewTimeEngine(),
 		accountSeed:       "master_account",
 		accountGenHistory: make(map[int]int),
-		committeeAccount:  make(map[int][]Account),
+		committeeAccount:  make(map[int][]account.Account),
 		listennerRegister: make(map[int][]func(msg interface{})),
 	}
 	sim.init()

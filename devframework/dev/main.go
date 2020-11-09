@@ -2,96 +2,184 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	F "github.com/incognitochain/incognito-chain/devframework"
-	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/devframework/account"
+	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
 )
 
 func main() {
-	sim := F.NewStandaloneSimulation("sim1", F.Config{
-		ShardNumber: 2,
+	//F.DisableLog(true)
+	sim := F.NewStandaloneSimulation("sim2", F.Config{
+		ShardNumber: 1,
 	})
 	sim.GenerateBlock().NextRound()
-	acc1 := sim.NewAccountFromShard(1)
-	acc2 := sim.NewAccountFromShard(0)
-	_, err := sim.API_CreateTransaction(sim.IcoAccount, acc1, 1000, acc2, 3000)
+	miner1 := sim.NewAccountFromShard(0)
+	minerCm1, _ := account.BuildCommitteePubkey(miner1.PrivateKey, sim.IcoAccount.PaymentAddress)
+	stake1 := rpcclient.StakingTxParam{
+		Name:         "miner1",
+		CommitteeKey: minerCm1,
+		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
+		StakerPrk:    sim.IcoAccount.PrivateKey,
+		MinerPrk:     miner1.PrivateKey,
+		RewardAddr:   miner1.PaymentAddress,
+		StakeShard:   true,
+		AutoRestake:  true,
+	}
+
+	stakeList := []rpcclient.StakingTxParam{stake1}
+	res, err := sim.RPC.API_CreateAndSendStakingTransaction(stake1)
+
+	sim.GenerateBlock().NextRound()
+	sim.GenerateBlock().NextRound()
+
+	txDetail, _ := sim.RPC.API_GetTransactionHash(res.TxID)
+	fmt.Printf("%+v", txDetail)
+	sim.Pause()
 	if err != nil {
 		panic(err)
 	}
-	sim.GenerateBlock(F.Hook{
-		//Create: func(chainID int, doCreate func(time time.Time) (common.BlockInterface, error)) {
-		//
-		//	doCreate(time.Now())
-		//},
-		Validation: func(chainID int, block common.BlockInterface, doValidation func(common.BlockInterface) error) {
-			fmt.Println("PreValidation block", 0)
-			if chainID == 0 && block.GetHeight() == 3 {
-				newShardBlock := block.(*blockchain.ShardBlock)
-				newShardBlock.Body.Transactions = append(newShardBlock.Body.Transactions, newShardBlock.Body.Transactions[0])
-				totalTxsFee := make(map[common.Hash]uint64)
-				for _, tx := range newShardBlock.Body.Transactions {
-					totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
-					txType := tx.GetType()
-					if txType == common.TxCustomTokenPrivacyType {
-						txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
-						totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
-					}
-				}
-				newShardBlock.Header.TotalTxsFee = totalTxsFee
-				merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
-				merkleRoot := &common.Hash{}
-				if len(merkleRoots) > 0 {
-					merkleRoot = merkleRoots[len(merkleRoots)-1]
-				}
-				crossTransactionRoot, err := blockchain.CreateMerkleCrossTransaction(newShardBlock.Body.CrossTransactions)
-				if err != nil {
-					fmt.Println(err)
-				}
-				_, shardTxMerkleData := blockchain.CreateShardTxRoot(newShardBlock.Body.Transactions)
-				newShardBlock.Header.TxRoot = *merkleRoot
-				newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
-				newShardBlock.Header.CrossTransactionRoot = *crossTransactionRoot
-			}
-
-			err = doValidation(block)
-			fmt.Println("PostValidation block", 0, err)
-		},
-		Insert: func(chainID int, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
-			doInsert(block)
-			if chainID == 0 {
-				bl1, _ := sim.GetBalance(sim.IcoAccount)
-				fmt.Println(bl1)
-				bl2, _ := sim.GetBalance(acc1)
-				fmt.Println(bl2)
-				bl3, _ := sim.GetBalance(acc2)
-				fmt.Println(bl3)
-				fmt.Printf("%+v", block.(*blockchain.ShardBlock).Body)
-				sim.Pause()
-			}
-
-		},
-	})
-	sim.NextRound()
-
-	for i := 0; i < 10; i++ {
-		sim.GenerateBlock(F.Hook{
-			Insert: func(chainID int, block common.BlockInterface, doInsert func(common.BlockInterface) error) {
-				if chainID == -1 {
-					fmt.Printf("%+v %+v", block.(*blockchain.BeaconBlock).GetHeight(), block.(*blockchain.BeaconBlock).Body.ShardState)
-					sim.Pause()
-					doInsert(block)
-					sim.Pause()
-				} else {
-					doInsert(block)
-				}
-
-			},
-		}).NextRound()
+	monitorPool := func(oldLen1 int, oldLen2 int, oldLen3 int) (bool, int, int, int) {
+		len1 := len(sim.GetBlockchain().BeaconChain.GetShardsWaitingList())
+		len2 := len(sim.GetBlockchain().BeaconChain.GetShardsPendingList())
+		len3 := 0
+		for _, sCommittee := range sim.GetBlockchain().BeaconChain.GetAllCommittees()[sim.GetBlockchain().BeaconChain.GetConsensusType()] {
+			len3 += len(sCommittee)
+		}
+		if oldLen1 != len1 || oldLen2 != len2 || oldLen3 != len3 {
+			return true, len1, len2, len3
+		}
+		return false, len1, len2, len3
 	}
 
-	balance, _ := sim.GetBalance(acc1)
-	fmt.Printf("%+v", balance)
-	sim.Pause()
+	viewPool := func() {
+		waitingPool := []string{}
+		pendingPool := []string{}
+		committeePool := []string{}
+		for _, stake := range stakeList {
+			role, _ := sim.GetPubkeyState(stake.CommitteeKey)
+			switch role {
+			case "waiting":
+				waitingPool = append(waitingPool, stake.Name)
+			case "pending":
+				pendingPool = append(pendingPool, stake.Name)
+			case "committee":
+				committeePool = append(committeePool, stake.Name)
+			}
+		}
+
+		fmt.Println("Waiting Pool:", waitingPool)
+		fmt.Println("Pending Pool:", pendingPool)
+		fmt.Println("Committee Pool:", committeePool)
+	}
+
+	_, l1, l2, l3 := monitorPool(0, 0, 0)
+	isChange := false
+	for i := 0; i < 40; i++ {
+		sim.GenerateBlock().NextRound()
+		isChange, l1, l2, l3 = monitorPool(l1, l2, l3)
+		if isChange {
+			fmt.Println("\n----------------------------------")
+			fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+			fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
+			sim.GetBlockchain().BeaconChain.GetAllCommittees()
+			viewPool()
+			fmt.Println("----------------------------------")
+			isChange = false
+		}
+	}
+
+	for i := 0; i < 20; i++ {
+		sim.GenerateBlock().NextRound()
+		isChange, l1, l2, l3 = monitorPool(l1, l2, l3)
+		if isChange {
+			fmt.Println("\n----------------------------------")
+			fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+			fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
+			sim.GetBlockchain().BeaconChain.GetAllCommittees()
+			viewPool()
+			fmt.Println("----------------------------------")
+			isChange = false
+		}
+	}
+
+	for i := 0; i < 50; i++ {
+		sim.GenerateBlock().NextRound()
+		isChange, l1, l2, l3 = monitorPool(l1, l2, l3)
+		if isChange {
+			fmt.Println("\n----------------------------------")
+			fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+			fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
+			sim.GetBlockchain().BeaconChain.GetAllCommittees()
+			viewPool()
+			fmt.Println("----------------------------------")
+			isChange = false
+		}
+	}
+
+	unstake1 := rpcclient.StopStakingParam{
+		BurnAddr:  sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
+		SenderPrk: sim.IcoAccount.PrivateKey,
+		MinerPrk:  miner1.PrivateKey,
+	}
+	if _, err := sim.RPC.API_CreateTxStopAutoStake(unstake1); err != nil {
+		panic(err)
+	}
+	fmt.Println("Stopstake staker1 at epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+
+	sim.GenerateBlock().NextRound()
+
+	miner2 := sim.NewAccountFromShard(0)
+	minerCm2, _ := account.BuildCommitteePubkey(miner2.PrivateKey, sim.IcoAccount.PaymentAddress)
+	stake2 := rpcclient.StakingTxParam{
+		Name:         "miner2",
+		CommitteeKey: minerCm2,
+		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
+		StakerPrk:    sim.IcoAccount.PrivateKey,
+		MinerPrk:     miner2.PrivateKey,
+		RewardAddr:   miner2.PaymentAddress,
+		StakeShard:   true,
+		AutoRestake:  true,
+	}
+
+	stakeList = append(stakeList, stake2)
+	_, err = sim.RPC.API_CreateAndSendStakingTransaction(stake2)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Stake staker2 at epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+
+	for i := 0; i < 100; i++ {
+		sim.GenerateBlock().NextRound()
+		isChange, l1, l2, l3 = monitorPool(l1, l2, l3)
+		if isChange {
+			fmt.Println("\n----------------------------------")
+			fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+			fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
+			sim.GetBlockchain().BeaconChain.GetAllCommittees()
+			viewPool()
+			fmt.Println("----------------------------------")
+			isChange = false
+		}
+	}
+
+	_, err = sim.RPC.API_WithdrawReward(miner1.PrivateKey, miner1.PaymentAddress)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 300; i++ {
+		sim.GenerateBlock().NextRound()
+		isChange, l1, l2, l3 = monitorPool(l1, l2, l3)
+		if isChange {
+			fmt.Println("\n----------------------------------")
+			fmt.Println("Beacon Epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
+			fmt.Println("Beacon Height", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetHeight())
+			sim.GetBlockchain().BeaconChain.GetAllCommittees()
+			viewPool()
+			fmt.Println("----------------------------------")
+			isChange = false
+		}
+	}
+	viewPool()
+	fmt.Println()
 }

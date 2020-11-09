@@ -8,7 +8,7 @@ import (
 )
 
 const RPC_TEMPLATE = `
-func (r *RemoteRPCClient) RPC_%APINAME%(%APIPARAMS%) (%APIRESULT%) {
+func (r *RemoteRPCClient) %APINAME%(%APIPARAMS%) (%APIRESULT%) {
 	%API_REQUEST%
 	%API_REQUEST_RESPONSE%
 	%API_RETURN%
@@ -31,8 +31,14 @@ const RPC_REQUEST_TEMPLATE = `requestBody, rpcERR := json.Marshal(map[string]int
 
 const RPC_RESPONSE_TEMPLATE = `resp := struct {
 		Result  %API_RES_TYPE%
+		Error *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
 	if err != nil {
 		%API_RET_ERR%
 	}`
@@ -58,6 +64,12 @@ type RemoteRPCClient struct {
 	endpoint string
 }
 
+type ErrMsg struct {
+	Code       int
+	Message    string
+	StackTrace string
+}
+
 func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
 	resp, err := http.Post(r.endpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -74,7 +86,7 @@ func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
 `)
 
 	for _, api := range apis {
-		regex := regexp.MustCompile(`([^ ]+)\((.+)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
+		regex := regexp.MustCompile(`([^ ]+)\((.*)\)[ ]*\(([ ]*([^, ]*)(error|,error|, error))\)`)
 
 		res := regex.FindAllStringSubmatch(api, -1)
 		if strings.Trim(api, " ") == "" {
@@ -84,11 +96,14 @@ func (r *RemoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
 			continue
 		}
 
-		apiName := strings.Trim(strings.ToLower(res[0][1]), "\t ")
+		apiName := strings.Trim(res[0][1], "\t ")
 		apiParams := []string{}
 
 		for _, param := range strings.Split(res[0][2], ",") {
 			trimParam := strings.Trim(param, " ")
+			if trimParam == "" {
+				continue
+			}
 			regex := regexp.MustCompile(`(.+) (.+)`)
 			paramStruct := regex.FindAllStringSubmatch(trimParam, -1)
 			apiParams = append(apiParams, paramStruct[0][1])

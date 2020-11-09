@@ -2,34 +2,13 @@ package rpcclient
 
 import (
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/devframework/account"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
-
-type ClientInterface interface {
-	RPC_createandsendtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (jsonresult.CreateTransactionResult, error)
-	RPC_getbalancebyprivatekey(privateKey string) (uint64, error)
-	RPC_getlistprivacycustomtokenbalance(privateKey string) (jsonresult.ListCustomTokenBalance, error)
-	RPC_getrewardamount(paymentaddress string) (map[string]uint64, error)
-	RPC_withdrawreward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_createandsendstakingtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_createandsendstopautostakingtransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stopstakeinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_getcommitteelist(empty string) (jsonresult.CommitteeListsResult, error)
-	RPC_createandsendprivacycustomtokentransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult, error)
-	RPC_createandsendtxwithwithdrawalreqv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_createandsendtxwithpdefeewithdrawalreq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_createandsendtxwithptokentradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult, error)
-	RPC_createandsendtxwithptokencrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult, error)
-	RPC_createandsendtxwithprvtradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_createandsendtxwithprvcrosspooltradereq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_createandsendtxwithptokencontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult, error)
-	RPC_createandsendtxwithprvcontributionv2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqinfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
-	RPC_getpdestate(data map[string]interface{}) (jsonresult.CurrentPDEState, error)
-}
 
 type RPCClient struct {
 	client ClientInterface
@@ -43,57 +22,72 @@ func NewRPCClient(client ClientInterface) *RPCClient {
 }
 
 func (r *RPCClient) API_CreateAndSendTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.RPC_createandsendtransaction(privateKey, receivers, fee, privacy)
+	result, err := r.client.CreateAndSendTransaction(privateKey, receivers, fee, privacy)
 	return &result, err
 }
 
 func (r *RPCClient) API_CreateAndSendPrivacyCustomTokenTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.RPC_createandsendprivacycustomtokentransaction(privateKey, receivers, fee, privacy, tokenInfo, p1, pPrivacy)
+	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, receivers, fee, privacy, tokenInfo, p1, pPrivacy)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithWithdrawalReqV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.RPC_createandsendtxwithwithdrawalreqv2(privateKey, receivers, fee, privacy, reqInfo)
+	result, err := r.client.CreateAndSendTxWithWithdrawalReqV2(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPDEFeeWithdrawalReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.RPC_createandsendtxwithpdefeewithdrawalreq(privateKey, receivers, fee, privacy, reqInfo)
+	result, err := r.client.CreateAndSendTxWithPDEFeeWithdrawalReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPTokenTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.RPC_createandsendtxwithptokentradereq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
+	result, err := r.client.CreateAndSendTxWithPTokenTradeReq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPTokenCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.RPC_createandsendtxwithptokencrosspooltradereq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
+	result, err := r.client.CreateAndSendTxWithPTokenCrossPoolTradeReq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPRVTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.RPC_createandsendtxwithprvtradereq(privateKey, receivers, fee, privacy, reqInfo)
+	result, err := r.client.CreateAndSendTxWithPRVTradeReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPRVCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.RPC_createandsendtxwithprvcrosspooltradereq(privateKey, receivers, fee, privacy, reqInfo)
+	result, err := r.client.CreateAndSendTxWithPRVCrossPoolTradeReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPTokenContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.RPC_createandsendtxwithptokencontributionv2(privateKey, receivers, fee, privacy, reqInfo, "", 0)
+	result, err := r.client.CreateAndSendTxWithPTokenContributionV2(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_CreateAndSendTxWithPRVContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.RPC_createandsendtxwithprvcontributionv2(privateKey, receivers, fee, privacy, reqInfo)
+	result, err := r.client.CreateAndSendTxWithPRVContributionV2(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_GetPDEState(beaconHeight float64) (jsonresult.CurrentPDEState, error) {
-	result, err := r.client.RPC_getpdestate(map[string]interface{}{"BeaconHeight": beaconHeight})
+	result, err := r.client.GetPDEState(map[string]interface{}{"BeaconHeight": beaconHeight})
 	return result, err
 }
 
-func (r *RPCClient) API_GetBalance(privateKey string) (map[string]uint64, error) {
+func (r *RPCClient) API_GetBeaconBestState() (jsonresult.GetBeaconBestState, error) {
+	result, err := r.client.GetBeaconBestState()
+	return result, err
+}
+
+func (r *RPCClient) API_GetShardBestState(sid int) (jsonresult.GetShardBestState, error) {
+	result, err := r.client.GetShardBestState(sid)
+	return result, err
+}
+
+func (r *RPCClient) API_GetTransactionHash(h string) (*jsonresult.TransactionDetail, error) {
+	result, err := r.client.GetTransactionByHash(h)
+	return result, err
+}
+
+func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, error) {
 	tokenList := make(map[string]uint64)
-	prv, _ := r.client.RPC_getbalancebyprivatekey(privateKey)
+	prv, _ := r.client.GetBalanceByPrivateKey(acc.PrivateKey)
 	tokenList["PRV"] = prv
 
-	tokenBL, _ := r.client.RPC_getlistprivacycustomtokenbalance(privateKey)
+	tokenBL, _ := r.client.GetListPrivacyCustomTokenBalance(acc.PrivateKey)
 	for _, token := range tokenBL.ListCustomTokenBalance {
 		tokenList[token.TokenID] = token.Amount
 
@@ -160,13 +154,14 @@ func (r *RPCClient) API_CreateAndSendStakingTransaction(stakeMeta StakingTxParam
 		panic(0)
 	}
 	burnAddr := stakeMeta.BurnAddr
-	txResp, err := r.client.RPC_createandsendstakingtransaction(stakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
+	txResp, err := r.client.CreateAndSendStakingTransaction(stakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
 		"StakingType":                  float64(stakingType),
 		"CandidatePaymentAddress":      minerPayment,
 		"PrivateSeed":                  privateSeed,
 		"RewardReceiverPaymentAddress": stakeMeta.RewardAddr,
 		"AutoReStaking":                stakeMeta.AutoRestake,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +182,7 @@ func (r *RPCClient) API_CreateTxStopAutoStake(stopStakeMeta StopStakingParam) (*
 
 	burnAddr := stopStakeMeta.BurnAddr
 
-	txResp, err := r.client.RPC_createandsendstopautostakingtransaction(stopStakeMeta.SenderPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+	txResp, err := r.client.CreateAndSendStopAutoStakingTransaction(stopStakeMeta.SenderPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
 		"StopAutoStakingType":     float64(127),
 		"CandidatePaymentAddress": minerPayment,
 		"PrivateSeed":             privateSeed,
@@ -200,7 +195,7 @@ func (r *RPCClient) API_CreateTxStopAutoStake(stopStakeMeta StopStakingParam) (*
 
 func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float64, error) {
 	result := make(map[string]float64)
-	rs, err := r.client.RPC_getrewardamount(paymentAddress)
+	rs, err := r.client.GetRewardAmount(paymentAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +207,7 @@ func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float
 
 func (r *RPCClient) API_WithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
 
-	txResp, err := r.client.RPC_withdrawreward(privateKey, nil, 0, 0, map[string]interface{}{
+	txResp, err := r.client.WithdrawReward(privateKey, nil, 0, 0, map[string]interface{}{
 		"PaymentAddress": paymentAddress, "TokenID": "0000000000000000000000000000000000000000000000000000000000000004", "Version": 0,
 	})
 	if err != nil {

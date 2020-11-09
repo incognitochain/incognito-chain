@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/devframework/account"
 	"log"
 	"net"
 	"os"
@@ -55,8 +56,8 @@ type SimulationEngine struct {
 	//for account manager
 	accountSeed       string
 	accountGenHistory map[int]int
-	committeeAccount  map[int][]Account
-	IcoAccount        Account
+	committeeAccount  map[int][]account.Account
+	IcoAccount        account.Account
 
 	//blockchain dependency object
 	Network     *HighwayConnection
@@ -78,19 +79,19 @@ type SimulationEngine struct {
 	listennerRegister map[int][]func(msg interface{})
 }
 
-func (sim *SimulationEngine) NewAccountFromShard(sid int) Account {
+func (sim *SimulationEngine) NewAccountFromShard(sid int) account.Account {
 	lastID := sim.accountGenHistory[sid]
 	lastID++
 	sim.accountGenHistory[sid] = lastID
-	acc, _ := GenerateAccountByShard(sid, lastID, sim.accountSeed)
+	acc, _ := account.GenerateAccountByShard(sid, lastID, sim.accountSeed)
 	return *acc
 }
 
-func (sim *SimulationEngine) NewAccount() Account {
+func (sim *SimulationEngine) NewAccount() account.Account {
 	lastID := sim.accountGenHistory[0]
 	lastID++
 	sim.accountGenHistory[0] = lastID
-	acc, _ := GenerateAccountByShard(0, lastID, sim.accountSeed)
+	acc, _ := account.GenerateAccountByShard(0, lastID, sim.accountSeed)
 	return *acc
 }
 
