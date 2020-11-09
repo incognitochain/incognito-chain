@@ -2,18 +2,19 @@ package tx_ver2
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
@@ -139,18 +140,31 @@ func InitConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
 	if err := proveConversion(tx, params); err != nil {
 		return err
 	}
+	jsb, _ := json.Marshal(tx)
+	utils.Logger.Log.Infof("Init conversion complete ! -> %s", string(jsb))
 	return nil
 }
 
 func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID *common.Hash,  db *statedb.StateDB) ([]*privacy.CoinV2, error) {
 	var err error
+	isPRV := (tokenID==nil) || (*tokenID==common.PRVCoinID)
 	c := make([]*privacy.CoinV2, len(paymentInfos))
 
 	for i := 0; i < len(paymentInfos); i += 1 {
-		c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
-		if err != nil {
-			utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
-			return nil, err
+		if isPRV{
+			c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
+			if err != nil {
+				utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
+				return nil, err
+			}
+		}else{
+			createdCACoin, _, err := createUniqueOTACoinCA(paymentInfos[i], tokenID, db)
+			if err!=nil {
+				utils.Logger.Log.Errorf("TxConversion cannot create new CA coin - %v", err)
+				return nil, err
+			}
+			createdCACoin.SetPlainTokenID(tokenID)
+			c[i] = createdCACoin
 		}
 	}
 	return c, nil
@@ -344,7 +358,7 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 	return nil
 }
 
-func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2InitParams) error {
+func (txToken *TxToken) initTokenConversion(txNormal *Tx, params *TxTokenConvertVer1ToVer2InitParams) error {
 	txToken.TokenData.Type = utils.CustomTokenTransfer
 	txToken.TokenData.PropertyName = ""
 	txToken.TokenData.PropertySymbol = ""
@@ -368,13 +382,7 @@ func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2Init
 		nil,
 		params.info,
 	)
-	txToken.cachedTxNormal = nil
-	txNormal, ok := txToken.GetTxNormal().(*Tx)
-	if !ok{
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("TX should have been ver2"))
-	}
-	txNormal.SetSig(nil)
-	txNormal.SetSigPubKey(nil)
+
 	if err := validateTxConvertVer1ToVer2Params(txConvertParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
@@ -434,13 +442,21 @@ func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitP
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
+	txn := makeTxToken(tx, nil, nil, nil)
 	// Init Token
-	if err := txToken.initTokenConversion(params); err != nil {
+	if err := txToken.initTokenConversion(txn, params); err != nil {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
 
-	err = txToken.Tx.signOnMessage(inps, outs, txPrivacyParams, txToken.Hash()[:])
-
-	return nil
+	tdh, err := txToken.TokenData.Hash()
+	if err!=nil{
+		return err
+	}
+	message := common.HashH(append(tx.Hash()[:], tdh[:]...))
+	err = tx.signOnMessage(inps, outs, txPrivacyParams, message[:])
+	if err!=nil{
+		return err
+	}
+	return txToken.SetTxBase(tx)
 }
