@@ -41,24 +41,33 @@ func NewIncognitoNode(name string, mode int, chainCustomParam *blockchain.Params
 	switch mode {
 	case MODE_MAINNET:
 		blockchain.IsTestNet = false
+		blockchain.IsTestNet2 = false
 		blockchain.ReadKey(blockchain.MainnetKeylist, blockchain.Mainnetv2Keylist)
 		blockchain.SetupParam()
 		chainParam = &blockchain.ChainMainParam
+		break
 	case MODE_TESTNET:
 		blockchain.ReadKey(blockchain.TestnetKeylist, blockchain.Testnetv2Keylist)
 		blockchain.SetupParam()
 		chainParam = &blockchain.ChainTestParam
+		break
 	case MODE_TESTNET2:
 		blockchain.IsTestNet2 = true
 		blockchain.ReadKey(blockchain.Testnet2Keylist, blockchain.Testnet2v2Keylist)
 		blockchain.SetupParam()
 		chainParam = &blockchain.ChainTest2Param
+		break
 	case MODE_CUSTOM:
 		blockchain.IsTestNet = false
 		blockchain.IsTestNet2 = false
+		break
 	}
 	sim.initNode(chainParam, enableRPC)
-	sim.ConnectNetwork(highwayAddr)
+	relayShards := []byte{0}
+	// for index := 0; index < common.MaxShardNumber; index++ {
+	// 	relayShards = append(relayShards, byte(index))
+	// }
+	sim.ConnectNetwork(highwayAddr, relayShards)
 	return sim
 }
 
@@ -176,6 +185,10 @@ func (sim *SimulationEngine) initNode(chainParam *blockchain.Params, enableRPC b
 	go temppool.Start(cQuit)
 	go txpool.Start(cQuit)
 
+	relayShards := []byte{0}
+	// for index := 0; index < common.MaxShardNumber; index++ {
+	// 	relayShards = append(relayShards, byte(index))
+	// }
 	err = bc.Init(&blockchain.Config{
 		BTCChain:        btcChain,
 		BNBChainState:   bnbChainState,
@@ -192,6 +205,7 @@ func (sim *SimulationEngine) initNode(chainParam *blockchain.Params, enableRPC b
 		RandomClient:    &btcrd,
 		ConsensusEngine: cs,
 		GenesisParams:   blockchain.GenesisParam,
+		RelayShards:     relayShards,
 	})
 	if err != nil {
 		panic(err)

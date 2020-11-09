@@ -52,6 +52,7 @@ type HighwayConnectionConfig struct {
 	PrivateKey      string
 	ConsensusEngine peerv2.ConsensusData
 	syncker         *syncker.SynckerManager
+	RelayShards     []byte
 }
 
 func NewHighwayConnection(cfg HighwayConnectionConfig) *HighwayConnection {
@@ -92,7 +93,7 @@ func (s *HighwayConnection) Connect() {
 		s.config.ConsensusEngine,
 		dispatcher,
 		"relay",
-		[]byte{},
+		s.config.RelayShards,
 	)
 
 	go s.conn.Start(nil)

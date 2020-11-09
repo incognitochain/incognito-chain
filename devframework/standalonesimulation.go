@@ -311,7 +311,7 @@ func (sim *SimulationEngine) startPubSub() {
 	}()
 }
 
-func (sim *SimulationEngine) ConnectNetwork(highwayAddr string) {
+func (sim *SimulationEngine) ConnectNetwork(highwayAddr string, relayShards []byte) {
 	config := HighwayConnectionConfig{
 		"127.0.0.1",
 		19876,
@@ -320,6 +320,7 @@ func (sim *SimulationEngine) ConnectNetwork(highwayAddr string) {
 		"",
 		sim.consensus,
 		sim.syncker,
+		relayShards,
 	}
 	sim.Network = NewHighwayConnection(config)
 	sim.Network.Connect()
