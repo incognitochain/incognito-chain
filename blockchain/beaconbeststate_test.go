@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,9 +10,13 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 func TestBeaconBestState_filterCommitteeInstructions(t *testing.T) {
+
+	txHash, _ := common.Hash{}.NewHashFromStr("12000")
+
 	type fields struct {
 		BestBlockHash            common.Hash
 		PreviousBestBlockHash    common.Hash
@@ -56,9 +61,91 @@ func TestBeaconBestState_filterCommitteeInstructions(t *testing.T) {
 		args   args
 		want   []string
 	}{
-		{},
-		{},
-		{},
+		{
+			name:   "single return stakingtx public key",
+			fields: fields{},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.RETURN_ACTION,
+						key,
+						"0",
+						txHash.String(),
+						"100",
+					},
+				},
+			},
+			want: []string{
+				instruction.RETURN_ACTION,
+				key,
+				"0",
+				txHash.String(),
+				"100",
+			},
+		},
+		{
+			name:   "single return stakingtx public key",
+			fields: fields{},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.STOP_AUTO_STAKE_ACTION,
+						key2,
+					},
+					[]string{
+						instruction.RETURN_ACTION,
+						key,
+						"0",
+						txHash.String(),
+						"100",
+					},
+				},
+			},
+			want: []string{
+				instruction.STOP_AUTO_STAKE_ACTION,
+				key2,
+				instruction.RETURN_ACTION,
+				key,
+				"0",
+				txHash.String(),
+				"100",
+			},
+		},
+		{
+			name:   "single return stakingtx public key",
+			fields: fields{},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.STOP_AUTO_STAKE_ACTION,
+						key2,
+					},
+					[]string{
+						instruction.RETURN_ACTION,
+						key,
+						"0",
+						txHash.String(),
+						"100",
+					},
+					[]string{
+						instruction.RETURN_ACTION,
+						key,
+						"0",
+						txHash.String(),
+						"100",
+					},
+				},
+			},
+			want: []string{
+				instruction.STOP_AUTO_STAKE_ACTION,
+				key2,
+				instruction.RETURN_ACTION,
+				strings.Join([]string{key, key}, ","),
+				"0",
+				strings.Join([]string{txHash.String(), txHash.String()}, ","),
+				strings.Join([]string{"100", "100"}, ","),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
