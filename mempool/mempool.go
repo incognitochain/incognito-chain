@@ -242,8 +242,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 			if tempTxToken2.TokenData.Mintable{
 				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 			}
-		}
-		if tempTx.TxTokenData.Mintable{
+		}else if tempTx.TxTokenData.Mintable{
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
@@ -372,7 +371,7 @@ func (tp *TxPool) checkFees(
 	shardID byte,
 	beaconHeight int64,
 ) bool {
-	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
+	Logger.log.Info("Beacon height for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
 	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
 		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
