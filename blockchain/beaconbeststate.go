@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -757,4 +758,37 @@ func InitBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 //GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
+}
+
+func (beaconBestState *BeaconBestState) filterCommitteeInstructions(instructions [][]string) []string {
+	res := []string{}
+	returnStakingInstructions := map[byte][]instruction.ReturnStakeInstruction{}
+
+	// Instruction Hash
+	for _, str := range instructions {
+		returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(str)
+		if err == nil {
+			returnStakingInstructions[returnStakingIns.ShardID] = append(returnStakingInstructions[returnStakingIns.ShardID], *returnStakingIns)
+		} else {
+			res = append(res, str...)
+		}
+	}
+
+	for i, v := range returnStakingInstructions {
+		if len(v) != 1 {
+			publicKeys := []string{}
+			stakingTxs := []string{}
+			percentReturns := []uint{}
+			for _, value := range v {
+				publicKeys = append(publicKeys, value.PublicKeys...)
+				stakingTxs = append(stakingTxs, value.StakingTXIDs...)
+				percentReturns = append(percentReturns, value.PercentReturns...)
+			}
+			returnStakingInstruction := instruction.NewReturnStakeInsWithValue(publicKeys, i, stakingTxs)
+			res = append(res, returnStakingInstruction.ToString()...)
+		} else {
+			res = append(res, v[0].ToString()...)
+		}
+	}
+	return res
 }

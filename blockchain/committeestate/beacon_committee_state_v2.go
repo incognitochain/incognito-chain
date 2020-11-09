@@ -393,7 +393,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange)
+			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange, env, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -605,6 +605,7 @@ func (b *BeaconCommitteeStateV2) processStakeInstruction(
 	}
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 	b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeyStructs...)
+
 	return committeeChange, err
 }
 
@@ -649,7 +650,7 @@ func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 	candidates, _ := incognitokey.CommitteeKeyListToString(oldState.shardCommonPool[:b.numberOfAssignedCandidates])
 	newCommitteeChange = b.assign(candidates, rand, activeShards, newCommitteeChange, oldState)
 	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, oldState.shardCommonPool[:b.numberOfAssignedCandidates]...)
-	b.shardCommonPool = oldState.shardCommonPool[b.numberOfAssignedCandidates:]
+	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
 
 	return newCommitteeChange
@@ -660,7 +661,6 @@ func (b *BeaconCommitteeStateV2) assign(
 	oldState *BeaconCommitteeStateV2,
 ) *CommitteeChange {
 	numberOfValidator := make([]int, activeShards)
-
 	for i := 0; i < activeShards; i++ {
 		numberOfValidator[byte(i)] += len(oldState.shardSubstitute[byte(i)])
 		numberOfValidator[byte(i)] += len(oldState.shardCommittee[byte(i)])
@@ -785,15 +785,13 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	// oldstate -> only read
 	newCommitteeChange := committeeChange
 	indexNextEpochShardCandidate := make(map[string]int)
-	for i, v := range oldState.shardCommonPool {
+	for i, v := range b.shardCommonPool {
 		key, err := v.ToBase58()
 		if err != nil {
 			return newCommitteeChange, returnStakingInstructions, err
 		}
 		indexNextEpochShardCandidate[key] = i
 	}
-	//careful with 2 variables: env.newUnassignedCommonPool, env.newAllSubstituteCommittees
-	//may be they will be change value when sync data
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
 			if common.IndexOfStr(publicKey, env.newAllSubstituteCommittees) != -1 {
