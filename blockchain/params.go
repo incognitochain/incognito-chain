@@ -157,6 +157,7 @@ func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 		{"0000000000000000000000000000000000000000", 9},		// eth
 		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6},		// usdt, kovan testnet
 		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6},		// usdc, kovan testnet
+		{"4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa", 6},     	// dai, kovan testnet
 	}
 }
 
