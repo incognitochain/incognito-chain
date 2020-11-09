@@ -589,6 +589,6 @@ func (c *CoinV1) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 }
 
 // Check whether the utxo is from this address
-func (c *CoinV1) IsCoinBelongToViewKey(viewKey key.ViewingKey) (bool, *operation.Point) {
-	return operation.IsPointEqual(viewKey.GetPublicSpend(), c.GetPublicKey()), nil
+func (c *CoinV1) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point) {
+	return operation.IsPointEqual(keySet.PaymentAddress.GetPublicSpend(), c.GetPublicKey()), nil
 }

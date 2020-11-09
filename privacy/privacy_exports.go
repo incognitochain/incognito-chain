@@ -174,8 +174,8 @@ func ProveV2(inputCoins []PlainCoin, outputCoins []*CoinV2, sharedSecrets []*Poi
 	return privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, hasPrivacy, paymentInfo)
 }
 
-func ComputeAssetTagBlinder(sharedSecret *Point, indexForShard uint32) (*Scalar,error){
-	return coin.ComputeAssetTagBlinder(sharedSecret, indexForShard)
+func ComputeAssetTagBlinder(sharedSecret *Point) (*Scalar,error){
+	return coin.ComputeAssetTagBlinder(sharedSecret)
 }
 
 func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error){

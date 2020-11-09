@@ -11,7 +11,7 @@ import (
 	// "github.com/incognitochain/incognito-chain/transaction"
 )
 
-var privIndicator string = "-1"
+var privIndicator string = "1"
 
 // Parse from byte to AutoTxByHash
 func ParseAutoTxHashFromBytes(b []byte) (*AutoTxByHash, error) {
@@ -122,14 +122,10 @@ func (this *DebugTool) CreateAndSendTransaction() ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, privKeyB string, amount string) ([]byte, error) {
+func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, paymentAddress string, amount string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
-
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
@@ -143,11 +139,11 @@ func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, privKey
 			%s
 		],
 		"id": 1
-	}`, privKeyA, paymentAddStr, amount, privIndicator)
+	}`, privKeyA, paymentAddress, amount, privIndicator)
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
+func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
@@ -155,6 +151,7 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
 	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
 
 	query := fmt.Sprintf(`{
@@ -166,13 +163,15 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr string) ([]byte, error) {
 			[
 				{
 			  "PaymentAddress": "%s",
-			  "ReadonlyKey": "%s",
+			  "OTASecretKey": "%s",
+			  "ReadonlyKey" : "%s",
 			  "StartHeight": 0
 				}
-			]
+			],
+		  "%s"
 		  ],
 		"id": 1
-	}`, paymentAddStr, viewingKeyStr)
+	}`, paymentAddStr, otaSecretKey, viewingKeyStr, tokenID)
 
 	//fmt.Println("==============")
 
@@ -187,7 +186,8 @@ func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, 
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
+	//viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
@@ -198,14 +198,14 @@ func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, 
 			[
 				{
 			  "PaymentAddress": "%s",
-			  "ReadonlyKey": "%s",
+			  "OTASecretKey":   "%s",
 			  "StartHeight": 0
 				}
 			],
 			"%s"
 		  ],
 		"id": 1
-	}`, paymentAddStr, viewingKeyStr, tokenID)
+	}`, paymentAddStr, otaSecretKey, tokenID)
 
 	//fmt.Println("==============")
 
@@ -237,8 +237,6 @@ func (this *DebugTool) GetListUnspentOutputTokens(privKeyStr, tokenID string) ([
 	   ],
 	   "id":1
 	}`, privKeyStr, tokenID)
-
-	//fmt.Println("==============")
 
 	return this.SendPostRequestWithQuery(query)
 }
@@ -324,10 +322,7 @@ func (this *DebugTool) ListPrivacyCustomToken() ([]byte, error) {
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStrB string, tokenID string, amount string) ([]byte, error) {
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStrB)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, paymentAddress string, tokenID string, amount string) ([]byte, error) {
 
 	query := fmt.Sprintf(`{
 		"id": 1,
@@ -351,7 +346,7 @@ func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, privKeyStr
 				}
 			}
 			]
-	}`, privKeyStrA, tokenID, paymentAddStr, amount)
+	}`, privKeyStrA, tokenID, paymentAddress, amount)
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -454,7 +449,7 @@ func (this *DebugTool) PDETradePRV(privKeyStr, receiverToken, amount string) ([]
 			"params": [
 				"%s",
 				{
-					"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+					"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": %s
 				},
 				-1,
 				-1,
@@ -508,8 +503,6 @@ func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]by
 		}`, privKeyStr, sellToken, amount, amount, sellToken, amount, paymentAddStr)
 	return this.SendPostRequestWithQuery(query)
 }
-
-
 
 func (this *DebugTool) GetBalancePrivacyCustomToken(privKeyStr string, tokenID string) ([]byte, error) {
 	query := fmt.Sprintf(`{

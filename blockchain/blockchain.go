@@ -575,3 +575,11 @@ func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
 func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database {
 	return blockchain.config.DataBase[int(shardID)]
 }
+
+func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+
+	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
+}

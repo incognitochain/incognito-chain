@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"time"
@@ -171,7 +172,8 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 		return errors.New("params of tx Init is not TxPrivacyInitParam")
 	}
 
-	utils.Logger.Log.Debugf("CREATING TX........\n")
+	jsb, _ := json.Marshal(params)
+	utils.Logger.Log.Infof("Create TX v2 with params %s", string(jsb))
 	if err := tx_generic.ValidateTxParams(params); err != nil {
 		return err
 	}
@@ -188,14 +190,14 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	if check, err := tx.IsNonPrivacyNonInput(params); check {
 		return err
 	}
-	// if params.HasPrivacy{
-	// 	if err := tx.proveCA(params); err != nil {
-	// 		return err
-	// 	}
-	// }else{
-	// }
 	if err := tx.prove(params); err != nil {
 		return err
+	}
+	jsb, _ = json.Marshal(tx)
+	utils.Logger.Log.Infof("TX Creation complete ! The resulting transaction is : %s", string(jsb))
+	txSize := tx.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
 	return nil
@@ -455,7 +457,7 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 	return mlsag.Verify(mlsagSignature, ring, tx.Hash()[:])
 }
 
-func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	var err error
 	var valid bool
 	if tokenID, err = tx_generic.ParseTokenID(tokenID); err != nil {
@@ -466,6 +468,12 @@ func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridg
 		utils.Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have proofs of any other version - %v", tx.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
+
+	isNewTransaction, ok := boolParams["isNewTransaction"]
+	if !ok {
+		isNewTransaction = false
+	}
+
 	isConfAsset, err := proofAsV2.IsConfidentialAsset()
 	if err!=nil{
 		utils.Logger.Log.Errorf("Error in tx %s : proof is invalid due to inconsistent asset tags - %v", tx.Hash().String(), err)
@@ -486,7 +494,9 @@ func (tx *Tx) Verify(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridg
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String()))
 	}
 
-	if valid, err := tx.Proof.Verify(isConfAsset, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil); !valid {
+	boolParams["hasConfidentialAsset"] = isConfAsset
+
+	if valid, err := tx.Proof.Verify(boolParams, tx.SigPubKey, tx.Fee, shardID, tokenID, nil); !valid {
 		if err != nil {
 			utils.Logger.Log.Error(err)
 		}
@@ -625,28 +635,30 @@ func (tx Tx) StringWithoutMetadataSig() string {
 	return record
 }
 
-func (tx *Tx) Hash() *common.Hash {
+func (tx Tx) Hash() *common.Hash {
 	// leave out signature & its public key when hashing tx
-	tempSig := tx.Sig
-	tempPk := tx.SigPubKey
-	tx.Sig = nil
-	tx.SigPubKey = nil
+	tx.Sig = []byte{}
+	tx.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(tx)
 	if err!=nil{
 		return nil
 	}
 	hash := common.HashH(inBytes)
-
-	// put those info back
-	tx.Sig = tempSig
-	tx.SigPubKey = tempPk
+	// after this returns, tx is restored since the receiver is not a pointer
 	return &hash
 }
 
 func (tx *Tx) HashWithoutMetadataSig() *common.Hash {
+	md := tx.GetMetadata()
+	mdHash := md.HashWithoutSig()
+	tx.SetMetadata(nil)
+	txHash := tx.Hash()
+	if mdHash==nil || txHash==nil{
+		return nil
+	}
+	// tx.SetMetadata(md)
 	inBytes := []byte(tx.StringWithoutMetadataSig())
 	hash := common.HashH(inBytes)
-	//tx.cachedHash = &hash
 	return &hash
 }
 
@@ -684,7 +696,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 	return tx.TxBase.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, []privacy.Proof, error) {
+func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
 	switch tx.GetType() {
 	case common.TxRewardType:
 		valid, err := tx.ValidateTxSalary(transactionStateDB)
@@ -695,8 +707,12 @@ func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.St
 		valid, err := validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
 		return valid, nil ,err
 	default:
-		valid, err := tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+		valid, err := tx.Verify(boolParams, transactionStateDB, bridgeStateDB, shardID, tokenID)
 		resultProofs := []privacy.Proof{}
+		isBatch, ok := boolParams["isBatch"]
+		if !ok {
+			isBatch = false
+		}
 		if isBatch{
 			if tx.GetProof()!=nil{
 				resultProofs = append(resultProofs, tx.GetProof())
@@ -707,17 +723,22 @@ func (tx Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.St
 	// return validateTransaction(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
-func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	valid, _, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
+	valid, _, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 	if !valid {
 		return false, err
 	}
-	valid, err = tx_generic.MdValidate(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, isNewTransaction)
+
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+	valid, err = tx_generic.MdValidate(&tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID)
 	if !valid {
 		return false, err
 	}
@@ -729,6 +750,6 @@ func (tx Tx) GetTxActualSize() uint64 {
 	if err!=nil{
 		return 0
 	}
-	return uint64(len(jsb)) / 1024
+	return uint64(math.Ceil(float64(len(jsb)) / 1024))
 }
 

@@ -3,6 +3,7 @@ package tx_generic
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,6 +35,16 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 			return false, nil
 		}
 	}
+
+	//if type is reward and not have metadata
+	if tx.GetType() == common.TxRewardType && meta == nil  {
+		return false, nil
+	}
+	//if type is return staking and not have metadata
+	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
+		return false, nil
+	}
+
 	if meta != nil {
 		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintdata, shardID, tx, bcr, accumulatedValues, retriever, viewRetriever)
 		if err != nil {
@@ -97,7 +108,7 @@ func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 	return nil
 }
 
-func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, isNewTransaction bool) (bool, error) {
+func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
 		if hasPrivacy && tx.GetVersion() == 1{
@@ -155,7 +166,23 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 
 	// check sanity of Proof
 	if tx.GetProof() != nil {
-		ok, err := tx.GetProof().ValidateSanity()
+		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		additionalData := make(map[string]interface{})
+
+		if tx.GetVersion() == 1{
+			if chainRetriever != nil {
+				additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
+			}
+			sigPubKey, err :=  new(operation.Point).FromBytesS(tx.GetSigPubKey())
+			if err != nil {
+				return false, errors.New("SigPubKey is invalid")
+			}
+			additionalData["sigPubKey"] = sigPubKey
+		}
+
+		additionalData["shardID"] = shardID
+
+		ok, err := tx.GetProof().ValidateSanity(additionalData)
 		if !ok || err != nil {
 			s := ""
 			if !ok {
@@ -187,7 +214,7 @@ func GetTxActualSizeInBytes(tx metadata.Transaction) uint64{
 		return uint64(0)
 	}
 	var sizeTx = uint64(0)
-	txTokenBase, ok := tx.(TxTokenBase)
+	txTokenBase, ok := tx.(*TxTokenBase)
 	if ok { //TxTokenBase
 		sizeTx += GetTxActualSizeInBytes(txTokenBase.Tx)
 

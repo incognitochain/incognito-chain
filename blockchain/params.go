@@ -69,6 +69,7 @@ type Params struct {
 	PortalParams                     map[uint64]PortalParams
 	PortalFeederAddress              string
 	EpochBreakPointSwapNewKey        []uint64
+	BCHeightBreakPointNewZKP         uint64
 }
 
 type GenesisParams struct {
@@ -169,6 +170,7 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		BCHeightBreakPointNewZKP:         			  2300000,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -243,6 +245,7 @@ func init() {
 			},
 		},
 		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		BCHeightBreakPointNewZKP:         		      660000,
 	}
 	if IsTestNet {
 		GenesisParam = genesisParamsTestnetNew

@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
 
@@ -120,7 +120,15 @@ func (proof ConversionProofVer1ToVer2) Bytes() []byte {
 	proofBytes = append(proofBytes, byte(len(proof.outputCoins)))
 	for i := 0; i < len(proof.outputCoins); i++ {
 		outputCoins := proof.outputCoins[i].Bytes()
-		proofBytes = append(proofBytes, byte(len(outputCoins)))
+		lenOutputCoins := len(outputCoins)
+		lenOutputCoinsBytes := []byte{}
+		if lenOutputCoins < 256 {
+			lenOutputCoinsBytes = []byte{byte(lenOutputCoins)}
+		} else {
+			lenOutputCoinsBytes = common.IntToBytes(lenOutputCoins)
+		}
+
+		proofBytes = append(proofBytes, lenOutputCoinsBytes...)
 		proofBytes = append(proofBytes, outputCoins...)
 	}
 
@@ -186,6 +194,8 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 	offset += 1
 	proof.outputCoins = make([]*coin.CoinV2, lenOutputCoinsArray)
 	for i := 0; i < lenOutputCoinsArray; i++ {
+		proof.outputCoins[i] = new(coin.CoinV2)
+		// try get 1-byte for len
 		if offset >= len(proofBytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
@@ -195,17 +205,26 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 		if offset+lenOutputCoin > len(proofBytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
-		coinBytes := proofBytes[offset : offset+lenOutputCoin]
-		if pc, err := coin.NewPlainCoinFromByte(coinBytes); err != nil {
-			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
-		} else {
-			var ok bool
-			if proof.outputCoins[i], ok = pc.(*coin.CoinV2); !ok {
-				err := errors.New("Cannot assert type of Coin to CoinV2")
+		err := proof.outputCoins[i].SetBytes(proofBytes[offset : offset+lenOutputCoin])
+		if err != nil {
+			// 1-byte is wrong
+			// try get 2-byte for len
+			if offset+1 > len(proofBytes) {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+			}
+			lenOutputCoin = common.BytesToInt(proofBytes[offset-1 : offset+1])
+			offset += 1
+
+			if offset+lenOutputCoin > len(proofBytes) {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+			}
+			err1 := proof.outputCoins[i].SetBytes(proofBytes[offset : offset+lenOutputCoin])
+			if err1 != nil {
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 			}
 		}
 		offset += lenOutputCoin
+
 	}
 
 	// SNNoPrivacyProof
@@ -272,7 +291,7 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 	return proof, nil
 }
 
-func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
+func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{}) (bool, error) {
 	if proof.Version != ConversionProofVersion {
 		return false, errors.New("Proof version of ConversionProof is not right")
 	}
@@ -326,12 +345,17 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity() (bool, error) {
 	return true, nil
 }
 
-func (proof ConversionProofVer1ToVer2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
 	//Step to verify ConversionProofVer1ToVer2
 	//	- verify sumInput = sumOutput + fee
 	//	- verify if serial number of each input coin has been derived correctly
 	//	- verify input coins' randomness
 	//	- verify if output coins' commitment has been calculated correctly
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+
 	if hasPrivacy {
 		return false, errors.New("ConversionProof does not have privacy, something is wrong")
 	}

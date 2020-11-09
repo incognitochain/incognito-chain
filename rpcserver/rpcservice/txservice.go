@@ -253,7 +253,7 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	beaconHeight := beaconState.BeaconHeight
-	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidatePlainCoins,
+	realFee, _, _, err := txService.EstimateFee(2, unitFeeNativeToken, false, candidatePlainCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
 		privacyCustomTokenParams, int64(beaconHeight))
@@ -318,7 +318,7 @@ func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, 
 	}
 	beaconHeight := beaconState.BeaconHeight
 	paymentInfos := coin.CreatePaymentInfosFromPlainCoinsAndAddress(plainCoins, keySet.PaymentAddress, []byte{})
-	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, plainCoins,
+	realFee, _, _, err := txService.EstimateFee(1, unitFeeNativeToken, false, plainCoins,
 		paymentInfos, shardIDSender, numBlock, false,
 		metadataParam,
 		nil, int64(beaconHeight))
@@ -404,7 +404,8 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	beaconHeight := beaconState.BeaconHeight
-	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidatePlainCoins,
+	ver, err := transaction.GetTxVersionFromCoins(candidatePlainCoins)
+	realFee, _, _, err := txService.EstimateFee(int(ver), unitFeeNativeToken, false, candidatePlainCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
 		privacyCustomTokenParams, int64(beaconHeight))
@@ -445,6 +446,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 // if isGetPTokenFee == true: return fee for ptoken
 // if isGetPTokenFee == false: return fee for native token
 func (txService TxService) EstimateFee(
+	version int,
 	defaultFee int64,
 	isGetPTokenFee bool,
 	candidatePlainCoins []coin.PlainCoin,
@@ -479,7 +481,7 @@ func (txService TxService) EstimateFee(
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFeeForNativeToken()
 	}
-	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(len(candidatePlainCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
+	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(version, len(candidatePlainCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb, nil
 }
@@ -1647,7 +1649,11 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	isGetPTokenFee := false
 	beaconState := txService.BlockChain.GetBeaconBestState()
 	beaconHeight := beaconState.BeaconHeight
-	realFee, _, _, _ := txService.EstimateFee(
+	ver, err := transaction.GetTxVersionFromCoins(plainCoins)
+	if err!=nil{
+		return nil, NewRPCError(GetOutputCoinError ,err)
+	}
+	realFee, _, _, _ := txService.EstimateFee(int(ver),
 		estimateFeeCoinPerKb, isGetPTokenFee, plainCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, int64(beaconHeight))
 	if len(plainCoins) == 0 {
 		realFee = 0

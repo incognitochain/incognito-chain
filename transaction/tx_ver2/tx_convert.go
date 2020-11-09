@@ -2,18 +2,19 @@ package tx_ver2
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
@@ -39,6 +40,11 @@ func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxConvertVer1ToVer2InitParams {
+	// make sure info is not nil ; zero value for it is []byte{}
+
+	if info==nil{
+		info = []byte{}
+	}
 
 	return  &TxConvertVer1ToVer2InitParams{
 		stateDB:     stateDB,
@@ -58,12 +64,6 @@ func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) e
 	}
 	if len(params.paymentInfo) > 254 {
 		return utils.NewTransactionErr(utils.PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
-	}
-	limitFee := uint64(0)
-	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
-		false, nil, nil, limitFee)
-	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
 	}
 
 	sumInput, sumOutput := uint64(0), uint64(0)
@@ -134,18 +134,35 @@ func InitConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
 	if err := proveConversion(tx, params); err != nil {
 		return err
 	}
+	jsb, _ := json.Marshal(tx)
+	utils.Logger.Log.Infof("Init conversion complete ! -> %s", string(jsb))
+	txSize := tx.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 	return nil
 }
 
 func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID *common.Hash,  db *statedb.StateDB) ([]*privacy.CoinV2, error) {
 	var err error
+	isPRV := (tokenID==nil) || (*tokenID==common.PRVCoinID)
 	c := make([]*privacy.CoinV2, len(paymentInfos))
 
 	for i := 0; i < len(paymentInfos); i += 1 {
-		c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
-		if err != nil {
-			utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
-			return nil, err
+		if isPRV{
+			c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
+			if err != nil {
+				utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
+				return nil, err
+			}
+		}else{
+			createdCACoin, _, err := createUniqueOTACoinCA(paymentInfos[i], tokenID, db)
+			if err!=nil {
+				utils.Logger.Log.Errorf("TxConversion cannot create new CA coin - %v", err)
+				return nil, err
+			}
+			createdCACoin.SetPlainTokenID(tokenID)
+			c[i] = createdCACoin
 		}
 	}
 	return c, nil
@@ -226,8 +243,13 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		return false, errors.New("TxConversion found duplicate one-time-address error")
 	}
 
+
+	boolParams := make(map[string]bool)
+	boolParams["hasPrivacy"] = false
+	boolParams["isBatch"] = false
+
 	//Verify the conversion proof
-	valid, err := proofConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
+	valid, err := proofConversion.Verify(boolParams, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, nil)
 	if !valid {
 		if err != nil {
 			utils.Logger.Log.Error(err)
@@ -271,6 +293,11 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	metaData metadata.Metadata,
 	info []byte) *TxTokenConvertVer1ToVer2InitParams {
 
+	if info == nil{
+		info = []byte{}
+	}
+
+
 	tokenParams := &CustomTokenConversionParams{
 		tokenID:       tokenID,
 		tokenPayments: tokenPayments,
@@ -303,13 +330,6 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 		return errors.New("tokenInputs length = " + strconv.Itoa(len(params.tokenParams.tokenInputs)))
 	}
 
-	limitFee := uint64(0)
-	estimateTxSizeParam := tx_generic.NewEstimateTxSizeParam(len(params.feeInputs), len(params.feePayments),
-		false, nil, nil, limitFee)
-	if txSize := tx_generic.EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
-		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
-	}
-
 	for _, c := range params.feeInputs {
 		if c.GetVersion() != utils.TxVersion2Number {
 			return errors.New("TxConversion should only have fee input coins version 2")
@@ -329,7 +349,7 @@ func validateTxTokenConvertVer1ToVer2Params (params *TxTokenConvertVer1ToVer2Ini
 	return nil
 }
 
-func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2InitParams) error {
+func (txToken *TxToken) initTokenConversion(txNormal *Tx, params *TxTokenConvertVer1ToVer2InitParams) error {
 	txToken.TokenData.Type = utils.CustomTokenTransfer
 	txToken.TokenData.PropertyName = ""
 	txToken.TokenData.PropertySymbol = ""
@@ -353,13 +373,7 @@ func (txToken *TxToken) initTokenConversion(params *TxTokenConvertVer1ToVer2Init
 		nil,
 		params.info,
 	)
-	txToken.cachedTxNormal = nil
-	txNormal, ok := txToken.GetTxNormal().(*Tx)
-	if !ok{
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("TX should have been ver2"))
-	}
-	txNormal.SetSig(nil)
-	txNormal.SetSigPubKey(nil)
+
 	if err := validateTxConvertVer1ToVer2Params(txConvertParams); err != nil {
 		return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 	}
@@ -419,13 +433,29 @@ func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitP
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
+	txn := makeTxToken(tx, nil, nil, nil)
 	// Init Token
-	if err := txToken.initTokenConversion(params); err != nil {
+	if err := txToken.initTokenConversion(txn, params); err != nil {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
 
-	err = txToken.Tx.signOnMessage(inps, outs, txPrivacyParams, txToken.Hash()[:])
-
+	tdh, err := txToken.TokenData.Hash()
+	if err!=nil{
+		return err
+	}
+	message := common.HashH(append(tx.Hash()[:], tdh[:]...))
+	err = tx.signOnMessage(inps, outs, txPrivacyParams, message[:])
+	if err!=nil{
+		return err
+	}
+	err = txToken.SetTxBase(tx)
+	if err!=nil{
+		return err
+	}
+	txSize := txToken.GetTxActualSize()
+	if txSize > common.MaxTxSize {
+		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 	return nil
 }
