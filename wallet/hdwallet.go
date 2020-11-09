@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -236,8 +235,6 @@ func deserialize(data []byte) (*KeyWallet, error) {
 
 		key.KeySet.OTAKey.SetPublicSpend(data[2:2+pkKeyLength])
 		key.KeySet.OTAKey.SetOTASecretKey(data[3+pkKeyLength :3+pkKeyLength+skKeyLength])
-		fmt.Println("BUGLOG2", key.KeySet.OTAKey.GetPublicSpend())
-		fmt.Println("BUGLOG2", key.KeySet.OTAKey.GetOTASecretKey())
 	}
 
 	// validate checksum
