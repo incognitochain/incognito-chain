@@ -90,7 +90,11 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 
 		var err2 error
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(
+		ver, err := transaction.GetTxVersionFromCoins(outCoins)
+		if err!=nil{
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(int(ver),
 			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customPrivacyTokenParam, int64(beaconHeight))
 		if err2 != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidTxFeeError, err2)
