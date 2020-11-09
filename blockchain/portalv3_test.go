@@ -2524,8 +2524,8 @@ type ExpectedResultRequestMatchingWRedeemV3 struct {
 }
 
 func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
-	beaconHeight := uint64(1003)
-	shardHeight := uint64(1003)
+	beaconHeight := uint64(1004)
+	shardHeight := uint64(1004)
 	shardID := byte(0)
 
 	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
@@ -2629,7 +2629,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 		shardID, shardHeight,
 		USER_ETH_ADDRESS_1)
 
-	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-2").String()
 	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-2", common.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
@@ -2640,7 +2640,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 		shardID, shardHeight,
 		USER_ETH_ADDRESS_1)
 
-	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-1", common.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
@@ -2690,15 +2690,15 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 			uniqueRedeemID:   "redeem-bnb-2",
 			cusIncAddressStr: CUS_INC_ADDRESS_1,
 		},
-		// invalid request matching waiting redeem: duplicate waiting redeem quest ID
+		// invalid request matching waiting redeem: duplicate waiting redeem request ID
 		{
 			uniqueRedeemID:   "redeem-bnb-1",
 			cusIncAddressStr: CUS_INC_ADDRESS_2,
 		},
-		// invalid request matching waiting redeem:
+		// invalid request matching waiting redeem: invalid custodian
 		{
-			uniqueRedeemID:   "redeem-bnb-1",
-			cusIncAddressStr: CUS_INC_ADDRESS_2,
+			uniqueRedeemID:   "redeem-bnb-3",
+			cusIncAddressStr: CUS_INC_ADDRESS_3,
 		},
 	}
 
@@ -2740,7 +2740,7 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 137500000000,
+			common.PortalBNBIDStr: 0,
 		})
 
 	custodian2 := statedb.NewCustodianState()
@@ -2764,7 +2764,7 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 13500000000,
+			common.PortalBNBIDStr: 12500000000,
 		})
 
 	custodian3 := statedb.NewCustodianState()
@@ -2799,24 +2799,28 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 		"redeem-bnb-1", common.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
-		[]*statedb.MatchingRedeemCustodianDetail{},
+		[]*statedb.MatchingRedeemCustodianDetail{
+			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 1*1e9),
+		},
 		2000000,
 		beaconHeight, common.Hash{},
 		shardID, shardHeight,
 		USER_ETH_ADDRESS_1)
 
-	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-2").String()
 	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-2", common.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
-		[]*statedb.MatchingRedeemCustodianDetail{},
+		[]*statedb.MatchingRedeemCustodianDetail{
+			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_1, CUS_BNB_ADDRESS_1, 137500000000),
+		},
 		280000000,
 		beaconHeight, common.Hash{},
 		shardID, shardHeight,
 		USER_ETH_ADDRESS_1)
 
-	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-1", common.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
@@ -2841,13 +2845,12 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 			wRedeemReqKey2: wRedeemReq2,
 			wRedeemReqKey3: wRedeemReq3,
 		},
-		numBeaconInsts: 5,
+		numBeaconInsts: 4,
 		statusInsts: []string{
-			common.PortalRedeemRequestAcceptedChainStatus,
-			common.PortalRedeemRequestAcceptedChainStatus,
-			common.PortalRedeemRequestAcceptedChainStatus,
-			common.PortalRedeemRequestRejectedChainStatus,
-			common.PortalRedeemRequestRejectedChainStatus,
+			common.PortalReqMatchingRedeemAcceptedChainStatus,
+			common.PortalReqMatchingRedeemAcceptedChainStatus,
+			common.PortalReqMatchingRedeemRejectedChainStatus,
+			common.PortalReqMatchingRedeemRejectedChainStatus,
 		},
 	}
 
