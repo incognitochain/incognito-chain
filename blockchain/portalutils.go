@@ -211,8 +211,14 @@ func pickUpCustodianForPorting(
 	if len(sortedCusCollaterals) == 0 {
 		return nil, errors.New("pickUpCustodianForPorting: There is no custodian supply remote address for porting tokenID")
 	}
-	sort.SliceStable(sortedCusCollaterals, func(i, j int) bool {
-		return sortedCusCollaterals[i].amountInUSDT > sortedCusCollaterals[j].amountInUSDT
+	sort.Slice(sortedCusCollaterals, func(i, j int) bool {
+		if sortedCusCollaterals[i].amountInUSDT > sortedCusCollaterals[j].amountInUSDT{
+			return true
+		} else if (sortedCusCollaterals[i].amountInUSDT == sortedCusCollaterals[j].amountInUSDT) &&
+			(sortedCusCollaterals[i].custodianKey < sortedCusCollaterals[j].custodianKey) {
+			return true
+		}
+		return false
 	})
 
 	// convert porting amount (up to percent) to USDT
