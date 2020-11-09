@@ -62,6 +62,13 @@ const ETH_ID = "0000000000000000000000000000000000000000"
 
 const BNB_NODE_URL = "https://data-seed-pre-0-s3.binance.org:443"
 
+var supportedCollaterals = []PortalCollateral{
+	{"0000000000000000000000000000000000000000", 9},		// eth
+	{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6},		// usdt, kovan testnet
+	{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6},		// usdc, kovan testnet
+	{"4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", 6},		// dai, kovan testnet
+}
+
 func (s *PortalTestSuiteV3) SetupTest() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "portal_test_statedb_")
 	if err != nil {
@@ -81,6 +88,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 			common.PortalBTCIDStr: {Amount: 10000000000},
 			ETH_ID:                {Amount: 400000000},
 			USDT_ID:               {Amount: 1000000},
+			DAI_ID: {Amount: 1000000},
 		})
 	s.currentPortalStateForProducer = CurrentPortalState{
 		CustodianPoolState:         map[string]*statedb.CustodianState{},
@@ -134,13 +142,14 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						TP130:                                130,
 						MinPercentPortingFee:                 0.01,
 						MinPercentRedeemFee:                  0.01,
-						SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),
+						SupportedCollateralTokens:            supportedCollaterals,
 					},
 				},
 				BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
 				BNBFullNodeHost:          TestnetBNBFullNodeHost,
 				BNBFullNodePort:          TestnetBNBFullNodePort,
 				BNBRelayingHeaderChainID: TestnetBNBChainID,
+				PortalETHContractAddressStr: "0xDdFe62F1022a62bF8Dc007cb4663228C71F5235b",
 			},
 		},
 	}
@@ -862,6 +871,29 @@ func buildPortalRequestRedeemActionV3(
 	return []string{strconv.Itoa(metadata.PortalRedeemRequestMeta), actionContentBase64Str}
 }
 
+func buildPortalRequestMatchingWRedeemActionV3(
+	uniqueRedeemID string,
+	custodianIncAddress string,
+	shardID byte,
+) []string {
+	data := metadata.PortalReqMatchingRedeem{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalReqMatchingRedeemMeta,
+		},
+		CustodianAddressStr: custodianIncAddress,
+		RedeemID:            uniqueRedeemID,
+	}
+
+	actionContent := metadata.PortalReqMatchingRedeemAction{
+		Meta:        data,
+		TxReqID:     common.Hash{},
+		ShardID:     shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalReqMatchingRedeemMeta), actionContentBase64Str}
+}
+
 /*
 	Feature 0: Relay exchange rate
 */
@@ -1086,6 +1118,7 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateral() {
 	Feature 2: Custodians deposit collateral (ETH/ERC20)
 */
 
+
 type TestCaseCustodianDepositV3 struct {
 	custodianIncAddress string
 	remoteAddress       map[string]string
@@ -1094,6 +1127,9 @@ type TestCaseCustodianDepositV3 struct {
 	blockHash           eCommon.Hash
 	txIndex             uint
 	proofStrs           []string
+
+	isSubmitted bool
+	uniqExternalTxID []byte
 }
 
 type ExpectedResultCustodianDepositV3 struct {
@@ -1118,6 +1154,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 			blockHash:         eCommon.HexToHash("0x708c2c91ec3316339c92f685b9eaf63ef77d8e784884dcfc122049e016964b9c"),
 			txIndex:           0,
 			proofStrs:         []string{"+QJQgiCAuQJK+QJHAYKFm7kBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD5AT35ATqU3f5i8QIqYr+NwAfLRmMijHH1I1vhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFjRXhdigAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGcxMlM1THJzMVhlUUxicU40eVN5S3RqQWpkMmQ3c0JQMnRqRmlqem1wNmF2cnJrUUNORk1wa1htM0ZQemoyV2N1MlpOcUpFbWg5SnJpVnVSRXJWd2h1UW5MbVdTYWdnb2JFV3NCRWNpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="},
+			uniqExternalTxID: []byte{},
+			isSubmitted: false,
 		},
 		// the existed custodian deposits other token more with new remote addresses
 		// expect don't change to new remote addresses,
@@ -1133,6 +1171,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 			blockHash:         eCommon.HexToHash("0xa5c475e212ddc995e8ae6d0ff5697329c7d940fea12ffb4409d228d2ff81dda6"),
 			txIndex:           0,
 			proofStrs:         []string{"+FGgQyJ3tgRMZNNGQsj6WJUnyQbGUBhDuJtTTnvxKXwUs+yAgICAgICAoFR3R54AGET6UMLq8J+wZY26e4kmkJE7TrZYc4/OVGZvgICAgICAgIA= +QLsMLkC6PkC5QGDARO4uQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAIAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAACAAAAAAAAAAEAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAABAAAQAAAAAAAAAAAAAAQAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAgAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPkB2viblE+W/jt6bPlyX1nTU/cjwb22TKaq+GOg3fJSrRviyJtpwrBo/DeNqpUrp/FjxKEWKPVaTfUjs++gAAAAAAAAAAAAAAAA/ZTEarjc8JKNUROm/qqSV5NQThagAAAAAAAAAAAAAAAA3f5i8QIqYr+NwAfLRmMijHH1I1ugAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiscjBInoAAD5ATqU3f5i8QIqYr+NwAfLRmMijHH1I1vhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEAAAAAAAAAAAAAAAAAT5b+O3ps+XJfWdNT9yPBvbZMpqoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJUC+QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGcxMlM1THJzMVhlUUxicU40eVN5S3RqQWpkMmQ3c0JQMnRqRmlqem1wNmF2cnJrUUNORk1wa1htM0ZQemoyV2N1MlpOcUpFbWg5SnJpVnVSRXJWd2h1UW5MbVdTYWdnb2JFV3NCRWNpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="},
+			uniqExternalTxID: []byte{},
+			isSubmitted: false,
 		},
 		// invalid: submit the used proof
 		{
@@ -1146,6 +1186,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 			blockHash:         eCommon.HexToHash("0x052bf2d84ed7ff491fee92f5c972064874e87b6bccf380d2d2fdce868fcc779a"),
 			txIndex:           0,
 			proofStrs:         []string{"+FGgkim5h9Db5fqlQSWhHU4r/Een/l9ayPW2RvRgg7/mFB+AgICAgICAoEgQ3HfIjb7iph+5ox+t2rxlS8cM0zlAsPnHJuMUQtt5gICAgICAgIA= +QJOMLkCSvkCRwGChZu5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+QE9+QE6lN3+YvECKmK/jcAHy0ZjIoxx9SNb4aAtS1l5NfPNZ/su6/HbTevJNM7lx7qnFT+YD9vrLnQITrkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABY0V4XYoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABnMTJTNUxyczFYZVFMYnFONHlTeUt0akFqZDJkN3NCUDJ0akZpanptcDZhdnJya1FDTkZNcGtYbTNGUHpqMldjdTJaTnFKRW1oOUpyaVZ1UkVyVndodVFuTG1XU2FnZ29iRVdzQkVjaQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="},
+			uniqExternalTxID: []byte{},
+			isSubmitted: true,
 		},
 		// new custodian deposit ERC20 (DAI)
 		{
@@ -1158,6 +1200,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 			blockHash:         eCommon.HexToHash("0xe20c9ce7f574c56bf4e6a5581c5dc67733f572d605fc2fca8a1ead8697d54c50"),
 			txIndex:           0,
 			proofStrs:         []string{"+FGgI4BYmPQn1Z8GX6I/S66oN5kC8K9nJK0f7vjIx462cPeAgICAgICAoMcZ/82EkEqECH4LANdv6vQRDTQLpqmo6rcvKsCNoroUgICAgICAgIA= +QLrMLkC5/kC5AGC2SC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAIAAAAAAAAAAQAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAEAABAAAAAAAAAAAAAABAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAACAAAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+QHa+JuUT5b+O3ps+XJfWdNT9yPBvbZMpqr4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAAD9lMRquNzwko1RE6b+qpJXk1BOFqAAAAAAAAAAAAAAAADd/mLxAipiv43AB8tGYyKMcfUjW6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACKxyMEiegAAPkBOpTd/mLxAipiv43AB8tGYyKMcfUjW+GgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65AQAAAAAAAAAAAAAAAABPlv47emz5cl9Z01P3I8G9tkymqgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlQL5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZzEyUzVMcnMxWGVRTGJxTjR5U3lLdGpBamQyZDdzQlAydGpGaWp6bXA2YXZycmtRQ05GTXBrWG0zRlB6ajJXY3UyWk5xSkVtaDlKcmlWdVJFclZ3aHVRbkxtV1NhZ2dvYkVXc0JFY2kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+			uniqExternalTxID: []byte{},
+			isSubmitted: false,
 		},
 		// invalid: collateral tokenID is not supported
 		{
@@ -1170,6 +1214,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 			blockHash:         eCommon.HexToHash("0x8042b68712126e8b44448459e49ca749b1017e0c7664c218eac4df3fd4f7fd95"),
 			txIndex:           0,
 			proofStrs:         []string{"+FGgSnC5szaIJUmGb0yLUtpiDUuy4En6iLj6f8k+02wV1s+AgICAgICAoMcZ/82EkEqECH4LANdv6vQRDTQLpqmo6rcvKsCNoroUgICAgICAgIA= +QLrMLkC5/kC5AGC2SC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAIAAAAAAAAAAQAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAEAABAAAAAAAAAAAAAABAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAACAAAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+QHa+JuUT5b+O3ps+XJfWdNT9yPBvbZMpqr4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAAD9lMRquNzwko1RE6b+qpJXk1BOFqAAAAAAAAAAAAAAAADd/mLxAipiv43AB8tGYyKMcfUjW6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACKxyMEiegAAPkBOpTd/mLxAipiv43AB8tGYyKMcfUjW+GgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65AQAAAAAAAAAAAAAAAABPlv47emz5cl9Z01P3I8G9tkymqgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlQL5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZzEyUzVMcnMxWGVRTGJxTjR5U3lLdGpBamQyZDdzQlAydGpGaWp6bXA2YXZycmtRQ05GTXBrWG0zRlB6ajJXY3UyWk5xSkVtaDlKcmlWdVJFclZ3aHVRbkxtV1NhZ2dvYkVXc0JFY2kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+			uniqExternalTxID: []byte{},
+			isSubmitted: false,
 		},
 	}
 
@@ -1186,13 +1232,13 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		})
 	custodian1.SetTotalTokenCollaterals(
 		map[string]uint64{
-			ETH_ID:  10 * 1e9,
-			USDT_ID: 500 * 1e6,
+			ETH_ID:  1 * 1e8,
+			DAI_ID: 10 * 1e9,
 		})
 	custodian1.SetFreeTokenCollaterals(
 		map[string]uint64{
-			ETH_ID:  10 * 1e9,
-			USDT_ID: 500 * 1e6,
+			ETH_ID:  1 * 1e8,
+			DAI_ID: 10 * 1e9,
 		})
 
 	custodian2 := statedb.NewCustodianState()
@@ -1203,11 +1249,11 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
-			USDT_ID: 2000 * 1e6,
+			DAI_ID: 10 * 1e9,
 		})
 	custodian2.SetFreeTokenCollaterals(
 		map[string]uint64{
-			USDT_ID: 2000 * 1e6,
+			DAI_ID: 10 * 1e9,
 		})
 
 	expectedRes := &ExpectedResultCustodianDepositV3{
@@ -1226,9 +1272,13 @@ func buildCustodianDepositActionsV3FromTcs(tcs []TestCaseCustodianDepositV3, sha
 
 	for _, tc := range tcs {
 		inst := buildPortalCustodianDepositActionV3(tc.remoteAddress, tc.blockHash, tc.txIndex, tc.proofStrs, shardID)
+		uniqExternalTxID := metadata.GetUniqExternalTxID(common.ETHChainName, tc.blockHash, tc.txIndex)
 		insts = append(insts, instructionForProducer{
 			inst:         inst,
-			optionalData: nil,
+			optionalData: map[string]interface{}{
+				"isSubmitted": tc.isSubmitted,
+				"uniqExternalTxID" : uniqExternalTxID,
+			},
 		})
 	}
 
@@ -1237,7 +1287,6 @@ func buildCustodianDepositActionsV3FromTcs(tcs []TestCaseCustodianDepositV3, sha
 
 //todo:
 func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
-	return
 	fmt.Println("Running TestCustodianDepositCollateral - beacon height 1000 ...")
 	bc := s.blockChain
 	pm := NewPortalManager()
@@ -1266,7 +1315,6 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
 
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
-
 /*
 	Feature 2: Custodians withdraw free collaterals (ETH/ERC20)
 */
@@ -2516,6 +2564,408 @@ func (s *PortalTestSuiteV3) TestRequestRedeemV3() {
 
 	// build actions from testcases
 	instsForProducer := buildRequestRedeemActionsFromTcs(testcases, shardID, shardHeight)
+
+	// producer instructions
+	newInsts, err := producerPortalInstructions(
+		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+	s.Equal(nil, err)
+
+	// process new instructions
+	err = processPortalInstructions(
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+
+	// check results
+	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
+	s.Equal(nil, err)
+
+	for i, inst := range newInsts {
+		s.Equal(expectedResult.statusInsts[i], inst[2], "Instruction index %v", i)
+	}
+
+	s.Equal(expectedResult.custodianPool, s.currentPortalStateForProducer.CustodianPoolState)
+	s.Equal(expectedResult.waitingPortingRes, s.currentPortalStateForProducer.WaitingPortingRequests)
+
+	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
+}
+
+/*
+	Feature 3: Custodians request matching waiting redeem requests
+*/
+type TestCaseRequestMatchingWRedeemV3 struct {
+	uniqueRedeemID          string
+	cusIncAddressStr   string
+}
+
+type ExpectedResultRequestMatchingWRedeemV3 struct {
+	waitingPortingRes map[string]*statedb.WaitingPortingRequest
+	custodianPool     map[string]*statedb.CustodianState
+	waitingRedeemReq  map[string]*statedb.RedeemRequest
+	numBeaconInsts    uint
+	statusInsts       []string
+}
+
+func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
+	beaconHeight := uint64(1003)
+	shardHeight := uint64(1003)
+	shardID := byte(0)
+
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		})
+	custodian1.SetTotalCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(0)
+	custodian1.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  10 * 1e9,
+			USDT_ID: 500 * 1e6,
+		})
+	custodian1.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  0,
+			USDT_ID: 0,
+		})
+	custodian1.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 1000 * 1e9,
+		})
+	custodian1.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID:  10 * 1e9,
+				USDT_ID: 500 * 1e6,
+			},
+		})
+	custodian1.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 137500000000,   // 137.5 BNB
+		})
+
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		})
+	custodian2.SetTotalTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 2000 * 1e6,
+		})
+	custodian2.SetFreeTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 260 * 1e6,
+		})
+	custodian2.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				USDT_ID: 1740 * 1e6,
+			}})
+	custodian2.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 13500000000,   // 13.5 BNB
+		})
+
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+		})
+	custodian3.SetTotalCollateral(1000 * 1e9)
+	custodian3.SetFreeCollateral(1000 * 1e9)
+
+	// waiting porting requests
+	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
+	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
+		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, 30*1e9,
+		[]*statedb.MatchingPortingCustodianDetail{
+			{
+				IncAddress:             custodian2.GetIncognitoAddress(),
+				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				Amount:                 30 * 1e9,
+				LockedAmountCollateral: 0,
+				LockedTokenCollaterals: map[string]uint64{
+					USDT_ID: 1200 * 1e6,
+				},
+			},
+		}, 60000000, beaconHeight, shardHeight, shardID)
+
+	// waiting redeem requests
+	wRedeemReqKey1 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReq1 := statedb.NewRedeemRequestWithValue(
+		"redeem-bnb-1", common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
+		1*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{},
+		2000000,
+		beaconHeight, common.Hash{},
+		shardID, shardHeight,
+		USER_ETH_ADDRESS_1)
+
+	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
+		"redeem-bnb-2", common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
+		140*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{},
+		280000000,
+		beaconHeight, common.Hash{},
+		shardID, shardHeight,
+		USER_ETH_ADDRESS_1)
+
+	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
+		"redeem-bnb-1", common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
+		130*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{},
+		280000000,
+		beaconHeight, common.Hash{},
+		shardID, shardHeight,
+		USER_ETH_ADDRESS_1)
+
+	custodians := map[string]*statedb.CustodianState{
+		custodianKey1: custodian1,
+		custodianKey2: custodian2,
+		custodianKey3: custodian3,
+	}
+	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
+		wPortingReqKey3: wPortingRequest3,
+	}
+	wRedeemRequests := map[string]*statedb.RedeemRequest{
+		wRedeemReqKey1: wRedeemReq1,
+		wRedeemReqKey2: wRedeemReq2,
+		wRedeemReqKey3: wRedeemReq3,
+	}
+
+	s.currentPortalStateForProducer.CustodianPoolState = custodians
+	s.currentPortalStateForProducer.WaitingPortingRequests = wPortingRequests
+	s.currentPortalStateForProducer.WaitingRedeemRequests = wRedeemRequests
+
+	s.currentPortalStateForProcess.CustodianPoolState = cloneCustodians(custodians)
+	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
+	s.currentPortalStateForProcess.WaitingRedeemRequests = cloneRedeemRequests(wRedeemRequests)
+}
+
+func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequestMatchingWRedeemV3, *ExpectedResultRequestMatchingWRedeemV3) {
+	beaconHeight := uint64(1004)
+	shardHeight := uint64(1004)
+	shardID := byte(0)
+	// build test cases
+	testcases := []TestCaseRequestMatchingWRedeemV3{
+		// valid request matching waiting redeem: matching full redeem amount
+		{
+			uniqueRedeemID:          "redeem-bnb-1",
+			cusIncAddressStr: CUS_INC_ADDRESS_2,
+		},
+		// valid request matching waiting redeem: matching a part of redeem amount
+		{
+			uniqueRedeemID:          "redeem-bnb-2",
+			cusIncAddressStr: CUS_INC_ADDRESS_1,
+		},
+		// invalid request matching waiting redeem: duplicate waiting redeem quest ID
+		{
+			uniqueRedeemID:          "redeem-bnb-1",
+			cusIncAddressStr: CUS_INC_ADDRESS_2,
+		},
+		// invalid request matching waiting redeem:
+		{
+			uniqueRedeemID:          "redeem-bnb-1",
+			cusIncAddressStr: CUS_INC_ADDRESS_2,
+		},
+	}
+
+	// build expected results
+	// custodian state after matching porting requests
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		})
+	custodian1.SetTotalCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(0)
+	custodian1.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  10 * 1e9,
+			USDT_ID: 500 * 1e6,
+		})
+	custodian1.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  0,
+			USDT_ID: 0,
+		})
+	custodian1.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 1000 * 1e9,
+		})
+	custodian1.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID:  10 * 1e9,
+				USDT_ID: 500 * 1e6,
+			},
+		})
+	custodian1.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 137500000000,
+		})
+
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		})
+	custodian2.SetTotalTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 2000 * 1e6,
+		})
+	custodian2.SetFreeTokenCollaterals(
+		map[string]uint64{
+			USDT_ID: 260 * 1e6,
+		})
+	custodian2.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				USDT_ID: 1740 * 1e6,
+			}})
+	custodian2.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 13500000000,
+		})
+
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+		})
+	custodian3.SetTotalCollateral(1000 * 1e9)
+	custodian3.SetFreeCollateral(1000 * 1e9)
+
+	// waiting porting requests
+	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
+	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
+		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, 30*1e9,
+		[]*statedb.MatchingPortingCustodianDetail{
+			{
+				IncAddress:             custodian2.GetIncognitoAddress(),
+				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				Amount:                 30 * 1e9,
+				LockedAmountCollateral: 0,
+				LockedTokenCollaterals: map[string]uint64{
+					USDT_ID: 1200 * 1e6,
+				},
+			},
+		}, 60000000, beaconHeight, shardHeight, shardID)
+
+	// waiting redeem requests
+	wRedeemReqKey1 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReq1 := statedb.NewRedeemRequestWithValue(
+		"redeem-bnb-1", common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
+		1*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{},
+		2000000,
+		beaconHeight, common.Hash{},
+		shardID, shardHeight,
+		USER_ETH_ADDRESS_1)
+
+	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
+		"redeem-bnb-2", common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
+		140*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{},
+		280000000,
+		beaconHeight, common.Hash{},
+		shardID, shardHeight,
+		USER_ETH_ADDRESS_1)
+
+	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
+	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
+		"redeem-bnb-1", common.PortalBNBIDStr,
+		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
+		130*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{},
+		280000000,
+		beaconHeight, common.Hash{},
+		shardID, shardHeight,
+		USER_ETH_ADDRESS_1)
+
+	expectedRes := &ExpectedResultRequestMatchingWRedeemV3{
+		custodianPool: map[string]*statedb.CustodianState{
+			custodianKey1: custodian1,
+			custodianKey2: custodian2,
+			custodianKey3: custodian3,
+		},
+		waitingPortingRes: map[string]*statedb.WaitingPortingRequest{
+			wPortingReqKey3: wPortingRequest3,
+		},
+		waitingRedeemReq: map[string]*statedb.RedeemRequest{
+			wRedeemReqKey1: wRedeemReq1,
+			wRedeemReqKey2: wRedeemReq2,
+			wRedeemReqKey3: wRedeemReq3,
+		},
+		numBeaconInsts: 5,
+		statusInsts: []string{
+			common.PortalRedeemRequestAcceptedChainStatus,
+			common.PortalRedeemRequestAcceptedChainStatus,
+			common.PortalRedeemRequestAcceptedChainStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
+		},
+	}
+
+	return testcases, expectedRes
+}
+
+func buildRequestMatchingWRedeemV3ActionsFromTcs(tcs []TestCaseRequestMatchingWRedeemV3, shardID byte, shardHeight uint64) []instructionForProducer {
+	insts := []instructionForProducer{}
+
+	for _, tc := range tcs {
+		inst := buildPortalRequestMatchingWRedeemActionV3(
+			tc.uniqueRedeemID, tc.cusIncAddressStr, shardID)
+		insts = append(insts, instructionForProducer{
+			inst:         inst,
+			optionalData: nil,
+		})
+	}
+
+	return insts
+}
+
+func (s *PortalTestSuiteV3) TestRequestMatchingWRedeemV3() {
+	fmt.Println("Running TestRequestMatchingWRedeemV3 - beacon height 1004 ...")
+	bc := s.blockChain
+	pm := NewPortalManager()
+	beaconHeight := uint64(1004)
+	shardHeight := uint64(1004)
+	shardID := byte(0)
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+
+	s.SetupTestRequestMatchingWRedeemV3()
+
+	// build test cases
+	testcases, expectedResult := buildTestCaseAndExpectedResultRequestMatchingWRedeemV3()
+
+	// build actions from testcases
+	instsForProducer := buildRequestMatchingWRedeemV3ActionsFromTcs(testcases, shardID, shardHeight)
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
