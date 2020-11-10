@@ -708,7 +708,7 @@ func CalUnlockCollateralAmountV3(
 	}
 
 	lockedAmountCollateral := uint64(0)
-	listLockedTokens := custodianState.GetLockedTokenCollaterals()[tokenID]
+	listLockedTokens := cloneMap(custodianState.GetLockedTokenCollaterals()[tokenID])
 	if listLockedTokens == nil {
 		listLockedTokens = map[string]uint64{}
 	}
