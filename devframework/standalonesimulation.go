@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -642,8 +643,9 @@ func createGenesisTx(accounts []account.Account) []string {
 		panic(err)
 	}
 	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
+	initPRV := int(1000000000000 * math.Pow(10, 9))
 	for _, account := range accounts {
-		txs := initSalaryTx("1000000000000000000000000000000", account.PrivateKey, stateDB)
+		txs := initSalaryTx(strconv.Itoa(initPRV), account.PrivateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
 	return transactions

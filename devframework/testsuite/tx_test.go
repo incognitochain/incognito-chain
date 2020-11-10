@@ -23,7 +23,7 @@ func Test_SendTX(t *testing.T) {
 	acc1 := sim.NewAccountFromShard(1)
 	acc2 := sim.NewAccountFromShard(0)
 
-	_, err := sim.RPC.API_CreateAndSendTransaction(sim.GenesisAccount.PrivateKey, map[string]interface{}{
+	_, err := sim.RPC.API_SendTxPRV(sim.GenesisAccount.PrivateKey, map[string]interface{}{
 		acc1.PaymentAddress: float64(1000),
 		acc2.PaymentAddress: float64(3000),
 	}, -1, 0)
@@ -122,7 +122,7 @@ func Test_StakeFlow1(t *testing.T) {
 	}
 
 	stakeList := []rpcclient.StakingTxParam{stake1}
-	_, err := sim.RPC.API_CreateAndSendStakingTransaction(stake1)
+	_, err := sim.RPC.API_SendTxStaking(stake1)
 	if err != nil {
 		panic(err)
 	}
@@ -209,7 +209,7 @@ func Test_StakeFlow1(t *testing.T) {
 		SenderPrk: sim.GenesisAccount.PrivateKey,
 		MinerPrk:  miner1.PrivateKey,
 	}
-	if _, err := sim.RPC.API_CreateTxStopAutoStake(unstake1); err != nil {
+	if _, err := sim.RPC.API_SendTxStopAutoStake(unstake1); err != nil {
 		panic(err)
 	}
 	fmt.Println("Stopstake staker1 at epoch", sim.GetBlockchain().BeaconChain.GetBestView().GetBlock().GetCurrentEpoch())
@@ -230,7 +230,7 @@ func Test_StakeFlow1(t *testing.T) {
 	}
 
 	stakeList = append(stakeList, stake2)
-	_, err = sim.RPC.API_CreateAndSendStakingTransaction(stake2)
+	_, err = sim.RPC.API_SendTxStaking(stake2)
 	if err != nil {
 		panic(err)
 	}
@@ -250,7 +250,7 @@ func Test_StakeFlow1(t *testing.T) {
 		}
 	}
 
-	_, err = sim.RPC.API_WithdrawReward(miner1.PrivateKey, miner1.PaymentAddress)
+	_, err = sim.RPC.API_SendTxWithdrawReward(miner1.PrivateKey, miner1.PaymentAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -278,7 +278,7 @@ func Test_PDEFlow(t *testing.T) {
 		ShardNumber: 1,
 	})
 	acc1 := sim.NewAccountFromShard(0)
-	_, err := sim.RPC.API_CreateAndSendTransaction(sim.GenesisAccount.PrivateKey, map[string]interface{}{
+	_, err := sim.RPC.API_SendTxPRV(sim.GenesisAccount.PrivateKey, map[string]interface{}{
 		acc1.PaymentAddress: float64(100000000),
 	}, -1, -1)
 	if err != nil {
@@ -288,18 +288,8 @@ func Test_PDEFlow(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 
 	//Create custom token
-	result1, err := sim.RPC.API_CreateAndSendPrivacyCustomTokenTransaction(sim.GenesisAccount.PrivateKey, nil, 5, 1, map[string]interface{}{
-		"Privacy":     true,
-		"TokenID":     "",
-		"TokenName":   "pLAM",
-		"TokenSymbol": "LAM",
-		"TokenFee":    float64(0),
-		"TokenTxType": float64(0),
-		"TokenAmount": float64(30000000000),
-		"TokenReceivers": map[string]interface{}{
-			sim.GenesisAccount.PaymentAddress: float64(30000000000),
-		},
-	}, "", -1)
+	// 9223372036754775808
+	result1, err := sim.RPC.API_SendTxCreateCustomToken(sim.GenesisAccount.PrivateKey, sim.GenesisAccount.PaymentAddress, 10000000, "pTest", "TES", 30000000000)
 	if err != nil {
 		panic(err)
 	}
@@ -313,7 +303,7 @@ func Test_PDEFlow(t *testing.T) {
 
 	burnAddr := sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
 	// fmt.Println(burnAddr)
-	result2, err := sim.RPC.API_CreateAndSendTxWithPTokenContributionV2(sim.GenesisAccount.PrivateKey, nil, -1, 0, map[string]interface{}{
+	result2, err := sim.RPC.API_SendTxWithPTokenContributionV2(sim.GenesisAccount.PrivateKey, nil, -1, 0, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     result1.TokenID,
 		"TokenTxType": float64(1),
@@ -340,7 +330,7 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 
-	_, err = sim.RPC.API_CreateAndSendTxWithPRVContributionV2(sim.GenesisAccount.PrivateKey, map[string]interface{}{burnAddr: "100000000000"}, -1, 0, map[string]interface{}{
+	_, err = sim.RPC.API_SendTxWithPRVContributionV2(sim.GenesisAccount.PrivateKey, map[string]interface{}{burnAddr: "100000000000"}, -1, 0, map[string]interface{}{
 		"PDEContributionPairID": "testPAIR",
 		"ContributorAddressStr": sim.GenesisAccount.PaymentAddress,
 		"ContributedAmount":     "100000000000",
@@ -360,7 +350,7 @@ func Test_PDEFlow(t *testing.T) {
 	rBytes, _ := json.Marshal(r)
 	fmt.Println(string(rBytes))
 
-	_, err = sim.RPC.API_CreateAndSendTxWithPRVCrossPoolTradeReq(acc1.PrivateKey, map[string]interface{}{burnAddr: "1000000"}, -1, -1, map[string]interface{}{
+	_, err = sim.RPC.API_SendTxWithPRVCrossPoolTradeReq(acc1.PrivateKey, map[string]interface{}{burnAddr: "1000000"}, -1, -1, map[string]interface{}{
 		"TokenIDToBuyStr":     result1.TokenID,
 		"TokenIDToSellStr":    "0000000000000000000000000000000000000000000000000000000000000004",
 		"SellAmount":          "1000000",
@@ -375,7 +365,7 @@ func Test_PDEFlow(t *testing.T) {
 		sim.GenerateBlock().NextRound()
 	}
 
-	_, err = sim.RPC.API_CreateAndSendTxWithPTokenCrossPoolTradeReq(sim.GenesisAccount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, map[string]interface{}{
+	_, err = sim.RPC.API_SendTxWithPTokenCrossPoolTradeReq(sim.GenesisAccount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     result1.TokenID,
 		"TokenTxType": float64(1),

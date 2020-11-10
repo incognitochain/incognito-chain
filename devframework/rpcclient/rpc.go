@@ -22,44 +22,61 @@ func NewRPCClient(client ClientInterface) *RPCClient {
 	return rpc
 }
 
-func (r *RPCClient) API_CreateAndSendTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxPRV(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTransaction(privateKey, receivers, fee, privacy)
 	return &result, err
 }
 
-func (r *RPCClient) API_CreateAndSendPrivacyCustomTokenTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (*jsonresult.CreateTransactionTokenResult, error) {
+func (r *RPCClient) API_SendTxCreateCustomToken(privateKey string, receiverPaymentAddress string, privacy float64, tokenName string, tokenSymbol string, tokenAmount uint64) (*jsonresult.CreateTransactionTokenResult, error) {
+	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, nil, -1, privacy, map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     "",
+		"TokenName":   tokenName,
+		"TokenSymbol": tokenSymbol,
+		"TokenFee":    float64(0),
+		"TokenTxType": float64(0),
+		"TokenAmount": float64(tokenAmount),
+		"TokenReceivers": map[string]interface{}{
+			receiverPaymentAddress: float64(tokenAmount),
+		},
+	}, "", privacy)
+	return &result, err
+}
+
+func (r *RPCClient) API_SendTxCustomToken(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (*jsonresult.CreateTransactionTokenResult, error) {
 	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, receivers, fee, privacy, tokenInfo, p1, pPrivacy)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithWithdrawalReqV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
+
+func (r *RPCClient) API_SendTxWithWithdrawalReqV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTxWithWithdrawalReqV2(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPDEFeeWithdrawalReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxWithPDEFeeWithdrawalReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTxWithPDEFeeWithdrawalReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPTokenTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
+func (r *RPCClient) API_SendTxWithPTokenTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
 	result, err := r.client.CreateAndSendTxWithPTokenTradeReq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPTokenCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
+func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
 	result, err := r.client.CreateAndSendTxWithPTokenCrossPoolTradeReq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPRVTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxWithPRVTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTxWithPRVTradeReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPRVCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTxWithPRVCrossPoolTradeReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPTokenContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
+func (r *RPCClient) API_SendTxWithPTokenContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
 	result, err := r.client.CreateAndSendTxWithPTokenContributionV2(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
-func (r *RPCClient) API_CreateAndSendTxWithPRVContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxWithPRVContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTxWithPRVContributionV2(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
@@ -95,7 +112,7 @@ func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, erro
 
 	tokenBL, _ := r.client.GetListPrivacyCustomTokenBalance(acc.PrivateKey)
 	for _, token := range tokenBL.ListCustomTokenBalance {
-		tokenList[token.TokenID] = token.Amount
+		tokenList[token.Name] = token.Amount
 
 	}
 	return tokenList, nil
@@ -123,7 +140,7 @@ type StopStakingParam struct {
 	MinerPrk  string
 }
 
-func (r *RPCClient) API_CreateAndSendStakingTransaction(stakeMeta StakingTxParam) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.CreateTransactionResult, error) {
 	stakeAmount := 0
 	stakingType := 0
 	if stakeMeta.StakeShard {
@@ -174,7 +191,7 @@ func (r *RPCClient) API_CreateAndSendStakingTransaction(stakeMeta StakingTxParam
 	return &txResp, nil
 }
 
-func (r *RPCClient) API_CreateTxStopAutoStake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
 	if stopStakeMeta.MinerPrk == "" {
 		stopStakeMeta.MinerPrk = stopStakeMeta.SenderPrk
 	}
@@ -211,7 +228,7 @@ func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float
 	return result, nil
 }
 
-func (r *RPCClient) API_WithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) API_SendTxWithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
 
 	txResp, err := r.client.WithdrawReward(privateKey, nil, 0, 0, map[string]interface{}{
 		"PaymentAddress": paymentAddress, "TokenID": "0000000000000000000000000000000000000000000000000000000000000004", "Version": 0,
