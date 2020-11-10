@@ -577,19 +577,6 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			swapOrConfirmShardSwapInstruction = tempSwapInstruction.ToString()
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
-		// NOTE: shardCommittee must be finalized before building Bridge instruction here
-		// shardCommittee must include all producers and validators in the right order
-		// Generate instruction storing merkle root of validators pubkey and send to beacon
-		bridgeID := byte(common.BridgeShardID)
-		if shardID == bridgeID && committeeChanged(swapOrConfirmShardSwapInstruction) {
-			blockHeight := view.ShardHeight + 1
-			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
-			if err != nil {
-				BLogger.log.Error(err)
-				return instructions, shardPendingValidator, shardCommittee, err
-			}
-			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
-		}
 	}
 
 	if len(swapOrConfirmShardSwapInstruction) > 0 {
