@@ -4023,8 +4023,11 @@ func addCustodianToPool(
 			totalTokenColaterals := map[string]uint64{
 				collateralTokenID: depositAmount,
 			}
+			freeTokenCollaterals := map[string]uint64{
+				collateralTokenID: depositAmount,
+			}
 			newCustodian.SetTotalTokenCollaterals(totalTokenColaterals)
-			newCustodian.SetFreeTokenCollaterals(totalTokenColaterals)
+			newCustodian.SetFreeTokenCollaterals(freeTokenCollaterals)
 		}
 	} else {
 		newCustodian.SetIncognitoAddress(custodianIncAddr)
@@ -4063,9 +4066,9 @@ func addCustodianToPool(
 			newCustodian.SetTotalCollateral(existCustodian.GetTotalCollateral())
 			newCustodian.SetFreeCollateral(existCustodian.GetFreeCollateral())
 
-			tmpTotalTokenCollaterals := cloneMap(existCustodian.GetTotalTokenCollaterals())
+			tmpTotalTokenCollaterals := existCustodian.GetTotalTokenCollaterals()
 			tmpTotalTokenCollaterals[collateralTokenID] += depositAmount
-			tmpFreeTokenCollaterals := cloneMap(existCustodian.GetFreeTokenCollaterals())
+			tmpFreeTokenCollaterals := existCustodian.GetFreeTokenCollaterals()
 			tmpFreeTokenCollaterals[collateralTokenID] += depositAmount
 			newCustodian.SetTotalTokenCollaterals(tmpTotalTokenCollaterals)
 			newCustodian.SetFreeTokenCollaterals(tmpFreeTokenCollaterals)
