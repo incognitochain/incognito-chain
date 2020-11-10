@@ -93,7 +93,14 @@ func (pc PlainCoinV1) GetKeyImage() *operation.Point    { return pc.serialNumber
 func (pc PlainCoinV1) GetRandomness() *operation.Scalar { return pc.randomness }
 func (pc PlainCoinV1) GetValue() uint64  { return pc.value }
 func (pc PlainCoinV1) GetInfo() []byte   { return pc.info }
+func (pc PlainCoinV1) GetAssetTag() *operation.Point   { return nil }
+func (pc PlainCoinV1) GetTxRandom() *TxRandom   { return nil }
+func (pc PlainCoinV1) GetSharedRandom() *operation.Scalar   { return nil }
+func (pc PlainCoinV1) GetSharedConcealRandom() *operation.Scalar   { return nil }
 func (pc PlainCoinV1) IsEncrypted() bool { return false }
+func (pc PlainCoinV1) GetCoinDetailEncrypted() []byte {
+	return nil
+}
 
 func (pc *PlainCoinV1) SetPublicKey(v *operation.Point)    { pc.publicKey = v }
 func (pc *PlainCoinV1) SetCommitment(v *operation.Point)   { pc.commitment = v }
@@ -404,6 +411,17 @@ func (c CoinV1) GetShardID() (uint8, error) { return c.CoinDetails.GetShardID() 
 func (c CoinV1) GetValue() uint64  { return c.CoinDetails.GetValue() }
 func (c CoinV1) GetInfo() []byte   { return c.CoinDetails.GetInfo() }
 func (c CoinV1) IsEncrypted() bool { return c.CoinDetailsEncrypted != nil }
+func (c CoinV1) GetTxRandom() *TxRandom {return nil}
+func (c CoinV1) GetSharedRandom() *operation.Scalar {return nil}
+func (c CoinV1) GetSharedConcealRandom() *operation.Scalar {return nil}
+func (c CoinV1) GetAssetTag() *operation.Point {return nil}
+func (c CoinV1) GetCoinDetailEncrypted() []byte {
+	if c.CoinDetailsEncrypted != nil{
+		return c.CoinDetailsEncrypted.Bytes()
+	}
+	return nil
+}
+
 
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {

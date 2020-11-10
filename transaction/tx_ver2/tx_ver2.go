@@ -3,7 +3,6 @@ package tx_ver2
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"time"

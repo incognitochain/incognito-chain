@@ -18,7 +18,12 @@ type Coin interface {
 	GetRandomness() *operation.Scalar
 	GetShardID() (uint8, error)
 	GetSNDerivator() *operation.Scalar
+	GetCoinDetailEncrypted() []byte
 	IsEncrypted() bool
+	GetTxRandom() *TxRandom
+	GetSharedRandom() *operation.Scalar
+	GetSharedConcealRandom() *operation.Scalar
+	GetAssetTag() *operation.Point
 
 	// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
 	// Param keyset: (private key, payment address, read only key)
@@ -48,7 +53,12 @@ type PlainCoin interface {
 	GetRandomness() *operation.Scalar
 	GetShardID() (uint8, error)
 	GetSNDerivator() *operation.Scalar
+	GetCoinDetailEncrypted() []byte
 	IsEncrypted() bool
+	GetTxRandom() *TxRandom
+	GetSharedRandom() *operation.Scalar
+	GetSharedConcealRandom() *operation.Scalar
+	GetAssetTag() *operation.Point
 
 	SetKeyImage(*operation.Point)
 	SetPublicKey(*operation.Point)
