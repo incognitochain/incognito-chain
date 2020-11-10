@@ -60,7 +60,7 @@ func NewWithDrawRewardRequest(tokenIDStr string, paymentAddStr string, version f
 	}
 	ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, int(version));
 	if !ok || err != nil {
-		return nil, errors.Errorf("Invalid version %v", version)
+		return nil, errors.Errorf("Invalid version %d", version)
 	}
 
 	withdrawRewardRequest := &WithDrawRewardRequest{
