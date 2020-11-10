@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	F "github.com/incognitochain/incognito-chain/devframework"
 	"github.com/incognitochain/incognito-chain/devframework/account"
 	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
@@ -14,12 +15,12 @@ func main() {
 	})
 	sim.GenerateBlock().NextRound()
 	miner1 := sim.NewAccountFromShard(0)
-	minerCm1, _ := account.BuildCommitteePubkey(miner1.PrivateKey, sim.IcoAccount.PaymentAddress)
+	minerCm1, _ := account.BuildCommitteePubkey(miner1.PrivateKey, sim.GenesisAccount.PaymentAddress)
 	stake1 := rpcclient.StakingTxParam{
 		Name:         "miner1",
 		CommitteeKey: minerCm1,
 		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
-		StakerPrk:    sim.IcoAccount.PrivateKey,
+		StakerPrk:    sim.GenesisAccount.PrivateKey,
 		MinerPrk:     miner1.PrivateKey,
 		RewardAddr:   miner1.PaymentAddress,
 		StakeShard:   true,
@@ -118,7 +119,7 @@ func main() {
 
 	unstake1 := rpcclient.StopStakingParam{
 		BurnAddr:  sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
-		SenderPrk: sim.IcoAccount.PrivateKey,
+		SenderPrk: sim.GenesisAccount.PrivateKey,
 		MinerPrk:  miner1.PrivateKey,
 	}
 	if _, err := sim.RPC.API_CreateTxStopAutoStake(unstake1); err != nil {
@@ -129,12 +130,12 @@ func main() {
 	sim.GenerateBlock().NextRound()
 
 	miner2 := sim.NewAccountFromShard(0)
-	minerCm2, _ := account.BuildCommitteePubkey(miner2.PrivateKey, sim.IcoAccount.PaymentAddress)
+	minerCm2, _ := account.BuildCommitteePubkey(miner2.PrivateKey, sim.GenesisAccount.PaymentAddress)
 	stake2 := rpcclient.StakingTxParam{
 		Name:         "miner2",
 		CommitteeKey: minerCm2,
 		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
-		StakerPrk:    sim.IcoAccount.PrivateKey,
+		StakerPrk:    sim.GenesisAccount.PrivateKey,
 		MinerPrk:     miner2.PrivateKey,
 		RewardAddr:   miner2.PaymentAddress,
 		StakeShard:   true,

@@ -4,12 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/devframework/account"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/devframework/account"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -54,7 +58,7 @@ type SimulationEngine struct {
 	accountSeed       string
 	accountGenHistory map[int]int
 	committeeAccount  map[int][]account.Account
-	IcoAccount        account.Account
+	GenesisAccount    account.Account
 
 	//blockchain dependency object
 	Network     *HighwayConnection
@@ -129,8 +133,8 @@ func (sim *SimulationEngine) init() {
 			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
 		}
 	}
-	sim.IcoAccount = sim.NewAccount()
-	initTxs := createICOtx([]string{sim.IcoAccount.PrivateKey})
+	sim.GenesisAccount = sim.NewAccount()
+	initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
 	activeNetParams.GenesisParams.InitialIncognito = initTxs
 	activeNetParams.CreateGenesisBlocks()
 
@@ -562,7 +566,7 @@ func DisableLog(disable bool) {
 	disableStdoutLog = disable
 }
 
-func (sim *SimulationEngine) GetPubkeyState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
+func (sim *SimulationEngine) GetCommitteePublicKeyState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
 
 	//For Beacon, check in beacon state, if user is in committee
 	for _, v := range sim.bc.BeaconChain.GetCommittee() {
@@ -627,4 +631,40 @@ func (s *SimulationEngine) OnReceive(msgType int, f func(msg interface{})) {
 //note: this function is async, meaning that f function does not lock insert process
 func (s *SimulationEngine) OnInserted(blkType int, f func(msg interface{})) {
 	s.listennerRegister[blkType] = append(s.listennerRegister[blkType], f)
+}
+
+func createGenesisTx(accounts []account.Account) []string {
+	transactions := []string{}
+	db, err := incdb.Open("leveldb", "/tmp/"+time.Now().UTC().String())
+	if err != nil {
+		fmt.Print("could not open connection to leveldb")
+		fmt.Print(err)
+		panic(err)
+	}
+	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
+	for _, account := range accounts {
+		txs := initSalaryTx("1000000000000000000000000000000", account.PrivateKey, stateDB)
+		transactions = append(transactions, txs[0])
+	}
+	return transactions
+}
+
+func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
+	var initTxs []string
+	var initAmount, _ = strconv.Atoi(amount) // amount init
+	testUserkeyList := []string{
+		privateKey,
+	}
+	for _, val := range testUserkeyList {
+
+		testUserKey, _ := wallet.Base58CheckDeserialize(val)
+		testSalaryTX := transaction.Tx{}
+		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
+			stateDB,
+			nil,
+		)
+		initTx, _ := json.Marshal(testSalaryTX)
+		initTxs = append(initTxs, string(initTx))
+	}
+	return initTxs
 }

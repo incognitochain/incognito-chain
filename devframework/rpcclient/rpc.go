@@ -2,6 +2,7 @@ package rpcclient
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/devframework/account"
@@ -77,9 +78,9 @@ func (r *RPCClient) API_GetShardBestState(sid int) (jsonresult.GetShardBestState
 	return result, err
 }
 
-func (r *RPCClient) API_GetTransactionHash(h string) (*jsonresult.TransactionDetail, error) {
+func (r *RPCClient) API_GetTransactionHash(h string) (jsonresult.TransactionDetail, error) {
 	result, err := r.client.GetTransactionByHash(h)
-	return result, err
+	return *result, err
 }
 
 func (r *RPCClient) API_GetPrivacyCustomToken(h string) (*jsonresult.GetCustomToken, error) {
