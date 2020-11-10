@@ -103,6 +103,7 @@ func buildLiquidationByExchangeRateInstV3(
 // when custodians didn't return public token to users after timeout
 func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	beaconHeight uint64,
+	shardHeights map[byte]uint64,
 	currentPortalState *CurrentPortalState,
 	portalParams PortalParams,
 ) ([][]string, error) {
@@ -124,7 +125,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 	sort.Strings(sortedMatchedRedeemReqKeys)
 	for _, redeemReqKey := range sortedMatchedRedeemReqKeys {
 		redeemReq := currentPortalState.MatchedRedeemRequests[redeemReqKey]
-		if blockchain.checkBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), blockchain.ShardChain[redeemReq.ShardID()].multiView.GetBestView().GetHeight(), redeemReq.ShardHeight(), portalParams.TimeOutCustodianReturnPubToken) {
+		if blockchain.checkBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), shardHeights[redeemReq.ShardID()], redeemReq.ShardHeight(), portalParams.TimeOutCustodianReturnPubToken) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -377,6 +378,7 @@ func (blockchain *BlockChain) checkBlockTimeIsReached(recentBeaconHeight, beacon
 
 func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	beaconHeight uint64,
+	shardHeights map[byte]uint64,
 	currentPortalState *CurrentPortalState,
 	portalParams PortalParams,
 ) ([][]string, error) {
@@ -388,7 +390,7 @@ func (blockchain *BlockChain) checkAndBuildInstForExpiredWaitingPortingRequest(
 	sort.Strings(sortedWaitingPortingReqKeys)
 	for _, portingReqKey := range sortedWaitingPortingReqKeys {
 		portingReq := currentPortalState.WaitingPortingRequests[portingReqKey]
-		if blockchain.checkBlockTimeIsReached(beaconHeight, portingReq.BeaconHeight(), blockchain.ShardChain[portingReq.ShardID()].multiView.GetBestView().GetHeight(), portingReq.ShardHeight(), portalParams.TimeOutWaitingPortingRequest) {
+		if blockchain.checkBlockTimeIsReached(beaconHeight, portingReq.BeaconHeight(), shardHeights[portingReq.ShardID()], portingReq.ShardHeight(), portalParams.TimeOutWaitingPortingRequest) {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {

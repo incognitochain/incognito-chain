@@ -643,13 +643,14 @@ func (blockchain *BlockChain) handlePortalInsts(
 
 	// get shard height of all shards for producer
 	shardHeights := map[byte]uint64{}
-	for i:= 0; i<common.MaxShardNumber; i++ {
+	for i := 0; i < common.MaxShardNumber; i++ {
 		shardHeights[byte(i)] = blockchain.ShardChain[i].multiView.GetBestView().GetHeight()
 	}
 
 	// auto-liquidation portal instructions
 	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
 		beaconHeight,
+		shardHeights,
 		currentPortalState,
 		portalParams,
 	)
@@ -722,12 +723,13 @@ func (blockchain *BlockChain) handlePortalInsts(
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64,
+	shardHeights map[byte]uint64,
 	currentPortalState *CurrentPortalState,
 	portalParams PortalParams) ([][]string, error) {
 	insts := [][]string{}
 
 	// check there is any waiting porting request timeout
-	expiredWaitingPortingInsts, err := blockchain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState, portalParams)
+	expiredWaitingPortingInsts, err := blockchain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, shardHeights, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -738,7 +740,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 1: check there is any custodian doesn't send public tokens back to user after TimeOutCustodianReturnPubToken
 	// get custodian's collateral to return user
-	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState, portalParams)
+	custodianLiqInsts, err := blockchain.checkAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, currentPortalState, portalParams)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
