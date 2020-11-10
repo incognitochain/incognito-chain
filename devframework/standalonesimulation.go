@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -21,7 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
 	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -33,7 +31,6 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Config struct {
@@ -557,57 +554,8 @@ func (sim *SimulationEngine) InjectTx(txBase58 string) error {
 	return nil
 }
 
-// func (sim *SimulationEngine) GetBalance(acc Account) (map[string]uint64, error) {
-// 	tokenList := make(map[string]uint64)
-// 	prv, _ := sim.rpc_getbalancebyprivatekey(acc.PrivateKey)
-// 	tokenList["PRV"] = prv
-
-// 	tokenBL, _ := sim.rpc_getlistprivacycustomtokenbalance(acc.PrivateKey)
-// 	for _, token := range tokenBL.ListCustomTokenBalance {
-// 		tokenList[token.TokenID] = token.Amount
-
-// 	}
-// 	return tokenList, nil
-// }
-
 func (sim *SimulationEngine) GetBlockchain() *blockchain.BlockChain {
 	return sim.bc
-}
-
-func createICOtx(privateKeys []string) []string {
-	transactions := []string{}
-	db, err := incdb.Open("leveldb", "/tmp/"+time.Now().UTC().String())
-	if err != nil {
-		fmt.Print("could not open connection to leveldb")
-		fmt.Print(err)
-		panic(err)
-	}
-	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
-	for _, privateKey := range privateKeys {
-		txs := initSalaryTx("1000000000000000000000000000000", privateKey, stateDB)
-		transactions = append(transactions, txs[0])
-	}
-	return transactions
-}
-
-func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
-	var initTxs []string
-	var initAmount, _ = strconv.Atoi(amount) // amount init
-	testUserkeyList := []string{
-		privateKey,
-	}
-	for _, val := range testUserkeyList {
-
-		testUserKey, _ := wallet.Base58CheckDeserialize(val)
-		testSalaryTX := transaction.Tx{}
-		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
-			stateDB,
-			nil,
-		)
-		initTx, _ := json.Marshal(testSalaryTX)
-		initTxs = append(initTxs, string(initTx))
-	}
-	return initTxs
 }
 
 func DisableLog(disable bool) {

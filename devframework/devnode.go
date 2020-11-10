@@ -69,10 +69,10 @@ func NewIncognitoNode(name string, mode int, chainCustomParam *blockchain.Params
 		break
 	}
 	sim.initNode(chainParam, enableRPC)
-	relayShards := []byte{0}
-	// for index := 0; index < common.MaxShardNumber; index++ {
-	// 	relayShards = append(relayShards, byte(index))
-	// }
+	relayShards := []byte{}
+	for index := 0; index < common.MaxShardNumber; index++ {
+		relayShards = append(relayShards, byte(index))
+	}
 	sim.ConnectNetwork(highwayAddr, relayShards)
 	return sim
 }
@@ -191,10 +191,10 @@ func (sim *SimulationEngine) initNode(chainParam *blockchain.Params, enableRPC b
 	go temppool.Start(cQuit)
 	go txpool.Start(cQuit)
 
-	relayShards := []byte{0}
-	// for index := 0; index < common.MaxShardNumber; index++ {
-	// 	relayShards = append(relayShards, byte(index))
-	// }
+	relayShards := []byte{}
+	for index := 0; index < common.MaxShardNumber; index++ {
+		relayShards = append(relayShards, byte(index))
+	}
 	err = bc.Init(&blockchain.Config{
 		BTCChain:        btcChain,
 		BNBChainState:   bnbChainState,
