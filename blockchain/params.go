@@ -271,7 +271,7 @@ func init() {
 		ReplaceStakingTxHeight:         1,
 		IsBackup:                       false,
 		PreloadAddress:                 "",
-		BCHeightBreakPointNewZKP:       260000, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointNewZKP:       784000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:        2085,
 		UpgradeCommitteeEngineV2Height: 1e10,
 	}
