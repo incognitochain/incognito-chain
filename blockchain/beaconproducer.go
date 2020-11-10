@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"math/rand"
 	"sort"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -448,19 +448,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	}
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
 	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-		if newBeaconHeight%chainParamEpoch == 1 {
-			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
-			env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
-			env.LatestShardsState = shardsState
-			swapShardInstructions, err := beaconBestState.beaconCommitteeEngine.GenerateAllSwapShardInstructions(env)
-			if err != nil {
-				return [][]string{}, err
-			}
-			for _, swapShardInstruction := range swapShardInstructions {
-				instructions = append(instructions, swapShardInstruction.ToString())
-			}
-		}
-	} else if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
 		if newBeaconHeight%chainParamEpoch == 0 {
 			BeaconCommittee := beaconBestState.GetBeaconCommittee()
 			beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
@@ -473,6 +460,19 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 				instructions = append(instructions, swapBeaconInstructions)
 				beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
 				instructions = append(instructions, beaconRootInst)
+			}
+		}
+	} else if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if newBeaconHeight%chainParamEpoch == 1 {
+			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
+			env := beaconBestState.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
+			env.LatestShardsState = shardsState
+			swapShardInstructions, err := beaconBestState.beaconCommitteeEngine.GenerateAllSwapShardInstructions(env)
+			if err != nil {
+				return [][]string{}, err
+			}
+			for _, swapShardInstruction := range swapShardInstructions {
+				instructions = append(instructions, swapShardInstruction.ToString())
 			}
 		}
 	}
