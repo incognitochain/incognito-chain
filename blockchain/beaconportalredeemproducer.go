@@ -378,6 +378,7 @@ func buildInstPickingCustodiansForTimeoutWaitingRedeem(
 // if the waiting redeem request gets timeout, but not enough matching custodians, auto pick up more custodians
 func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 	beaconHeight uint64,
+	shardHeights map[byte]uint64,
 	currentPortalState *CurrentPortalState) ([][]string, error) {
 	insts := [][]string{}
 	waitingRedeemKeys := []string{}
@@ -387,7 +388,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 	sort.Strings(waitingRedeemKeys)
 	for _, waitingRedeemKey := range waitingRedeemKeys {
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
-		if !blockchain.checkBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), blockchain.ShardChain[waitingRedeem.ShardID()].multiView.GetBestView().GetHeight(), waitingRedeem.ShardHeight(), blockchain.GetPortalParams(beaconHeight).TimeOutWaitingRedeemRequest) {
+		if !blockchain.checkBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), shardHeights[waitingRedeem.ShardID()], waitingRedeem.ShardHeight(), blockchain.GetPortalParams(beaconHeight).TimeOutWaitingRedeemRequest) {
 			continue
 		}
 

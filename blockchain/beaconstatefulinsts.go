@@ -641,6 +641,12 @@ func (blockchain *BlockChain) handlePortalInsts(
 
 	oldMatchedRedeemRequests := cloneRedeemRequests(currentPortalState.MatchedRedeemRequests)
 
+	// get shard height of all shards for producer
+	shardHeights := map[byte]uint64{}
+	for i:= 0; i<common.MaxShardNumber; i++ {
+		shardHeights[byte(i)] = blockchain.ShardChain[i].multiView.GetBestView().GetHeight()
+	}
+
 	// auto-liquidation portal instructions
 	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
 		beaconHeight,
@@ -683,6 +689,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	var pickCustodiansForRedeemReqInsts [][]string
 	pickCustodiansForRedeemReqInsts, err = blockchain.checkAndPickMoreCustodianForWaitingRedeemRequest(
 		beaconHeight,
+		shardHeights,
 		currentPortalState,
 	)
 	if err != nil {
