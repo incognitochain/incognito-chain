@@ -76,7 +76,6 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
-	UpgradeCommitteeEngineV2Height   uint64
 	BCHeightBreakPointFixRandShardCM uint64
 }
 
@@ -185,7 +184,6 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 2070000,
 	}
 	// END TESTNET
@@ -350,7 +348,6 @@ func init() {
 		ReplaceStakingTxHeight:           559380,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 644000,
 	}
 	if IsTestNet {

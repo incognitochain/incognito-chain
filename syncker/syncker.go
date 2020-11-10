@@ -195,7 +195,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	case *types.CrossShardBlock:
 		csBlk := blk.(*types.CrossShardBlock)
 		if synckerManager.CrossShardSyncProcess[int(csBlk.ToShardID)] != nil {
-			fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
+			fmt.Printf("crossdebug: receive block from %d to %d hash %s\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
 			synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
 		}
 	}
