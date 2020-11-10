@@ -131,7 +131,15 @@ func (proof PaymentProofV2) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.inputCoins)))
 	for i := 0; i < len(proof.inputCoins); i++ {
 		inputCoins := proof.inputCoins[i].Bytes()
-		bytes = append(bytes, byte(len(inputCoins)))
+		lenInputCoins := len(inputCoins)
+		lenInputCoinsBytes := []byte{}
+		if lenInputCoins < 256 {
+			lenInputCoinsBytes = []byte{byte(lenInputCoins)}
+		} else {
+			lenInputCoinsBytes = common.IntToBytes(lenInputCoins)
+		}
+
+		bytes = append(bytes, lenInputCoinsBytes...)
 		bytes = append(bytes, inputCoins...)
 	}
 
@@ -193,22 +201,35 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
 	proof.inputCoins = make([]coin.PlainCoin, lenInputCoinsArray)
+	var err error
 	for i := 0; i < lenInputCoinsArray; i++ {
+		// try get 1-byte for len
 		if offset >= len(proofbytes) {
-			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
-		var err error
-
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenInputCoin > len(proofbytes) {
-			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
-		coinBytes := proofbytes[offset : offset+lenInputCoin]
-		proof.inputCoins[i], err = coin.NewPlainCoinFromByte(coinBytes)
+		proof.inputCoins[i], err = coin.NewPlainCoinFromByte(proofbytes[offset : offset+lenInputCoin])
 		if err != nil {
-			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
+			// 1-byte is wrong
+			// try get 2-byte for len
+			if offset+1 > len(proofbytes) {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+			}
+			lenInputCoin = common.BytesToInt(proofbytes[offset-1 : offset+1])
+			offset += 1
+
+			if offset+lenInputCoin > len(proofbytes) {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+			}
+			proof.inputCoins[i], err = coin.NewPlainCoinFromByte(proofbytes[offset : offset+lenInputCoin])
+			if err != nil {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
+			}
 		}
 		offset += lenInputCoin
 	}
@@ -297,7 +318,7 @@ func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error){
 	return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Error : TX contains both confidential asset & non-CA coins"))
 }
 
-func (proof PaymentProofV2) ValidateSanity() (bool, error) {
+func (proof PaymentProofV2) ValidateSanity(additionalData interface{}) (bool, error) {
 	if len(proof.GetInputCoins()) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
 	}
@@ -389,8 +410,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 			if sharedSecrets[i]==nil{
 				blinders[i] = new(operation.Scalar).FromUint64(0)
 			}else{
-				_, indexForShard, err := outputCoins[i].GetTxRandomDetail()
-				blinders[i], err = coin.ComputeAssetTagBlinder(sharedSecrets[i], indexForShard)
+				blinders[i], err = coin.ComputeAssetTagBlinder(sharedSecrets[i])
 				if err != nil {
 					return nil, err
 				}
@@ -442,11 +462,11 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 	}
 
 	for _, inputCoin := range proof.GetInputCoins(){
-		coin, ok := inputCoin.(*coin.CoinV2)
+		c, ok := inputCoin.(*coin.CoinV2)
 		if !ok {
-			return nil, errors.New("Input coin of PaymentProofV2 must be CoinV2")
+			return nil, errors.New("Input c of PaymentProofV2 must be CoinV2")
 		}
-		coin.ConcealInputCoin()
+		c.ConcealInputCoin()
 	}
 
 	return proof, nil
@@ -536,7 +556,18 @@ func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 	// return true, nil
 }
 
-func (proof PaymentProofV2) Verify(hasConfidentialAsset bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof PaymentProofV2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
+	hasConfidentialAsset, ok := boolParams["hasConfidentialAsset"]
+	if !ok {
+		hasConfidentialAsset = true
+	}
+
+	isBatch, ok := boolParams["isBatch"]
+	if !ok {
+		isBatch = false
+	}
+
+
 	inputCoins := proof.GetInputCoins()
 	dupMap := make(map[string]bool)
 	for _,coin := range inputCoins{

@@ -56,12 +56,8 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 				utils.Logger.Log.Errorf("Cannot recompute shared secret : %v", err)
 				return nil, err
 			}
-			_, indexForShard, err := inputCoin_specific.GetTxRandomDetail()
-			if err != nil {
-				utils.Logger.Log.Errorf("Cannot retrieve tx random detail : %v", err)
-				return nil, err
-			}
-			bl, err = privacy.ComputeAssetTagBlinder(sharedSecret, indexForShard)
+
+			bl, err = privacy.ComputeAssetTagBlinder(sharedSecret)
 			if err != nil {
 				return nil, err
 			}
@@ -81,6 +77,8 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 	sumInputAssetTagBlinders.Mul(sumInputAssetTagBlinders, numOfOutputs)
 
 	sumOutputAssetTagBlinders := new(privacy.Scalar).FromUint64(0)
+
+	var err error
 	for i, oc := range outputCoins{
 		if oc.GetAssetTag()==nil{
 			return nil, errors.New("Cannot cast a coin as v2-CA")
@@ -91,13 +89,8 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 		if isUnblinded{
 			utils.Logger.Log.Infof("Signing TX : processing an unblinded output coin")
 		}else{
-			_, indexForShard, err := oc.GetTxRandomDetail()
-			if err != nil {
-				utils.Logger.Log.Errorf("Cannot retrieve tx random detail : %v", err)
-				return nil, err
-			}
 			utils.Logger.Log.Debugf("Shared secret is %s\n", string(outputSharedSecrets[i].MarshalText()))
-			bl, err = privacy.ComputeAssetTagBlinder(outputSharedSecrets[i], indexForShard)
+			bl, err = privacy.ComputeAssetTagBlinder(outputSharedSecrets[i])
 			if err != nil {
 				return nil, err
 			}
@@ -435,7 +428,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 	}
 	for i:=privacy.MAX_TRIES_OTA;i>0;i--{
 		c, sharedSecret, err := privacy.NewCoinCA(paymentInfo, tokenID)
-		if tokenID!=nil && sharedSecret!=nil && c!=nil && c.GetAssetTag()!=nil{
+		if tokenID!=nil && sharedSecret !=nil && c!=nil && c.GetAssetTag()!=nil{
 			utils.Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s\n", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
 		}
 		if err != nil {
@@ -443,7 +436,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 			return nil, nil, err
 		}
 		// If previously created coin is burning address
-		if sharedSecret==nil {
+		if sharedSecret ==nil {
 			// assetTag := privacy.HashToPoint(tokenID[:])
 			// c.SetAssetTag(assetTag)
 			return c, nil, nil // No need to check db

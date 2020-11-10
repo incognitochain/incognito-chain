@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -89,7 +88,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		for i := 0; i < cpRandNum; i++ {
 			maxRetries := 5000
 			var retries int
-			for retries=maxRetries;retries>0;retries--{
+			for retries = maxRetries; retries > 0; retries-- {
 				lenCommitment, _ = statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
 				ok, err := statedb.HasCommitmentIndex(param.stateDB, *param.tokenID, index.Uint64(), param.shardID)
@@ -106,7 +105,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 				}
 			}
 			// no usable commitment from db
-			if retries==0{
+			if retries == 0 {
 				utils.Logger.Log.Errorf("Error : No available commitment in db")
 				return
 			}
@@ -380,4 +379,3 @@ func SignNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signature
 	sigPubKey = sigKey.GetPublicKey().GetPublicKey().ToBytesS()
 	return signatureBytes, sigPubKey, nil
 }
-

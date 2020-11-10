@@ -109,9 +109,21 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 		if !ok {
 			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid params: %+v", keyParam))
 		}
+		// get OTA secretKey deserializing (compulsory for V2, optional for V1)
+		var otaKey *wallet.KeyWallet
+		var err error
+		otaKeyStr, ok := keys["OTASecretKey"].(string)
+		if !ok || otaKeyStr == "" {
+			Logger.log.Info("otaKey is optional")
+		} else {
+			otaKey, err = wallet.Base58CheckDeserialize(otaKeyStr)
+			if err != nil {
+				Logger.log.Debugf("otaKey is invalid: err: %+v", err)
+				return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+			}
+		}
 		// get keyset only contain read only key by deserializing (optional)
 		var readonlyKey *wallet.KeyWallet
-		var err error
 		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
 		if !ok || readonlyKeyStr == "" {
 			Logger.log.Info("Read onlyKey is optional")
@@ -148,6 +160,10 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
 			keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
 		}
+		if otaKey != nil && otaKey.KeySet.OTAKey.GetOTASecretKey()!= nil {
+			keySet.OTAKey = otaKey.KeySet.OTAKey
+		}
+
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		outputCoins, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, startHeight)

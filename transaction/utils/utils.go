@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -52,6 +52,7 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 	if p == nil {
 		return nil, nil
 	}
+
 	proofInBytes, err := json.Marshal(p)
 	if err != nil {
 		return nil, err
@@ -59,6 +60,7 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 	if string(proofInBytes)=="null"{
 		return nil, nil
 	}
+
 
 	var res privacy.Proof
 	switch txType {

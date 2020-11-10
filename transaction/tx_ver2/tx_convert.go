@@ -2,19 +2,20 @@ package tx_ver2
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
@@ -40,6 +41,11 @@ func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxConvertVer1ToVer2InitParams {
+	// make sure info is not nil ; zero value for it is []byte{}
+
+	if info==nil{
+		info = []byte{}
+	}
 
 	return  &TxConvertVer1ToVer2InitParams{
 		stateDB:     stateDB,
@@ -238,8 +244,13 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		return false, errors.New("TxConversion found duplicate one-time-address error")
 	}
 
+
+	boolParams := make(map[string]bool)
+	boolParams["hasPrivacy"] = false
+	boolParams["isBatch"] = false
+
 	//Verify the conversion proof
-	valid, err := proofConversion.Verify(false, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, false, nil)
+	valid, err := proofConversion.Verify(boolParams, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, nil)
 	if !valid {
 		if err != nil {
 			utils.Logger.Log.Error(err)
@@ -282,6 +293,11 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // tokenID of the conversion coin
 	metaData metadata.Metadata,
 	info []byte) *TxTokenConvertVer1ToVer2InitParams {
+
+	if info == nil{
+		info = []byte{}
+	}
+
 
 	tokenParams := &CustomTokenConversionParams{
 		tokenID:       tokenID,

@@ -71,6 +71,7 @@ type ChainRetriever interface {
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
+	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 }
 
@@ -151,13 +152,13 @@ type Transaction interface {
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
 	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, []privacy.Proof, error)
+	ValidateTransaction(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, []privacy.Proof, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock(*MintData, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 
 	// Init Transaction, the input should be params such as: TxPrivacyInitParams
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
-	Verify(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
+	Verify(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
 }
 
 type MintData struct {

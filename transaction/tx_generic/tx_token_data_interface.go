@@ -73,15 +73,15 @@ type TransactionToken interface {
 	ValidateSanityData(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) (bool, error)
 	ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
-	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, metadata.ChainRetriever, byte, bool, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
+	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, metadata.ChainRetriever, byte, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, []privacy.Proof, error)
+	ValidateTransaction(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, []privacy.Proof, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock(*metadata.MintData, byte, metadata.ChainRetriever, *metadata.AccumulatedValues, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) (bool, error)
 
 	// Init Transaction, the input should be params such as: TxPrivacyInitParams
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
-	Verify(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
+	Verify(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
 }
 
 
