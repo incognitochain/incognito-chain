@@ -3,11 +3,11 @@ package blockchain
 import (
 	"bytes"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -31,7 +31,7 @@ var(
 // in case private key: return unspent outputcoin tx
 // in case read only key: return all outputcoin tx with amount value
 // in case payment address: return all outputcoin tx with no amount value
-func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin coin.Coin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) (coin.PlainCoin, error) {
+func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin privacy.Coin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) (privacy.PlainCoin, error) {
 	result, err := outCoin.Decrypt(keySet)
 	if err != nil {
 		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
@@ -318,11 +318,14 @@ func getCoinFilterByOTAKeyAndToken() coinMatcher{
 	}
 }
 
-func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]coin.PlainCoin, uint64, error) {
+//Return all coins belonging to the provided keyset
+//
+//If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
+func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	var outCoins []privacy.Coin
 	var fromHeight uint64 = 0
 	if keyset == nil {
-		return nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+		return nil, nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
 	bss := blockchain.GetBestStateShard(shardID)
 	transactionStateDB := bss.transactionStateDB
@@ -330,16 +333,16 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 	if versionsIncluded[1]{
 		results, err := queryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
 		if err != nil {
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 		outCoins = append(outCoins, results...)
 	}
 	if versionsIncluded[2]{
 		if keyset.OTAKey.GetOTASecretKey() == nil || keyset.OTAKey.GetPublicSpend() == nil {
-			return nil, 0, errors.New("OTA secretKey is needed when retrieving coinV2")
+			return nil, nil, 0, errors.New("OTA secretKey is needed when retrieving coinV2")
 		}
 		if keyset.PaymentAddress.GetOTAPublicKey() == nil {
-			return nil, 0, errors.New("OTA publicKey is needed when retrieving coinV2")
+			return nil, nil, 0, errors.New("OTA publicKey is needed when retrieving coinV2")
 		}
 		latest := bss.ShardHeight
 		if upToHeight > latest || upToHeight==0{
@@ -350,29 +353,35 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		}
 		results, err := queryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, getCoinFilterByOTAKeyAndToken())
 		if err != nil {
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 		outCoins = append(outCoins, results...)
 	}
 
-	results := make([]coin.PlainCoin, 0)
-	for _, outCoin := range outCoins {
-
-		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-		if decryptedOut != nil {
-			results = append(results, decryptedOut)
+	//If ReadonlyKey found, return decrypted coins
+	if keyset.ReadonlyKey.GetPrivateView() != nil && keyset.ReadonlyKey.GetPublicSpend() != nil{
+		resultPlainCoins := make([]privacy.PlainCoin, 0)
+		for _, outCoin := range outCoins {
+			decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+			if decryptedOut != nil {
+				resultPlainCoins = append(resultPlainCoins, decryptedOut)
+			}
 		}
+		
+		return resultPlainCoins, nil, fromHeight, nil
+	}else{//Just return the raw coins
+		return nil, outCoins, fromHeight, nil
 	}
-	return results, fromHeight, nil
+	
 }
 
-func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]coin.PlainCoin, uint64, error) {
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, startHeight, map[int]bool{2:true})
 }
 
-func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {
-	res, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
-	return res, err
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]privacy.PlainCoin, []privacy.Coin, error) {
+	resPlainCoins, resCoins, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+	return resPlainCoins, resCoins, err
 }
 
 //GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
@@ -382,20 +391,20 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *in
 //in case readonly-key: return all outputcoin tx with amount value
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, uint64, error) {
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
-func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]coin.PlainCoin,  error) {
+func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin,  error) {
 	bss := blockchain.GetBestStateShard(shardID)
 	transactionStateDB := bss.transactionStateDB
 
 	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
 	switch state{
 	case 2:
-		var results []coin.PlainCoin
+		var results []privacy.PlainCoin
 		if withVersion1{
-			results, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+			results, _, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
 			if err!=nil{
 				return nil, err
 			}
