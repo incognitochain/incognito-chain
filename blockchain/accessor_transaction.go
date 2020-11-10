@@ -289,7 +289,7 @@ func queryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	return outCoins, nil
 }
 
-func getCoinViewKeyFilter() coinMatcher{
+func getCoinFilterByOTAKeyAndToken() coinMatcher{
 	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool{
 		entry, exists := kvargs["otaKey"]
 		if !exists{
@@ -348,7 +348,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		if upToHeight > MaxOutcoinQueryInterval{
 			fromHeight = upToHeight - MaxOutcoinQueryInterval
 		}
-		results, err := queryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, getCoinViewKeyFilter())
+		results, err := queryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, getCoinFilterByOTAKeyAndToken())
 		if err != nil {
 			return nil, 0, err
 		}
@@ -390,7 +390,7 @@ func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.
 	bss := blockchain.GetBestStateShard(shardID)
 	transactionStateDB := bss.transactionStateDB
 
-	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, transactionStateDB, shardID)
+	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
 	switch state{
 	case 2:
 		var results []coin.PlainCoin
@@ -411,7 +411,7 @@ func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.
 	case 1:
 		return nil, err
 	case 0:
-		go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, keyset.OTAKey, tokenID, transactionStateDB, shardID)
+		go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, keyset.OTAKey, transactionStateDB, shardID)
 		return nil, errors.New("View Key indexing is in progress")
 	default:
 		return nil, errors.New("View Key indexing state is corrupted")
