@@ -82,6 +82,11 @@ func (r *RPCClient) API_GetTransactionHash(h string) (*jsonresult.TransactionDet
 	return result, err
 }
 
+func (r *RPCClient) API_GetPrivacyCustomToken(h string) (*jsonresult.GetCustomToken, error) {
+	result, err := r.client.GetPrivacyCustomToken(h)
+	return result, err
+}
+
 func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, error) {
 	tokenList := make(map[string]uint64)
 	prv, _ := r.client.GetBalanceByPrivateKey(acc.PrivateKey)

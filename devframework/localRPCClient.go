@@ -197,3 +197,12 @@ func (r *LocalRPCClient) GetTransactionByHash(transactionHash string) (res *json
 	}
 	return resI.(*jsonresult.TransactionDetail),nil
 }
+func (r *LocalRPCClient) GetPrivacyCustomToken(tokenStr string) (res *jsonresult.GetCustomToken,err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getprivacycustomtoken"]
+	resI, rpcERR := c(httpServer, []interface{}{tokenStr}, nil)
+	if rpcERR != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	return resI.(*jsonresult.GetCustomToken),nil
+}

@@ -26,4 +26,5 @@ type ClientInterface interface {
 	GetBeaconBestState() (jsonresult.GetBeaconBestState, error)
 	GetShardBestState(sid int) (jsonresult.GetShardBestState, error)
 	GetTransactionByHash(transactionHash string) (*jsonresult.TransactionDetail, error)
+	GetPrivacyCustomToken(tokenStr string) (*jsonresult.GetCustomToken, error)
 }
