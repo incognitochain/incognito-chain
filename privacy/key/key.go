@@ -57,12 +57,22 @@ type OTAKey struct{
 }
 
 func (otaKey OTAKey) GetPublicSpend() *operation.Point {
-	pubSpend, _ := new(operation.Point).FromBytesS(otaKey.pk)
-	return pubSpend
+	pubSpend, err := new(operation.Point).FromBytesS(otaKey.pk)
+	if err != nil{
+		return nil
+	}
+	if pubSpend.PointValid(){
+		return pubSpend
+	}
+	return nil
 }
 
 func (otaKey OTAKey) GetOTASecretKey() *operation.Scalar {
-	return new(operation.Scalar).FromBytesS(otaKey.otaSecret)
+	otaSecret := new(operation.Scalar).FromBytesS(otaKey.otaSecret)
+	if otaSecret.ScalarValid(){
+		return otaSecret
+	}
+	return nil
 }
 
 func (otaKey *OTAKey) SetOTASecretKey(otaSecretKey []byte){
