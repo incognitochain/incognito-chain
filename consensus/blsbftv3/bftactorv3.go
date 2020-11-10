@@ -145,17 +145,22 @@ func (e *BLSBFT_V3) Start() error {
 
 			case voteMsg := <-e.VoteMessageCh:
 				voteMsg.isValid = 0
+				e.Logger.Info("[staking-v2] receive vote msg")
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 						b.votes[voteMsg.Validator] = voteMsg // store it
 						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 						b.hasNewVote = true
+					} else {
+						e.Logger.Info("[staking-v2] 1")
 					}
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 					if _, ok := e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator]; !ok {
 						e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = voteMsg
 						e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+					} else {
+						e.Logger.Info("[staking-v2] 2")
 					}
 				}
 				// e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
