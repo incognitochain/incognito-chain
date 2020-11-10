@@ -11,6 +11,7 @@ type ProposeBlockInfo struct {
 	votes      map[string]BFTVote //pk->BFTVote
 	isValid    bool
 	hasNewVote bool
+	isVoted    bool
 }
 
 //NewProposeBlockInfoValue : new propose block info
