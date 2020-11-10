@@ -11,6 +11,8 @@ import (
 )
 
 type ListOutputCoins struct {
+	FromHeight uint64 `json:"FromHeight"`
+	ToHeight uint64 `json:"ToHeight"`
 	Outputs map[string][]OutCoin `json:"Outputs"`
 }
 

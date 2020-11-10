@@ -18,11 +18,11 @@ type CoinService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte, shardHeight uint64) ([]coin.PlainCoin, error) {
+func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte, shardHeight uint64) ([]coin.PlainCoin, uint64, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	return coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardID, prvCoinID, shardHeight)
 }
@@ -59,10 +59,12 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		}
 		shardHeight := uint64(shardHeightTemp)
 
-		outCoins, err := coinService.ListDecryptedOutputCoinsByKeySet(&keyWallet.KeySet, shardID, shardHeight)
+		outCoins, fh, err := coinService.ListDecryptedOutputCoinsByKeySet(&keyWallet.KeySet, shardID, shardHeight)
 		if err != nil {
 			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
 		}
+		result.ToHeight = shardHeight
+		result.FromHeight = fh
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
 			if outCoin.GetValue() == 0{
@@ -166,11 +168,13 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKey(listKeyParams []int
 
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		outputCoins, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, startHeight)
+		outputCoins, fh, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, startHeight)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 		}
+		result.ToHeight = startHeight
+		result.FromHeight = fh
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outputCoins {
 			tmp := jsonresult.NewOutCoin(outCoin)
@@ -250,11 +254,12 @@ func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []inte
 			return nil, NewRPCError(RPCInvalidParamsError, err)
 		}
 
-		outCoins, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID, shardHeight)
+		outCoins, fh, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID, shardHeight)
 		if err != nil {
 			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
 		}
-
+		result.ToHeight = shardHeight
+		result.FromHeight = fh
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
 			if outCoin.GetValue() == 0{

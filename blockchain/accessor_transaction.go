@@ -22,6 +22,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var(
+	outcoinReindexer = NewOutcoinReindexer(OutcoinReindexerRoutines)
+)
+
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
 // Param keyset: (private key, payment address, read only key)
 // in case private key: return unspent outputcoin tx
@@ -228,137 +232,147 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 	return append(transactions, txsResponse...), nil
 }
 
-func (blockchain *BlockChain) QueryDBToGetOutcoinsVer1BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([][]byte, error) {
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
-	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
+func queryDbCoinVer1(pubkey []byte, shardID byte, tokenID *common.Hash, db *statedb.StateDB) ([]privacy.Coin, error) {
+	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(db, *tokenID, pubkey, shardID)
 	if err != nil {
 		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
 		return nil, err
 	}
-	return outCoinsBytes, nil
+	var outCoins []privacy.Coin
+	for _, item := range outCoinsBytes{
+		outCoin, err := coin.NewCoinFromByte(item)
+		if err != nil {
+			Logger.log.Errorf("Cannot create coin from byte %v", err)
+			return nil, err
+		}
+		outCoins = append(outCoins, outCoin)
+	}
+	return outCoins, nil
 }
 
-func (blockchain *BlockChain) QueryDBToGetOutcoinsVer2BytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
-	if keyset.OTAKey.GetOTASecretKey() == nil || keyset.OTAKey.GetPublicSpend() == nil {
-		return nil, errors.New("OTA secretKey is needed when retrieving coinV2")
-	}
-	if keyset.PaymentAddress.GetOTAPublicKey() == nil {
-		return nil, errors.New("OTA publicKey is needed when retrieving coinV2")
-	}
+type coinMatcher func(*privacy.CoinV2, map[string]interface{}) bool
 
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
-	currentHeight := blockchain.GetBestStateShard(shardID).ShardHeight
-
-	var outCoinsBytes [][]byte
-	for height := shardHeight; height <= currentHeight; height += 1 {
-		currentHeightCoins, err := statedb.GetOTACoinsByHeight(transactionStateDB, *tokenID, shardID, height)
+func queryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...coinMatcher) ([]privacy.Coin, error) {
+	var outCoins []privacy.Coin
+	for height := shardHeight; height <= destHeight; height += 1 {
+		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
 			Logger.log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
 			return nil, err
 		}
-
+		params := make(map[string]interface{})
+		params["otaKey"] = otaKey
+		params["db"] = db
+		params["tokenID"] = tokenID
 		for _, coinBytes := range currentHeightCoins {
 			c, err := coin.NewCoinFromByte(coinBytes)
 			if err != nil {
 				Logger.log.Error("Get outcoins ver 2 bytes by keyset Parse Coin From Bytes", err)
 				return nil, err
 			}
-
-			fmt.Println("Found a coin")
-			fmt.Println("Version = ", c.GetVersion())
-			fmt.Println("Commitment = ", c.GetCommitment())
-			fmt.Println("PublicKey = ", c.GetPublicKey())
-			fmt.Println("Keyset readonly key.publicKey = ", keyset.ReadonlyKey.Pk)
-			fmt.Println("Keyset readonly key.privateViewKey = ", keyset.ReadonlyKey.Rk)
-			fmt.Println("Keyset OTAsecretKey = ", keyset.OTAKey.GetOTASecretKey().ToBytesS())
-			// fmt.Println("Is belong to key = ", coin.DoesCoinBelongToKeySet(c, keyset.ReadonlyKey))
-
 			cv2, ok := c.(*privacy.CoinV2)
 			if !ok{
 				Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
 				return nil, errors.New("Cannot cast a coin to version 2")
 			}
-			if pass, sharedSecret := cv2.DoesCoinBelongToKeySet(keyset); pass {
-				if sharedSecret != nil{
-					pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
-					if pass{
-						outCoinsBytes = append(outCoinsBytes, cv2.Bytes())
-					}
-				}else{
-					outCoinsBytes = append(outCoinsBytes, cv2.Bytes())
+			pass := true
+			for _, f := range filters{
+				if !f(cv2, params){
+					pass = false
 				}
+			}
+			if pass{
+				outCoins = append(outCoins, cv2)
 			}
 		}
 	}
-	return outCoinsBytes, nil
+	return outCoins, nil
 }
 
-func (blockchain *BlockChain) QueryDBToGetOutcoinsBytesByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([][]byte, error) {
-	outCoinByBytesVer1, err := blockchain.QueryDBToGetOutcoinsVer1BytesByKeyset(keyset, shardID, tokenID)
-	if err != nil {
-		return nil, err
-	}
-
-	outCoinByBytesVer2, err := blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, shardHeight)
-	if err != nil {
-		return nil, err
-	}
-
-	return append(outCoinByBytesVer1, outCoinByBytesVer2...), nil
-}
-
-func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]coin.PlainCoin, error) {
-	var outCoinsInBytes [][]byte
-	var err error
-	if keyset == nil {
-		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
-	}
-	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsVer2BytesByKeyset(keyset, shardID, tokenID, startHeight)
-	if err != nil {
-		return nil, err
-	}
-	// loop on all outputcoin to decrypt data
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
-	results := make([]coin.PlainCoin, 0)
-	for _, item := range outCoinsInBytes {
-		outCoin, err := coin.NewCoinFromByte(item)
-		if err != nil {
-			Logger.log.Errorf("Cannot create coin from byte %v", err)
-			return nil, err
+func getCoinViewKeyFilter() coinMatcher{
+	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool{
+		entry, exists := kvargs["otaKey"]
+		if !exists{
+			return false
 		}
+		vk, ok := entry.(privacy.OTAKey)
+		if !ok{
+			return false
+		}
+		entry, exists = kvargs["tokenID"]
+		if !exists{
+			return false
+		}
+		tokenID, ok := entry.(*common.Hash)
+		if !ok{
+			return false
+		}
+		ks := &incognitokey.KeySet{}
+		ks.OTAKey = vk
+
+		if pass, sharedSecret := c.DoesCoinBelongToKeySet(ks); pass {
+			pass, _ = c.ValidateAssetTag(sharedSecret, tokenID)
+			return pass
+		}
+		return false
+	}
+}
+
+func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]coin.PlainCoin, uint64, error) {
+	var outCoins []privacy.Coin
+	var fromHeight uint64 = 0
+	if keyset == nil {
+		return nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+	}
+	bss := blockchain.GetBestStateShard(shardID)
+	transactionStateDB := bss.transactionStateDB
+
+	if versionsIncluded[1]{
+		results, err := queryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
+		if err != nil {
+			return nil, 0, err
+		}
+		outCoins = append(outCoins, results...)
+	}
+	if versionsIncluded[2]{
+		if keyset.OTAKey.GetOTASecretKey() == nil || keyset.OTAKey.GetPublicSpend() == nil {
+			return nil, 0, errors.New("OTA secretKey is needed when retrieving coinV2")
+		}
+		if keyset.PaymentAddress.GetOTAPublicKey() == nil {
+			return nil, 0, errors.New("OTA publicKey is needed when retrieving coinV2")
+		}
+		latest := bss.ShardHeight
+		if upToHeight > latest || upToHeight==0{
+			upToHeight = latest
+		}
+		if upToHeight > MaxOutcoinQueryInterval{
+			fromHeight = upToHeight - MaxOutcoinQueryInterval
+		}
+		results, err := queryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, getCoinViewKeyFilter())
+		if err != nil {
+			return nil, 0, err
+		}
+		outCoins = append(outCoins, results...)
+	}
+
+	results := make([]coin.PlainCoin, 0)
+	for _, outCoin := range outCoins {
+
 		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
 		if decryptedOut != nil {
 			results = append(results, decryptedOut)
 		}
 	}
-	return results, nil
+	return results, fromHeight, nil
+}
+
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]coin.PlainCoin, uint64, error) {
+	return blockchain.getOutputCoins(keyset, shardID, tokenID, startHeight, map[int]bool{2:true})
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]coin.PlainCoin, error) {
-	var outCoinsInBytes [][]byte
-	var err error
-	if keyset == nil {
-		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
-	}
-	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsVer1BytesByKeyset(keyset, shardID, tokenID)
-	if err != nil {
-		return nil, err
-	}
-	// loop on all outputcoin to decrypt data
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
-	results := make([]coin.PlainCoin, 0)
-	for _, item := range outCoinsInBytes {
-		outCoin, err := coin.NewCoinFromByte(item)
-		if err != nil {
-			Logger.log.Errorf("Cannot create coin from byte %v", err)
-			return nil, err
-		}
-		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-		if decryptedOut != nil {
-			results = append(results, decryptedOut)
-		}
-	}
-	return results, nil
+	res, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+	return res, err
 }
 
 //GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
@@ -368,51 +382,40 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *in
 //in case readonly-key: return all outputcoin tx with amount value
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, error) {
-	var outCoinsInBytes [][]byte
-	var err error
-	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
-	if keyset == nil {
-		return nil, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
-	}
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]coin.PlainCoin, uint64, error) {
+	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
+}
 
-	outCoinsInBytes, err = blockchain.QueryDBToGetOutcoinsBytesByKeyset(keyset, shardID, tokenID, shardHeight)
-	if err != nil {
+func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]coin.PlainCoin,  error) {
+	bss := blockchain.GetBestStateShard(shardID)
+	transactionStateDB := bss.transactionStateDB
+
+	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, transactionStateDB, shardID)
+	switch state{
+	case 2:
+		var results []coin.PlainCoin
+		if withVersion1{
+			results, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+			if err!=nil{
+				return nil, err
+			}
+		}
+		for _, outCoin := range outCoins {
+			decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+			if decryptedOut != nil {
+				results = append(results, decryptedOut)
+			}
+		}
+		Logger.log.Infof("Retrieved output coins ver2 for view key %v", keyset.OTAKey.GetOTASecretKey())
+		return results, nil
+	case 1:
 		return nil, err
+	case 0:
+		go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, keyset.OTAKey, tokenID, transactionStateDB, shardID)
+		return nil, errors.New("View Key indexing is in progress")
+	default:
+		return nil, errors.New("View Key indexing state is corrupted")
 	}
-
-	// loop on all outputcoin to decrypt data
-	results := make([]coin.PlainCoin, 0)
-	for _, item := range outCoinsInBytes {
-		outCoin, err := coin.NewCoinFromByte(item)
-		if err != nil {
-			Logger.log.Errorf("Cannot create coin from byte %v", err)
-			return nil, err
-		}
-		if pass, sharedSecret := outCoin.DoesCoinBelongToKeySet(keyset); pass {
-			cv2, ok := outCoin.(*privacy.CoinV2)
-			var pass bool = false
-			if ok{
-				pass, _ = cv2.ValidateAssetTag(sharedSecret, tokenID)
-			}else{
-				// v1: no asset tag to check
-				pass = true
-			}
-			if pass{
-				if keyset.ReadonlyKey.GetPrivateView() != nil && keyset.ReadonlyKey.GetPublicSpend() != nil {
-					decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-					if decryptedOut != nil {
-						results = append(results, decryptedOut)
-					}
-				}else if cv2 != nil {
-						results = append(results, cv2)
-				}
-			}
-		}
-	}
-
-	fmt.Println("BUGLOG2 finished")
-	return results, nil
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
@@ -615,14 +618,20 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				if outputCoin.GetVersion() != 2 {
 					continue
 				}
-				//shardIDcoin, _ := outputCoin.GetShardID()
-				//fmt.Println("Coin Version =", outputCoin.GetVersion())
-				//fmt.Println("Coin ShardID =", shardIDcoin)
-				//fmt.Println("Coin ShardID =", shardIDcoin)
-				//fmt.Println("Coin Value =", outputCoin.GetValue())
-				//fmt.Println("Coin Info =", outputCoin.GetInfo())
-				//fmt.Println("Coin is encrypted =", outputCoin.IsEncrypted())
-				//fmt.Println("TokenID of coin =", view.tokenID)
+				for vkArr, state := range outcoinReindexer.ViewKeyBeingProcessed{
+					if state==0{
+						continue
+					}
+					vk := &privacy.OTAKey{}
+					vk.SetOTASecretKey(vkArr[0:32])
+					vk.SetPublicSpend(vkArr[32:64])
+					ks := &incognitokey.KeySet{}
+					ks.OTAKey = *vk
+					belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
+					if belongs{
+						outcoinReindexer.StoreReindexedOutputCoins(stateDB, *vk, []privacy.Coin{outputCoin}, shardID)
+					}
+				}
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
 			}
