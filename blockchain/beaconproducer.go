@@ -180,7 +180,10 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, NewBlockChainError(GenerateShardStateError, err)
 	}
 
-	tempInstructionArr := beaconBestState.filterCommitteeInstructions(tempInstruction)
+	tempInstructionArr := []string{}
+	for _, strs := range tempInstruction {
+		tempInstructionArr = append(tempInstructionArr, strs...)
+	}
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		Logger.log.Error(err)

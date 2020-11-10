@@ -481,7 +481,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		tempInstruction = append(tempInstruction, incurredInstructions...)
 	}
 
-	tempInstructionArr := curView.filterCommitteeInstructions(tempInstruction)
+	tempInstructionArr := []string{}
+	for _, strs := range tempInstruction {
+		tempInstructionArr = append(tempInstructionArr, strs...)
+	}
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionHashError, fmt.Errorf("Fail to generate hash for instruction %+v", tempInstructionArr))
