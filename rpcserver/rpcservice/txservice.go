@@ -220,7 +220,7 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 	// get list outputcoins tx
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
-	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsVer2ByKeyset(keySet, shardIDSender, prvCoinID, uint64(0))
+	plainCoins, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID, false)
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
@@ -371,7 +371,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	// get list outputcoins tx
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
-	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID, uint64(0))
+	plainCoins, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID, true)
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
@@ -797,7 +797,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 				}
 				//return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
 			}
-			outputTokens, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID, uint64(0))
+			outputTokens, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID, true)
 			if err != nil {
 				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
 			}
@@ -930,7 +930,7 @@ func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[str
 			}
 			// We should get all one time address of user from start 0 to current
 			// This code does not used on production anyway (only for testing purpose) so it should not affect performance
-			outputTokens, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID, uint64(0))
+			outputTokens, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID, true)
 			if err != nil {
 				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
 			}
@@ -1262,7 +1262,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 
 		// Get List privacy custom token balance require user to input their secret key, so this is for testing purpose
 		// So we need to query startHeight from 0
-		outcoints, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID, 0)
+		outcoints, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID, true)
 		if err != nil {
 			Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
@@ -1304,7 +1304,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		if err != nil {
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
 		}
-		outcoints, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID, 0)
+		outcoints, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID, true)
 		if err != nil {
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
 		}
@@ -1354,7 +1354,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		// Get balance privacy custom token should use 0 as start height, because we do not use this in production anyway
 		// Get from 0 to get all the coins starting from begin to end
-		outcoins, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID, uint64(0))
+		outcoins, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID, true)
 		if err != nil {
 			Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 			return uint64(0), NewRPCError(UnexpectedError, err)
@@ -1381,7 +1381,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 					if tokenID.IsEqual(tempTokenID) {
 						lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 						shardIDSender := common.GetShardIDFromLastByte(lastByte)
-						outcoints, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&account.KeySet, shardIDSender, tempTokenID, uint64(0))
+						outcoints, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(&account.KeySet, shardIDSender, tempTokenID, true)
 						if err != nil {
 							Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 							return uint64(0), NewRPCError(UnexpectedError, err)
@@ -1626,7 +1626,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	}
 
 	// Defragment account need to get all coins, so start from 0
-	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID, uint64(0))
+	plainCoins, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID, true)
 	if err != nil {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
