@@ -69,10 +69,10 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 		return false, false, err
 	}
 	if len(bReq.BurnerAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's burner address")
+		return false, false, errors.New("wrong request info's burner address")
 	}
 	if bReq.BurningAmount == 0 {
-		return false, false, errors.New("Wrong request info's burned amount")
+		return false, false, errors.New("wrong request info's burned amount")
 	}
 
 	//if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
