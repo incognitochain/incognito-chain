@@ -184,7 +184,7 @@ func (txService TxService) chooseCoinsTokenVer1ByKeySet(keySet *incognitokey.Key
 		numBlock = 1000
 	}
 	// get list outputcoins tx
-	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsVer1ByKeyset(keySet, shardIDSender, tokenID)
+	plainCoins, _, err := txService.BlockChain.GetListDecryptedOutputCoinsVer1ByKeyset(keySet, shardIDSender, tokenID)
 	if err != nil {
 		return nil, nil, NewRPCError(GetOutputCoinsVer1Error, err)
 	}
@@ -299,7 +299,7 @@ func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, 
 	// get list outputcoins tx
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
-	plainCoins, err := txService.BlockChain.GetListDecryptedOutputCoinsVer1ByKeyset(keySet, shardIDSender, prvCoinID)
+	plainCoins, _, err := txService.BlockChain.GetListDecryptedOutputCoinsVer1ByKeyset(keySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, nil, 0, NewRPCError(GetOutputCoinsVer1Error, err)
 	}

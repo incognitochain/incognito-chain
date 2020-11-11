@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"

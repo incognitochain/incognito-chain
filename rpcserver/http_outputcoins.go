@@ -109,7 +109,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
 		}
 	}
-	result, err1 := httpServer.outputCoinService.ListDecryptedOutputCoinsByKey(listKeyParams, *tokenID)
+	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID)
 	if err1 != nil {
 		return nil, err1
 	}

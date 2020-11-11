@@ -67,6 +67,7 @@ func HashToPoint(b []byte) *Point {
 type PublicKey = key.PublicKey
 type ViewingKey = key.ViewingKey
 type PrivateKey = key.PrivateKey
+type OTAKey = key.OTAKey
 type PaymentInfo = key.PaymentInfo
 type PaymentAddress = key.PaymentAddress
 

@@ -294,6 +294,10 @@ func (c CoinV2) GetShardID() (uint8, error) {
 	shardID := common.GetShardIDFromLastByte(lastByte)
 	return shardID, nil
 }
+func (c CoinV2) GetCoinDetailEncrypted() []byte {
+	return nil
+}
+
 
 func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)           { c.mask = mask }
