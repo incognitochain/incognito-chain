@@ -200,8 +200,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	err2 = newBestState.storeCommitteeStateWithPreviousState(committeeChange)
 	if err2 != nil {
-		// Logger.log.Info("[swap-v2] err2:", err2)
-		// panic(100)
 		return err2
 	}
 
@@ -691,11 +689,9 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
 		// Before get random from bitcoin
-	} else if beaconBestState.BeaconHeight%chainParamEpoch >= randomTime {
-		if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
-			beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
-			isBeginRandom = true
-		}
+	} else if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
+		beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
+		isBeginRandom = true
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
