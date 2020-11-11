@@ -206,3 +206,12 @@ func (r *LocalRPCClient) GetPrivacyCustomToken(tokenStr string) (res *jsonresult
 	}
 	return resI.(*jsonresult.GetCustomToken),nil
 }
+func (r *LocalRPCClient) GetBurningAddress(empty string) (res string,err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getburningaddress"]
+	resI, rpcERR := c(httpServer, []interface{}{empty}, nil)
+	if rpcERR != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	return resI.(string),nil
+}

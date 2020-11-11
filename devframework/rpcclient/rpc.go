@@ -69,24 +69,78 @@ func (r *RPCClient) API_SendTxWithPTokenTradeReq(privateKey string, receivers ma
 	result, err := r.client.CreateAndSendTxWithPTokenTradeReq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
 	return &result, err
 }
-func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.CreateAndSendTxWithPTokenCrossPoolTradeReq(privateKey, receivers, fee, privacy, reqInfo, "", 0)
+func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(acount account.Account, tokenID string, buyTokenID string, amount string) (*jsonresult.CreateTransactionTokenResult, error) {
+	burnAddr := "" //todo
+	reqInfo := map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     tokenID,
+		"TokenTxType": float64(1),
+		"TokenName":   "",
+		"TokenSymbol": "",
+		"TokenAmount": amount,
+		"TokenReceivers": map[string]interface{}{
+			burnAddr: amount,
+		},
+		"TokenFee":            "0",
+		"TokenIDToBuyStr":     buyTokenID,
+		"TokenIDToSellStr":    tokenID,
+		"SellAmount":          amount,
+		"MinAcceptableAmount": "1",
+		"TradingFee":          "1",
+		"TraderAddressStr":    acount.PaymentAddress,
+	}
+	result, err := r.client.CreateAndSendTxWithPTokenCrossPoolTradeReq(acount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
 	result, err := r.client.CreateAndSendTxWithPRVTradeReq(privateKey, receivers, fee, privacy, reqInfo)
 	return &result, err
 }
-func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.CreateAndSendTxWithPRVCrossPoolTradeReq(privateKey, receivers, fee, privacy, reqInfo)
+func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, buyTokenID string, amount string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "" //todo
+	reqInfo := map[string]interface{}{
+		"TokenIDToBuyStr":     buyTokenID,
+		"TokenIDToSellStr":    "0000000000000000000000000000000000000000000000000000000000000004",
+		"SellAmount":          amount,
+		"MinAcceptableAmount": "1",
+		"TradingFee":          "0",
+		"TraderAddressStr":    account.PaymentAddress,
+	}
+	result, err := r.client.CreateAndSendTxWithPRVCrossPoolTradeReq(account.PrivateKey, map[string]interface{}{
+		burnAddr: amount,
+	}, -1, -1, reqInfo)
 	return &result, err
 }
-func (r *RPCClient) API_SendTxWithPTokenContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.CreateAndSendTxWithPTokenContributionV2(privateKey, receivers, fee, privacy, reqInfo, "", 0)
+func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, tokenID string, tokenAmount string, pairID string) (*jsonresult.CreateTransactionTokenResult, error) {
+	burnAddr := "" //todo
+	reqInfo := map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     tokenID,
+		"TokenTxType": float64(1),
+		"TokenName":   "",
+		"TokenSymbol": "",
+		"TokenAmount": tokenAmount,
+		"TokenReceivers": map[string]interface{}{
+			burnAddr: tokenAmount,
+		},
+		"TokenFee":              "0",
+		"PDEContributionPairID": pairID,
+		"ContributorAddressStr": account.PaymentAddress,
+		"ContributedAmount":     tokenAmount,
+		"TokenIDStr":            tokenID,
+	}
+	result, err := r.client.CreateAndSendTxWithPTokenContributionV2(account.PrivateKey, nil, -1, 0, reqInfo, "", 0)
 	return &result, err
 }
-func (r *RPCClient) API_SendTxWithPRVContributionV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
-	result, err := r.client.CreateAndSendTxWithPRVContributionV2(privateKey, receivers, fee, privacy, reqInfo)
+func (r *RPCClient) API_SendTxWithPRVContributionV2(account account.Account, prvAmount string, pairID string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "" //todo
+	reqInfo := map[string]interface{}{
+		"PDEContributionPairID": pairID,
+		"ContributorAddressStr": account.PaymentAddress,
+		"ContributedAmount":     prvAmount,
+		"TokenIDStr":            "0000000000000000000000000000000000000000000000000000000000000004",
+	}
+	result, err := r.client.CreateAndSendTxWithPRVContributionV2(account.PrivateKey, map[string]interface{}{burnAddr: prvAmount}, -1, 0, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_GetPDEState(beaconHeight float64) (jsonresult.CurrentPDEState, error) {
@@ -145,7 +199,7 @@ type StakingTxParam struct {
 
 type StopStakingParam struct {
 	BurnAddr  string
-	SenderPrk string
+	StakerPrk string
 	MinerPrk  string
 }
 
@@ -202,7 +256,7 @@ func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.Cre
 
 func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
 	if stopStakeMeta.MinerPrk == "" {
-		stopStakeMeta.MinerPrk = stopStakeMeta.SenderPrk
+		stopStakeMeta.MinerPrk = stopStakeMeta.StakerPrk
 	}
 	wl, err := wallet.Base58CheckDeserialize(stopStakeMeta.MinerPrk)
 	if err != nil {
@@ -214,7 +268,7 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 
 	burnAddr := stopStakeMeta.BurnAddr
 
-	txResp, err := r.client.CreateAndSendStopAutoStakingTransaction(stopStakeMeta.SenderPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+	txResp, err := r.client.CreateAndSendStopAutoStakingTransaction(stopStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
 		"StopAutoStakingType":     float64(127),
 		"CandidatePaymentAddress": minerPayment,
 		"PrivateSeed":             privateSeed,

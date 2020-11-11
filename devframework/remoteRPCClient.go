@@ -713,3 +713,34 @@ func (r *RemoteRPCClient) GetPrivacyCustomToken(tokenStr string) (res *jsonresul
 	}
 	return resp.Result,err
 }
+
+
+func (r *RemoteRPCClient) GetBurningAddress(empty string) (res string,err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getburningaddress",
+		"params":   []interface{}{empty},
+		"id":      1,
+	})
+	if err != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result  string
+		Error *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res,errors.New(rpcERR.Error())
+	}
+	return resp.Result,err
+}
