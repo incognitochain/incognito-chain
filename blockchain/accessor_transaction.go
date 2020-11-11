@@ -627,7 +627,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				if outputCoin.GetVersion() != 2 {
 					continue
 				}
-				for vkArr, state := range outcoinReindexer.ViewKeyBeingProcessed{
+				for vkArr, state := range outcoinReindexer.getOrLoadIndexedOTAKeys(stateDB){
 					if state==0{
 						continue
 					}
