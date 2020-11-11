@@ -362,8 +362,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	newState.mu.Lock()
 	committeeChange := NewCommitteeChange()
 	// snapshot shard common pool in beacon random time
-	// TODO: @tin add testcase at random time (env.IsBeaconRandomTime == true) with Unstake
-	// TODO: @tin Unstake + Swap Key In
 	if env.IsBeaconRandomTime {
 		newState.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
 			oldState.shardCommonPool,
