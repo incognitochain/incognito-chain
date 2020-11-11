@@ -1749,7 +1749,7 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.Chain
 	return nil
 }
 
-func (serverObj *Server) PushBlockToAll(block common.BlockInterface, previousValidationData string, isBeacon bool) error {
+func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error {
 	var ok bool
 	if isBeacon {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)

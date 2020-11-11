@@ -55,8 +55,8 @@ type ChainInterface interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
-	InsertAndBroadcastBlock(block common.BlockInterface) error
-	InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface, validationData string) error
+	InsertAndBroadcastBlock(block types.BlockInterface) error
+	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error

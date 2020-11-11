@@ -287,7 +287,6 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 120000,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{

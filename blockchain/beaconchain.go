@@ -190,7 +190,8 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertShardBlock(block common.BlockInterface, shouldValidate bool) error {
+// TODO: change name
+func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Info(err)
 		return err
@@ -204,7 +205,7 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	return err == nil
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
@@ -218,7 +219,7 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 	panic("this function is not supported on beacon chain")
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(common.BlockInterface, string) error {
+func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")
 }
 

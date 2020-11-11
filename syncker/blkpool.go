@@ -9,9 +9,9 @@ import (
 
 type BlkPool struct {
 	action               chan func()
-	blkPoolByHash        map[string]common.BlockPoolInterface // hash -> block
-	validationDataByHash map[string]string                    // hash of block -> validation data of that block
-	blkPoolByPrevHash    map[string][]string                  // prevhash -> []nexthash
+	blkPoolByHash        map[string]types.BlockPoolInterface // hash -> block
+	validationDataByHash map[string]string                   // hash of block -> validation data of that block
+	blkPoolByPrevHash    map[string][]string                 // prevhash -> []nexthash
 }
 
 func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
@@ -121,8 +121,8 @@ func (pool *BlkPool) AddPreviousValidationData(hash common.Hash, validationData 
 	}
 }
 
-func (pool *BlkPool) GetBlock(hash common.Hash) common.BlockPoolInterface {
-	res := make(chan common.BlockPoolInterface)
+func (pool *BlkPool) GetBlock(hash common.Hash) types.BlockPoolInterface {
+	res := make(chan types.BlockPoolInterface)
 	pool.action <- func() {
 		blk, _ := pool.blkPoolByHash[hash.String()]
 		res <- blk
@@ -139,7 +139,7 @@ func (pool *BlkPool) HasHash(hash common.Hash) bool {
 	return <-res
 }
 
-func (pool *BlkPool) RemoveBlock(block common.BlockPoolInterface) {
+func (pool *BlkPool) RemoveBlock(block types.BlockPoolInterface) {
 	pool.action <- func() {
 		delete(pool.blkPoolByHash, block.Hash().String())
 		delete(pool.validationDataByHash, block.GetPrevHash().String())
@@ -208,8 +208,8 @@ func (pool *BlkPool) GetPreviousValidationData(hash common.Hash) string {
 	return <-res
 }
 
-func (pool *BlkPool) GetAllViewByHash(rHash string) []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
+func (pool *BlkPool) GetAllViewByHash(rHash string) []types.BlockPoolInterface {
+	res := make(chan []types.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetAllViewFromHash(rHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
 	}

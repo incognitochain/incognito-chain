@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"os"
 	"sync"
@@ -165,7 +166,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
-			if err := s.Chain.InsertShardBlock(block.(common.BlockInterface), true); err != nil {
+			if err := s.Chain.InsertBlock(block.(types.BlockInterface), true); err != nil {
 				Logger.Error("Insert shard block from pool fail", block.GetHeight(), block.Hash(), err)
 				continue
 			} else {

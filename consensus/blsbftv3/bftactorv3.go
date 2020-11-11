@@ -337,11 +337,11 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			if err != nil {
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
-				vote.isValid = BEACON_CHAIN_ID
-				numberOfErrorVote++
+				vote.isValid = -1
+				errVote++
 			} else {
 				vote.isValid = 1
-				numberOfValidVote++
+				validVote++
 			}
 		} else {
 			validVote++
@@ -356,19 +356,18 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if validVote > 2*len(v.committees)/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
 		if e.ChainID == BEACON_CHAIN_ID {
-			e.processWithEnoughVotesBeaconChain(v, currentCommittees)
+			e.processWithEnoughVotesBeaconChain(v)
 		} else {
 			previousCommittees := view.GetCommittee()
-			e.processWithEnoughVotesShardChain(v, currentCommittees, previousCommittees)
+			e.processWithEnoughVotesShardChain(v, previousCommittees)
 		}
 	}
 }
 
 func (e *BLSBFT_V3) processWithEnoughVotesBeaconChain(
 	v *ProposeBlockInfo,
-	currentCommittees []incognitokey.CommitteePublicKey,
 ) {
-	validationData, err := createBLSAggregatedSignatures(currentCommittees, v.block.GetValidationField(), v.votes)
+	validationData, err := createBLSAggregatedSignatures(v.committees, v.block.GetValidationField(), v.votes)
 	if err != nil {
 		e.Logger.Error(err)
 		return
@@ -382,10 +381,9 @@ func (e *BLSBFT_V3) processWithEnoughVotesBeaconChain(
 
 func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	v *ProposeBlockInfo,
-	currentCommittees []incognitokey.CommitteePublicKey,
 	previousCommittees []incognitokey.CommitteePublicKey,
 ) {
-	validationData, err := createBLSAggregatedSignatures(currentCommittees, v.block.GetValidationField(), v.votes)
+	validationData, err := createBLSAggregatedSignatures(v.committees, v.block.GetValidationField(), v.votes)
 	if err != nil {
 		e.Logger.Error(err)
 		return

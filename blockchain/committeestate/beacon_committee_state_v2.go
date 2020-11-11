@@ -359,9 +359,11 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	oldState := engine.finalBeaconCommitteeStateV2
 
 	oldState.mu.RLock()
+	defer oldState.mu.RUnlock()
 	oldState.clone(engine.uncommittedBeaconCommitteeStateV2)
 	newState := engine.uncommittedBeaconCommitteeStateV2
 	newState.mu.Lock()
+	defer newState.mu.Unlock()
 	committeeChange := NewCommitteeChange()
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
@@ -449,8 +451,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		shardID := byte(key)
 		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
-	newState.mu.Unlock()
-	oldState.mu.RUnlock()
 
 	return hashes, committeeChange, incurredInstructions, nil
 }

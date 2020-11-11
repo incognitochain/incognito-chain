@@ -646,7 +646,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 	return env
 }
 
-func InitBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
+func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Committee Engine V1, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -802,15 +802,6 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 	return nil
 }
 
-func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(height)
-	if e != nil {
-		return common.Hash{}, e
-	}
-	return bRH.ConsensusStateDBRootHash, nil
-
-}
-
 func getBeaconConsensusStateDB(db incdb.Database, hash common.Hash) (*statedb.StateDB, error) {
 	data, err := rawdbv2.GetBeaconRootsHash(db, hash)
 	if err != nil {
@@ -826,14 +817,6 @@ func getBeaconConsensusStateDB(db incdb.Database, hash common.Hash) (*statedb.St
 		return nil, err
 	}
 	return stateDB, nil
-}
-
-func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
-	bRH, e := blockchain.GetBeaconRootsHash(height)
-	if e != nil {
-		return common.Hash{}, e
-	}
-	return bRH.FeatureStateDBRootHash, nil
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash, error) {

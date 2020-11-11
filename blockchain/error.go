@@ -356,7 +356,7 @@ var ErrCodeMessage = map[int]struct {
 	ReturnStakingInstructionHandlerError:              {-1160, "Return Staking Instruction Handler error"},
 	CountMissingSignatureError:                        {-1161, "Count Missing Signature Error"},
 	ReplacePreviousValidationDataError:                {-1162, "Replace Previous Validation Data Error"},
-	CommitteeFromBlockNotFoundError:                   {-1161, "Committee From Beacon Block Not Found Error"},
+	CommitteeFromBlockNotFoundError:                   {-1163, "Committee From Beacon Block Not Found Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},

@@ -22,7 +22,7 @@ type blockValidation interface {
 	AddValidationField(validationData string)
 }
 
-func (e BLSBFT) CreateValidationData(block common.BlockInterface) consensustypes.ValidationData {
+func (e BLSBFT) CreateValidationData(block types.BlockInterface) consensustypes.ValidationData {
 	var valData consensustypes.ValidationData
 	// selfPublicKey := e.UserKeySet.GetPublicKey()
 	// keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
@@ -31,7 +31,7 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) consensustypes
 	return valData
 }
 
-func ValidateProducerSig(block common.BlockInterface) error {
+func ValidateProducerSig(block types.BlockInterface) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -54,7 +54,7 @@ func ValidateProducerSig(block common.BlockInterface) error {
 	return nil
 }
 
-func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)

@@ -57,9 +57,9 @@ type Chain interface {
 	//ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
-	InsertShardBlock(block common.BlockInterface, shouldValidate bool) error
+	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
-	CheckExistedBlk(block common.BlockInterface) bool
+	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
 	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
 	CommitteeStateVersion() uint
