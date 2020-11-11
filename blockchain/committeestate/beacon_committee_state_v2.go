@@ -353,14 +353,18 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	var err error
 	incurredInstructions := [][]string{}
 	returnStakingInstructions := make(map[byte]*instruction.ReturnStakeInstruction)
-
+	committeeChange := NewCommitteeChange()
 	oldState := engine.finalBeaconCommitteeStateV2
 
 	oldState.mu.RLock()
+	defer oldState.mu.RUnlock()
+
 	oldState.clone(engine.uncommittedBeaconCommitteeStateV2)
 	newState := engine.uncommittedBeaconCommitteeStateV2
+
 	newState.mu.Lock()
-	committeeChange := NewCommitteeChange()
+	defer newState.mu.Unlock()
+
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		newState.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
@@ -447,8 +451,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 		shardID := byte(key)
 		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
-	newState.mu.Unlock()
-	oldState.mu.RUnlock()
 
 	return hashes, committeeChange, incurredInstructions, nil
 }
