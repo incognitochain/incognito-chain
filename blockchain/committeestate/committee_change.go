@@ -14,10 +14,10 @@ type CommitteeChange struct {
 	NextEpochShardCandidateRemoved     []incognitokey.CommitteePublicKey
 	CurrentEpochShardCandidateAdded    []incognitokey.CommitteePublicKey
 	CurrentEpochShardCandidateRemoved  []incognitokey.CommitteePublicKey
-	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey //
-	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey //
-	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey //
-	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey //
+	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey
+	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey
+	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey
+	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey
 	BeaconSubstituteAdded              []incognitokey.CommitteePublicKey
 	BeaconSubstituteRemoved            []incognitokey.CommitteePublicKey
 	BeaconCommitteeAdded               []incognitokey.CommitteePublicKey
@@ -26,6 +26,23 @@ type CommitteeChange struct {
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
 	Unstake                            []string
+}
+
+//GetStakerKeys ...
+func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
+	return committeeChange.NextEpochShardCandidateAdded
+}
+
+func (committeeChange *CommitteeChange) UnstakeKeys() []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.Unstake)
+	return res
+}
+
+func (committeeChange *CommitteeChange) StopAutoStakeKeys() []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
+	return res
 }
 
 func NewCommitteeChange() *CommitteeChange {

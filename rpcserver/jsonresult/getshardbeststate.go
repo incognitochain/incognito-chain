@@ -25,6 +25,7 @@ type GetShardBestState struct {
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
+	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
 }
 
 func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
@@ -44,6 +45,7 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		TotalTxns:              data.TotalTxns,
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
 		BestCrossShard:         data.BestCrossShard,
+		CommitteeFromBlock:     data.CommitteeFromBlock(),
 	}
 
 	result.ShardCommittee = make([]string, len(data.ShardCommitteeEngine().GetShardCommittee()))

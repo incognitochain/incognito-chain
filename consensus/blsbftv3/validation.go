@@ -3,6 +3,7 @@ package blsbftv3
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -13,17 +14,17 @@ import (
 )
 
 type blockValidation interface {
-	common.BlockInterface
+	types.BlockInterface
 	AddValidationField(validationData string)
 }
 
-func (e BLSBFT_V3) CreateValidationData(block common.BlockInterface) consensustypes.ValidationData {
+func (e BLSBFT_V3) CreateValidationData(block types.BlockInterface) consensustypes.ValidationData {
 	var valData consensustypes.ValidationData
 	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes())
 	return valData
 }
 
-func ValidateProducerSig(block common.BlockInterface) error {
+func ValidateProducerSig(block types.BlockInterface) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -40,7 +41,7 @@ func ValidateProducerSig(block common.BlockInterface) error {
 	return nil
 }
 
-func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -119,6 +120,6 @@ func validateBLSSig(
 	return nil
 }
 
-func (e BLSBFT_V3) ValidateBlockWithConsensus(block common.BlockInterface) error {
+func (e BLSBFT_V3) ValidateBlockWithConsensus(block types.BlockInterface) error {
 	return nil
 }

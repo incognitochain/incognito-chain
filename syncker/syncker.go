@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -255,22 +257,30 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			beaconBlock := new(types.BeaconBlock)
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
 
+			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
 						//validate crossShardBlock before add to result
 						blkXShard := synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash)
-						beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), beaconBlock.GetHeight()-1)
-						if err != nil {
-							Logger.Error("Cannot get beacon consensus root hash from block ", beaconBlock.GetHeight()-1)
-							return nil
-						}
-						beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
-						committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
-						err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(common.BlockInterface), committee)
-						if err != nil {
-							Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
-							return nil
+
+						// TODO: @committees
+						//For releasing beacon nodes and re verify cross shard blocks from beacon
+						//Use committeeFromBlock field for getting committees
+						if beaconFinalView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+							beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), beaconBlock.GetHeight()-1)
+							if err != nil {
+								Logger.Error("Cannot get beacon consensus root hash from block ", beaconBlock.GetHeight()-1)
+								return nil
+							}
+							beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+							committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
+							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee)
+							if err != nil {
+								Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
+								return nil
+							}
 						}
 						//add to result list
 						res[byte(i)] = append(res[byte(i)], blkXShard)
@@ -337,8 +347,8 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 			select {
 			case blk := <-ch:
 				if !isNil(blk) {
-					Logger.Infof("Receive crosshard block from shard %v ->  %v, hash %v", fromShard, toShard, blk.(common.BlockPoolInterface).Hash().String())
-					synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.BlockPoolInterface))
+					Logger.Infof("Receive crosshard block from shard %v ->  %v, hash %v", fromShard, toShard, blk.(types.BlockPoolInterface).Hash().String())
+					synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(types.BlockPoolInterface))
 				} else {
 					//Logger.Info("Block is nil, break stream")
 					return
@@ -416,7 +426,7 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 			if blk.(*types.BeaconBlock).GetHeight() <= synckerManager.config.Blockchain.BeaconChain.GetFinalViewHeight() {
 				return
 			}
-			synckerManager.beaconPool.AddBlock(blk.(common.BlockPoolInterface))
+			synckerManager.beaconPool.AddBlock(blk.(types.BlockPoolInterface))
 			prevHash := blk.(*types.BeaconBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.BeaconChain.GetViewByHash(prevHash); v == nil {
 				requestHash = prevHash
@@ -441,7 +451,7 @@ func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context,
 			if blk.(*types.ShardBlock).GetHeight() <= synckerManager.config.Blockchain.ShardChain[sid].GetFinalViewHeight() {
 				return
 			}
-			synckerManager.shardPool[int(sid)].AddBlock(blk.(common.BlockPoolInterface))
+			synckerManager.shardPool[int(sid)].AddBlock(blk.(types.BlockPoolInterface))
 			prevHash := blk.(*types.ShardBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.ShardChain[sid].GetViewByHash(prevHash); v == nil {
 				requestHash = prevHash
@@ -537,7 +547,7 @@ func (blk *TmpBlock) GetRound() int {
 	return 1
 }
 
-func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []common.BlockPoolInterface {
+func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []types.BlockPoolInterface {
 	switch poolType {
 	case BeaconPoolType:
 		if synckerManager.BeaconSyncProcess != nil {
@@ -554,7 +564,7 @@ func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []comm
 	case CrossShardPoolType:
 		if syncProcess, ok := synckerManager.ShardSyncProcess[sID]; ok {
 			if syncProcess.shardPool != nil {
-				res := []common.BlockPoolInterface{}
+				res := []types.BlockPoolInterface{}
 				for fromSID, blksPool := range synckerManager.crossShardPool {
 					for _, blk := range blksPool.blkPoolByHash {
 						res = append(res, &TmpBlock{
@@ -569,7 +579,7 @@ func (synckerManager *SynckerManager) GetPoolInfo(poolType byte, sID int) []comm
 			}
 		}
 	}
-	return []common.BlockPoolInterface{}
+	return []types.BlockPoolInterface{}
 }
 
 func (synckerManager *SynckerManager) GetPoolLatestHeight(poolType byte, bestHash string, sID int) uint64 {
@@ -593,7 +603,7 @@ func (synckerManager *SynckerManager) GetPoolLatestHeight(poolType byte, bestHas
 	return 0
 }
 
-func (synckerManager *SynckerManager) GetAllViewByHash(poolType byte, bestHash string, sID int) []common.BlockPoolInterface {
+func (synckerManager *SynckerManager) GetAllViewByHash(poolType byte, bestHash string, sID int) []types.BlockPoolInterface {
 	switch poolType {
 	case BeaconPoolType:
 		if synckerManager.BeaconSyncProcess != nil {
@@ -609,7 +619,7 @@ func (synckerManager *SynckerManager) GetAllViewByHash(poolType byte, bestHash s
 		}
 	default:
 		//TODO
-		return []common.BlockPoolInterface{}
+		return []types.BlockPoolInterface{}
 	}
-	return []common.BlockPoolInterface{}
+	return []types.BlockPoolInterface{}
 }

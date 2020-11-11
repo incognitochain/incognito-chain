@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -16,7 +17,7 @@ type BlkPool struct {
 func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 	pool := new(BlkPool)
 	pool.action = make(chan func())
-	pool.blkPoolByHash = make(map[string]common.BlockPoolInterface)
+	pool.blkPoolByHash = make(map[string]types.BlockPoolInterface)
 	pool.blkPoolByPrevHash = make(map[string][]string)
 	pool.validationDataByHash = make(map[string]string)
 	go pool.Start()
@@ -85,10 +86,10 @@ func (pool *BlkPool) GetPrevHashPool() map[string][]string {
 	return <-res
 }
 
-func (pool *BlkPool) GetBlockList() []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
+func (pool *BlkPool) GetBlockList() []types.BlockPoolInterface {
+	res := make(chan []types.BlockPoolInterface)
 	pool.action <- func() {
-		blkList := []common.BlockPoolInterface{}
+		blkList := []types.BlockPoolInterface{}
 		for _, blk := range pool.blkPoolByHash {
 			blkList = append(blkList, blk)
 		}
@@ -97,7 +98,7 @@ func (pool *BlkPool) GetBlockList() []common.BlockPoolInterface {
 	return <-res
 }
 
-func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
+func (pool *BlkPool) AddBlock(blk types.BlockPoolInterface) {
 	pool.action <- func() {
 		prevHash := blk.GetPrevHash().String()
 		hash := blk.Hash().String()
@@ -151,8 +152,8 @@ func (pool *BlkPool) RemovePrevHash(hash string) {
 	}
 }
 
-func (pool *BlkPool) GetPoolInfo() []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
+func (pool *BlkPool) GetPoolInfo() []types.BlockPoolInterface {
+	res := make(chan []types.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetPoolInfo(pool.blkPoolByHash)
 	}
@@ -173,8 +174,8 @@ func (pool *BlkPool) GetLatestHeight(currentHash string) uint64 {
 
 //When get s2b block for producer
 //Get Block from current hash to final block
-func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
+func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []types.BlockPoolInterface {
+	res := make(chan []types.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetFinalBlockFromBlockHash_v1(currentHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
 	}
@@ -183,16 +184,16 @@ func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []common.Blo
 
 //When get last block for s2b synchronization
 //Get longest branch in pool
-func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
+func (pool *BlkPool) GetLongestChain(currentHash string) []types.BlockPoolInterface {
+	res := make(chan []types.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetLongestChain(currentHash, pool.blkPoolByHash, pool.blkPoolByPrevHash)
 	}
 	return <-res
 }
 
-func (pool *BlkPool) GetBlockByPrevHash(prevHash common.Hash) []common.BlockPoolInterface {
-	res := make(chan []common.BlockPoolInterface)
+func (pool *BlkPool) GetBlockByPrevHash(prevHash common.Hash) []types.BlockPoolInterface {
+	res := make(chan []types.BlockPoolInterface)
 	pool.action <- func() {
 		res <- GetBlksByPrevHash(prevHash.String(), pool.blkPoolByHash, pool.blkPoolByPrevHash)
 	}

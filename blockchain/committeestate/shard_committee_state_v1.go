@@ -109,7 +109,7 @@ func (committeeState *ShardCommitteeStateV1) reset() {
 
 //GetShardCommittee get shard committees
 func (engine *ShardCommitteeEngineV1) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return engine.shardCommitteeStateV1.shardCommittee
+	return incognitokey.DeepCopy(engine.shardCommitteeStateV1.shardCommittee)
 }
 
 //GetShardSubstitute get shard pending validators
@@ -244,7 +244,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 	}
 
 	if err != nil {
-		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, err
 	}
 
 	hashes, err := engine.generateUncommittedCommitteeHashes()
@@ -383,27 +383,29 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
-				return nil, err
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeys, shardSwappedCommittees) {
-				return nil, fmt.Errorf("Expect swapped committees to be %+v but get %+v",
-					swapInstruction.OutPublicKeys, shardSwappedCommittees)
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
+					fmt.Errorf("Expect swapped committees to be %+v but get %+v",
+						swapInstruction.OutPublicKeys, shardSwappedCommittees))
 			}
 
 			if !reflect.DeepEqual(swapInstruction.InPublicKeys, shardNewCommittees) {
-				return nil, fmt.Errorf("Expect new committees to be %+v but get %+v",
-					swapInstruction.InPublicKeys, shardNewCommittees)
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
+					fmt.Errorf("Expect new committees to be %+v but get %+v",
+						swapInstruction.InPublicKeys, shardNewCommittees))
 			}
 
 			shardNewCommitteesStruct, err := incognitokey.CommitteeBase58KeyListToStruct(shardNewCommittees)
 			if err != nil {
-				return nil, err
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 
 			shardSwappedCommitteesStruct, err := incognitokey.CommitteeBase58KeyListToStruct(shardSwappedCommittees)
 			if err != nil {
-				return nil, err
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 
 			beforeFilterShardSubstituteAdded := newCommitteeChange.ShardSubstituteAdded[shardID]
@@ -447,12 +449,12 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 
 	committeeState.shardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
 	if err != nil {
-		return nil, err
+		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	committeeState.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append(fixedProducerShardValidators, shardCommittee...))
 	if err != nil {
-		return nil, err
+		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
 	return newCommitteeChange, nil
@@ -472,18 +474,21 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstructionForKeyL
 		if inst[0] == instruction.SWAP_ACTION {
 			swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(inst)
 			if err != nil {
-				return nil, err
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			removedCommitteeSize := len(swapInstruction.InPublicKeys)
-			remainedShardCommittees := committeeState.shardCommittee[removedCommitteeSize:]
-			tempShardSwappedCommittees := committeeState.shardCommittee[:env.MinShardCommitteeSize()]
+			remainedShardCommittees := incognitokey.DeepCopy(committeeState.shardCommittee[removedCommitteeSize:])
+			tempShardSwappedCommittees := incognitokey.DeepCopy(committeeState.shardCommittee[:env.MinShardCommitteeSize()])
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
-				return nil, fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs)
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
+					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
 			}
 			shardCommitteesStruct := append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
-			committeeState.shardCommittee = shardCommitteesStruct
-			newCommitteeChange.ShardCommitteeAdded[shardID] = swapInstruction.InPublicKeyStructs
-			newCommitteeChange.ShardCommitteeRemoved[shardID] = swapInstruction.OutPublicKeyStructs
+			committeeState.shardCommittee = incognitokey.DeepCopy(shardCommitteesStruct)
+			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
+			committeeReplace[common.REPLACE_IN] = incognitokey.DeepCopy(swapInstruction.InPublicKeyStructs)
+			committeeReplace[common.REPLACE_OUT] = incognitokey.DeepCopy(swapInstruction.OutPublicKeyStructs)
+			committeeChange.ShardCommitteeReplaced[shardID] = committeeReplace
 		}
 	}
 	return newCommitteeChange, nil

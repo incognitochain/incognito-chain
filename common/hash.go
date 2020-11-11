@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"sort"
 
-	"golang.org/x/crypto/sha3"
-
 	"github.com/ethereum/go-ethereum/crypto"
+	"golang.org/x/crypto/sha3"
 )
 
 var InvalidMaxHashSizeErr = errors.New("invalid max hash size")
@@ -302,4 +301,9 @@ func GenerateHashFromMapStringBool(maps1 map[string]bool) (Hash, error) {
 		}
 	}
 	return GenerateHashFromStringArray(res)
+}
+
+func (h Hash) IsZeroValue() bool {
+	emptyHash := Hash{}
+	return h.IsEqual(&emptyHash)
 }

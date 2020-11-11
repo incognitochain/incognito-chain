@@ -156,6 +156,19 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	stakerInfo := &statedb.StakerInfo{}
 	stakerInfo.SetTxStakingID(*hash)
 
+	beaconViewAlreadyUnstake := &mocks.BeaconViewRetriever{}
+	beaconViewAlreadyUnstake.
+		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
+		Return(subtitutePublicKeys, nil)
+	beaconViewAlreadyUnstake.
+		On("GetStakerInfo", key1).
+		Return(stakerInfo, true, nil)
+	beaconViewAlreadyUnstake.
+		On("GetAutoStakingList").
+		Return(map[string]bool{
+			key1: false,
+		})
+
 	beaconViewValidInput := &mocks.BeaconViewRetriever{}
 	beaconViewValidInput.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
@@ -163,6 +176,11 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	beaconViewValidInput.
 		On("GetStakerInfo", key1).
 		Return(stakerInfo, true, nil)
+	beaconViewValidInput.
+		On("GetAutoStakingList").
+		Return(map[string]bool{
+			key1: true,
+		})
 
 	stakingTxError := &mocks.Transaction{}
 	stakingTxError.
@@ -304,6 +322,22 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			args: args{
 				tx:                  stakingTx,
 				beaconViewRetriever: beaconViewValidInput,
+				chainRetriever:      chainViewSenderIsNotMatchTxSender,
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "Key has already been unstaked",
+			fields: fields{
+				MetadataBase: metadata.MetadataBase{
+					Type: metadata.UnStakingMeta,
+				},
+				CommitteePublicKey: key1,
+			},
+			args: args{
+				tx:                  stakingTx,
+				beaconViewRetriever: beaconViewAlreadyUnstake,
 				chainRetriever:      chainViewSenderIsNotMatchTxSender,
 			},
 			want:    false,
@@ -453,7 +487,6 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 
 func TestNewUnStakingMetadata(t *testing.T) {
 	type args struct {
-		unStakingType      int
 		committeePublicKey string
 	}
 	tests := []struct {
@@ -463,17 +496,8 @@ func TestNewUnStakingMetadata(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Unstaking Type Is Wrong",
-			args: args{
-				unStakingType:      metadata.BeaconStakingMeta,
-				committeePublicKey: "keys",
-			},
-			wantErr: true,
-		},
-		{
 			name: "Valid Input",
 			args: args{
-				unStakingType:      metadata.UnStakingMeta,
 				committeePublicKey: "keys",
 			},
 			want: &metadata.UnStakingMetadata{
@@ -487,7 +511,7 @@ func TestNewUnStakingMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := metadata.NewUnStakingMetadata(tt.args.unStakingType, tt.args.committeePublicKey)
+			got, err := metadata.NewUnStakingMetadata(tt.args.committeePublicKey)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewUnStakingMetadata() error = %v, wantErr %v", err, tt.wantErr)
 				return

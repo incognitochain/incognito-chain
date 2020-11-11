@@ -78,9 +78,7 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
-	UpgradeCommitteeEngineV2Height   uint64
 	BCHeightBreakPointFixRandShardCM uint64
-	CommitteeStateV2Height           uint64
 	MissingSignaturePenalty          []signaturecounter.Penalty
 }
 
@@ -149,7 +147,6 @@ func init() {
 		Offset:                           TestnetOffset,
 		AssignOffset:                     TestnetAssignOffset,
 		SwapOffset:                       TestnetSwapOffset,
-		MaxSwapOrAssign:                  TestnetMaxSwapOrAssign,
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
@@ -160,7 +157,7 @@ func init() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
+		ConsensusV2Epoch:               1e9,
 		ConsensusV3Epoch:               1,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
@@ -190,9 +187,7 @@ func init() {
 		ReplaceStakingTxHeight:           1,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 2070000,
-		CommitteeStateV2Height:           1,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{
 				MinPercent:   20 * TestnetEpoch / 100,
@@ -224,8 +219,8 @@ func init() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		//InitialIncognito: IntegrationTestInitPRV,
-		InitialIncognito:   TestnetInitPRV,
+		InitialIncognito: IntegrationTestInitPRV,
+		//InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTest2Param = Params{
@@ -294,7 +289,6 @@ func init() {
 		PreloadAddress:                   "",
 		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 120000,
-		CommitteeStateV2Height:           1,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{
 				MinPercent:   20 * Testnet2Epoch / 100,
@@ -352,7 +346,6 @@ func init() {
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
 		AssignOffset:                     MainnetAssignOffset,
-		MaxSwapOrAssign:                  MainnetMaxSwapOrAssign,
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
@@ -364,7 +357,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               20000,
+		ConsensusV3Epoch:               1,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
@@ -393,9 +386,7 @@ func init() {
 		ReplaceStakingTxHeight:           559380,
 		IsBackup:                         false,
 		PreloadAddress:                   "",
-		UpgradeCommitteeEngineV2Height:   1,
 		BCHeightBreakPointFixRandShardCM: 644000,
-		CommitteeStateV2Height:           1e9,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
 			{
 				MinPercent:   800,

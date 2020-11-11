@@ -543,7 +543,7 @@ func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 	committeeChange *CommitteeChange,
 ) {
 	for _, committeePublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
-		if common.IndexOfStr(committeePublicKey, env.allCandidateSubstituteCommittee) == -1 {
+		if common.IndexOfStr(committeePublicKey, b.getAllCandidateSubstituteCommittee()) == -1 {
 			// if not found then delete auto staking data for this public key if present
 			if _, ok := b.autoStake[committeePublicKey]; ok {
 				delete(b.autoStake, committeePublicKey)
@@ -904,11 +904,4 @@ func (engine *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommittee
 //ActiveShards ...
 func (engine *BeaconCommitteeEngineV1) ActiveShards() int {
 	return len(engine.beaconCommitteeStateV1.shardCommittee)
-}
-
-//UpdateDB ...
-func (engine *BeaconCommitteeEngineV1) UpdateDB(
-	committeeChange *CommitteeChange,
-	env *BeaconCommitteeStateEnvironment) error {
-	return nil
 }

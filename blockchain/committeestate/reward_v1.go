@@ -1,7 +1,6 @@
 package committeestate
 
 import (
-	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -20,7 +19,8 @@ func (b *BeaconCommitteeEngineV1) SplitReward(
 	rewardForCustodian := map[common.Hash]uint64{}
 
 	if len(allCoinTotalReward) == 0 {
-		return nil, nil, nil, nil, errors.New("Not enough reward")
+		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
+		return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 	}
 
 	for key, totalReward := range allCoinTotalReward {

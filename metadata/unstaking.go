@@ -17,11 +17,8 @@ type UnStakingMetadata struct {
 }
 
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
-func NewUnStakingMetadata(unStakingType int, committeePublicKey string) (*UnStakingMetadata, error) {
-	// if unStakingType != UnStakingMeta {
-	// 	return nil, errors.New("invalid unstaking type")
-	// }
-	metadataBase := NewMetadataBase(unStakingType)
+func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
+	metadataBase := NewMetadataBase(UnStakingMeta)
 	return &UnStakingMetadata{
 		MetadataBase:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
@@ -78,6 +75,16 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	}
 	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
 		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
+	}
+
+	// TODO: @tin if node in candidate list => auto stake can be true or false, but if node in substitute/committee auto stake must be true
+	autoStakingList := beaconViewRetriever.GetAutoStakingList()
+	check, ok := autoStakingList[requestedPublicKey]
+	if !ok {
+		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, errors.New("Not found staker info"))
+	}
+	if !check {
+		return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
 	}
 
 	return true, nil

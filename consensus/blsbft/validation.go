@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
@@ -17,7 +18,7 @@ type vote struct {
 }
 
 type blockValidation interface {
-	common.BlockInterface
+	types.BlockInterface
 	AddValidationField(validationData string)
 }
 

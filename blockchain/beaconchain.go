@@ -159,7 +159,10 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 }
 
 func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
-	round int, startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
+	round int, startTime int64,
+	committees []incognitokey.CommitteePublicKey,
+	committeeViewHash common.Hash,
+) (types.BlockInterface, error) {
 	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
@@ -173,8 +176,12 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 }
 
 //this function for version 2
-func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string,
-	startTime int64, committeeView multiview.View) (common.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(
+	oldBlock types.BlockInterface, proposer string,
+	startTime int64,
+	committees []incognitokey.CommitteePublicKey,
+	committeeViewHash common.Hash,
+) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.BeaconBlock)
 	json.Unmarshal(b, &newBlock)
@@ -191,7 +198,7 @@ func (chain *BeaconChain) InsertShardBlock(block common.BlockInterface, shouldVa
 	return nil
 }
 
-func (chain *BeaconChain) CheckExistedBlk(block common.BlockInterface) bool {
+func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
 	return err == nil
@@ -223,7 +230,7 @@ func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
 }
 
-func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
+func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 }
 
@@ -243,7 +250,7 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 // 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 // }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
@@ -261,6 +268,10 @@ func (chain *BeaconChain) GetConsensusType() string {
 
 func (chain *BeaconChain) GetShardID() int {
 	return -1
+}
+
+func (chain *BeaconChain) IsBeaconChain() bool {
+	return true
 }
 
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
@@ -309,7 +320,7 @@ func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicK
 	return result
 }
 
-func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (types.BlockInterface, error) {
 	var beaconBlk types.BeaconBlock
 	err := json.Unmarshal(blockString, &beaconBlk)
 	if err != nil {
@@ -323,14 +334,14 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 }
 
 //CommitteesByShardID ...
-func (chain *BeaconChain) CommitteesByShardID(shardID byte) []incognitokey.CommitteePublicKey {
-	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
-	return finalView.GetShardCommittee()[shardID]
+func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
+	return chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
 }
 
-//GetProposerByTimeSlot ...
-func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version int) incognitokey.CommitteePublicKey {
-	finalView := chain.multiView.GetFinalView().(*BeaconBestState)
+//ProposerByTimeSlot ...
+func (chain *BeaconChain) ProposerByTimeSlot(
+	shardID byte, ts int64,
+	committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
 
 	//TODO: add recalculate proposer index here when swap committees
 	// chainParamEpoch := chain.Blockchain.config.ChainParams.Epoch
@@ -341,11 +352,11 @@ func (chain *BeaconChain) GetProposerByTimeSlot(shardID byte, ts int64, version 
 	// 	id = GetProposerByTimeSlot(ts, finalView.MinShardCommitteeSize)
 	// }
 
-	id := GetProposerByTimeSlot(ts, finalView.MinShardCommitteeSize)
-	return finalView.GetShardCommittee()[shardID][id]
+	id := GetProposerByTimeSlot(ts, chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize)
+	return committees[id]
 }
 
-func (chain *BeaconChain) CommitteesV2(block common.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
 }
 
@@ -355,4 +366,9 @@ func (chain *BeaconChain) CommitteeStateVersion() uint {
 
 func (chain *BeaconChain) FinalView() multiview.View {
 	return chain.GetFinalView()
+}
+
+//BestViewCommitteeFromBlock ...
+func (chain *BeaconChain) BestViewCommitteeFromBlock() common.Hash {
+	return common.Hash{}
 }

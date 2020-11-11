@@ -163,6 +163,7 @@ const (
 	ProcessPDEInstructionError
 	ProcessPortalInstructionError
 	InitBeaconStateError
+	InitShardStateError
 	GetListOutputCoinsByKeysetError
 	ProcessSalaryInstructionsError
 	GetShardIDFromTxError
@@ -184,6 +185,7 @@ const (
 	ReturnStakingInstructionHandlerError
 	CountMissingSignatureError
 	ReplacePreviousValidationDataError
+	CommitteeFromBlockNotFoundError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -335,6 +337,7 @@ var ErrCodeMessage = map[int]struct {
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
 	ProcessPortalInstructionError:                     {-1143, "Process Portal instruction Error"},
 	InitBeaconStateError:                              {-1144, "Init Beacon State Error"},
+	InitShardStateError:                               {-1144, "Init Shard State Error"},
 	ProcessSalaryInstructionsError:                    {-1145, "Proccess Salary Instruction Error"},
 	GetShardIDFromTxError:                             {-1146, "Get ShardID From Tx Error"},
 	GetValueFromTxError:                               {-1147, "Get Value From Tx Error"},
@@ -353,6 +356,7 @@ var ErrCodeMessage = map[int]struct {
 	ReturnStakingInstructionHandlerError:              {-1160, "Return Staking Instruction Handler error"},
 	CountMissingSignatureError:                        {-1161, "Count Missing Signature Error"},
 	ReplacePreviousValidationDataError:                {-1162, "Replace Previous Validation Data Error"},
+	CommitteeFromBlockNotFoundError:                   {-1161, "Committee From Beacon Block Not Found Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},

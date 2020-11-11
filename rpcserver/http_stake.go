@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -61,7 +60,10 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 	//Get staking type
 	unStakingType, ok := data["UnStakingType"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid UnStaking Type For Staking Transaction %+v", data["UnStakingType"]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid UnStaking Type For UnStaking Transaction %+v", data["UnStakingType"]))
+	}
+	if unStakingType != metadata.UnStakingMeta {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid UnStaking Type got %+v, want %+v", unStakingType, metadata.UnStakingMeta))
 	}
 
 	//Get Candidate Payment Address
@@ -96,19 +98,9 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	unStakingMetadata, err := metadata.NewUnStakingMetadata(int(unStakingType), base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
+	unStakingMetadata, err := metadata.NewUnStakingMetadata(base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	beaconview := httpServer.blockService.BlockChain.BeaconChain.GetFinalView()
-	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
-	check, ok := beaconFinalView.GetAutoStaking()[unStakingMetadata.CommitteePublicKey]
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key has not staked yet"))
-	}
-	if !check {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key AutoStaking has been already false"))
 	}
 
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, unStakingMetadata)

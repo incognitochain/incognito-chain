@@ -591,51 +591,6 @@ func GetOneShardCommitteeEnterTime(
 	return list
 }
 
-func DeleteMembersAtCommonShardPool(
-	stateDB *StateDB,
-	members []incognitokey.CommitteePublicKey,
-) error {
-	err := deleteCommittee(stateDB, CandidateChainID, CommonShardPool, members)
-	if err != nil {
-		return NewStatedbError(DeleteMemberCommonShardPoolError, err)
-	}
-	return nil
-}
-
-func DeleteMembersAtCommonBeaconPool(
-	stateDB *StateDB,
-	members []incognitokey.CommitteePublicKey,
-) error {
-	err := deleteCommittee(stateDB, BeaconChainID, CommonBeaconPool, members)
-	if err != nil {
-		return NewStatedbError(DeleteMemberCommonBeaconPoolError, err)
-	}
-	return nil
-}
-
-func DeleteMembersAtBeaconPool(
-	stateDB *StateDB,
-	members []incognitokey.CommitteePublicKey,
-) error {
-	err := deleteCommittee(stateDB, BeaconChainID, BeaconPool, members)
-	if err != nil {
-		return NewStatedbError(DeleteMemberCommonBeaconPoolError, err)
-	}
-	return nil
-}
-
-func DeleteMembersAtShardPool(
-	stateDB *StateDB,
-	shardID byte,
-	members []incognitokey.CommitteePublicKey,
-) error {
-	err := deleteCommittee(stateDB, int(shardID), ShardPool, members)
-	if err != nil {
-		return NewStatedbError(DeleteMemberShardPoolError, err)
-	}
-	return nil
-}
-
 //DeleteStakerInfo :
 func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
 	return deleteStakerInfo(stateDB, stakers)

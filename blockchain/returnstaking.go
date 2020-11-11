@@ -276,7 +276,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						continue
 					}
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
-						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID())
+						err = errors.Errorf("Duplicate return staking using tx staking %v", stakerInfo.TxStakingID())
 						Logger.log.Error(err)
 						return nil, nil, err
 					}

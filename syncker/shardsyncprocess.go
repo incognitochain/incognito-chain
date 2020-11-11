@@ -11,7 +11,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -76,6 +75,10 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 			case f := <-s.actionCh:
 				f()
 			case shardPeerState := <-s.shardPeerStateCh:
+				//TODO: @tin
+				// receive peer state here
+				// process peer state
+
 				for sid, peerShardState := range shardPeerState.Shards {
 					if int(sid) == s.shardID {
 						s.shardPeerState[shardPeerState.SenderID] = ShardPeerState{
@@ -215,7 +218,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		return
 	}
 
-	blockBuffer := []common.BlockInterface{}
+	blockBuffer := []types.BlockInterface{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer func() {
 		if requestCnt == 0 {
@@ -280,7 +283,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				}
 
 				insertTime = time.Now()
-				blockBuffer = []common.BlockInterface{}
+				blockBuffer = []types.BlockInterface{}
 			}
 
 			if isNil(blk) && len(blockBuffer) == 0 {

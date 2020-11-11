@@ -190,7 +190,8 @@ func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand 
 		}
 		candidateRandomShardID[candidate] = byte(shardID)
 	}
-	for candidate, randomShardID := range candidateRandomShardID {
+	for _, candidate := range candidates {
+		randomShardID := candidateRandomShardID[candidate]
 		assignShardID := sortedShardIDs[n-1-m[randomShardID]]
 		assignedCandidates[byte(assignShardID)] = append(assignedCandidates[byte(assignShardID)], candidate)
 	}

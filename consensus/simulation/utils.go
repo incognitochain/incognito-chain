@@ -17,11 +17,11 @@ func failOnError(err error) {
 	}
 }
 
-func NewEmptyBlock() common.BlockInterface {
+func NewEmptyBlock() types.BlockInterface {
 	return &types.ShardBlock{}
 }
 
-func NewBlock(height uint64, time int64, producer string, prev common.Hash) common.BlockInterface {
+func NewBlock(height uint64, time int64, producer string, prev common.Hash) types.BlockInterface {
 	return &types.ShardBlock{
 		Header: types.ShardHeader{
 			Version:           1,

@@ -99,7 +99,7 @@ CONTINUE_VERIFY:
 // var bcAllTime time.Duration
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
-	blockHash := beaconBlock.Hash()
+	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	blockchain.BeaconChain.insertLock.Lock()
@@ -114,7 +114,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	//get view that block link to
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
 	if preView == nil {
-		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
+		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view %v", beaconBlock.GetHeight(), preHash))
 	}
 	curView := preView.(*BeaconBestState)
 
@@ -180,6 +180,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		}
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	}
+
+	err2 = newBestState.storeCommitteeStateWithPreviousState(committeeChange)
+	if err2 != nil {
+		return err2
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -419,6 +424,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
+	shardInstruction.compose()
 	tempInstruction, err := curView.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedBlockRewardInstructions,
@@ -551,10 +557,19 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hashes.ShardCandidateHash))
 	}
 	if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
-		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot, hashes.ShardCommitteeAndValidatorHash))
+		res := make(map[byte][]string)
+		for k, v := range beaconBestState.GetShardCommittee() {
+			res[k], _ = incognitokey.CommitteeKeyListToString(v)
+		}
+		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf(
+			"Expect %+v but get %+v \n Committees %+v",
+			beaconBlock.Header.ShardCommitteeAndValidatorRoot,
+			hashes.ShardCommitteeAndValidatorHash,
+			res,
+		))
 	}
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
-		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
+		return NewBlockChainError(AutoStakingRootHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
 	}
 	if !TestRandom {
 		//COMMENT FOR TESTING
@@ -648,11 +663,9 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
 		// Before get random from bitcoin
-	} else if beaconBestState.BeaconHeight%chainParamEpoch >= randomTime {
-		if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
-			beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
-			isBeginRandom = true
-		}
+	} else if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
+		beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
+		isBeginRandom = true
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
@@ -776,11 +789,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpdateDB(newBestState.consensusStateDB)
-	err = newBestState.beaconCommitteeEngine.UpdateDB(committeeChange, env)
+	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
 	if err != nil {
 		return err
 	}
+
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -1033,4 +1046,51 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	}
 
 	return beacon, shard
+}
+
+func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
+	committeeChange *committeestate.CommitteeChange) error {
+	stakerKeys := committeeChange.StakerKeys()
+	if len(stakerKeys) != 0 {
+		err := statedb.StoreStakerInfoV1(
+			beaconBestState.consensusStateDB,
+			stakerKeys,
+			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
+			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
+			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
+	if len(stopAutoStakerKeys) != 0 {
+		err := statedb.StoreStakerInfoV1(
+			beaconBestState.consensusStateDB,
+			stopAutoStakerKeys,
+			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
+			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
+			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) storeCommitteeStateWithPreviousState(
+	committeeChange *committeestate.CommitteeChange) error {
+
+	removedStakerKeys := committeeChange.UnstakeKeys()
+	if len(removedStakerKeys) != 0 {
+		err := statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

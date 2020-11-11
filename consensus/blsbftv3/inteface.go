@@ -1,6 +1,7 @@
 package blsbftv3
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -21,6 +22,7 @@ type NodeInterface interface {
 }
 
 type ChainInterface interface {
+	BestViewCommitteeFromBlock() common.Hash
 	GetFinalView() multiview.View
 	GetBestView() multiview.View
 	GetEpoch() uint64
@@ -34,18 +36,30 @@ type ChainInterface interface {
 	GetActiveShardNumber() int
 	CurrentHeight() uint64
 	GetCommitteeSize() int
+	IsBeaconChain() bool
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
-	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(version int, proposer string, round int, startTime int64, view multiview.View) (common.BlockInterface, error)
-	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64, view multiview.View) (common.BlockInterface, error)
+	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
+	CreateNewBlockFromOldBlock(
+		oldBlock types.BlockInterface,
+		proposer string,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	InsertAndBroadcastBlockWithPrevValidationData(block common.BlockInterface, validationData string) error
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
-	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker
@@ -53,14 +67,12 @@ type ChainInterface interface {
 	GetFinalViewHeight() uint64
 	GetBestViewHash() string
 	GetFinalViewHash() string
-
 	GetViewByHash(hash common.Hash) multiview.View
-	// CommitteeStateVersion() uint
 }
 
 //CommitteeChainHandler :
 type CommitteeChainHandler interface {
-	CommitteesByShardID(byte) []incognitokey.CommitteePublicKey
-	GetProposerByTimeSlot(byte, int64, int) incognitokey.CommitteePublicKey
+	CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
+	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 }
