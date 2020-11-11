@@ -695,6 +695,12 @@ func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return 
 
 func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
 
+func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
+	isBurn, burnedCoin, burnedToken, err := tx.GetTxBurnData()
+	return isBurn, burnedCoin, nil, burnedToken, err
+}
+
+
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 	if err!=nil{

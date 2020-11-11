@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/common"
 )
 
 // Interface for Transaction Transfer Token
@@ -52,7 +52,7 @@ type TransactionToken interface {
 	GetReceiverData() ([]privacy.Coin, error)
 	GetTxMintData() (bool, privacy.Coin, *common.Hash, error)
 	GetTxBurnData() (bool, privacy.Coin, *common.Hash, error)
-
+	GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error)
 	ListSerialNumbersHashH() []common.Hash
 	String() string
 	Hash() *common.Hash

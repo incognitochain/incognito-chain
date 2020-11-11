@@ -1,15 +1,10 @@
 package tx_ver2
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
-	"strconv"
-	"sort"
-	"bytes"
-	"math"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -18,28 +13,30 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-
+	"math"
+	"sort"
+	"strconv"
 )
 
 type TxTokenDataVersion2 struct {
-	PropertyID     	common.Hash
-	PropertyName   	string
-	PropertySymbol 	string
-	SigPubKey      	[]byte `json:"SigPubKey,omitempty"` // 33 bytes
-	Sig            	[]byte `json:"Sig,omitempty"`       //
-	Proof          	privacy.Proof
+	PropertyID     common.Hash
+	PropertyName   string
+	PropertySymbol string
+	SigPubKey      []byte `json:"SigPubKey,omitempty"` // 33 bytes
+	Sig            []byte `json:"Sig,omitempty"`       //
+	Proof          privacy.Proof
 
-	Type     		int
-	Mintable 		bool
+	Type     int
+	Mintable bool
 }
 
-func (td TxTokenDataVersion2) Hash() (*common.Hash, error){
+func (td TxTokenDataVersion2) Hash() (*common.Hash, error) {
 	// leave out signature & its public key when hashing tx
 	td.Sig = []byte{}
 	td.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(td)
 
-	if err!=nil{
+	if err != nil {
 		return nil, err
 	}
 	// after this returns, tx is restored since the receiver is not a pointer
@@ -47,44 +44,44 @@ func (td TxTokenDataVersion2) Hash() (*common.Hash, error){
 	return &hash, nil
 }
 
-func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
+func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 	result := &Tx{
 		TxBase: tx_generic.TxBase{
-			Version: 	txPRV.Version,
-			Type: 		txPRV.Type,
-			LockTime: 	txPRV.LockTime,
-			Fee: 		0,
+			Version:              txPRV.Version,
+			Type:                 txPRV.Type,
+			LockTime:             txPRV.LockTime,
+			Fee:                  0,
 			PubKeyLastByteSender: txPRV.PubKeyLastByteSender,
-			Metadata: 	nil,
+			Metadata:             nil,
 		},
 	}
 	var clonedInfo []byte = nil
 	var err error
-	if txPRV.Info!=nil{
+	if txPRV.Info != nil {
 		clonedInfo = make([]byte, len(txPRV.Info))
 		copy(clonedInfo, txPRV.Info)
 	}
 	var clonedProof privacy.Proof = nil
 	// feed the type to parse proof 
 	proofType := txPRV.Type
-	if proofType==common.TxTokenConversionType{
+	if proofType == common.TxTokenConversionType {
 		proofType = common.TxConversionType
 	}
-	if proof!=nil{
+	if proof != nil {
 		clonedProof, err = utils.ParseProof(proof, txPRV.Version, proofType)
-		if err!=nil{
+		if err != nil {
 			jsb, _ := json.Marshal(proof)
 			utils.Logger.Log.Errorf("Cannot parse proof %s using version %v - type %v", string(jsb), txPRV.Version, txPRV.Type)
 			return nil
 		}
 	}
 	var clonedSig []byte = nil
-	if sig!=nil{		
+	if sig != nil {
 		clonedSig = make([]byte, len(sig))
 		copy(clonedSig, sig)
 	}
 	var clonedPk []byte = nil
-	if pubkey!=nil{
+	if pubkey != nil {
 		clonedPk = make([]byte, len(pubkey))
 		copy(clonedPk, pubkey)
 	}
@@ -98,67 +95,66 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx{
 }
 
 type TxToken struct {
-	Tx 				Tx 					`json:"Tx"`
-	TokenData 		TxTokenDataVersion2 `json:"TxTokenPrivacyData"`
-	cachedTxNormal	*Tx
+	Tx             Tx                  `json:"Tx"`
+	TokenData      TxTokenDataVersion2 `json:"TxTokenPrivacyData"`
+	cachedTxNormal *Tx
 }
-
-func (tx *TxToken) Hash() *common.Hash{
+func (tx *TxToken) Hash() *common.Hash {
 	firstHash := tx.Tx.Hash()
 	secondHash, err := tx.TokenData.Hash()
-	if err!=nil{
+	if err != nil {
 		return nil
 	}
 	result := common.HashH(append(firstHash[:], secondHash[:]...))
 	return &result
 }
-func (td TxTokenDataVersion2) ToCompatTokenData(ttx metadata.Transaction) tx_generic.TxTokenData{
+func (td TxTokenDataVersion2) ToCompatTokenData(ttx metadata.Transaction) tx_generic.TxTokenData {
 	return tx_generic.TxTokenData{
-		TxNormal: 		ttx,
-		PropertyID: 	td.PropertyID,
-		PropertyName: 	td.PropertyName,
+		TxNormal:       ttx,
+		PropertyID:     td.PropertyID,
+		PropertyName:   td.PropertyName,
 		PropertySymbol: td.PropertySymbol,
-		Type: 			td.Type,
-		Mintable: 		td.Mintable,
-		Amount: 		0,
+		Type:           td.Type,
+		Mintable:       td.Mintable,
+		Amount:         0,
 	}
 }
-func decomposeTokenData(td tx_generic.TxTokenData) (*TxTokenDataVersion2, *Tx, error){
+func decomposeTokenData(td tx_generic.TxTokenData) (*TxTokenDataVersion2, *Tx, error) {
 	result := TxTokenDataVersion2{
-		PropertyID: 	td.PropertyID,
-		PropertyName: 	td.PropertyName,
+		PropertyID:     td.PropertyID,
+		PropertyName:   td.PropertyName,
 		PropertySymbol: td.PropertySymbol,
-		Type: 			td.Type,
-		Mintable: 		td.Mintable,
+		Type:           td.Type,
+		Mintable:       td.Mintable,
 	}
 	tx, ok := td.TxNormal.(*Tx)
-	if !ok{
+	if !ok {
 		return nil, nil, errors.New("Error while casting a transaction to v2")
 	}
 	return &result, tx, nil
 }
-func (tx *TxToken) GetTxBase() metadata.Transaction{
+func (tx *TxToken) GetTxBase() metadata.Transaction {
 	return &tx.Tx
 }
-func (tx *TxToken) SetTxBase(inTx metadata.Transaction) error{
+func (tx *TxToken) SetTxBase(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
-	if !ok{
+	if !ok {
 		return errors.New("Cannot set TxBase : wrong type")
 	}
 	tx.Tx = *temp
 	return nil
 }
-func (tx *TxToken) GetTxNormal() metadata.Transaction{
-	if tx.cachedTxNormal!=nil{
+func (tx *TxToken) GetTxNormal() metadata.Transaction {
+	if tx.cachedTxNormal != nil {
 		return tx.cachedTxNormal
 	}
 	result := makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
 	// tx.cachedTxNormal = result
 	return result
 }
-func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error{
+func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
-	if !ok{
+	if !ok {
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Cannot set TxNormal : wrong type"))
 	}
 	tx.TokenData.SigPubKey = temp.SigPubKey
@@ -246,7 +242,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 			}
 			// the coin was copied onto the proof
 			theCoinOnProof, ok := temp.Proof.GetOutputCoins()[0].(*privacy.CoinV2)
-			if !ok{
+			if !ok {
 				return utils.NewTransactionErr(utils.UnexpectedError, errors.New("coin should have been ver2"))
 			}
 			theCoinOnProof.SetCommitment(new(privacy.Point).Identity())
@@ -280,7 +276,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 
 			// set the unblinded asset tag
 			err = theCoinOnProof.SetPlainTokenID(plainTokenID)
-			if err!=nil{
+			if err != nil {
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
@@ -308,10 +304,10 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 			if err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
 			}
-			if isBurning{
+			if isBurning {
 				// show plain tokenID if this is a burning TX
 				txToken.TokenData.PropertyID = *propertyID
-			}else{
+			} else {
 				// tokenID is already hidden in asset tags in coin, here we use the umbrella ID
 				txToken.TokenData.PropertyID = dbFacingTokenID
 			}
@@ -349,7 +345,7 @@ func (tx *Tx) provePRV(params *tx_generic.TxPrivacyInitParams) ([]privacy.PlainC
 
 	// Get Hash of the whole txToken then sign on it
 	// message := common.HashH(append(tx.Hash()[:], hashedTokenMessage...))
-	
+
 	return inputCoins, outputCoins, nil
 }
 
@@ -430,19 +426,19 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		return err
 	}
 	tdh, err := txToken.TokenData.Hash()
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	message := common.HashH(append(tx.Hash()[:], tdh[:]...))
 	err = tx.signOnMessage(inps, outs, txPrivacyParams, message[:])
-	if err!=nil{
+	if err != nil {
 		return err
 	}
-	
+
 	err = txToken.SetTxBase(tx)
 	jsb, _ = json.Marshal(txToken)
 	utils.Logger.Log.Warnf("TX Creation complete ! The resulting token transaction is : %s", string(jsb))
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	// check tx size
@@ -475,7 +471,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	txToken.TokenData.Type = utils.CustomTokenInit
 	txToken.TokenData.PropertyName = coinName
 	txToken.TokenData.PropertySymbol = coinName
-	txToken.TokenData.Mintable= true
+	txToken.TokenData.Mintable = true
 
 	tempOutputCoin := []privacy.Coin{otaCoin}
 	proof := new(privacy.ProofV2)
@@ -496,7 +492,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	txToken.SetTxNormal(temp)
 
 	hashedTokenMessage, err := txToken.TokenData.Hash()
-	if err!=nil{
+	if err != nil {
 		return utils.NewTransactionErr(utils.SignTxError, err)
 	}
 
@@ -525,7 +521,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 	// Verify TxToken Salary: NonPrivacyNonInput
 	if txFee.GetProof() == nil {
 		hashedTokenMessage, err := txToken.TokenData.Hash()
-		if err!=nil{
+		if err != nil {
 			return false, err
 		}
 		message := common.HashH(append(txFee.Hash()[:], hashedTokenMessage[:]...))
@@ -554,7 +550,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 	inputCoins := txFee.GetProof().GetInputCoins()
 	keyImages := make([]*privacy.Point, len(inputCoins)+1)
 	for i := 0; i < len(inputCoins); i += 1 {
-		if inputCoins[i].GetKeyImage()==nil {
+		if inputCoins[i].GetKeyImage() == nil {
 			utils.Logger.Log.Errorf("Error when reconstructing mlsagSignature: missing keyImage")
 			return false, err
 		}
@@ -609,7 +605,7 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 	if !ok {
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v \n", txToken.Hash().String(), err)
 		return false, nil, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
-	}else {
+	} else {
 		// validate for pToken
 		tokenID := txToken.TokenData.PropertyID
 		switch txToken.TokenData.Type {
@@ -630,15 +626,15 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 				return valid, nil, err
 			} else {
 				isBatch, ok := boolParams["isBatch"]
-				if !ok{
+				if !ok {
 					isBatch = false
 				}
 
 				// for CA, bulletproof batching is not supported
 				boolParams["isBatch"] = false
 				boolParams["hasPrivacy"] = true
-				resTxTokenData, _, err :=  txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenID)
-				if err!= nil{
+				resTxTokenData, _, err := txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenID)
+				if err != nil {
 					return resTxTokenData, nil, err
 				}
 				txFeeProof := txToken.Tx.GetProof()
@@ -651,10 +647,10 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 				// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
 				bpValid, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
 				resultProofs := []privacy.Proof{}
-				if isBatch{
+				if isBatch {
 					resultProofs = append(resultProofs, txFeeProof)
 				}
-				
+
 				return bpValid && resTxTokenData, resultProofs, err
 
 			}
@@ -665,17 +661,17 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 }
 
 func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if txToken.GetType() != common.TxCustomTokenPrivacyType && txToken.GetType() != common.TxTokenConversionType{
+	if txToken.GetType() != common.TxCustomTokenPrivacyType && txToken.GetType() != common.TxTokenConversionType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
 	}
 	txn, ok := txToken.GetTxNormal().(*Tx)
-	if !ok || txn==nil{
+	if !ok || txn == nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("TX token must have token component"))
 	}
 	if txToken.GetTxBase().GetProof() == nil && txn.GetProof() == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have a proof")
 	}
-	if txToken.GetTokenID().String() == common.PRVCoinID.String(){
+	if txToken.GetTokenID().String() == common.PRVCoinID.String() {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
 	}
 	// validate metadata
@@ -696,7 +692,7 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 
 func (txToken TxToken) GetTxActualSize() uint64 {
 	jsb, err := json.Marshal(txToken)
-	if err!=nil{
+	if err != nil {
 		return 0
 	}
 	return uint64(math.Ceil(float64(len(jsb)) / 1024))
@@ -737,21 +733,21 @@ func (tx TxToken) GetInfo() []byte { return tx.Tx.Info }
 func (tx *TxToken) SetInfo(info []byte) { tx.Tx.Info = info }
 
 // not supported
-func (tx TxToken) GetSigPubKey() []byte { return []byte{} }
-func (tx *TxToken) SetSigPubKey(sigPubkey []byte) {  }
-func (tx TxToken) GetSig() []byte { return []byte{} }
-func (tx *TxToken) SetSig(sig []byte) {}
-func (tx TxToken) GetProof() privacy.Proof { return nil }
-func (tx *TxToken) SetProof(proof privacy.Proof) {}
-func (tx TxToken) GetCachedActualSize() *uint64{
+func (tx TxToken) GetSigPubKey() []byte           { return []byte{} }
+func (tx *TxToken) SetSigPubKey(sigPubkey []byte) {}
+func (tx TxToken) GetSig() []byte                 { return []byte{} }
+func (tx *TxToken) SetSig(sig []byte)             {}
+func (tx TxToken) GetProof() privacy.Proof        { return nil }
+func (tx *TxToken) SetProof(proof privacy.Proof)  {}
+func (tx TxToken) GetCachedActualSize() *uint64 {
 	return nil
 }
-func (tx *TxToken) SetCachedActualSize(sz *uint64){}
+func (tx *TxToken) SetCachedActualSize(sz *uint64) {}
 
-func (tx TxToken) GetCachedHash() *common.Hash{
+func (tx TxToken) GetCachedHash() *common.Hash {
 	return nil
 }
-func (tx *TxToken) SetCachedHash(h *common.Hash){}
+func (tx *TxToken) SetCachedHash(h *common.Hash) {}
 func (tx *TxToken) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	return false, nil
 }
@@ -761,10 +757,10 @@ func (tx TxToken) GetTokenID() *common.Hash { return &tx.TokenData.PropertyID }
 func (tx TxToken) GetMetadata() metadata.Metadata { return tx.Tx.Metadata }
 
 func (tx *TxToken) SetMetadata(meta metadata.Metadata) { tx.Tx.Metadata = meta }
-func (tx TxToken) GetPrivateKey() []byte{
+func (tx TxToken) GetPrivateKey() []byte {
 	return tx.Tx.GetPrivateKey()
 }
-func (tx *TxToken) SetPrivateKey(sk []byte){
+func (tx *TxToken) SetPrivateKey(sk []byte) {
 	tx.Tx.SetPrivateKey(sk)
 }
 
@@ -794,7 +790,7 @@ func (tx TxToken) ListSerialNumbersHashH() []common.Hash {
 
 func (tx TxToken) String() string {
 	jsb, err := json.Marshal(tx)
-	if err!=nil{
+	if err != nil {
 		return ""
 	}
 	return string(jsb)
@@ -984,10 +980,13 @@ func (txToken *TxToken) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metad
 	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, txToken, bcr, accumulatedValues, retriever, viewRetriever)
 }
 
-func (txToken *TxToken) GetTxTokenData() tx_generic.TxTokenData { return txToken.TokenData.ToCompatTokenData(txToken.GetTxNormal()) }
-func (txToken *TxToken) SetTxTokenData(data tx_generic.TxTokenData) error{
+func (txToken *TxToken) GetTxTokenData() tx_generic.TxTokenData {
+	return txToken.TokenData.ToCompatTokenData(txToken.GetTxNormal())
+}
+
+func (txToken *TxToken) SetTxTokenData(data tx_generic.TxTokenData) error {
 	td, txN, err := decomposeTokenData(data)
-	if err == nil{
+	if err == nil {
 		txToken.TokenData = *td
 		return txToken.SetTxNormal(txN)
 	}
@@ -1003,6 +1002,17 @@ func (txToken *TxToken) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error
 	tokenID := txToken.TokenData.PropertyID
 	isBurn, burnCoin, _, err := txToken.GetTxNormal().GetTxBurnData()
 	return isBurn, burnCoin, &tokenID, err
+}
+
+func (txToken *TxToken) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
+	isBurnToken, burnToken, burnedTokenID, errToken :=  txToken.GetTxBurnData()
+	isBurnPrv, burnPrv, _, errPrv := txToken.GetTxBase().GetTxBurnData()
+
+	if errToken != nil && errPrv != nil {
+		return false, nil, nil, nil, fmt.Errorf("%v and %v", errPrv, errToken)
+	}
+
+	return isBurnPrv || isBurnToken, burnToken, burnPrv, burnedTokenID, nil
 }
 
 func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
@@ -1021,7 +1031,7 @@ func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stat
 		return nil
 	}
 	err = tx.Tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	if tx.GetTxNormal().GetProof() == nil {
@@ -1038,32 +1048,30 @@ func (txToken *TxToken) ValidateTxWithBlockChain(chainRetriever metadata.ChainRe
 
 func (tx *TxToken) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
 
-
-
 func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	var err error
 	type TxTokenHolder struct {
-		Tx 					json.RawMessage
-		TxTokenPrivacyData 	json.RawMessage
+		Tx                 json.RawMessage
+		TxTokenPrivacyData json.RawMessage
 	}
 	var holder TxTokenHolder
-	if err = json.Unmarshal(data, &holder); err!=nil{
+	if err = json.Unmarshal(data, &holder); err != nil {
 		return err
 	}
-	
+
 	if err = json.Unmarshal(holder.Tx, &txToken.Tx); err != nil {
 		return err
 	}
 
-	switch txToken.Tx.Type{
+	switch txToken.Tx.Type {
 	case common.TxTokenConversionType:
-		if txToken.Tx.Version!=utils.TxConversionVersion12Number{
+		if txToken.Tx.Version != utils.TxConversionVersion12Number {
 			return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof version"))
 		}
 		txToken.TokenData.Proof = &privacy.ProofForConversion{}
 		txToken.TokenData.Proof.Init()
 	case common.TxCustomTokenPrivacyType:
-		if txToken.Tx.Version!=utils.TxVersion2Number{
+		if txToken.Tx.Version != utils.TxVersion2Number {
 			return utils.NewTransactionErr(utils.PrivacyTokenJsonError, errors.New("Error while unmarshalling TX token v2 : wrong proof version"))
 		}
 		txToken.TokenData.Proof = &privacy.ProofV2{}
@@ -1082,4 +1090,3 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	txToken.cachedTxNormal = makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
 	return nil
 }
-

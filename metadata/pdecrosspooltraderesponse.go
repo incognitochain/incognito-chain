@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -65,25 +66,15 @@ func (iRes *PDECrossPoolTradeResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-	tx Transaction,
-	chainRetriever ChainRetriever,
-	ac *AccumulatedValues,
-	shardViewRetriever ShardViewRetriever,
-	beaconViewRetriever BeaconViewRetriever,
-) (bool, error) {
+func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+
+	for i, inst := range mintData.Insts  {
 		if len(inst) < 4 { // this is not PDETradeRequest or PDECrossPoolTradeRequestMeta instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PDECrossPoolTradeRequestMeta) {
 			continue
 		}
@@ -98,6 +89,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
 		var receiverAddrStrFromInst string
+		var receiverTxRandomFromInst string
 		var receivingAmtFromInst uint64
 		var receivingTokenIDStr string
 		if instTradeStatus == common.PDECrossPoolTradeFeeRefundChainStatus ||
@@ -112,6 +104,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardIDFromInst = pdeRefundCrossPoolTrade.ShardID
 			txReqIDFromInst = pdeRefundCrossPoolTrade.TxReqID
 			receiverAddrStrFromInst = pdeRefundCrossPoolTrade.TraderAddressStr
+			receiverTxRandomFromInst = pdeRefundCrossPoolTrade.TxRandomStr
 			receivingTokenIDStr = pdeRefundCrossPoolTrade.TokenIDStr
 			receivingAmtFromInst = pdeRefundCrossPoolTrade.Amount
 		} else { // trade accepted
@@ -127,6 +120,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardIDFromInst = lastPDETradeAcceptedContent.ShardID
 			txReqIDFromInst = lastPDETradeAcceptedContent.RequestedTxID
 			receiverAddrStrFromInst = lastPDETradeAcceptedContent.TraderAddressStr
+			receiverTxRandomFromInst = lastPDETradeAcceptedContent.TxRandomStr
 			receivingTokenIDStr = lastPDETradeAcceptedContent.TokenIDToBuyStr
 			receivingAmtFromInst = lastPDETradeAcceptedContent.ReceiveAmount
 		}
@@ -135,16 +129,45 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardID != shardIDFromInst {
 			continue
 		}
-		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
+
+		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
 			continue
 		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			receivingAmtFromInst != paidAmount ||
-			receivingTokenIDStr != assetID.String() {
+		if !isMinted {
+			Logger.log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
 			continue
+		}
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
+
+		if len(receiverTxRandomFromInst) > 0 {
+			publicKey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddrStrFromInst, receiverTxRandomFromInst)
+			if err != nil {
+				Logger.log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
+				continue
+			}
+
+			txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+			if !bytes.Equal(publicKey.ToBytesS(), pk[:]) ||
+				receivingAmtFromInst != paidAmount ||
+				!bytes.Equal(txR[:], txRandom[:]) ||
+				receivingTokenIDStr != assetID.String() {
+				continue
+			}
+		} else {
+			key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
+			if err != nil {
+				Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+				continue
+			}
+
+			if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+				receivingAmtFromInst != paidAmount ||
+				receivingTokenIDStr != assetID.String() {
+				continue
+			}
 		}
 		idx = i
 		break
@@ -152,6 +175,6 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PDECrossPoolTradeRequestMeta tx found for PDECrossPoolTradeResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
 }

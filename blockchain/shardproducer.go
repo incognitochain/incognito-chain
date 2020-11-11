@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -756,4 +755,16 @@ func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 	// }
 	b := common.RandBytes(common.HashSize)
 	return privacy.GeneratePrivateKey(b)
+}
+
+// committeeChanged checks if swap instructions really changed the committee list
+// (not just empty swap instruction)
+func committeeChanged(swap []string) bool {
+	if len(swap) < 3 {
+		return false
+	}
+
+	in := swap[1]
+	out := swap[2]
+	return len(in) > 0 || len(out) > 0
 }

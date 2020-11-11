@@ -458,6 +458,7 @@ func (blockchain *BlockChain) buildInstsForSortedTradableActions(
 			currentPDEState,
 			beaconHeight,
 			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TxRandomStr,
 			tradeAction.TxReqID,
 			tradingFeeByPair,
 		)
@@ -535,6 +536,7 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 	currentPDEState *CurrentPDEState,
 	beaconHeight uint64,
 	traderAddressStr string,
+	txRandomStr string,
 	txReqID common.Hash,
 	tradingFeeByPair map[string]uint64,
 ) ([][]string, error) {
@@ -612,6 +614,7 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 		// build trade accepted contents
 		pdeTradeAcceptedContent := metadata.PDECrossPoolTradeAcceptedContent{
 			TraderAddressStr: traderAddressStr,
+			TxRandomStr:      txRandomStr,
 			TokenIDToBuyStr:  tradeInf.tokenIDToBuyStr,
 			ReceiveAmount:    tradeInf.receiveAmount,
 			Token1IDStr:      pdePoolPair.Token1IDStr,
@@ -753,7 +756,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 
 	pdeTradeAcceptedContent := metadata.PDETradeAcceptedContent{
 		TraderAddressStr: pdeTradeReqAction.Meta.TraderAddressStr,
-		TxRandomStr: pdeTradeReqAction.Meta.TxRandomStr,
+		TxRandomStr:      pdeTradeReqAction.Meta.TxRandomStr,
 		TokenIDToBuyStr:  pdeTradeReqAction.Meta.TokenIDToBuyStr,
 		ReceiveAmount:    receiveAmt,
 		Token1IDStr:      pdePoolPair.Token1IDStr,

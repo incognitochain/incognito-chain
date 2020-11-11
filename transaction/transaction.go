@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -380,7 +381,34 @@ func GetTxTokenDataFromTransaction(tx metadata.Transaction) *tx_generic.TxTokenD
 	default:
 		return nil
 	}
-	return nil
+}
+
+func GetFullBurnData(tx metadata.Transaction) (bool, coin.Coin, coin.Coin, *common.Hash, error) {
+
+	switch  tx.GetType() {
+	case common.TxNormalType:
+		isBurned, burnPrv, _, err :=  tx.GetTxBurnData()
+		if err != nil || isBurned == false {
+			return false, nil, nil, nil, err
+		}
+		return true, burnPrv, nil, nil, err
+	case common.TxCustomTokenPrivacyType:
+		if txTmp, ok := tx.(TransactionToken); !ok {
+			return false, nil, nil, nil, fmt.Errorf("tx is not tp")
+		} else {
+			isBurnToken, burnToken, burnedTokenID, err1 :=  txTmp.GetTxBurnData()
+			isBurnPrv, burnPrv, _, err2 := txTmp.GetTxBase().GetTxBurnData()
+
+			if err1 != nil && err2 != nil {
+				return false, nil, nil, nil, fmt.Errorf("%v and %v", err1, err2)
+			}
+
+			return isBurnPrv || isBurnToken, burnToken, burnPrv, burnedTokenID, nil
+		}
+
+	default:
+		return false, nil, nil, nil, nil
+	}
 }
 
 // func (txToken *tx_generic.TxTokenBase) UnmarshalJSON(data []byte) error {

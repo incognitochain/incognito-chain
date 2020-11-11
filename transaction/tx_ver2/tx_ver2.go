@@ -1,15 +1,9 @@
 package tx_ver2
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
-	"math/big"
-	"strconv"
-	"time"
-	"encoding/json"
-	"math"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -17,6 +11,10 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
+	"math"
+	"math/big"
+	"strconv"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
@@ -685,6 +683,11 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
 
 func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
+
+func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
+	isBurn, burnedCoin, burnedToken, err := tx.GetTxBurnData()
+	return isBurn, burnedCoin, nil, burnedToken, err
+}
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)

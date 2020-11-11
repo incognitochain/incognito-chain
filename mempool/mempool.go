@@ -333,20 +333,6 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 		txDescs = append(txDescs, &txD.Desc)
 		txHashes = append(txHashes, *tx.Hash())
 	}
-
-	boolParams := make(map[string]bool)
-	boolParams["isNewTransaction"] = false
-	boolParams["isBatch"] = true
-	boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
-
-	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), boolParams)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !ok {
-		return nil, nil, fmt.Errorf("Verify Batch Transaction failed %+v", txs)
-	}
 	return txHashes, txDescs, nil
 }
 

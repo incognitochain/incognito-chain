@@ -77,11 +77,10 @@ func buildTradeResTx(
 	receiveAmt uint64,
 	tokenIDStr string,
 	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	stateDB *statedb.StateDB,
 	meta metadata.Metadata,
 ) (metadata.Transaction, error) {
+
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
@@ -90,13 +89,13 @@ func buildTradeResTx(
 
 	var txParam transaction.TxSalaryOutputParams
 	if len(txRandomStr) > 0 {
-		publickey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddressStr, txRandomStr)
+		publicKey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddressStr, txRandomStr)
 		if err != nil {
 			return nil, err
 		}
-		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: nil, PublicKey: publickey, TxRandom: txRandom, TokenID: tokenID, Info: []byte{}}
+		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: nil, PublicKey: publicKey, TxRandom: txRandom, TokenID: tokenID, Info: []byte{}}
 	} else {
-		return nil, errors.New("Cannnot create trade response without txRandom info")
+		return nil, errors.New("cannot create trade response without txRandom info")
 	}
 	return txParam.BuildTxSalary(nil, producerPrivateKey, transactionStateDB, meta)
 }
@@ -113,6 +112,7 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
 	if err != nil {
 		return nil, nil
 	}
+
 	if shardID != crossPoolTradeRefundContent.ShardID {
 		return nil, nil
 	}
@@ -121,14 +121,14 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
 		crossPoolTradeRefundContent.TxReqID,
 		metadata.PDECrossPoolTradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		crossPoolTradeRefundContent.TraderAddressStr,
+		crossPoolTradeRefundContent.TxRandomStr,
 		crossPoolTradeRefundContent.Amount,
 		crossPoolTradeRefundContent.TokenIDStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		beaconView.GetBeaconFeatureStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -151,9 +151,12 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	if err != nil {
 		return nil, nil
 	}
-	if shardID != pdeTradeRequestAction.ShardID {
-		return nil, nil
-	}
+
+	meta := metadata.NewPDETradeResponse(
+		instStatus,
+		pdeTradeRequestAction.TxReqID,
+		metadata.PDETradeResponseMeta,
+	)
 
 	resTx, err := buildTradeResTx(
 		pdeTradeRequestAction.Meta.TraderAddressStr,
@@ -161,9 +164,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		pdeTradeRequestAction.Meta.SellAmount+pdeTradeRequestAction.Meta.TradingFee,
 		pdeTradeRequestAction.Meta.TokenIDToSellStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		beaconView.GetBeaconFeatureStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -191,23 +192,22 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeAcceptedTx(
 		Logger.log.Warn("WARNING: cross pool trade contents is empty.")
 		return nil, nil
 	}
+
 	finalCrossPoolTradeAcceptedContent := crossPoolTradeAcceptedContents[len - 1]
-	if shardID != finalCrossPoolTradeAcceptedContent.ShardID {
-		return nil, nil
-	}
+
 	meta := metadata.NewPDECrossPoolTradeResponse(
 		instStatus,
 		finalCrossPoolTradeAcceptedContent.RequestedTxID,
 		metadata.PDECrossPoolTradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		finalCrossPoolTradeAcceptedContent.TraderAddressStr,
+		finalCrossPoolTradeAcceptedContent.TxRandomStr,
 		finalCrossPoolTradeAcceptedContent.ReceiveAmount,
 		finalCrossPoolTradeAcceptedContent.TokenIDToBuyStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		beaconView.GetBeaconFeatureStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -230,23 +230,20 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	if err != nil {
 		return nil, nil
 	}
-	if shardID != pdeTradeAcceptedContent.ShardID {
-		return nil, nil
-	}
+
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
 		pdeTradeAcceptedContent.RequestedTxID,
 		metadata.PDETradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		pdeTradeAcceptedContent.TraderAddressStr,
 		pdeTradeAcceptedContent.TxRandomStr,
 		pdeTradeAcceptedContent.ReceiveAmount,
 		pdeTradeAcceptedContent.TokenIDToBuyStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		beaconView.GetBeaconFeatureStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -499,17 +496,16 @@ func (blockGenerator *BlockGenerator) buildPDEFeeWithdrawalTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 
-	resTx := new(transaction.Tx)
-	err = resTx.InitTxSalary(
-		pdeFeeWithdrawalRequestAction.Meta.WithdrawalFeeAmt,
-		&receiverAddr,
-		producerPrivateKey,
-		shardView.GetCopiedTransactionStateDB(),
-		meta,
-	)
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount: pdeFeeWithdrawalRequestAction.Meta.WithdrawalFeeAmt,
+		ReceiverAddress: &receiverAddr,
+		TokenID: &common.PRVCoinID}
+	otaCoin, err := txParam.GenerateOutputCoin()
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing trading fee withdrawal (normal) tx: %+v", err)
-		return nil, nil
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
+		return nil, err
 	}
-	return resTx, nil
+	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
 }

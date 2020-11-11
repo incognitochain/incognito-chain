@@ -15,6 +15,7 @@ import (
 type PDEFeeWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
+	SharedRandom       []byte
 }
 
 func NewPDEFeeWithdrawalResponse(
@@ -52,7 +53,9 @@ func (iRes PDEFeeWithdrawalResponse) ValidateMetadataByItself() bool {
 func (iRes PDEFeeWithdrawalResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -62,14 +65,14 @@ func (iRes *PDEFeeWithdrawalResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDEFeeWithdrawalRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PDEFeeWithdrawalRequestMeta) {
 			continue
 		}
@@ -97,18 +100,24 @@ func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(tx
 			continue
 		}
 
-		_, pk, amount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			feeWithdrawalRequestAction.Meta.WithdrawalFeeAmt != amount ||
-			common.PRVCoinID.String() != assetID.String() {
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != common.PRVIDStr {
 			continue
 		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, feeWithdrawalRequestAction.Meta.WithdrawalFeeAmt); !ok {
+			continue
+		}
+
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.Errorf("no PDEFeeWithdrawalRequest tx found for the PDEFeeWithdrawalResponse tx %s", tx.Hash().String())
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PDEFeeWithdrawalResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

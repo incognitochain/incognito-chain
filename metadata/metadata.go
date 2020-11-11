@@ -125,11 +125,10 @@ type Transaction interface {
 	GetTxActualSize() uint64
 	GetReceivers() ([][]byte, []uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
-
 	GetReceiverData() ([]coin.Coin, error)
 	GetTxMintData() (bool, coin.Coin, *common.Hash, error)
 	GetTxBurnData() (bool, coin.Coin, *common.Hash, error)
-
+	GetTxFullBurnData() (bool, coin.Coin, coin.Coin, *common.Hash, error)
 	ListSerialNumbersHashH() []common.Hash
 	String() string
 	Hash() *common.Hash

@@ -1,9 +1,7 @@
 package blockchain
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"

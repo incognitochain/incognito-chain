@@ -1,10 +1,10 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -35,7 +35,7 @@ func NewPDEFeeWithdrawalRequest(
 	metaType int,
 ) (*PDEFeeWithdrawalRequest, error) {
 	metadataBase := MetadataBase{
-		Type: metaType,
+		Type: metaType, Sig: []byte{},
 	}
 	pdeFeeWithdrawalRequest := &PDEFeeWithdrawalRequest{
 		WithdrawerAddressStr:  withdrawerAddressStr,
@@ -46,6 +46,8 @@ func NewPDEFeeWithdrawalRequest(
 	pdeFeeWithdrawalRequest.MetadataBase = metadataBase
 	return pdeFeeWithdrawalRequest, nil
 }
+
+func (*PDEFeeWithdrawalRequest) ShouldSignMetaData() bool { return true }
 
 func (pc PDEFeeWithdrawalRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
@@ -61,9 +63,12 @@ func (pc PDEFeeWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriev
 	if len(withdrawerAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's withdrawer address")
 	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], withdrawerAddr.Pk[:]) {
-		return false, false, errors.New("WithdrawerAddr incorrect")
+
+	if ok, err := tx.CheckAuthorizedSender(withdrawerAddr.Pk); err != nil || !ok {
+		fmt.Println("Check authorized sender fail:", ok, err)
+		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}
+
 	_, err = common.Hash{}.NewHashFromStr(pc.WithdrawalToken1IDStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEFeeWithdrawalRequestFromMapError, errors.New("WithdrawalTokenID1Str incorrect"))
@@ -83,6 +88,20 @@ func (pc PDEFeeWithdrawalRequest) ValidateMetadataByItself() bool {
 }
 
 func (pc PDEFeeWithdrawalRequest) Hash() *common.Hash {
+	record := pc.MetadataBase.Hash().String()
+	record += pc.WithdrawerAddressStr
+	record += pc.WithdrawalToken1IDStr
+	record += pc.WithdrawalToken2IDStr
+	record += strconv.FormatUint(pc.WithdrawalFeeAmt, 10)
+	if pc.Sig != nil && len(pc.Sig) != 0 {
+		record += string(pc.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (pc PDEFeeWithdrawalRequest) HashWithoutSig() *common.Hash {
 	record := pc.MetadataBase.Hash().String()
 	record += pc.WithdrawerAddressStr
 	record += pc.WithdrawalToken1IDStr

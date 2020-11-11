@@ -107,10 +107,20 @@ func (txToken TxTokenBase) GetTxMintData() (bool, privacy.Coin, *common.Hash, er
 }
 
 func (txToken TxTokenBase) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) {
-	fmt.Println("[BUGLOC] Burn Data Token")
 	tokenID := txToken.TxTokenData.GetPropertyID()
 	isBurn, burnCoin, _, err := txToken.TxTokenData.TxNormal.GetTxBurnData()
 	return isBurn, burnCoin, &tokenID, err
+}
+
+func (txToken TxTokenBase) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
+	isBurnToken, burnToken, burnedTokenID, errToken :=  txToken.GetTxBurnData()
+	isBurnPrv, burnPrv, _, errPrv := txToken.GetTxBase().GetTxBurnData()
+
+	if errToken != nil && errPrv != nil {
+		return false, nil, nil, nil, fmt.Errorf("%v and %v", errPrv, errToken)
+	}
+
+	return isBurnPrv || isBurnToken, burnToken, burnPrv, burnedTokenID, nil
 }
 // ========== CHECK FUNCTION ===========
 
