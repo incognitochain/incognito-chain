@@ -648,9 +648,10 @@ func (b *BeaconCommitteeStateV2) processAssignWithRandomInstruction(
 	// b == newstate -> only write
 	// oldstate -> only read
 	newCommitteeChange := committeeChange
-	candidates, _ := incognitokey.CommitteeKeyListToString(oldState.shardCommonPool[:b.numberOfAssignedCandidates])
+	candidateStructs := oldState.shardCommonPool[:b.numberOfAssignedCandidates]
+	candidates, _ := incognitokey.CommitteeKeyListToString(candidateStructs)
 	newCommitteeChange = b.assign(candidates, rand, activeShards, newCommitteeChange, oldState)
-	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, oldState.shardCommonPool[:b.numberOfAssignedCandidates]...)
+	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, candidateStructs...)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
 
@@ -694,24 +695,25 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	numberFixedValidators := env.NumberOfFixedShardBlockValidators
 
 	// process list shard committees
-	for _, v := range tempSwapOutPublicKeys {
-		if !v.IsEqual(oldState.shardCommittee[chainID][numberFixedValidators]) {
-			return nil, returnStakingInstructions, errors.New("Swap Out Not Valid In List Committees Public Key")
-		}
-		b.shardCommittee[chainID] = append(b.shardCommittee[chainID][:numberFixedValidators],
-			b.shardCommittee[chainID][numberFixedValidators+1:]...)
-		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
+	oldSwappedOutShardCommittee := oldState.shardCommittee[chainID][numberFixedValidators : numberFixedValidators+len(tempSwapOutPublicKeys)]
+	if !reflect.DeepEqual(oldSwappedOutShardCommittee, tempSwapOutPublicKeys) {
+		return nil, returnStakingInstructions, fmt.Errorf("Swap Out Not Valid In List Committees Public Key, "+
+			"expect new %+v, got %+v", tempSwapOutPublicKeys, oldSwappedOutShardCommittee)
 	}
+
+	fixedShardCommittee := incognitokey.DeepCopy(oldState.shardCommittee[chainID][:numberFixedValidators])
+	remainedShardCommittee := incognitokey.DeepCopy(oldState.shardCommittee[chainID][numberFixedValidators+len(tempSwapOutPublicKeys):])
+	b.shardCommittee[chainID] = append(fixedShardCommittee, remainedShardCommittee...)
+	newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], oldSwappedOutShardCommittee...)
 	b.shardCommittee[chainID] = append(b.shardCommittee[chainID], tempSwapInPublicKeys...)
 
 	// process list shard pool
-	for _, v := range tempSwapInPublicKeys {
-		if !v.IsEqual(oldState.shardSubstitute[chainID][0]) {
-			return nil, returnStakingInstructions, errors.New("Swap In Not Valid In List Subtitutes Public Key")
-		}
-		b.shardSubstitute[chainID] = b.shardSubstitute[chainID][1:]
-		newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], v)
+	if !reflect.DeepEqual(tempSwapInPublicKeys, oldState.shardSubstitute[chainID][:len(tempSwapInPublicKeys)]) {
+		return nil, returnStakingInstructions, fmt.Errorf("Swap In Not Valid In List Subtitutes Public Key, "+
+			"expect new %+v, got %+v", tempSwapInPublicKeys, oldState.shardSubstitute[chainID])
 	}
+	b.shardSubstitute[chainID] = b.shardSubstitute[chainID][len(tempSwapInPublicKeys):]
+	newCommitteeChange.ShardSubstituteRemoved[chainID] = append(newCommitteeChange.ShardSubstituteRemoved[chainID], tempSwapInPublicKeys...)
 	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process after swap for assign old committees to current shard pool
