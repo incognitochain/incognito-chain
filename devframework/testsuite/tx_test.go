@@ -289,7 +289,7 @@ func Test_PDEFlow(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 
 	//Create custom token
-	result1, err := sim.RPC.API_SendTxCreateCustomToken(sim.GenesisAccount.PrivateKey, sim.GenesisAccount.PaymentAddress, 10000000, "pTest", "TES", 30000000000)
+	result1, err := sim.RPC.API_SendTxCreateCustomToken(sim.GenesisAccount.PrivateKey, sim.GenesisAccount.PaymentAddress, 1, "pTest", "TES", 30000000000)
 	if err != nil {
 		panic(err)
 	}
