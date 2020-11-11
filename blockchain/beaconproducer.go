@@ -630,14 +630,19 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
+				// TODO: @tin test with more than 4 keys in stop auto stake instruction
 				for i, v := range tempStopAutoStakeInstruction.CommitteePublicKeys {
 					check, ok := beaconBestState.GetAutoStakingList()[v]
-					if !ok || !check {
+					// for debug only
+					if !ok {
 						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+					}
+					if !ok || !check {
 						tempStopAutoStakeInstruction.CommitteePublicKeys =
 							append(tempStopAutoStakeInstruction.CommitteePublicKeys[:i],
 								tempStopAutoStakeInstruction.CommitteePublicKeys[i+1:]...,
 							)
+						// TODO: @tin duplicate code?
 						tempStopAutoStakeInstruction.CommitteePublicKeysStruct =
 							append(tempStopAutoStakeInstruction.CommitteePublicKeysStruct[:i],
 								tempStopAutoStakeInstruction.CommitteePublicKeysStruct[i+1:]...,
@@ -654,14 +659,17 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempUnstakeInstruction := instruction.ImportUnstakeInstructionFromString(inst)
+				// TODO: @tin test with more than 4 keys in unstake instruction
 				for i, v := range tempUnstakeInstruction.CommitteePublicKeys {
 					check, ok := beaconBestState.GetAutoStakingList()[v]
+					// TODO: @tin if node in candidate list => auto stake can be true or false, but if node in substitute/committee auto stake must be true
 					if !ok || !check {
 						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
 						tempUnstakeInstruction.CommitteePublicKeys =
 							append(tempUnstakeInstruction.CommitteePublicKeys[:i],
 								tempUnstakeInstruction.CommitteePublicKeys[i+1:]...,
 							)
+						// TODO: @tin duplicate code?
 						tempUnstakeInstruction.CommitteePublicKeysStruct =
 							append(tempUnstakeInstruction.CommitteePublicKeysStruct[:i],
 								tempUnstakeInstruction.CommitteePublicKeysStruct[i+1:]...,

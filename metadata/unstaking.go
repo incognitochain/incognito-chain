@@ -77,6 +77,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
 	}
 
+	// TODO: @tin if node in candidate list => auto stake can be true or false, but if node in substitute/committee auto stake must be true
 	autoStakingList := beaconViewRetriever.GetAutoStakingList()
 	check, ok := autoStakingList[requestedPublicKey]
 	if !ok {
