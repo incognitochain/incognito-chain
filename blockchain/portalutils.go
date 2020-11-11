@@ -212,7 +212,7 @@ func pickUpCustodianForPorting(
 		return nil, errors.New("pickUpCustodianForPorting: There is no custodian supply remote address for porting tokenID")
 	}
 	sort.Slice(sortedCusCollaterals, func(i, j int) bool {
-		if sortedCusCollaterals[i].amountInUSDT > sortedCusCollaterals[j].amountInUSDT{
+		if sortedCusCollaterals[i].amountInUSDT > sortedCusCollaterals[j].amountInUSDT {
 			return true
 		} else if (sortedCusCollaterals[i].amountInUSDT == sortedCusCollaterals[j].amountInUSDT) &&
 			(sortedCusCollaterals[i].custodianKey < sortedCusCollaterals[j].custodianKey) {
@@ -987,7 +987,7 @@ func updateCustodianStateAfterExpiredPortingReq(
 		lockedTokensAmount := custodianState.GetLockedTokenCollaterals()
 		freeTokensAmount := custodianState.GetFreeTokenCollaterals()
 		for publicTokenId, tokenValue := range unlockedTokensAmount {
-			if lockedTokensAmount[tokenID][publicTokenId] < unlockedAmount {
+			if lockedTokensAmount[tokenID][publicTokenId] < tokenValue {
 				return errors.New("[updateCustodianStateAfterExpiredPortingReq] locked amount custodian state less than token locked in porting request")
 			}
 			lockedTokensAmount[tokenID][publicTokenId] -= tokenValue
@@ -4494,7 +4494,6 @@ func UpdateCustodianAfterTopupWaitingPorting(
 	}
 	return nil
 }
-
 
 func cloneMap(m map[string]uint64) map[string]uint64 {
 	if m == nil {
