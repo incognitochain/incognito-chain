@@ -5,10 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -123,6 +125,22 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 	tx, _ := common.Hash{}.NewHashFromStr("123")
 	paymentAddress0, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
 	assert.Nil(t, err)
+
+	beaconCommitteeEngineAutoStakeFalse := &mocks.BeaconCommitteeEngine{}
+	beaconCommitteeEngineAutoStakeFalse.
+		On("GetAutoStaking").
+		Return(map[string]bool{
+			key0: false,
+			key:  true,
+		})
+
+	beaconCommitteeEngineAutoStakeTrue := &mocks.BeaconCommitteeEngine{}
+	beaconCommitteeEngineAutoStakeTrue.
+		On("GetAutoStaking").
+		Return(map[string]bool{
+			key0: true,
+			key:  true,
+		})
 
 	type fields struct {
 		BestBlockHash            common.Hash
@@ -242,8 +260,10 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "Stop AutoStake Instruction",
-			fields: fields{},
+			name: "Stop AutoStake Instruction",
+			fields: fields{
+				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeTrue,
+			},
 			args: args{
 				instructions: [][]string{
 					[]string{
@@ -259,8 +279,10 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "Unstake Instruction",
-			fields: fields{},
+			name: "Unstake Instruction",
+			fields: fields{
+				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeTrue,
+			},
 			args: args{
 				instructions: [][]string{
 					[]string{
@@ -274,6 +296,84 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 					&instruction.UnstakeInstruction{
 						CommitteePublicKeys:       []string{key0},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey0},
+					},
+				},
+			},
+		},
+		{
+			name: "1 invalid stop auto stake",
+			fields: fields{
+				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+			},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.UNSTAKE_ACTION,
+						key0,
+					},
+				},
+			},
+			want: &shardInstruction{
+				unstakeInstructions: []*instruction.UnstakeInstruction{},
+			},
+		},
+		{
+			name: "1 valid and 1 invalid stop auto stake",
+			fields: fields{
+				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+			},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.UNSTAKE_ACTION,
+						strings.Join([]string{key0, key}, ","),
+					},
+				},
+			},
+			want: &shardInstruction{
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys:       []string{key},
+						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey},
+					},
+				},
+			},
+		},
+		{
+			name: "1 invalid unstake",
+			fields: fields{
+				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+			},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.UNSTAKE_ACTION,
+						key0,
+					},
+				},
+			},
+			want: &shardInstruction{
+				unstakeInstructions: []*instruction.UnstakeInstruction{},
+			},
+		},
+		{
+			name: "1 invalid and 1 valid unstake",
+			fields: fields{
+				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+			},
+			args: args{
+				instructions: [][]string{
+					[]string{
+						instruction.UNSTAKE_ACTION,
+						strings.Join([]string{key0, key}, ","),
+					},
+				},
+			},
+			want: &shardInstruction{
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys:       []string{key},
+						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey},
 					},
 				},
 			},

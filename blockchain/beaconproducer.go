@@ -2,10 +2,11 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"math/rand"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -602,6 +603,7 @@ func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instruct
 func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(instructions [][]string, shardID byte) *shardInstruction {
 	shardInstruction := newShardInstruction()
 	// extract instructions
+
 	for _, inst := range instructions {
 		if len(inst) > 0 {
 			if inst[0] == instruction.STAKE_ACTION {
@@ -628,7 +630,23 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
-				shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, tempStopAutoStakeInstruction)
+				for i, v := range tempStopAutoStakeInstruction.CommitteePublicKeys {
+					check, ok := beaconBestState.GetAutoStakingList()[v]
+					if !ok || !check {
+						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+						tempStopAutoStakeInstruction.CommitteePublicKeys =
+							append(tempStopAutoStakeInstruction.CommitteePublicKeys[:i],
+								tempStopAutoStakeInstruction.CommitteePublicKeys[i+1:]...,
+							)
+						tempStopAutoStakeInstruction.CommitteePublicKeysStruct =
+							append(tempStopAutoStakeInstruction.CommitteePublicKeysStruct[:i],
+								tempStopAutoStakeInstruction.CommitteePublicKeysStruct[i+1:]...,
+							)
+					}
+				}
+				if len(tempStopAutoStakeInstruction.CommitteePublicKeys) != 0 {
+					shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, tempStopAutoStakeInstruction)
+				}
 			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
@@ -636,7 +654,23 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempUnstakeInstruction := instruction.ImportUnstakeInstructionFromString(inst)
-				shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, tempUnstakeInstruction)
+				for i, v := range tempUnstakeInstruction.CommitteePublicKeys {
+					check, ok := beaconBestState.GetAutoStakingList()[v]
+					if !ok || !check {
+						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+						tempUnstakeInstruction.CommitteePublicKeys =
+							append(tempUnstakeInstruction.CommitteePublicKeys[:i],
+								tempUnstakeInstruction.CommitteePublicKeys[i+1:]...,
+							)
+						tempUnstakeInstruction.CommitteePublicKeysStruct =
+							append(tempUnstakeInstruction.CommitteePublicKeysStruct[:i],
+								tempUnstakeInstruction.CommitteePublicKeysStruct[i+1:]...,
+							)
+					}
+				}
+				if len(tempUnstakeInstruction.CommitteePublicKeys) != 0 {
+					shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, tempUnstakeInstruction)
+				}
 			}
 		}
 	}
