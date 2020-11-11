@@ -110,15 +110,16 @@ func Test_StakeFlow1(t *testing.T) {
 	})
 	sim.GenerateBlock().NextRound()
 	miner1 := sim.NewAccountFromShard(0)
-	//minerCm1, _ := account.BuildCommitteePubkey(miner1.PrivateKey, sim.GenesisAccount.PaymentAddress)
+	minerCm1, _ := account.BuildCommitteePubkey(miner1.PrivateKey, sim.GenesisAccount.PaymentAddress)
 	stake1 := rpcclient.StakingTxParam{
-		Name:        "miner1",
-		BurnAddr:    sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
-		StakerPrk:   sim.GenesisAccount.PrivateKey,
-		MinerPrk:    miner1.PrivateKey,
-		RewardAddr:  miner1.PaymentAddress,
-		StakeShard:  true,
-		AutoRestake: true,
+		Name:         "miner1",
+		CommitteeKey: minerCm1,
+		BurnAddr:     sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight()),
+		StakerPrk:    sim.GenesisAccount.PrivateKey,
+		MinerPrk:     miner1.PrivateKey,
+		RewardAddr:   miner1.PaymentAddress,
+		StakeShard:   true,
+		AutoRestake:  true,
 	}
 
 	stakeList := []rpcclient.StakingTxParam{stake1}
@@ -288,7 +289,6 @@ func Test_PDEFlow(t *testing.T) {
 	sim.GenerateBlock().NextRound()
 
 	//Create custom token
-	// 9223372036754775808
 	result1, err := sim.RPC.API_SendTxCreateCustomToken(sim.GenesisAccount.PrivateKey, sim.GenesisAccount.PaymentAddress, 10000000, "pTest", "TES", 30000000000)
 	if err != nil {
 		panic(err)

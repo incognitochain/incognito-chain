@@ -43,8 +43,17 @@ func (r *RPCClient) API_SendTxCreateCustomToken(privateKey string, receiverPayme
 	return &result, err
 }
 
-func (r *RPCClient) API_SendTxCustomToken(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, tokenInfo map[string]interface{}, p1 string, pPrivacy float64) (*jsonresult.CreateTransactionTokenResult, error) {
-	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, receivers, fee, privacy, tokenInfo, p1, pPrivacy)
+func (r *RPCClient) API_SendTxCustomToken(privateKey string, tokenID string, receivers map[string]interface{}, fee float64, privacy float64) (*jsonresult.CreateTransactionTokenResult, error) {
+	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, receivers, fee, privacy, map[string]interface{}{
+		"Privacy":        true,
+		"TokenID":        tokenID,
+		"TokenName":      "",
+		"TokenSymbol":    "",
+		"TokenFee":       float64(0),
+		"TokenTxType":    float64(1),
+		"TokenAmount":    float64(0),
+		"TokenReceivers": receivers,
+	}, "", privacy)
 	return &result, err
 }
 
