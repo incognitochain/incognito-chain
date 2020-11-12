@@ -659,15 +659,16 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 				for i := 0; i < len(tempUnstakeInstruction.CommitteePublicKeys); i++ {
 					v := tempUnstakeInstruction.CommitteePublicKeys[i]
 					index := common.IndexOfStr(v, waitingValidatorsList)
-					if index != -1 {
+					if index == -1 {
 						check, ok := beaconBestState.GetAutoStakingList()[v]
-						if !ok || !check {
+						if !ok {
 							Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+						}
+						if !ok || !check {
 							tempUnstakeInstruction.DeleteSingleElement(i)
 							i--
 						}
 					}
-
 				}
 				if len(tempUnstakeInstruction.CommitteePublicKeys) != 0 {
 					shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, tempUnstakeInstruction)
