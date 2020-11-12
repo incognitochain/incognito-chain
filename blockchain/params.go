@@ -28,6 +28,7 @@ type PortalParams struct {
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
 	SupportedCollateralTokens            []PortalCollateral
+	MinPortalFee                         uint64 // nano PRV
 }
 
 /*
@@ -144,9 +145,9 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 	return []PortalCollateral{
-		{"0000000000000000000000000000000000000000", 9},		// eth
-		{"dac17f958d2ee523a2206206994597c13d831ec7", 6},		// usdt
-		{"a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6},		// usdc
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"dac17f958d2ee523a2206206994597c13d831ec7", 6}, // usdt
+		{"a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6}, // usdc
 	}
 }
 
@@ -154,9 +155,9 @@ func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 	return []PortalCollateral{
-		{"0000000000000000000000000000000000000000", 9},		// eth
-		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6},		// usdt, kovan testnet
-		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6},		// usdc, kovan testnet
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6}, // usdt, kovan testnet
+		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6}, // usdc, kovan testnet
 	}
 }
 
@@ -165,8 +166,8 @@ func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
 	return []PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9},
-		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6},		// usdt
-		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6},		// usdc
+		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6}, // usdt
+		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6}, // usdc
 	}
 }
 
@@ -213,7 +214,7 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -243,7 +244,8 @@ func init() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(),  // todo: need to be updated before deploying
+				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
+				MinPortalFee:                         100,
 			},
 		},
 		PortalTokens:                initPortalTokensForTestNet(),
@@ -300,7 +302,7 @@ func init() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -331,6 +333,7 @@ func init() {
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
 				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(),
+				MinPortalFee:                         100,
 			},
 		},
 		PortalTokens:                initPortalTokensForTestNet(),
@@ -385,7 +388,7 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -416,6 +419,7 @@ func init() {
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
 				SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(),
+				MinPortalFee:                         100,
 			},
 		},
 		PortalTokens:                initPortalTokensForMainNet(),

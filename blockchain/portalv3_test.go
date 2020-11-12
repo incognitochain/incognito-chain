@@ -143,6 +143,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						MinPercentPortingFee:                 0.01,
 						MinPercentRedeemFee:                  0.01,
 						SupportedCollateralTokens:            supportedCollaterals,
+						MinPortalFee:                         100,
 					},
 				},
 				BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
@@ -216,7 +217,7 @@ func (s *PortalTestSuiteV3) TestExchangeRate() {
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 35000000}, 	// x1.75
+			common.PortalBNBIDStr: {Amount: 35000000}, // x1.75
 			common.PortalBTCIDStr: {Amount: 10000000000},
 			ETH_ID:                {Amount: 400000000},
 			USDT_ID:               {Amount: 1000000},
@@ -3648,7 +3649,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 0.1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 0.1*1e9),
-		}, 4600000, 1500, common.Hash{}, 0, 1000,  "")
+		}, 4600000, 1500, common.Hash{}, 0, 1000, "")
 
 	wRedeemRequests := map[string]*statedb.RedeemRequest{
 		wRedeemReqKey3: wRedeemRequest3,
@@ -3681,6 +3682,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	s.currentPortalStateForProcess.WaitingRedeemRequests = cloneRedeemRequests(wRedeemRequests)
 	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
 }
+
 //
 //func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 //	fmt.Println("Running TestAutoLiquidationCustodian - beacon height 3161 ...")
@@ -3769,13 +3771,13 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 */
 
 type ExpectedResultAutoLiquidationByRates struct {
-	custodianPool        map[string]*statedb.CustodianState
-	waitingPortingRes    map[string]*statedb.WaitingPortingRequest
+	custodianPool         map[string]*statedb.CustodianState
+	waitingPortingRes     map[string]*statedb.WaitingPortingRequest
 	waitingRedeemRequests map[string]*statedb.RedeemRequest
-	matchedRedeemRequest map[string]*statedb.RedeemRequest
-	liquidationPool map[string]*statedb.LiquidationPool
-	numBeaconInsts       uint
-	statusInsts          []string
+	matchedRedeemRequest  map[string]*statedb.RedeemRequest
+	liquidationPool       map[string]*statedb.LiquidationPool
+	numBeaconInsts        uint
+	statusInsts           []string
 }
 
 func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
@@ -3887,7 +3889,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 		shardID, shardHeight,
 		USER_ETH_ADDRESS_1)
 
-
 	// matched redeem requests
 	matchedRedeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	matchedRedeemReq1 := statedb.NewRedeemRequestWithValue(
@@ -3945,7 +3946,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 40000000}, 	// x2
+			common.PortalBNBIDStr: {Amount: 40000000}, // x2
 			common.PortalBTCIDStr: {Amount: 10000000000},
 			ETH_ID:                {Amount: 400000000},
 			USDT_ID:               {Amount: 1000000},
@@ -4065,7 +4066,6 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	//	shardID, shardHeight,
 	//	USER_ETH_ADDRESS_1)
 
-
 	// matched redeem requests
 	matchedRedeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	matchedRedeemReq1 := statedb.NewRedeemRequestWithValue(
@@ -4099,10 +4099,10 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	liquidationPool[liquidationPoolKey] = statedb.NewLiquidationPoolWithValue(
 		map[string]statedb.LiquidationPoolDetail{
 			common.PortalBNBIDStr: {
-				PubTokenAmount:         10*1e9,
-				CollateralAmount:       0,
+				PubTokenAmount:   10 * 1e9,
+				CollateralAmount: 0,
 				TokensCollateralAmount: map[string]uint64{
-					USDT_ID: 400*1e6,
+					USDT_ID: 400 * 1e6,
 				},
 			},
 		})

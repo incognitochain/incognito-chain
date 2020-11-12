@@ -355,6 +355,10 @@ func CalMinPortingFee(portingAmountInPToken uint64, portalTokenID string, exchan
 	// can't use big int to calculate porting fee because of common.MinPercentPortingFee < 1
 	portingFee := uint64(math.Round(float64(portingAmountInPRV) * portalParam.MinPercentPortingFee / 100))
 
+	if portingFee < portalParam.MinPortalFee {
+		return portalParam.MinPortalFee, nil
+	}
+
 	return portingFee, nil
 }
 
@@ -368,6 +372,10 @@ func CalMinRedeemFee(redeemAmountInPToken uint64, portalTokenID string, exchange
 
 	// can't use big int to calculate porting fee because of common.MinPercentRedeemFee < 1
 	redeemFee := uint64(math.Round(float64(redeemAmountInPRV) * portalParam.MinPercentRedeemFee / 100))
+
+	if redeemFee < portalParam.MinPortalFee {
+		return portalParam.MinPortalFee, nil
+	}
 
 	return redeemFee, nil
 }
