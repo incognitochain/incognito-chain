@@ -604,6 +604,11 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 	shardInstruction := newShardInstruction()
 	// extract instructions
 
+	waitingValidatorsList, err := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom())
+	if err != nil {
+		return shardInstruction
+	}
+
 	for _, inst := range instructions {
 		if len(inst) > 0 {
 			if inst[0] == instruction.STAKE_ACTION {
@@ -630,23 +635,15 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
-				// TODO: @tin test with more than 4 keys in stop auto stake instruction
-				for i, v := range tempStopAutoStakeInstruction.CommitteePublicKeys {
+				for i := 0; i < len(tempStopAutoStakeInstruction.CommitteePublicKeys); i++ {
+					v := tempStopAutoStakeInstruction.CommitteePublicKeys[i]
 					check, ok := beaconBestState.GetAutoStakingList()[v]
-					// for debug only
 					if !ok {
 						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
 					}
 					if !ok || !check {
-						tempStopAutoStakeInstruction.CommitteePublicKeys =
-							append(tempStopAutoStakeInstruction.CommitteePublicKeys[:i],
-								tempStopAutoStakeInstruction.CommitteePublicKeys[i+1:]...,
-							)
-						// TODO: @tin duplicate code?
-						tempStopAutoStakeInstruction.CommitteePublicKeysStruct =
-							append(tempStopAutoStakeInstruction.CommitteePublicKeysStruct[:i],
-								tempStopAutoStakeInstruction.CommitteePublicKeysStruct[i+1:]...,
-							)
+						tempStopAutoStakeInstruction.DeleteSingleElement(i)
+						i--
 					}
 				}
 				if len(tempStopAutoStakeInstruction.CommitteePublicKeys) != 0 {
@@ -659,22 +656,18 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempUnstakeInstruction := instruction.ImportUnstakeInstructionFromString(inst)
-				// TODO: @tin test with more than 4 keys in unstake instruction
-				for i, v := range tempUnstakeInstruction.CommitteePublicKeys {
-					check, ok := beaconBestState.GetAutoStakingList()[v]
-					// TODO: @tin if node in candidate list => auto stake can be true or false, but if node in substitute/committee auto stake must be true
-					if !ok || !check {
-						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
-						tempUnstakeInstruction.CommitteePublicKeys =
-							append(tempUnstakeInstruction.CommitteePublicKeys[:i],
-								tempUnstakeInstruction.CommitteePublicKeys[i+1:]...,
-							)
-						// TODO: @tin duplicate code?
-						tempUnstakeInstruction.CommitteePublicKeysStruct =
-							append(tempUnstakeInstruction.CommitteePublicKeysStruct[:i],
-								tempUnstakeInstruction.CommitteePublicKeysStruct[i+1:]...,
-							)
+				for i := 0; i < len(tempUnstakeInstruction.CommitteePublicKeys); i++ {
+					v := tempUnstakeInstruction.CommitteePublicKeys[i]
+					index := common.IndexOfStr(v, waitingValidatorsList)
+					if index != -1 {
+						check, ok := beaconBestState.GetAutoStakingList()[v]
+						if !ok || !check {
+							Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+							tempUnstakeInstruction.DeleteSingleElement(i)
+							i--
+						}
 					}
+
 				}
 				if len(tempUnstakeInstruction.CommitteePublicKeys) != 0 {
 					shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, tempUnstakeInstruction)

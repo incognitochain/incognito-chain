@@ -156,18 +156,16 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	stakerInfo := &statedb.StakerInfo{}
 	stakerInfo.SetTxStakingID(*hash)
 
-	beaconViewAlreadyUnstake := &mocks.BeaconViewRetriever{}
-	beaconViewAlreadyUnstake.
+	beaconViewNotInCandidateList := &mocks.BeaconViewRetriever{}
+	beaconViewNotInCandidateList.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
-	beaconViewAlreadyUnstake.
+	beaconViewNotInCandidateList.
 		On("GetStakerInfo", key1).
 		Return(stakerInfo, true, nil)
-	beaconViewAlreadyUnstake.
-		On("GetAutoStakingList").
-		Return(map[string]bool{
-			key1: false,
-		})
+	beaconViewNotInCandidateList.
+		On("CandidateWaitingForNextRandom").
+		Return([]incognitokey.CommitteePublicKey{})
 
 	beaconViewValidInput := &mocks.BeaconViewRetriever{}
 	beaconViewValidInput.
@@ -177,10 +175,8 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("GetStakerInfo", key1).
 		Return(stakerInfo, true, nil)
 	beaconViewValidInput.
-		On("GetAutoStakingList").
-		Return(map[string]bool{
-			key1: true,
-		})
+		On("CandidateWaitingForNextRandom").
+		Return([]incognitokey.CommitteePublicKey{*incKey1})
 
 	stakingTxError := &mocks.Transaction{}
 	stakingTxError.
@@ -337,7 +333,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			},
 			args: args{
 				tx:                  stakingTx,
-				beaconViewRetriever: beaconViewAlreadyUnstake,
+				beaconViewRetriever: beaconViewNotInCandidateList,
 				chainRetriever:      chainViewSenderIsNotMatchTxSender,
 			},
 			want:    false,
