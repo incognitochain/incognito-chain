@@ -27,7 +27,9 @@ const (
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
 	SpareTime                     = 1000 // in mili-second
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
+	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
+	OutcoinReindexerTimeout 	  = 90	 // seconds
+	OutcoinReindexerRoutines 	  = 2
 )
 
 // CONSTANT for network MAINNET

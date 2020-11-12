@@ -152,6 +152,18 @@ func GenerateOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
+func GenerateReindexedOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) common.Hash {
+	prefixHash := GetReindexedOutputCoinPrefix(tokenID, shardID, publicKey)
+	valueHash := common.HashH(outputCoin)
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+}
+
+func GenerateReindexedOTAKeyObjectKey(theKey []byte) common.Hash {
+	prefixHash := GetReindexedKeysPrefix()
+	valueHash := common.HashH(theKey)
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+}
+
 func (s OutputCoinObject) GetVersion() int {
 	return s.version
 }

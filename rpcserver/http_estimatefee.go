@@ -67,7 +67,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		paymentInfos, 0, senderKeySet, shardID)
 
 	// Should get outCoins from start
-	outCoins, err := httpServer.outputCoinService.ListDecryptedOutputCoinsByKeySet(senderKeySet, shardIDSender, 0)
+	outCoins, _, err := httpServer.outputCoinService.ListDecryptedOutputCoinsByKeySet(senderKeySet, shardIDSender, 0)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
