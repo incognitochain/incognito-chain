@@ -27,5 +27,5 @@ type ClientInterface interface {
 	GetShardBestState(sid int) (jsonresult.GetShardBestState, error)
 	GetTransactionByHash(transactionHash string) (*jsonresult.TransactionDetail, error)
 	GetPrivacyCustomToken(tokenStr string) (*jsonresult.GetCustomToken, error)
-	GetBurningAddress(empty string) (string, error)
+	GetBurningAddress(beaconHeight float64) (string, error)
 }

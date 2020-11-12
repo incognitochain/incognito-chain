@@ -70,7 +70,10 @@ func (r *RPCClient) API_SendTxWithPTokenTradeReq(privateKey string, receivers ma
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(acount account.Account, tokenID string, buyTokenID string, amount string) (*jsonresult.CreateTransactionTokenResult, error) {
-	burnAddr := "" //todo
+	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	if err != nil {
+		return nil, err
+	}
 	reqInfo := map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     tokenID,
@@ -97,7 +100,10 @@ func (r *RPCClient) API_SendTxWithPRVTradeReq(privateKey string, receivers map[s
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, buyTokenID string, amount string) (*jsonresult.CreateTransactionResult, error) {
-	burnAddr := "" //todo
+	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	if err != nil {
+		return nil, err
+	}
 	reqInfo := map[string]interface{}{
 		"TokenIDToBuyStr":     buyTokenID,
 		"TokenIDToSellStr":    "0000000000000000000000000000000000000000000000000000000000000004",
@@ -112,7 +118,10 @@ func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, 
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, tokenID string, tokenAmount string, pairID string) (*jsonresult.CreateTransactionTokenResult, error) {
-	burnAddr := "" //todo
+	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	if err != nil {
+		return nil, err
+	}
 	reqInfo := map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     tokenID,
@@ -133,7 +142,10 @@ func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, 
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVContributionV2(account account.Account, prvAmount string, pairID string) (*jsonresult.CreateTransactionResult, error) {
-	burnAddr := "" //todo
+	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	if err != nil {
+		return nil, err
+	}
 	reqInfo := map[string]interface{}{
 		"PDEContributionPairID": pairID,
 		"ContributorAddressStr": account.PaymentAddress,

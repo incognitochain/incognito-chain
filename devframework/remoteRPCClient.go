@@ -715,11 +715,11 @@ func (r *RemoteRPCClient) GetPrivacyCustomToken(tokenStr string) (res *jsonresul
 }
 
 
-func (r *RemoteRPCClient) GetBurningAddress(empty string) (res string,err error) {
+func (r *RemoteRPCClient) GetBurningAddress(beaconHeight float64) (res string,err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getburningaddress",
-		"params":   []interface{}{empty},
+		"params":   []interface{}{beaconHeight},
 		"id":      1,
 	})
 	if err != nil {

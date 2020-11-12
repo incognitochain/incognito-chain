@@ -206,10 +206,10 @@ func (r *LocalRPCClient) GetPrivacyCustomToken(tokenStr string) (res *jsonresult
 	}
 	return resI.(*jsonresult.GetCustomToken),nil
 }
-func (r *LocalRPCClient) GetBurningAddress(empty string) (res string,err error) {
+func (r *LocalRPCClient) GetBurningAddress(beaconHeight float64) (res string,err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["getburningaddress"]
-	resI, rpcERR := c(httpServer, []interface{}{empty}, nil)
+	resI, rpcERR := c(httpServer, []interface{}{beaconHeight}, nil)
 	if rpcERR != nil {
 		return res,errors.New(rpcERR.Error())
 	}
