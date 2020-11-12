@@ -47,7 +47,11 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	txDescs := []*metadata.TxDesc{}
 	// txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
+	boolParams := make(map[string]bool)
+	boolParams["isNewTransaction"] = false
+	boolParams["isBatch"] = true
+	boolParams["isNewZKP"] = tp.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), boolParams)
 	if err != nil {
 		return nil, err
 	}

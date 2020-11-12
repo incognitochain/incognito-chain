@@ -53,7 +53,7 @@ func main() {
 		AutoRestake: true,
 	}
 
-	resStakingTx, err := client.API_CreateAndSendStakingTransaction(stake1)
+	resStakingTx, err := client.API_SendTxStaking(stake1)
 	if err == nil {
 		fmt.Println(resStakingTx)
 	}
