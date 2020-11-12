@@ -521,7 +521,7 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 		return false
 	}
 
-	rK := new(operation.Point).ScalarMult(paymentAdd.GetPublicView(), r)
+	rK := new(operation.Point).ScalarMult(paymentAdd.GetOTAPublicKey(), r)
 	_, txOTARandomPoint, index,  err := c.GetTxRandomDetail()
 	if err  != nil {
 		return false
