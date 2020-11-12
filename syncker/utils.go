@@ -45,7 +45,7 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 	for i, v := range sameCommitteeBlock {
 		if !chain.CheckExistedBlk(v) {
 			var err error
-			if i == len(sameCommitteeBlock)-1 {
+			if i == 0 {
 				err = chain.InsertBlk(v, true)
 			} else {
 				err = chain.InsertBlk(v, false)
