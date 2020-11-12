@@ -103,6 +103,7 @@ const (
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
 	unlockMempool           = "unlockmempool"
 	getAutoStakingByHeight  = "getautostakingbyheight"
+	getCommitteeState       = "getcommitteestate"
 	getRewardAmountByEpoch  = "getrewardamountbyepoch"
 	//==================================================
 
@@ -262,10 +263,8 @@ const (
 
 	getTotalStaker = "gettotalstaker"
 
-	//multi-validators
-	getMultiValKeyState = "getmultivalkeystate"
-	addMultiValKey      = "addmultivakey"
-	setMultiValKeyLimit = "setmultivalkeylimit"
+	//validator state
+	getValKeyState = "getvalkeystate"
 )
 
 const (

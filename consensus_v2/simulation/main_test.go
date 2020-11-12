@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi"
+	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -430,8 +430,8 @@ func RunSimulation(testScn *testScenerio, t *testing.T) {
 	committeePkStruct := []incognitokey.CommitteePublicKey{}
 	committeePkBytes := [][]byte{}
 	for _, v := range testScn.Committee {
-		p, _ := consensus_multi.LoadUserKeyFromIncPrivateKey(v)
-		m, _ := consensus_multi.GetMiningKeyFromPrivateSeed(p)
+		p, _ := consensus_v2.LoadUserKeyFromIncPrivateKey(v)
+		m, _ := consensus_v2.GetMiningKeyFromPrivateSeed(p)
 		pk := m.GetPublicKey()
 		committeePkStruct = append(committeePkStruct, *pk)
 		committeePkBytes = append(committeePkBytes, pk.MiningPubKey["bls"])
@@ -439,8 +439,8 @@ func RunSimulation(testScn *testScenerio, t *testing.T) {
 	nodeList := []*Node{}
 
 	for i, v := range testScn.Committee {
-		p, _ := consensus_multi.LoadUserKeyFromIncPrivateKey(v)
-		m, _ := consensus_multi.GetMiningKeyFromPrivateSeed(p)
+		p, _ := consensus_v2.LoadUserKeyFromIncPrivateKey(v)
+		m, _ := consensus_v2.GetMiningKeyFromPrivateSeed(p)
 		ni := NewNode(committeePkStruct, m, i, testScn.Name)
 		nodeList = append(nodeList, ni)
 	}

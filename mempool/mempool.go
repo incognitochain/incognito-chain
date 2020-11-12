@@ -34,7 +34,7 @@ const (
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	ConsensusEngine interface {
-		IsCommitteeInShard(byte) bool
+		IsCommitteeInShard(shardID byte) bool
 	}
 	BlockChain        *blockchain.BlockChain       // Block chain of node
 	DataBase          map[int]incdb.Database       // main database of blockchain
@@ -47,7 +47,9 @@ type Config struct {
 	PersistMempool    bool
 	RelayShards       []byte
 	// UserKeyset            *incognitokey.KeySet
-	PubSubManager *pubsub.PubSubManager
+	PubSubManager interface {
+		PublishMessage(message *pubsub.Message)
+	}
 	// RoleInCommitteesEvent pubsub.EventChannel
 }
 

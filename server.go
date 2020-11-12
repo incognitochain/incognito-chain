@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -20,8 +19,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
 
@@ -35,7 +32,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	consensus "github.com/incognitochain/incognito-chain/consensus_multi"
+	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -482,8 +479,8 @@ func (serverObj *Server) NewServer(
 	})
 
 	serverObj.connManager = connManager
-	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, ValidatorsLimit: cfg.ValidatorLimit, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
-	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain, Consensus: serverObj.consensusEngine})
+	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
+	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Network: serverObj.highway, Blockchain: serverObj.blockChain, Consensus: serverObj.consensusEngine})
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -553,6 +550,14 @@ func (serverObj *Server) NewServer(
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
+
+	//Publish node state to other peer
+	go func() {
+		t := time.NewTicker(time.Second * 3)
+		for _ = range t.C {
+			serverObj.PublishNodeState()
+		}
+	}()
 
 	//Init Metric Tool
 	//if cfg.MetricUrl != "" {
@@ -1969,192 +1974,6 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	return nil
 }
 
-func (serverObj *Server) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
-	Logger.log.Infof("[SyncBeacon] from %v to %v ", from, to)
-	req := &proto.BlockByHeightRequest{
-		Type:         proto.BlkType_BlkBc,
-		Specific:     false,
-		Heights:      []uint64{from, to},
-		From:         int32(peerv2.HighwayBeaconID),
-		To:           int32(peerv2.HighwayBeaconID),
-		SyncFromPeer: peerID,
-	}
-	return serverObj.requestBlocksViaStream(ctx, peerID, req)
-}
-
-func (serverObj *Server) RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
-	Logger.log.Infof("[SyncShard] from %v to %v fromShard %v", from, to, fromSID)
-	req := &proto.BlockByHeightRequest{
-		Type:         proto.BlkType_BlkShard,
-		Specific:     false,
-		Heights:      []uint64{from, to},
-		From:         int32(fromSID),
-		To:           int32(fromSID),
-		SyncFromPeer: peerID,
-	}
-	return serverObj.requestBlocksViaStream(ctx, peerID, req)
-}
-
-func (serverObj *Server) RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan common.BlockInterface, err error) {
-	Logger.log.Infof("[SyncXShard] heights %v fromShard %v toShard %v", heights, fromSID, toSID)
-	req := &proto.BlockByHeightRequest{
-		Type:         proto.BlkType_BlkXShard,
-		Specific:     true,
-		Heights:      heights,
-		From:         int32(fromSID),
-		To:           int32(toSID),
-		SyncFromPeer: peerID,
-	}
-	return serverObj.requestBlocksViaStream(ctx, peerID, req)
-}
-
-func (serverObj *Server) RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
-	req := &proto.BlockByHashRequest{
-		Type:         proto.BlkType_BlkXShard,
-		Hashes:       hashes,
-		From:         int32(fromSID),
-		To:           int32(toSID),
-		SyncFromPeer: peerID,
-	}
-	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
-}
-
-func (serverObj *Server) RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
-	req := &proto.BlockByHashRequest{
-		Type:         proto.BlkType_BlkBc,
-		Hashes:       hashes,
-		From:         int32(peerv2.HighwayBeaconID),
-		To:           int32(peerv2.HighwayBeaconID),
-		SyncFromPeer: peerID,
-	}
-	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
-}
-
-func (serverObj *Server) RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
-	req := &proto.BlockByHashRequest{
-		Type:         proto.BlkType_BlkShard,
-		Hashes:       hashes,
-		From:         int32(fromSID),
-		To:           int32(fromSID),
-		SyncFromPeer: peerID,
-	}
-	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
-}
-
-func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan common.BlockInterface, err error) {
-	Logger.log.Infof("[stream] Request Block type %v from peer %v from cID %v, [%v %v] ", req.Type, peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1])
-	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
-	stream, err := serverObj.highway.Requester.StreamBlockByHeight(ctx, req)
-	if err != nil {
-		Logger.log.Errorf("[stream] %v", err)
-		return nil, err
-	}
-
-	var closeChannel = func() {
-		if blockCh != nil {
-			close(blockCh)
-			blockCh = nil
-		}
-	}
-
-	go func(stream proto.HighwayService_StreamBlockByHeightClient, ctx context.Context) {
-		for {
-			blkData, err := stream.Recv()
-			if err != nil {
-				if err != io.EOF {
-					Logger.log.Errorf("[stream] %v", err)
-				}
-				closeChannel()
-				return
-			}
-
-			if len(blkData.Data) < 2 {
-				Logger.log.Errorf("[stream] received empty blk")
-				closeChannel()
-				return
-			}
-
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
-			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
-			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
-			}
-
-			err = wrapper.DeCom(blkData.Data[1:], newBlk)
-			if err != nil {
-				Logger.log.Errorf("[stream] %v", err)
-				closeChannel()
-				return
-			}
-			//fmt.Printf("[stream]: Receive %v block %v \n", req.GetType(), newBlk.GetHeight())
-			select {
-			case <-ctx.Done():
-				closeChannel()
-				return
-			case blockCh <- newBlk:
-			}
-		}
-
-	}(stream, ctx)
-
-	return blockCh, nil
-}
-
-func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerID string, req *proto.BlockByHashRequest) (blockCh chan common.BlockInterface, err error) {
-	Logger.log.Infof("SYNCKER Request Block by hash from peerID %v, from CID %v, total %v blocks", peerID, req.From, len(req.Hashes))
-	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
-	stream, err := serverObj.highway.Requester.StreamBlockByHash(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	var closeChannel = func() {
-		if blockCh != nil {
-			close(blockCh)
-			blockCh = nil
-		}
-	}
-
-	go func(stream proto.HighwayService_StreamBlockByHashClient, ctx context.Context) {
-		for {
-			blkData, err := stream.Recv()
-			if err != nil || err == io.EOF {
-				closeChannel()
-				return
-			}
-
-			if len(blkData.Data) < 2 {
-				closeChannel()
-				return
-			}
-
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
-			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
-			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
-			}
-
-			err = wrapper.DeCom(blkData.Data[1:], newBlk)
-			if err != nil {
-				closeChannel()
-				return
-			}
-			//fmt.Println("SYNCKER: Receive block ...", newBlk.GetHeight())
-			select {
-			case <-ctx.Done():
-				closeChannel()
-				return
-			case blockCh <- newBlk:
-			}
-		}
-
-	}(stream, ctx)
-
-	return blockCh, nil
-}
-
 func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
 
 	if s.blockChain == nil || userPk == nil {
@@ -2279,31 +2098,31 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	return "", -2
 }
 
-func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *syncker.NextCrossShardInfo {
-	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase[common.BeaconChainDataBaseID], byte(fromSID), byte(toSID), uint64(currentHeight))
-	if err != nil {
-		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
-		return nil
-	}
-	var res = new(syncker.NextCrossShardInfo)
-	err = json.Unmarshal(b, res)
-	if err != nil {
-		return nil
-	}
-	return res
-}
+//func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *blockchain.NextCrossShardInfo {
+//	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase[common.BeaconChainDataBaseID], byte(fromSID), byte(toSID), uint64(currentHeight))
+//	if err != nil {
+//		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+//		return nil
+//	}
+//	var res = new(blockchain.NextCrossShardInfo)
+//	err = json.Unmarshal(b, res)
+//	if err != nil {
+//		return nil
+//	}
+//	return res
+//}
 
-func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
-	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
-	if err != nil {
-		return nil, err
-	}
-	beaconBlock, _, err := s.blockChain.GetBeaconBlockByHash(*blkhash)
-	if err != nil {
-		return nil, err
-	}
-	return beaconBlock, nil
-}
+//func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
+//	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
+//	if err != nil {
+//		return nil, err
+//	}
+//	beaconBlock, _, err := s.blockChain.GetBeaconBlockByHash(*blkhash)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return beaconBlock, nil
+//}
 
 func (s *Server) GetBeaconChainDatabase() incdb.Database {
 	return s.dataBase[common.BeaconChainDataBaseID]

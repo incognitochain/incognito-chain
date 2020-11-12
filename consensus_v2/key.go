@@ -1,20 +1,20 @@
-package consensus_multi
+package consensus_v2
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/bridgesig"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
-	"github.com/incognitochain/incognito-chain/consensus/blsbftv2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -169,7 +169,7 @@ func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, comm
 }
 
 func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
-	privateSeed, err := blsbft.LoadUserKeyFromIncPrivateKey(privateKey)
+	privateSeed, err := LoadUserKeyFromIncPrivateKey(privateKey)
 	if err != nil {
 		return "", err
 	}

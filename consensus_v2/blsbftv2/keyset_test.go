@@ -1,18 +1,22 @@
-package blsbft
+package blsbftv2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/incognitokey"
+
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"testing"
 )
 
 func TestMiningKey_GetKeyTuble(t *testing.T) {
@@ -42,7 +46,7 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 			//fmt.Println("paymentAddressB58: ", paymentAddressB58)
 			//fmt.Println("viewingKeyB58: ", viewingKeyB58)
 
-			//blsBft := BLSBFT{}
+			//blsBft := BLSBFT_V2{}
 			//privateSeed, _ := blsBft.LoadUserKeyFromIncPrivateKey(privKeyB58)
 
 			//fmt.Println("privateSeed: ", privateSeed)
@@ -68,11 +72,11 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 	}
 }
 
-func newMiningKey(privateSeed string) (*MiningKey, error) {
-	var miningKey MiningKey
+func newMiningKey(privateSeed string) (*signatureschemes.MiningKey, error) {
+	var miningKey signatureschemes.MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
-		return nil, NewConsensusError(LoadKeyError, err)
+		return nil, consensus.NewConsensusError(consensus.LoadKeyError, err)
 	}
 
 	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)

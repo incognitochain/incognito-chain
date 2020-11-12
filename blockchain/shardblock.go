@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"sort"
 )
 
 type ShardBlock struct {
@@ -588,4 +589,72 @@ func (block ShardBlock) GetConsensusType() string {
 
 func (block CrossShardBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
+}
+
+//this function used to update several field that need recalculated in block header (in case there is change of body content)
+func (block *ShardBlock) UpdateHeaderOnBodyChange(blockchain *BlockChain) error {
+	//TODO: @lam add more (crossshard bitmap, and any field that need recalculated when body change)
+	totalTxsFee := make(map[common.Hash]uint64)
+	for _, tx := range block.Body.Transactions {
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		txType := tx.GetType()
+		if txType == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		}
+	}
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
+	merkleRoot := &common.Hash{}
+	if len(merkleRoots) > 0 {
+		merkleRoot = merkleRoots[len(merkleRoots)-1]
+	}
+	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
+	if err != nil {
+		fmt.Println(err)
+	}
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(block.Body.Transactions, blockchain, block.Header.ShardID)
+	if err != nil {
+		return err
+	}
+	totalInstructions := []string{}
+	for _, value := range txInstructions {
+		totalInstructions = append(totalInstructions, value...)
+	}
+	for _, value := range block.Body.Instructions {
+		totalInstructions = append(totalInstructions, value...)
+	}
+	instructionsHash, err := generateHashFromStringArray(totalInstructions)
+	if err != nil {
+		return NewBlockChainError(InstructionsHashError, err)
+	}
+	// Instruction merkle root
+	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
+	if err != nil {
+		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from Tx: %+v", err))
+	}
+	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
+	}
+	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
+	instMerkleRoot := GetKeccak256MerkleRoot(insts)
+
+	//-----------------
+	//REVIEW: @dung.v these field are belong to beststate
+	// stakingTxRoot, err := newShardBestState.StakingTx.GenerateHash()
+	// if err != nil {
+	// 	return NewBlockChainError(StakingTxHashError, err)
+	// }
+	// block.Header.StakingTxRoot = stakingTxRoot
+	//-----------------
+
+	_, shardTxMerkleData := CreateShardTxRoot(block.Body.Transactions)
+	block.Header.TotalTxsFee = totalTxsFee
+	block.Header.TxRoot = *merkleRoot
+	block.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
+	block.Header.CrossTransactionRoot = *crossTransactionRoot
+	block.Header.CrossShardBitMap = CreateCrossShardByteArray(block.Body.Transactions, block.Header.ShardID)
+	block.Header.InstructionsRoot = instructionsHash
+	copy(block.Header.InstructionMerkleRoot[:], instMerkleRoot)
+	return nil
 }

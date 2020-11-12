@@ -69,9 +69,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
-	gettransactionhashbyreceiverv2:            (*HttpServer).handleGetTransactionHashByReceiverV2,
+	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
-	gettransactionbyreceiverv2:                (*HttpServer).handleGetTransactionByReceiverV2,
+	gettransactionbyreceiverv2:              (*HttpServer).handleGetTransactionByReceiverV2,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
@@ -87,7 +87,9 @@ var HttpHandler = map[string]httpHandler{
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
+	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
 	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+
 	//=================================
 
 	// Beststate
@@ -245,10 +247,8 @@ var HttpHandler = map[string]httpHandler{
 
 	getTotalStaker: (*HttpServer).handleGetTotalStaker,
 
-	// multi-validators
-	getMultiValKeyState: (*HttpServer).handleGetMultiValKeyState,
-	addMultiValKey:      (*HttpServer).handleAddMultiValKey,
-	setMultiValKeyLimit: (*HttpServer).handleSetMultiValKeyLimit,
+	//validators state
+	getValKeyState: (*HttpServer).handleGetValKeyState,
 }
 
 // Commands that are available to a limited user

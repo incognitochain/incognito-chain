@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -92,10 +93,8 @@ type RpcServerConfig struct {
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 		GetAllValidatorKeyState() map[string]consensus.MiningState
-		AddValidatorKey(key string) error
-		SetValidatorKeyLimit(newLimit int) error
 	}
-	TxMemPool                   *mempool.TxPool
+	TxMemPool                   rpcservice.MempoolInterface
 	RPCMaxClients               int
 	RPCMaxWSClients             int
 	RPCLimitRequestPerDay       int

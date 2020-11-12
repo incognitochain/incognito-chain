@@ -1,17 +1,16 @@
-package consensus_multi
+package consensus_v2
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common/consensus"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi/blsbft"
-	blsbft2 "github.com/incognitochain/incognito-chain/consensus_multi/blsbftv2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	blsbft2 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -25,8 +24,7 @@ type Engine struct {
 	config        *EngineConfig
 	IsEnabled     int //0 > stop, 1: running
 
-	//old code -> single process
-	//TODO: remove old code
+	//legacy code -> single process
 	userMiningPublicKeys *incognitokey.CommitteePublicKey
 	userKeyListString    string
 	currentMiningProcess ConsensusInterface
@@ -199,14 +197,6 @@ func (engine *Engine) Init(config *EngineConfig) {
 func (engine *Engine) Start() error {
 	defer Logger.Log.Infof("CONSENSUS: Start")
 
-	// engine.validatorsLimit = 1
-	// newLimitBytes, err := engine.config.Blockchain.GetBeaconChainDatabase().Get([]byte("CONSENSUSKEYLIMIT"))
-	// if err == nil {
-	// 	err := json.Unmarshal(newLimitBytes, &engine.validatorsLimit)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// }
 	if engine.config.Node.GetPrivateKey() != "" {
 		privateSeed, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {
@@ -216,14 +206,9 @@ func (engine *Engine) Start() error {
 		if err != nil {
 			panic(err)
 		}
-
 		engine.validators = []*consensus.Validator{&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey}}
 	} else if engine.config.Node.GetMiningKeys() != "" {
-		//import validator keys : 'key1,key2'
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
-		if len(keys) > engine.config.ValidatorsLimit {
-			panic("The max number of validator is reached")
-		}
 		engine.validators = []*consensus.Validator{}
 		for _, key := range keys {
 			miningKey, err := GetMiningKeyFromPrivateSeed(key)
@@ -232,6 +217,7 @@ func (engine *Engine) Start() error {
 			}
 			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
 		}
+		engine.validators = engine.validators[:1] //allow only 1 key
 	}
 	engine.IsEnabled = 1
 	return nil
@@ -260,25 +246,6 @@ func (engine *Engine) GetAllValidatorKeyState() map[string]consensus.MiningState
 		result[validator.PrivateSeed] = validator.State
 	}
 	return result
-}
-
-func (engine *Engine) AddValidatorKey(key string) error {
-	if len(engine.validators) >= engine.config.ValidatorsLimit {
-		return errors.New("Concurrent Validators reached, can't not add more!")
-	}
-	miningKey, err := GetMiningKeyFromPrivateSeed(key)
-	if err != nil {
-		panic(err)
-	}
-	engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
-	return nil
-}
-
-func (engine *Engine) SetValidatorKeyLimit(newLimit int) error {
-	engine.config.ValidatorsLimit = newLimit
-	// newLimitBytes, _ := json.Marshal(newLimit)
-	// engine.config.Blockchain.GetBeaconChainDatabase().Put([]byte("CONSENSUSKEYLIMIT"), []byte(newLimitBytes))
-	return nil
 }
 
 func (engine *Engine) IsCommitteeInShard(shardID byte) bool {

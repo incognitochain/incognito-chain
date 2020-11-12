@@ -8,11 +8,11 @@ import (
 	"sort"
 	"time"
 
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -170,7 +170,6 @@ func (e *BLSBFT_V2) Start() error {
 				newTimeSlot := false
 				if e.currentTimeSlot != common.CalculateTimeSlot(e.currentTime) {
 					newTimeSlot = true
-
 				}
 
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
@@ -454,6 +453,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		v.isValid = true
 		e.voteHistory[v.block.GetHeight()] = v.block
 		e.Logger.Info(e.ChainKey, "sending vote...")
+		go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
 
