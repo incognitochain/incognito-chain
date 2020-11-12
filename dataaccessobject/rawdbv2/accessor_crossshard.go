@@ -25,7 +25,7 @@ func GetLastBeaconStateConfirmCrossShard(db incdb.Database) []byte {
 	return lastState
 }
 
-func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64, val []byte) error {
+func StoreCrossShardNextHeight(db incdb.KeyValueWriter, fromShard byte, toShard byte, curHeight uint64, val []byte) error {
 	key := GetCrossShardNextHeightKey(fromShard, toShard, curHeight)
 	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreCrossShardNextHeightError, err)

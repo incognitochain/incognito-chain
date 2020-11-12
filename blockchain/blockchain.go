@@ -19,7 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -54,7 +53,7 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
-	PubSubManager     *pubsub.PubSubManager
+	PubSubManager     Pubsub
 	RandomClient      btc.RandomClient
 	Syncker           Syncker
 	Server            Server
@@ -496,7 +495,7 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
-	fmt.Println("debug BackupShardViews", len(allViews))
+	// fmt.Println("debug BackupShardViews", len(allViews))
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
@@ -515,7 +514,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		fmt.Println("debug Cannot unmarshall shard best state", string(b))
 		return err
 	}
-	fmt.Println("debug RestoreShardViews", len(allViews))
+	// fmt.Println("debug RestoreShardViews", len(allViews))
 	blockchain.ShardChain[shardID].multiView.Reset()
 
 	for _, v := range allViews {
@@ -717,4 +716,34 @@ func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight ui
 	}
 
 	return nil
+}
+
+func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *NextCrossShardInfo {
+	b, err := rawdbv2.GetCrossShardNextHeight(s.GetBeaconChainDatabase(), byte(fromSID), byte(toSID), uint64(currentHeight))
+	if err != nil {
+		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+		return nil
+	}
+	var res = new(NextCrossShardInfo)
+	err = json.Unmarshal(b, res)
+	if err != nil {
+		return nil
+	}
+	return res
+}
+
+func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
+	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlock, nil
+}
+
+func (s *BlockChain) GetChainParams() *Params {
+	return s.config.ChainParams
 }

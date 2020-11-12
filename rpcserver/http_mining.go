@@ -17,7 +17,7 @@ import (
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.ConsensusEngine, *httpServer.config.ChainParams, httpServer.config.Server.IsEnableMining())
+	result := jsonresult.NewGetMiningInfoResult(httpServer.config.TxMemPool.Count(), *httpServer.config.BlockChain, httpServer.config.ConsensusEngine, *httpServer.config.ChainParams, httpServer.config.Server.IsEnableMining())
 	return result, nil
 }
 

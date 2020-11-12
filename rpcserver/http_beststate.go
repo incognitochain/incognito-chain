@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -159,5 +160,29 @@ func (httpServer *HttpServer) handleGetTotalStaker(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.GetTotalStakerError, err)
 	}
 	result := jsonresult.NewGetTotalStaker(total)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetCommitteeByBeaconHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block height empty"))
+	}
+	block, err := httpServer.blockService.BlockChain.GetBeaconBlockByHeightV1(uint64(arrayParams[0].(float64)))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, nil)
+	}
+	// blockHash := common.Hash{}.NewHashFromStr(block.Hash().String())
+	clonedBeaconBestState, err := httpServer.blockService.BlockChain.GetBeaconViewStateDataFromBlockHash(*block.Hash())
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+
+	beaconCommittee := clonedBeaconBestState.BeaconCommittee
+	beaconPendingValidator := clonedBeaconBestState.BeaconPendingValidator
+	shardCommittee := clonedBeaconBestState.ShardCommittee
+	shardPendingValidator := clonedBeaconBestState.ShardPendingValidator
+	epoch := clonedBeaconBestState.Epoch
+	result := jsonresult.NewCommitteeListsResult(epoch, shardCommittee, shardPendingValidator, beaconCommittee, beaconPendingValidator)
 	return result, nil
 }
