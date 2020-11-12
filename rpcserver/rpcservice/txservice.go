@@ -49,6 +49,11 @@ type MempoolInterface interface {
 	SendTransactionToBlockGen()
 }
 
+type TxInfo struct {
+	BlockHash common.Hash
+	Tx metadata.Transaction
+}
+
 func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
 	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	return statedb.ListSerialNumber(transactionStateDB, tokenID, shardID)
@@ -205,32 +210,19 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		numBlock = 1000
 	}
 	// calculate total amount to send
-	totalAmmount := uint64(0)
+	totalAmount := uint64(0)
 	for _, receiver := range paymentInfos {
-		totalAmmount += receiver.Amount
+		totalAmount += receiver.Amount
 	}
-	// get list outputcoins tx
-	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
+
+	// get output native coins for estimate fee
+	candidateOutputCoins, remainOutCoins, candidateOutputCoinAmount, overBalanceAmount, err1 := txService.ChooseOutsCoinByKeysetForEstimateFee(
+		paymentInfos, 0, keySet, shardIDSender)
+	if err1 != nil {
+		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err1)
 	}
-	// remove out coin in mem pool
-	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
-	}
-	if len(outCoins) == 0 && totalAmmount > 0 {
-		return nil, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
-	}
-	// Use Knapsack to get candiate output coin
-	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := txService.chooseBestOutCoinsToSpent(outCoins, totalAmmount)
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
-	}
+
 	// refund out put for sender
-	overBalanceAmount := candidateOutputCoinAmount - totalAmmount
 	if overBalanceAmount > 0 {
 		// add more into output for estimate fee
 		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
@@ -238,12 +230,9 @@ func (txService TxService) chooseOutsCoinByKeyset(
 			Amount:         overBalanceAmount,
 		})
 	}
+
 	// check real fee(nano PRV) per tx
-	beaconState, err := txService.BlockChain.GetClonedBeaconBestState()
-	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
-	}
-	beaconHeight := beaconState.BeaconHeight
+	beaconHeight := txService.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
@@ -251,7 +240,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
-	if totalAmmount == 0 && realFee == 0 {
+	if totalAmount == 0 && realFee == 0 {
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
 			switch metadataType {
@@ -260,27 +249,68 @@ func (txService TxService) chooseOutsCoinByKeyset(
 					return nil, realFee, nil
 				}
 			}
-			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee))
+			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmount: %+v, realFee: %+v", totalAmount, realFee))
 		}
 		if privacyCustomTokenParams != nil {
 			// for privacy token
 			return nil, 0, nil
 		}
 	}
-	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
+	needToPayFee := int64((totalAmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
-	if needToPayFee > 0 {
-		if len(outCoins) > 0 {
-			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
+	if totalAmount + realFee > candidateOutputCoinAmount {
+		if len(remainOutCoins) > 0 {
+			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(remainOutCoins, uint64(needToPayFee))
 			if err != nil {
 				return nil, 0, NewRPCError(GetOutputCoinError, err1)
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
+		} else {
+			return nil, 0, NewRPCError(RejectInvalidTxFeeError, errors.New("not enough coin for native fee"))
 		}
 	}
-	// convert to inputcoins
+	// convert to input coins
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	return inputCoins, realFee, nil
+}
+
+// chooseOutsCoinByKeyset returns list of input coins native token to estimate fee
+func (txService TxService) ChooseOutsCoinByKeysetForEstimateFee(
+	paymentInfos []*privacy.PaymentInfo, numBlock uint64,
+	keySet *incognitokey.KeySet, shardIDSender byte,
+) ([]*privacy.OutputCoin, []*privacy.OutputCoin, uint64, uint64, *RPCError) {
+	// estimate fee according to 8 recent block
+	if numBlock == 0 {
+		numBlock = 1000
+	}
+	// calculate total amount to send
+	totalAmount := uint64(0)
+	for _, receiver := range paymentInfos {
+		totalAmount += receiver.Amount
+	}
+	// get list outputcoins tx
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
+	if err != nil {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
+	if err != nil {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, err)
+	}
+	if len(outCoins) == 0 && totalAmount > 0 {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
+	}
+	// Use Knapsack to get candiate output coin
+	candidateOutputCoins, remainOutCoins, totalCandidateOutCoinsAmount, err := txService.chooseBestOutCoinsToSpent(outCoins, totalAmount)
+	if err != nil {
+		return nil, nil, 0, 0, NewRPCError(GetOutputCoinError, err)
+	}
+
+	overBalance := totalCandidateOutCoinsAmount - totalAmount
+	return candidateOutputCoins, remainOutCoins, totalCandidateOutCoinsAmount, overBalance, nil
 }
 
 // EstimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
@@ -880,6 +910,27 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 	return txService.BlockChain.GetTransactionHashByReceiver(keySet)
 }
 
+// GetTransactionHashByReceiverV2 gets tx hashes by receiver in paging fashion
+func (txService TxService) GetTransactionHashByReceiverV2(
+	paymentAddressParam string,
+	skip, limit uint,
+) (map[byte][]common.Hash, error) {
+	var keySet *incognitokey.KeySet
+
+	if paymentAddressParam != "" {
+		senderKey, err := wallet.Base58CheckDeserialize(paymentAddressParam)
+		if err != nil {
+			return nil, errors.New("payment address is invalid")
+		}
+
+		keySet = &senderKey.KeySet
+	} else {
+		return nil, errors.New("payment address is invalid")
+	}
+
+	return txService.BlockChain.GetTransactionHashByReceiverV2(keySet, skip, limit)
+}
+
 func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.TransactionDetail, *RPCError) {
 	txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
 	if err != nil {
@@ -1463,26 +1514,17 @@ func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.Ou
 	if err != nil {
 		Logger.log.Errorf("txService.SendRawTxWithMetadata Create tx message for broadcasting with err: %+v", err)
 		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
-	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 
 	return txMsg, hash, tx.PubKeyLastByteSender, nil
 }*/
 
-// GetTransactionByReceiver - from keyset of receiver, we can get list tx hash which be sent to receiver
-// if this keyset contain payment-addr, we can detect tx hash
-// if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
-// because this is monitoring output to get received tx -> can not know this is a returned amount tx
-func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) (*jsonresult.ListReceivedTransaction, *RPCError) {
-	if len(keySet.PaymentAddress.Pk) == 0 {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
-	}
-	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
-	}
 
+func (txService TxService) buildTxInfosFromTxHashs(
+	listTxsHash map[byte][]common.Hash,
+	keySet incognitokey.KeySet,
+) *jsonresult.ListReceivedTransaction {
 	result := jsonresult.ListReceivedTransaction{
 		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
 	}
@@ -1490,7 +1532,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:     shardID,
-				ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
+				ReceivedAmounts: map[common.Hash]jsonresult.ReceivedInfo{},
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
@@ -1627,7 +1669,341 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 			})
 		}
 	}
-	return &result, nil
+	return &result
+}
+
+// GetTransactionByReceiver - from keyset of receiver, we can get list tx hash which be sent to receiver
+// if this keyset contain payment-addr, we can detect tx hash
+// if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
+// because this is monitoring output to get received tx -> can not know this is a returned amount tx
+func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) (*jsonresult.ListReceivedTransaction, *RPCError) {
+	if len(keySet.PaymentAddress.Pk) == 0 {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
+	}
+	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
+	}
+	result := txService.buildTxInfosFromTxHashs(listTxsHash, keySet)
+	return result, nil
+}
+
+
+func (txService TxService) buildTxDetails(
+	txInfos []TxInfo,
+	keySet incognitokey.KeySet,
+) []jsonresult.ReceivedTransactionV2 {
+	txDetails := []jsonresult.ReceivedTransactionV2{}
+	for _, txInfo := range txInfos {
+		item := jsonresult.ReceivedTransactionV2{
+			ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
+			InputSerialNumbers: map[common.Hash][]string{},
+		}
+		if len(keySet.ReadonlyKey.Rk) != 0 {
+			_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(*txInfo.Tx.Hash())
+			item.LockTime = time.Unix(txDetail.GetLockTime(), 0).Format(common.DateOutputFormat)
+			item.Info = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
+			item.BlockHash = blockHash.String()
+			item.Hash = txDetail.Hash().String()
+
+			txType := txDetail.GetType()
+			item.Type = txType
+			switch item.Type {
+			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+				{
+					normalTx, ok := txDetail.(*transaction.Tx)
+					if !ok || normalTx == nil {
+						continue
+					}
+					item.Version = normalTx.Version
+					item.IsPrivacy = normalTx.IsPrivacy()
+					item.Fee = normalTx.Fee
+
+					// marshal metadata
+					if txDetail.GetMetadata() != nil {
+						metaData, _ := json.MarshalIndent(txDetail.GetMetadata(), "", "\t")
+						item.Metadata = string(metaData)
+					}
+
+					proof := normalTx.GetProof()
+					if proof != nil {
+						// add list input coins' serial number
+						inputCoins := proof.GetInputCoins()
+						for _, in := range inputCoins {
+							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
+								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+						}
+
+						outputs := proof.GetOutputCoins()
+						for _, output := range outputs {
+							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+								temp := &privacy.OutputCoin{
+									CoinDetails:          output.CoinDetails,
+									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+								}
+								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+									// try to decrypt to get more data
+									err := temp.Decrypt(keySet.ReadonlyKey)
+									if err != nil {
+										Logger.log.Error(err)
+										continue
+									}
+								}
+								info := jsonresult.ReceivedInfo{
+									CoinDetails: jsonresult.ReceivedCoin{
+										Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
+										PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+										Value:     temp.CoinDetails.GetValue(),
+									},
+								}
+								if temp.CoinDetailsEncrypted != nil {
+									info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+								}
+								item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
+							}
+						}
+					}
+				}
+			case common.TxCustomTokenPrivacyType:
+				{
+					privacyTokenTx, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+					if !ok || privacyTokenTx == nil {
+						continue
+					}
+					item.Version = privacyTokenTx.Version
+					item.IsPrivacy = privacyTokenTx.IsPrivacy()
+					item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
+					item.Fee = privacyTokenTx.Fee
+					item.PrivacyCustomTokenFee = privacyTokenTx.TxPrivacyTokenData.TxNormal.Fee
+					item.PrivacyCustomTokenID = privacyTokenTx.TxPrivacyTokenData.PropertyID.String()
+					item.PrivacyCustomTokenName = privacyTokenTx.TxPrivacyTokenData.PropertyName
+					item.PrivacyCustomTokenSymbol = privacyTokenTx.TxPrivacyTokenData.PropertySymbol
+
+					// marshal metadata
+					if txDetail.GetMetadata() != nil {
+						metaData, _ := json.MarshalIndent(txDetail.GetMetadata(), "", "\t")
+						item.Metadata = string(metaData)
+					}
+
+					// prv proof
+					proof := privacyTokenTx.GetProof()
+					if proof != nil {
+						// list serial number of native input coins
+						nativeInputCoins := proof.GetInputCoins()
+						for _, in := range nativeInputCoins {
+							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
+								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+						}
+
+						outputs := proof.GetOutputCoins()
+						for _, output := range outputs {
+							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+								temp := &privacy.OutputCoin{
+									CoinDetails:          output.CoinDetails,
+									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+								}
+								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+									// try to decrypt to get more data
+									err := temp.Decrypt(keySet.ReadonlyKey)
+									if err != nil {
+										Logger.log.Error(err)
+										continue
+									}
+								}
+								info := jsonresult.ReceivedInfo{
+									CoinDetails: jsonresult.ReceivedCoin{
+										Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
+										PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+										Value:     temp.CoinDetails.GetValue(),
+									},
+								}
+								if temp.CoinDetailsEncrypted != nil {
+									info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+								}
+								item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
+							}
+						}
+					}
+
+					// token proof
+					proof = privacyTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
+					if proof != nil {
+						// list serial number of ptoken input coins
+						ptokenInputCoins := proof.GetInputCoins()
+						for _, in := range ptokenInputCoins {
+							item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID],
+								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+						}
+
+						outputs := proof.GetOutputCoins()
+						for _, output := range outputs {
+							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+								temp := &privacy.OutputCoin{
+									CoinDetails:          output.CoinDetails,
+									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+								}
+								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+									// try to decrypt to get more data
+									err := temp.Decrypt(keySet.ReadonlyKey)
+									if err != nil {
+										Logger.log.Error(err)
+										continue
+									}
+								}
+								info := jsonresult.ReceivedInfo{
+									CoinDetails: jsonresult.ReceivedCoin{
+										Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
+										PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+										Value:     temp.CoinDetails.GetValue(),
+									},
+								}
+								if temp.CoinDetailsEncrypted != nil {
+									info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+								}
+								item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID], info)
+							}
+						}
+					}
+				}
+			}
+		}
+		txDetails = append(txDetails, item)
+	}
+	return txDetails
+}
+
+func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo, tokenID common.Hash, pubKey []byte) {
+	txInfos := []TxInfo{}
+	for _, txHash := range txHashs {
+		_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+		// filter by tokenID
+		if bytes.Equal(tokenID.Bytes(), common.PRVCoinID.Bytes()) {
+			// case 1: tokenID is PRVID, include normal Tx and privacyTx that have native output coins for public key
+			if txDetail.GetType() == common.TxCustomTokenPrivacyType {
+				txPToken, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+				if !ok || txPToken == nil {
+					continue
+				}
+				nativeProof := txPToken.GetProof()
+				if nativeProof == nil {
+					continue
+				}
+				nativeOutputCoins := nativeProof.GetOutputCoins()
+				hasNativeOutCoin := false
+				for _, out := range nativeOutputCoins {
+					if bytes.Equal(out.CoinDetails.GetPublicKey().ToBytesS(), pubKey) {
+						hasNativeOutCoin = true
+						break
+					}
+				}
+				if !hasNativeOutCoin {
+					continue
+				}
+			}
+		} else {
+			// case 2: tokenID is others, include privacyTx that have ptoken output coins for public key
+			if txDetail.GetType() != common.TxCustomTokenPrivacyType {
+				continue
+			}
+
+			txPToken, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+			if !ok || txPToken == nil {
+				continue
+			}
+			if !bytes.Equal(txPToken.GetTokenID().Bytes(), tokenID.Bytes()) {
+				continue
+			}
+
+			pTokenProof := txPToken.TxPrivacyTokenData.TxNormal.GetProof()
+			if pTokenProof == nil {
+				continue
+			}
+			pTokenOutputCoins := pTokenProof.GetOutputCoins()
+			hasPTokenOutCoin := false
+			for _, out := range pTokenOutputCoins {
+				if bytes.Equal(out.CoinDetails.GetPublicKey().ToBytesS(), pubKey) {
+					hasPTokenOutCoin = true
+					break
+				}
+			}
+			if !hasPTokenOutCoin {
+				continue
+			}
+		}
+
+		txInfo := TxInfo{
+			BlockHash: blockHash,
+			Tx: txDetail,
+		}
+		txInfos = append(txInfos, txInfo)
+	}
+	ch <- txInfos
+}
+
+// GetTransactionByReceiverV2 - from keyset of receiver, we can get list tx hash which be sent to receiver
+// if this keyset contain payment-addr, we can detect tx hash
+// if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
+// because this is monitoring output to get received tx -> can not know this is a returned amount tx
+func (txService TxService) GetTransactionByReceiverV2(
+	keySet incognitokey.KeySet,
+	skip, limit uint,
+	tokenIDHash common.Hash,
+) (*jsonresult.ListReceivedTransactionV2, uint, *RPCError) {
+	result := &jsonresult.ListReceivedTransactionV2{
+		ReceivedTransactions: []jsonresult.ReceivedTransactionV2{},
+	}
+	if len(keySet.PaymentAddress.Pk) == 0 {
+		return nil, 0, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
+	}
+	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
+	if err != nil {
+		return nil, 0, NewRPCError(UnexpectedError, errors.New("Cannot find any tx"))
+	}
+
+	allTxHashs := []common.Hash{}
+	for _, txHashs := range listTxsHash {
+		allTxHashs = append(allTxHashs, txHashs...)
+	}
+	totalTxHashs := len(allTxHashs)
+	chunksNum := 32 // number of concurrent gorountines
+	chunkSize := totalTxHashs / (chunksNum + 1)
+	if chunkSize == 0 {
+		chunkSize = 1
+	}
+
+	actualChunksNum := chunksNum
+	if chunkSize == 1 {
+		actualChunksNum = totalTxHashs
+	}
+	ch := make(chan []TxInfo)
+	for i := 0; i < actualChunksNum; i++ {
+		start := chunkSize * i
+		end := start + chunkSize
+		chunk := allTxHashs[start : end]
+		go txService.getTxsByHashs(chunk, ch, tokenIDHash, keySet.PaymentAddress.Pk)
+	}
+
+	txInfos := []TxInfo{}
+	for i := 0; i < actualChunksNum; i++ {
+		chunkedTxInfos := <- ch
+		txInfos = append(txInfos, chunkedTxInfos...)
+	}
+
+	sort.SliceStable(txInfos, func(i, j int) bool {
+		return txInfos[i].Tx.GetLockTime() > txInfos[j].Tx.GetLockTime()
+	})
+	txNum := uint(len(txInfos))
+	if skip >= txNum {
+		return result, 0, nil
+	}
+	limit = skip + limit
+	if limit > txNum {
+		limit = txNum
+	}
+	pagingTxInfos := txInfos[skip:limit]
+	txDetails := txService.buildTxDetails(pagingTxInfos, keySet)
+	result.ReceivedTransactions = txDetails
+	return result, txNum, nil
 }
 
 func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incognitokey.KeySet, txHashStr string) (map[string]interface{}, *RPCError) {

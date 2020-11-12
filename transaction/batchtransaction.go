@@ -22,11 +22,11 @@ func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
 	b.txs = append(b.txs, txs...)
 }
 
-func (b *batchTransaction) Validate(transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB) (bool, error, int) {
-	return b.validateBatchTxsByItself(b.txs, transactionStateDB, bridgeStateDB)
+func (b *batchTransaction) Validate(transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, boolParams map[string]bool) (bool, error, int) {
+	return b.validateBatchTxsByItself(b.txs, transactionStateDB, bridgeStateDB, boolParams)
 }
 
-func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB) (bool, error, int) {
+func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, boolParams map[string]bool) (bool, error, int) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -36,7 +36,9 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		hasPrivacy := tx.IsPrivacy()
-		ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, true, false)
+
+		boolParams["hasPrivacy"] = tx.IsPrivacy()
+		ok, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 		if !ok {
 			return false, err, i
 		}
@@ -67,3 +69,4 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	}
 	return true, nil, -1
 }
+

@@ -6,8 +6,8 @@ import (
 
 type ReceivedTransaction struct {
 	TransactionDetail
-	ReceivedAmounts map[common.Hash]ReceivedInfo `json:"ReceivedAmounts"`
-	FromShardID     byte                         `json:"FromShardID"`
+	ReceivedAmounts    map[common.Hash]ReceivedInfo `json:"ReceivedAmounts"`
+	FromShardID        byte                           `json:"FromShardID"`
 }
 
 type ReceivedInfo struct {
@@ -23,4 +23,15 @@ type ReceivedCoin struct {
 
 type ListReceivedTransaction struct {
 	ReceivedTransactions []ReceivedTransaction `json:"ReceivedTransactions"`
+}
+
+type ReceivedTransactionV2 struct {
+	TransactionDetail
+	ReceivedAmounts    map[common.Hash][]ReceivedInfo `json:"ReceivedAmounts"`
+	InputSerialNumbers map[common.Hash][]string       `json:"InputSerialNumbers"`
+	FromShardID        byte                           `json:"FromShardID"`
+}
+
+type ListReceivedTransactionV2 struct {
+	ReceivedTransactions []ReceivedTransactionV2 `json:"ReceivedTransactions"`
 }
