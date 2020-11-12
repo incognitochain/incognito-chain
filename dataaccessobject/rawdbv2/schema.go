@@ -34,6 +34,11 @@ var (
 	shardFeatureRootHashPrefix         = []byte("s-fe" + string(splitter))
 	previousBestStatePrefix            = []byte("previous-best-state" + string(splitter))
 	splitter                           = []byte("-[-]-")
+
+	// output coins by OTA key storage (optional)
+	// this will use its own separate folder
+	reindexedOutputCoinPrefix          = []byte("reindexed-output-coin" + string(splitter))
+	reindexedKeysPrefix                = []byte("reindexed-key" + string(splitter))
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -302,4 +307,33 @@ func GetLastBeaconHeightConfirmCrossShardKey() []byte {
 	temp := make([]byte, 0, len(lastBeaconHeightConfirmCrossShard))
 	temp = append(temp, lastBeaconHeightConfirmCrossShard...)
 	return temp
+}
+
+// ============================= Coin By OTA Key =======================================
+
+const (
+	outcoinPrefixHashKeyLength = 12
+	outcoinPrefixKeyLength     = 20
+)
+
+func getReindexedOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
+	h := common.HashH(append(reindexedOutputCoinPrefix, append(tokenID[:], append(publicKey, shardID)...)...))
+	return h[:][:outcoinPrefixHashKeyLength]
+}
+
+func getReindexedKeysPrefix() []byte {
+	h := common.HashH(reindexedKeysPrefix)
+	return h[:][:outcoinPrefixHashKeyLength]
+}
+
+func generateReindexedOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) []byte {
+	prefixHash := getReindexedOutputCoinPrefix(tokenID, shardID, publicKey)
+	valueHash := common.HashH(outputCoin)
+	return append(prefixHash, valueHash[:][:outcoinPrefixKeyLength]...)
+}
+
+func generateReindexedOTAKeyObjectKey(theKey []byte) []byte {
+	prefixHash := getReindexedKeysPrefix()
+	valueHash := common.HashH(theKey)
+	return append(prefixHash, valueHash[:][:outcoinPrefixKeyLength]...)
 }
