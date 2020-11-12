@@ -150,17 +150,20 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			key4: false,
 		}).
 		On("GetCandidateShardWaitingForNextRandom").
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3, *incKey4})
+		Return([]incognitokey.CommitteePublicKey{*incKey0})
 
 	beaconCommitteeEngineAutoStakeFalse := &mocks.BeaconCommitteeEngine{}
 	beaconCommitteeEngineAutoStakeFalse.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
-			key:  true,
+			key:  false,
+			key2: true,
+			key3: true,
+			key4: true,
 		}).
 		On("GetCandidateShardWaitingForNextRandom").
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey})
+		Return([]incognitokey.CommitteePublicKey{*incKey})
 
 	beaconCommitteeEngineAutoStakeTrue := &mocks.BeaconCommitteeEngine{}
 	beaconCommitteeEngineAutoStakeTrue.
@@ -401,7 +404,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "1 invalid unstake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+				beaconCommitteeEngine: beaconCommitteeEngineNotInCandidateAutoStakeFalse,
 			},
 			args: args{
 				instructions: [][]string{
@@ -438,7 +441,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			},
 		},
 		{
-			name: "1 invalid and 4 valid unstake",
+			name: "2 invalid and 4 valid unstake",
 			fields: fields{
 				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
 			},
@@ -462,7 +465,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			},
 		},
 		{
-			name: "4 invalid and 1 valid unstake",
+			name: "4 invalid and 2 valid unstake",
 			fields: fields{
 				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse1,
 			},
@@ -477,9 +480,9 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			want: &shardInstruction{
 				unstakeInstructions: []*instruction.UnstakeInstruction{
 					&instruction.UnstakeInstruction{
-						CommitteePublicKeys: []string{key},
+						CommitteePublicKeys: []string{key0, key},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
-							*incKey,
+							*incKey0, *incKey,
 						},
 					},
 				},
@@ -603,10 +606,6 @@ func TestBeaconBestState_processStakeInstructionFromShardBlock(t *testing.T) {
 	initPublicKey()
 	initLog()
 
-	// tx, _ := common.Hash{}.NewHashFromStr("123")
-	// paymentAddress0, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
-	// assert.Nil(t, err)
-
 	type fields struct {
 		BestBlockHash            common.Hash
 		PreviousBestBlockHash    common.Hash
@@ -652,93 +651,7 @@ func TestBeaconBestState_processStakeInstructionFromShardBlock(t *testing.T) {
 		args   args
 		want   *shardInstruction
 		want1  *duplicateKeyStakeInstruction
-	}{
-		// {
-		// 	name: "Valid Input-v2",
-		// 	fields: fields{
-		// 		beaconCommitteeEngine: &committeestate.BeaconCommitteeEngineV2{},
-		// 	},
-		// 	args: args{
-		// 		shardInstructions: &shardInstruction{
-		// 			stakeInstructions: []*instruction.StakeInstruction{
-		// 				&instruction.StakeInstruction{
-		// 					PublicKeyStructs: []incognitokey.CommitteePublicKey{
-		// 						*incKey0,
-		// 					},
-		// 					PublicKeys: []string{key0},
-		// 					RewardReceiverStructs: []privacy.PaymentAddress{
-		// 						paymentAddress0.KeySet.PaymentAddress,
-		// 					},
-		// 					AutoStakingFlag: []bool{true},
-		// 					TxStakeHashes: []common.Hash{
-		// 						*tx,
-		// 					},
-		// 					RewardReceivers: []string{paymentAddreessKey0},
-		// 					Chain:           instruction.SHARD_INST,
-		// 					TxStakes:        []string{tx.String()},
-		// 				},
-		// 				&instruction.StakeInstruction{
-		// 					PublicKeyStructs: []incognitokey.CommitteePublicKey{
-		// 						*incKey0,
-		// 					},
-		// 					PublicKeys: []string{key0},
-		// 					RewardReceiverStructs: []privacy.PaymentAddress{
-		// 						paymentAddress0.KeySet.PaymentAddress,
-		// 					},
-		// 					AutoStakingFlag: []bool{true},
-		// 					TxStakeHashes: []common.Hash{
-		// 						*tx,
-		// 					},
-		// 					RewardReceivers: []string{paymentAddreessKey0},
-		// 					Chain:           instruction.SHARD_INST,
-		// 					TxStakes:        []string{tx.String()},
-		// 				},
-		// 			},
-		// 		},
-		// 		validStakePublicKeys: []string{},
-		// 	},
-		// 	want: &shardInstruction{
-		// 		stakeInstructions: []*instruction.StakeInstruction{
-		// 			&instruction.StakeInstruction{
-		// 				PublicKeyStructs: []incognitokey.CommitteePublicKey{
-		// 					*incKey0,
-		// 				},
-		// 				PublicKeys: []string{key0},
-		// 				RewardReceiverStructs: []privacy.PaymentAddress{
-		// 					paymentAddress0.KeySet.PaymentAddress,
-		// 				},
-		// 				AutoStakingFlag: []bool{true},
-		// 				TxStakeHashes: []common.Hash{
-		// 					*tx,
-		// 				},
-		// 				RewardReceivers: []string{paymentAddreessKey0},
-		// 				Chain:           instruction.SHARD_INST,
-		// 				TxStakes:        []string{tx.String()},
-		// 			},
-		// 		},
-		// 	},
-		// 	want1: &duplicateKeyStakeInstruction{
-		// 		instructions: []*instruction.StakeInstruction{
-		// 			&instruction.StakeInstruction{
-		// 				PublicKeyStructs: []incognitokey.CommitteePublicKey{
-		// 					*incKey0,
-		// 				},
-		// 				PublicKeys: []string{key0},
-		// 				RewardReceiverStructs: []privacy.PaymentAddress{
-		// 					paymentAddress0.KeySet.PaymentAddress,
-		// 				},
-		// 				AutoStakingFlag: []bool{true},
-		// 				TxStakeHashes: []common.Hash{
-		// 					*tx,
-		// 				},
-		// 				RewardReceivers: []string{paymentAddreessKey0},
-		// 				Chain:           instruction.SHARD_INST,
-		// 				TxStakes:        []string{tx.String()},
-		// 			},
-		// 		},
-		// 	},
-		// },
-	}
+	}{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			beaconBestState := &BeaconBestState{
