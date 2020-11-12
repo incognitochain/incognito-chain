@@ -11,10 +11,9 @@ import (
 )
 
 type EngineConfig struct {
-	Node            NodeInterface
-	ValidatorsLimit int
-	Blockchain      *blockchain.BlockChain
-	PubSubManager   *pubsub.PubSubManager
+	Node          NodeInterface
+	Blockchain    *blockchain.BlockChain
+	PubSubManager *pubsub.PubSubManager
 }
 
 type NodeInterface interface {
