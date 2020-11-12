@@ -17,7 +17,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
 	"github.com/incognitochain/incognito-chain/incdb"
