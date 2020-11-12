@@ -1108,28 +1108,30 @@ func updateCurrentPortalStateAfterLiquidationByRatesV3(
 
 		// locked prv collateral
 		remainUnlockByPortalTokenID := remainUnlockAmounts[portalTokenID]
-		lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-		lockedAmountTmp[portalTokenID] = lockedAmountTmp[portalTokenID] - lInfo.LiquidatedCollateralAmount - remainUnlockByPortalTokenID.PrvAmount
-		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+
+		if lInfo.LiquidatedCollateralAmount > 0 {
+			lockedAmountTmp := custodianState.GetLockedAmountCollateral()
+			lockedAmountTmp[portalTokenID] = lockedAmountTmp[portalTokenID] - lInfo.LiquidatedCollateralAmount - remainUnlockByPortalTokenID.PrvAmount
+			custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+
+			// set total collaterals
+			custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - lInfo.LiquidatedCollateralAmount)
+		}
 
 		// locked token collaterals
 		lockedTokenAmountTmp := custodianState.GetLockedTokenCollaterals()
 		lockedTokenByPortalTokenID := lockedTokenAmountTmp[portalTokenID]
-
+		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
 		for extTokenID := range lockedTokenByPortalTokenID {
-			lockedTokenByPortalTokenID[extTokenID] = lockedTokenByPortalTokenID[extTokenID] - lInfo.LiquidatedTokenCollateralsAmount[extTokenID] - remainUnlockByPortalTokenID.TokenAmounts[extTokenID]
+			if lInfo.LiquidatedTokenCollateralsAmount[extTokenID] > 0 {
+				lockedTokenByPortalTokenID[extTokenID] = lockedTokenByPortalTokenID[extTokenID] - lInfo.LiquidatedTokenCollateralsAmount[extTokenID] - remainUnlockByPortalTokenID.TokenAmounts[extTokenID]
+				totalTokenCollaterals[extTokenID] -= lInfo.LiquidatedTokenCollateralsAmount[extTokenID]
+			}
 		}
 		lockedTokenAmountTmp[portalTokenID] = lockedTokenByPortalTokenID
 		custodianState.SetLockedTokenCollaterals(lockedTokenAmountTmp)
 
 		// set total collaterals
-		custodianState.SetTotalCollateral(custodianState.GetTotalCollateral() - lInfo.LiquidatedCollateralAmount)
-
-		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
-		for extTokenID := range totalTokenCollaterals {
-			totalTokenCollaterals[extTokenID] -= lInfo.LiquidatedTokenCollateralsAmount[extTokenID]
-		}
-		custodianState.SetTotalTokenCollaterals(totalTokenCollaterals)
 
 		// free collaterals
 		freePRVCollateral += remainUnlockByPortalTokenID.PrvAmount
@@ -3745,7 +3747,7 @@ func GetTotalLockedCollateralAmountInWaitingPortingsV3(portalState *CurrentPorta
 		}
 		for _, cus := range waitingPortingReq.Custodians() {
 			if cus.IncAddress == custodianState.GetIncognitoAddress() {
-				tokenAmountList = cus.LockedTokenCollaterals
+				tokenAmountList = cloneMap(cus.LockedTokenCollaterals)
 				tokenAmountList[common.PRVIDStr] = cus.LockedAmountCollateral
 				break
 			}

@@ -683,6 +683,10 @@ func (blockchain *BlockChain) buildInstForLiquidationByExchangeRatesV3(
 			insts = append(insts, inst)
 		}
 
+		if len(tpRatios) == 0 {
+			continue
+		}
+
 		// update current portal state after liquidation custodianKey
 		updateCurrentPortalStateAfterLiquidationByRatesV3(currentPortalState, custodianKey, tpRatios, remainUnlockColalterals)
 		inst := buildLiquidationByExchangeRateInstV3(
