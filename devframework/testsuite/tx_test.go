@@ -337,7 +337,7 @@ func Test_PDEFlow(t *testing.T) {
 	rBytes, _ := json.Marshal(r)
 	fmt.Println(string(rBytes))
 
-	_, err = sim.RPC.API_SendTxWithPRVCrossPoolTradeReq(acc1, "0000000000000000000000000000000000000000000000000000000000000004", "1000000")
+	_, err = sim.RPC.API_SendTxWithPRVCrossPoolTradeReq(acc1, result1.TokenID, "1000000")
 	if err != nil {
 		panic(err)
 	}
