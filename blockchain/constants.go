@@ -30,6 +30,7 @@ const (
 	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
 	OutcoinReindexerTimeout 	  = 90	 // seconds
 	OutcoinReindexerRoutines 	  = 2
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
 // CONSTANT for network MAINNET

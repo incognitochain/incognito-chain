@@ -72,7 +72,6 @@ type ChainRetriever interface {
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
-	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 }
 
 type BeaconViewRetriever interface {

@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"io"
 	"sort"
 
@@ -737,20 +736,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	beaconView.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
 	blockchain.beaconViewCache.Add(blockHash, beaconView)
 	return beaconView, err
-}
-
-// GetFixedRandomForShardIDCommitment returns the fixed randomness for shardID commitments
-// if bc height is greater than or equal to BCHeightBreakPointFixRandShardCM
-// otherwise, return nil
-func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar {
-	if beaconHeight == 0 {
-		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
-	}
-	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP {
-		return privacy.FixedRandomnessShardID
-	}
-
-	return nil
 }
 
 func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
