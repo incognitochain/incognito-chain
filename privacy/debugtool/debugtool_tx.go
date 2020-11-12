@@ -143,7 +143,7 @@ func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, payment
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string) ([]byte, error) {
+func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string, h uint64) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
@@ -165,13 +165,13 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string) ([]byte, e
 			  "PaymentAddress": "%s",
 			  "OTASecretKey": "%s",
 			  "ReadonlyKey" : "%s",
-			  "StartHeight": 0
+			  "StartHeight": %d
 				}
 			],
 		  "%s"
 		  ],
 		"id": 1
-	}`, paymentAddStr, otaSecretKey, viewingKeyStr, tokenID)
+	}`, paymentAddStr, otaSecretKey, viewingKeyStr, h, tokenID)
 
 	//fmt.Println("==============")
 
@@ -274,6 +274,21 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 	query := fmt.Sprintf(`{
 	   "jsonrpc":"1.0",
 	   "method":"getbalancebyprivatekey",
+	   "params":["%s"],
+	   "id":1
+	}`, privKeyStr)
+
+	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) SubmitKey(privKeyStr string) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	query := fmt.Sprintf(`{
+	   "jsonrpc":"1.0",
+	   "method":"submitkey",
 	   "params":["%s"],
 	   "id":1
 	}`, privKeyStr)
