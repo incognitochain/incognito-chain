@@ -244,7 +244,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 
 				// create inst to liquidate token from custodian to user
 				var confirmInst []string
-				if metaType == metadata.PortalLiquidateCustodianMetaV3 {
+				if metaType == metadata.PortalLiquidateCustodianMetaV3 && len(liquidatedAmounts) > 0 {
 					liquidatedBigIntAmounts := make(map[string]*big.Int)
 					for tokenLiquidateId, tokenAmount := range liquidatedAmounts {
 						amountBN := big.NewInt(0).SetUint64(tokenAmount)
@@ -1014,7 +1014,6 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 		)
 		insts = append(insts, confirmInst)
 	}
-
 
 	Logger.log.Errorf("===================== Build instructions for producer redeem from liquidation pool v3 successfully....")
 	Logger.log.Errorf("insts: %+v, %+v", insts)
