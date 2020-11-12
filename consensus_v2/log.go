@@ -1,4 +1,4 @@
-package consensus_multi
+package consensus_v2
 
 import "github.com/incognitochain/incognito-chain/common"
 

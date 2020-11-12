@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	consensus "github.com/incognitochain/incognito-chain/consensus_multi"
+	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/syncker"
 

@@ -1,9 +1,9 @@
-package consensus_multi
+package consensus_v2
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -11,10 +11,9 @@ import (
 )
 
 type EngineConfig struct {
-	Node            NodeInterface
-	ValidatorsLimit int
-	Blockchain      *blockchain.BlockChain
-	PubSubManager   *pubsub.PubSubManager
+	Node          NodeInterface
+	Blockchain    *blockchain.BlockChain
+	PubSubManager *pubsub.PubSubManager
 }
 
 type NodeInterface interface {

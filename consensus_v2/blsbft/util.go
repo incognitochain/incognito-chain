@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"

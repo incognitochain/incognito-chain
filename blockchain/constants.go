@@ -28,6 +28,7 @@ const (
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
+// this param is configured based on network ID. Testnet = 4, Mainnet = 22
 var NumberOfFixedBlockValidators = 4
 
 // burning addresses
@@ -132,7 +133,7 @@ const (
 	// relaying header chain
 	TestnetBNBChainID        = "Binance-Chain-Ganges"
 	TestnetBTCChainID        = "Bitcoin-Testnet"
-	TestnetBTCDataFolderName = "btcrelayingv10"
+	TestnetBTCDataFolderName = "btcrelayingv13"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
@@ -174,7 +175,7 @@ const (
 	// relaying header chain
 	Testnet2BNBChainID        = "Binance-Chain-Ganges"
 	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
-	Testnet2BTCDataFolderName = "btcrelayingv10"
+	Testnet2BTCDataFolderName = "btcrelayingv11"
 
 	// BNB fullnode
 	Testnet2BNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"

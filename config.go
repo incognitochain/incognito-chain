@@ -53,9 +53,6 @@ const (
 	DefaultPersistMempool = false
 	DefaultBtcClient      = 0
 	DefaultBtcClientPort  = "8332"
-
-	// consensus-multi
-	DefaultValidatorLimit = 1
 )
 
 var (
@@ -159,9 +156,6 @@ type config struct {
 	//backup
 	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
 	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
-
-	// consensus-multi
-	ValidatorLimit int `long:"valdlimit" description:"set concurrent validators limit"`
 }
 
 func (cfg config) IsTestnet() bool {
@@ -351,7 +345,6 @@ func loadConfig() (*config, []string, error) {
 		BtcClient:                   DefaultBtcClient,
 		BtcClientPort:               DefaultBtcClientPort,
 		EnableMining:                DefaultEnableMining,
-		ValidatorLimit:              DefaultValidatorLimit,
 	}
 
 	// Service options which are only added on Windows.

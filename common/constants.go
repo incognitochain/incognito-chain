@@ -62,7 +62,7 @@ var (
 var (
 	PRVCoinID      = Hash{4} // To send PRV in custom token
 	PRVCoinName    = "PRV"   // To send PRV in custom token
-	MaxShardNumber = 8
+	MaxShardNumber = 8       //programmatically config based on networkID
 )
 
 // CONSENSUS

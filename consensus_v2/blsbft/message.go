@@ -3,7 +3,7 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
