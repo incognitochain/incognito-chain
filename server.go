@@ -199,6 +199,7 @@ func (serverObj *Server) NewServer(
 	listenAddrs string,
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
+	dboc *incdb.Database,
 	chainParams *blockchain.Params,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
@@ -335,6 +336,7 @@ func (serverObj *Server) NewServer(
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
 		GenesisParams:   blockchain.GenesisParam,
+		OutcoinByOTAKeyDb: dboc,
 	})
 	if err != nil {
 		return err
