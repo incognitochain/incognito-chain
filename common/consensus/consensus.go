@@ -1,6 +1,6 @@
 package consensus
 
-import "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+import "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 type MiningState struct {
 	Role    string

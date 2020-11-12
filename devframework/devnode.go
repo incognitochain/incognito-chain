@@ -8,7 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi"
+	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/devframework/mock"
 	"github.com/incognitochain/incognito-chain/devframework/rpcclient"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -100,7 +100,7 @@ func (sim *SimulationEngine) initNode(chainParam *blockchain.Params, enableRPC b
 	//init blockchain
 	bc := blockchain.BlockChain{}
 
-	cs := consensus_multi.NewConsensusEngine()
+	cs := consensus_v2.NewConsensusEngine()
 	txpool := mempool.TxPool{}
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now

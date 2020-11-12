@@ -3,11 +3,11 @@ package blsbftv2
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 

@@ -1,13 +1,13 @@
-package consensus_multi
+package consensus_v2
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes/bridgesig"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strings"
 

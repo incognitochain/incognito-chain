@@ -1,4 +1,4 @@
-package consensus_multi
+package consensus_v2
 
 import (
 	"errors"
@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common/consensus"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi/blsbft"
-	blsbft2 "github.com/incognitochain/incognito-chain/consensus_multi/blsbftv2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	blsbft2 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )

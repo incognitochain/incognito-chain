@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus_multi/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_multi/blsbftv2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -80,10 +80,10 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 						continue
 					}
 					if senderComm[i] == 0 {
-						fmt.Printf("Don't send propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+						fmt.Printf("Don'trrrrrr send propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 						// c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 					} else {
-						fmt.Printf("Send propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+						fmt.Printf("Send propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 						c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 					}
 				}
@@ -92,7 +92,7 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 					if s.id == c.id {
 						continue
 					}
-					fmt.Printf("Send* propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+					fmt.Printf("Send* propose from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 					c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 				}
 			}
@@ -112,14 +112,14 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 					}
 					if senderComm, ok := comm[s.id]; ok {
 						if senderComm[i] == 0 {
-							fmt.Printf("Don't send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+							fmt.Printf("Don't send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 							// c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 						} else {
-							fmt.Printf("Send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+							fmt.Printf("Send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 							c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 						}
 					} else {
-						fmt.Printf("Send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+						fmt.Printf("Send vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 						c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 					}
 
@@ -129,7 +129,7 @@ func (s *Node) PushMessageToChain(msg wire.Message, chain common.ChainInterface)
 					if s.id == c.id {
 						continue
 					}
-					fmt.Printf("Send* vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-startTimeSlot+1)
+					fmt.Printf("Send* vote from %v to %v at timeslot %v\n", s.id, c.id, timeSlot-GetSimulation().startTimeSlot+1)
 					c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
 				}
 			}
