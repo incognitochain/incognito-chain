@@ -263,13 +263,8 @@ const (
 
 	getTotalStaker = "gettotalstaker"
 
-	//multi-validators
-	getMultiValKeyState = "getmultivalkeystate"
-	addMultiValKey      = "addmultivakey"
-	setMultiValKeyLimit = "setmultivalkeylimit"
-
-	//
-	getCommitteeByBeaconHeight = "getcommitteebybeaconheight"
+	//validator state
+	getValKeyState = "getvalkeystate"
 )
 
 const (

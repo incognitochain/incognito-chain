@@ -247,12 +247,8 @@ var HttpHandler = map[string]httpHandler{
 
 	getTotalStaker: (*HttpServer).handleGetTotalStaker,
 
-	// multi-validators
-	getMultiValKeyState: (*HttpServer).handleGetMultiValKeyState,
-	addMultiValKey:      (*HttpServer).handleAddMultiValKey,
-	setMultiValKeyLimit: (*HttpServer).handleSetMultiValKeyLimit,
-
-	getCommitteeByBeaconHeight: (*HttpServer).handleGetCommitteeByBeaconHeight,
+	//validators state
+	getValKeyState: (*HttpServer).handleGetValKeyState,
 }
 
 // Commands that are available to a limited user
