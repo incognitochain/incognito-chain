@@ -149,7 +149,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDepositV3(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalCustodianDepositV3FromMap(data)
+	meta, err := metadata.NewPortalCustodianDepositV3FromMap(data)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
