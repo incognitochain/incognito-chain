@@ -17,6 +17,7 @@ import (
 type returnStakingInfo struct {
 	SwapoutPubKey string
 	FunderAddress privacy.PaymentAddress
+	SharedRandom []byte
 	StakingTx     metadata.Transaction
 	StakingAmount uint64
 }
@@ -91,11 +92,17 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 				return errors.Errorf("Double tx return staking from instruction for tx staking %v", returnMeta.TxID)
 			}
 			returnStakingTxs[*txHash] = struct{}{}
-			_, _, returnAmount := tx.GetUniqueReceiver()
+			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+			if err != nil || !isMinted {
+				return errors.Errorf("this is not tx mint for return staking. Error %v", err)
+			}
+			if coinID.String() != common.PRVIDStr {
+				return errors.Errorf("return staking tx only mints prv. Error token %v", coinID.String())
+			}
 			h, _ := common.Hash{}.NewHashFromStr(returnMeta.TxID)
 			mReturnStakingInfoGot[*h] = returnStakingInfo{
 				FunderAddress: returnMeta.StakerAddress,
-				StakingAmount: returnAmount,
+				StakingAmount: mintCoin.GetValue(),
 			}
 		}
 	}
@@ -142,24 +149,28 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 		info.FunderAddress,
 		metadata.ReturnStakingMeta,
 	)
-	returnStakingTx := new(transaction.Tx)
-	stakeAmount := info.StakingTx.CalculateTxValue()
-	err := returnStakingTx.InitTxSalary(
-		stakeAmount,
-		&info.FunderAddress,
-		producerPrivateKey,
-		curView.GetCopiedTransactionStateDB(),
-		returnStakingMeta,
-	)
-	//modify the type of the salary transaction
-	returnStakingTx.Type = common.TxReturnStakingType
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount: info.StakingAmount,
+		ReceiverAddress: &info.FunderAddress,
+		TokenID: &common.PRVCoinID}
+
+	otaCoin, err := txParam.GenerateOutputCoin()
 	if err != nil {
-		return nil, 0, NewBlockChainError(InitSalaryTransactionError, err)
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
+		return nil, 0, errors.Errorf("cannot get new coin from amount and payment address. Error %v", err)
 	}
-	return returnStakingTx, stakeAmount, nil
+	returnStakingMeta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+
+	returnStakingTx, err := txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), returnStakingMeta)
+	if err!= nil {
+		return nil, 0, errors.Errorf("cannot init return staking tx. Error %v", err)
+	}
+	returnStakingTx.SetType(common.TxReturnStakingType)
+	return returnStakingTx, info.StakingAmount, nil
 }
 
-func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
+func (blockchain *BlockChain)  getReturnStakingInfoFromBeaconInstructions(
 	curView *ShardBestState,
 	beaconBlocks []*BeaconBlock,
 	shardID byte,
