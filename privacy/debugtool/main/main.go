@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"math/big"
 
 	//"os"
 	//"strconv"
@@ -47,9 +48,9 @@ func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 	return nil
 }
 
-func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
+func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64){
 	fmt.Println("========== GET OUTPUT TOKEN ==========")
-	b, _ := tool.GetListOutputCoins(privKey, tokenID)
+	b, _ := tool.GetListOutputCoins(privKey, tokenID, height)
 	fmt.Println(string(b))
 	fmt.Println("========== END OUTPUT TOKEN ==========")
 }
@@ -105,9 +106,9 @@ func ConvertTokenCoinVersion(tool *debugtool.DebugTool, privKey string, tokenID 
 	fmt.Println("END CONVERT TOKEN COIN")
 }
 
-func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string) {
+func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string, height uint64) {
 	fmt.Println("========== GET PRV OUTPUT COIN ==========")
-	b, _ := tool.GetListOutputCoins(privkey, common.PRVIDStr)
+	b, _ := tool.GetListOutputCoins(privkey, common.PRVIDStr, height)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
 }
@@ -117,6 +118,13 @@ func GetPRVBalance(tool *debugtool.DebugTool, privkey string) {
 	b, _ := tool.GetBalanceByPrivatekey(privkey)
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV BALANCE ==========")
+}
+
+func SubmitOTAKey(tool *debugtool.DebugTool, privkey string) {
+	fmt.Println("========== SUBMIT KEY ==========")
+	b, _ := tool.SubmitKey(privkey)
+	fmt.Println(string(b))
+	fmt.Println("========== END SUBMIT KEY ==========")
 }
 
 func GetRawMempool(tool *debugtool.DebugTool) {
@@ -470,8 +478,15 @@ func main() {
 			}else{
 				privateKey = args[1]
 			}
-
-			GetPRVOutPutCoin(tool, privateKey)
+			bi := big.NewInt(0)
+			if len(args)>=3{
+				_, ok := bi.SetString(args[2], 10)
+				if !ok{
+					continue
+				}
+			}
+			
+			GetPRVOutPutCoin(tool, privateKey, bi.Uint64())
 		}
 		if args[0] == "balance" {
 			var privateKey string
@@ -678,8 +693,15 @@ func main() {
 					tokenID = tokenIDs[args[2]]
 				}
 			}
+			bi := big.NewInt(0)
+			if len(args)>=4{
+				_, ok := bi.SetString(args[3], 10)
+				if !ok{
+					continue
+				}
+			}
 
-			GetOutputToken(tool, privateKey, tokenID)
+			GetOutputToken(tool, privateKey, tokenID, bi.Uint64())
 		}
 		if args[0] == "uot" {
 			if len(args) < 2 {
@@ -785,6 +807,26 @@ func main() {
 				tokenID = tokenIDs[args[2]]
 			}
 			PDETradeToken(tool, privateKey, tokenID, args[3])
+		}
+
+		if args[0] == "sub" {
+			var privateKey string
+			if len(args[1]) < 3{
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					panic(err)
+				}
+				if index >= int64(len(privateKeys)){
+					fmt.Println("Cannot find the private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			}else{
+				privateKey = args[1]
+			}
+
+			SubmitOTAKey(tool, privateKey)
 		}
 		// if args[0] == "doublespend" {
 		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)

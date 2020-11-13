@@ -951,42 +951,6 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 	return outputCoins
 }
 
-func (stateDB *StateDB) getAllReindexedOutputCoinState(tokenID common.Hash, shardID byte, publicKey []byte) []*OutputCoinState {
-	temp := stateDB.trie.NodeIterator(GetReindexedOutputCoinPrefix(tokenID, shardID, publicKey))
-	it := trie.NewIterator(temp)
-	outputCoins := []*OutputCoinState{}
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		newOutputCoin := NewOutputCoinState()
-		err := json.Unmarshal(newValue, newOutputCoin)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		outputCoins = append(outputCoins, newOutputCoin)
-	}
-	return outputCoins
-}
-
-func (stateDB *StateDB) getAllReindexedKeyState() []*OutputCoinState {
-	temp := stateDB.trie.NodeIterator(GetReindexedKeysPrefix())
-	it := trie.NewIterator(temp)
-	outputCoins := []*OutputCoinState{}
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		newOutputCoin := NewOutputCoinState()
-		err := json.Unmarshal(newValue, newOutputCoin)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		outputCoins = append(outputCoins, newOutputCoin)
-	}
-	return outputCoins
-}
-
 // ================================= OnetimeAddress OBJECT =======================================
 
 func (stateDB *StateDB) getOnetimeAddressState(key common.Hash) (*OnetimeAddressState, bool, error) {

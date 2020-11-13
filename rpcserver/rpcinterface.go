@@ -263,6 +263,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	setTxFee:                         (*HttpServer).handleSetTxFee,
 	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
+	submitKey:                     	  (*HttpServer).handleSubmitKey,
 }
 
 var WsHandler = map[string]wsHandler{

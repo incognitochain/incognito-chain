@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -21,6 +22,30 @@ Result—a list of accounts and their balances
 */
 func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result, err := httpServer.walletService.ListAccounts()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+/*
+this submits a chain-facing `OTA key` to view its balances later
+
+Parameter #1—the OTA key that will be submitted
+Result—success or error
+
+*/
+func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams==nil || len(arrayParams)!=1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array with 1 element"))
+	}
+	key, ok := arrayParams[0].(string)
+	if !ok{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OTA key is invalid"))
+	}
+	result, err := httpServer.walletService.SubmitKey(key)
 	if err != nil {
 		return nil, err
 	}

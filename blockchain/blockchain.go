@@ -58,6 +58,7 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
+	OutcoinByOTAKeyDb *incdb.Database
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -93,6 +94,13 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
+
+	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
+	if EnableIndexingCoinByOTAKey{
+		var err error
+		outcoinReindexer, err = NewOutcoinReindexer(OutcoinReindexerRoutines, *config.OutcoinByOTAKeyDb)
+		return err
+	}
 	return nil
 }
 
