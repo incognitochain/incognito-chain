@@ -689,6 +689,9 @@ func main() {
 			tokenID := common.PRVIDStr
 			if len(args) > 2{
 				tokenID = args[2]
+				if len(args[2]) < 10{
+					tokenID = tokenIDs[args[2]] //Make sure you have the right token name
+				}
 			}
 
 			var privateKey string
@@ -725,7 +728,17 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			PDEWithdrawContribution(tool, privateKeys[index], args[2], args[3], args[4])
+			tokenID1 := args[2]
+			if len(args[2]) < 10{
+				tokenID1 = tokenIDs[args[2]]
+			}
+
+			tokenID2 := args[3]
+			if len(args[3]) < 10{
+				tokenID2 = tokenIDs[args[3]]
+			}
+
+			PDEWithdrawContribution(tool, privateKeys[index], tokenID1, tokenID2, args[4])
 		}
 
 		if args[0] == "pdetradeprv" {

@@ -164,7 +164,7 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string) ([]byte, e
 				{
 			  "PaymentAddress": "%s",
 			  "OTASecretKey": "%s",
-			  "ReadonlyKey" : "%s",
+			  "ReadonlyKey": "%s",
 			  "StartHeight": 0
 				}
 			],
@@ -187,7 +187,7 @@ func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, 
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
-	//viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
 
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
@@ -199,13 +199,14 @@ func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, 
 				{
 			  "PaymentAddress": "%s",
 			  "OTASecretKey":   "%s",
+			  "ReadonlyKey": "%s",
 			  "StartHeight": 0
 				}
 			],
 			"%s"
 		  ],
 		"id": 1
-	}`, paymentAddStr, otaSecretKey, tokenID)
+	}`, paymentAddStr, otaSecretKey, viewingKeyStr, tokenID)
 
 	//fmt.Println("==============")
 
@@ -436,7 +437,6 @@ func (this *DebugTool) PDEWithdrawContribution(privKeyStr, tokenID1, tokenID2, a
 		}`, privKeyStr, amountShare, tokenID1, tokenID2, paymentAddStr)
 	return this.SendPostRequestWithQuery(query)
 }
-
 
 func (this *DebugTool) PDETradePRV(privKeyStr, receiverToken, amount string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
@@ -789,7 +789,6 @@ func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, e
 // 	preJson := []string{EncodeBase58Check(tx1),EncodeBase58Check(tx2)}
 // 	result, _ := json.Marshal(preJson)
 // 	return result, err
-
 
 // 	// query := fmt.Sprintf(`{
 // 	// 	"id": 1,
