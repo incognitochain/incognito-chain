@@ -2,10 +2,11 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"sort"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/pkg/errors"
@@ -658,7 +659,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-	_, newCommittees, newSubstitutes, slashingCommittees, normalCommittees := createSwapShardInstructionV3(
+	_, newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees := createSwapShardInstructionV3(
 		shardID,
 		tempSubstitutes,
 		tempCommittees,
@@ -688,7 +689,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, returnStakingInstructions, err = b.processAfterNormalSwap(
 		env,
-		normalCommittees,
+		normalSwapOutCommittees,
 		newCommitteeChange,
 		returnStakingInstructions,
 	)

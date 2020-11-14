@@ -361,6 +361,9 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		if e.ChainID == BEACON_CHAIN_ID {
 			e.processWithEnoughVotesBeaconChain(v, currentCommittees)
 		} else {
+			// @TODO:
+			// @hung must get list committees by previous hash for previouscommittees
+
 			previousCommittees := view.GetCommittee()
 			e.processWithEnoughVotesShardChain(v, currentCommittees, previousCommittees)
 		}
