@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -677,8 +678,7 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
-	// add count signature
-	err = curView.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
+	err = beaconBestState.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
 	if err != nil {
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
